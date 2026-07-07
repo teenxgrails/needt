@@ -9,6 +9,7 @@ import { DayView } from "@/components/calendar/DayView";
 import { FeedManager } from "@/components/calendar/FeedManager";
 import { MonthView } from "@/components/calendar/MonthView";
 import { MultiMonthView } from "@/components/calendar/MultiMonthView";
+import { SmartPlanningPanel } from "@/components/calendar/SmartPlanningPanel";
 import { WeekView } from "@/components/calendar/WeekView";
 
 import { addDays, formatDate, newDate, subDays } from "@/lib/date-utils";
@@ -98,6 +99,9 @@ export function Calendar({
           {/* Feed Manager */}
           <div className="flex-1 overflow-y-auto">
             <FeedManager />
+            <div className="border-t border-border">
+              <SmartPlanningPanel />
+            </div>
           </div>
         </div>
       </aside>

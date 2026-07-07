@@ -1,5 +1,7 @@
-import { HiOutlinePlus } from "react-icons/hi";
+import { HiOutlineCheck, HiOutlineClock, HiOutlinePlus } from "react-icons/hi";
 
+import { useFocusModeStore } from "@/store/focusMode";
+import { useTaskStore } from "@/store/task";
 import { useTaskModalStore } from "@/store/taskModal";
 
 import { Command } from "../types";
@@ -19,6 +21,32 @@ export function useTaskCommands(): Command[] {
       },
       perform: () => {
         useTaskModalStore.getState().setOpen(true);
+      },
+    },
+    {
+      id: "tasks.schedule",
+      title: "Schedule Tasks",
+      keywords: ["task", "schedule", "auto", "plan"],
+      icon: HiOutlineClock,
+      section: "tasks",
+      shortcut: "st",
+      perform: async () => {
+        await useTaskStore.getState().scheduleAllTasks();
+      },
+    },
+    {
+      id: "tasks.complete-focus",
+      title: "Complete Focus Task",
+      keywords: ["task", "complete", "done", "focus"],
+      icon: HiOutlineCheck,
+      section: "tasks",
+      shortcut: "ct",
+      context: {
+        requiredPath: "/focus",
+        navigateIfNeeded: false,
+      },
+      perform: () => {
+        useFocusModeStore.getState().completeCurrentTask();
       },
     },
   ];
