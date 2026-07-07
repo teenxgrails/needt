@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { sendConnectorWebhook } from "@/services/connectors/webhooks";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
@@ -23,6 +24,11 @@ export async function POST(request: NextRequest) {
 
     // Repush dirty blocks and newly scheduled tasks to calendar
     await repushDirtyBlocks(userId);
+    await sendConnectorWebhook({
+      userId,
+      event: "schedule.changed",
+      payload: { taskCount: tasksWithRelations.length },
+    });
 
     return NextResponse.json(tasksWithRelations);
   } catch (error) {

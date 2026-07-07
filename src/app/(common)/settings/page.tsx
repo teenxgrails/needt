@@ -6,6 +6,7 @@ import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { AccountManager } from "@/components/settings/AccountManager";
 import { AutoScheduleSettings } from "@/components/settings/AutoScheduleSettings";
 import { CalendarSettings } from "@/components/settings/CalendarSettings";
+import { ConnectorSettings } from "@/components/settings/ConnectorSettings";
 import { ImportExportSettings } from "@/components/settings/ImportExportSettings";
 import { LogViewer } from "@/components/settings/LogViewer";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
@@ -28,6 +29,7 @@ type SettingsTab =
   | "auto-schedule"
   | "smart-scheduling"
   | "ai-assistant"
+  | "connectors"
   | "system"
   | "task-sync"
   | "logs"
@@ -52,6 +54,7 @@ export default function SettingsPage() {
       { id: "auto-schedule", label: "Auto-Schedule" },
       { id: "smart-scheduling", label: "Smart Scheduling" },
       { id: "ai-assistant", label: "AI Assistant" },
+      { id: "connectors", label: "Connectors" },
       { id: "task-sync", label: "Task Sync" },
       { id: "notifications", label: "Notifications" },
       { id: "import-export", label: "Import/Export" },
@@ -85,6 +88,7 @@ export default function SettingsPage() {
         "auto-schedule",
         "smart-scheduling",
         "ai-assistant",
+        "connectors",
         "task-sync",
         "system",
         "logs",
@@ -155,6 +159,8 @@ export default function SettingsPage() {
         return <SmartSchedulingSettings />;
       case "ai-assistant":
         return <AIAssistantSettings />;
+      case "connectors":
+        return <ConnectorSettings />;
       case "task-sync":
         return <TaskSyncSettings />;
       case "notifications":

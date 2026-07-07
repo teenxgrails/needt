@@ -91,6 +91,7 @@ model User {
   schedulingPreferences SchedulingPreferences?
   energyProfileWindows  EnergyProfileWindow[]
   aiSettings            AISettings?
+  connectorSettings     ConnectorSettings?
   tasks                 Task[]
   projects              Project[]
   connectedAccounts     ConnectedAccount[]
@@ -358,6 +359,22 @@ model AISettings {
 
   @@index([userId])
   @@index([provider])
+}
+
+model ConnectorSettings {
+  id                  String   @id @default(cuid())
+  userId              String   @unique
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash           String?  @unique
+  tokenPreview        String?
+  webhookUrl          String?
+  webhookSchedule     Boolean  @default(false)
+  webhookTaskComplete Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+  @@index([tokenHash])
 }
 
 model Tag {

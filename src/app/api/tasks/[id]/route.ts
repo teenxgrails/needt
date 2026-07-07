@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { sendConnectorWebhook } from "@/services/connectors/webhooks";
 import { Task } from "@prisma/client";
 import { RRule } from "rrule";
 
@@ -288,6 +289,17 @@ export async function PUT(
 
     // Schedule calendar block push for any changes to scheduled times or status
     schedulePushTaskBlock(userId, id);
+
+    if (
+      updates.status === TaskStatus.COMPLETED &&
+      task.status !== TaskStatus.COMPLETED
+    ) {
+      await sendConnectorWebhook({
+        userId,
+        event: "task.completed",
+        payload: { taskId: updatedTask.id, title: updatedTask.title },
+      });
+    }
 
     return NextResponse.json(updatedTask);
   } catch (error) {
