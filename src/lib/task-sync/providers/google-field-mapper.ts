@@ -42,7 +42,7 @@ export class GoogleFieldMapper extends FieldMapper {
       {
         internalField: "description",
         externalField: "notes",
-//        preserveLocalValue: true,
+        //        preserveLocalValue: true,
       },
       {
         internalField: "dueDate",
@@ -50,11 +50,15 @@ export class GoogleFieldMapper extends FieldMapper {
         preserveLocalValue: true,
         transformToExternal: (value: unknown) => {
           if (!value) return null;
-          return new Date(new Date(value as string | number | Date).toISOString());
+          return new Date(
+            new Date(value as string | number | Date).toISOString()
+          );
         },
         transformToInternal: (value: unknown) => {
           if (!value) return null;
-          return new Date(new Date(value as string | number | Date).toISOString());
+          return new Date(
+            new Date(value as string | number | Date).toISOString()
+          );
         },
       },
       {
@@ -63,11 +67,26 @@ export class GoogleFieldMapper extends FieldMapper {
         preserveLocalValue: true,
         transformToExternal: (value: unknown) => {
           if (!value) return null;
-          return new Date(new Date(value as string | number | Date).toISOString());
+          return new Date(
+            new Date(value as string | number | Date).toISOString()
+          );
         },
         transformToInternal: (value: unknown) => {
           if (!value) return null;
-          return new Date(new Date(value as string | number | Date).toISOString());
+          return new Date(
+            new Date(value as string | number | Date).toISOString()
+          );
+        },
+      },
+      {
+        internalField: "completedAt",
+        externalField: "completedDate",
+        preserveLocalValue: true,
+        transformToInternal: (value: unknown) => {
+          if (!value) return null;
+          return new Date(
+            new Date(value as string | number | Date).toISOString()
+          );
         },
       },
       // Priority isn't present in Google Tasks; preserve the local priority

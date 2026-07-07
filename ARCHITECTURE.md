@@ -2,6 +2,25 @@
 
 This document captures the Phase 0 baseline for the FluidCalendar fork before the Mina Calendar planner changes.
 
+## Current Fork Additions
+
+The fork now presents the app as `teenx planner` through `src/lib/app-config.ts`, while preserving upstream attribution and license text.
+
+Single-user mode is enforced by disabling public signup/registration and SaaS surfaces. Auth remains NextAuth-backed, with first-run setup as the local account creation path.
+
+The scheduling stack has two layers:
+
+- `src/services/scheduling/engine.ts`: pure deterministic scheduler. It accepts schedulable tasks, busy blocks, energy profile windows, preferences, and `now`; it returns placed blocks, frozen blocks, and unscheduled overflow reasons.
+- `src/services/scheduling/TaskSchedulingService.ts`: database adapter. It reads tasks/settings/calendar busy time from Prisma, calls the pure engine, and persists the first visible task block into the current `Task` scheduling fields.
+
+Smart scheduling data is stored on `Task`, `EnergyProfileWindow`, and `SchedulingPreferences`. `Settings -> Smart Scheduling` reads/writes the energy curve and ADHD preferences.
+
+The optional AI layer lives under `src/services/ai`. `AISettings` stores provider choice, encrypted BYO key, custom endpoint, model, and allowed actions. `None` remains the default. API routes under `/api/ai/*` parse brain dumps and request schedule suggestions, always falling back to deterministic behavior if the provider fails.
+
+The ADHD planning surface lives in `src/components/calendar/SmartPlanningPanel.tsx` and is mounted inside the calendar sidebar. It provides brain dump parsing, energy timeline, overcommitment warning, buffer visibility, quick reschedule, and shutdown ritual.
+
+The local connector API uses `ConnectorSettings` with a hashed personal bearer token. `/api/connect/tasks`, `/api/connect/schedule`, and `/api/connect/reschedule` let local tools create tasks, read schedule state, and trigger scheduling. Optional outbound webhooks are best-effort.
+
 ## Stack
 
 - Next.js 15 App Router with React 19 and TypeScript.

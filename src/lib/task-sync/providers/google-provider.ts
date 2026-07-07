@@ -1,10 +1,10 @@
 import { google } from "googleapis";
+import type { tasks_v1 } from "googleapis";
 
 import { logger } from "@/lib/logger";
 import { TokenManager } from "@/lib/token-manager";
 
-import { TaskStatus, Priority, Task } from "@/types/task";
-import type { tasks_v1 } from "googleapis";
+import { Priority, Task, TaskStatus } from "@/types/task";
 
 import {
   ExternalTask,
@@ -26,7 +26,11 @@ export class GoogleTaskProvider implements TaskProviderInterface {
   private accountId: string;
   private userId: string;
 
-  constructor(client: ReturnType<typeof google.tasks>, accountId: string, userId: string) {
+  constructor(
+    client: ReturnType<typeof google.tasks>,
+    accountId: string,
+    userId: string
+  ) {
     this.client = client;
     this.accountId = accountId;
     this.userId = userId;
@@ -65,14 +69,20 @@ export class GoogleTaskProvider implements TaskProviderInterface {
     }, "getTaskLists");
   }
 
-  async getTasks(listId: string, options?: SyncOptions): Promise<ExternalTask[]> {
+  async getTasks(
+    listId: string,
+    options?: SyncOptions
+  ): Promise<ExternalTask[]> {
     return this.apiCall(async () => {
       const tasks: ExternalTask[] = [];
       let pageToken: string | undefined;
 
       do {
         type TasksListParams = tasks_v1.Params$Resource$Tasks$List;
-        const params: TasksListParams = { tasklist: listId, pageToken } as TasksListParams;
+        const params: TasksListParams = {
+          tasklist: listId,
+          pageToken,
+        } as TasksListParams;
 
         if (options) {
           if (options.includeCompleted === false) params.showCompleted = false;
@@ -80,7 +90,7 @@ export class GoogleTaskProvider implements TaskProviderInterface {
         }
 
         const res = await this.client.tasks.list(params);
-        const items = res.data.items || []; 
+        const items = res.data.items || [];
 
         tasks.push(
           ...items.map((t) => ({
@@ -89,8 +99,9 @@ export class GoogleTaskProvider implements TaskProviderInterface {
             description: t.notes || null,
             status: t.status || undefined,
             listId,
-            dueDate: t.due ? new Date(t.due as string) : undefined,
-            completedDate: (t.completed && new Date(t.completed as string)) || undefined,
+            startDate: t.due ? new Date(t.due as string) : undefined,
+            completedDate:
+              (t.completed && new Date(t.completed as string)) || undefined,
             lastModified: t.updated ? new Date(t.updated as string) : undefined,
             lastModifiedDateTime: t.updated as string | undefined,
             url: t.selfLink as string | undefined,
@@ -111,10 +122,14 @@ export class GoogleTaskProvider implements TaskProviderInterface {
         notes: task.description || undefined,
       };
 
-      if (task.dueDate) body.due = new Date(task.dueDate).toISOString();
-      if (task.status) body.status = this.mapStatusToGoogle(task.status as string);
+      if (task.startDate) body.due = new Date(task.startDate).toISOString();
+      if (task.status)
+        body.status = this.mapStatusToGoogle(task.status as string);
 
-      const res = await this.client.tasks.insert({ tasklist: listId, requestBody: body });
+      const res = await this.client.tasks.insert({
+        tasklist: listId,
+        requestBody: body,
+      });
 
       const t = res.data;
 
@@ -124,8 +139,9 @@ export class GoogleTaskProvider implements TaskProviderInterface {
         description: t.notes || null,
         status: t.status || undefined,
         listId,
-        dueDate: t.due ? new Date(t.due as string) : undefined,
-        completedDate: (t.completed && new Date(t.completed as string)) || undefined,
+        startDate: t.due ? new Date(t.due as string) : undefined,
+        completedDate:
+          (t.completed && new Date(t.completed as string)) || undefined,
         lastModified: t.updated ? new Date(t.updated as string) : undefined,
         lastModifiedDateTime: t.updated as string | undefined,
         url: t.selfLink as string | undefined,
@@ -133,16 +149,29 @@ export class GoogleTaskProvider implements TaskProviderInterface {
     }, "createTask");
   }
 
-  async updateTask(listId: string, taskId: string, updates: TaskUpdates): Promise<ExternalTask> {
+  async updateTask(
+    listId: string,
+    taskId: string,
+    updates: TaskUpdates
+  ): Promise<ExternalTask> {
     return this.apiCall(async () => {
       const body: Partial<tasks_v1.Schema$Task> = {};
 
       if (updates.title !== undefined) body.title = updates.title;
-      if (updates.description !== undefined) body.notes = updates.description || undefined;
-      if (updates.dueDate !== undefined) body.due = updates.dueDate ? new Date(updates.dueDate).toISOString() : null;
-      if (updates.status !== undefined) body.status = this.mapStatusToGoogle(updates.status as string | null);
+      if (updates.description !== undefined)
+        body.notes = updates.description || undefined;
+      if (updates.startDate !== undefined)
+        body.due = updates.startDate
+          ? new Date(updates.startDate).toISOString()
+          : null;
+      if (updates.status !== undefined)
+        body.status = this.mapStatusToGoogle(updates.status as string | null);
 
-      const res = await this.client.tasks.patch({ tasklist: listId, task: taskId, requestBody: body });
+      const res = await this.client.tasks.patch({
+        tasklist: listId,
+        task: taskId,
+        requestBody: body,
+      });
 
       const t = res.data;
 
@@ -152,8 +181,9 @@ export class GoogleTaskProvider implements TaskProviderInterface {
         description: t.notes || null,
         status: t.status || undefined,
         listId,
-        dueDate: t.due ? new Date(t.due as string) : undefined,
-        completedDate: (t.completed && new Date(t.completed as string)) || undefined,
+        startDate: t.due ? new Date(t.due as string) : undefined,
+        completedDate:
+          (t.completed && new Date(t.completed as string)) || undefined,
         lastModified: t.updated ? new Date(t.updated as string) : undefined,
         lastModifiedDateTime: t.updated as string | undefined,
         url: t.selfLink as string | undefined,
@@ -212,7 +242,7 @@ export class GoogleTaskProvider implements TaskProviderInterface {
       status: this.mapStatusFromGoogle(externalTask.status as string | null),
       priority: Priority.MEDIUM,
       projectId,
-      dueDate: externalTask.dueDate || null,
+      dueDate: null,
       startDate: externalTask.startDate || null,
       completedAt: externalTask.completedDate || null,
       isRecurring: externalTask.isRecurring || false,
@@ -297,7 +327,8 @@ export class GoogleTaskProvider implements TaskProviderInterface {
         }
 
         // Exponential backoff with jitter
-        const backoff = Math.pow(2, attempt) * 250 + Math.floor(Math.random() * 100);
+        const backoff =
+          Math.pow(2, attempt) * 250 + Math.floor(Math.random() * 100);
         await new Promise((res) => setTimeout(res, backoff));
         continue;
       }
@@ -326,7 +357,10 @@ export async function getGoogleTasksClient(accountId: string, userId: string) {
   });
 
   // Set credentials
-  oauth2Client.setCredentials({ access_token: tokens.accessToken, refresh_token: tokens.refreshToken });
+  oauth2Client.setCredentials({
+    access_token: tokens.accessToken,
+    refresh_token: tokens.refreshToken,
+  });
 
   // Create tasks client
   return google.tasks({ version: "v1", auth: oauth2Client });

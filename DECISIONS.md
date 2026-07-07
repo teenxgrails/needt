@@ -14,3 +14,4 @@
 - 2026-07-07: Phase 5 ships ADHD planning affordances as a dense calendar sidebar panel first: brain dump, energy timeline, overcommitment, buffers, quick reschedule, and shutdown ritual remain visible without adding another route.
 - 2026-07-07: Phase 6 uses a restrained Motion-like dark shell with compact controls and sparse blue accent; the app defaults new users to dark while still allowing light/system in settings.
 - 2026-07-07: Phase 7 exposes a single-user local connector API with one hashed personal bearer token; outbound webhooks are best-effort and never block scheduling or task completion.
+- 2026-07-07: Phase 8 keeps deployment/tagging local only; Phase 12 deployment work from `AGENTS_ADDON.md` is intentionally skipped for the separate session.

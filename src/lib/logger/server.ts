@@ -17,6 +17,12 @@ const DEFAULT_RETENTION: LogRetention = {
   debug: 3,
 };
 
+const DISABLED_LOG_SETTINGS: LogSettings = {
+  logLevel: "none",
+  logDestination: "db",
+  logRetention: DEFAULT_RETENTION,
+};
+
 // Type guard for LogRetention
 const isLogRetention = (value: unknown): value is LogRetention => {
   if (!value || typeof value !== "object") return false;
@@ -43,6 +49,10 @@ const getRetentionDays = (level: LogLevel, retention: LogRetention): number => {
 
 export class ServerLogger {
   private async getLogSettings(): Promise<LogSettings> {
+    if (process.env.NODE_ENV === "test") {
+      return DISABLED_LOG_SETTINGS;
+    }
+
     try {
       const settings = await prisma.systemSettings.findFirst();
       return {
@@ -52,11 +62,7 @@ export class ServerLogger {
       };
     } catch (error) {
       console.error("Failed to get system settings:", error);
-      return {
-        logLevel: "none",
-        logDestination: "db",
-        logRetention: DEFAULT_RETENTION,
-      };
+      return DISABLED_LOG_SETTINGS;
     }
   }
 

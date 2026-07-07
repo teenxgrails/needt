@@ -23,6 +23,45 @@ FluidCalendar is built for people who want full control over their scheduling wo
 
 ![Snagit 2024 2025-02-16 12 33 23](https://github.com/user-attachments/assets/515381e9-b961-475d-a272-d454ecca59cb)
 
+## Mina Calendar Fork
+
+This repository is being shaped into **teenx planner**, a single-user Motion-style planner for Mina Calendar.
+
+What this fork adds:
+
+- Single-user mode with public signup, team, and billing surfaces disabled.
+- Apple / iCloud Calendar through the existing CalDAV integration using `https://caldav.icloud.com` and an app-specific password.
+- Smart scheduling data for energy requirements, priorities, deadlines, chunking, frozen blocks, dependencies, energy profiles, and ADHD-friendly scheduling preferences.
+- A pure deterministic scheduler in `src/services/scheduling/engine.ts` that respects dependencies, busy blocks, energy windows, chunks, buffers, hard stops, and overcommitment.
+- Optional AI assistant settings for Anthropic, OpenAI, or a custom local endpoint. Provider `None` is the default and keeps scheduling offline.
+- ADHD planning panel on the calendar with brain dump parsing, energy timeline, overcommitment warning, time-blindness buffer visibility, quick reschedule, and shutdown ritual.
+- Dense dark planner shell, command palette shortcuts, and a local connector API for external tools.
+
+Key docs:
+
+- [Architecture](ARCHITECTURE.md)
+- [Environment template](ENV_TEMPLATE.md)
+- [Custom AI contract](docs/custom-ai-contract.md)
+- [Connector API](docs/connector-api.md)
+
+Local run:
+
+```bash
+npm install
+cp .env.example .env.local
+npm run prisma:generate
+npm run dev
+```
+
+Then open `http://localhost:3000`. The app expects PostgreSQL at `DATABASE_URL`; `docker compose up db -d` starts the bundled database when Docker is available.
+
+Optional configuration:
+
+- Google and Outlook OAuth credentials can be supplied in Settings or env vars.
+- Apple/iCloud is configured from Settings -> Accounts -> Apple / iCloud Calendar.
+- AI keys are entered in Settings -> AI Assistant and encrypted before storage.
+- Connector token is generated in Settings -> Connectors and used as a bearer token.
+
 ## Support the Project ❤️
 
 If you find FluidCalendar useful, please consider supporting its development. Your sponsorship helps ensure continued maintenance and new features.
