@@ -5,26 +5,53 @@ import { ProjectStatus } from "@/types/project";
 import {
   EnergyLevel,
   Priority,
+  SchedulingEnergyLevel,
+  SchedulingTaskPriority,
   TaskStatus,
   TaskWithRelations,
   TimePreference,
 } from "@/types/task";
 
-import { SchedulingService } from "./SchedulingService";
+import {
+  CalendarBusyBlock,
+  EnergyProfile,
+  SchedulableTask,
+  ScheduleResult,
+  SchedulingPreferences,
+  scheduleTasks,
+} from "./engine";
 
 const LOG_SOURCE = "TaskSchedulingService";
+const DEFAULT_HORIZON_DAYS = 21;
+const DEFAULT_WORK_HOURS: SchedulingPreferences["workHours"] = {
+  "1": { start: "09:00", end: "17:00" },
+  "2": { start: "09:00", end: "17:00" },
+  "3": { start: "09:00", end: "17:00" },
+  "4": { start: "09:00", end: "17:00" },
+  "5": { start: "09:00", end: "17:00" },
+};
 
-// Define a type for the database result
 type DbTaskWithRelations = {
   id: string;
   title: string;
   description: string | null;
   status: string;
   dueDate: Date | null;
+  startDate: Date | null;
   duration: number | null;
   priority: string | null;
   energyLevel: string | null;
   preferredTime: string | null;
+  energyRequired: SchedulingEnergyLevel;
+  estimatedMinutes: number | null;
+  minChunkMinutes: number | null;
+  maxChunkMinutes: number | null;
+  deadline: Date | null;
+  priorityLevel: SchedulingTaskPriority;
+  contextTag: string | null;
+  isFrozen: boolean;
+  dependsOnId: string | null;
+  autoScheduled: boolean;
   projectId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -39,7 +66,7 @@ type DbTaskWithRelations = {
   lastScheduled: Date | null;
   scheduleLocked: boolean;
   postponedUntil: Date | null;
-  userId: string;
+  userId: string | null;
   tags: {
     id: string;
     name: string;
@@ -58,9 +85,47 @@ type DbTaskWithRelations = {
   } | null;
 };
 
-/**
- * Convert database task to TaskWithRelations
- */
+function parseJsonArray(value: string | null | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseWorkDays(value: string | null | undefined): number[] {
+  if (!value) {
+    return [1, 2, 3, 4, 5];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (item): item is number =>
+            Number.isInteger(item) && item >= 0 && item <= 6
+        )
+      : [1, 2, 3, 4, 5];
+  } catch {
+    return [1, 2, 3, 4, 5];
+  }
+}
+
+function toTime(hour: number): string {
+  return `${hour.toString().padStart(2, "0")}:00`;
+}
+
+function addDays(date: Date, days: number): Date {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
 function convertDbTaskToTaskWithRelations(
   dbTask: DbTaskWithRelations
 ): TaskWithRelations {
@@ -84,86 +149,209 @@ function convertDbTaskToTaskWithRelations(
   };
 }
 
-/**
- * Schedule all tasks for a user
- * @param userId The user ID
- * @returns The updated tasks
- */
-export async function scheduleAllTasksForUser(
-  userId: string
-): Promise<TaskWithRelations[]>;
+function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
+  return {
+    id: task.id,
+    title: task.title,
+    status: task.status,
+    createdAt: task.createdAt,
+    estimatedMinutes: task.estimatedMinutes,
+    durationMinutes: task.duration,
+    minChunkMinutes: task.minChunkMinutes,
+    maxChunkMinutes: task.maxChunkMinutes,
+    deadline: task.deadline ?? task.dueDate,
+    priority: task.priorityLevel,
+    energyRequired: task.energyRequired,
+    contextTag: task.contextTag,
+    isFrozen: task.isFrozen || task.scheduleLocked,
+    dependsOnId: task.dependsOnId,
+    autoScheduled: task.autoScheduled || task.isAutoScheduled,
+    scheduledStart: task.scheduledStart,
+    scheduledEnd: task.scheduledEnd,
+  };
+}
 
-/**
- * Implementation of scheduleAllTasksForUser
- */
+function buildPreferences(
+  smartPrefs: {
+    workHours: unknown;
+    bufferMinutes: number;
+    maxDeepWorkPerDay: number;
+    minBreakMinutes: number;
+    autoRescheduleOnMiss: boolean;
+    enableBodyDoubling: boolean;
+    enableTaskBatching: boolean;
+    hardStopTime: string;
+    bufferMultiplier: number;
+  } | null,
+  legacySettings: {
+    workDays: string;
+    workHourStart: number;
+    workHourEnd: number;
+    bufferMinutes: number;
+  }
+): SchedulingPreferences {
+  if (smartPrefs) {
+    return {
+      workHours:
+        smartPrefs.workHours &&
+        typeof smartPrefs.workHours === "object" &&
+        !Array.isArray(smartPrefs.workHours)
+          ? (smartPrefs.workHours as SchedulingPreferences["workHours"])
+          : DEFAULT_WORK_HOURS,
+      bufferMinutes: smartPrefs.bufferMinutes,
+      maxDeepWorkPerDay: smartPrefs.maxDeepWorkPerDay,
+      minBreakMinutes: smartPrefs.minBreakMinutes,
+      autoRescheduleOnMiss: smartPrefs.autoRescheduleOnMiss,
+      enableBodyDoubling: smartPrefs.enableBodyDoubling,
+      enableTaskBatching: smartPrefs.enableTaskBatching,
+      hardStopTime: smartPrefs.hardStopTime,
+      bufferMultiplier: smartPrefs.bufferMultiplier,
+    };
+  }
+
+  return {
+    workHours: Object.fromEntries(
+      parseWorkDays(legacySettings.workDays).map((day) => [
+        String(day),
+        {
+          start: toTime(legacySettings.workHourStart),
+          end: toTime(legacySettings.workHourEnd),
+        },
+      ])
+    ),
+    bufferMinutes: legacySettings.bufferMinutes,
+    maxDeepWorkPerDay: 180,
+    minBreakMinutes: 15,
+    autoRescheduleOnMiss: true,
+    enableBodyDoubling: false,
+    enableTaskBatching: true,
+    hardStopTime: toTime(legacySettings.workHourEnd),
+    bufferMultiplier: 1.3,
+  };
+}
+
+function buildFallbackEnergyProfile(legacySettings: {
+  highEnergyStart: number | null;
+  highEnergyEnd: number | null;
+  mediumEnergyStart: number | null;
+  mediumEnergyEnd: number | null;
+  lowEnergyStart: number | null;
+  lowEnergyEnd: number | null;
+  workDays: string;
+}): EnergyProfile {
+  return {
+    windows: parseWorkDays(legacySettings.workDays).flatMap((dayOfWeek) => [
+      {
+        dayOfWeek,
+        startTime: toTime(legacySettings.highEnergyStart ?? 9),
+        endTime: toTime(legacySettings.highEnergyEnd ?? 12),
+        energyLevel: "HIGH",
+      },
+      {
+        dayOfWeek,
+        startTime: toTime(legacySettings.lowEnergyStart ?? 13),
+        endTime: toTime(legacySettings.lowEnergyEnd ?? 14),
+        energyLevel: "LOW",
+      },
+      {
+        dayOfWeek,
+        startTime: toTime(legacySettings.mediumEnergyStart ?? 15),
+        endTime: toTime(legacySettings.mediumEnergyEnd ?? 18),
+        energyLevel: "MEDIUM",
+      },
+    ]),
+  };
+}
+
+function summarizeSchedule(result: ScheduleResult) {
+  return {
+    blocks: result.blocks.length,
+    frozenBlocks: result.frozenBlocks.length,
+    unscheduled: result.unscheduled.length,
+  };
+}
+
 export async function scheduleAllTasksForUser(
   userId: string
 ): Promise<TaskWithRelations[]> {
   try {
     logger.info("Starting task scheduling for user", { userId }, LOG_SOURCE);
 
-    // If settings are not provided, fetch them from the database
-    const userSettings = await prisma.autoScheduleSettings.findUnique({
+    const legacySettings = await prisma.autoScheduleSettings.findUnique({
       where: { userId },
     });
 
-    if (!userSettings) {
+    if (!legacySettings) {
       throw new Error("Auto-schedule settings not found for user");
     }
 
-    // Get all tasks marked for auto-scheduling that are not locked
-    const tasksToSchedule = await prisma.task.findMany({
-      where: {
-        isAutoScheduled: true,
-        scheduleLocked: false,
-        status: {
-          not: {
-            in: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS],
-          },
-        },
-        userId,
-      },
-      include: {
-        project: true,
-        tags: true,
-      },
+    const smartPrefs = await prisma.schedulingPreferences.findUnique({
+      where: { userId },
     });
-
-    // Get locked tasks (we'll keep their schedules)
-    const lockedTasks = await prisma.task.findMany({
-      where: {
-        isAutoScheduled: true,
-        scheduleLocked: true,
-        status: {
-          not: {
-            in: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS],
-          },
-        },
-        userId,
-      },
-      include: {
-        project: true,
-        tags: true,
-      },
+    const energyWindows = await prisma.energyProfileWindow.findMany({
+      where: { userId },
+      orderBy: [{ dayOfWeek: "asc" }, { sortOrder: "asc" }],
     });
-
-    logger.info(
-      "Found tasks to schedule",
-      {
-        tasksToScheduleCount: tasksToSchedule.length,
-        lockedTasksCount: lockedTasks.length,
-      },
-      LOG_SOURCE
+    const now = new Date();
+    const selectedCalendarIds = parseJsonArray(
+      legacySettings.selectedCalendars
     );
+    const busyEvents = await prisma.calendarEvent.findMany({
+      where: {
+        feedId: { in: selectedCalendarIds },
+        start: { lt: addDays(now, DEFAULT_HORIZON_DAYS) },
+        end: { gt: now },
+      },
+    });
 
-    // Initialize scheduling service with settings
-    const schedulingService = new SchedulingService(userSettings);
+    const dbTasks = (await prisma.task.findMany({
+      where: {
+        OR: [{ isAutoScheduled: true }, { autoScheduled: true }],
+        status: {
+          not: {
+            in: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS],
+          },
+        },
+        userId,
+      },
+      include: {
+        project: true,
+        tags: true,
+      },
+    })) as DbTaskWithRelations[];
 
-    // Clear existing schedules for non-locked tasks
+    const result = scheduleTasks({
+      tasks: dbTasks.map(toSchedulableTask),
+      busyBlocks: busyEvents.map(
+        (event): CalendarBusyBlock => ({
+          id: event.id,
+          title: event.title,
+          start: event.start,
+          end: event.end,
+          source: "calendar",
+        })
+      ),
+      energyProfile:
+        energyWindows.length > 0
+          ? {
+              windows: energyWindows.map((window) => ({
+                dayOfWeek: window.dayOfWeek,
+                startTime: window.startTime,
+                endTime: window.endTime,
+                energyLevel: window.energyLevel,
+              })),
+            }
+          : buildFallbackEnergyProfile(legacySettings),
+      prefs: buildPreferences(smartPrefs, legacySettings),
+      now,
+    });
+
     await prisma.task.updateMany({
       where: {
         id: {
-          in: tasksToSchedule.map((task) => task.id),
+          in: dbTasks
+            .filter((task) => !task.scheduleLocked && !task.isFrozen)
+            .map((task) => task.id),
         },
         userId,
       },
@@ -174,29 +362,34 @@ export async function scheduleAllTasksForUser(
       },
     });
 
-    // Schedule all tasks
-    const updatedTasks = await schedulingService.scheduleMultipleTasks(
-      [...tasksToSchedule, ...lockedTasks],
-      userId
+    const firstBlockByTask = new Map<string, (typeof result.blocks)[number]>();
+    for (const block of result.blocks) {
+      const existing = firstBlockByTask.get(block.taskId);
+      if (!existing || block.start < existing.start) {
+        firstBlockByTask.set(block.taskId, block);
+      }
+    }
+
+    await Promise.all(
+      [...firstBlockByTask.values()].map((block) =>
+        prisma.task.update({
+          where: { id: block.taskId, userId },
+          data: {
+            scheduledStart: block.start,
+            scheduledEnd: block.end,
+            isAutoScheduled: true,
+            autoScheduled: true,
+            scheduleScore: 1,
+            lastScheduled: now,
+          },
+        })
+      )
     );
 
-    // Update the lastScheduled timestamp for all tasks
-    await prisma.task.updateMany({
+    const updatedDbTasks = (await prisma.task.findMany({
       where: {
         id: {
-          in: updatedTasks.map((task) => task.id),
-        },
-      },
-      data: {
-        lastScheduled: new Date(),
-      },
-    });
-
-    // Fetch the tasks again with their relations to return
-    const dbTasks = (await prisma.task.findMany({
-      where: {
-        id: {
-          in: updatedTasks.map((task) => task.id),
+          in: dbTasks.map((task) => task.id),
         },
         userId,
       },
@@ -206,12 +399,13 @@ export async function scheduleAllTasksForUser(
       },
     })) as DbTaskWithRelations[];
 
-    // Convert database tasks to TaskWithRelations
-    const tasksWithRelations = dbTasks.map(convertDbTaskToTaskWithRelations);
+    const tasksWithRelations = updatedDbTasks.map(
+      convertDbTaskToTaskWithRelations
+    );
 
     logger.info(
       "Task scheduling completed successfully",
-      { userId, tasksScheduled: updatedTasks.length },
+      { userId, summary: JSON.stringify(summarizeSchedule(result)) },
       LOG_SOURCE
     );
 

@@ -1,6 +1,7 @@
 /** @type {import('jest').Config} */
 const config = {
   testEnvironment: "node",
+  modulePathIgnorePatterns: ["<rootDir>/.next"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
