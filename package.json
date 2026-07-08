@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bcrypt",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp"
+    ]
+  },
   "engines": {
     "node": ">=22.11.0"
   },
