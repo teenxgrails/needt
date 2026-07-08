@@ -32,3 +32,4 @@
 - 2026-07-08: AGENTS_NEXT Phase A refreshed/verified `pnpm-lock.yaml` with Neon packages, but live local setup is environment-blocked because no Docker/Postgres binary exists and `localhost:5432` refuses connections.
 - 2026-07-08: AGENTS_NEXT Phase B cannot create Neon/Vercel resources from this workspace because no `neon`/`vercel` CLI config or account credentials are present; deploy docs were updated to the actual pnpm + Neon adapter flow and domain remains TODO until owned/configured.
 - 2026-07-08: AGENTS_NEXT Phase C implements Mina MCP as a dependency-free stdio JSON-RPC server that wraps `/api/connect/*`; connector route aliases were added for the requested `GET /api/connect/tasks` and `POST /api/connect/schedule` contracts.
+- 2026-07-08: AGENTS_NEXT Phase D only records future Capacitor, Telegram/n8n, and extra-cron work in `TODO.md`; none of those integrations are implemented in this session.
