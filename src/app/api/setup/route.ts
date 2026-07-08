@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { Prisma } from "@prisma/client";
-import { hash } from "bcrypt";
+import { hash } from "bcryptjs";
 
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
