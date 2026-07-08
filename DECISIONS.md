@@ -38,3 +38,4 @@
 - 2026-07-08: UI Part 1 maps Motion's calendar layout to Mina glass by making the left rail navigation/planning-only and moving the existing mini-calendar/feed controls into a right panel; empty-slot creation still uses the existing event/task modals and stores.
 - 2026-07-08: UI pass pivoted to the updated AGENTS_UI.md direction: target screens now use flat Motion-like dark tokens instead of Liquid Glass, while existing shared glass utilities remain untouched for future design work.
 - 2026-07-08: UI Part 2 maps the Motion "Hard deadline" toggle to Mina's existing `isFrozen` task field so the modal stays UI-only and does not introduce new scheduling schema or behavior.
+- 2026-07-08: UI Part 3 keeps existing settings components but relabels the left navigation to Motion-style sections; Smart Scheduling represents the requested Energy profile section because it already owns those controls.

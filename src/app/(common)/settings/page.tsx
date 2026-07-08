@@ -14,7 +14,6 @@ import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSe
 import { SystemSettings } from "@/components/settings/SystemSettings";
 import { TaskSyncSettings } from "@/components/settings/TaskSyncSettings";
 import { UserSettings } from "@/components/settings/UserSettings";
-import { Card } from "@/components/ui/card";
 
 import { cn } from "@/lib/utils";
 
@@ -48,16 +47,16 @@ export default function SettingsPage() {
 
   const tabs = useMemo(() => {
     const baseTabs = [
-      { id: "accounts", label: "Accounts" },
-      { id: "user", label: "User" },
-      { id: "calendar", label: "Calendar" },
-      { id: "auto-schedule", label: "Auto-Schedule" },
-      { id: "smart-scheduling", label: "Smart Scheduling" },
-      { id: "ai-assistant", label: "AI Assistant" },
-      { id: "connectors", label: "Connectors" },
-      { id: "task-sync", label: "Task Sync" },
+      { id: "calendar", label: "Calendars / Apple-iCloud" },
+      { id: "auto-schedule", label: "Auto-scheduling" },
+      { id: "task-sync", label: "Task defaults" },
+      { id: "user", label: "Theme" },
       { id: "notifications", label: "Notifications" },
-      { id: "import-export", label: "Import/Export" },
+      { id: "smart-scheduling", label: "Energy profile" },
+      { id: "connectors", label: "Connectors" },
+      { id: "ai-assistant", label: "AI" },
+      { id: "accounts", label: "Account" },
+      { id: "import-export", label: "Import / Export" },
     ] as const;
 
     // Add admin-only tabs
@@ -73,7 +72,7 @@ export default function SettingsPage() {
     return baseTabs;
   }, [isAdmin]);
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>("accounts");
+  const [activeTab, setActiveTab] = useState<SettingsTab>("calendar");
 
   // Check initial hash and handle changes
   useEffect(() => {
@@ -177,38 +176,91 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container py-6">
-      <div className="flex flex-col lg:flex-row lg:space-x-12 lg:space-y-0">
-        <aside className="lg:w-1/5">
-          <Card className="sticky top-20">
-            <nav className="space-y-1 p-1">
-              {tabs.map((tab) => (
-                <a
-                  key={tab.id}
-                  href={`#${tab.id}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setActiveTab(tab.id as SettingsTab);
-                  }}
-                  className={cn(
-                    "flex w-full items-center rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                    !isHydrated && "duration-0",
-                    activeTab === tab.id
-                      ? "bg-white/10 text-foreground shadow-[0_0_24px_-18px_var(--acc-blue)]"
-                      : "text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-                  )}
-                >
-                  {tab.label}
-                </a>
-              ))}
-            </nav>
-          </Card>
-        </aside>
-        <div className="mt-6 flex-1 lg:mt-0">
-          <div className="space-y-6">
-            <div className={cn("space-y-8", !isHydrated && "opacity-0")}>
-              {renderContent()}
+    <div className="min-h-full bg-[#1A1D1E] px-3 py-4 text-white sm:px-5">
+      <div className="mx-auto flex max-w-[1120px] flex-col gap-4 lg:flex-row">
+        <aside className="lg:w-[230px] lg:flex-none">
+          <div className="sticky top-20 rounded-md border border-[#323234] bg-[#262627] p-2">
+            <a
+              href="/calendar"
+              className="mb-3 flex rounded-md px-3 py-2 text-sm text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
+            >
+              ← Back
+            </a>
+            <div className="space-y-4">
+              <div>
+                <div className="px-3 pb-1 text-xs font-medium uppercase text-[#9AA0A6]">
+                  General
+                </div>
+                <nav className="space-y-1">
+                  {tabs
+                    .filter(
+                      (tab) => !["accounts", "system", "logs"].includes(tab.id)
+                    )
+                    .map((tab) => (
+                      <a
+                        key={tab.id}
+                        href={`#${tab.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setActiveTab(tab.id as SettingsTab);
+                        }}
+                        className={cn(
+                          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          !isHydrated && "duration-0",
+                          activeTab === tab.id
+                            ? "bg-[#2B2F31] text-white"
+                            : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
+                        )}
+                      >
+                        {tab.label}
+                      </a>
+                    ))}
+                </nav>
+              </div>
+              <div>
+                <div className="px-3 pb-1 text-xs font-medium uppercase text-[#9AA0A6]">
+                  Account
+                </div>
+                <nav className="space-y-1">
+                  {tabs
+                    .filter((tab) =>
+                      ["accounts", "system", "logs"].includes(tab.id)
+                    )
+                    .map((tab) => (
+                      <a
+                        key={tab.id}
+                        href={`#${tab.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setActiveTab(tab.id as SettingsTab);
+                        }}
+                        className={cn(
+                          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                          !isHydrated && "duration-0",
+                          activeTab === tab.id
+                            ? "bg-[#2B2F31] text-white"
+                            : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
+                        )}
+                      >
+                        {tab.label}
+                      </a>
+                    ))}
+                </nav>
+              </div>
             </div>
+          </div>
+        </aside>
+        <div className="min-w-0 flex-1 lg:max-w-[820px]">
+          <div className={cn("space-y-6", !isHydrated && "opacity-0")}>
+            <div>
+              <h1 className="text-xl font-semibold">
+                {tabs.find((tab) => tab.id === activeTab)?.label ?? "Settings"}
+              </h1>
+              <p className="mt-1 text-sm text-[#9AA0A6]">
+                Configure Mina without leaving the planner flow.
+              </p>
+            </div>
+            {renderContent()}
           </div>
         </div>
       </div>
