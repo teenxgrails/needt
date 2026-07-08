@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateConnectorToken } from "@/services/connectors/auth";
+import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
-  const userId = await authenticateConnectorToken(
-    request.headers.get("authorization")
-  );
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function readSchedule(userId: string) {
   const now = new Date();
   const tasks = await prisma.task.findMany({
     where: {
@@ -29,8 +23,31 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({
+  return {
     generatedAt: now.toISOString(),
     tasks,
-  });
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const userId = await authenticateConnectorToken(
+    request.headers.get("authorization")
+  );
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return NextResponse.json(await readSchedule(userId));
+}
+
+export async function POST(request: NextRequest) {
+  const userId = await authenticateConnectorToken(
+    request.headers.get("authorization")
+  );
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  await scheduleAllTasksForUser(userId);
+  return NextResponse.json(await readSchedule(userId));
 }

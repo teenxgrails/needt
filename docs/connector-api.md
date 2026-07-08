@@ -61,6 +61,24 @@ Response:
 }
 ```
 
+`POST /api/connect/schedule` runs the scheduler first, then returns the same schedule shape.
+
+## List Tasks
+
+```bash
+curl http://localhost:3000/api/connect/tasks \
+  -H "Authorization: Bearer mina_REPLACE_ME"
+```
+
+Response:
+
+```json
+{
+  "generatedAt": "2026-07-08T10:00:00.000Z",
+  "tasks": []
+}
+```
+
 ## Reschedule
 
 ```bash

@@ -24,6 +24,26 @@ function isPriority(value: unknown): value is SchedulingTaskPriority {
   );
 }
 
+export async function GET(request: NextRequest) {
+  const userId = await authenticateConnectorToken(
+    request.headers.get("authorization")
+  );
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const tasks = await prisma.task.findMany({
+    where: { userId },
+    orderBy: [{ scheduledStart: "asc" }, { createdAt: "desc" }],
+    include: { scheduledBlocks: { orderBy: { chunkIndex: "asc" } } },
+  });
+
+  return NextResponse.json({
+    generatedAt: new Date().toISOString(),
+    tasks,
+  });
+}
+
 export async function POST(request: NextRequest) {
   const userId = await authenticateConnectorToken(
     request.headers.get("authorization")
