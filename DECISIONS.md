@@ -27,3 +27,5 @@
 - 2026-07-08: Design Part 3 uses CSS gradients for Mina glow/orb treatments rather than copied Opal assets; the provided reference file is `design-refs/opal-reference.jpg` despite the spec saying `.png`.
 - 2026-07-08: Design Part 4 applies Liquid Glass through shared controls, app chrome, FullCalendar CSS, focus mode, tasks, and settings so older feature screens inherit the redesign without changing scheduler or data logic.
 - 2026-07-08: Design Part 5 replaces the inherited calendar logo with an original SVG glass-orb/shard mark and reuses the same CSS orb language for loading, empty states, and the focus completion bloom.
+- 2026-07-08: Design Part 6 adds direct `gaxios` and `yaml` dependencies because pnpm strict module resolution does not allow app/tests to import those transitive packages reliably.
+- 2026-07-08: Design Part 6 records DB-backed runtime checks as environment-blocked in `QA_REPORT.md` because Docker is unavailable and local Postgres is unreachable; build, type, schema validation, Jest, manifest, and HTTP shell smoke passed.
