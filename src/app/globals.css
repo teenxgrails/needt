@@ -448,12 +448,12 @@
 .fc {
   @apply h-full;
   --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: rgba(255, 255, 255, 0.035);
-  --fc-neutral-text-color: var(--text-lo);
-  --fc-border-color: rgba(255, 255, 255, 0.08);
-  --fc-today-bg-color: rgba(74, 123, 255, 0.1);
-  --fc-now-indicator-color: var(--acc-magenta);
-  color: var(--text-hi);
+  --fc-neutral-bg-color: #262627;
+  --fc-neutral-text-color: #9aa0a6;
+  --fc-border-color: #323234;
+  --fc-today-bg-color: rgba(62, 99, 221, 0.14);
+  --fc-now-indicator-color: #3e63dd;
+  color: #ffffff;
 }
 
 .fc .fc-toolbar {
@@ -466,21 +466,15 @@
 }
 
 .fc .fc-button {
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 12px !important;
-  background: rgba(255, 255, 255, 0.065) !important;
-  color: var(--text-hi) !important;
+  border: 1px solid #323234 !important;
+  border-radius: 6px !important;
+  background: #262627 !important;
+  color: #ffffff !important;
   box-shadow: none !important;
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
 
 .fc .fc-button-primary {
-  background: linear-gradient(
-    135deg,
-    var(--acc-blue),
-    var(--acc-violet)
-  ) !important;
+  background: #3e63dd !important;
   color: white !important;
 }
 
@@ -494,19 +488,15 @@
 
 .fc .fc-timegrid-slot-label {
   @apply text-[11px];
-  color: var(--text-lo);
+  color: #9aa0a6;
 }
 
 .fc .fc-event {
   @apply cursor-pointer border shadow-sm;
-  border-radius: 12px !important;
-  background:
-    linear-gradient(135deg, rgba(74, 123, 255, 0.18), rgba(139, 92, 246, 0.14)),
-    rgba(255, 255, 255, 0.055) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 0 26px -18px var(--acc-blue) !important;
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-radius: 6px !important;
+  background: #262627 !important;
+  border-color: #323234 !important;
+  box-shadow: none !important;
 }
 
 .fc .fc-event-main {
@@ -526,42 +516,42 @@
 }
 
 .fc .fc-timegrid-now-indicator-line {
-  border-color: var(--acc-magenta) !important;
+  border-color: #3e63dd !important;
   border-width: 1px !important;
-  box-shadow: 0 0 16px var(--acc-magenta);
+  box-shadow: none;
 }
 
 .fc .fc-timegrid-now-indicator-arrow {
-  border-color: var(--acc-magenta) !important;
+  border-color: #3e63dd !important;
 }
 
 .fc .fc-day-today {
-  background: rgba(74, 123, 255, 0.1) !important;
+  background: rgba(62, 99, 221, 0.14) !important;
 }
 
 .fc .fc-day-header {
   @apply border-b py-2;
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: #323234;
 }
 
 .fc .fc-scrollgrid {
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: #323234 !important;
 }
 
 .fc .fc-col-header-cell {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-  background: rgba(255, 255, 255, 0.025) !important;
+  border-color: #323234 !important;
+  background: #262627 !important;
 }
 
 .fc .fc-col-header-cell-cushion {
   padding: 8px 4px !important;
   font-size: 12px;
   font-weight: 500;
-  color: var(--text-hi);
+  color: #ffffff;
 }
 
 .fc .fc-timegrid-col-frame {
-  background: rgba(255, 255, 255, 0.012);
+  background: transparent;
 }
 
 .fc .fc-timegrid-slot-minor {
@@ -572,40 +562,40 @@
 .dark .fc {
   --fc-small-font-size: 0.85em;
   --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: rgba(255, 255, 255, 0.035);
-  --fc-neutral-text-color: var(--text-lo);
-  --fc-border-color: rgba(255, 255, 255, 0.08);
+  --fc-neutral-bg-color: #262627;
+  --fc-neutral-text-color: #9aa0a6;
+  --fc-border-color: #323234;
 
-  --fc-button-text-color: hsl(var(--primary-foreground));
-  --fc-button-bg-color: hsl(var(--primary));
-  --fc-button-border-color: hsl(var(--primary));
-  --fc-button-hover-bg-color: hsl(var(--primary) / 0.9);
-  --fc-button-hover-border-color: hsl(var(--primary) / 0.9);
-  --fc-button-active-bg-color: hsl(var(--primary) / 0.8);
-  --fc-button-active-border-color: hsl(var(--primary) / 0.8);
+  --fc-button-text-color: #ffffff;
+  --fc-button-bg-color: #262627;
+  --fc-button-border-color: #323234;
+  --fc-button-hover-bg-color: #2b2f31;
+  --fc-button-hover-border-color: #323234;
+  --fc-button-active-bg-color: #3e63dd;
+  --fc-button-active-border-color: #3e63dd;
 
-  --fc-event-bg-color: rgba(74, 123, 255, 0.24);
-  --fc-event-border-color: rgba(255, 255, 255, 0.1);
-  --fc-event-text-color: var(--text-hi);
+  --fc-event-bg-color: #262627;
+  --fc-event-border-color: #323234;
+  --fc-event-text-color: #ffffff;
   --fc-event-selected-overlay-color: rgba(0, 0, 0, 0.25);
 
   --fc-more-link-bg-color: hsl(var(--muted));
   --fc-more-link-text-color: hsl(var(--muted-foreground));
 
-  --fc-non-business-color: rgba(255, 255, 255, 0.035);
-  --fc-bg-event-color: rgba(74, 123, 255, 0.18);
+  --fc-non-business-color: rgba(255, 255, 255, 0.03);
+  --fc-bg-event-color: #262627;
   --fc-bg-event-opacity: 0.3;
-  --fc-highlight-color: rgba(45, 212, 191, 0.14);
-  --fc-today-bg-color: rgba(74, 123, 255, 0.1);
-  --fc-now-indicator-color: var(--acc-magenta);
+  --fc-highlight-color: rgba(62, 99, 221, 0.16);
+  --fc-today-bg-color: rgba(62, 99, 221, 0.14);
+  --fc-now-indicator-color: #3e63dd;
 }
 
 .dark .fc .fc-toolbar-title {
-  color: hsl(var(--foreground));
+  color: #ffffff;
 }
 
 .dark .fc .fc-col-header-cell-cushion {
-  color: hsl(var(--foreground));
+  color: #ffffff;
 }
 
 .dark .fc .fc-daygrid-day.fc-day-other {
@@ -632,17 +622,17 @@
 }
 
 .dark .fc .fc-col-header-cell {
-  background: rgba(255, 255, 255, 0.035);
+  background: #262627;
   border-color: var(--fc-border-color);
 }
 
 .dark .fc .fc-timegrid-slot-label-cushion,
 .dark .fc .fc-timegrid-axis-cushion {
-  color: hsl(var(--foreground));
+  color: #9aa0a6;
 }
 
 .dark .fc .fc-daygrid-day-number {
-  color: hsl(var(--foreground));
+  color: #ffffff;
 }
 
 /* Command Palette Styles */

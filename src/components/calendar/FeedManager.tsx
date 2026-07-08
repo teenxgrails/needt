@@ -46,18 +46,18 @@ export function FeedManager() {
   );
 
   return (
-    <div className="glass--subtle flex h-full flex-col p-3">
-      <div className="glass--subtle border border-white/10 py-3">
+    <div className="flex h-full flex-col rounded-md border border-[#323234] bg-[#1A1D1E] p-3 text-white">
+      <div className="rounded-md border border-[#323234] bg-[#262627] py-3">
         <MiniCalendar currentDate={currentDate} onDateClick={setDate} />
       </div>
-      <div className="mt-3 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.025] p-4">
+      <div className="mt-3 flex-1 space-y-4 overflow-y-auto rounded-md border border-[#323234] bg-[#262627] p-4">
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-foreground">Calendars</h3>
-          <div className="text-xs text-muted-foreground">My calendars</div>
+          <h3 className="text-sm font-medium text-white">Calendars</h3>
+          <div className="text-xs text-[#9AA0A6]">My calendars</div>
           {feeds.map((feed) => (
             <div
               key={feed.id}
-              className="flex items-center justify-between rounded-xl p-2 hover:bg-white/[0.07]"
+              className="flex items-center justify-between rounded-md p-2 hover:bg-[#2B2F31]"
             >
               <div className="flex items-center gap-3">
                 <Checkbox
@@ -71,18 +71,18 @@ export function FeedManager() {
                     backgroundColor: feed.color || "hsl(var(--primary))",
                   }}
                 />
-                <span className="calendar-name max-w-[150px] truncate text-sm text-foreground">
+                <span className="calendar-name max-w-[150px] truncate text-sm text-white">
                   {feed.name}
                 </span>
                 {feed.type === "GOOGLE" && (
                   <BsGoogle
-                    className="h-4 w-4 flex-shrink-0 text-muted-foreground"
+                    className="h-4 w-4 flex-shrink-0 text-[#9AA0A6]"
                     title={feed.url}
                   />
                 )}
                 {feed.type === "OUTLOOK" && (
                   <BsMicrosoft
-                    className="h-4 w-4 flex-shrink-0 text-muted-foreground"
+                    className="h-4 w-4 flex-shrink-0 text-[#9AA0A6]"
                     title={feed.url}
                   />
                 )}
@@ -92,8 +92,8 @@ export function FeedManager() {
                   onClick={() => handleSyncFeed(feed.id)}
                   disabled={syncingFeeds.has(feed.id)}
                   className={cn(
-                    "rounded-full p-1.5 text-muted-foreground hover:text-foreground",
-                    "hover:bg-muted/50 focus:outline-none focus:ring-2",
+                    "rounded-md p-1.5 text-[#9AA0A6] hover:text-white",
+                    "hover:bg-[#2B2F31] focus:outline-none focus:ring-2",
                     "focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
                     "disabled:opacity-50"
                   )}
@@ -107,7 +107,7 @@ export function FeedManager() {
                 </button>
                 <button
                   onClick={() => handleRemoveFeed(feed.id)}
-                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted/50 hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                  className="rounded-md p-1.5 text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
                 >
                   <BsTrash className="h-3.5 w-3.5" />
                 </button>
@@ -115,7 +115,7 @@ export function FeedManager() {
             </div>
           ))}
           {feeds.length === 0 && (
-            <p className="py-4 text-center text-sm text-muted-foreground">
+            <p className="py-4 text-center text-sm text-[#9AA0A6]">
               No calendars added yet
             </p>
           )}

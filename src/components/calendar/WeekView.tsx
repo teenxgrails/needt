@@ -365,10 +365,10 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
       />
       {quickCreate && !isEventModalOpen && !isNewTaskModalOpen && (
         <div
-          className="glass--strong fixed z-50 w-56 p-2 shadow-[0_20px_70px_-30px_rgba(0,0,0,0.85)]"
+          className="fixed z-50 w-56 rounded-md border border-[#323234] bg-[#262627] p-2 text-white shadow-lg"
           style={{ left: quickCreate.x, top: quickCreate.y }}
         >
-          <div className="mb-1 px-2 py-1 text-xs text-muted-foreground">
+          <div className="mb-1 px-2 py-1 text-xs text-[#9AA0A6]">
             {quickCreate.start.toLocaleTimeString([], {
               hour: "numeric",
               minute: "2-digit",
@@ -376,7 +376,7 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
           </div>
           <button
             type="button"
-            className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm hover:bg-white/[0.08]"
+            className="flex w-full items-center rounded-md px-3 py-2 text-left text-sm hover:bg-[#2B2F31]"
             onClick={() => {
               setIsEventModalOpen(true);
             }}
@@ -385,7 +385,7 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
           </button>
           <button
             type="button"
-            className="mt-1 flex w-full items-center rounded-xl px-3 py-2 text-left text-sm text-violet-100 hover:bg-violet-400/10"
+            className="mt-1 flex w-full items-center rounded-md px-3 py-2 text-left text-sm hover:bg-[#2B2F31]"
             onClick={() => {
               setIsNewTaskModalOpen(true);
             }}

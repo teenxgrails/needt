@@ -221,7 +221,7 @@ export function SmartPlanningPanel() {
   return (
     <div className="space-y-4 p-4 text-sm">
       {overflowMinutes > 0 && (
-        <div className="glass--subtle border-amber-300/25 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-100">
+        <div className="rounded-md border border-[#323234] bg-[#262627] p-3 text-amber-100">
           <div className="flex items-center gap-2 font-medium">
             <AlertTriangle className="h-4 w-4" />
             Overcommitted by {minutesLabel(overflowMinutes)}
@@ -233,7 +233,7 @@ export function SmartPlanningPanel() {
         </div>
       )}
 
-      <section className="glass--subtle space-y-2 p-3">
+      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
         <div className="flex items-center gap-2 font-medium">
           <Brain className="h-4 w-4" />
           Brain Dump
@@ -264,11 +264,11 @@ export function SmartPlanningPanel() {
           </Button>
         </div>
         {parsedTasks.length > 0 && (
-          <div className="space-y-1 rounded-2xl border border-white/10 bg-white/[0.035] p-2">
+          <div className="space-y-1 rounded-md border border-[#323234] bg-[#1A1D1E] p-2">
             {parsedTasks.map((task, index) => (
               <div key={`${task.title}-${index}`}>
                 <div className="font-medium">{task.title}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-[#9AA0A6]">
                   {[
                     task.estimatedMinutes && `${task.estimatedMinutes}m`,
                     task.priority,
@@ -284,7 +284,7 @@ export function SmartPlanningPanel() {
         )}
       </section>
 
-      <section className="glass--subtle space-y-2 p-3">
+      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
         <div className="flex items-center gap-2 font-medium">
           <Zap className="h-4 w-4" />
           Energy Today
@@ -294,7 +294,7 @@ export function SmartPlanningPanel() {
             todayEnergy.map((window) => (
               <div
                 key={`${window.startTime}-${window.endTime}-${window.energyLevel}`}
-                className="flex items-center justify-between rounded-xl bg-[linear-gradient(90deg,rgba(74,123,255,0.16),rgba(139,92,246,0.12),rgba(230,75,208,0.1))] px-2 py-1"
+                className="flex items-center justify-between rounded-md bg-[#1A1D1E] px-2 py-1"
               >
                 <span>
                   {window.startTime}-{window.endTime}
@@ -303,26 +303,26 @@ export function SmartPlanningPanel() {
               </div>
             ))
           ) : (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-[#9AA0A6]">
               No energy windows set for today.
             </div>
           )}
         </div>
       </section>
 
-      <section className="glass--subtle space-y-2 p-3">
+      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
         <div className="flex items-center gap-2 font-medium">
           <Clock className="h-4 w-4" />
           Time-Blindness Buffer
         </div>
-        <div className="rounded-xl bg-white/[0.045] p-2 text-xs text-muted-foreground">
+        <div className="rounded-md bg-[#1A1D1E] p-2 text-xs text-[#9AA0A6]">
           Mina places tasks at {bufferMultiplier.toFixed(1)}x estimates when no
           personal category data exists.
         </div>
         {nextTask && (
-          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-2">
+          <div className="rounded-md border border-[#323234] bg-[#1A1D1E] p-2">
             <div className="font-medium">Next: {nextTask.title}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-[#9AA0A6]">
               Raw{" "}
               {minutesLabel(
                 nextTask.estimatedMinutes || nextTask.duration || 30
@@ -339,12 +339,12 @@ export function SmartPlanningPanel() {
         )}
       </section>
 
-      <section className="glass--subtle space-y-2 p-3">
+      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
         <div className="flex items-center gap-2 font-medium">
           <TrendingUp className="h-4 w-4" />
           Calibration
         </div>
-        <div className="rounded-xl bg-white/[0.045] p-2 text-xs text-muted-foreground">
+        <div className="rounded-md bg-[#1A1D1E] p-2 text-xs text-[#9AA0A6]">
           {calibration?.reportReady
             ? "Your estimates are getting calibrated from completed work."
             : `${calibration?.totalCompletedWithActuals ?? 0}/20 completed tasks tracked before the full report unlocks.`}
@@ -352,15 +352,15 @@ export function SmartPlanningPanel() {
         {calibration?.contexts.slice(0, 4).map((context) => (
           <div
             key={context.contextTag}
-            className="rounded-xl border border-white/10 bg-white/[0.035] p-2"
+            className="rounded-md border border-[#323234] bg-[#1A1D1E] p-2"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium">{context.contextTag}</span>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-[#9AA0A6]">
                 {context.factor.toFixed(1)}x
               </span>
             </div>
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="mt-1 text-xs text-[#9AA0A6]">
               {context.completedCount} tasks ·{" "}
               {context.overUnderPercent >= 0 ? "+" : ""}
               {context.overUnderPercent}% vs likely · {context.trend}
@@ -369,7 +369,7 @@ export function SmartPlanningPanel() {
         ))}
       </section>
 
-      <section className="glass--subtle space-y-2 p-3">
+      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
         <Button
           type="button"
           className="w-full"
@@ -387,7 +387,7 @@ export function SmartPlanningPanel() {
           <Moon className="mr-2 h-4 w-4" />
           Shutdown Ritual
         </Button>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-[#9AA0A6]">
           <CheckCircle2 className="h-3 w-3" />
           Review done, roll unfinished work, then reschedule.
         </div>

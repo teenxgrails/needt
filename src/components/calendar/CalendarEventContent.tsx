@@ -18,12 +18,10 @@ interface CalendarEventContentProps {
 }
 
 const priorityColors = {
-  [Priority.HIGH]:
-    "border-rose-300/80 shadow-[0_0_30px_-18px_rgb(251,113,133)]",
-  [Priority.MEDIUM]:
-    "border-amber-300/80 shadow-[0_0_30px_-18px_rgb(251,191,36)]",
-  [Priority.LOW]: "border-sky-300/80 shadow-[0_0_30px_-18px_rgb(56,189,248)]",
-  [Priority.NONE]: "border-white/20",
+  [Priority.HIGH]: "border-l-red-400",
+  [Priority.MEDIUM]: "border-l-amber-400",
+  [Priority.LOW]: "border-l-blue-400",
+  [Priority.NONE]: "border-l-[#323234]",
 };
 
 export const CalendarEventContent = memo(function CalendarEventContent({
@@ -34,7 +32,6 @@ export const CalendarEventContent = memo(function CalendarEventContent({
   const isRecurring = eventInfo.event.extendedProps.isRecurring;
   const status = eventInfo.event.extendedProps.status;
   const priority = eventInfo.event.extendedProps.priority;
-  const energyRequired = eventInfo.event.extendedProps.energyRequired;
   const location = eventInfo.event.extendedProps.location;
   const calendarName = eventInfo.event.extendedProps.calendarName;
   const dueDate = eventInfo.event.extendedProps?.extendedProps?.dueDate;
@@ -72,15 +69,9 @@ export const CalendarEventContent = memo(function CalendarEventContent({
     <div
       data-testid={isTask ? "calendar-task" : "calendar-event"}
       className={cn(
-        "flex h-full flex-col justify-start gap-1 overflow-hidden rounded-xl border border-white/10 bg-white/[0.055] px-1.5 py-1 text-[11px] text-foreground backdrop-blur-xl",
+        "flex h-full flex-col justify-start gap-1 overflow-hidden rounded-md border border-[#323234] bg-[#262627] px-1.5 py-1 text-[11px] text-white",
         isTask && "border-l-4",
         isTask && priority && priorityColors[priority as Priority],
-        isTask &&
-          energyRequired === "HIGH" &&
-          "shadow-[0_0_34px_-18px_var(--acc-violet)]",
-        isTask &&
-          energyRequired === "LOW" &&
-          "shadow-[0_0_34px_-18px_var(--acc-teal)]",
         isTask &&
           !priority && {
             "border-green-500": status === TaskStatus.COMPLETED,
@@ -88,7 +79,7 @@ export const CalendarEventContent = memo(function CalendarEventContent({
             "border-gray-500": status === TaskStatus.TODO,
           },
         isOverdue && "border-red-400 font-medium text-red-200",
-        status === TaskStatus.COMPLETED && "text-muted-foreground line-through"
+        status === TaskStatus.COMPLETED && "text-[#9AA0A6] line-through"
       )}
     >
       <div className="flex w-full items-center gap-1.5">
@@ -115,7 +106,7 @@ export const CalendarEventContent = memo(function CalendarEventContent({
         <div className="min-w-0 flex-1">
           <div
             className={cn(
-              "calendar-event-title font-medium leading-snug text-foreground",
+              "calendar-event-title font-medium leading-snug text-white",
               duration <= 1800000 ? "truncate" : "line-clamp-2 break-words"
             )}
           >
@@ -125,7 +116,7 @@ export const CalendarEventContent = memo(function CalendarEventContent({
             {title}
           </div>
           {timeText && (
-            <div className="mt-0.5 truncate text-[10px] font-normal tabular-nums text-muted-foreground">
+            <div className="mt-0.5 truncate text-[10px] font-normal tabular-nums text-[#9AA0A6]">
               {timeText}
             </div>
           )}

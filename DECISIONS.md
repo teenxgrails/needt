@@ -36,3 +36,4 @@
 - 2026-07-08: AGENTS_NEXT Phase F does not tag `v0.3.0` because local DB, Neon/Vercel production, and live MCP task-creation checks are blocked by missing external infrastructure rather than passing green.
 - 2026-07-08: Schedule-all now returns all current user tasks after scheduling and the client refetches the filtered task list, so running auto-schedule with no eligible auto-scheduled tasks no longer blanks the UI.
 - 2026-07-08: UI Part 1 maps Motion's calendar layout to Mina glass by making the left rail navigation/planning-only and moving the existing mini-calendar/feed controls into a right panel; empty-slot creation still uses the existing event/task modals and stores.
+- 2026-07-08: UI pass pivoted to the updated AGENTS_UI.md direction: target screens now use flat Motion-like dark tokens instead of Liquid Glass, while existing shared glass utilities remain untouched for future design work.
