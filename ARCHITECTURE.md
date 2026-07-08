@@ -21,6 +21,8 @@ The ADHD planning surface lives in `src/components/calendar/SmartPlanningPanel.t
 
 The local connector API uses `ConnectorSettings` with a hashed personal bearer token. `/api/connect/tasks`, `/api/connect/schedule`, and `/api/connect/reschedule` let local tools create tasks, read schedule state, and trigger scheduling. Optional outbound webhooks are best-effort.
 
+Phase 9 adds time tracking and calibration. `TimeEntry` stores timer/manual/focus sessions, while `Task` stores three-point estimates (`estOptimistic`, `estLikely`, `estPessimistic`) plus actual-minute deltas. `src/services/time-tracking/timeEntries.ts` owns timer writes and task actual rollups. `src/services/time-tracking/calibration.ts` computes median actual/likely correction factors per `contextTag`; `TaskSchedulingService` injects those factors into the pure scheduler, and `/api/calibration` exposes the report to the planning UI and AI layer.
+
 ## Stack
 
 - Next.js 15 App Router with React 19 and TypeScript.

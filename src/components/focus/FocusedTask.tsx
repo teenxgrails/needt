@@ -1,5 +1,6 @@
 "use client";
 
+import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -121,6 +122,15 @@ export function FocusedTask({ task }: FocusedTaskProps) {
             <p className="text-muted-foreground">This task repeats</p>
           </div>
         )}
+      </div>
+
+      <div className="mb-6">
+        <TaskTimer
+          taskId={task.id}
+          actualMinutes={task.actualMinutes}
+          likelyDelta={task.likelyDelta}
+          source="focus"
+        />
       </div>
 
       {/* Task description with hyperlinks */}

@@ -59,6 +59,14 @@ export interface Task {
   preferredTime?: TimePreference | null;
   energyRequired?: SchedulingEnergyLevel;
   estimatedMinutes?: number | null;
+  estOptimistic?: number | null;
+  estLikely?: number | null;
+  estPessimistic?: number | null;
+  actualMinutes?: number | null;
+  estimateDelta?: number | null;
+  optimisticDelta?: number | null;
+  likelyDelta?: number | null;
+  pessimisticDelta?: number | null;
   minChunkMinutes?: number | null;
   maxChunkMinutes?: number | null;
   deadline?: Date | null;
@@ -91,17 +99,18 @@ export interface Task {
   lastSyncedAt?: Date | null;
 }
 
-export interface NewTask
-  extends Omit<Task, "id" | "createdAt" | "updatedAt" | "tags" | "project"> {
+export interface NewTask extends Omit<
+  Task,
+  "id" | "createdAt" | "updatedAt" | "tags" | "project"
+> {
   tagIds?: string[];
   isAutoScheduled: boolean;
   scheduleLocked: boolean;
 }
 
-export interface UpdateTask
-  extends Partial<
-    Omit<Task, "id" | "createdAt" | "updatedAt" | "tags" | "project">
-  > {
+export interface UpdateTask extends Partial<
+  Omit<Task, "id" | "createdAt" | "updatedAt" | "tags" | "project">
+> {
   tagIds?: string[];
 }
 

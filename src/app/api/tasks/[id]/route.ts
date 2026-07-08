@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
+import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
 import { Task } from "@prisma/client";
 import { RRule } from "rrule";
 
@@ -175,6 +176,16 @@ export async function PUT(
               dueDate: baseDate, // Use the original due date for the completed instance
               startDate: task.startDate, // Use the original start date for the completed instance
               duration: task.duration,
+              estimatedMinutes: task.estimatedMinutes,
+              estOptimistic: task.estOptimistic,
+              estLikely: task.estLikely,
+              estPessimistic: task.estPessimistic,
+              minChunkMinutes: task.minChunkMinutes,
+              maxChunkMinutes: task.maxChunkMinutes,
+              deadline: task.deadline,
+              energyRequired: task.energyRequired,
+              priorityLevel: task.priorityLevel,
+              contextTag: task.contextTag,
               priority: task.priority,
               energyLevel: task.energyLevel,
               preferredTime: task.preferredTime,
@@ -294,6 +305,7 @@ export async function PUT(
       updates.status === TaskStatus.COMPLETED &&
       task.status !== TaskStatus.COMPLETED
     ) {
+      await recomputeTaskActuals(updatedTask.id);
       await sendConnectorWebhook({
         userId,
         event: "task.completed",

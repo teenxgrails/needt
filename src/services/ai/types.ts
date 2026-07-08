@@ -7,6 +7,7 @@ import {
   SchedulingPreferences,
   SchedulingTaskPriority,
 } from "@/services/scheduling/engine";
+import { CalibrationContext } from "@/services/time-tracking/calibration";
 
 export type AIProviderName = "NONE" | "ANTHROPIC" | "OPENAI" | "CUSTOM";
 
@@ -17,6 +18,7 @@ export interface SchedulingContext {
   prefs: SchedulingPreferences;
   now: string;
   deterministicResult?: ScheduleResult;
+  calibration?: CalibrationContext;
 }
 
 export interface AIScheduleMove {

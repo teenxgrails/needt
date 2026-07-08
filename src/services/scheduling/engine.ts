@@ -55,6 +55,7 @@ export interface SchedulingPreferences {
   enableTaskBatching: boolean;
   hardStopTime: string;
   bufferMultiplier: number;
+  calibrationFactors?: Record<string, number>;
 }
 
 export interface ScheduledBlock {
@@ -271,10 +272,11 @@ function splitTaskIntoChunks(
 ): TaskChunk[] {
   const rawEstimate =
     task.estimatedMinutes ?? task.durationMinutes ?? DEFAULT_ESTIMATE_MINUTES;
-  const inflatedEstimate = Math.max(
-    1,
-    Math.ceil(rawEstimate * Math.max(1, prefs.bufferMultiplier))
-  );
+  const contextFactor = task.contextTag
+    ? prefs.calibrationFactors?.[task.contextTag.toLowerCase()]
+    : undefined;
+  const estimateFactor = contextFactor ?? Math.max(1, prefs.bufferMultiplier);
+  const inflatedEstimate = Math.max(1, Math.ceil(rawEstimate * estimateFactor));
   const minChunk = Math.max(
     1,
     task.minChunkMinutes ?? DEFAULT_MIN_CHUNK_MINUTES

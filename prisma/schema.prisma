@@ -92,6 +92,7 @@ model User {
   energyProfileWindows  EnergyProfileWindow[]
   aiSettings            AISettings?
   connectorSettings     ConnectorSettings?
+  timeEntries           TimeEntry[]
   tasks                 Task[]
   projects              Project[]
   connectedAccounts     ConnectedAccount[]
@@ -217,6 +218,14 @@ model Task {
   // Smart scheduling fields
   energyRequired   SchedulingEnergyLevel  @default(MEDIUM)
   estimatedMinutes Int?
+  estOptimistic    Int?
+  estLikely        Int?
+  estPessimistic   Int?
+  actualMinutes    Int?
+  estimateDelta    Int?
+  optimisticDelta  Int?
+  likelyDelta      Int?
+  pessimisticDelta Int?
   minChunkMinutes  Int?
   maxChunkMinutes  Int?
   deadline         DateTime?
@@ -266,7 +275,8 @@ model Task {
   skipSync          Boolean   @default(false) // Flag to skip syncing this task
 
   // Change tracking relation
-  changes TaskChange[]
+  changes     TaskChange[]
+  timeEntries TimeEntry[]
 
   // User relationship
   userId String?
@@ -303,6 +313,23 @@ model Task {
   @@index([externalListId])
   @@index([blockDirty, userId])
   @@index([blockFeedId])
+}
+
+model TimeEntry {
+  id        String          @id @default(cuid())
+  taskId    String
+  task      Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?           @relation(fields: [userId], references: [id])
+  startedAt DateTime
+  endedAt   DateTime?
+  source    TimeEntrySource @default(timer)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([taskId])
+  @@index([userId, startedAt])
+  @@index([source])
 }
 
 model EnergyProfileWindow {
@@ -748,6 +775,12 @@ enum SchedulingTaskPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum TimeEntrySource {
+  timer
+  manual
+  focus
 }
 
 enum AIProvider {

@@ -1,3 +1,5 @@
+import { getCalibrationContext } from "@/services/time-tracking/calibration";
+
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -44,6 +46,7 @@ type DbTaskWithRelations = {
   preferredTime: string | null;
   energyRequired: SchedulingEnergyLevel;
   estimatedMinutes: number | null;
+  estLikely: number | null;
   minChunkMinutes: number | null;
   maxChunkMinutes: number | null;
   deadline: Date | null;
@@ -155,7 +158,7 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
     title: task.title,
     status: task.status,
     createdAt: task.createdAt,
-    estimatedMinutes: task.estimatedMinutes,
+    estimatedMinutes: task.estLikely ?? task.estimatedMinutes,
     durationMinutes: task.duration,
     minChunkMinutes: task.minChunkMinutes,
     maxChunkMinutes: task.maxChunkMinutes,
@@ -288,6 +291,7 @@ export async function scheduleAllTasksForUser(
     const smartPrefs = await prisma.schedulingPreferences.findUnique({
       where: { userId },
     });
+    const calibration = await getCalibrationContext(userId);
     const energyWindows = await prisma.energyProfileWindow.findMany({
       where: { userId },
       orderBy: [{ dayOfWeek: "asc" }, { sortOrder: "asc" }],
@@ -322,15 +326,13 @@ export async function scheduleAllTasksForUser(
 
     const result = scheduleTasks({
       tasks: dbTasks.map(toSchedulableTask),
-      busyBlocks: busyEvents.map(
-        (event): CalendarBusyBlock => ({
-          id: event.id,
-          title: event.title,
-          start: event.start,
-          end: event.end,
-          source: "calendar",
-        })
-      ),
+      busyBlocks: busyEvents.map((event): CalendarBusyBlock => ({
+        id: event.id,
+        title: event.title,
+        start: event.start,
+        end: event.end,
+        source: "calendar",
+      })),
       energyProfile:
         energyWindows.length > 0
           ? {
@@ -342,7 +344,10 @@ export async function scheduleAllTasksForUser(
               })),
             }
           : buildFallbackEnergyProfile(legacySettings),
-      prefs: buildPreferences(smartPrefs, legacySettings),
+      prefs: {
+        ...buildPreferences(smartPrefs, legacySettings),
+        calibrationFactors: calibration.factors,
+      },
       now,
     });
 

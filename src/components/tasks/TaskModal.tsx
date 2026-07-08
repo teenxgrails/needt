@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { RRule } from "rrule";
 
+import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -98,6 +99,9 @@ export function TaskModal({
   const [startDate, setStartDate] = useState<string>("");
   const [duration, setDuration] = useState<string>("");
   const [estimatedMinutes, setEstimatedMinutes] = useState<string>("");
+  const [estOptimistic, setEstOptimistic] = useState<string>("");
+  const [estLikely, setEstLikely] = useState<string>("");
+  const [estPessimistic, setEstPessimistic] = useState<string>("");
   const [minChunkMinutes, setMinChunkMinutes] = useState<string>("");
   const [maxChunkMinutes, setMaxChunkMinutes] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
@@ -129,6 +133,9 @@ export function TaskModal({
   const [priorityLevel, setPriorityLevel] = useState<SchedulingTaskPriority>(
     SchedulingTaskPriority.MEDIUM
   );
+  const [calibrationFactors, setCalibrationFactors] = useState<
+    Record<string, number>
+  >({});
   const titleInputRef = useRef<HTMLInputElement>(null);
 
   const resetForm = useCallback(() => {
@@ -139,6 +146,9 @@ export function TaskModal({
     setStartDate("");
     setDuration("");
     setEstimatedMinutes("");
+    setEstOptimistic("");
+    setEstLikely("");
+    setEstPessimistic("");
     setMinChunkMinutes("");
     setMaxChunkMinutes("");
     setDeadline("");
@@ -189,6 +199,15 @@ export function TaskModal({
       setEstimatedMinutes(
         (task.estimatedMinutes ?? task.duration)?.toString() || ""
       );
+      setEstOptimistic(task.estOptimistic?.toString() || "");
+      setEstLikely(
+        (
+          task.estLikely ??
+          task.estimatedMinutes ??
+          task.duration
+        )?.toString() || ""
+      );
+      setEstPessimistic(task.estPessimistic?.toString() || "");
       setMinChunkMinutes(task.minChunkMinutes?.toString() || "");
       setMaxChunkMinutes(task.maxChunkMinutes?.toString() || "");
       if (task.deadline) {
@@ -222,6 +241,34 @@ export function TaskModal({
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    fetch("/api/calibration")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data?.factors && typeof data.factors === "object") {
+          setCalibrationFactors(data.factors);
+        }
+      })
+      .catch(() => setCalibrationFactors({}));
+  }, [isOpen]);
+
+  const parsedLikely = estLikely
+    ? parseInt(estLikely, 10)
+    : estimatedMinutes
+      ? parseInt(estimatedMinutes, 10)
+      : duration
+        ? parseInt(duration, 10)
+        : null;
+  const contextFactor = contextTag.trim()
+    ? calibrationFactors[contextTag.trim().toLowerCase()]
+    : undefined;
+  const suggestedLikely =
+    contextFactor && parsedLikely
+      ? Math.max(1, Math.round(parsedLikely * contextFactor))
+      : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -240,6 +287,11 @@ export function TaskModal({
           : duration
             ? parseInt(duration, 10)
             : undefined,
+        estOptimistic: estOptimistic ? parseInt(estOptimistic, 10) : undefined,
+        estLikely: parsedLikely ?? undefined,
+        estPessimistic: estPessimistic
+          ? parseInt(estPessimistic, 10)
+          : undefined,
         minChunkMinutes: minChunkMinutes
           ? parseInt(minChunkMinutes, 10)
           : undefined,
@@ -297,6 +349,14 @@ export function TaskModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto">
+          {task && (
+            <TaskTimer
+              taskId={task.id}
+              actualMinutes={task.actualMinutes}
+              likelyDelta={task.likelyDelta}
+            />
+          )}
+
           <div>
             <Label htmlFor="title">Title</Label>
             <Input
@@ -381,6 +441,42 @@ export function TaskModal({
                 onChange={(e) => setEstimatedMinutes(e.target.value)}
                 min="0"
                 placeholder={duration || "45"}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="estOptimistic">Optimistic</Label>
+              <Input
+                type="number"
+                id="estOptimistic"
+                value={estOptimistic}
+                onChange={(e) => setEstOptimistic(e.target.value)}
+                min="0"
+                placeholder="30"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="estLikely">Likely</Label>
+              <Input
+                type="number"
+                id="estLikely"
+                value={estLikely}
+                onChange={(e) => setEstLikely(e.target.value)}
+                min="0"
+                placeholder={estimatedMinutes || duration || "45"}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="estPessimistic">Pessimistic</Label>
+              <Input
+                type="number"
+                id="estPessimistic"
+                value={estPessimistic}
+                onChange={(e) => setEstPessimistic(e.target.value)}
+                min="0"
+                placeholder="75"
               />
             </div>
 
@@ -517,6 +613,16 @@ export function TaskModal({
                 onChange={(e) => setContextTag(e.target.value)}
                 placeholder="deep work"
               />
+              {contextFactor && suggestedLikely && (
+                <button
+                  type="button"
+                  onClick={() => setEstLikely(String(suggestedLikely))}
+                  className="mt-1 text-left text-xs text-blue-300 hover:text-blue-200"
+                >
+                  You usually run {contextFactor.toFixed(1)}x on &quot;
+                  {contextTag.trim()}&quot;. Suggest {suggestedLikely} min.
+                </button>
+              )}
             </div>
 
             <div>

@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   Moon,
+  TrendingUp,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -47,6 +48,18 @@ interface SmartSchedulingSettingsResponse {
   energyProfile: EnergyWindow[];
 }
 
+interface CalibrationResponse {
+  totalCompletedWithActuals: number;
+  reportReady: boolean;
+  contexts: Array<{
+    contextTag: string;
+    completedCount: number;
+    factor: number;
+    overUnderPercent: number;
+    trend: "improving" | "steady" | "widening";
+  }>;
+}
+
 function minutesLabel(minutes: number) {
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.floor(minutes / 60);
@@ -60,6 +73,9 @@ export function SmartPlanningPanel() {
   const [parsedTasks, setParsedTasks] = useState<ParsedTask[]>([]);
   const [energyWindows, setEnergyWindows] = useState<EnergyWindow[]>([]);
   const [bufferMultiplier, setBufferMultiplier] = useState(1.3);
+  const [calibration, setCalibration] = useState<CalibrationResponse | null>(
+    null
+  );
   const [isParsing, setIsParsing] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
 
@@ -76,6 +92,13 @@ export function SmartPlanningPanel() {
       }
     }
     loadSettings();
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/calibration")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setCalibration(data))
+      .catch(() => setCalibration(null));
   }, []);
 
   const today = newDate().getDay();
@@ -314,6 +337,36 @@ export function SmartPlanningPanel() {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="space-y-2">
+        <div className="flex items-center gap-2 font-medium">
+          <TrendingUp className="h-4 w-4" />
+          Calibration
+        </div>
+        <div className="rounded-md bg-muted p-2 text-xs text-muted-foreground">
+          {calibration?.reportReady
+            ? "Your estimates are getting calibrated from completed work."
+            : `${calibration?.totalCompletedWithActuals ?? 0}/20 completed tasks tracked before the full report unlocks.`}
+        </div>
+        {calibration?.contexts.slice(0, 4).map((context) => (
+          <div
+            key={context.contextTag}
+            className="rounded-md border border-border p-2"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">{context.contextTag}</span>
+              <span className="text-xs text-muted-foreground">
+                {context.factor.toFixed(1)}x
+              </span>
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {context.completedCount} tasks ·{" "}
+              {context.overUnderPercent >= 0 ? "+" : ""}
+              {context.overUnderPercent}% vs likely · {context.trend}
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="space-y-2">

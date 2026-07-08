@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getConfiguredSchedulerAI } from "@/services/ai/settings";
 import { AISuggestion, SchedulingContext } from "@/services/ai/types";
+import { getCalibrationContext } from "@/services/time-tracking/calibration";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
     if ("response" in auth) return auth.response;
 
     const context = (await request.json()) as SchedulingContext;
+    context.calibration = await getCalibrationContext(auth.userId);
     const { settings, ai } = await getConfiguredSchedulerAI(auth.userId);
 
     if (settings.provider === "NONE") {
