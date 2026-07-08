@@ -9,8 +9,10 @@ const nextConfig = {
   // Disable all development indicators
   devIndicators: false,
 
-  // Enable standalone output for Docker deployment
-  output: "standalone",
+  // Standalone output is for Docker only. On Vercel it breaks the build
+  // (missing route_client-reference-manifest.js for route-group API routes),
+  // so skip it when building on Vercel.
+  output: process.env.VERCEL ? undefined : "standalone",
 
   // Determine which file extensions to use based on SAAS enablement
   pageExtensions: (() => {
