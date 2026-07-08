@@ -18,13 +18,13 @@ Mina is prepared for a single-user serverless deployment on Vercel with Neon Pos
 3. Set Build Command to:
 
 ```bash
-npm run vercel-build
+pnpm vercel-build
 ```
 
 4. Set Install Command to:
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 ```
 
 ## 3. Environment Variables
@@ -68,9 +68,12 @@ Apple/iCloud CalDAV credentials are entered in the app at runtime and never stor
 
 ## 4. Domain
 
-1. Add `app.minacalendar.com` in Vercel Project -> Domains.
+1. Add `app.minacalendar.com` or `minacalendar.com` in Vercel Project -> Domains after the domain is owned.
 2. Point DNS to Vercel as instructed.
 3. Vercel provisions HTTPS automatically.
+
+If the domain is not owned yet, keep the generated `*.vercel.app` URL and update `NEXTAUTH_URL`,
+`NEXT_PUBLIC_APP_URL`, and `NEXT_PUBLIC_SITE_URL` to that URL.
 
 ## 5. OAuth Redirect URIs
 
@@ -123,5 +126,6 @@ Expected result:
 ## 8. Notes
 
 - The app remains single-user in product behavior, but tables keep `userId` seams so future SaaS conversion does not require a database rewrite.
-- Prisma is configured with `directUrl`; Neon driver-adapter packages are not added in this offline build. Add `@prisma/adapter-neon` and `@neondatabase/serverless` later if connection pressure requires the adapter path.
+- Prisma is configured with `directUrl`.
+- `@prisma/adapter-neon` and `@neondatabase/serverless` are installed. Runtime uses the Neon driver adapter automatically when `DATABASE_URL` is a Neon pooled URL containing `neon.tech` and `-pooler.`; local Postgres keeps the standard Prisma client path.
 - Deploy is triggered by pushing to `main` or by `vercel --prod`.

@@ -30,3 +30,4 @@
 - 2026-07-08: Design Part 6 adds direct `gaxios` and `yaml` dependencies because pnpm strict module resolution does not allow app/tests to import those transitive packages reliably.
 - 2026-07-08: Design Part 6 records DB-backed runtime checks as environment-blocked in `QA_REPORT.md` because Docker is unavailable and local Postgres is unreachable; build, type, schema validation, Jest, manifest, and HTTP shell smoke passed.
 - 2026-07-08: AGENTS_NEXT Phase A refreshed/verified `pnpm-lock.yaml` with Neon packages, but live local setup is environment-blocked because no Docker/Postgres binary exists and `localhost:5432` refuses connections.
+- 2026-07-08: AGENTS_NEXT Phase B cannot create Neon/Vercel resources from this workspace because no `neon`/`vercel` CLI config or account credentials are present; deploy docs were updated to the actual pnpm + Neon adapter flow and domain remains TODO until owned/configured.
