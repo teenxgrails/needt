@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/cron/sync-calendars",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 5 * * *"
     },
     {
       "path": "/api/cron/reschedule",
-      "schedule": "*/30 * * * *"
+      "schedule": "30 5 * * *"
     }
   ]
 }
