@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Headphones, Pause, Play, Square } from "lucide-react";
 
-import { GlowRing, StatBlock } from "@/components/liquid";
+import { StatBlock } from "@/components/liquid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -90,7 +90,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
     : 1;
   const ringStyle = useMemo(
     () => ({
-      background: `conic-gradient(var(--acc-blue) ${progress * 220}deg, var(--acc-violet) ${progress * 315}deg, rgba(255,255,255,0.08) 0deg)`,
+      background: `conic-gradient(#3E63DD ${progress * 360}deg, #323234 0deg)`,
     }),
     [progress]
   );
@@ -189,12 +189,9 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
       </div>
 
       <div className="mt-5 flex flex-col items-center gap-5 lg:flex-row">
-        <GlowRing tone={running ? "magenta" : "blue"} className="shrink-0">
-          <div
-            className="grid h-40 w-40 place-items-center rounded-full p-2 shadow-[0_0_54px_-18px_var(--acc-violet)]"
-            style={ringStyle}
-          >
-            <div className="grid h-full w-full place-items-center rounded-full border border-white/10 bg-[rgba(7,7,13,0.72)] text-center backdrop-blur-2xl">
+        <div className="shrink-0">
+          <div className="grid h-40 w-40 place-items-center rounded-full p-2" style={ringStyle}>
+            <div className="grid h-full w-full place-items-center rounded-full border border-[#323234] bg-[#1A1D1E] text-center">
               <div>
                 <div className="stat-numeral text-4xl text-white">
                   {mode === "FLOW"
@@ -207,7 +204,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
               </div>
             </div>
           </div>
-        </GlowRing>
+        </div>
         <div className="flex-1 space-y-3">
           {!running && (
             <div className="grid grid-cols-3 gap-2">
