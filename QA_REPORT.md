@@ -94,3 +94,23 @@ Date: 2026-07-09
 - PASS: Local dev server started at `http://localhost:3000`.
 - PASS: Browser smoke for `http://localhost:3000/auth/signin`; desktop and 390px mobile widths had no horizontal overflow.
 - BLOCKED: Authenticated calendar animation and task-modal creation smoke. `/calendar` redirected to sign-in, and no authenticated local session/database-backed account was available in this environment.
+
+## Master Pass
+
+Date: 2026-07-09
+
+- PASS: Phase 1-10 commits created:
+  `feat(m-1)`, `fix(m-2)`, `feat(m-3)`, `feat(m-4)`, `feat(m-5)`, `feat(m-6)`, `feat(m-7)`, `feat(m-8)`, `feat(m-9)`, `feat(m-10)`.
+- PASS: `pnpm prisma validate`.
+- BLOCKED: `pnpm prisma migrate deploy` against the configured Neon database failed in the sandbox; escalated retry was rejected because it would mutate an external database without explicit target approval.
+- PASS: `pnpm tsc --noEmit`.
+- PASS: full Jest via `pnpm test:unit`: 39 suites passed, 1 skipped; 276 tests passed, 1 skipped.
+- PASS: `pnpm build`. Build completed with known DB-unreachable warnings during static collection.
+- PASS: Local dev server started at `http://localhost:3000`.
+- PASS: Live browser smoke for `/calendar` and `/chat` reached the app shell, then redirected to `/auth/signin` as expected without an authenticated session.
+- PASS: No top nav/footer visible on the reachable shell; left Motion sidebar is the only navigation surface.
+- PASS: AI Chat entry is elevated at the top of the sidebar and `/chat` exists.
+- PASS: 390px mobile smoke on the reachable sign-in shell: sidebar collapsed to `64px`, document width matched viewport width, and no horizontal overflow was detected.
+- PASS: PWA manifest is present and uses Mina dark canvas theme colors; service worker includes offline queueing and push notification handlers.
+- BLOCKED: Authenticated live checks for calendar slot event creation, task modal creation, task colors after creation, Settings AI key save, Projects CRUD, Timeline with persisted projects, AI chat blocked/streaming states, AI tool execution, web push permission prompt, and actual offline sync. The browser has no signed-in session and the configured database is unreachable from this environment.
+- NOT FULLY IMPLEMENTED: Real provider token streaming/function-calling is not wired to external LLM streaming APIs yet. The Phase 6 route gates on configured provider keys, streams server-generated responses, persists history, confirms destructive actions, and maps supported prompts to existing app-control tools.
