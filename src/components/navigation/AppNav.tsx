@@ -6,117 +6,159 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   CheckSquare,
+  ExternalLink,
   Focus,
-  Keyboard,
   Search,
+  Settings,
   Sparkles,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { useShortcutsStore } from "@/store/shortcuts";
+import { useFocusModeStore } from "@/store/focusMode";
 
 import { ThemeToggle } from "./ThemeToggle";
 import { UserMenu } from "./UserMenu";
 
 interface AppNavProps {
   className?: string;
+  onOpenChatOverlay?: () => void;
 }
 
-export function AppNav({ className }: AppNavProps) {
-  const pathname = usePathname();
-  const { setOpen: setShortcutsOpen } = useShortcutsStore();
-
-  // Function to trigger command palette
-  const openCommandPalette = () => {
-    // Simulate Cmd+K / Ctrl+K
-    const event = new KeyboardEvent("keydown", {
+function openCommandPalette() {
+  document.dispatchEvent(
+    new KeyboardEvent("keydown", {
       key: "k",
       metaKey: true,
       bubbles: true,
-    });
-    document.dispatchEvent(event);
-  };
+    })
+  );
+}
+
+export function AppNav({ className, onOpenChatOverlay }: AppNavProps) {
+  const pathname = usePathname();
+  const currentTaskId = useFocusModeStore((state) => state.currentTaskId);
+  const isProcessing = useFocusModeStore((state) => state.isProcessing);
 
   const links = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays },
-    { href: "/tasks", label: "Tasks", icon: CheckSquare },
+    { href: "/tasks", label: "Projects & Tasks", icon: CheckSquare },
     { href: "/focus", label: "Focus", icon: Focus },
   ];
 
   return (
-    <nav
+    <aside
       className={cn(
-        "glass--strong z-20 mx-3 mt-3 h-14 flex-none rounded-2xl",
+        "motion-sidebar z-20 flex h-screen w-[232px] flex-none flex-col border-r border-[#323234] bg-[#1A1D1E] p-2 text-white",
         className
       )}
     >
-      <div className="h-full px-3 sm:px-4">
-        <div className="flex h-full items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/calendar"
-              className={cn(
-                "mr-1 flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-sm font-semibold",
-                pathname === "/calendar"
-                  ? "bg-white/10 text-white"
-                  : "text-foreground hover:bg-white/[0.07]"
-              )}
-            >
-              <span className="grid h-7 w-7 place-items-center rounded-xl bg-[linear-gradient(135deg,var(--acc-blue),var(--acc-violet)_55%,var(--acc-magenta))] text-white shadow-[0_0_24px_-8px_var(--acc-violet)]">
-                <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-              </span>
-              <span className="hidden sm:inline">Mina</span>
-            </Link>
-            {links.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href;
-
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium transition-all",
-                    isActive
-                      ? "bg-white/10 text-white shadow-[0_0_24px_-16px_var(--acc-blue)]"
-                      : "text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4" strokeWidth={1.75} />
-                  <span className="hidden sm:inline">{link.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={openCommandPalette}
-              className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/[0.045] px-2 py-1.5 text-xs text-muted-foreground backdrop-blur-xl hover:bg-white/[0.075] hover:text-foreground"
-              title="Search or run a command (⌘K)"
-            >
-              <Search className="h-4 w-4" strokeWidth={1.75} />
-              <span className="hidden sm:inline">Search</span>
-              <kbd className="ml-1 hidden rounded bg-white/10 px-1 py-0.5 text-xs sm:inline">
-                ⌘K
-              </kbd>
-            </button>
-            <ThemeToggle />
-            <button
-              onClick={() => setShortcutsOpen(true)}
-              className="flex items-center gap-1 rounded-xl px-2 py-1.5 text-xs text-muted-foreground hover:bg-white/[0.07] hover:text-foreground"
-              title="View Keyboard Shortcuts (Press ?)"
-            >
-              <Keyboard className="h-4 w-4" strokeWidth={1.75} />
-              <span className="hidden sm:inline">Shortcuts</span>
-              <kbd className="ml-1 hidden rounded bg-white/10 px-1 py-0.5 text-xs sm:inline">
-                ?
-              </kbd>
-            </button>
-            <UserMenu />
+      <div className="mb-3 flex items-center gap-2 px-2 py-1.5">
+        <span className="grid h-7 w-7 place-items-center rounded-md bg-[#262627] text-xs font-semibold">
+          M
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold">Mina</div>
+          <div className="truncate text-[11px] text-[#9AA0A6]">
+            Private planner
           </div>
         </div>
       </div>
-    </nav>
+
+      <div className="mb-3 grid grid-cols-[1fr_auto] gap-1">
+        <Link
+          href="/chat"
+          className={cn(
+            "flex min-w-0 items-center gap-2 rounded-md border border-[#323234] bg-[#262627] px-2.5 py-2 text-[13px] font-medium transition-colors hover:bg-[#2B2F31]",
+            pathname === "/chat" && "bg-[#2B2F31] text-white"
+          )}
+        >
+          <Search className="h-4 w-4 flex-none" strokeWidth={1.75} />
+          <span className="truncate">AI Chat</span>
+          <kbd className="ml-auto rounded bg-[#1A1D1E] px-1.5 py-0.5 text-[10px] text-[#9AA0A6]">
+            ⌘/
+          </kbd>
+        </Link>
+        <button
+          type="button"
+          onClick={onOpenChatOverlay}
+          className="grid h-9 w-9 place-items-center rounded-md border border-[#323234] bg-[#262627] text-[#9AA0A6] transition-colors hover:bg-[#2B2F31] hover:text-white"
+          title="Open compact AI chat"
+        >
+          <ExternalLink className="h-4 w-4" strokeWidth={1.75} />
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={openCommandPalette}
+        className="mb-2 flex w-full items-center gap-2 rounded-md border border-[#323234] bg-[#262627] px-2.5 py-1.5 text-left text-[13px] text-[#9AA0A6] transition-colors hover:bg-[#2B2F31] hover:text-white"
+      >
+        <Search className="h-4 w-4" strokeWidth={1.75} />
+        <span className="min-w-0 flex-1 truncate">Search or command</span>
+        <kbd className="rounded bg-[#1A1D1E] px-1.5 py-0.5 text-[10px] text-[#9AA0A6]">
+          ⌘K
+        </kbd>
+      </button>
+
+      <nav className="space-y-0.5 text-[13px]">
+        {links.map((link) => {
+          const Icon = link.icon;
+          const isActive = pathname === link.href;
+          const isFocus = link.href === "/focus";
+          const focusLive = isFocus && (currentTaskId || isProcessing);
+
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors",
+                isActive
+                  ? "bg-[#2B2F31] text-white"
+                  : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
+              )}
+            >
+              <Icon className="h-4 w-4 flex-none" strokeWidth={1.75} />
+              <span className="min-w-0 flex-1 truncate">{link.label}</span>
+              {focusLive && (
+                <span className="rounded bg-[#3E63DD] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  Live
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-auto space-y-2 border-t border-[#323234] pt-2">
+        <Link
+          href="/settings"
+          className={cn(
+            "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+            pathname === "/settings"
+              ? "bg-[#2B2F31] text-white"
+              : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
+          )}
+        >
+          <Settings className="h-4 w-4" strokeWidth={1.75} />
+          <span>Settings</span>
+        </Link>
+        <div className="flex items-center justify-between gap-2">
+          <UserMenu />
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={onOpenChatOverlay}
+              className="grid h-8 w-8 place-items-center rounded-md text-[#9AA0A6] transition-colors hover:bg-[#2B2F31] hover:text-white"
+              title="AI Chat"
+            >
+              <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }

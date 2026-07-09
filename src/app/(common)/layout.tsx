@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
 import { DndProvider } from "@/components/dnd/DndProvider";
 import { AppNav } from "@/components/navigation/AppNav";
-import { VersionBadge } from "@/components/navigation/VersionBadge";
 import { NotificationProvider } from "@/components/providers/NotificationProvider.open";
 import { PrivacyProvider } from "@/components/providers/PrivacyProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
@@ -27,6 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
   const { isOpen: shortcutsOpen, setOpen: setShortcutsOpen } =
     useShortcutsStore();
 
@@ -49,7 +50,7 @@ export default function RootLayout({
   }, [setShortcutsOpen]);
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen bg-[#1A1D1E]">
       <SessionProvider>
         <PrivacyProvider>
           <DndProvider>
@@ -64,15 +65,14 @@ export default function RootLayout({
               isOpen={shortcutsOpen}
               onClose={() => setShortcutsOpen(false)}
             />
-            <AppNav />
-            <main className="relative flex-1">
+            <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
+            <main className="relative min-w-0 flex-1">
               <NotificationProvider>{children}</NotificationProvider>
             </main>
-            <footer className="glass--strong mx-3 mb-3 flex-none rounded-2xl px-4 py-2">
-              <div className="flex justify-end">
-                <VersionBadge />
-              </div>
-            </footer>
+            <AIChatOverlay
+              open={chatOverlayOpen}
+              onOpenChange={setChatOverlayOpen}
+            />
             <Toaster />
           </DndProvider>
         </PrivacyProvider>
