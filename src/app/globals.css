@@ -123,6 +123,37 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     letter-spacing: 0;
   }
+
+  html:not(.dark) body {
+    background: #f6f7fb;
+    color: #11131c;
+  }
+
+  html:not(.dark) .motion-sidebar,
+  html:not(.dark) .bg-\[\#1A1D1E\] {
+    background-color: #f6f7fb !important;
+    color: #11131c;
+  }
+
+  html:not(.dark) .bg-\[\#262627\],
+  html:not(.dark) .glass,
+  html:not(.dark) .glass--strong,
+  html:not(.dark) .glass--subtle {
+    background-color: #ffffff !important;
+    border-color: #d9dde7 !important;
+  }
+
+  html:not(.dark) .bg-\[\#2B2F31\] {
+    background-color: #e9edf5 !important;
+  }
+
+  html:not(.dark) .border-\[\#323234\] {
+    border-color: #d9dde7 !important;
+  }
+
+  html:not(.dark) .text-\[\#9AA0A6\] {
+    color: #667085 !important;
+  }
 }
 
 @layer components {
