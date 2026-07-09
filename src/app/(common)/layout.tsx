@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
+import { AIActionCursor } from "@/components/ai/AIActionCursor";
 import { DndProvider } from "@/components/dnd/DndProvider";
 import { AppNav } from "@/components/navigation/AppNav";
 import { NotificationProvider } from "@/components/providers/NotificationProvider.open";
@@ -73,6 +74,7 @@ export default function RootLayout({
               open={chatOverlayOpen}
               onOpenChange={setChatOverlayOpen}
             />
+            <AIActionCursor />
             <Toaster />
           </DndProvider>
         </PrivacyProvider>

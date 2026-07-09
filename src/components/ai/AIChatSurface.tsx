@@ -156,10 +156,18 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
           value?: string;
           conversationId?: string;
           requiresConfirm?: boolean;
+          toolName?: string | null;
         };
         if (event.type === "meta") {
           conversationId = event.conversationId || conversationId;
           requiresConfirm = Boolean(event.requiresConfirm);
+          if (event.toolName && event.toolName !== "confirmation_required") {
+            window.dispatchEvent(
+              new CustomEvent("mina:ai-action", {
+                detail: { label: event.toolName.replace(/_/g, " ") },
+              })
+            );
+          }
           if (conversationId && activeId === "pending") setActiveId(conversationId);
         } else {
           assistantText += event.value || "";
