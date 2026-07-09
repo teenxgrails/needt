@@ -2,6 +2,7 @@ import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.share
 
 import {
   HiOutlineCalendar,
+  HiOutlineChatAlt2,
   HiOutlineClipboardList,
   HiOutlineCog,
   HiOutlineLightningBolt,
@@ -42,6 +43,17 @@ export function useNavigationCommands(): Command[] {
       shortcut: "gf",
       perform: (router?: AppRouterInstance) => {
         if (router) router.push("/focus");
+      },
+    },
+    {
+      id: "navigation.chat",
+      title: "Go to AI Chat",
+      keywords: ["navigation", "ai", "chat"],
+      icon: HiOutlineChatAlt2,
+      section: "navigation",
+      shortcut: "ga",
+      perform: (router?: AppRouterInstance) => {
+        if (router) router.push("/chat");
       },
     },
     {

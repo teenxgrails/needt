@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
@@ -23,8 +24,12 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [showAllCommands, setShowAllCommands] = useState(false);
+  const [results, setResults] = useState<
+    Array<{ id: string; type: string; title: string; href: string }>
+  >([]);
   const { searchCommands, executeCommand, getAllCommands } = useCommands();
 
   // Get filtered commands based on search or show all commands
@@ -40,8 +45,29 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     if (!open) {
       setSearch("");
       setShowAllCommands(false);
+      setResults([]);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!search.trim()) {
+      setResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      fetch(`/api/search?q=${encodeURIComponent(search)}`, {
+        signal: controller.signal,
+      })
+        .then((response) => (response.ok ? response.json() : { results: [] }))
+        .then((data) => setResults(data.results || []))
+        .catch(() => undefined);
+    }, 140);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [search]);
 
   // Group commands by section for better organization
   const groupedCommands = useMemo(() => {
@@ -217,6 +243,25 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     </Command.Group>
                   )
                 )}
+              {results.length > 0 && (
+                <Command.Group heading="Search">
+                  {results.map((result) => (
+                    <Command.Item
+                      key={`${result.type}-${result.id}`}
+                      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[#2B2F31] aria-selected:text-white"
+                      onSelect={() => {
+                        router.push(result.href);
+                        onOpenChange(false);
+                      }}
+                    >
+                      <span className="w-14 text-xs text-[#9AA0A6]">
+                        {result.type}
+                      </span>
+                      <span>{result.title}</span>
+                    </Command.Item>
+                  ))}
+                </Command.Group>
+              )}
             </Command.List>
           </Command>
         </Dialog.Content>
