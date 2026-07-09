@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 
+import { motion, useReducedMotion } from "framer-motion";
+
 import { Task, TaskStatus } from "@/types/task";
 
 interface TimelineViewProps {
@@ -30,6 +32,7 @@ function taskEnd(task: Task) {
 }
 
 export function TimelineView({ tasks }: TimelineViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   const rows = useMemo(() => {
     const datedTasks = tasks
       .map((task) => {
@@ -129,8 +132,12 @@ export function TimelineView({ tasks }: TimelineViewProps) {
                   Math.max(1, Math.floor((end.getTime() - start.getTime()) / DAY_MS) + 1);
                 const color = task.project?.color || "#3E63DD";
                 return (
-                  <div
+                  <motion.div
                     key={task.id}
+                    layout={!prefersReducedMotion}
+                    initial={prefersReducedMotion ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: prefersReducedMotion ? 0 : 0.16 }}
                     className="absolute h-7 truncate rounded-md px-2 py-1 text-xs text-white"
                     style={{
                       left: `calc(${((offset - 1) / rows.dayCount) * 100}% + 4px)`,
@@ -141,7 +148,7 @@ export function TimelineView({ tasks }: TimelineViewProps) {
                     title={task.title}
                   >
                     {task.title}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>

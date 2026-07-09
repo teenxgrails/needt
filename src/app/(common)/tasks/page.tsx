@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { CalendarRange, Kanban, ListTodo } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,6 +41,7 @@ export default function TasksPage() {
   const { fetchProjects, activeProject } = useProjectStore();
   const { viewMode, setViewMode } = useTaskPageSettings();
   const { isOpen, setOpen } = useTaskModalStore();
+  const prefersReducedMotion = useReducedMotion();
 
   const [selectedTask, setSelectedTask] = useState<Task | undefined>();
   const [initialProjectId, setInitialProjectId] = useState<
@@ -197,30 +199,41 @@ export default function TasksPage() {
         </div>
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-6">
-          {viewMode === "list" ? (
-            <TaskList
-              tasks={tasks}
-              onEdit={(task) => {
-                setSelectedTask(task);
-                setOpen(true);
-              }}
-              onDelete={handleDeleteTask}
-              onStatusChange={handleStatusChange}
-              onInlineEdit={handleInlineEdit}
-            />
-          ) : viewMode === "board" ? (
-            <BoardView
-              tasks={tasks}
-              onEdit={(task) => {
-                setSelectedTask(task);
-                setOpen(true);
-              }}
-              onDelete={handleDeleteTask}
-              onStatusChange={handleStatusChange}
-            />
-          ) : (
-            <TimelineView tasks={tasks} />
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={viewMode}
+              className="min-h-0 flex-1"
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+              transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
+            >
+              {viewMode === "list" ? (
+                <TaskList
+                  tasks={tasks}
+                  onEdit={(task) => {
+                    setSelectedTask(task);
+                    setOpen(true);
+                  }}
+                  onDelete={handleDeleteTask}
+                  onStatusChange={handleStatusChange}
+                  onInlineEdit={handleInlineEdit}
+                />
+              ) : viewMode === "board" ? (
+                <BoardView
+                  tasks={tasks}
+                  onEdit={(task) => {
+                    setSelectedTask(task);
+                    setOpen(true);
+                  }}
+                  onDelete={handleDeleteTask}
+                  onStatusChange={handleStatusChange}
+                />
+              ) : (
+                <TimelineView tasks={tasks} />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <TaskModal
