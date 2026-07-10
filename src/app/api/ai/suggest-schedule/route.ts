@@ -11,7 +11,7 @@ const LOG_SOURCE = "ai-suggest-schedule-api";
 const FALLBACK: AISuggestion = {
   summary: "Deterministic schedule kept.",
   moves: [],
-  warnings: ["AI was unavailable, so Mina kept the deterministic schedule."],
+  warnings: ["AI was unavailable, so Flowday kept the deterministic schedule."],
 };
 
 export async function POST(request: NextRequest) {

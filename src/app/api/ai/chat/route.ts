@@ -72,7 +72,7 @@ function buildSystemPrompt(soulPreset: string) {
       : "Be concise, direct, and businesslike.";
 
   return [
-    "You are Mina's single-user planner assistant.",
+    "You are Flowday's single-user planner assistant.",
     tone,
     "Use tools when the user asks to create, edit, delete, schedule, parse, query, or manage planner data.",
     "Never claim a tool changed data unless the server tool result says it did.",
@@ -188,7 +188,7 @@ function toolDefinitions(settings: {
     tools.push({
       name: "auto_schedule",
       description:
-        "Run Mina's deterministic scheduler for the current user. Requires confirmation.",
+        "Run Flowday's deterministic scheduler for the current user. Requires confirmation.",
       parameters: {
         type: "object",
         additionalProperties: false,

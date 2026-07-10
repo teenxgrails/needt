@@ -87,6 +87,7 @@ model User {
   userSettings          UserSettings?
   calendarSettings      CalendarSettings?
   notificationSettings  NotificationSettings?
+  customizationSettings UserCustomization?
   integrationSettings   IntegrationSettings?
   dataSettings          DataSettings?
   schedulingPreferences SchedulingPreferences?
@@ -603,6 +604,25 @@ model NotificationSettings {
   webPushSubscription   Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model UserCustomization {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accentColor       String   @default("#6366F1")
+  backgroundTint    String   @default("#1B1D1E")
+  density           String   @default("comfortable")
+  sidebarWidth      Int      @default(244)
+  radius            Int      @default(8)
+  fontFamily        String   @default("system")
+  eventChipStyle    String   @default("flat")
+  animationsEnabled Boolean  @default(true)
+  themePreset       String   @default("flowday")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@index([userId])
 }

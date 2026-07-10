@@ -167,7 +167,7 @@ export function AIAssistantSettings() {
     >
       <SettingRow
         label="Provider"
-        description="None keeps Mina fully offline. API keys are encrypted before storage."
+        description="None keeps Flowday fully offline. API keys are encrypted before storage."
       >
         <div className="space-y-4">
           <Select
@@ -289,7 +289,7 @@ export function AIAssistantSettings() {
 
       <SettingRow
         label="Allowed Actions"
-        description="AI suggestions are shown as suggestions; Mina does not silently reshuffle."
+        description="AI suggestions are shown as suggestions; Flowday does not silently reshuffle."
       >
         <div className="space-y-3">
           {[
@@ -319,7 +319,7 @@ export function AIAssistantSettings() {
 
       <SettingRow
         label="Brain Dump"
-        description="Paste messy notes and preview structured tasks. With provider None, Mina uses a local parser."
+        description="Paste messy notes and preview structured tasks. With provider None, Flowday uses a local parser."
       >
         <div className="space-y-3">
           <Textarea

@@ -9,6 +9,7 @@ import { AccountManager } from "@/components/settings/AccountManager";
 import { AutoScheduleSettings } from "@/components/settings/AutoScheduleSettings";
 import { CalendarSettings } from "@/components/settings/CalendarSettings";
 import { ConnectorSettings } from "@/components/settings/ConnectorSettings";
+import { CustomizationSettings } from "@/components/settings/CustomizationSettings";
 import { ImportExportSettings } from "@/components/settings/ImportExportSettings";
 import { LogViewer } from "@/components/settings/LogViewer";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
@@ -31,6 +32,7 @@ type SettingsTab =
   | "smart-scheduling"
   | "ai-assistant"
   | "connectors"
+  | "customization"
   | "system"
   | "task-sync"
   | "logs"
@@ -54,6 +56,7 @@ export default function SettingsPage() {
       { id: "auto-schedule", label: "Auto-scheduling" },
       { id: "task-sync", label: "Task defaults" },
       { id: "user", label: "Theme" },
+      { id: "customization", label: "Customization" },
       { id: "notifications", label: "Notifications" },
       { id: "smart-scheduling", label: "Energy profile" },
       { id: "connectors", label: "Connectors" },
@@ -91,6 +94,7 @@ export default function SettingsPage() {
         "smart-scheduling",
         "ai-assistant",
         "connectors",
+        "customization",
         "task-sync",
         "system",
         "logs",
@@ -163,6 +167,8 @@ export default function SettingsPage() {
         return <AIAssistantSettings />;
       case "connectors":
         return <ConnectorSettings />;
+      case "customization":
+        return <CustomizationSettings />;
       case "task-sync":
         return <TaskSyncSettings />;
       case "notifications":
@@ -274,7 +280,7 @@ export default function SettingsPage() {
                 {tabs.find((tab) => tab.id === activeTab)?.label ?? "Settings"}
               </h1>
               <p className="mt-1 text-sm text-[#9AA0A6]">
-                Configure Mina without leaving the planner flow.
+                Configure Flowday without leaving the planner flow.
               </p>
             </div>
             <motion.div
