@@ -6,7 +6,6 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 
 import { DayView } from "@/components/calendar/DayView";
-import { FeedManager } from "@/components/calendar/FeedManager";
 import { MonthView } from "@/components/calendar/MonthView";
 import { MultiMonthView } from "@/components/calendar/MultiMonthView";
 import { WeekView } from "@/components/calendar/WeekView";
@@ -95,9 +94,9 @@ export function Calendar({
   };
 
   return (
-    <div className="flex h-full w-full gap-2 overflow-hidden bg-[#1B1D1E] p-2 text-white">
+    <div className="flex h-full w-full overflow-hidden bg-[#1B1D1E] text-white">
       {/* Main Content */}
-      <main className="flex min-w-0 flex-1 flex-col rounded-md border border-[#323234] bg-[#1B1D1E]">
+      <main className="flex min-w-0 flex-1 flex-col border-y border-r border-[#323234] bg-[#1B1D1E]">
         {/* Header */}
         <header className="flex h-12 flex-none items-center border-b border-[#323234] px-2">
           <div className="flex items-center gap-1.5">
@@ -198,7 +197,7 @@ export function Calendar({
         </header>
 
         {/* Calendar Grid */}
-        <div className="flex-1 overflow-hidden p-2 pt-0">
+        <div className="flex-1 overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={`${view}-${currentDate.toISOString().slice(0, 10)}`}
@@ -232,9 +231,6 @@ export function Calendar({
           </AnimatePresence>
         </div>
       </main>
-      <aside className="hidden h-full w-[300px] flex-none lg:block">
-        <FeedManager />
-      </aside>
     </div>
   );
 }
