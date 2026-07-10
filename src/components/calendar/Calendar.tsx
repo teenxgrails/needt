@@ -71,17 +71,16 @@ export function Calendar({
   const prefersReducedMotion = useReducedMotion();
   const [transitionDirection, setTransitionDirection] = useState(0);
 
-  const titleText =
+  const titlePrimary =
     view === "day"
       ? new Intl.DateTimeFormat("en-US", {
           month: "short",
           day: "numeric",
-          year: "numeric",
         }).format(currentDate)
-      : new Intl.DateTimeFormat("en-US", {
-          month: "short",
-          year: "numeric",
-        }).format(currentDate);
+      : new Intl.DateTimeFormat("en-US", { month: "short" }).format(currentDate);
+  const titleSecondary = new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+  }).format(currentDate);
 
   // Use initial data from server for hydration
   useEffect(() => {
@@ -158,46 +157,40 @@ export function Calendar({
               whileHover={prefersReducedMotion ? undefined : { y: -1 }}
               whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
               onClick={handleToday}
-              className="rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]"
+              className="rounded-md border border-[#323234] bg-[#262627] px-1.5 py-[3px] text-[13px] font-medium text-white hover:bg-[#2B2F31]"
               title="Go to Today (t)"
             >
               Today
             </motion.button>
 
-            <motion.button
-              whileHover={prefersReducedMotion ? undefined : { y: -1 }}
-              whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
-              onClick={handleAutoSchedule}
-              className="rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]"
-            >
-              Auto Schedule
-            </motion.button>
-
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <motion.button
                 whileHover={prefersReducedMotion ? undefined : { y: -1 }}
                 whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
                 onClick={handlePrevWeek}
-                className="rounded-md p-1.5 text-white hover:bg-[#2B2F31]"
+                className="rounded-md p-1 text-[#9BA1A6] hover:bg-[#2B2F31] hover:text-white"
                 data-testid="calendar-prev-week"
                 title="Previous Week (←)"
               >
-                <IoChevronBack className="h-5 w-5" />
+                <IoChevronBack className="h-4 w-4" />
               </motion.button>
               <motion.button
                 whileHover={prefersReducedMotion ? undefined : { y: -1 }}
                 whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
                 onClick={handleNextWeek}
-                className="rounded-md p-1.5 text-white hover:bg-[#2B2F31]"
+                className="rounded-md p-1 text-[#9BA1A6] hover:bg-[#2B2F31] hover:text-white"
                 data-testid="calendar-next-week"
                 title="Next Week (→)"
               >
-                <IoChevronForward className="h-5 w-5" />
+                <IoChevronForward className="h-4 w-4" />
               </motion.button>
             </div>
 
-            <h1 className="px-1.5 text-sm font-semibold text-white">
-              {titleText}
+            <h1 className="px-1.5 text-[20px] leading-none text-white">
+              <span className="font-semibold">{titlePrimary}</span>{" "}
+              <span className="font-normal text-[#9BA1A6]">
+                {titleSecondary}
+              </span>
             </h1>
           </div>
 
@@ -207,7 +200,7 @@ export function Calendar({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="flex items-center gap-1.5 rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]"
+                  className="flex items-center gap-1.5 rounded-md border border-[#323234] bg-[#262627] px-1.5 py-[3px] text-[13px] font-medium text-white hover:bg-[#2B2F31]"
                   title="Calendar options"
                 >
                   <IoOptionsOutline className="h-4 w-4" />
@@ -256,7 +249,7 @@ export function Calendar({
               whileHover={prefersReducedMotion ? undefined : { y: -1 }}
               whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
               onClick={handleAutoSchedule}
-              className="flex items-center gap-1.5 rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]"
+              className="flex items-center gap-1.5 rounded-md border border-[#323234] bg-[#262627] px-1.5 py-[3px] text-[13px] font-medium text-white hover:bg-[#2B2F31]"
               title="Refresh all tasks"
             >
               <IoRefreshOutline className="h-4 w-4" />
@@ -268,7 +261,7 @@ export function Calendar({
               whileHover={prefersReducedMotion ? undefined : { y: -1 }}
               whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
               onClick={handleNewEvent}
-              className="rounded-md border border-[#323234] bg-[#262627] p-1.5 text-white hover:bg-[#2B2F31]"
+              className="rounded-md border border-[#323234] bg-[#262627] p-1 text-white hover:bg-[#2B2F31]"
               title="New event"
             >
               <IoAddOutline className="h-4 w-4" />
@@ -277,7 +270,7 @@ export function Calendar({
             {/* View switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]">
+                <button className="flex items-center gap-1 rounded-md border border-[#323234] bg-[#262627] px-1.5 py-[3px] text-[13px] font-medium text-white hover:bg-[#2B2F31]">
                   {VIEW_LABELS[view]}
                   <IoChevronDown className="h-3.5 w-3.5 text-[#9AA0A6]" />
                 </button>

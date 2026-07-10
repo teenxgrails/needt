@@ -473,11 +473,17 @@ html[data-animations="off"] *::after {
   background: var(--active) !important;
 }
 
-.fc .fc-day-today .fc-daygrid-day-number,
-.fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+.fc .fc-day-today .fc-daygrid-day-number {
   border-radius: 6px;
   background: var(--accent);
   color: var(--accent-contrast);
+}
+
+/* Week/day header renders its own today pill (on the number only) via
+   dayHeaderContent, so don't tint the whole today header cushion. */
+.fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+  background: transparent;
+  color: inherit;
 }
 
 .fc .fc-day-header {
@@ -511,12 +517,10 @@ html[data-animations="off"] *::after {
   content: var(--tz-label, "");
   position: absolute;
   bottom: 4px;
-  left: 6px;
-  font-size: 10px;
+  left: 8px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-lo);
+  color: #9ba1a6;
   pointer-events: none;
 }
 

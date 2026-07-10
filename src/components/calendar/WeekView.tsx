@@ -73,13 +73,37 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
 
   // Timezone abbreviation shown in the top-left axis corner (Motion-style).
-  const tzLabel =
+  // Intl's "short" token returns "GMT+2" for most zones, so map the long,
+  // descriptive name to a familiar abbreviation (CEST, EST, ...) and fall back
+  // to the GMT offset when it's an uncommon zone.
+  const tzAbbrByLongName: Record<string, string> = {
+    "Central European Standard Time": "CET",
+    "Central European Summer Time": "CEST",
+    "Western European Standard Time": "WET",
+    "Western European Summer Time": "WEST",
+    "Eastern European Standard Time": "EET",
+    "Eastern European Summer Time": "EEST",
+    "Greenwich Mean Time": "GMT",
+    "British Summer Time": "BST",
+    "Coordinated Universal Time": "UTC",
+    "Eastern Standard Time": "EST",
+    "Eastern Daylight Time": "EDT",
+    "Central Standard Time": "CST",
+    "Central Daylight Time": "CDT",
+    "Mountain Standard Time": "MST",
+    "Mountain Daylight Time": "MDT",
+    "Pacific Standard Time": "PST",
+    "Pacific Daylight Time": "PDT",
+  };
+  const tzParts = (token: "long" | "short") =>
     new Intl.DateTimeFormat("en-US", {
-      timeZoneName: "short",
+      timeZoneName: token,
       timeZone: userSettings.timeZone,
     })
       .formatToParts(new Date())
       .find((part) => part.type === "timeZoneName")?.value ?? "";
+  const tzLongName = tzParts("long");
+  const tzLabel = tzAbbrByLongName[tzLongName] ?? tzParts("short");
 
   // Update events when the calendar view changes
   const handleDatesSet = useCallback(
@@ -341,10 +365,27 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
           startTime: calendarSettings.workingHours.start,
           endTime: calendarSettings.workingHours.end,
         }}
-        dayHeaderFormat={{
-          weekday: "short",
-          day: "numeric",
-          omitCommas: true,
+        dayHeaderContent={(arg) => {
+          const weekday = new Intl.DateTimeFormat("en-US", {
+            weekday: "short",
+          }).format(arg.date);
+          const day = arg.date.getDate();
+          return (
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="text-[13px] font-medium text-[#9BA1A6]">
+                {weekday}
+              </span>
+              <span
+                className={
+                  arg.isToday
+                    ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-md bg-[var(--accent)] px-1 text-[13px] font-semibold text-white"
+                    : "text-[14px] font-semibold text-[#9BA1A6]"
+                }
+              >
+                {day}
+              </span>
+            </div>
+          );
         }}
         height="100%"
         dateClick={handleSlotClick}

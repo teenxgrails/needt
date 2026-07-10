@@ -314,11 +314,27 @@ export function DayView({ currentDate, onDateClick }: DayViewProps) {
           startTime: calendarSettings.workingHours.start,
           endTime: calendarSettings.workingHours.end,
         }}
-        dayHeaderFormat={{
-          weekday: "long",
-          month: "long",
-          day: "numeric",
-          omitCommas: true,
+        dayHeaderContent={(arg) => {
+          const weekday = new Intl.DateTimeFormat("en-US", {
+            weekday: "short",
+          }).format(arg.date);
+          const day = arg.date.getDate();
+          return (
+            <div className="flex items-center justify-center gap-1.5">
+              <span className="text-[13px] font-medium text-[#9BA1A6]">
+                {weekday}
+              </span>
+              <span
+                className={
+                  arg.isToday
+                    ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-md bg-[var(--accent)] px-1 text-[13px] font-semibold text-white"
+                    : "text-[14px] font-semibold text-[#9BA1A6]"
+                }
+              >
+                {day}
+              </span>
+            </div>
+          );
         }}
         height="100%"
         dateClick={handleSlotClick}
