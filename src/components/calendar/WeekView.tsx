@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   DatesSetArg,
@@ -71,6 +71,15 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
     null
   );
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
+
+  // Timezone abbreviation shown in the top-left axis corner (Motion-style).
+  const tzLabel =
+    new Intl.DateTimeFormat("en-US", {
+      timeZoneName: "short",
+      timeZone: userSettings.timeZone,
+    })
+      .formatToParts(new Date())
+      .find((part) => part.type === "timeZoneName")?.value ?? "";
 
   // Update events when the calendar view changes
   const handleDatesSet = useCallback(
@@ -290,7 +299,10 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
   );
 
   return (
-    <div className="h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-0.5 [&_.fc-timegrid-slot-label]:!py-0.5 [&_.fc-timegrid-slot]:!h-[32px]">
+    <div
+      className="fc-tz-corner h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-0.5 [&_.fc-timegrid-slot-label]:!py-0.5 [&_.fc-timegrid-slot]:!h-[32px]"
+      style={{ "--tz-label": JSON.stringify(tzLabel) } as CSSProperties}
+    >
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
@@ -331,7 +343,6 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
         }}
         dayHeaderFormat={{
           weekday: "short",
-          month: "numeric",
           day: "numeric",
           omitCommas: true,
         }}

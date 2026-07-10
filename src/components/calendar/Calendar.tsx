@@ -3,23 +3,55 @@
 import { useEffect, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { IoChevronBack, IoChevronForward } from "react-icons/io5";
+import {
+  IoAddOutline,
+  IoChevronBack,
+  IoChevronDown,
+  IoChevronForward,
+  IoOptionsOutline,
+  IoRefreshOutline,
+} from "react-icons/io5";
 
 import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { MultiMonthView } from "@/components/calendar/MultiMonthView";
 import { WeekView } from "@/components/calendar/WeekView";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-import { addDays, formatDate, newDate, subDays } from "@/lib/date-utils";
+import { useEventModalStore } from "@/lib/commands/groups/calendar";
+import { addDays, newDate, subDays } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
 import {
   useCalendarStore,
   useViewStore,
 } from "@/store/calendar";
+import { useSettingsStore } from "@/store/settings";
 import { useTaskStore } from "@/store/task";
 
 import { CalendarEvent, CalendarFeed } from "@/types/calendar";
+
+const VIEW_LABELS: Record<string, string> = {
+  day: "Day",
+  week: "Week",
+  month: "Month",
+  multiMonth: "Year",
+};
+
+const VIEW_ORDER: Array<"day" | "week" | "month" | "multiMonth"> = [
+  "day",
+  "week",
+  "month",
+  "multiMonth",
+];
 
 interface CalendarProps {
   initialFeeds?: CalendarFeed[];
@@ -33,8 +65,23 @@ export function Calendar({
   const { date: currentDate, setDate, view, setView } = useViewStore();
   const { scheduleAllTasks } = useTaskStore();
   const { setFeeds, setEvents } = useCalendarStore();
+  const { user: userSettings, calendar: calendarSettings, updateUserSettings, updateCalendarSettings } =
+    useSettingsStore();
+  const eventModalStore = useEventModalStore();
   const prefersReducedMotion = useReducedMotion();
   const [transitionDirection, setTransitionDirection] = useState(0);
+
+  const titleText =
+    view === "day"
+      ? new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }).format(currentDate)
+      : new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          year: "numeric",
+        }).format(currentDate);
 
   // Use initial data from server for hydration
   useEffect(() => {
@@ -93,6 +140,13 @@ export function Calendar({
     setDate(newDate());
   };
 
+  const handleNewEvent = () => {
+    const start = newDate();
+    eventModalStore.setDefaultDate(start);
+    eventModalStore.setDefaultEndDate(new Date(start.getTime() + 30 * 60 * 1000));
+    eventModalStore.setOpen(true);
+  };
+
   return (
     <div className="flex h-full w-full overflow-hidden bg-[#1B1D1E] text-white">
       {/* Main Content */}
@@ -142,57 +196,104 @@ export function Calendar({
               </motion.button>
             </div>
 
-            <h1 className="px-1.5 text-sm font-medium text-white">
-              {formatDate(currentDate)}
+            <h1 className="px-1.5 text-sm font-semibold text-white">
+              {titleText}
             </h1>
           </div>
 
-          {/* View Switching Buttons */}
+          {/* Right-side actions */}
           <div className="ml-auto flex items-center gap-1">
-            <button
-              onClick={() => handleViewChange("day")}
-              className={cn(
-                "rounded-md px-2 py-1 text-[13px] font-medium transition-all",
-                view === "day"
-                  ? "bg-[#2B2F31] text-white"
-                  : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
-              )}
+            {/* Calendar options menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-1.5 rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]"
+                  title="Calendar options"
+                >
+                  <IoOptionsOutline className="h-4 w-4" />
+                  <span className="hidden sm:inline">Calendar options</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Calendar options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuCheckboxItem
+                  checked={userSettings.timeFormat === "24h"}
+                  onCheckedChange={(checked) =>
+                    updateUserSettings({ timeFormat: checked ? "24h" : "12h" })
+                  }
+                >
+                  24-hour time
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={userSettings.weekStartDay === "monday"}
+                  onCheckedChange={(checked) =>
+                    updateUserSettings({
+                      weekStartDay: checked ? "monday" : "sunday",
+                    })
+                  }
+                >
+                  Start week on Monday
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={calendarSettings.workingHours.enabled}
+                  onCheckedChange={(checked) =>
+                    updateCalendarSettings({
+                      workingHours: {
+                        ...calendarSettings.workingHours,
+                        enabled: checked,
+                      },
+                    })
+                  }
+                >
+                  Highlight working hours
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Refresh all tasks (auto-schedule) */}
+            <motion.button
+              whileHover={prefersReducedMotion ? undefined : { y: -1 }}
+              whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+              onClick={handleAutoSchedule}
+              className="flex items-center gap-1.5 rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]"
+              title="Refresh all tasks"
             >
-              Day
-            </button>
-            <button
-              onClick={() => handleViewChange("week")}
-              className={cn(
-                "rounded-md px-2 py-1 text-[13px] font-medium transition-all",
-                view === "week"
-                  ? "bg-[#2B2F31] text-white"
-                  : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
-              )}
+              <IoRefreshOutline className="h-4 w-4" />
+              <span className="hidden md:inline">Refresh all tasks</span>
+            </motion.button>
+
+            {/* New event */}
+            <motion.button
+              whileHover={prefersReducedMotion ? undefined : { y: -1 }}
+              whileTap={prefersReducedMotion ? undefined : { scale: 0.98 }}
+              onClick={handleNewEvent}
+              className="rounded-md border border-[#323234] bg-[#262627] p-1.5 text-white hover:bg-[#2B2F31]"
+              title="New event"
             >
-              Week
-            </button>
-            <button
-              onClick={() => handleViewChange("month")}
-              className={cn(
-                "rounded-md px-2 py-1 text-[13px] font-medium transition-all",
-                view === "month"
-                  ? "bg-[#2B2F31] text-white"
-                  : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
-              )}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => handleViewChange("multiMonth")}
-              className={cn(
-                "rounded-md px-2 py-1 text-[13px] font-medium transition-all",
-                view === "multiMonth"
-                  ? "bg-[#2B2F31] text-white"
-                  : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
-              )}
-            >
-              Year
-            </button>
+              <IoAddOutline className="h-4 w-4" />
+            </motion.button>
+
+            {/* View switcher */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1 rounded-md border border-[#323234] bg-[#262627] px-2 py-1 text-[13px] font-medium text-white hover:bg-[#2B2F31]">
+                  {VIEW_LABELS[view]}
+                  <IoChevronDown className="h-3.5 w-3.5 text-[#9AA0A6]" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-32">
+                {VIEW_ORDER.map((v) => (
+                  <DropdownMenuItem
+                    key={v}
+                    onClick={() => handleViewChange(v)}
+                    className={cn(view === v && "text-[var(--accent)]")}
+                  >
+                    {VIEW_LABELS[v]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
