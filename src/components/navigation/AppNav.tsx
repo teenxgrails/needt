@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { APP_NAME } from "@/lib/app-config";
+import { getOverdueSummary } from "@/lib/overdue";
 import { cn } from "@/lib/utils";
 
 import { useCalendarStore, useViewStore } from "@/store/calendar";
@@ -56,14 +57,7 @@ export function AppNav({ className, onOpenChatOverlay }: AppNavProps) {
     month: "short",
     day: "numeric",
   }).format(new Date());
-  const overdueCount = tasks.filter((task) => {
-    const due = task.dueDate || task.deadline;
-    if (!due || task.status === "completed") return false;
-    const dueTime = new Date(due).getTime();
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999);
-    return dueTime <= endOfToday.getTime();
-  }).length;
+  const overdueSummary = getOverdueSummary(tasks);
 
   const links = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays, meta: todayLabel },
@@ -71,7 +65,8 @@ export function AppNav({ className, onOpenChatOverlay }: AppNavProps) {
       href: "/tasks",
       label: "Projects & Tasks",
       icon: CheckSquare,
-      badge: overdueCount,
+      badge: overdueSummary.count,
+      badgeSeverity: overdueSummary.severity,
     },
     { href: "/focus", label: "Focus", icon: Focus },
   ];
@@ -163,8 +158,10 @@ export function AppNav({ className, onOpenChatOverlay }: AppNavProps) {
                 <span
                   className={cn(
                     "rounded px-1.5 py-0.5 text-[10px] font-semibold max-md:hidden",
-                    (link.badge ?? 0) > 0
+                    (link.badge ?? 0) > 0 && link.badgeSeverity === "red"
                       ? "bg-red-500/20 text-red-200"
+                      : (link.badge ?? 0) > 0
+                        ? "bg-orange-500/20 text-orange-200"
                       : "bg-transparent text-transparent"
                   )}
                 >

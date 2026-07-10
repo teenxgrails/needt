@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+import { getOverdueSummary } from "@/lib/overdue";
 import { cn } from "@/lib/utils";
 
 import { useProjectStore } from "@/store/project";
@@ -297,6 +298,9 @@ function ProjectItem({
     (task) =>
       task.projectId === project.id && task.status !== TaskStatus.COMPLETED
   ).length;
+  const overdueSummary = getOverdueSummary(
+    tasks.filter((task) => task.projectId === project.id)
+  );
 
   // Check if project has any task mappings
   const hasMappings = mappings.length > 0;
@@ -313,13 +317,37 @@ function ProjectItem({
       )}
       onClick={() => setActiveProject(project)}
     >
-      {project.color && (
-        <div
-          className="h-2 w-2 flex-shrink-0 rounded-full"
-          style={{ backgroundColor: project.color }}
-        />
+      <div
+        className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-md text-[11px] font-semibold"
+        style={{
+          backgroundColor: project.color
+            ? `color-mix(in srgb, ${project.color} 22%, var(--raised))`
+            : "var(--active)",
+          color: project.color || "var(--text-lo)",
+        }}
+      >
+        {project.icon || project.name.slice(0, 1).toUpperCase()}
+      </div>
+      <span className="project-name min-w-0 flex-1 truncate">
+        {project.name}
+        {(project.progress ?? 0) > 0 && (
+          <span className="ml-1 text-[10px] text-[var(--text-lo)]">
+            {project.progress ?? 0}%
+          </span>
+        )}
+      </span>
+      {overdueSummary.count > 0 && (
+        <span
+          className={cn(
+            "rounded px-1.5 py-0.5 text-[10px] font-semibold",
+            overdueSummary.severity === "red"
+              ? "bg-red-500/20 text-red-200"
+              : "bg-orange-500/20 text-orange-200"
+          )}
+        >
+          ‼ {overdueSummary.count}
+        </span>
       )}
-      <span className="project-name flex-1 truncate">{project.name}</span>
       <span className="text-xs text-muted-foreground">{taskCount}</span>
 
       {hasMappings && (
