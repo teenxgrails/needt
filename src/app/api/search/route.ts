@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
     prisma.task.findMany({
       where: {
         userId: auth.userId,
-        OR: [{ title: { contains: q } }, { description: { contains: q } }],
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ],
       },
       take: 6,
       orderBy: { updatedAt: "desc" },
@@ -24,7 +27,10 @@ export async function GET(request: NextRequest) {
     prisma.project.findMany({
       where: {
         userId: auth.userId,
-        OR: [{ name: { contains: q } }, { description: { contains: q } }],
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ],
       },
       take: 6,
       orderBy: { updatedAt: "desc" },
@@ -32,7 +38,10 @@ export async function GET(request: NextRequest) {
     prisma.calendarEvent.findMany({
       where: {
         feed: { userId: auth.userId },
-        OR: [{ title: { contains: q } }, { description: { contains: q } }],
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+        ],
       },
       take: 6,
       orderBy: { start: "desc" },
