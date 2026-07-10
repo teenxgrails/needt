@@ -4,6 +4,11 @@ import { motion, useReducedMotion } from "framer-motion";
 import { BsArrowRepeat, BsGoogle, BsMicrosoft, BsTrash } from "react-icons/bs";
 
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/utils";
 
@@ -96,29 +101,41 @@ export function FeedManager() {
                 )}
               </div>
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => handleSyncFeed(feed.id)}
-                  disabled={syncingFeeds.has(feed.id)}
-                  className={cn(
-                    "rounded-md p-1.5 text-[#9AA0A6] hover:text-white",
-                    "hover:bg-[#2B2F31] focus:outline-none focus:ring-2",
-                    "focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
-                    "disabled:opacity-50"
-                  )}
-                >
-                  <BsArrowRepeat
-                    className={cn(
-                      "h-3.5 w-3.5",
-                      syncingFeeds.has(feed.id) && "animate-spin"
-                    )}
-                  />
-                </button>
-                <button
-                  onClick={() => handleRemoveFeed(feed.id)}
-                  className="rounded-md p-1.5 text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-                >
-                  <BsTrash className="h-3.5 w-3.5" />
-                </button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleSyncFeed(feed.id)}
+                      disabled={syncingFeeds.has(feed.id)}
+                      className={cn(
+                        "rounded-md p-1.5 text-[#9AA0A6] hover:text-white",
+                        "hover:bg-[#2B2F31] focus:outline-none focus:ring-2",
+                        "focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
+                        "disabled:opacity-50"
+                      )}
+                      aria-label={`Sync ${feed.name}`}
+                    >
+                      <BsArrowRepeat
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          syncingFeeds.has(feed.id) && "animate-spin"
+                        )}
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Sync calendar</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleRemoveFeed(feed.id)}
+                      className="rounded-md p-1.5 text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-destructive focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+                      aria-label={`Remove ${feed.name}`}
+                    >
+                      <BsTrash className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Remove calendar</TooltipContent>
+                </Tooltip>
               </div>
             </motion.div>
           ))}

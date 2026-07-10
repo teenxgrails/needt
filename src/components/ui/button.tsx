@@ -6,18 +6,19 @@ import { type VariantProps, cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#3E63DD] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "border border-[#3E63DD] bg-[#3E63DD] text-white hover:bg-[#3557c5]",
+        default:
+          "border border-[var(--accent)] bg-[var(--accent)] text-white hover:opacity-90",
         destructive:
           "border border-red-500/40 bg-red-500/15 text-red-100 hover:bg-red-500/25",
         outline:
-          "border border-[#323234] bg-[#262627] text-foreground hover:bg-[#2B2F31]",
+          "border border-[var(--line-strong)] bg-[var(--raised)] text-foreground hover:bg-[var(--active)]",
         secondary:
-          "border border-[#323234] bg-[#262627] text-secondary-foreground hover:bg-[#2B2F31]",
-        ghost: "hover:bg-[#2B2F31] hover:text-foreground",
+          "border border-[var(--line-strong)] bg-[var(--raised)] text-secondary-foreground hover:bg-[var(--active)]",
+        ghost: "hover:bg-[var(--active)] hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

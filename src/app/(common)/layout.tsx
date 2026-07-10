@@ -15,6 +15,7 @@ import { CommandPaletteFab } from "@/components/ui/command-palette-fab";
 import { CommandPaletteHint } from "@/components/ui/command-palette-hint";
 import { ShortcutsModal } from "@/components/ui/shortcuts-modal";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { usePageTitle } from "@/hooks/use-page-title";
 
@@ -55,27 +56,29 @@ export default function RootLayout({
       <SessionProvider>
         <PrivacyProvider>
           <DndProvider>
-            <SetupCheck />
-            <CommandPalette
-              open={commandPaletteOpen}
-              onOpenChange={setCommandPaletteOpen}
-            />
-            <CommandPaletteHint />
-            <CommandPaletteFab />
-            <ShortcutsModal
-              isOpen={shortcutsOpen}
-              onClose={() => setShortcutsOpen(false)}
-            />
-            <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
-            <main className="relative min-w-0 flex-1">
-              <NotificationProvider>{children}</NotificationProvider>
-            </main>
-            <AIChatOverlay
-              open={chatOverlayOpen}
-              onOpenChange={setChatOverlayOpen}
-            />
-            <AIActionCursor />
-            <Toaster />
+            <TooltipProvider delayDuration={400}>
+              <SetupCheck />
+              <CommandPalette
+                open={commandPaletteOpen}
+                onOpenChange={setCommandPaletteOpen}
+              />
+              <CommandPaletteHint />
+              <CommandPaletteFab />
+              <ShortcutsModal
+                isOpen={shortcutsOpen}
+                onClose={() => setShortcutsOpen(false)}
+              />
+              <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
+              <main className="relative min-w-0 flex-1">
+                <NotificationProvider>{children}</NotificationProvider>
+              </main>
+              <AIChatOverlay
+                open={chatOverlayOpen}
+                onOpenChange={setChatOverlayOpen}
+              />
+              <AIActionCursor />
+              <Toaster />
+            </TooltipProvider>
           </DndProvider>
         </PrivacyProvider>
       </SessionProvider>

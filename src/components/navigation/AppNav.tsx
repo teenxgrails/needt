@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { APP_NAME } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
@@ -97,15 +102,19 @@ export function AppNav({ className, onOpenChatOverlay }: AppNavProps) {
             ⌘/
           </kbd>
         </Link>
-        <button
-          type="button"
-          onClick={onOpenChatOverlay}
-          className="grid h-9 w-9 place-items-center rounded-md border border-[var(--line-strong)] bg-[var(--raised)] text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
-          aria-label="Open compact AI chat"
-          title="Open compact AI chat"
-        >
-          <ArrowUpRight className="h-4 w-4" strokeWidth={1.75} />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onOpenChatOverlay}
+              className="grid h-9 w-9 place-items-center rounded-md border border-[var(--line-strong)] bg-[var(--raised)] text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
+              aria-label="Open compact AI chat"
+            >
+              <ArrowUpRight className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>Open compact AI chat</TooltipContent>
+        </Tooltip>
       </div>
 
       <button
@@ -194,26 +203,34 @@ export function AppNav({ className, onOpenChatOverlay }: AppNavProps) {
       <div className="mt-auto flex items-center justify-between gap-1 border-t border-[var(--line-strong)] pt-2">
         <UserMenu />
         <div className="flex items-center gap-1">
-          <Link
-            href="/settings"
-            className={cn(
-              "grid h-8 w-8 place-items-center rounded-md text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]",
-              pathname === "/settings" && "bg-[var(--active)] text-[var(--text-hi)]"
-            )}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <Settings className="h-4 w-4" strokeWidth={1.75} />
-          </Link>
-          <button
-            type="button"
-            onClick={onOpenChatOverlay}
-            className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
-            aria-label="AI Chat"
-            title="AI Chat"
-          >
-            <Sparkles className="h-4 w-4" strokeWidth={1.75} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/settings"
+                className={cn(
+                  "grid h-8 w-8 place-items-center rounded-md text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]",
+                  pathname === "/settings" && "bg-[var(--active)] text-[var(--text-hi)]"
+                )}
+                aria-label="Settings"
+              >
+                <Settings className="h-4 w-4" strokeWidth={1.75} />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>Settings</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onOpenChatOverlay}
+                className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
+                aria-label="AI Chat"
+              >
+                <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>AI Chat</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </aside>
