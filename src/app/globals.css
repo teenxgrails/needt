@@ -588,10 +588,9 @@ html[data-animations="off"] *::after {
    solid current-time line. The guide is created by WeekView and snaps to 15m. */
 .fc-hover-guide {
   position: absolute;
-  /* left/width are set per-move so the guide only spans the hovered day
-     column (sits on top of the cursor) rather than the full week width. */
+  /* Span the whole grid width (all day columns), like Motion. */
+  right: 0;
   left: 0;
-  width: 100%;
   z-index: 4;
   height: 0;
   border-top: 1px dashed #6b7075;

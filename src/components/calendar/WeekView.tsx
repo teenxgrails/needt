@@ -94,24 +94,12 @@ export function WeekView({ currentDate }: WeekViewProps) {
       ) as HTMLElement | null;
       if (!body || !slots) return;
 
-      const bodyRect = body.getBoundingClientRect();
-      const y = event.clientY - bodyRect.top;
+      const y = event.clientY - body.getBoundingClientRect().top;
       const height = slots.offsetHeight;
       if (y < 0 || y > height) {
         line?.style.setProperty("display", "none");
         return;
       }
-
-      // Only draw the guide across the day column under the cursor, so it sits
-      // on top of the cursor instead of stretching the full width of the week.
-      const column = (event.target as HTMLElement | null)?.closest(
-        ".fc-timegrid-col"
-      ) as HTMLElement | null;
-      if (!column) {
-        line?.style.setProperty("display", "none");
-        return;
-      }
-      const columnRect = column.getBoundingClientRect();
 
       if (!line) {
         line = document.createElement("div");
@@ -122,10 +110,10 @@ export function WeekView({ currentDate }: WeekViewProps) {
         body.appendChild(line);
       }
 
+      // The guide spans the whole grid (all day columns), like Motion, and just
+      // follows the cursor's time position.
       const minutes = Math.min(1425, Math.round((y / height) * 96) * 15);
       line.style.top = `${(minutes / 1440) * height}px`;
-      line.style.left = `${columnRect.left - bodyRect.left}px`;
-      line.style.width = `${columnRect.width}px`;
       line.style.display = "block";
       const guideDate = new Date();
       guideDate.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
