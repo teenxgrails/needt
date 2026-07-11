@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   eachDayOfInterval,
@@ -25,6 +25,15 @@ export function MiniCalendar({
   compact = false,
 }: MiniCalendarProps) {
   const [calendarDate, setCalendarDate] = useState(currentDate);
+
+  // Follow the main calendar when its selected date jumps to another month
+  // (e.g. via the calendar arrows), so the mini-calendar stays in sync.
+  useEffect(() => {
+    setCalendarDate((prev) =>
+      isSameMonth(prev, currentDate) ? prev : currentDate
+    );
+  }, [currentDate]);
+
   const monthStart = startOfMonth(calendarDate);
   const monthEnd = endOfMonth(calendarDate);
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -107,10 +116,10 @@ export function MiniCalendar({
             key={day.toISOString()}
             onClick={() => onDateClick?.(day)}
             className={cn(
-              "mx-0.5 flex h-6 items-center justify-center rounded-md text-[11px]",
-              isSameDay(day, currentDate)
-                ? "bg-[var(--accent)] text-white hover:opacity-90"
-                : isToday(day)
+              "mx-0.5 flex h-6 items-center justify-center rounded-md text-[11px] transition-colors",
+              isToday(day)
+                ? "bg-[var(--accent)] font-semibold text-white hover:opacity-90"
+                : isSameDay(day, currentDate)
                   ? "bg-[var(--active)] text-[var(--text-hi)] hover:bg-[var(--active)]"
                   : isSameMonth(day, calendarDate)
                     ? "text-[var(--text-hi)] hover:bg-[var(--active)]"

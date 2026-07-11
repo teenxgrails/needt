@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import {
   Tooltip,
   TooltipContent,
@@ -24,6 +25,7 @@ import {
 import { APP_NAME } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
 
+import { useViewStore } from "@/store/calendar";
 import { useFocusModeStore } from "@/store/focusMode";
 import { useTaskStore } from "@/store/task";
 
@@ -62,6 +64,8 @@ export const AppNav = memo(function AppNav({
   );
   const currentTaskId = useFocusModeStore((state) => state.currentTaskId);
   const isProcessing = useFocusModeStore((state) => state.isProcessing);
+  const currentDate = useViewStore((state) => state.date);
+  const setDate = useViewStore((state) => state.setDate);
   const todayLabel = new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
@@ -144,6 +148,10 @@ export const AppNav = memo(function AppNav({
           ⌘K
         </kbd>
       </button>
+
+      <div className="mb-2 max-md:hidden">
+        <MiniCalendar currentDate={currentDate} onDateClick={setDate} compact />
+      </div>
 
       <nav className="space-y-0.5 text-[13px] max-md:flex max-md:flex-1 max-md:items-center max-md:justify-around max-md:space-y-0">
         {links.map((link) => {
