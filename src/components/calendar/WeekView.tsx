@@ -78,8 +78,8 @@ export function WeekView({ currentDate }: WeekViewProps) {
   );
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
 
-  // This is the subtle dashed guide from Motion. It is deliberately separate
-  // from FullCalendar's now-indicator, which is hidden in the shared CSS.
+  // Motion-style dashed guide line that follows the cursor's time across the
+  // whole grid, separate from FullCalendar's now-indicator (hidden in the CSS).
   useEffect(() => {
     const root = wrapperRef.current;
     if (!root) return;
@@ -110,8 +110,6 @@ export function WeekView({ currentDate }: WeekViewProps) {
         body.appendChild(line);
       }
 
-      // The guide spans the whole grid (all day columns), like Motion, and just
-      // follows the cursor's time position.
       const minutes = Math.min(1425, Math.round((y / height) * 96) * 15);
       line.style.top = `${(minutes / 1440) * height}px`;
       line.style.display = "block";

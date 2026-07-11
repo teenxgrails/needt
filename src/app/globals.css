@@ -584,11 +584,19 @@ html[data-animations="off"] *::after {
   border-top-style: none !important;
 }
 
-/* Keep the Motion-style dashed cursor guide while suppressing FullCalendar's
-   solid current-time line. The guide is created by WeekView and snaps to 15m. */
+/* FullCalendar's timegrid is built from <table> rows, so the app-wide
+   `table tbody tr:hover` highlight bled through as a wide band across the
+   whole hovered hour. Suppress it inside the calendar - the dashed cursor
+   guide is the only hover affordance we want here. */
+.fc table tbody tr:hover,
+.fc tbody tr:hover {
+  background: transparent !important;
+}
+
+/* Motion-style dashed cursor guide (created by WeekView, snaps to 15m). It
+   spans the full grid width and follows the cursor's time. */
 .fc-hover-guide {
   position: absolute;
-  /* Span the whole grid width (all day columns), like Motion. */
   right: 0;
   left: 0;
   z-index: 4;

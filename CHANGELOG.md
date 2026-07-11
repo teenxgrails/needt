@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Removed the wide highlighted band that appeared across the whole hovered hour in the calendar (the app-wide `table tbody tr:hover` highlight was bleeding into FullCalendar's timegrid rows); the thin Motion-style dashed cursor guide is now the only hover affordance
 - The dashed cursor guide in week view spans the full grid width (all day columns) and shows consistently over working hours, non-working hours, and every day, matching Motion
 - Restored the calendar grid lines (hourly rows and day-column separators at `#2B2F31`, half-hour lines hidden) and added Motion-style column shading: the current-day column stays flat `#202425`, while other days show a two-step tint — working hours `#24282A`, non-working hours `#282C2E`
 
