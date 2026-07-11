@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 
 import { isSaasEnabled } from "@/lib/config";
 
+import { useDurationMemoryStore } from "@/store/durationMemory";
+
 import {
   NewTag,
   NewTask,
@@ -97,6 +99,17 @@ export const useTaskStore = create<TaskState>()(
       createTask: async (task: NewTask) => {
         set({ loading: true, error: null });
         try {
+          // Prefill a learned duration for similar tasks when none was set,
+          // so new tasks are auto-created with a familiar time budget.
+          if (task.duration == null && task.title) {
+            const learned = useDurationMemoryStore
+              .getState()
+              .recall(task.title);
+            if (learned) {
+              task = { ...task, duration: learned };
+            }
+          }
+
           const response = await fetch("/api/tasks", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

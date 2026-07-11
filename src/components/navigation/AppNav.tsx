@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
+import { TodaysTasksPanel } from "@/components/tasks/TodaysTasksPanel";
 import {
   Tooltip,
   TooltipContent,
@@ -168,6 +169,8 @@ export const AppNav = memo(function AppNav({
           );
         })}
       </nav>
+
+      <TodaysTasksPanel className="mt-3 min-h-0 flex-1 max-md:hidden" />
 
       <div className="mt-auto max-md:hidden">
         <Link

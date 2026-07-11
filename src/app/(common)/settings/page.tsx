@@ -7,6 +7,7 @@ import {
   Brain,
   CalendarDays,
   CalendarRange,
+  CircleDot,
   Download,
   ListChecks,
   Palette,
@@ -30,6 +31,7 @@ import { NotificationSettings } from "@/components/settings/NotificationSettings
 import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSettings";
 import { SystemSettings } from "@/components/settings/SystemSettings";
 import { TaskSyncSettings } from "@/components/settings/TaskSyncSettings";
+import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
 
 import { cn } from "@/lib/utils";
@@ -49,6 +51,7 @@ type SettingsTab =
   | "customization"
   | "system"
   | "task-sync"
+  | "task-urgency"
   | "logs"
   | "import-export"
   | "notifications";
@@ -68,6 +71,7 @@ export default function SettingsPage() {
       { id: "calendar", label: "Calendars / Apple-iCloud", icon: CalendarDays },
       { id: "auto-schedule", label: "Auto-scheduling", icon: CalendarRange },
       { id: "task-sync", label: "Task defaults", icon: ListChecks },
+      { id: "task-urgency", label: "Task urgency", icon: CircleDot },
       { id: "user", label: "Theme", icon: Palette },
       { id: "customization", label: "Customization", icon: SlidersHorizontal },
       { id: "notifications", label: "Notifications", icon: Bell },
@@ -109,6 +113,7 @@ export default function SettingsPage() {
         "connectors",
         "customization",
         "task-sync",
+        "task-urgency",
         "system",
         "logs",
         "import-export",
@@ -184,6 +189,8 @@ export default function SettingsPage() {
         return <CustomizationSettings />;
       case "task-sync":
         return <TaskSyncSettings />;
+      case "task-urgency":
+        return <TaskUrgencySettings />;
       case "notifications":
         return <NotificationSettings />;
       case "system":
