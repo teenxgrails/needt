@@ -63,6 +63,7 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
     }>
   >([]);
   const calendarRef = useRef<FullCalendar>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const [quickViewItem, setQuickViewItem] = useState<CalendarEvent | Task>();
   const [isTask, setIsTask] = useState(false);
@@ -165,6 +166,71 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
       useTaskStore.getState().fetchTasks(),
     ]);
   }, []);
+
+  // Motion-style hover guide line: a dashed line that follows the cursor,
+  // snapped to 15-minute increments, with a small time label.
+  useEffect(() => {
+    const root = wrapperRef.current;
+    if (!root) return;
+    let line: HTMLDivElement | null = null;
+
+    const ensureLine = (body: HTMLElement) => {
+      if (line && line.isConnected) return line;
+      line = document.createElement("div");
+      line.style.cssText =
+        "position:absolute;left:0;right:0;height:0;border-top:1px dashed #6b7075;pointer-events:none;opacity:0;z-index:4;";
+      const label = document.createElement("span");
+      label.style.cssText =
+        "position:absolute;left:6px;top:-8px;font-size:10px;line-height:1;padding:1px 4px;border-radius:4px;background:#1b1d1e;color:#c7ccd1;white-space:nowrap;";
+      line.appendChild(label);
+      body.appendChild(line);
+      return line;
+    };
+
+    const onMove = (e: MouseEvent) => {
+      const body = root.querySelector(
+        ".fc-timegrid-body"
+      ) as HTMLElement | null;
+      const slots = root.querySelector(
+        ".fc-timegrid-slots"
+      ) as HTMLElement | null;
+      if (!body || !slots) return;
+      const rect = body.getBoundingClientRect();
+      const h = slots.offsetHeight;
+      const y = e.clientY - rect.top;
+      const l = ensureLine(body);
+      if (y < 0 || y > h) {
+        l.style.opacity = "0";
+        return;
+      }
+      let mins = Math.round(((y / h) * 1440) / 15) * 15;
+      if (mins >= 1440) mins = 1425;
+      l.style.top = `${(mins / 1440) * h}px`;
+      l.style.opacity = "1";
+      const d = new Date();
+      d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+      (l.firstChild as HTMLElement).textContent = new Intl.DateTimeFormat(
+        "en-US",
+        {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: userSettings.timeFormat === "12h",
+        }
+      ).format(d);
+    };
+
+    const onLeave = () => {
+      if (line) line.style.opacity = "0";
+    };
+
+    root.addEventListener("mousemove", onMove);
+    root.addEventListener("mouseleave", onLeave);
+    return () => {
+      root.removeEventListener("mousemove", onMove);
+      root.removeEventListener("mouseleave", onLeave);
+      if (line && line.parentNode) line.parentNode.removeChild(line);
+    };
+  }, [userSettings.timeFormat]);
 
   // Update items when loading state changes, feeds change, or tasks change
   useEffect(() => {
@@ -324,6 +390,7 @@ export function WeekView({ currentDate, onDateClick }: WeekViewProps) {
 
   return (
     <div
+      ref={wrapperRef}
       className="fc-tz-corner h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-0.5 [&_.fc-timegrid-slot-label]:!py-0.5 [&_.fc-timegrid-slot]:!h-[32px]"
       style={{ "--tz-label": JSON.stringify(tzLabel) } as CSSProperties}
     >

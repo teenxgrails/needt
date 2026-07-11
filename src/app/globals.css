@@ -460,17 +460,47 @@ html[data-animations="off"] *::after {
 }
 
 .fc .fc-timegrid-now-indicator-line {
-  border-color: var(--accent) !important;
+  border-color: #ffffff !important;
   border-width: 1px !important;
   box-shadow: none;
 }
 
+/* White dot at the left end of the now-indicator (Motion-style) */
+.fc .fc-timegrid-now-indicator-line::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #ffffff;
+}
+
+/* Hide FullCalendar's default triangle arrow on the axis */
 .fc .fc-timegrid-now-indicator-arrow {
-  border-color: var(--accent) !important;
+  display: none !important;
+}
+
+/* Grid background system (Motion-like):
+   - non-working hours = base #1B1D1E
+   - working hours     = slightly darker band
+   - today column      = a touch darker with stronger separators */
+.fc .fc-timegrid-col-frame {
+  background: #17191a;
+}
+
+.fc .fc-non-business {
+  background: #1b1d1e !important;
 }
 
 .fc .fc-day-today {
-  background: var(--active) !important;
+  background: #141617 !important;
+}
+
+.fc .fc-timegrid-col.fc-day-today {
+  border-left: 1px solid #2c2e30 !important;
+  border-right: 1px solid #2c2e30 !important;
 }
 
 .fc .fc-day-today .fc-daygrid-day-number {
@@ -497,7 +527,22 @@ html[data-animations="off"] *::after {
 
 .fc .fc-col-header-cell {
   border-color: var(--line-strong) !important;
-  background: var(--raised) !important;
+  background: #1b1d1e !important;
+}
+
+/* All-day row: flat #1B1D1E, no divider tint, and hide the "all-day" label */
+.fc .fc-timegrid-axis-cushion {
+  font-size: 0 !important;
+}
+
+.fc .fc-scrollgrid-section-header > td,
+.fc .fc-timegrid-divider,
+.fc .fc-daygrid-body {
+  background: #1b1d1e !important;
+}
+
+.fc .fc-timegrid-divider {
+  border-color: #1b1d1e !important;
 }
 
 .fc .fc-col-header-cell-cushion {
@@ -524,23 +569,15 @@ html[data-animations="off"] *::after {
   pointer-events: none;
 }
 
-.fc .fc-timegrid-col-frame {
-  background: transparent;
-}
-
 /* Motion shows only hourly lines - hide the half-hour (minor) slot border */
 .fc .fc-timegrid-slot-minor {
   border-top-style: none !important;
 }
 
-.fc .fc-non-business {
-  background: color-mix(in srgb, var(--raised) 34%, transparent) !important;
-}
-
 .fc .fc-non-business:hover,
 .fc .fc-timegrid-col-bg .fc-non-business:hover,
 .fc .fc-bg-event:hover {
-  background: color-mix(in srgb, var(--raised) 44%, transparent) !important;
+  background: #1b1d1e !important;
   filter: none !important;
 }
 
