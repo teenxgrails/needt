@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Moved the AI Chat button from the top of the sidebar to the bottom-left, just above the profile/settings row (keeps the pill styling and ⌘/ label)
+- Made switching between app sections instant: the calendar route no longer blocks on a server-side query of every event on each navigation. It now renders as a static, prefetched route and hydrates from the persistent in-memory calendar store, revalidating in the background — so revisiting the calendar shows cached data immediately with no spinner or flash
 
 ### Fixed
 
