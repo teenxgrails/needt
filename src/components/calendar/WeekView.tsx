@@ -72,6 +72,55 @@ export function WeekView({ currentDate }: WeekViewProps) {
   );
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
 
+  // This is the subtle dashed guide from Motion. It is deliberately separate
+  // from FullCalendar's now-indicator, which is hidden in the shared CSS.
+  useEffect(() => {
+    const root = wrapperRef.current;
+    if (!root) return;
+    let line: HTMLDivElement | null = null;
+
+    const onMove = (event: MouseEvent) => {
+      const body = root.querySelector(".fc-timegrid-body") as HTMLElement | null;
+      const slots = root.querySelector(".fc-timegrid-slots") as HTMLElement | null;
+      if (!body || !slots) return;
+
+      const y = event.clientY - body.getBoundingClientRect().top;
+      const height = slots.offsetHeight;
+      if (y < 0 || y > height) {
+        line?.style.setProperty("display", "none");
+        return;
+      }
+
+      if (!line) {
+        line = document.createElement("div");
+        line.className = "fc-hover-guide";
+        const label = document.createElement("span");
+        label.className = "fc-hover-guide__label";
+        line.appendChild(label);
+        body.appendChild(line);
+      }
+
+      const minutes = Math.min(1425, Math.round((y / height) * 96) * 15);
+      line.style.top = `${(minutes / 1440) * height}px`;
+      line.style.display = "block";
+      const guideDate = new Date();
+      guideDate.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+      (line.firstElementChild as HTMLElement).textContent = new Intl.DateTimeFormat(
+        "en-US",
+        { hour: "numeric", minute: "2-digit", hour12: userSettings.timeFormat === "12h" }
+      ).format(guideDate);
+    };
+
+    const onLeave = () => line?.style.setProperty("display", "none");
+    root.addEventListener("mousemove", onMove);
+    root.addEventListener("mouseleave", onLeave);
+    return () => {
+      root.removeEventListener("mousemove", onMove);
+      root.removeEventListener("mouseleave", onLeave);
+      line?.remove();
+    };
+  }, [userSettings.timeFormat]);
+
   // Timezone abbreviation shown in the top-left axis corner (Motion-style).
   // Intl's "short" token returns "GMT+2" for most zones, so map the long,
   // descriptive name to a familiar abbreviation (CEST, EST, ...) and fall back

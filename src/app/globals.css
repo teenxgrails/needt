@@ -459,25 +459,7 @@ html[data-animations="off"] *::after {
   @apply text-xs opacity-90;
 }
 
-.fc .fc-timegrid-now-indicator-line {
-  border-color: #ffffff !important;
-  border-width: 1px !important;
-  box-shadow: none;
-}
-
-/* White dot at the left end of the now-indicator (Motion-style) */
-.fc .fc-timegrid-now-indicator-line::before {
-  content: "";
-  position: absolute;
-  left: -4px;
-  top: -4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: #ffffff;
-}
-
-/* Hide FullCalendar's default triangle arrow on the axis */
+.fc .fc-timegrid-now-indicator-line,
 .fc .fc-timegrid-now-indicator-arrow {
   display: none !important;
 }
@@ -571,6 +553,44 @@ html[data-animations="off"] *::after {
 /* Motion shows only hourly lines - hide the half-hour (minor) slot border */
 .fc .fc-timegrid-slot-minor {
   border-top-style: none !important;
+}
+
+/* Keep the Motion-style dashed cursor guide while suppressing FullCalendar's
+   solid current-time line. The guide is created by WeekView and snaps to 15m. */
+.fc-hover-guide {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 4;
+  height: 0;
+  border-top: 1px dashed #6b7075;
+  pointer-events: none;
+}
+
+.fc-hover-guide__label {
+  position: absolute;
+  top: -8px;
+  left: 6px;
+  border-radius: 4px;
+  background: #1b1d1e;
+  padding: 1px 4px;
+  color: #c7ccd1;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* The timezone and hour gutter are labels, not boxed calendar columns. */
+.fc .fc-timegrid-axis,
+.fc .fc-timegrid-slot-label {
+  border-right: 0 !important;
+  border-left: 0 !important;
+  border-top-color: transparent !important;
+}
+
+.fc .fc-timegrid-axis-frame,
+.fc .fc-timegrid-slot-label-frame {
+  border: 0 !important;
 }
 
 .fc .fc-non-business:hover,

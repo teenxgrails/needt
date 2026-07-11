@@ -230,7 +230,7 @@ export default function SettingsPage() {
                             setActiveTab(tab.id as SettingsTab);
                           }}
                           className={cn(
-                            "flex h-[30px] w-full items-center rounded-[2px] px-2.5 text-[14px] font-normal leading-[21px] transition-colors duration-150 ease-out",
+                            "flex h-[32px] w-full items-center gap-2.5 rounded-[4px] px-2.5 text-[14px] font-medium leading-[21px] transition-colors duration-150 ease-out",
                             activeTab === tab.id
                               ? "bg-[#2B2F31] text-white"
                               : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
@@ -267,7 +267,7 @@ export default function SettingsPage() {
                             setActiveTab(tab.id as SettingsTab);
                           }}
                           className={cn(
-                            "flex h-[30px] w-full items-center rounded-[2px] px-2.5 text-[14px] font-normal leading-[21px] transition-colors duration-150 ease-out",
+                            "flex h-[32px] w-full items-center gap-2.5 rounded-[4px] px-2.5 text-[14px] font-medium leading-[21px] transition-colors duration-150 ease-out",
                             activeTab === tab.id
                               ? "bg-[#2B2F31] text-white"
                               : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
