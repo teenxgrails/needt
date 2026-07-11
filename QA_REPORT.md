@@ -170,3 +170,15 @@ Date: 2026-07-11
 - PASS: `pnpm test:unit`: 40 suites passed, 1 skipped; 282 tests passed, 1 skipped.
 - PASS: `pnpm build` completed successfully. Static collection emitted the existing intermittent configured-Neon unreachable warnings but exited 0.
 - BLOCKED: Chrome local authentication with the supplied test account did not complete because the development server could not reach the configured Neon database; production Chrome remained authenticated and was used for the live comparison. No credential or account data was changed.
+
+## Motion Parity - Settings Shell
+
+Date: 2026-07-11
+
+- MEASURED IN CHROME: Motion settings replaces the regular product rail with a 244px settings rail. Main content starts at x=278 (34px inner gutter), headings are 18px/600/28px, category labels are 13px/500 `rgb(105, 113, 119)`, and selected settings items are 30px high with a 2px radius, 10px left padding, and `rgb(43, 47, 49)` background.
+- FIXED: Flowday now uses that settings-only rail, measured content gutter, title size, category/item density, selected state, and 150ms color-only hover treatment. Existing settings panels remain wired to their original stores and APIs.
+- FIXED: Shared settings sections are flat content groups with Motion-like dividers rather than nested raised cards.
+- PASS: `pnpm tsc --noEmit`.
+- PASS: `pnpm test:unit`: 40 suites passed, 1 skipped; 282 tests passed, 1 skipped.
+- PASS: `pnpm build` completed successfully with the existing intermittent configured-Neon unreachable warnings during static collection.
+- BLOCKED: After the build, Chrome rejected the local settings navigation with a client-side localhost block; the signed-in production Flowday tab was used for its before-state and Motion was used for all measured target values.

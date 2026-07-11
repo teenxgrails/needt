@@ -59,6 +59,12 @@ export function AppNav({ className, onOpenChatOverlay }: AppNavProps) {
   }).format(new Date());
   const overdueSummary = getOverdueSummary(tasks);
 
+  // Motion swaps its product rail for the settings rail on settings pages.
+  // Keeping both creates an unnecessary second navigation column.
+  if (pathname.startsWith("/settings")) {
+    return null;
+  }
+
   const links = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays, meta: todayLabel },
     {

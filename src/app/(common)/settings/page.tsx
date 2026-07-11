@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { motion, useReducedMotion } from "framer-motion";
-
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { AccountManager } from "@/components/settings/AccountManager";
 import { AutoScheduleSettings } from "@/components/settings/AutoScheduleSettings";
@@ -41,7 +39,6 @@ type SettingsTab =
 
 export default function SettingsPage() {
   const [isHydrated, setIsHydrated] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
   const { isAdmin, isLoading: isAdminLoading } = useAdmin();
   const { initializeSettings } = useSettingsStore();
 
@@ -185,112 +182,86 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-full bg-[#1A1D1E] px-3 py-4 text-white sm:px-5">
-      <div className="mx-auto flex max-w-[1120px] flex-col gap-4 lg:flex-row">
-        <aside className="lg:w-[230px] lg:flex-none">
-          <div className="sticky top-20 rounded-md border border-[#323234] bg-[#262627] p-2">
+    <div className="min-h-screen bg-[#1A1D1E] text-white">
+      <div className="flex min-h-screen flex-col lg:flex-row">
+        <aside className="border-b border-[#2B2F31] lg:w-[244px] lg:flex-none lg:border-b-0 lg:border-r">
+          <div className="sticky top-0 p-2">
             <a
               href="/calendar"
-              className="mb-3 flex rounded-md px-3 py-2 text-sm text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
+              className="mb-2 flex h-[30px] items-center rounded-[2px] px-2.5 text-[13px] text-[#9BA1A6] transition-colors duration-150 ease-out hover:bg-[#2B2F31] hover:text-white"
             >
-              ← Back
+              Back to Flowday
             </a>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <div className="px-3 pb-1 text-xs font-medium uppercase text-[#9AA0A6]">
+                <div className="ml-2 pb-1 text-[13px] font-medium leading-[17px] text-[#697177]">
                   General
                 </div>
-                <nav className="space-y-1">
+                <nav className="space-y-0.5">
                   {tabs
                     .filter(
                       (tab) => !["accounts", "system", "logs"].includes(tab.id)
                     )
                     .map((tab) => (
-                      <motion.a
+                      <a
                         key={tab.id}
                         href={`#${tab.id}`}
-                        initial={
-                          prefersReducedMotion ? false : { opacity: 0, y: 4 }
-                        }
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: prefersReducedMotion ? 0 : 0.16,
-                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           setActiveTab(tab.id as SettingsTab);
                         }}
                         className={cn(
-                          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                          !isHydrated && "duration-0",
+                          "flex h-[30px] w-full items-center rounded-[2px] px-2.5 text-[14px] font-normal leading-[21px] transition-colors duration-150 ease-out",
                           activeTab === tab.id
                             ? "bg-[#2B2F31] text-white"
                             : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
                         )}
                       >
                         {tab.label}
-                      </motion.a>
+                      </a>
                     ))}
                 </nav>
               </div>
               <div>
-                <div className="px-3 pb-1 text-xs font-medium uppercase text-[#9AA0A6]">
+                <div className="ml-2 pb-1 text-[13px] font-medium leading-[17px] text-[#697177]">
                   Account
                 </div>
-                <nav className="space-y-1">
+                <nav className="space-y-0.5">
                   {tabs
                     .filter((tab) =>
                       ["accounts", "system", "logs"].includes(tab.id)
                     )
                     .map((tab) => (
-                      <motion.a
+                      <a
                         key={tab.id}
                         href={`#${tab.id}`}
-                        initial={
-                          prefersReducedMotion ? false : { opacity: 0, y: 4 }
-                        }
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: prefersReducedMotion ? 0 : 0.16,
-                        }}
                         onClick={(e) => {
                           e.preventDefault();
                           setActiveTab(tab.id as SettingsTab);
                         }}
                         className={cn(
-                          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                          !isHydrated && "duration-0",
+                          "flex h-[30px] w-full items-center rounded-[2px] px-2.5 text-[14px] font-normal leading-[21px] transition-colors duration-150 ease-out",
                           activeTab === tab.id
                             ? "bg-[#2B2F31] text-white"
                             : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
                         )}
                       >
                         {tab.label}
-                      </motion.a>
+                      </a>
                     ))}
                 </nav>
               </div>
             </div>
           </div>
         </aside>
-        <div className="min-w-0 flex-1 lg:max-w-[820px]">
+        <div className="min-w-0 flex-1 px-5 py-3 sm:px-[34px]">
           <div className={cn("space-y-6", !isHydrated && "opacity-0")}>
             <div>
-              <h1 className="text-xl font-semibold">
+              <h1 className="text-lg font-semibold leading-7">
                 {tabs.find((tab) => tab.id === activeTab)?.label ?? "Settings"}
               </h1>
-              <p className="mt-1 text-sm text-[#9AA0A6]">
-                Configure Flowday without leaving the planner flow.
-              </p>
             </div>
-            <motion.div
-              key={activeTab}
-              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
-            >
-              {renderContent()}
-            </motion.div>
+            <div key={activeTab}>{renderContent()}</div>
           </div>
         </div>
       </div>
