@@ -528,7 +528,7 @@ html[data-animations="off"] *::after {
 }
 
 .fc .fc-col-header-cell {
-  background: #1B1D1E !important;
+  background: #1b1d1e !important;
   height: 44px;
 }
 
@@ -540,7 +540,7 @@ html[data-animations="off"] *::after {
 .fc .fc-scrollgrid-section-header > td,
 .fc .fc-timegrid-divider,
 .fc .fc-daygrid-body {
-  background: #1B1D1E !important;
+  background: #1b1d1e !important;
 }
 
 .fc .fc-timegrid-divider {
@@ -588,8 +588,10 @@ html[data-animations="off"] *::after {
    solid current-time line. The guide is created by WeekView and snaps to 15m. */
 .fc-hover-guide {
   position: absolute;
-  right: 0;
+  /* left/width are set per-move so the guide only spans the hovered day
+     column (sits on top of the cursor) rather than the full week width. */
   left: 0;
+  width: 100%;
   z-index: 4;
   height: 0;
   border-top: 1px dashed #6b7075;
@@ -634,7 +636,7 @@ html[data-animations="off"] *::after {
 
 /* Uniform Flowday canvas behind columns, gutter and gaps. */
 .fc .fc-view-harness {
-  background: #1B1D1E;
+  background: #1b1d1e;
 }
 
 .fc .fc-timegrid-col:hover,
@@ -706,7 +708,7 @@ html[data-animations="off"] *::after {
 }
 
 .dark .fc .fc-col-header-cell {
-  background: #1B1D1E;
+  background: #1b1d1e;
   border-color: var(--fc-border-color);
 }
 
@@ -726,7 +728,9 @@ html[data-animations="off"] *::after {
   border-radius: 8px;
   border: 1px solid #313538;
   background: #26292b;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 10%), 0 4px 6px -4px rgb(0 0 0 / 10%);
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 10%),
+    0 4px 6px -4px rgb(0 0 0 / 10%);
 }
 
 [cmdk-input] {
@@ -764,7 +768,9 @@ html[data-animations="off"] *::after {
   color: hsl(var(--foreground));
   user-select: none;
   will-change: background, color;
-  transition: background-color 150ms ease-out, color 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
 }
 
 [cmdk-item][aria-selected="true"] {

@@ -1,4 +1,10 @@
-import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import type {
   DatesSetArg,
@@ -80,16 +86,32 @@ export function WeekView({ currentDate }: WeekViewProps) {
     let line: HTMLDivElement | null = null;
 
     const onMove = (event: MouseEvent) => {
-      const body = root.querySelector(".fc-timegrid-body") as HTMLElement | null;
-      const slots = root.querySelector(".fc-timegrid-slots") as HTMLElement | null;
+      const body = root.querySelector(
+        ".fc-timegrid-body"
+      ) as HTMLElement | null;
+      const slots = root.querySelector(
+        ".fc-timegrid-slots"
+      ) as HTMLElement | null;
       if (!body || !slots) return;
 
-      const y = event.clientY - body.getBoundingClientRect().top;
+      const bodyRect = body.getBoundingClientRect();
+      const y = event.clientY - bodyRect.top;
       const height = slots.offsetHeight;
       if (y < 0 || y > height) {
         line?.style.setProperty("display", "none");
         return;
       }
+
+      // Only draw the guide across the day column under the cursor, so it sits
+      // on top of the cursor instead of stretching the full width of the week.
+      const column = (event.target as HTMLElement | null)?.closest(
+        ".fc-timegrid-col"
+      ) as HTMLElement | null;
+      if (!column) {
+        line?.style.setProperty("display", "none");
+        return;
+      }
+      const columnRect = column.getBoundingClientRect();
 
       if (!line) {
         line = document.createElement("div");
@@ -102,13 +124,17 @@ export function WeekView({ currentDate }: WeekViewProps) {
 
       const minutes = Math.min(1425, Math.round((y / height) * 96) * 15);
       line.style.top = `${(minutes / 1440) * height}px`;
+      line.style.left = `${columnRect.left - bodyRect.left}px`;
+      line.style.width = `${columnRect.width}px`;
       line.style.display = "block";
       const guideDate = new Date();
       guideDate.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-      (line.firstElementChild as HTMLElement).textContent = new Intl.DateTimeFormat(
-        "en-US",
-        { hour: "numeric", minute: "2-digit", hour12: userSettings.timeFormat === "12h" }
-      ).format(guideDate);
+      (line.firstElementChild as HTMLElement).textContent =
+        new Intl.DateTimeFormat("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: userSettings.timeFormat === "12h",
+        }).format(guideDate);
     };
 
     const onLeave = () => line?.style.setProperty("display", "none");

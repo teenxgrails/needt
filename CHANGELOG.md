@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The dashed cursor guide in week view now spans only the day column under the cursor instead of stretching the full width of the week
 - Restored the calendar grid lines (hourly rows and day-column separators at `#2B2F31`, half-hour lines hidden) and added Motion-style column shading: the current-day column stays flat `#202425`, while other days show a two-step tint — working hours `#24282A`, non-working hours `#282C2E`
 
 ### Changed
