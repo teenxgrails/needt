@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import Link from "next/link";
+
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Settings } from "lucide-react";
 import {
   IoAddOutline,
   IoChevronBack,
@@ -20,13 +23,23 @@ import { WeekView } from "@/components/calendar/WeekView";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 import { useEventModalStore } from "@/lib/commands/groups/calendar";
 import { addDays, newDate, subDays } from "@/lib/date-utils";
@@ -208,9 +221,9 @@ export function Calendar({
 
           {/* Right-side actions */}
           <div className="ml-auto flex items-center gap-1">
-            {/* Calendar options menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            {/* Calendar options panel (Motion-style) */}
+            <Popover>
+              <PopoverTrigger asChild>
                 <button
                   className="flex h-[25px] items-center gap-1.5 rounded-md border border-[#3A3F42] bg-[#313538] px-1.5 py-[3px] text-[13px] font-medium leading-[17px] text-white transition-colors duration-150 ease-out hover:bg-[#383D40]"
                   title="Calendar options"
@@ -218,43 +231,86 @@ export function Calendar({
                   <IoOptionsOutline className="h-4 w-4" />
                   <span className="hidden sm:inline">Calendar options</span>
                 </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Calendar options</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuCheckboxItem
-                  checked={userSettings.timeFormat === "24h"}
-                  onCheckedChange={(checked) =>
-                    updateUserSettings({ timeFormat: checked ? "24h" : "12h" })
-                  }
+              </PopoverTrigger>
+              <PopoverContent
+                align="end"
+                className="w-72 bg-[var(--raised)] p-4 text-[var(--text-hi)]"
+              >
+                <h3 className="mb-3 text-[15px] font-semibold">Calendar</h3>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[13px] text-[var(--text-lo)]">
+                      Start week on
+                    </span>
+                    <Select
+                      value={userSettings.weekStartDay}
+                      onValueChange={(value) =>
+                        updateUserSettings({
+                          weekStartDay: value as "monday" | "sunday",
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monday">Monday</SelectItem>
+                        <SelectItem value="sunday">Sunday</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[13px] text-[var(--text-lo)]">
+                      24-hour time
+                    </span>
+                    <Switch
+                      checked={userSettings.timeFormat === "24h"}
+                      onCheckedChange={(checked) =>
+                        updateUserSettings({
+                          timeFormat: checked ? "24h" : "12h",
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[13px] text-[var(--text-lo)]">
+                      Highlight working hours
+                    </span>
+                    <Switch
+                      checked={calendarSettings.workingHours.enabled}
+                      onCheckedChange={(checked) =>
+                        updateCalendarSettings({
+                          workingHours: {
+                            ...calendarSettings.workingHours,
+                            enabled: checked,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="my-3 h-px bg-[var(--line-strong)]" />
+
+                <Link
+                  href="/settings#auto-schedule"
+                  className="flex items-center justify-center gap-2 rounded-md py-1.5 text-[13px] text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
                 >
-                  24-hour time
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={userSettings.weekStartDay === "monday"}
-                  onCheckedChange={(checked) =>
-                    updateUserSettings({
-                      weekStartDay: checked ? "monday" : "sunday",
-                    })
-                  }
+                  Auto-scheduling settings
+                  <Settings className="h-3.5 w-3.5" />
+                </Link>
+                <Link
+                  href="/settings#calendar"
+                  className="flex items-center justify-center gap-2 rounded-md py-1.5 text-[13px] text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
                 >
-                  Start week on Monday
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={calendarSettings.workingHours.enabled}
-                  onCheckedChange={(checked) =>
-                    updateCalendarSettings({
-                      workingHours: {
-                        ...calendarSettings.workingHours,
-                        enabled: checked,
-                      },
-                    })
-                  }
-                >
-                  Highlight working hours
-                </DropdownMenuCheckboxItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  Calendar settings
+                  <Settings className="h-3.5 w-3.5" />
+                </Link>
+              </PopoverContent>
+            </Popover>
 
             {/* Refresh all tasks (auto-schedule) */}
             <button
