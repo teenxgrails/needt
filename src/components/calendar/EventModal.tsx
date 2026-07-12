@@ -387,18 +387,23 @@ export function EventModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="flex max-h-[90vh] max-w-[614px] flex-col gap-0 p-0">
+        <DialogContent className="flex h-[min(760px,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden border-[#3A3F42] bg-[#202425] p-0 text-[#F2F2F2] sm:max-w-[980px]">
           {isSubmitting && <LoadingOverlay />}
-          <DialogHeader className="space-y-1.5 rounded-t-lg border-t-4 border-[var(--accent)] bg-[#262626] px-6 pb-4 pt-5">
-            <DialogTitle className="text-lg font-normal leading-8">
-              {event?.id ? "Edit Event" : "New Event"}
+          <DialogHeader className="flex-row items-center space-y-0 border-b border-[#2B2F31] px-5 py-3.5 pr-14">
+            <DialogTitle className="flex items-center gap-3 text-base font-medium">
+              <span className="rounded-md border border-[#3A3F42] bg-[#1B1D1E] px-2.5 py-1 text-xs font-medium text-[#9BA1A6]">
+                Event
+              </span>
+              {event?.id ? "Edit event" : "Create event"}
             </DialogTitle>
           </DialogHeader>
 
           <form
             onSubmit={handleSubmit}
-            className="space-y-4 overflow-y-auto bg-[#26292B] px-6 pb-6 pt-5"
+            className="flex min-h-0 flex-1 flex-col"
           >
+            <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_340px]">
+              <div className="space-y-4 p-5">
             <div className="space-y-2">
               <Label htmlFor="title">Title</Label>
               <Input
@@ -502,6 +507,39 @@ export function EventModal({
               </Label>
             </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="recurrence">Repeat</Label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="recurring"
+                    checked={isRecurring}
+                    onCheckedChange={(checked) => {
+                      const isChecked = checked as boolean;
+                      setIsRecurring(isChecked);
+                      if (
+                        isChecked &&
+                        (recurrenceFreq === FREQUENCIES.NONE || !recurrenceFreq)
+                      ) {
+                        setRecurrenceFreq(FREQUENCIES.WEEKLY);
+                        const weekdayNum = startDate.getDay();
+                        const weekdays = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+                        setRecurrenceByDay([weekdays[weekdayNum]]);
+                      }
+                    }}
+                    data-testid="recurring-event-checkbox"
+                  />
+                  <Label htmlFor="recurring" className="text-sm font-normal">
+                    Does not repeat
+                  </Label>
+                </div>
+              </div>
+
+              {renderRecurrenceOptions()}
+              </div>
+
+              <aside className="space-y-4 border-t border-[#2B2F31] bg-[#1D2021] p-5 lg:border-l lg:border-t-0">
+                <p className="text-sm font-medium text-[#F2F2F2]">Event details</p>
+
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>
               <Input
@@ -524,35 +562,10 @@ export function EventModal({
                 className="event-description resize-none"
               />
             </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="recurring"
-                checked={isRecurring}
-                onCheckedChange={(checked) => {
-                  const isChecked = checked as boolean;
-                  setIsRecurring(isChecked);
-                  if (
-                    isChecked &&
-                    (recurrenceFreq === FREQUENCIES.NONE || !recurrenceFreq)
-                  ) {
-                    setRecurrenceFreq(FREQUENCIES.WEEKLY);
-                    const weekdayNum = startDate.getDay();
-                    const weekdays = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-                    const weekday = weekdays[weekdayNum];
-                    setRecurrenceByDay([weekday]);
-                  }
-                }}
-                data-testid="recurring-event-checkbox"
-              />
-              <Label htmlFor="recurring" className="text-sm">
-                Recurring event
-              </Label>
+              </aside>
             </div>
 
-            {renderRecurrenceOptions()}
-
-            <div className="flex items-center justify-between pt-4">
+            <div className="flex items-center justify-between border-t border-[#2B2F31] bg-[#202425] px-5 py-3">
               {event?.id ? (
                 <Button
                   type="button"
@@ -569,7 +582,11 @@ export function EventModal({
                 <Button type="button" variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
-                <Button type="submit" data-testid="save-event-button">
+                <Button
+                  type="submit"
+                  disabled={!title.trim() || isSubmitting}
+                  data-testid="save-event-button"
+                >
                   {event?.id ? "Update" : "Create"}
                 </Button>
               </div>

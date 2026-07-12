@@ -25,6 +25,10 @@ import { CalendarEvent, ExtendedEventProps } from "@/types/calendar";
 import { Task, TaskStatus } from "@/types/task";
 
 import { CalendarEventContent } from "./CalendarEventContent";
+import {
+  CalendarQuickCreate,
+  QuickCreateSelection,
+} from "./CalendarQuickCreate";
 import { EventModal } from "./EventModal";
 import { EventQuickView } from "./EventQuickView";
 import { resolveCalendarItemId } from "./calendar-item-id";
@@ -45,6 +49,9 @@ export function DayView({ currentDate }: DayViewProps) {
   const [selectedEndDate, setSelectedEndDate] = useState<Date>();
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  const [quickCreateSelection, setQuickCreateSelection] =
+    useState<QuickCreateSelection>();
   const [events, setEvents] = useState<
     Array<{
       id: string;
@@ -188,15 +195,31 @@ export function DayView({ currentDate }: DayViewProps) {
     setSelectedEvent({
       allDay,
     });
-    setIsEventModalOpen(true);
+    setQuickCreateSelection({
+      start,
+      end,
+      allDay,
+      point: selectInfo.jsEvent
+        ? { x: selectInfo.jsEvent.clientX, y: selectInfo.jsEvent.clientY }
+        : undefined,
+    });
   };
 
-  const handleSlotClick = (arg: { date: Date; allDay: boolean }) => {
+  const handleSlotClick = (arg: {
+    date: Date;
+    allDay: boolean;
+    jsEvent: MouseEvent;
+  }) => {
     const end = new Date(arg.date.getTime() + 30 * 60 * 1000);
     setSelectedDate(arg.date);
     setSelectedEndDate(end);
     setSelectedEvent({ allDay: arg.allDay });
-    setIsEventModalOpen(true);
+    setQuickCreateSelection({
+      start: arg.date,
+      end,
+      allDay: arg.allDay,
+      point: { x: arg.jsEvent.clientX, y: arg.jsEvent.clientY },
+    });
   };
 
   const handleEventModalClose = () => {
@@ -211,7 +234,18 @@ export function DayView({ currentDate }: DayViewProps) {
 
   const handleTaskModalClose = () => {
     setIsTaskModalOpen(false);
+    setIsNewTaskModalOpen(false);
     setSelectedTask(undefined);
+  };
+
+  const openTaskEditorFromQuickCreate = () => {
+    setQuickCreateSelection(undefined);
+    setIsNewTaskModalOpen(true);
+  };
+
+  const openEventEditorFromQuickCreate = () => {
+    setQuickCreateSelection(undefined);
+    setIsEventModalOpen(true);
   };
 
   const handleQuickViewClose = () => {
@@ -359,6 +393,13 @@ export function DayView({ currentDate }: DayViewProps) {
         defaultEndDate={selectedEndDate || eventModalStore.defaultEndDate}
       />
 
+      <CalendarQuickCreate
+        selection={quickCreateSelection}
+        onClose={() => setQuickCreateSelection(undefined)}
+        onOpenTaskEditor={openTaskEditorFromQuickCreate}
+        onOpenEventEditor={openEventEditorFromQuickCreate}
+      />
+
       {selectedTask && (
         <TaskModal
           isOpen={isTaskModalOpen}
@@ -367,6 +408,23 @@ export function DayView({ currentDate }: DayViewProps) {
           tags={useTaskStore.getState().tags}
           onSave={async (updates) => {
             await updateTask(selectedTask.id, updates);
+            handleTaskModalClose();
+          }}
+          onCreateTag={async (name: string, color?: string) => {
+            return useTaskStore.getState().createTag({ name, color });
+          }}
+        />
+      )}
+
+      {isNewTaskModalOpen && selectedDate && selectedEndDate && (
+        <TaskModal
+          isOpen={isNewTaskModalOpen}
+          onClose={handleTaskModalClose}
+          tags={useTaskStore.getState().tags}
+          initialStart={selectedDate}
+          initialEnd={selectedEndDate}
+          onSave={async (updates) => {
+            await useTaskStore.getState().createTask(updates);
             handleTaskModalClose();
           }}
           onCreateTag={async (name: string, color?: string) => {
