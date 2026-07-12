@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -118,7 +119,22 @@ export const useTaskStore = create<TaskState>()(
           if (!response.ok) throw new Error("Failed to create task");
           const newTask = await response.json();
           set((state) => ({ tasks: [...state.tasks, newTask] }));
-          await get().triggerScheduleAllTasks();
+          // Reschedule in the background with a status toast so the modal can
+          // close immediately and a scheduling failure never blocks (or
+          // duplicates) task creation.
+          void (async () => {
+            const toastId = toast.loading("Recalculating tasks...", {
+              className: "recalc-toast",
+              closeButton: true,
+            });
+            try {
+              await get().triggerScheduleAllTasks();
+            } catch (scheduleError) {
+              console.error("Background rescheduling failed:", scheduleError);
+            } finally {
+              toast.dismiss(toastId);
+            }
+          })();
           return newTask;
         } catch (error) {
           set({ error: error as Error });

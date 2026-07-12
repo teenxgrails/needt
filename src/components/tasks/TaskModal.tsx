@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { BookTemplate, ChevronDown, Settings2 } from "lucide-react";
 import { RRule } from "rrule";
+import { toast } from "sonner";
 
 import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { Button } from "@/components/ui/button";
@@ -389,6 +390,9 @@ export function TaskModal({
       onClose();
     } catch (error) {
       console.error("Error saving task:", error);
+      toast.error(
+        task ? "Couldn't save the task." : "Couldn't create the task."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -556,8 +560,15 @@ export function TaskModal({
               </div>
 
               <div className="min-h-0 space-y-3 overflow-y-auto border-t border-[var(--line-strong)] p-5 lg:border-l lg:border-t-0">
-                <div className="flex items-center justify-between rounded-md border border-[var(--line-strong)] bg-[var(--raised)] px-3 py-2 text-sm">
-                  <span>Auto-scheduled</span>
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-md border px-3 py-2 text-sm transition-colors",
+                    isAutoScheduled
+                      ? "border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_16%,var(--raised))] text-[var(--text-hi)]"
+                      : "border-[var(--line-strong)] bg-[var(--raised)]"
+                  )}
+                >
+                  <span className="font-medium">Auto-scheduled</span>
                   <Switch
                     checked={isAutoScheduled}
                     onCheckedChange={setIsAutoScheduled}
