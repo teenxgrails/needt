@@ -95,7 +95,7 @@ export function ConnectorSettings() {
   if (isLoading) {
     return (
       <SettingsSection
-        title="Connector API"
+        title="Integrations"
         description="Loading local connector settings."
       >
         <div className="text-sm text-muted-foreground">Loading...</div>
@@ -105,7 +105,7 @@ export function ConnectorSettings() {
 
   return (
     <SettingsSection
-      title="Connector API"
+      title="Integrations"
       description="Let local scripts and automations create tasks, read the schedule, and trigger rescheduling."
     >
       <SettingRow
