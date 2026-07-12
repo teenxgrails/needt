@@ -1,5 +1,12 @@
 # QA Report — Mina Design Parts 1-6
 
+## Calendar task interactions — Phase 1 (2026-07-13)
+
+- PASS: Chrome live verification on the signed-in production calendar: single-clicking an auto-scheduled task opened its quick view in both Week and Day views. The popover showed the task title, status, scheduled time, and confidence.
+- PASS: `pnpm tsc --noEmit`; full `pnpm test:unit` (43 suites passed, 1 skipped; 295 tests passed, 1 skipped); `pnpm build` completed with the known non-fatal unavailable-Neon warnings during static collection.
+- FIXED: Calendar task click handlers now resolve canonical task ids from explicit, nested, or generated `taskId:chunkIndex` FullCalendar ids. The quick view anchors to the clicked calendar element.
+- BLOCKED: The live week contained only scheduled task blocks and no ordinary timed calendar event. Timed-event quick-view verification requires permission to create and then delete one temporary event.
+
 Date: 2026-07-08
 
 ## Build, Type, Test
