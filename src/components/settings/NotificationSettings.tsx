@@ -1,3 +1,5 @@
+import { Switch } from "@/components/ui/switch";
+
 import { useSettingsStore } from "@/store/settings";
 
 import { SettingRow, SettingsSection } from "./SettingsSection";
@@ -50,43 +52,29 @@ export function NotificationSettings() {
 
   return (
     <SettingsSection
-      title="Notification Settings"
-      description="Configure your notification preferences."
+      title="Notifications"
+      description="Choose which planner updates can interrupt you. Browser alerts stay off until you enable them."
     >
       <SettingRow
-        label="Daily Email Updates"
-        description="Receive a daily email with your upcoming meetings and tasks"
+        label="Daily plan email"
+        description="Receive a concise email with upcoming meetings and tasks."
       >
-        <div className="space-y-2">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={notifications.dailyEmailEnabled}
-              onChange={(e) =>
-                updateNotificationSettings({
-                  dailyEmailEnabled: e.target.checked,
-                })
-              }
-              className="h-4 w-4 rounded border-[var(--line-strong)] text-[var(--accent)] focus:ring-[var(--accent)]"
-            />
-            <span className="ml-2 text-sm">Enable daily email updates</span>
-          </label>
-        </div>
+        <Switch
+          checked={notifications.dailyEmailEnabled}
+          onCheckedChange={(enabled) =>
+            updateNotificationSettings({ dailyEmailEnabled: enabled })
+          }
+        />
       </SettingRow>
 
       <SettingRow
         label="Web Push"
         description="Focus endings, upcoming tasks, and gentle streak reminders. Off by default."
       >
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={notifications.webPushEnabled}
-            onChange={(event) => enablePush(event.target.checked)}
-            className="h-4 w-4 rounded border-[var(--line-strong)] text-[var(--accent)] focus:ring-[var(--accent)]"
-          />
-          <span className="ml-2 text-sm">Enable web push</span>
-        </label>
+        <Switch
+          checked={notifications.webPushEnabled}
+          onCheckedChange={enablePush}
+        />
       </SettingRow>
     </SettingsSection>
   );

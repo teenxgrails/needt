@@ -7,17 +7,12 @@ import { Download, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 import { APP_SLUG } from "@/lib/app-config";
+
+import { SettingRow, SettingsSection } from "./SettingsSection";
 
 export function ImportExportSettings() {
   const [includeCompleted, setIncludeCompleted] = useState(false);
@@ -133,81 +128,87 @@ export function ImportExportSettings() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Import/Export Tasks</CardTitle>
-          <CardDescription>
-            Export your tasks to a file or import tasks from a file
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="includeCompleted"
-                checked={includeCompleted}
-                onCheckedChange={(checked) =>
-                  setIncludeCompleted(checked as boolean)
-                }
-              />
-              <Label htmlFor="includeCompleted">Include completed tasks</Label>
-            </div>
+    <SettingsSection
+      title="Import & export"
+      description="Move tasks into or out of your planner without changing your calendar connections."
+    >
+      <SettingRow
+        label="Task archive"
+        description="Choose whether completed tasks are included in the exported JSON file."
+      >
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="includeCompleted"
+            checked={includeCompleted}
+            onCheckedChange={(checked) =>
+              setIncludeCompleted(checked as boolean)
+            }
+          />
+          <Label htmlFor="includeCompleted">Include completed tasks</Label>
+        </div>
+      </SettingRow>
 
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="flex items-center gap-2"
-              >
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-                Export Tasks
-              </Button>
+      <SettingRow
+        label="Tasks"
+        description="Export a task archive or import a previously exported JSON file."
+      >
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            Export Tasks
+          </Button>
 
-              <Button
-                onClick={handleImportClick}
-                disabled={isImporting}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                {isImporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                Import Tasks
-              </Button>
+          <Button
+            onClick={handleImportClick}
+            disabled={isImporting}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            {isImporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            Import Tasks
+          </Button>
 
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept=".json"
-                className="hidden"
-              />
-            </div>
-          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".json"
+            className="hidden"
+          />
+        </div>
+      </SettingRow>
 
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              <strong>Export:</strong> Creates a JSON file containing all your
-              tasks, projects, and tags.
-            </p>
-            <p>
-              <strong>Import:</strong> Imports tasks, projects, and tags from a
-              JSON file. Tasks will be associated with your account.
-            </p>
-            <p className="text-yellow-600 dark:text-yellow-400">
-              Note: Importing will not delete or modify your existing tasks, but
-              may create duplicates if tasks with similar titles exist.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      <SettingRow
+        label="File format"
+        description="Exports include tasks, projects, and tags. Imports add the valid items from the selected file."
+      >
+        <div className="space-y-2 text-sm text-[#9BA1A6]">
+          <p>
+            <strong>Export:</strong> Creates a JSON file containing all your
+            tasks, projects, and tags.
+          </p>
+          <p>
+            <strong>Import:</strong> Imports tasks, projects, and tags from a
+            JSON file. Tasks will be associated with your account.
+          </p>
+          <p className="text-yellow-600 dark:text-yellow-400">
+            Note: Importing will not delete or modify your existing tasks, but
+            may create duplicates if tasks with similar titles exist.
+          </p>
+        </div>
+      </SettingRow>
+    </SettingsSection>
   );
 }

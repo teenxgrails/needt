@@ -894,8 +894,8 @@ export function TaskSyncSettings() {
 
   return (
     <SettingsSection
-      title="Task Synchronization"
-      description="Manage task synchronization with external services such as Outlook or Google Tasks."
+      title="Task defaults"
+      description="Choose the connected task source and the defaults used when work is brought into the planner."
     >
       {compatibleAccounts.length === 0 ? (
         <SettingRow

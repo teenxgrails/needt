@@ -27,7 +27,7 @@ export function TaskUrgencySettings() {
   return (
     <SettingsSection
       title="Task urgency"
-      description="Control the colored urgency circles in the today's tasks panel. Tasks due within the red window (or overdue) are red, within the yellow window are yellow, and anything further out is green."
+      description="Control the colored urgency circles used in Today. Overdue tasks and tasks inside the red window rise first."
     >
       <SettingRow
         label="Red threshold (hours)"

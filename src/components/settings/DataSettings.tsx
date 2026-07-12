@@ -1,3 +1,7 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+
 import { useSettingsStore } from "@/store/settings";
 
 import { SettingRow, SettingsSection } from "./SettingsSection";
@@ -7,34 +11,29 @@ export function DataSettings() {
 
   return (
     <SettingsSection
-      title="Data Settings"
-      description="Manage your calendar data and backup preferences."
+      title="Data & retention"
+      description="Control local backup and retention preferences for your planner data."
     >
       <SettingRow
         label="Automatic Backup"
-        description="Regularly backup your calendar data"
+        description="Keep a periodic backup of your planner data."
       >
-        <div className="space-y-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={data.autoBackup}
-              onChange={(e) =>
-                updateDataSettings({
-                  autoBackup: e.target.checked,
-                })
-              }
-              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="ml-2 text-sm">Enable automatic backups</span>
-          </label>
+        <div className="space-y-3">
+          <Switch
+            checked={data.autoBackup}
+            onCheckedChange={(autoBackup) => updateDataSettings({ autoBackup })}
+          />
 
           {data.autoBackup && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Backup Interval (days)
+            <div className="max-w-[160px] space-y-2">
+              <label
+                className="text-sm text-[#9BA1A6]"
+                htmlFor="backup-interval"
+              >
+                Every (days)
               </label>
-              <input
+              <Input
+                id="backup-interval"
                 type="number"
                 min="1"
                 max="30"
@@ -44,7 +43,6 @@ export function DataSettings() {
                     backupInterval: Number(e.target.value),
                   })
                 }
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
           )}
@@ -53,13 +51,14 @@ export function DataSettings() {
 
       <SettingRow
         label="Data Retention"
-        description="Configure how long to keep your calendar data"
+        description="Archive events after the selected number of days."
       >
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Retain data for (days)
+        <div className="max-w-[160px] space-y-2">
+          <label className="text-sm text-[#9BA1A6]" htmlFor="retain-data">
+            Days to retain
           </label>
-          <input
+          <Input
+            id="retain-data"
             type="number"
             min="30"
             max="3650"
@@ -69,35 +68,25 @@ export function DataSettings() {
                 retainDataFor: Number(e.target.value),
               })
             }
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           />
-          <p className="mt-1 text-sm text-gray-500">
-            Events older than this will be automatically archived
-          </p>
         </div>
       </SettingRow>
 
       <SettingRow label="Export Data" description="Download your calendar data">
-        <div className="space-y-3">
-          <button
-            type="button"
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline">
             Export as iCal
-          </button>
-          <button
-            type="button"
-            className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
+          </Button>
+          <Button type="button" variant="outline">
             Export as JSON
-          </button>
+          </Button>
         </div>
       </SettingRow>
 
       <SettingRow label="Clear Data" description="Remove all calendar data">
-        <button
+        <Button
           type="button"
-          className="inline-flex items-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+          variant="destructive"
           onClick={() => {
             if (
               window.confirm(
@@ -109,7 +98,7 @@ export function DataSettings() {
           }}
         >
           Clear All Data
-        </button>
+        </Button>
       </SettingRow>
     </SettingsSection>
   );
