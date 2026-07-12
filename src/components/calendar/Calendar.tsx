@@ -11,6 +11,7 @@ import {
   IoOptionsOutline,
   IoRefreshOutline,
 } from "react-icons/io5";
+import { toast } from "sonner";
 
 import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
@@ -31,10 +32,7 @@ import { useEventModalStore } from "@/lib/commands/groups/calendar";
 import { addDays, newDate, subDays } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
-import {
-  useCalendarStore,
-  useViewStore,
-} from "@/store/calendar";
+import { useCalendarStore, useViewStore } from "@/store/calendar";
 import { useSettingsStore } from "@/store/settings";
 import { useTaskStore } from "@/store/task";
 
@@ -66,8 +64,12 @@ export function Calendar({
   const { date: currentDate, setDate, view, setView } = useViewStore();
   const { scheduleAllTasks } = useTaskStore();
   const { setFeeds, setEvents } = useCalendarStore();
-  const { user: userSettings, calendar: calendarSettings, updateUserSettings, updateCalendarSettings } =
-    useSettingsStore();
+  const {
+    user: userSettings,
+    calendar: calendarSettings,
+    updateUserSettings,
+    updateCalendarSettings,
+  } = useSettingsStore();
   const eventModalStore = useEventModalStore();
   const prefersReducedMotion = useReducedMotion();
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -79,7 +81,9 @@ export function Calendar({
           month: "short",
           day: "numeric",
         }).format(currentDate)
-      : new Intl.DateTimeFormat("en-US", { month: "short" }).format(currentDate);
+      : new Intl.DateTimeFormat("en-US", { month: "short" }).format(
+          currentDate
+        );
   const titleSecondary = new Intl.DateTimeFormat("en-US", {
     year: "numeric",
   }).format(currentDate);
@@ -126,7 +130,17 @@ export function Calendar({
   };
 
   const handleAutoSchedule = async () => {
-    await scheduleAllTasks();
+    // Inverse-themed "Recalculating tasks..." toast (white on dark, dark on
+    // light), matching the Motion reference.
+    const toastId = toast.loading("Recalculating tasks...", {
+      className: "recalc-toast",
+      closeButton: true,
+    });
+    try {
+      await scheduleAllTasks();
+    } finally {
+      toast.dismiss(toastId);
+    }
   };
 
   const handleViewChange = (nextView: typeof view) => {
@@ -140,7 +154,9 @@ export function Calendar({
   const handleNewEvent = () => {
     const start = newDate();
     eventModalStore.setDefaultDate(start);
-    eventModalStore.setDefaultEndDate(new Date(start.getTime() + 30 * 60 * 1000));
+    eventModalStore.setDefaultEndDate(
+      new Date(start.getTime() + 30 * 60 * 1000)
+    );
     eventModalStore.setOpen(true);
   };
 
@@ -261,8 +277,12 @@ export function Calendar({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onClick={handleNewTask}>New Task</DropdownMenuItem>
-                <DropdownMenuItem onClick={handleNewEvent}>New Meeting or Event</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleNewTask}>
+                  New Task
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleNewEvent}>
+                  New Meeting or Event
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -295,18 +315,13 @@ export function Calendar({
             <motion.div
               key={`${view}-${currentDate.toISOString().slice(0, 10)}`}
               className="h-full"
-              initial={
-                prefersReducedMotion
-                  ? false
-                  : { opacity: 0 }
-              }
+              initial={prefersReducedMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={
-                prefersReducedMotion
-                  ? { opacity: 1 }
-                  : { opacity: 0 }
-              }
-              transition={{ duration: prefersReducedMotion ? 0 : 0.15, ease: "easeOut" }}
+              exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
+              transition={{
+                duration: prefersReducedMotion ? 0 : 0.15,
+                ease: "easeOut",
+              }}
             >
               {view === "day" ? (
                 <DayView currentDate={currentDate} />
@@ -332,7 +347,9 @@ export function Calendar({
           await createTask(task);
           setIsTaskModalOpen(false);
         }}
-        onCreateTag={(name, color) => useTaskStore.getState().createTag({ name, color })}
+        onCreateTag={(name, color) =>
+          useTaskStore.getState().createTag({ name, color })
+        }
       />
     </div>
   );

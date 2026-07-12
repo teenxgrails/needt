@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+
 import { useRouter } from "next/navigation";
 
 import * as Dialog from "@radix-ui/react-dialog";
@@ -86,7 +87,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
         <Dialog.Content className="fixed left-1/2 top-[20%] z-50 w-full max-w-[640px] -translate-x-1/2">
           <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
           <Dialog.Description className="sr-only">

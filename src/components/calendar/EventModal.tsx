@@ -390,7 +390,9 @@ export function EventModal({
         <DialogContent className="flex max-h-[90vh] max-w-[614px] flex-col gap-0 p-0">
           {isSubmitting && <LoadingOverlay />}
           <DialogHeader className="space-y-1.5 rounded-t-lg border-t-4 border-[var(--accent)] bg-[#262626] px-6 pb-4 pt-5">
-            <DialogTitle className="text-lg font-normal leading-8">{event?.id ? "Edit Event" : "New Event"}</DialogTitle>
+            <DialogTitle className="text-lg font-normal leading-8">
+              {event?.id ? "Edit Event" : "New Event"}
+            </DialogTitle>
           </DialogHeader>
 
           <form
@@ -585,7 +587,7 @@ export function EventModal({
         }}
       >
         <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-[10001] bg-background/80 backdrop-blur-sm" />
+          <AlertDialog.Overlay className="fixed inset-0 z-[10001] bg-background/80" />
           <AlertDialog.Content className="fixed left-1/2 top-1/2 z-[10002] w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border bg-background p-6 shadow-lg">
             <AlertDialog.Title className="mb-4 text-lg font-semibold">
               Edit Recurring Event

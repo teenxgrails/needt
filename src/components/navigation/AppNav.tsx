@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   CheckSquare,
+  Download,
   Focus,
   Search,
   Settings,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
+import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
 import { TodaysTasksPanel } from "@/components/tasks/TodaysTasksPanel";
 import {
   Tooltip,
@@ -48,11 +50,9 @@ function openCommandPalette() {
   );
 }
 
-export const AppNav = memo(function AppNav({
-  className,
-  onOpenChatOverlay,
-}: AppNavProps) {
+export const AppNav = memo(function AppNav({ className }: AppNavProps) {
   const pathname = usePathname();
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const overdueCount = useTaskStore(
     (state) =>
       state.tasks.filter(
@@ -102,6 +102,10 @@ export const AppNav = memo(function AppNav({
         className
       )}
     >
+      <div className="mb-2 max-md:hidden">
+        <MiniCalendar currentDate={currentDate} onDateClick={setDate} compact />
+      </div>
+
       <button
         type="button"
         onClick={openCommandPalette}
@@ -116,10 +120,6 @@ export const AppNav = memo(function AppNav({
           ⌘K
         </kbd>
       </button>
-
-      <div className="mb-2 max-md:hidden">
-        <MiniCalendar currentDate={currentDate} onDateClick={setDate} compact />
-      </div>
 
       <nav className="space-y-0.5 text-[13px] max-md:flex max-md:flex-1 max-md:items-center max-md:justify-around max-md:space-y-0">
         {links.map((link) => {
@@ -212,18 +212,20 @@ export const AppNav = memo(function AppNav({
               <TooltipTrigger asChild>
                 <button
                   type="button"
-                  onClick={onOpenChatOverlay}
+                  onClick={() => setDownloadOpen(true)}
                   className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
-                  aria-label="AI Chat"
+                  aria-label="Get the apps"
                 >
-                  <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+                  <Download className="h-4 w-4" strokeWidth={1.75} />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>AI Chat</TooltipContent>
+              <TooltipContent>Get the apps</TooltipContent>
             </Tooltip>
           </div>
         </div>
       </div>
+
+      <DownloadAppsModal open={downloadOpen} onOpenChange={setDownloadOpen} />
     </aside>
   );
 });

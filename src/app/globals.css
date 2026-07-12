@@ -389,6 +389,19 @@ html[data-animations="off"] *::after {
   }
 }
 
+/* "Recalculating tasks..." toast: inverse of the theme (white pill on the dark
+   theme, dark pill on the light theme), matching the Motion reference. */
+.recalc-toast {
+  background: var(--text-hi) !important;
+  color: var(--app-bg) !important;
+  border: none !important;
+}
+
+.recalc-toast [data-close-button],
+.recalc-toast [data-icon] {
+  color: var(--app-bg) !important;
+}
+
 /* FullCalendar Customization */
 .fc {
   @apply h-full;
