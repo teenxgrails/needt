@@ -574,9 +574,26 @@ html[data-animations="off"] *::after {
   @apply text-xs opacity-90;
 }
 
-.fc .fc-timegrid-now-indicator-line,
+/* Current-time marker: FullCalendar keeps its position in sync with the
+   clock. Motion's version is a calm white rule with a circular lead-in rather
+   than the library's default accent line and triangle. */
+.fc .fc-timegrid-now-indicator-line {
+  z-index: 6;
+  border-color: #f4f5f6 !important;
+  border-top-width: 1px !important;
+  opacity: 0.96;
+  pointer-events: none;
+}
+
 .fc .fc-timegrid-now-indicator-arrow {
-  display: none !important;
+  z-index: 7;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  border: 0 !important;
+  border-radius: 9999px;
+  background: #f4f5f6;
+  pointer-events: none;
 }
 
 /* Motion-style column shading. Lightness order: today (darkest) < working

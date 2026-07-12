@@ -79,7 +79,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
 
   // Motion-style dashed guide line that follows the cursor's time across the
-  // whole grid, separate from FullCalendar's now-indicator (hidden in the CSS).
+  // whole grid, separate from FullCalendar's live current-time indicator.
   useEffect(() => {
     const root = wrapperRef.current;
     if (!root) return;
