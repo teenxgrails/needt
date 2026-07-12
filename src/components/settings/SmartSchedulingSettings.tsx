@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 
 import { SettingRow, SettingsSection } from "./SettingsSection";
 
@@ -89,9 +88,6 @@ export function SmartSchedulingSettings() {
   const [preferences, setPreferences] =
     useState<SchedulingPreferences>(DEFAULT_PREFERENCES);
   const [energyProfile, setEnergyProfile] = useState<EnergyProfileWindow[]>([]);
-  const [workHoursJson, setWorkHoursJson] = useState(
-    JSON.stringify(DEFAULT_WORK_HOURS, null, 2)
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -108,13 +104,6 @@ export function SmartSchedulingSettings() {
         if (cancelled) return;
         setPreferences(data.preferences);
         setEnergyProfile(data.energyProfile);
-        setWorkHoursJson(
-          JSON.stringify(
-            data.preferences.workHours || DEFAULT_WORK_HOURS,
-            null,
-            2
-          )
-        );
       } catch (error) {
         toast.error("Could not load smart scheduling settings", {
           description:
@@ -184,14 +173,11 @@ export function SmartSchedulingSettings() {
   const saveSettings = async () => {
     try {
       setIsSaving(true);
-      const workHours = JSON.parse(
-        workHoursJson
-      ) as SchedulingPreferences["workHours"];
       const response = await fetch("/api/smart-scheduling-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          preferences: { ...preferences, workHours },
+          preferences,
           energyProfile: energyProfile.map((window, index) => ({
             ...window,
             sortOrder: index,
@@ -206,22 +192,11 @@ export function SmartSchedulingSettings() {
       const data = (await response.json()) as SmartSchedulingResponse;
       setPreferences(data.preferences);
       setEnergyProfile(data.energyProfile);
-      setWorkHoursJson(
-        JSON.stringify(
-          data.preferences.workHours || DEFAULT_WORK_HOURS,
-          null,
-          2
-        )
-      );
       toast.success("Smart scheduling settings saved");
     } catch (error) {
       toast.error("Could not save smart scheduling settings", {
         description:
-          error instanceof SyntaxError
-            ? "Work hours must be valid JSON."
-            : error instanceof Error
-              ? error.message
-              : "Please try again later.",
+          error instanceof Error ? error.message : "Please try again later.",
       });
     } finally {
       setIsSaving(false);
@@ -231,8 +206,8 @@ export function SmartSchedulingSettings() {
   if (isLoading) {
     return (
       <SettingsSection
-        title="Smart Scheduling"
-        description="Loading energy profile and ADHD scheduling preferences."
+        title="Energy & focus"
+        description="Loading the energy profile and focus preferences."
       >
         <div className="text-sm text-muted-foreground">Loading...</div>
       </SettingsSection>
@@ -241,8 +216,8 @@ export function SmartSchedulingSettings() {
 
   return (
     <SettingsSection
-      title="Smart Scheduling"
-      description="Tune the energy curve and ADHD-friendly constraints used by the planner."
+      title="Energy & focus"
+      description="Tune the energy curve and focus constraints used by the planner."
     >
       <SettingRow
         label="Energy Profile"
@@ -344,33 +319,10 @@ export function SmartSchedulingSettings() {
       </SettingRow>
 
       <SettingRow
-        label="Work Hours"
-        description="JSON map by weekday number. This keeps Phase 2 flexible until the scheduler consumes it directly."
+        label="Break & estimate buffers"
+        description="Set the minimum break and time-blindness multiplier for scheduled work."
       >
-        <Textarea
-          value={workHoursJson}
-          onChange={(event) => setWorkHoursJson(event.target.value)}
-          className="min-h-40 font-mono text-xs"
-        />
-      </SettingRow>
-
-      <SettingRow
-        label="Buffers"
-        description="Base buffer, minimum break, and time-blindness multiplier."
-      >
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="space-y-2">
-            <Label htmlFor="bufferMinutes">Buffer minutes</Label>
-            <Input
-              id="bufferMinutes"
-              type="number"
-              min={0}
-              value={preferences.bufferMinutes}
-              onChange={(event) =>
-                updatePreference("bufferMinutes", Number(event.target.value))
-              }
-            />
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="minBreakMinutes">Min break</Label>
             <Input

@@ -55,8 +55,8 @@ export function AutoScheduleSettings() {
 
   return (
     <SettingsSection
-      title="Auto-Schedule Settings"
-      description="Configure how tasks are automatically scheduled in your calendar."
+      title="Scheduling"
+      description="Set the calendar, working time, and delivery behavior used for automatic task scheduling."
     >
       <SettingRow
         label="Calendars to Consider"
@@ -170,152 +170,6 @@ export function AutoScheduleSettings() {
       </SettingRow>
 
       <SettingRow
-        label="Energy Level Time Preferences"
-        description="Map your energy levels to specific time ranges"
-      >
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label>High Energy Hours</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                value={autoSchedule.highEnergyStart?.toString() || "none"}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    highEnergyStart: value === "none" ? null : parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not Set" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not Set</SelectItem>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={autoSchedule.highEnergyEnd?.toString() || "none"}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    highEnergyEnd: value === "none" ? null : parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not Set" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not Set</SelectItem>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Medium Energy Hours</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                value={autoSchedule.mediumEnergyStart?.toString() || "none"}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    mediumEnergyStart:
-                      value === "none" ? null : parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not Set" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not Set</SelectItem>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={autoSchedule.mediumEnergyEnd?.toString() || "none"}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    mediumEnergyEnd: value === "none" ? null : parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not Set" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not Set</SelectItem>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Low Energy Hours</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                value={autoSchedule.lowEnergyStart?.toString() || "none"}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    lowEnergyStart: value === "none" ? null : parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not Set" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not Set</SelectItem>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={autoSchedule.lowEnergyEnd?.toString() || "none"}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    lowEnergyEnd: value === "none" ? null : parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not Set" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Not Set</SelectItem>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      </SettingRow>
-
-      <SettingRow
         label="Buffer Time"
         description="Minutes to leave between scheduled tasks"
       >
@@ -384,7 +238,9 @@ export function AutoScheduleSettings() {
                         <div className="flex items-center gap-2">
                           <span
                             className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: feed.color || "var(--muted)" }}
+                            style={{
+                              backgroundColor: feed.color || "var(--muted)",
+                            }}
                           />
                           {feed.name}
                         </div>
@@ -394,7 +250,8 @@ export function AutoScheduleSettings() {
               </Select>
               {feeds.filter((feed) => feed.type === "GOOGLE").length === 0 && (
                 <div className="text-sm text-muted-foreground mt-2">
-                  No Google calendars found. Please connect a Google account in Calendar Settings.
+                  No Google calendars found. Please connect a Google account in
+                  Calendar Settings.
                 </div>
               )}
             </div>
