@@ -608,15 +608,16 @@ html[data-animations="off"] *::after {
   pointer-events: none;
 }
 
-/* Calendar color hierarchy follows Photoshop-style brightness increments from
-   the app canvas (#1B1D1E): today stays on the canvas; other working hours
-   are +10 and non-working hours are +30. */
+/* Calendar color hierarchy stays intentionally close to the app canvas
+   (#1B1D1E): today is flat, while working and non-working hours are subtly
+   stepped without turning the calendar into grey blocks. */
 .fc .fc-timegrid-col-frame {
-  background: #252728;
+  background: #1e2021;
+  box-shadow: inset 1px 0 0 #2b2f31;
 }
 
 .fc .fc-timegrid-col-bg .fc-non-business {
-  background: #393b3c !important;
+  background: #242627 !important;
 }
 
 .fc .fc-day-today {
@@ -689,8 +690,7 @@ html[data-animations="off"] *::after {
 /* Keep every calendar canvas on the same base color. Grid and event borders
    are deliberately left untouched. */
 .fc .fc-daygrid-day,
-.fc .fc-daygrid-day-frame,
-.fc .fc-timegrid-slots {
+.fc .fc-daygrid-day-frame {
   background: #1b1d1e !important;
 }
 
