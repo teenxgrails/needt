@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed the command palette keeping an invisible modal scroll lock mounted after closing, which could prevent calendar scrolling and pointer interaction.
 - Fixed calendar task quick views for auto-scheduled chunks: click handlers now resolve the underlying task id instead of the generated calendar-block id, and the popover anchors to the clicked item.
 - Removed the wide highlighted band that appeared across the whole hovered hour in the calendar (the app-wide `table tbody tr:hover` highlight was bleeding into FullCalendar's timegrid rows); the thin Motion-style dashed cursor guide is now the only hover affordance
 - The dashed cursor guide in week view spans the full grid width (all day columns) and shows consistently over working hours, non-working hours, and every day, matching Motion
