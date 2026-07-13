@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+
 import { ActionOverlay } from "@/components/ui/action-overlay";
+
+import { springSoft } from "@/lib/motion";
 
 import { useFocusModeStore } from "@/store/focusMode";
 
@@ -13,6 +17,8 @@ import { TaskQueue } from "./TaskQueue";
 
 export function FocusMode() {
   const [mounted, setMounted] = useState(false);
+  const [sessionActive, setSessionActive] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
   // Add hydration safety
   const {
@@ -52,22 +58,68 @@ export function FocusMode() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar with queued tasks */}
-        <aside className="hidden h-full w-[244px] border-r border-[#2B2F31] bg-[#1B1D1E] lg:block">
+        <motion.aside
+          aria-hidden={sessionActive}
+          animate={{
+            opacity: sessionActive ? 0.18 : 1,
+            scale: sessionActive && !prefersReducedMotion ? 0.985 : 1,
+          }}
+          transition={prefersReducedMotion ? { duration: 0 } : springSoft}
+          className="hidden h-full w-[244px] origin-left border-r border-[#2B2F31] bg-[#1B1D1E] lg:block"
+          style={{ pointerEvents: sessionActive ? "none" : "auto" }}
+        >
           <TaskQueue />
-        </aside>
+        </motion.aside>
 
         {/* Main content area */}
-        <main className="min-w-0 flex-1 overflow-y-auto">
-          <div className="mx-auto flex min-h-full max-w-[860px] flex-col px-5 py-8 sm:px-10">
-            <FocusTimerPanel task={currentTask} />
-            <FocusedTask task={currentTask} />
-          </div>
+        <main className="relative min-w-0 flex-1 overflow-y-auto">
+          <motion.div
+            layout={!prefersReducedMotion}
+            transition={prefersReducedMotion ? { duration: 0 } : springSoft}
+            className="mx-auto flex min-h-full max-w-[860px] flex-col px-5 py-8 sm:px-10"
+          >
+            <FocusTimerPanel
+              task={currentTask}
+              immersive={sessionActive}
+              onRunningChange={setSessionActive}
+            />
+            <AnimatePresence initial={false}>
+              {!sessionActive && (
+                <motion.div
+                  key="focus-details"
+                  initial={
+                    prefersReducedMotion ? false : { opacity: 0, scale: 0.99 }
+                  }
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={
+                    prefersReducedMotion
+                      ? { opacity: 0 }
+                      : { opacity: 0, scale: 0.985 }
+                  }
+                  transition={
+                    prefersReducedMotion ? { duration: 0 } : springSoft
+                  }
+                >
+                  <FocusedTask task={currentTask} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </main>
 
         {/* Right sidebar with quick actions */}
-        <aside className="hidden h-full w-[244px] border-l border-[#2B2F31] bg-[#1B1D1E] xl:block">
+        <motion.aside
+          aria-hidden={sessionActive}
+          animate={{
+            opacity: sessionActive ? 0.18 : 1,
+            scale: sessionActive && !prefersReducedMotion ? 0.985 : 1,
+          }}
+          transition={prefersReducedMotion ? { duration: 0 } : springSoft}
+          className="hidden h-full w-[244px] origin-right border-l border-[#2B2F31] bg-[#1B1D1E] xl:block"
+          style={{ pointerEvents: sessionActive ? "none" : "auto" }}
+        >
           <QuickActions />
-        </aside>
+        </motion.aside>
       </div>
     </div>
   );

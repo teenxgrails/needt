@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import NumberFlow from "@number-flow/react";
 import { Headphones, Pause, Play, Square } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,12 +16,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { newDate } from "@/lib/date-utils";
+import { springSoft } from "@/lib/motion";
+import { cn } from "@/lib/utils";
+
 import { Task } from "@/types/task";
 
 type FocusModeName = "POMODORO" | "FLOW" | "DEEP_FOCUS";
 
 interface FocusTimerPanelProps {
   task: Task | null;
+  immersive?: boolean;
+  onRunningChange?: (running: boolean) => void;
 }
 
 interface FocusPayload {
@@ -54,7 +61,14 @@ function mmss(seconds: number) {
     .padStart(2, "0")}`;
 }
 
-export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
+const RING_RADIUS = 92;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+export function FocusTimerPanel({
+  task,
+  immersive = false,
+  onRunningChange,
+}: FocusTimerPanelProps) {
   const [mode, setMode] = useState<FocusModeName>("POMODORO");
   const [workMinutes, setWorkMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
@@ -65,6 +79,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
   const [report, setReport] = useState<FocusPayload | null>(null);
   const [sessionBloom, setSessionBloom] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const plannedMinutes =
     mode === "POMODORO"
@@ -81,12 +96,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
   const progress = plannedMinutes
     ? Math.min(1, elapsedSeconds / totalSeconds)
     : 1;
-  const ringStyle = useMemo(
-    () => ({
-      background: `conic-gradient(#6366F1 ${progress * 360}deg, #323234 0deg)`,
-    }),
-    [progress]
-  );
+  const ringOffset = RING_CIRCUMFERENCE * (1 - progress);
 
   async function loadReport() {
     const response = await fetch("/api/focus");
@@ -96,6 +106,10 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
   useEffect(() => {
     loadReport().catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    onRunningChange?.(running);
+  }, [onRunningChange, running]);
 
   useEffect(() => {
     if (!running) return;
@@ -116,7 +130,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
   }, [elapsedSeconds, plannedMinutes, running]);
 
   function start() {
-    setStartedAt(new Date());
+    setStartedAt(newDate());
     setElapsedSeconds(0);
     setRunning(true);
   }
@@ -136,7 +150,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
         completed,
         abandoned: !completed,
         startedAt,
-        endedAt: new Date(),
+        endedAt: newDate(),
       }),
     });
     if (response.ok) setReport(await response.json());
@@ -150,12 +164,28 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
 
   const isDeepLocked = mode === "DEEP_FOCUS" && running;
   return (
-    <section className="relative overflow-hidden border-b border-[#2B2F31] pb-10">
+    <motion.section
+      layout={!prefersReducedMotion}
+      animate={{
+        scale: immersive && !prefersReducedMotion ? 1.025 : 1,
+        y: immersive && !prefersReducedMotion ? 24 : 0,
+      }}
+      transition={prefersReducedMotion ? { duration: 0 } : springSoft}
+      className={cn(
+        "relative overflow-hidden border-b border-[#2B2F31] pb-10",
+        immersive &&
+          "glass my-auto rounded-2xl border border-white/10 px-7 py-8 shadow-[0_24px_80px_-40px_rgba(111,116,255,0.7)]"
+      )}
+    >
       {sessionBloom && <div className="session-complete-bloom" />}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase text-[#9BA1A6]">Focus session</p>
-          <h2 className="mt-1 text-xl font-semibold text-white">{task ? task.title : "Choose one thing"}</h2>
+          <p className="text-[11px] font-medium uppercase text-[#9BA1A6]">
+            Focus session
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            {task ? task.title : "Choose one thing"}
+          </h2>
           <p className="mt-1 text-xs text-[#9BA1A6]">
             {task ? task.title : "Start with the selected task"}
           </p>
@@ -178,8 +208,37 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
 
       <div className="mt-8 flex flex-col items-center gap-8 lg:flex-row">
         <div className="shrink-0">
-          <div className="grid h-52 w-52 place-items-center rounded-full p-2" style={ringStyle}>
-            <div className="grid h-full w-full place-items-center rounded-full border border-[#3A3F42] bg-[#1B1D1E] text-center">
+          <div className="relative grid h-52 w-52 place-items-center rounded-full">
+            <svg
+              aria-label={`${Math.round(progress * 100)}% focus progress`}
+              className="absolute inset-0 h-full w-full -rotate-90"
+              viewBox="0 0 208 208"
+            >
+              <circle
+                cx="104"
+                cy="104"
+                r={RING_RADIUS}
+                fill="none"
+                stroke="#323234"
+                strokeWidth="8"
+              />
+              <motion.circle
+                cx="104"
+                cy="104"
+                r={RING_RADIUS}
+                fill="none"
+                stroke="var(--accent)"
+                strokeLinecap="round"
+                strokeWidth="8"
+                strokeDasharray={RING_CIRCUMFERENCE}
+                initial={false}
+                animate={{ strokeDashoffset: ringOffset }}
+                transition={
+                  prefersReducedMotion ? { duration: 0 } : springSoft
+                }
+              />
+            </svg>
+            <div className="grid h-[184px] w-[184px] place-items-center rounded-full border border-[#3A3F42] bg-[#1B1D1E] text-center">
               <div>
                 <div className="text-5xl font-semibold tabular-nums text-white">
                   {mode === "FLOW"
@@ -326,6 +385,6 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
           -day streak warm.
         </div>
       )}
-    </section>
+    </motion.section>
   );
 }
