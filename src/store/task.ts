@@ -40,6 +40,7 @@ interface TaskState {
   filters: TaskFilters;
   loading: boolean;
   error: Error | null;
+  scheduleAnimationRevision: number;
 
   // Task actions
   fetchTasks: () => Promise<void>;
@@ -64,6 +65,7 @@ interface TaskState {
   // Auto-scheduling actions
   scheduleAllTasks: () => Promise<void>;
   triggerScheduleAllTasks: () => Promise<void>;
+  notifyScheduleAnimation: () => void;
 }
 
 export const useTaskStore = create<TaskState>()(
@@ -74,6 +76,12 @@ export const useTaskStore = create<TaskState>()(
       filters: {},
       loading: false,
       error: null,
+      scheduleAnimationRevision: 0,
+
+      notifyScheduleAnimation: () =>
+        set((state) => ({
+          scheduleAnimationRevision: state.scheduleAnimationRevision + 1,
+        })),
 
       // Task actions
       fetchTasks: async () => {
@@ -413,7 +421,9 @@ export const useTaskStore = create<TaskState>()(
                 try {
                   const data = JSON.parse(event.data);
                   if (data.type === "TASK_SCHEDULE_COMPLETE") {
-                    get().fetchTasks();
+                    void get()
+                      .fetchTasks()
+                      .then(() => get().notifyScheduleAnimation());
                     // Dispatch a custom event for the NotificationProvider
                     window.dispatchEvent(
                       new CustomEvent("task-schedule-complete", {
@@ -468,6 +478,7 @@ export const useTaskStore = create<TaskState>()(
           if (!response.ok) throw new Error("Failed to schedule tasks");
           await response.json();
           await get().fetchTasks();
+          get().notifyScheduleAnimation();
         } catch (error) {
           set({ error: error as Error });
           throw error;

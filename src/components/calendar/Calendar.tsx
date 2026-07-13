@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  LayoutGroup,
+  motion,
+  useReducedMotion,
+} from "motion/react";
 import { CheckSquare2, Clock3, Settings } from "lucide-react";
 import {
   IoAddOutline,
@@ -77,7 +82,7 @@ export function Calendar({
   initialEvents = [],
 }: CalendarProps) {
   const { date: currentDate, setDate, view, setView } = useViewStore();
-  const { scheduleAllTasks, tags } = useTaskStore();
+  const { scheduleAllTasks, scheduleAnimationRevision, tags } = useTaskStore();
   const { createTask } = useTaskMutations();
   const { setFeeds, setEvents } = useCalendarStore();
   const {
@@ -393,33 +398,38 @@ export function Calendar({
         </header>
 
         {/* Calendar Grid */}
-        <div className="flex-1 overflow-hidden">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={`${view}-${currentDate.toISOString().slice(0, 10)}`}
-              className="h-full"
-              initial={prefersReducedMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
-              transition={{
-                duration: prefersReducedMotion ? 0 : 0.15,
-                ease: "easeOut",
-              }}
-            >
-              {view === "day" ? (
-                <DayView currentDate={currentDate} />
-              ) : view === "week" ? (
-                <WeekView currentDate={currentDate} />
-              ) : view === "month" ? (
-                <MonthView currentDate={currentDate} onDateClick={setDate} />
-              ) : (
-                <MultiMonthView
-                  currentDate={currentDate}
-                  onDateClick={setDate}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
+        <div
+          className="flex-1 overflow-hidden"
+          data-schedule-revision={scheduleAnimationRevision}
+        >
+          <LayoutGroup id="calendar-schedule">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`${view}-${currentDate.toISOString().slice(0, 10)}`}
+                className="h-full"
+                initial={prefersReducedMotion ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
+                transition={{
+                  duration: prefersReducedMotion ? 0 : 0.15,
+                  ease: "easeOut",
+                }}
+              >
+                {view === "day" ? (
+                  <DayView currentDate={currentDate} />
+                ) : view === "week" ? (
+                  <WeekView currentDate={currentDate} />
+                ) : view === "month" ? (
+                  <MonthView currentDate={currentDate} onDateClick={setDate} />
+                ) : (
+                  <MultiMonthView
+                    currentDate={currentDate}
+                    onDateClick={setDate}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </LayoutGroup>
         </div>
       </main>
       <TaskModal

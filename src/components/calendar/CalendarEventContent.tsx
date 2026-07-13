@@ -11,10 +11,11 @@ import {
 
 import { getMonthEventDisplay } from "@/lib/calendar-event-display";
 import { isTaskOverdue } from "@/lib/task-utils";
-import { springSnappy } from "@/lib/motion";
+import { springSnappy, springSoft } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { useSettingsStore } from "@/store/settings";
+import { useTaskStore } from "@/store/task";
 
 import { Priority, TaskStatus } from "@/types/task";
 
@@ -36,7 +37,15 @@ export const CalendarEventContent = memo(function CalendarEventContent({
 }: CalendarEventContentProps) {
   const prefersReducedMotion = useReducedMotion();
   const { user: userSettings } = useSettingsStore();
+  const scheduleAnimationRevision = useTaskStore(
+    (state) => state.scheduleAnimationRevision
+  );
   const isTask = eventInfo.event.extendedProps.isTask;
+  const isAutoScheduled = eventInfo.event.extendedProps.isAutoScheduled;
+  const taskId = eventInfo.event.extendedProps.taskId as string | undefined;
+  const chunkIndex = eventInfo.event.extendedProps.chunkIndex as
+    | number
+    | undefined;
   const isRecurring = eventInfo.event.extendedProps.isRecurring;
   const status = eventInfo.event.extendedProps.status;
   const priority = eventInfo.event.extendedProps.priority;
@@ -78,14 +87,26 @@ export const CalendarEventContent = memo(function CalendarEventContent({
       : eventColor;
   const chipColor = isTask ? taskColor : eventColor;
   const displayTime = eventInfo.timeText || timeText;
+  const staggerIndex = (taskId ?? eventInfo.event.id)
+    .split("")
+    .reduce((total, character) => total + character.charCodeAt(0), 0);
+  const settleTransition =
+    isAutoScheduled && scheduleAnimationRevision > 0
+      ? {
+          ...springSoft,
+          delay: prefersReducedMotion ? 0 : (staggerIndex % 6) * 0.02,
+        }
+      : springSnappy;
 
   return (
     <motion.div
       layout={!prefersReducedMotion}
       layoutId={
-        prefersReducedMotion ? undefined : `calendar-item-${eventInfo.event.id}`
+        prefersReducedMotion
+          ? undefined
+          : `calendar-item-${taskId ?? eventInfo.event.id}-${chunkIndex ?? 0}`
       }
-      transition={springSnappy}
+      transition={settleTransition}
       whileHover={prefersReducedMotion ? undefined : { y: -1 }}
       data-testid={isTask ? "calendar-task" : "calendar-event"}
       style={{
