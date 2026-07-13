@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import NumberFlow from "@number-flow/react";
 import { BsArrowRepeat } from "react-icons/bs";
 import { HiFolderOpen, HiPencil, HiPlus } from "react-icons/hi";
 import { toast } from "sonner";
@@ -345,10 +346,21 @@ function ProjectItem({
               : "bg-orange-500/20 text-orange-200"
           )}
         >
-          ‼ {overdueSummary.count}
+          ‼{" "}
+          <NumberFlow
+            value={overdueSummary.count}
+            transformTiming={{ duration: 180, easing: "ease-out" }}
+            respectMotionPreference
+          />
         </span>
       )}
-      <span className="text-xs text-muted-foreground">{taskCount}</span>
+      <span className="text-xs text-muted-foreground">
+        <NumberFlow
+          value={taskCount}
+          transformTiming={{ duration: 180, easing: "ease-out" }}
+          respectMotionPreference
+        />
+      </span>
 
       {hasMappings && (
         <Button

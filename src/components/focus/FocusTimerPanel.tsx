@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import NumberFlow from "@number-flow/react";
 import { Headphones, Pause, Play, Square } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -43,13 +44,6 @@ const modeLabels: Record<FocusModeName, string> = {
   FLOW: "Flow",
   DEEP_FOCUS: "Deep Focus",
 };
-
-function minutesLabel(minutes: number) {
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-  if (!hours) return `${remainder}m`;
-  return `${hours}h ${remainder}m`;
-}
 
 function mmss(seconds: number) {
   const safe = Math.max(0, seconds);
@@ -285,14 +279,37 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
       {report && (
         <div className="mt-8 grid grid-cols-2 border-y border-[#2B2F31] sm:grid-cols-4">
           {[
-            ["Focus score", report.stats.focusScore],
-            ["Streak", `${report.stats.currentStreak}d`],
-            ["Focus hours", minutesLabel(report.stats.lifetimeMinutes)],
-            ["This week", minutesLabel(report.weeklyReport.focusMinutes)],
-          ].map(([label, value]) => (
-            <div key={label} className="border-r border-[#2B2F31] px-3 py-4 last:border-r-0">
+            { label: "Focus score", value: report.stats.focusScore },
+            {
+              label: "Streak",
+              value: report.stats.currentStreak,
+              suffix: "d",
+            },
+            {
+              label: "Focus hours",
+              value: report.stats.lifetimeMinutes / 60,
+              suffix: "h",
+            },
+            {
+              label: "This week",
+              value: report.weeklyReport.focusMinutes / 60,
+              suffix: "h",
+            },
+          ].map(({ label, value, suffix }) => (
+            <div
+              key={label}
+              className="border-r border-[#2B2F31] px-3 py-4 last:border-r-0"
+            >
               <div className="text-[11px] text-[#9BA1A6]">{label}</div>
-              <div className="mt-1 text-lg font-semibold text-white">{value}</div>
+              <div className="mt-1 text-lg font-semibold text-white">
+                <NumberFlow
+                  value={value}
+                  suffix={suffix}
+                  format={{ maximumFractionDigits: 1 }}
+                  transformTiming={{ duration: 220, easing: "ease-out" }}
+                  respectMotionPreference
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -300,7 +317,12 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
 
       {report?.weeklyReport.streakStatus.atRisk && (
         <div className="glass--subtle mt-3 border-amber-300/30 bg-amber-500/10 p-2 text-xs text-amber-100">
-          One completed session today keeps your {report.stats.currentStreak}
+          One completed session today keeps your{" "}
+          <NumberFlow
+            value={report.stats.currentStreak}
+            transformTiming={{ duration: 180, easing: "ease-out" }}
+            respectMotionPreference
+          />
           -day streak warm.
         </div>
       )}

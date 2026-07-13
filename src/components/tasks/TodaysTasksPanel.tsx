@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import NumberFlow from "@number-flow/react";
 import { Play } from "lucide-react";
 
 import { newDate } from "@/lib/date-utils";
@@ -61,7 +62,11 @@ export function TodaysTasksPanel({ className }: { className?: string }) {
         </h2>
         {todaysTasks.length > 0 && (
           <span className="text-[11px] text-[var(--text-lo)]">
-            {todaysTasks.length}
+            <NumberFlow
+              value={todaysTasks.length}
+              transformTiming={{ duration: 180, easing: "ease-out" }}
+              respectMotionPreference
+            />
           </span>
         )}
       </div>

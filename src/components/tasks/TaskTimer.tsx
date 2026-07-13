@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import NumberFlow from "@number-flow/react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -66,9 +68,26 @@ export function TaskTimer({
         <div>
           <p className="text-sm font-medium">Time tracked</p>
           <p className="text-xs text-muted-foreground">
-            {totalMinutes} min logged
-            {typeof likelyDelta === "number" &&
-              ` · ${likelyDelta >= 0 ? "+" : ""}${likelyDelta} min vs likely`}
+            <NumberFlow
+              value={totalMinutes}
+              suffix=" min"
+              transformTiming={{ duration: 200, easing: "ease-out" }}
+              respectMotionPreference
+            />{" "}
+            logged
+            {typeof likelyDelta === "number" && (
+              <>
+                {" · "}
+                <NumberFlow
+                  value={likelyDelta}
+                  prefix={likelyDelta >= 0 ? "+" : undefined}
+                  suffix=" min"
+                  transformTiming={{ duration: 200, easing: "ease-out" }}
+                  respectMotionPreference
+                />{" "}
+                vs likely
+              </>
+            )}
           </p>
         </div>
         <div className="flex gap-2">

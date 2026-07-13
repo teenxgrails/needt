@@ -2,6 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
+import NumberFlow from "@number-flow/react";
 
 import { cn } from "@/lib/utils";
 
@@ -64,7 +65,11 @@ export function Column({ status, tasks, onEdit, onDelete }: ColumnProps) {
               {formatEnumValue(status)}
             </span>
             <span className="text-sm text-muted-foreground">
-              {tasks.length}
+              <NumberFlow
+                value={tasks.length}
+                transformTiming={{ duration: 180, easing: "ease-out" }}
+                respectMotionPreference
+              />
             </span>
           </div>
         </div>

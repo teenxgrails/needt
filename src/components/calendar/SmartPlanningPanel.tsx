@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import NumberFlow from "@number-flow/react";
 import {
   AlertTriangle,
   Brain,
@@ -227,10 +228,21 @@ export function SmartPlanningPanel() {
         <div className="rounded-md border border-[#323234] bg-[#262627] p-3 text-amber-100">
           <div className="flex items-center gap-2 font-medium">
             <AlertTriangle className="h-4 w-4" />
-            Overcommitted by {minutesLabel(overflowMinutes)}
+            Overcommitted by{" "}
+            <NumberFlow
+              value={overflowMinutes}
+              suffix=" min"
+              transformTiming={{ duration: 220, easing: "ease-out" }}
+              respectMotionPreference
+            />
           </div>
           <div className="mt-1 text-xs opacity-80">
-            {unscheduledAutoTasks.length} auto task
+            <NumberFlow
+              value={unscheduledAutoTasks.length}
+              transformTiming={{ duration: 180, easing: "ease-out" }}
+              respectMotionPreference
+            />{" "}
+            auto task
             {unscheduledAutoTasks.length === 1 ? "" : "s"} need room.
           </div>
         </div>
