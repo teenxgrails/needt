@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
+import { motion, useReducedMotion } from "motion/react";
 import { HiOutlineSearch, HiX } from "react-icons/hi";
 import {
   HiOutlineCalendar,
@@ -15,6 +16,8 @@ import {
   HiOutlineLightningBolt,
 } from "react-icons/hi";
 
+import { fuzzyMatch } from "@/lib/fuzzy-match";
+import { quickEase, springSnappy } from "@/lib/motion";
 import { cn, formatShortcut } from "@/lib/utils";
 
 import { useCommands } from "@/hooks/useCommands";
@@ -24,8 +27,60 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function FuzzyHighlight({ text, query }: { text: string; query: string }) {
+  const matchedIndexes = new Set(fuzzyMatch(text, query)?.indexes ?? []);
+
+  return (
+    <>
+      {Array.from(text).map((character, index) =>
+        matchedIndexes.has(index) ? (
+          <mark
+            key={`${character}-${index}`}
+            className="bg-transparent font-semibold text-white"
+          >
+            {character}
+          </mark>
+        ) : (
+          character
+        )
+      )}
+    </>
+  );
+}
+
+function AnimatedItem({
+  children,
+  index,
+}: {
+  children: ReactNode;
+  index: number;
+}) {
+  const prefersReducedMotion = useReducedMotion();
+
+  return (
+    <motion.div
+      initial={
+        prefersReducedMotion ? false : { opacity: 0, y: 4, scale: 0.995 }
+      }
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={
+        prefersReducedMotion
+          ? { duration: 0 }
+          : {
+              duration: 0.16,
+              delay: Math.min(index, 6) * 0.018,
+              ease: "easeOut",
+            }
+      }
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
+  const prefersReducedMotion = useReducedMotion();
   const [search, setSearch] = useState("");
   const [showAllCommands, setShowAllCommands] = useState(false);
   const [results, setResults] = useState<
@@ -86,21 +141,45 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
-        <Dialog.Content className="fixed left-1/2 top-[20%] z-50 w-full max-w-[640px] -translate-x-1/2">
+      <Dialog.Portal forceMount>
+        <Dialog.Overlay forceMount asChild>
+          <motion.div
+            initial={false}
+            animate={{ opacity: open ? 1 : 0 }}
+            transition={prefersReducedMotion ? { duration: 0 } : quickEase}
+            className="fixed inset-0 z-50 bg-black/55 data-[state=closed]:pointer-events-none"
+            style={{ pointerEvents: open ? "auto" : "none" }}
+          />
+        </Dialog.Overlay>
+        <Dialog.Content
+          forceMount
+          className="fixed left-1/2 top-[20%] z-50 w-full max-w-[640px] -translate-x-1/2 data-[state=closed]:pointer-events-none"
+          style={{ pointerEvents: open ? "auto" : "none" }}
+        >
           <Dialog.Title className="sr-only">Command Menu</Dialog.Title>
           <Dialog.Description className="sr-only">
             Search commands and navigate the application
           </Dialog.Description>
 
+          <motion.div
+            initial={false}
+            animate={
+              open
+                ? { opacity: 1, scale: 1, y: 0 }
+                : { opacity: 0, scale: 0.98, y: -4 }
+            }
+            transition={
+              prefersReducedMotion
+                ? { duration: 0 }
+                : open
+                  ? springSnappy
+                  : quickEase
+            }
+          >
           <Command
+            shouldFilter={false}
             className={cn(
-              "overflow-hidden rounded-lg border border-[var(--line-strong)] bg-[var(--raised)] text-[var(--text-hi)] shadow-lg",
-              "transform transition-all",
-              "data-[state=open]:animate-in data-[state=closed]:animate-out",
-              "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-              "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+              "overflow-hidden rounded-lg border border-[var(--line-strong)] bg-[var(--raised)] text-[var(--text-hi)] shadow-lg"
             )}
           >
             <div className="flex items-center border-b border-[var(--line-strong)] px-3">
@@ -220,25 +299,31 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                         section.charAt(0).toUpperCase() + section.slice(1)
                       }
                     >
-                      {sectionCommands.map((command) => {
+                      {sectionCommands.map((command, commandIndex) => {
                         const Icon = command.icon;
                         return (
-                          <Command.Item
-                            key={command.id}
-                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[var(--active)] aria-selected:text-[var(--text-hi)]"
-                            onSelect={() => {
-                              executeCommand(command.id);
-                              onOpenChange(false);
-                            }}
-                          >
-                            {Icon && <Icon className="h-4 w-4" />}
-                            <span>{command.title}</span>
-                            {command.shortcut && (
-                              <kbd className="ml-auto text-xs text-[var(--text-lo)]">
-                                {formatShortcut(command.shortcut)}
-                              </kbd>
-                            )}
-                          </Command.Item>
+                          <AnimatedItem key={command.id} index={commandIndex}>
+                            <Command.Item
+                              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[var(--active)] aria-selected:text-[var(--text-hi)]"
+                              onSelect={() => {
+                                executeCommand(command.id);
+                                onOpenChange(false);
+                              }}
+                            >
+                              {Icon && <Icon className="h-4 w-4" />}
+                              <span>
+                                <FuzzyHighlight
+                                  text={command.title}
+                                  query={search}
+                                />
+                              </span>
+                              {command.shortcut && (
+                                <kbd className="ml-auto text-xs text-[var(--text-lo)]">
+                                  {formatShortcut(command.shortcut)}
+                                </kbd>
+                              )}
+                            </Command.Item>
+                          </AnimatedItem>
                         );
                       })}
                     </Command.Group>
@@ -246,25 +331,32 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                 )}
               {results.length > 0 && (
                 <Command.Group heading="Search">
-                  {results.map((result) => (
-                    <Command.Item
+                  {results.map((result, resultIndex) => (
+                    <AnimatedItem
                       key={`${result.type}-${result.id}`}
-                      className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[#2B2F31] aria-selected:text-white"
-                      onSelect={() => {
-                        router.push(result.href);
-                        onOpenChange(false);
-                      }}
+                      index={resultIndex}
                     >
-                      <span className="w-14 text-xs text-[#9AA0A6]">
-                        {result.type}
-                      </span>
-                      <span>{result.title}</span>
-                    </Command.Item>
+                      <Command.Item
+                        className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[#2B2F31] aria-selected:text-white"
+                        onSelect={() => {
+                          router.push(result.href);
+                          onOpenChange(false);
+                        }}
+                      >
+                        <span className="w-14 text-xs text-[#9AA0A6]">
+                          {result.type}
+                        </span>
+                        <span>
+                          <FuzzyHighlight text={result.title} query={search} />
+                        </span>
+                      </Command.Item>
+                    </AnimatedItem>
                   ))}
                 </Command.Group>
               )}
             </Command.List>
           </Command>
+          </motion.div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

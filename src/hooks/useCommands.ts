@@ -2,6 +2,8 @@ import { useEffect, useMemo } from "react";
 
 import { usePathname, useRouter } from "next/navigation";
 
+import { newDate } from "@/lib/date-utils";
+import { logger } from "@/lib/logger";
 import { useCalendarCommands } from "@/lib/commands/groups/calendar";
 import { useFocusCommands } from "@/lib/commands/groups/focus";
 import { useNavigationCommands } from "@/lib/commands/groups/navigation";
@@ -10,6 +12,8 @@ import { useSystemCommands } from "@/lib/commands/groups/system";
 import { useTaskCommands } from "@/lib/commands/groups/tasks";
 import { commandRegistry } from "@/lib/commands/registry";
 import { Command } from "@/lib/commands/types";
+
+const LOG_SOURCE = "useCommands";
 
 export function useCommands() {
   const calendarCommands = useCalendarCommands();
@@ -142,7 +146,7 @@ export function useCommands() {
         }
       } else {
         // Using letter sequences
-        const currentTime = Date.now();
+        const currentTime = newDate().getTime();
 
         // If it's been too long since the last keypress, reset the sequence
         if (currentTime - lastKeyPressTime > KEY_SEQUENCE_TIMEOUT) {
@@ -180,15 +184,16 @@ export function useCommands() {
               (cmd) => cmd.shortcut === combo && !isCommandValidForPath(cmd)
             );
             if (filteredCommand) {
-              console.log(
-                "Command found but filtered out:",
-                filteredCommand.id,
-                "for combo:",
-                combo,
-                "requiredPath:",
-                filteredCommand.context?.requiredPath,
-                "navigateIfNeeded:",
-                filteredCommand.context?.navigateIfNeeded
+              logger.debug(
+                "Command shortcut is unavailable on this path",
+                {
+                  commandId: filteredCommand.id,
+                  combo,
+                  requiredPath: filteredCommand.context?.requiredPath ?? null,
+                  navigateIfNeeded:
+                    filteredCommand.context?.navigateIfNeeded ?? null,
+                },
+                LOG_SOURCE
               );
             }
           }

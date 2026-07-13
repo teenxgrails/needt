@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added spring-based task dragging with a Motion-style lift preview, reduced-motion fallbacks, and direct Today-sidebar drops onto the Day and Week calendar grids.
 - Added a lightly staggered spring settle animation when auto-scheduling moves task chips into their new calendar slots.
 - Added an immersive Focus transition that dims side content without blur, centers a Liquid Glass focus card, and animates the timer with an accessible SVG progress ring.
+- Polished the command palette with fuzzy-ranked matches, highlighted match characters, a subtle result stagger, and a reduced-motion-aware spring open/close transition.
 - Added reduced-motion-aware number transitions for task counts, project alerts, focus stats, tracked time, and planning capacity.
 - Added reduced-motion-aware list transitions for task tables, project boards, and the Today sidebar so optimistic changes settle smoothly without delaying input.
 - Added instant optimistic task creation, editing, completion, movement, and deletion across Tasks, Calendar, Focus, Smart Planning, and project drag-and-drop, with server reconciliation and automatic rollback when a request fails.
