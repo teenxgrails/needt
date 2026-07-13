@@ -1,7 +1,7 @@
 import { memo } from "react";
 
 import type { EventContentArg } from "@fullcalendar/core";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import {
   IoCheckmarkCircle,
   IoCheckmarkCircleOutline,
@@ -11,6 +11,7 @@ import {
 
 import { getMonthEventDisplay } from "@/lib/calendar-event-display";
 import { isTaskOverdue } from "@/lib/task-utils";
+import { springSnappy } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { useSettingsStore } from "@/store/settings";
@@ -81,6 +82,10 @@ export const CalendarEventContent = memo(function CalendarEventContent({
   return (
     <motion.div
       layout={!prefersReducedMotion}
+      layoutId={
+        prefersReducedMotion ? undefined : `calendar-item-${eventInfo.event.id}`
+      }
+      transition={springSnappy}
       whileHover={prefersReducedMotion ? undefined : { y: -1 }}
       data-testid={isTask ? "calendar-task" : "calendar-event"}
       style={{

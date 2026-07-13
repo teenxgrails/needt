@@ -41,6 +41,7 @@ import { EventModal } from "./EventModal";
 import { EventQuickView } from "./EventQuickView";
 import { resolveCalendarItemId } from "./calendar-item-id";
 import { useCalendarDragHandlers } from "./useCalendarDragHandlers";
+import { useCalendarExternalTaskDrop } from "./useCalendarExternalTaskDrop";
 
 interface WeekViewProps {
   currentDate: Date;
@@ -87,6 +88,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
     null
   );
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
+  const handleExternalTaskDrop = useCalendarExternalTaskDrop();
 
   // Motion-style dashed guide line that follows the cursor's time across the
   // whole grid, separate from FullCalendar's live current-time indicator.
@@ -489,10 +491,12 @@ export function WeekView({ currentDate }: WeekViewProps) {
         datesSet={handleDatesSet}
         eventContent={renderEventContent}
         eventDrop={handleEventDrop}
+        droppable={true}
+        drop={handleExternalTaskDrop}
         eventResize={handleEventResize}
         eventResizableFromStart={true}
         snapDuration="00:15:00"
-        dragRevertDuration={250}
+        dragRevertDuration={220}
       />
       {quickViewItem && (
         <EventQuickView

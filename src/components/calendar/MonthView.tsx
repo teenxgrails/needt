@@ -295,7 +295,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
         datesSet={handleDatesSet}
         eventContent={renderEventContent}
         eventDrop={handleEventDrop}
-        dragRevertDuration={250}
+        dragRevertDuration={220}
       />
 
       <EventModal

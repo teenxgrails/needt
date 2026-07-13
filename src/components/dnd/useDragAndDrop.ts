@@ -4,27 +4,19 @@ import { Project } from "@/types/project";
 import { Task } from "@/types/task";
 
 export function useDraggableTask(task: Task) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: task.id,
-      data: {
-        type: "task",
-        task,
-      },
-    });
-
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+    data: {
+      type: "task",
+      task,
+    },
+  });
 
   return {
     draggableProps: {
       ...attributes,
       ...listeners,
       ref: setNodeRef,
-      style,
     },
     isDragging,
   };

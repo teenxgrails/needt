@@ -1,7 +1,8 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
 import { HiClock, HiLockClosed, HiPencil, HiTrash } from "react-icons/hi";
+
+import { useDraggableTask } from "@/components/dnd/useDragAndDrop";
 
 import {
   format,
@@ -76,31 +77,15 @@ const formatContextualDate = (date: Date) => {
 };
 
 export function BoardTask({ task, onEdit, onDelete }: BoardTaskProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: task.id,
-      data: {
-        type: "task",
-        task,
-      },
-    });
-
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const { draggableProps, isDragging } = useDraggableTask(task);
 
   return (
     <div className="group relative">
       <div
-        ref={setNodeRef}
-        {...attributes}
-        {...listeners}
-        style={style}
+        {...draggableProps}
         className={cn(
-          "cursor-grab rounded-lg border bg-card p-3 shadow-sm transition-shadow hover:shadow-md",
-          isDragging && "opacity-50"
+          "cursor-grab rounded-lg border bg-card p-3 shadow-sm transition-[opacity,box-shadow] duration-150 hover:shadow-md active:cursor-grabbing",
+          isDragging && "opacity-30"
         )}
       >
         <div className="space-y-2">

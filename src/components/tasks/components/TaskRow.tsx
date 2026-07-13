@@ -59,13 +59,13 @@ export function TaskRow({
       }}
       className={cn(
         "cursor-pointer transition-colors hover:bg-[var(--active)]",
-        isDragging ? "opacity-50" : "",
+        isDragging ? "opacity-30" : "",
         isFutureTask ? "text-[var(--text-lo)]" : ""
       )}
     >
       <td className="px-3 py-2">
         <div
-          className="cursor-grab text-muted-foreground hover:text-foreground"
+          className="cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
           {...draggableProps}
           onClick={(e) => e.stopPropagation()}
         >

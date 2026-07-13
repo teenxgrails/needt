@@ -35,6 +35,7 @@ import { EventModal } from "./EventModal";
 import { EventQuickView } from "./EventQuickView";
 import { resolveCalendarItemId } from "./calendar-item-id";
 import { useCalendarDragHandlers } from "./useCalendarDragHandlers";
+import { useCalendarExternalTaskDrop } from "./useCalendarExternalTaskDrop";
 
 interface DayViewProps {
   currentDate: Date;
@@ -80,6 +81,7 @@ export function DayView({ currentDate }: DayViewProps) {
     null
   );
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
+  const handleExternalTaskDrop = useCalendarExternalTaskDrop();
 
   // Update events when the calendar view changes
   const handleDatesSet = useCallback(
@@ -386,10 +388,12 @@ export function DayView({ currentDate }: DayViewProps) {
         datesSet={handleDatesSet}
         eventContent={renderEventContent}
         eventDrop={handleEventDrop}
+        droppable={true}
+        drop={handleExternalTaskDrop}
         eventResize={handleEventResize}
         eventResizableFromStart={true}
         snapDuration="00:15:00"
-        dragRevertDuration={250}
+        dragRevertDuration={220}
       />
 
       <EventModal
