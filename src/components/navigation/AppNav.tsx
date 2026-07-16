@@ -113,6 +113,8 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
         className
       )}
     >
+      <TodaysTasksPanel className="mb-2 max-h-[168px] flex-none max-md:hidden" />
+
       <div className="mb-2 max-md:hidden">
         <MiniCalendar currentDate={currentDate} onDateClick={setDate} compact />
       </div>
@@ -180,8 +182,6 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
           );
         })}
       </nav>
-
-      <TodaysTasksPanel className="mt-3 min-h-0 flex-1 max-md:hidden" />
 
       <div className="mt-auto max-md:hidden">
         <Link

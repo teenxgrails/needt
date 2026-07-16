@@ -51,7 +51,7 @@ import {
 
 const LOG_SOURCE = "CalendarTaskActionsMenu";
 const MENU_ITEM_CLASS =
-  "h-[30px] gap-2 rounded-md px-2 py-1.5 text-[14px] font-normal text-white focus:bg-[#3A3F42] focus:text-white [&>svg]:size-[18px] [&>svg]:text-[#8E959A]";
+  "h-8 gap-2 rounded-md px-2 py-1.5 text-[13px] font-normal text-[var(--text-primary)] focus:bg-[var(--menu-item-hover)] focus:text-[var(--text-primary)] [&>svg]:size-4 [&>svg]:text-[var(--text-secondary)]";
 
 interface CalendarTaskActionsMenuProps {
   task: Task;
@@ -211,7 +211,7 @@ export function CalendarTaskActionsMenu({
             aria-label="Task actions"
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
-            className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded text-[#A9B0B5] opacity-0 transition-[opacity,background-color,color] duration-150 hover:bg-[#4A4F52] hover:text-white group-hover:opacity-100 data-[state=open]:bg-[#4A4F52] data-[state=open]:text-white data-[state=open]:opacity-100"
+            className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded border border-transparent text-[var(--text-secondary)] opacity-0 transition-[opacity,background-color,border-color,color] duration-150 hover:border-[var(--control-border)] hover:bg-[var(--control-bg)] hover:text-[var(--text-primary)] group-hover:opacity-100 data-[state=open]:border-[var(--control-border)] data-[state=open]:bg-[var(--control-bg)] data-[state=open]:text-[var(--text-primary)] data-[state=open]:opacity-100"
           >
             <MoreHorizontal className="h-3.5 w-3.5" />
           </button>
@@ -221,14 +221,14 @@ export function CalendarTaskActionsMenu({
           side="right"
           sideOffset={6}
           collisionPadding={10}
-          className="w-[209px] rounded-lg border-[#3A3F42] bg-[#313538] p-1 text-white shadow-none"
+          className="w-[220px] border-[var(--menu-border)] bg-[var(--menu-bg)] p-1 text-[var(--text-primary)] shadow-lg"
           onClick={(event) => event.stopPropagation()}
         >
           <DropdownMenuItem
             className={MENU_ITEM_CLASS}
             onSelect={() => run("Complete task", () => completeTask(task.id))}
           >
-            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#35B77A] text-white">
+            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[var(--color-success)] text-white">
               <Check className="h-3 w-3" />
             </span>
             Complete task
@@ -237,13 +237,13 @@ export function CalendarTaskActionsMenu({
             className={MENU_ITEM_CLASS}
             onSelect={() => run("Cancel task", cancelTask)}
           >
-            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[#F0565B] text-[#202425]">
+            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[var(--color-danger)] text-[var(--surface-panel)]">
               <X className="h-3.5 w-3.5" />
             </span>
             Cancel task
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="-mx-1 my-1 bg-[#3A3F42]" />
+          <DropdownMenuSeparator className="-mx-1 my-1 bg-[var(--border-subtle)]" />
 
           <DropdownMenuItem
             className={MENU_ITEM_CLASS}
@@ -260,7 +260,7 @@ export function CalendarTaskActionsMenu({
             Open task
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="-mx-1 my-1 bg-[#3A3F42]" />
+          <DropdownMenuSeparator className="-mx-1 my-1 bg-[var(--border-subtle)]" />
 
           <DropdownMenuItem
             className={MENU_ITEM_CLASS}
@@ -305,7 +305,7 @@ export function CalendarTaskActionsMenu({
             Do ASAP
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="-mx-1 my-1 bg-[#3A3F42]" />
+          <DropdownMenuSeparator className="-mx-1 my-1 bg-[var(--border-subtle)]" />
 
           <DropdownMenuItem
             className={MENU_ITEM_CLASS}
@@ -348,17 +348,17 @@ export function CalendarTaskActionsMenu({
             Save as template
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="-mx-1 my-1 bg-[#3A3F42]" />
+          <DropdownMenuSeparator className="-mx-1 my-1 bg-[var(--border-subtle)]" />
 
           <DropdownMenuItem
-            className={`${MENU_ITEM_CLASS} bg-[#34393B] focus:bg-[#3B4144]`}
+            className={`${MENU_ITEM_CLASS} bg-[var(--surface-raised)]`}
             onSelect={() => run("Unschedule task", unschedule)}
           >
             <CalendarX2 />
             Unschedule
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator className="-mx-1 my-1 bg-[#3A3F42]" />
+          <DropdownMenuSeparator className="-mx-1 my-1 bg-[var(--border-subtle)]" />
 
           <DropdownMenuItem
             className={MENU_ITEM_CLASS}
@@ -368,7 +368,7 @@ export function CalendarTaskActionsMenu({
             Archive
           </DropdownMenuItem>
           <DropdownMenuItem
-            className={`${MENU_ITEM_CLASS} text-[#FF6268] focus:bg-[#3B3335] focus:text-[#FF6B70] [&>svg]:text-[#FF6268]`}
+            className={`${MENU_ITEM_CLASS} text-[var(--color-danger)] focus:bg-[var(--button-danger-bg)] focus:text-[var(--color-danger)] [&>svg]:text-[var(--color-danger)]`}
             onSelect={() => run("Delete task", () => deleteTask(task.id))}
           >
             <Trash2 />

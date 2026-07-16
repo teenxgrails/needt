@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Draggable } from "@fullcalendar/interaction";
-import NumberFlow from "@number-flow/react";
 import { Play } from "lucide-react";
 
 import { newDate } from "@/lib/date-utils";
@@ -80,19 +79,6 @@ export function TodaysTasksPanel({ className }: { className?: string }) {
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div className="mb-1 flex items-center justify-between px-2">
-        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-lo)]">
-          Today&apos;s tasks
-        </h2>
-        <span className="text-[11px] text-[var(--text-lo)]">
-          <NumberFlow
-            value={todaysTasks.length}
-            transformTiming={{ duration: 180, easing: "ease-out" }}
-            respectMotionPreference
-          />
-        </span>
-      </div>
-
       <div
         ref={externalDragContainerRef}
         className="min-h-0 flex-1 overflow-y-auto"
@@ -112,16 +98,16 @@ export function TodaysTasksPanel({ className }: { className?: string }) {
                   task.duration ?? task.estimatedMinutes ?? 30
                 }
               >
-                <div className="group relative flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[var(--active)] active:cursor-grabbing">
+                <div className="group relative flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[var(--surface-hover)] active:cursor-grabbing">
                   <span
                     className="h-3 w-3 flex-none rounded-full border-2"
                     style={{ borderColor: URGENCY_COLORS[urgency] }}
                     aria-hidden
                   />
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--text-hi)]">
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-[var(--text-primary)]">
                     {task.title}
                   </span>
-                  <span className="flex-none text-[11px] tabular-nums text-[var(--text-lo)] transition-opacity duration-150 ease-out group-hover:opacity-0">
+                  <span className="flex-none text-[11px] tabular-nums text-[var(--text-secondary)] transition-opacity duration-150 ease-out group-hover:opacity-0">
                     {task.deadline || task.dueDate || task.scheduledStart
                       ? formatDueTime(
                           newDate(
@@ -136,9 +122,9 @@ export function TodaysTasksPanel({ className }: { className?: string }) {
                     type="button"
                     onClick={() => handleStart(task)}
                     aria-label={`Start ${task.title}`}
-                    className="pointer-events-none absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 translate-x-1 place-items-center rounded-full bg-[var(--accent)] text-white opacity-0 transition-all duration-150 ease-out group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100"
+                    className="pointer-events-none absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 translate-x-1 place-items-center rounded-md border border-[var(--control-border)] bg-[var(--control-bg)] text-[var(--text-primary)] opacity-0 transition-[opacity,transform,background-color] duration-150 ease-out hover:bg-[var(--control-bg-hover)] group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100"
                   >
-                    <Play className="h-3 w-3 fill-current" />
+                    <Play className="h-3 w-3" />
                   </button>
                 </div>
               </li>

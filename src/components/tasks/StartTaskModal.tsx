@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -110,24 +111,24 @@ export function StartTaskModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px]">
-        <DialogHeader>
-          <DialogTitle>Start task now</DialogTitle>
-          <DialogDescription className="truncate text-[var(--text-hi)]">
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[400px]">
+        <DialogHeader className="border-b border-[var(--border-subtle)] px-5 py-4 pr-12">
+          <DialogTitle className="text-[16px]">Start task now</DialogTitle>
+          <DialogDescription className="line-clamp-2 pt-0.5 text-[13px] text-[var(--text-secondary)]">
             {task?.title}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 px-5 py-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[var(--text-hi)]">
+            <label className="text-[13px] font-medium text-[var(--text-primary)]">
               How long are you going to work on this task now?
             </label>
             <Select
               value={String(duration)}
               onValueChange={(value) => setDuration(Number(value))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-[var(--control-height-sm)]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -140,30 +141,34 @@ export function StartTaskModal({
             </Select>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--text-hi)]">
-            <input
-              type="checkbox"
+          <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-[var(--text-primary)]">
+            <Checkbox
               checked={startFocus}
-              onChange={(event) => setStartFocus(event.target.checked)}
-              className="h-4 w-4 rounded border-[var(--line-strong)] bg-[var(--raised)] accent-[var(--accent)]"
+              onCheckedChange={(checked) => setStartFocus(checked === true)}
             />
             Start focus on this task
           </label>
 
-          <p className="text-xs text-[var(--text-lo)]">
+          <p className="text-[12px] text-[var(--text-muted)]">
             We&apos;ll move current task(s) to a different time.
           </p>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 border-t border-[var(--border-subtle)] px-5 py-3 sm:space-x-0">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => onOpenChange(false)}
             disabled={isStarting}
           >
             Cancel
           </Button>
-          <Button onClick={handleStart} disabled={isStarting || !task}>
+          <Button
+            size="sm"
+            className="min-w-[76px]"
+            onClick={handleStart}
+            disabled={isStarting || !task}
+          >
             {isStarting ? "Starting…" : "Start"}
           </Button>
         </DialogFooter>

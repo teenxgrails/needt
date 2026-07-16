@@ -49,19 +49,13 @@ export function getTaskUrgency(
 }
 
 /**
- * Is this an active task that belongs in the "today's tasks" panel? Includes
- * incomplete tasks that are overdue or due by the end of today.
+ * Is this an active task that belongs in today's sidebar list? A task is shown
+ * only when its effective due date, scheduled block, or start date is today.
  */
 export function isTodayTask(task: Task, now: Date = newDate()): boolean {
   if (task.status === TaskStatus.COMPLETED) return false;
-  const due = task.deadline
-    ? newDate(task.deadline)
-    : task.dueDate
-      ? newDate(task.dueDate)
-      : null;
-  const endOfToday = newDate(now);
-  endOfToday.setHours(23, 59, 59, 999);
-  const startsToday = [task.scheduledStart, task.startDate].some((value) => {
+
+  const isSameLocalDay = (value: Date | string | null | undefined) => {
     if (!value) return false;
     const date = newDate(value);
     return (
@@ -69,8 +63,12 @@ export function isTodayTask(task: Task, now: Date = newDate()): boolean {
       date.getMonth() === now.getMonth() &&
       date.getDate() === now.getDate()
     );
-  });
-  return startsToday || (!!due && due.getTime() <= endOfToday.getTime());
+  };
+
+  const effectiveDueDate = task.deadline ?? task.dueDate;
+  return [effectiveDueDate, task.scheduledStart, task.startDate].some(
+    isSameLocalDay
+  );
 }
 
 /**

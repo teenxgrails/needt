@@ -54,9 +54,12 @@ describe("getTaskUrgency", () => {
 });
 
 describe("isTodayTask", () => {
-  it("includes overdue and due-today tasks but excludes completed ones", () => {
+  it("includes only due-today tasks and excludes completed or other days", () => {
     const dueToday = makeTask({
       dueDate: new Date("2026-07-11T18:00:00.000Z"),
+    });
+    const yesterday = makeTask({
+      dueDate: new Date("2026-07-10T18:00:00.000Z"),
     });
     const completed = makeTask({
       dueDate: new Date("2026-07-11T18:00:00.000Z"),
@@ -66,6 +69,7 @@ describe("isTodayTask", () => {
       dueDate: new Date("2026-07-12T18:00:00.000Z"),
     });
     expect(isTodayTask(dueToday, now)).toBe(true);
+    expect(isTodayTask(yesterday, now)).toBe(false);
     expect(isTodayTask(completed, now)).toBe(false);
     // A task due tomorrow is not part of today's list.
     expect(isTodayTask(tomorrow, now)).toBe(false);
