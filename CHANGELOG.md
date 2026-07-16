@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Established the finished Calendar palette and controls as the Needt design system, with primitive, semantic, and component tokens, theme-ready root switching, and shared buttons, inputs, pickers, menus, dialogs, switches, checkboxes, and tooltips consuming the same source of truth.
 - Matched calendar toolbar controls to Motion's exact 25px height and 13px type, while restoring a configurable multi-color accent palette instead of forcing the interface to one graphite color.
 - Aligned the week header/time gutter with Motion and added a compact gridded all-day rail.
 - Refined calendar working and non-working hour shades while preserving the current-day hierarchy and consistent one-pixel grid lines.

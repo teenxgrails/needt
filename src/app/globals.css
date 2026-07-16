@@ -5,19 +5,161 @@
 @layer base {
   :root {
     color-scheme: light;
-    --app-bg: #f6f7fb;
-    --raised: #ffffff;
-    --raised-2: #eef1f8;
-    --active: #e9edf7;
-    --line: #d9dde7;
-    --line-strong: #cbd2df;
-    --text-hi: #11131c;
-    --text-lo: #5d6478;
-    --accent: #6366f1;
-    --accent-contrast: #ffffff;
-    --bg-0: #f6f7fb;
-    --bg-1: #ffffff;
-    --bg-2: #eef1f8;
+
+    /*
+     * Needt design tokens
+     * primitive -> semantic -> component
+     *
+     * New screens must consume semantic/component tokens. The legacy aliases
+     * below keep older screens compatible while they are migrated.
+     */
+
+    /* Primitive palette: raw values are defined in this layer only. */
+    --primitive-white: #ffffff;
+    --primitive-neutral-025: #f6f7fb;
+    --primitive-neutral-050: #f2f2f2;
+    --primitive-neutral-100: #ecedee;
+    --primitive-neutral-200: #d9dde7;
+    --primitive-neutral-250: #c7ccd1;
+    --primitive-neutral-300: #cbd2df;
+    --primitive-neutral-400: #9ba1a6;
+    --primitive-neutral-525: #6b7075;
+    --primitive-neutral-500: #737a80;
+    --primitive-neutral-550: #656b70;
+    --primitive-neutral-590: #44494c;
+    --primitive-neutral-600: #3a3f42;
+    --primitive-neutral-650: #383d40;
+    --primitive-neutral-700: #313538;
+    --primitive-neutral-705: #303335;
+    --primitive-neutral-750: #2b2f31;
+    --primitive-neutral-800: #26292b;
+    --primitive-neutral-825: #202223;
+    --primitive-neutral-850: #202425;
+    --primitive-neutral-865: #1e2021;
+    --primitive-neutral-875: #1d1f20;
+    --primitive-neutral-900: #1b1d1e;
+    --primitive-neutral-950: #151718;
+    --primitive-indigo-500: #6366f1;
+    --primitive-blue-500: #4a7bff;
+    --primitive-violet-500: #8b5cf6;
+    --primitive-magenta-500: #e64bd0;
+    --primitive-teal-400: #2dd4bf;
+    --primitive-gold-400: #f5c451;
+    --primitive-red-500: #f0565b;
+    --primitive-green-500: #3cc487;
+
+    /* Semantic layer: light mode. */
+    --surface-canvas: var(--primitive-neutral-025);
+    --surface-panel: var(--primitive-white);
+    --surface-raised: var(--primitive-white);
+    --surface-control: #eef1f8;
+    --surface-control-hover: #e4e8f1;
+    --surface-input: var(--primitive-white);
+    --surface-hover: #e9edf7;
+    --surface-selected: var(--primitive-neutral-100);
+    --surface-inverse: var(--primitive-neutral-900);
+    --border-subtle: var(--primitive-neutral-200);
+    --border-control: var(--primitive-neutral-300);
+    --text-primary: #11131c;
+    --text-secondary: #5d6478;
+    --text-muted: #737a80;
+    --text-inverse: var(--primitive-white);
+    --color-accent: var(--primitive-indigo-500);
+    --color-accent-contrast: var(--primitive-white);
+    --color-danger: var(--primitive-red-500);
+    --color-success: var(--primitive-green-500);
+
+    /* Component layer: shared geometry and chrome. */
+    --control-height: 36px;
+    --control-height-sm: 32px;
+    --control-radius: var(--radius);
+    --control-bg: var(--surface-control);
+    --control-bg-hover: var(--surface-control-hover);
+    --control-border: var(--border-control);
+    --control-fg: var(--text-primary);
+    --control-fg-muted: var(--text-secondary);
+    --input-bg: var(--surface-input);
+    --input-border: var(--border-control);
+    --input-border-focus: var(--border-control);
+    --button-primary-bg: var(--color-accent);
+    --button-primary-border: var(--color-accent);
+    --button-primary-fg: var(--color-accent-contrast);
+    --button-secondary-bg: var(--control-bg);
+    --button-secondary-bg-hover: var(--control-bg-hover);
+    --button-secondary-border: var(--control-border);
+    --button-danger-bg: color-mix(
+      in srgb,
+      var(--color-danger) 15%,
+      transparent
+    );
+    --button-danger-bg-hover: color-mix(
+      in srgb,
+      var(--color-danger) 24%,
+      transparent
+    );
+    --button-danger-border: color-mix(
+      in srgb,
+      var(--color-danger) 45%,
+      transparent
+    );
+    --menu-bg: var(--surface-panel);
+    --menu-border: var(--border-control);
+    --menu-item-hover: var(--surface-hover);
+    --menu-radius: 8px;
+    --popover-bg: var(--surface-panel);
+    --popover-border: var(--border-control);
+    --popover-radius: 8px;
+    --dialog-bg: var(--surface-panel);
+    --dialog-border: var(--border-control);
+    --dialog-radius: 8px;
+    --switch-off-bg: color-mix(in srgb, var(--text-primary) 6%, transparent);
+    --switch-on-bg: var(--primitive-blue-500);
+    --switch-thumb-bg: var(--primitive-white);
+    --calendar-canvas-bg: var(--surface-canvas);
+    --calendar-grid-line: var(--border-subtle);
+    --calendar-toolbar-bg: var(--surface-control);
+    --calendar-toolbar-bg-hover: var(--surface-control-hover);
+    --calendar-toolbar-border: var(--border-control);
+    --calendar-toolbar-height: 25px;
+    --calendar-toolbar-icon-size: 25px;
+    --calendar-toolbar-font-size: 13px;
+    --calendar-options-width: 322px;
+    --calendar-options-control-height: 30px;
+    --calendar-working-hours-bg: color-mix(
+      in srgb,
+      var(--surface-canvas) 96%,
+      var(--text-primary)
+    );
+    --calendar-non-working-hours-bg: color-mix(
+      in srgb,
+      var(--surface-canvas) 92%,
+      var(--text-primary)
+    );
+    --calendar-today-non-working-hours-bg: color-mix(
+      in srgb,
+      var(--surface-canvas) 94%,
+      var(--text-primary)
+    );
+    --calendar-task-bg: var(--surface-control);
+    --calendar-task-border: var(--border-control);
+    --calendar-now-indicator: var(--text-primary);
+    --calendar-hover-guide: var(--primitive-neutral-525);
+    --calendar-hover-guide-label: var(--primitive-neutral-250);
+
+    /* Backwards-compatible aliases. */
+    --app-bg: var(--surface-canvas);
+    --raised: var(--surface-raised);
+    --raised-2: var(--surface-panel);
+    --active: var(--surface-hover);
+    --line: var(--border-subtle);
+    --line-strong: var(--border-control);
+    --text-hi: var(--text-primary);
+    --text-lo: var(--text-secondary);
+    --accent: var(--color-accent);
+    --accent-contrast: var(--color-accent-contrast);
+    --bg-0: var(--surface-canvas);
+    --bg-1: var(--surface-raised);
+    --bg-2: var(--surface-panel);
     --acc-blue: #4a7bff;
     --acc-violet: #8b5cf6;
     --acc-magenta: #e64bd0;
@@ -68,19 +210,32 @@
 
   .dark {
     color-scheme: dark;
-    --app-bg: #1b1d1e;
-    --raised: #262627;
-    --raised-2: #2b2f31;
-    --active: #2b2f31;
-    --line: #2a2c2d;
-    --line-strong: #323334;
-    --text-hi: #f4f5f6;
-    --text-lo: #9aa0a6;
-    --accent: #6366f1;
-    --accent-contrast: #ffffff;
-    --bg-0: #1b1d1e;
-    --bg-1: #262627;
-    --bg-2: #2b2f31;
+    /* Semantic layer: the finished Calendar is the dark-theme reference. */
+    --surface-canvas: var(--primitive-neutral-900);
+    --surface-panel: var(--primitive-neutral-850);
+    --surface-raised: var(--primitive-neutral-800);
+    --surface-control: var(--primitive-neutral-700);
+    --surface-control-hover: var(--primitive-neutral-650);
+    --surface-input: var(--primitive-neutral-950);
+    --surface-hover: var(--primitive-neutral-750);
+    --surface-selected: var(--primitive-neutral-100);
+    --surface-inverse: var(--primitive-neutral-100);
+    --border-subtle: var(--primitive-neutral-750);
+    --border-control: var(--primitive-neutral-600);
+    --text-primary: var(--primitive-neutral-050);
+    --text-secondary: var(--primitive-neutral-400);
+    --text-muted: var(--primitive-neutral-500);
+    --text-inverse: var(--primitive-neutral-900);
+    --color-accent: var(--primitive-indigo-500);
+    --color-accent-contrast: var(--primitive-white);
+    --color-danger: var(--primitive-red-500);
+    --color-success: var(--primitive-green-500);
+    --calendar-working-hours-bg: var(--primitive-neutral-875);
+    --calendar-non-working-hours-bg: var(--primitive-neutral-825);
+    --calendar-today-non-working-hours-bg: var(--primitive-neutral-865);
+    --calendar-task-bg: var(--primitive-neutral-705);
+    --calendar-task-border: var(--primitive-neutral-590);
+    --calendar-now-indicator: var(--text-primary);
     --acc-blue: #4a7bff;
     --acc-violet: #8b5cf6;
     --acc-magenta: #e64bd0;
@@ -510,10 +665,10 @@ html[data-animations="off"] *::after {
   --fc-page-bg-color: transparent;
   --fc-neutral-bg-color: var(--raised);
   --fc-neutral-text-color: var(--text-lo);
-  --fc-border-color: #2b2f31;
+  --fc-border-color: var(--calendar-grid-line);
   --fc-today-bg-color: var(--active);
-  --fc-now-indicator-color: var(--accent);
-  color: var(--text-hi);
+  --fc-now-indicator-color: var(--color-accent);
+  color: var(--text-primary);
 }
 
 .fc .fc-toolbar {
@@ -548,7 +703,7 @@ html[data-animations="off"] *::after {
 
 .fc .fc-timegrid-slot-label {
   @apply text-[10px] font-normal leading-none;
-  color: #9ba1a6;
+  color: var(--text-secondary);
 }
 
 .fc .fc-event {
@@ -562,8 +717,8 @@ html[data-animations="off"] *::after {
    the card inside it. Keep task blocks calm and neutral at both layers so the
    generated task color can never flash as a bright calendar event. */
 .fc .fc-event.calendar-task {
-  background: #303335 !important;
-  border-color: #44494c !important;
+  background: var(--calendar-task-bg) !important;
+  border-color: var(--calendar-task-border) !important;
 }
 
 .fc .fc-event.calendar-task .fc-event-main {
@@ -591,7 +746,7 @@ html[data-animations="off"] *::after {
    than the library's default accent line and triangle. */
 .fc .fc-timegrid-now-indicator-line {
   z-index: 6;
-  border-color: #f4f5f6 !important;
+  border-color: var(--calendar-now-indicator) !important;
   border-top-width: 1px !important;
   opacity: 0.96;
   pointer-events: none;
@@ -605,7 +760,7 @@ html[data-animations="off"] *::after {
   width: 14px;
   height: 14px;
   border-radius: 9999px;
-  background: #f4f5f6;
+  background: var(--calendar-now-indicator);
 }
 
 .fc .fc-timegrid-now-indicator-arrow {
@@ -616,11 +771,11 @@ html[data-animations="off"] *::after {
    (#1B1D1E): today is flat, while working and non-working hours are subtly
    stepped without turning the calendar into grey blocks. */
 .fc .fc-timegrid-col-frame {
-  background: #1d1f20;
+  background: var(--calendar-working-hours-bg);
 }
 
 .fc .fc-timegrid-col-bg .fc-non-business {
-  background: #202223 !important;
+  background: var(--calendar-non-working-hours-bg) !important;
 }
 
 .fc .fc-day-today {
@@ -628,17 +783,17 @@ html[data-animations="off"] *::after {
 }
 
 .fc .fc-day-today .fc-timegrid-col-frame {
-  background: #1b1d1e;
+  background: var(--calendar-canvas-bg);
 }
 
 .fc .fc-day-today .fc-timegrid-col-bg .fc-non-business {
-  background: #1e2021 !important;
+  background: var(--calendar-today-non-working-hours-bg) !important;
 }
 
 .fc .fc-day-today .fc-daygrid-day-number {
   border-radius: 6px;
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
 }
 
 /* Week/day header renders its own today pill (on the number only) via
@@ -666,7 +821,7 @@ html[data-animations="off"] *::after {
 
 /* Horizontal hour lines (major slot lanes only). */
 .fc .fc-timegrid-slots .fc-timegrid-slot-lane {
-  border-top: 1px solid #2b2f31 !important;
+  border-top: 1px solid var(--calendar-grid-line) !important;
 }
 
 /* Keep hourly rules above FullCalendar's business-hours overlays so they
@@ -679,7 +834,7 @@ html[data-animations="off"] *::after {
 
 /* Vertical day-column separators. */
 .fc .fc-timegrid-cols .fc-timegrid-col {
-  border-left: 1px solid #2b2f31 !important;
+  border-left: 1px solid var(--calendar-grid-line) !important;
 }
 
 .fc .fc-timegrid-cols .fc-timegrid-axis + .fc-timegrid-col {
@@ -687,7 +842,7 @@ html[data-animations="off"] *::after {
 }
 
 .fc .fc-col-header-cell {
-  background: #1b1d1e !important;
+  background: var(--calendar-canvas-bg) !important;
   height: 45px;
 }
 
@@ -699,14 +854,14 @@ html[data-animations="off"] *::after {
 .fc .fc-scrollgrid-section-header > td,
 .fc .fc-timegrid-divider,
 .fc .fc-daygrid-body {
-  background: #1b1d1e !important;
+  background: var(--calendar-canvas-bg) !important;
 }
 
 /* Keep every calendar canvas on the same base color. Grid and event borders
    are deliberately left untouched. */
 .fc .fc-daygrid-day,
 .fc .fc-daygrid-day-frame {
-  background: #1b1d1e !important;
+  background: var(--calendar-canvas-bg) !important;
 }
 
 .fc-tz-corner .fc-scrollgrid-section-body:first-of-type > td,
@@ -715,18 +870,18 @@ html[data-animations="off"] *::after {
 .fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-daygrid-day-frame {
   min-height: 21px !important;
   height: 21px !important;
-  background: #1b1d1e !important;
+  background: var(--calendar-canvas-bg) !important;
 }
 
 .fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-timegrid-axis,
 .fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-daygrid-day {
-  border-top: 1px solid #2b2f31 !important;
-  border-bottom: 1px solid #2b2f31 !important;
+  border-top: 1px solid var(--calendar-grid-line) !important;
+  border-bottom: 1px solid var(--calendar-grid-line) !important;
 }
 
 .fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-daygrid-day {
-  border-left: 1px solid #2b2f31 !important;
-  border-right: 1px solid #2b2f31 !important;
+  border-left: 1px solid var(--calendar-grid-line) !important;
+  border-right: 1px solid var(--calendar-grid-line) !important;
 }
 
 .fc-tz-corner
@@ -737,12 +892,12 @@ html[data-animations="off"] *::after {
 }
 
 .fc .fc-timegrid-divider {
-  border-color: #2b2f31 !important;
+  border-color: var(--calendar-grid-line) !important;
 }
 
 /* Unify all grid lines (hour rows + day separators) to Motion's #2B2F31 */
 .fc {
-  --fc-border-color: #2b2f31;
+  --fc-border-color: var(--calendar-grid-line);
 }
 
 .fc .fc-col-header-cell-cushion {
@@ -767,7 +922,7 @@ html[data-animations="off"] *::after {
   transform: translateY(-50%);
   font-size: 12px;
   font-weight: 500;
-  color: #9ba1a6;
+  color: var(--text-secondary);
   pointer-events: none;
 }
 
@@ -813,7 +968,7 @@ html[data-animations="off"] *::after {
   left: 0;
   z-index: 4;
   height: 0;
-  border-top: 1px dashed #6b7075;
+  border-top: 1px dashed var(--calendar-hover-guide);
   pointer-events: none;
 }
 
@@ -822,9 +977,9 @@ html[data-animations="off"] *::after {
   top: -8px;
   left: 6px;
   border-radius: 4px;
-  background: #1b1d1e;
+  background: var(--calendar-canvas-bg);
   padding: 1px 4px;
-  color: #c7ccd1;
+  color: var(--calendar-hover-guide-label);
   font-size: 10px;
   line-height: 1;
   white-space: nowrap;
@@ -837,7 +992,7 @@ html[data-animations="off"] *::after {
   width: 56px !important;
   min-width: 56px !important;
   box-sizing: border-box;
-  background: #1b1d1e !important;
+  background: var(--calendar-canvas-bg) !important;
   border-right: 0 !important;
   border-left: 0 !important;
   border-top-color: transparent !important;
@@ -855,12 +1010,12 @@ html[data-animations="off"] *::after {
 }
 
 .fc .fc-day-today .fc-timegrid-col-bg .fc-non-business:hover {
-  background: #1e2021 !important;
+  background: var(--calendar-today-non-working-hours-bg) !important;
 }
 
 /* Uniform Flowday canvas behind columns, gutter and gaps. */
 .fc .fc-view-harness {
-  background: #1b1d1e;
+  background: var(--calendar-canvas-bg);
 }
 
 .fc .fc-timegrid-col:hover,
@@ -874,7 +1029,7 @@ html[data-animations="off"] *::after {
   --fc-page-bg-color: transparent;
   --fc-neutral-bg-color: var(--raised);
   --fc-neutral-text-color: var(--text-lo);
-  --fc-border-color: #2b2f31;
+  --fc-border-color: var(--calendar-grid-line);
 
   --fc-button-text-color: #ffffff;
   --fc-button-bg-color: var(--raised);
@@ -893,23 +1048,23 @@ html[data-animations="off"] *::after {
   --fc-more-link-text-color: hsl(var(--muted-foreground));
 
   --fc-non-business-color: rgba(255, 255, 255, 0.03);
-  --fc-bg-event-color: #262627;
+  --fc-bg-event-color: var(--surface-raised);
   --fc-bg-event-opacity: 0.3;
-  --fc-highlight-color: #2b2f31;
-  --fc-today-bg-color: #2b2f31;
-  --fc-now-indicator-color: #3e63dd;
+  --fc-highlight-color: var(--surface-hover);
+  --fc-today-bg-color: var(--surface-hover);
+  --fc-now-indicator-color: var(--color-accent);
 }
 
 .dark .fc .fc-toolbar-title {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .dark .fc .fc-col-header-cell-cushion {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .dark .fc .fc-daygrid-day.fc-day-other {
-  background: #1b1d1e;
+  background: var(--calendar-canvas-bg);
 }
 
 .dark .fc .fc-scrollgrid-section-sticky > * {
@@ -919,7 +1074,7 @@ html[data-animations="off"] *::after {
 }
 
 .dark :not(td[aria-labelledby]) > .fc-daygrid-day-frame {
-  background: #1b1d1e;
+  background: var(--calendar-canvas-bg);
 }
 
 .dark .fc .fc-scrollgrid-section-body {
@@ -928,21 +1083,21 @@ html[data-animations="off"] *::after {
 
 .dark .fc .fc-timegrid-slot-label,
 .dark .fc .fc-timegrid-axis-frame {
-  background-color: #1b1d1e !important;
+  background-color: var(--calendar-canvas-bg) !important;
 }
 
 .dark .fc .fc-col-header-cell {
-  background: #1b1d1e;
+  background: var(--calendar-canvas-bg);
   border-color: var(--fc-border-color);
 }
 
 .dark .fc .fc-timegrid-slot-label-cushion,
 .dark .fc .fc-timegrid-axis-cushion {
-  color: #9aa0a6;
+  color: var(--text-secondary);
 }
 
 .dark .fc .fc-daygrid-day-number {
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 /* Command Palette Styles */
@@ -950,8 +1105,8 @@ html[data-animations="off"] *::after {
   max-width: 640px;
   width: 100%;
   border-radius: 8px;
-  border: 1px solid #313538;
-  background: #26292b;
+  border: 1px solid var(--menu-border);
+  background: var(--menu-bg);
   box-shadow:
     0 10px 15px -3px rgb(0 0 0 / 10%),
     0 4px 6px -4px rgb(0 0 0 / 10%);
@@ -998,7 +1153,7 @@ html[data-animations="off"] *::after {
 }
 
 [cmdk-item][aria-selected="true"] {
-  background: #2b2f31;
+  background: var(--menu-item-hover);
   color: hsl(var(--foreground));
 }
 

@@ -89,8 +89,12 @@ export function CustomizationSettings() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty("--accent", settings.accentColor);
-    root.style.setProperty("--app-bg", settings.backgroundTint);
+    // Customize semantic tokens so every shared component updates together.
+    // The legacy aliases in globals.css continue to follow these values.
+    root.style.removeProperty("--accent");
+    root.style.removeProperty("--app-bg");
+    root.style.setProperty("--color-accent", settings.accentColor);
+    root.style.setProperty("--surface-canvas", settings.backgroundTint);
     root.style.setProperty("--radius", `${settings.radius}px`);
     root.style.setProperty(
       "--flowday-sidebar-width",

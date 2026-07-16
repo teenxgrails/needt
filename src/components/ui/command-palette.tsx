@@ -330,7 +330,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                           index={resultIndex}
                         >
                           <Command.Item
-                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[#2B2F31] aria-selected:text-white"
+                            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[var(--menu-item-hover)] aria-selected:text-[var(--text-primary)]"
                             onSelect={() => {
                               router.push(result.href);
                               onOpenChange(false);

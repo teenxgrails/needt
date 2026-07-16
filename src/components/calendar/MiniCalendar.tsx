@@ -81,17 +81,17 @@ export function MiniCalendar({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="group flex min-w-0 items-center gap-1 rounded px-0.5 text-[13px] font-semibold text-[var(--text-hi)] hover:bg-[var(--active)]"
+              className="group flex min-w-0 items-center gap-1 rounded px-0.5 text-[13px] font-semibold text-[var(--text-primary)] hover:bg-[var(--menu-item-hover)]"
               aria-label="Choose month"
             >
               <span>{format(calendarDate, "MMMM yyyy")}</span>
-              <CalendarDays className="h-3 w-3 text-[var(--text-lo)] opacity-0 transition-opacity group-hover:opacity-100" />
+              <CalendarDays className="h-3 w-3 text-[var(--text-secondary)] opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
           </PopoverTrigger>
           <PopoverContent
             align="start"
             sideOffset={5}
-            className="w-[220px] border-[#3A3F42] bg-[#202425] p-2"
+            className="w-[220px] p-2"
           >
             <div className="mb-2 flex items-center justify-between px-1 text-[13px] font-semibold">
               <button
@@ -105,7 +105,7 @@ export function MiniCalendar({
                     )
                   )
                 }
-                className="grid h-6 w-6 place-items-center rounded hover:bg-[#2B2F31]"
+                className="grid h-6 w-6 place-items-center rounded hover:bg-[var(--menu-item-hover)]"
                 aria-label="Previous year"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
@@ -122,7 +122,7 @@ export function MiniCalendar({
                     )
                   )
                 }
-                className="grid h-6 w-6 place-items-center rounded hover:bg-[#2B2F31]"
+                className="grid h-6 w-6 place-items-center rounded hover:bg-[var(--menu-item-hover)]"
                 aria-label="Next year"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -135,9 +135,9 @@ export function MiniCalendar({
                   type="button"
                   onClick={() => selectMonth(index)}
                   className={cn(
-                    "h-7 rounded text-[12px] transition-colors hover:bg-[#2B2F31]",
+                    "h-7 rounded text-[12px] transition-colors hover:bg-[var(--menu-item-hover)]",
                     index === calendarDate.getMonth() &&
-                      "bg-white text-[#1B1D1E] hover:bg-white"
+                      "bg-[var(--surface-selected)] text-[var(--text-inverse)] hover:bg-[var(--surface-selected)]"
                   )}
                 >
                   {month}
@@ -151,14 +151,14 @@ export function MiniCalendar({
           <button
             type="button"
             onClick={handleToday}
-            className="h-5 rounded-md border border-[#3A3F42] bg-[#313538] px-2 text-[12px] font-medium text-white transition-colors hover:bg-[#383D40]"
+            className="h-5 rounded-md border border-[var(--calendar-toolbar-border)] bg-[var(--calendar-toolbar-bg)] px-2 text-[12px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--calendar-toolbar-bg-hover)]"
           >
             Today
           </button>
           <button
             type="button"
             onClick={() => jumpWeek(-7)}
-            className="grid h-5 w-5 place-items-center rounded text-[#9BA1A6] transition-colors hover:bg-[#2B2F31] hover:text-white"
+            className="grid h-5 w-5 place-items-center rounded text-[var(--text-secondary)] transition-colors hover:bg-[var(--menu-item-hover)] hover:text-[var(--text-primary)]"
             aria-label="Previous week"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -166,7 +166,7 @@ export function MiniCalendar({
           <button
             type="button"
             onClick={() => jumpWeek(7)}
-            className="grid h-5 w-5 place-items-center rounded text-[#9BA1A6] transition-colors hover:bg-[#2B2F31] hover:text-white"
+            className="grid h-5 w-5 place-items-center rounded text-[var(--text-secondary)] transition-colors hover:bg-[var(--menu-item-hover)] hover:text-[var(--text-primary)]"
             aria-label="Next week"
           >
             <ChevronRight className="h-3.5 w-3.5" />
@@ -195,12 +195,12 @@ export function MiniCalendar({
                 onClick={() => onDateClick?.(day)}
                 aria-label={`${today ? "TODAY " : ""}${format(day, "d")}`}
                 className={cn(
-                  "relative flex h-6 w-6 items-center justify-center rounded border border-transparent text-[12px] transition-[border-color,background-color,color] duration-150 hover:border-[var(--accent)]",
+                  "relative flex h-6 w-6 items-center justify-center rounded border border-transparent text-[12px] transition-[border-color,background-color,color] duration-150 hover:border-[var(--color-accent)]",
                   selected
-                    ? "bg-[#ECedee] font-semibold text-[#1B1D1E]"
+                    ? "bg-[var(--surface-selected)] font-semibold text-[var(--text-inverse)]"
                     : currentMonth
-                      ? "text-[#F2F2F2] hover:bg-[#26292B]"
-                      : "text-[#656B70] hover:bg-[#202425]"
+                      ? "text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
+                      : "text-[var(--text-muted)] hover:bg-[var(--surface-panel)]"
                 )}
               >
                 {today && (

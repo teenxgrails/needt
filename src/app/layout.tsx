@@ -12,7 +12,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark h-full" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="dark h-full"
+      data-app-theme="needt"
+      suppressHydrationWarning
+    >
       <body className="flex h-full flex-col bg-[var(--bg-0)] antialiased">
         <AmbientBackdrop />
         <div className="relative z-10 flex min-h-full flex-col">

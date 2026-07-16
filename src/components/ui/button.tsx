@@ -6,26 +6,27 @@ import { type VariantProps, cva } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--control-radius)] text-sm font-medium transition-[color,background-color,border-color,transform] duration-150 ease-out active:scale-[0.98] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--control-border)] disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "border border-[var(--accent)] bg-[var(--accent)] text-white hover:opacity-90",
+          "border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)] hover:brightness-110",
         destructive:
-          "border border-red-500/40 bg-red-500/15 text-red-100 hover:bg-red-500/25",
+          "border border-[var(--button-danger-border)] bg-[var(--button-danger-bg)] text-[var(--color-danger)] hover:bg-[var(--button-danger-bg-hover)]",
         outline:
-          "border border-[var(--line-strong)] bg-[var(--raised)] text-foreground hover:bg-[var(--active)]",
+          "border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] text-[var(--control-fg)] hover:bg-[var(--button-secondary-bg-hover)]",
         secondary:
-          "border border-[var(--line-strong)] bg-[var(--raised)] text-secondary-foreground hover:bg-[var(--active)]",
-        ghost: "hover:bg-[var(--active)] hover:text-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] text-[var(--control-fg)] hover:bg-[var(--button-secondary-bg-hover)]",
+        ghost:
+          "text-[var(--control-fg)] hover:bg-[var(--menu-item-hover)] hover:text-[var(--text-primary)]",
+        link: "text-[var(--color-accent)] underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 px-3 text-xs",
+        default: "h-[var(--control-height)] px-4 py-2",
+        sm: "h-[var(--control-height-sm)] px-3 text-xs",
         lg: "h-10 px-8",
-        icon: "h-9 w-9",
+        icon: "h-[var(--control-height)] w-[var(--control-height)]",
       },
     },
     defaultVariants: {

@@ -73,9 +73,9 @@ const VIEW_ORDER: Array<"day" | "week" | "month" | "multiMonth"> = [
 
 const LOG_SOURCE = "Calendar";
 const TOOLBAR_BUTTON_CLASS =
-  "flex h-[25px] items-center gap-1.5 rounded-md border border-[#3A3F42] bg-[#313538] px-1.5 py-[3px] text-[13px] font-medium leading-[17px] text-white transition-colors duration-150 ease-out hover:bg-[#383D40] disabled:cursor-wait disabled:opacity-70";
+  "flex h-[var(--calendar-toolbar-height)] items-center gap-1.5 rounded-md border border-[var(--calendar-toolbar-border)] bg-[var(--calendar-toolbar-bg)] px-1.5 py-[3px] text-[length:var(--calendar-toolbar-font-size)] font-medium leading-[17px] text-[var(--text-primary)] transition-colors duration-150 ease-out hover:bg-[var(--calendar-toolbar-bg-hover)] disabled:cursor-wait disabled:opacity-70";
 const TOOLBAR_ICON_BUTTON_CLASS =
-  "grid h-[25px] w-[25px] place-items-center rounded-md border border-[#3A3F42] bg-[#313538] text-white transition-colors duration-150 ease-out hover:bg-[#383D40]";
+  "grid h-[var(--calendar-toolbar-icon-size)] w-[var(--calendar-toolbar-icon-size)] place-items-center rounded-md border border-[var(--calendar-toolbar-border)] bg-[var(--calendar-toolbar-bg)] text-[var(--text-primary)] transition-colors duration-150 ease-out hover:bg-[var(--calendar-toolbar-bg-hover)]";
 
 interface CalendarProps {
   initialFeeds?: CalendarFeed[];
@@ -169,9 +169,9 @@ export function Calendar({
   };
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#1B1D1E] text-white">
+    <div className="flex h-full w-full overflow-hidden bg-[var(--calendar-canvas-bg)] text-[var(--text-primary)]">
       {/* Main Content */}
-      <main className="flex min-w-0 flex-1 flex-col bg-[#1B1D1E]">
+      <main className="flex min-w-0 flex-1 flex-col bg-[var(--calendar-canvas-bg)]">
         {/* Header */}
         <header className="flex h-12 flex-none items-center px-2">
           {/* Right-side actions */}
@@ -190,13 +190,13 @@ export function Calendar({
               <PopoverContent
                 align="end"
                 sideOffset={6}
-                className="w-[322px] border-[#3A3F42] bg-[#202425] p-4 text-[var(--text-hi)]"
+                className="w-[var(--calendar-options-width)] border-[var(--popover-border)] bg-[var(--popover-bg)] p-4 text-[var(--text-primary)]"
               >
                 <h3 className="mb-4 text-[16px] font-semibold">Calendar</h3>
 
                 <div className="space-y-2">
                   <div className="flex h-[34px] items-center justify-between gap-3">
-                    <span className="text-[14px] text-[#9BA1A6]">
+                    <span className="text-[14px] text-[var(--text-secondary)]">
                       Start week on
                     </span>
                     <Select
@@ -207,19 +207,19 @@ export function Calendar({
                         })
                       }
                     >
-                      <SelectTrigger className="h-[30px] w-[104px] border-[#2B2F31] bg-[#151718] px-3 text-[14px]">
+                      <SelectTrigger className="h-[var(--calendar-options-control-height)] w-[104px] px-3 text-[14px]">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="border-[#3A3F42] bg-[#202425] text-[#F2F2F2]">
+                      <SelectContent>
                         <SelectItem
                           value="monday"
-                          className="h-[30px] rounded text-[14px] focus:bg-[#2B2F31] data-[state=checked]:bg-[#202425]"
+                          className="h-[var(--calendar-options-control-height)] rounded text-[14px]"
                         >
                           Monday
                         </SelectItem>
                         <SelectItem
                           value="sunday"
-                          className="h-[30px] rounded text-[14px] focus:bg-[#2B2F31] data-[state=checked]:bg-[#202425]"
+                          className="h-[var(--calendar-options-control-height)] rounded text-[14px]"
                         >
                           Sunday
                         </SelectItem>
@@ -228,11 +228,11 @@ export function Calendar({
                   </div>
 
                   <div className="flex h-[30px] items-center justify-between gap-3">
-                    <span className="text-[14px] text-[#9BA1A6]">
+                    <span className="text-[14px] text-[var(--text-secondary)]">
                       24-hour time
                     </span>
                     <Switch
-                      className="h-4 w-[26px] border-[#3A3F42] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
+                      className="h-4 w-[26px] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
                       checked={userSettings.timeFormat === "24h"}
                       onCheckedChange={(checked) =>
                         updateUserSettings({
@@ -243,11 +243,11 @@ export function Calendar({
                   </div>
 
                   <div className="flex h-[30px] items-center justify-between gap-3">
-                    <span className="text-[14px] text-[#9BA1A6]">
+                    <span className="text-[14px] text-[var(--text-secondary)]">
                       Highlight working hours
                     </span>
                     <Switch
-                      className="h-4 w-[26px] border-[#3A3F42] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
+                      className="h-4 w-[26px] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
                       checked={calendarSettings.workingHours.enabled}
                       onCheckedChange={(checked) =>
                         updateCalendarSettings({
@@ -261,18 +261,18 @@ export function Calendar({
                   </div>
                 </div>
 
-                <div className="my-3 h-px bg-[#2B2F31]" />
+                <div className="my-3 h-px bg-[var(--border-subtle)]" />
 
                 <Link
                   href="/settings#auto-schedule"
-                  className="flex h-7 items-center justify-center gap-2 rounded text-[14px] text-[#9BA1A6] transition-colors hover:bg-[#2B2F31] hover:text-white"
+                  className="flex h-7 items-center justify-center gap-2 rounded text-[14px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--menu-item-hover)] hover:text-[var(--text-primary)]"
                 >
                   Auto-scheduling settings
                   <Settings className="h-3.5 w-3.5" />
                 </Link>
                 <Link
                   href="/settings#calendar"
-                  className="flex h-7 items-center justify-center gap-2 rounded text-[14px] text-[#9BA1A6] transition-colors hover:bg-[#2B2F31] hover:text-white"
+                  className="flex h-7 items-center justify-center gap-2 rounded text-[14px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--menu-item-hover)] hover:text-[var(--text-primary)]"
                 >
                   Calendar settings
                   <Settings className="h-3.5 w-3.5" />
@@ -308,20 +308,20 @@ export function Calendar({
               <DropdownMenuContent
                 align="end"
                 sideOffset={6}
-                className="w-[210px] origin-[var(--radix-dropdown-menu-content-transform-origin)] rounded-lg border-[#3A3F42] bg-[#202425] p-1 text-[#F2F2F2] shadow-none data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1"
+                className="w-[210px] origin-[var(--radix-dropdown-menu-content-transform-origin)] p-1 shadow-none data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1"
               >
                 <DropdownMenuItem
                   onClick={handleNewTask}
-                  className="group flex h-9 cursor-pointer items-center gap-2 rounded px-2 text-[13px] focus:bg-[#2B2F31]"
+                  className="group flex h-9 cursor-pointer items-center gap-2 rounded px-2 text-[13px]"
                 >
-                  <CheckSquare2 className="h-4 w-4 text-[#9BA1A6] transition-colors group-data-[highlighted]:text-[#F2F2F2]" />
+                  <CheckSquare2 className="h-4 w-4 text-[var(--text-secondary)] transition-colors group-data-[highlighted]:text-[var(--text-primary)]" />
                   <span className="font-medium">Create task</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleNewEvent}
-                  className="group flex h-9 cursor-pointer items-center gap-2 rounded border-t border-[#2B2F31] px-2 text-[13px] focus:bg-[#2B2F31]"
+                  className="group flex h-9 cursor-pointer items-center gap-2 rounded border-t border-[var(--border-subtle)] px-2 text-[13px]"
                 >
-                  <Clock3 className="h-4 w-4 text-[#9BA1A6] transition-colors group-data-[highlighted]:text-[#F2F2F2]" />
+                  <Clock3 className="h-4 w-4 text-[var(--text-secondary)] transition-colors group-data-[highlighted]:text-[var(--text-primary)]" />
                   <span className="font-medium">Create event</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -332,7 +332,7 @@ export function Calendar({
               <DropdownMenuTrigger asChild>
                 <button className={TOOLBAR_BUTTON_CLASS}>
                   {VIEW_LABELS[view]}
-                  <IoChevronDown className="h-3.5 w-3.5 text-[#9AA0A6]" />
+                  <IoChevronDown className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-32">
@@ -340,7 +340,7 @@ export function Calendar({
                   <DropdownMenuItem
                     key={v}
                     onClick={() => handleViewChange(v)}
-                    className={cn(view === v && "text-[var(--accent)]")}
+                    className={cn(view === v && "text-[var(--color-accent)]")}
                   >
                     {VIEW_LABELS[v]}
                   </DropdownMenuItem>
