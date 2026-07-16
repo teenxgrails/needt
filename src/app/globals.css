@@ -150,6 +150,64 @@
     --calendar-hover-guide: var(--primitive-neutral-525);
     --calendar-hover-guide-label: var(--primitive-neutral-250);
 
+    /* Space canvas: intentionally dark in every app theme. Keeping its
+       palette semantic makes future custom themes a token swap instead of a
+       component rewrite. */
+    --space-canvas: var(--primitive-neutral-950);
+    --space-panel: color-mix(
+      in srgb,
+      var(--primitive-neutral-900) 94%,
+      transparent
+    );
+    --space-panel-raised: var(--primitive-neutral-825);
+    --space-panel-hover: var(--primitive-neutral-750);
+    --space-task-bg: color-mix(
+      in srgb,
+      var(--primitive-neutral-900) 88%,
+      transparent
+    );
+    --space-task-bg-hover: var(--primitive-neutral-825);
+    --space-label-bg: color-mix(
+      in srgb,
+      var(--primitive-neutral-950) 90%,
+      transparent
+    );
+    --space-border: color-mix(
+      in srgb,
+      var(--primitive-neutral-500) 42%,
+      transparent
+    );
+    --space-project-border: color-mix(
+      in srgb,
+      var(--primitive-neutral-250) 22%,
+      transparent
+    );
+    --space-grid: color-mix(
+      in srgb,
+      var(--primitive-neutral-250) 5%,
+      transparent
+    );
+    --space-grid-strong: color-mix(
+      in srgb,
+      var(--primitive-neutral-250) 16%,
+      transparent
+    );
+    --space-drag-overlay: color-mix(
+      in srgb,
+      var(--primitive-neutral-950) 72%,
+      transparent
+    );
+    --space-star: color-mix(in srgb, var(--primitive-white) 36%, transparent);
+    --space-text-primary: var(--primitive-neutral-050);
+    --space-text-secondary: var(--primitive-neutral-250);
+    --space-text-muted: var(--primitive-neutral-500);
+    --space-cluster-blue: var(--primitive-blue-500);
+    --space-cluster-violet: var(--primitive-violet-500);
+    --space-cluster-teal: var(--primitive-teal-400);
+    --space-cluster-magenta: var(--primitive-magenta-500);
+    --space-cluster-gold: var(--primitive-gold-400);
+    --space-cluster-green: var(--primitive-green-500);
+
     /* Backwards-compatible aliases. */
     --app-bg: var(--surface-canvas);
     --raised: var(--surface-raised);
@@ -528,26 +586,26 @@
    and task drift use only composited transforms/gradients, so no animation
    loop or force simulation runs on the main thread. */
 .workspace-space-canvas {
-  background-color: #090b0c;
+  background-color: var(--space-canvas);
   background-image:
     radial-gradient(
       circle at 15% 18%,
-      rgb(255 255 255 / 30%) 0 1px,
+      var(--space-star) 0 1px,
       transparent 1.5px
     ),
     radial-gradient(
       circle at 68% 35%,
-      rgb(255 255 255 / 22%) 0 1px,
+      color-mix(in srgb, var(--space-star) 72%, transparent) 0 1px,
       transparent 1.5px
     ),
     radial-gradient(
       circle at 38% 72%,
-      rgb(255 255 255 / 18%) 0 1px,
+      color-mix(in srgb, var(--space-star) 60%, transparent) 0 1px,
       transparent 1.5px
     ),
     radial-gradient(
       circle at 82% 78%,
-      rgb(255 255 255 / 26%) 0 1px,
+      color-mix(in srgb, var(--space-star) 84%, transparent) 0 1px,
       transparent 1.5px
     );
   background-size:
@@ -564,30 +622,47 @@
   pointer-events: none;
   opacity: 0.3;
   background:
-    radial-gradient(ellipse at 22% 44%, rgb(74 123 255 / 10%), transparent 34%),
-    radial-gradient(ellipse at 76% 58%, rgb(139 92 246 / 8%), transparent 30%);
+    radial-gradient(
+      ellipse at 22% 44%,
+      color-mix(in srgb, var(--space-cluster-blue) 11%, transparent),
+      transparent 34%
+    ),
+    radial-gradient(
+      ellipse at 76% 58%,
+      color-mix(in srgb, var(--space-cluster-violet) 9%, transparent),
+      transparent 30%
+    );
   animation: workspace-space-drift 18s ease-in-out infinite alternate;
 }
 
 .workspace-space-canvas::after {
   position: absolute;
-  inset: -28%;
+  inset: 0;
   content: "";
   pointer-events: none;
-  opacity: 0.12;
-  background: repeating-radial-gradient(
-    ellipse at 49% 51%,
-    transparent 0 106px,
-    rgb(213 221 232 / 44%) 107px,
-    transparent 108px 184px
-  );
-  transform: rotate(-9deg);
-  animation: workspace-orbit-turn 72s linear infinite;
+  opacity: 0.55;
+  background-image:
+    linear-gradient(var(--space-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--space-grid) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at center, black 18%, transparent 82%);
 }
 
-.workspace-space-node {
+.workspace-space-task {
   animation: workspace-task-float 5.5s ease-in-out infinite alternate;
   animation-delay: var(--space-delay, 0ms);
+  will-change: translate;
+}
+
+.workspace-space-project {
+  background: conic-gradient(
+    var(--cluster-color) 0 var(--cluster-progress),
+    color-mix(in srgb, var(--cluster-color) 12%, transparent)
+      var(--cluster-progress) 360deg
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--cluster-color) 18%, transparent),
+    0 16px 46px color-mix(in srgb, var(--cluster-color) 13%, transparent);
 }
 
 @keyframes workspace-space-drift {
@@ -602,16 +677,10 @@
   }
 }
 
-@keyframes workspace-orbit-turn {
-  to {
-    transform: rotate(351deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .workspace-space-canvas::before,
   .workspace-space-canvas::after,
-  .workspace-space-node {
+  .workspace-space-task {
     animation: none;
   }
 }

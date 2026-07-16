@@ -17,6 +17,7 @@ import {
   List,
   Search,
   SortAsc,
+  TimerReset,
 } from "lucide-react";
 
 import { CalendarTaskActionsMenu } from "@/components/calendar/CalendarTaskActionsMenu";
@@ -33,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 
-import { newDate } from "@/lib/date-utils";
+import { isToday, newDate } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
 import { useProjectStore } from "@/store/project";
@@ -117,6 +118,13 @@ function priorityColor(priority?: Priority | null) {
   if (priority === Priority.MEDIUM) return "text-[var(--primitive-gold-400)]";
   if (priority === Priority.LOW) return "text-[var(--primitive-teal-400)]";
   return "text-[var(--text-muted)]";
+}
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
 }
 
 export function TaskList({
@@ -257,9 +265,20 @@ export function TaskList({
     (activeProject ? 1 : 0) +
     (priority?.length ?? 0) +
     (energyLevel?.length ?? 0) +
+    (search ? 1 : 0) +
     (status?.length === 2 && !status.includes(TaskStatus.COMPLETED)
       ? 0
       : (status?.length ?? 0));
+
+  const dueTodayCount = filteredTasks.filter((task) => {
+    const date = taskDeadline(task) ?? task.scheduledStart;
+    return Boolean(date && isToday(newDate(date)));
+  }).length;
+  const overdueCount = filteredTasks.filter(isOverdue).length;
+  const openMinutes = filteredTasks.reduce(
+    (total, task) => total + (task.duration ?? task.estimatedMinutes ?? 30),
+    0
+  );
 
   const toggleColumn = (column: TaskListColumn, checked: boolean) => {
     setVisibleColumns(
@@ -555,9 +574,29 @@ export function TaskList({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <span className="ml-1 text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
-            Tasks: {filteredTasks.length}
-          </span>
+          <div className="ml-1 hidden items-center gap-3 text-[10px] text-[var(--text-muted)] xl:flex">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-secondary)]" />
+              {filteredTasks.length} tasks
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarClock className="h-3 w-3" />
+              {dueTodayCount} today
+            </span>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5",
+                overdueCount > 0 && "text-[var(--color-danger)]"
+              )}
+            >
+              <Flag className="h-3 w-3" />
+              {overdueCount} overdue
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <TimerReset className="h-3 w-3" />
+              {formatDuration(openMinutes)} load
+            </span>
+          </div>
 
           <div className="relative ml-auto min-w-[190px] max-w-[280px] flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -626,14 +665,16 @@ export function TaskList({
             <div>
               <CalendarClock className="mx-auto mb-3 h-5 w-5 text-[var(--text-muted)]" />
               <p className="text-[13px] text-[var(--text-secondary)]">
-                No tasks match this view.
+                {tasks.length === 0
+                  ? "No tasks yet."
+                  : "No tasks match this view."}
               </p>
               <button
                 type="button"
-                onClick={clearFilters}
+                onClick={tasks.length === 0 ? onCreateTask : clearFilters}
                 className="mt-2 text-[12px] text-[var(--text-primary)] underline-offset-4 hover:underline"
               >
-                Clear filters
+                {tasks.length === 0 ? "Create task" : "Clear filters"}
               </button>
             </div>
           </div>
@@ -666,6 +707,10 @@ function GroupRows({
   onCreateTask,
 }: GroupRowsProps) {
   const columnSpan = visibleColumns.length + 2;
+  const groupMinutes = tasks.reduce(
+    (total, task) => total + (task.duration ?? task.estimatedMinutes ?? 30),
+    0
+  );
 
   return (
     <>
@@ -685,6 +730,9 @@ function GroupRows({
             <span>{label}</span>
             <span className="text-[11px] font-normal text-[var(--text-muted)]">
               {tasks.length}
+            </span>
+            <span className="ml-auto text-[10px] font-normal text-[var(--text-muted)]">
+              {formatDuration(groupMinutes)}
             </span>
           </button>
         </td>

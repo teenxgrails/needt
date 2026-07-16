@@ -66,7 +66,7 @@ export const useTaskListViewSettings = create<TaskListViewSettings>()(
     (set) => ({
       // Initial sort settings
       sortBy: "dueDate",
-      sortDirection: "desc",
+      sortDirection: "asc",
 
       // Initial filter settings
       status: DEFAULT_STATUS_FILTERS,
@@ -97,7 +97,7 @@ export const useTaskListViewSettings = create<TaskListViewSettings>()(
         }),
     }),
     {
-      name: "task-list-view-settings",
+      name: "task-list-view-settings-v2",
     }
   )
 );

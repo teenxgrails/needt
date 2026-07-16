@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgraded Workspace into a practical mission-control view: readable project constellations and task chips, Today/7-day/14-day horizons, search and project focus, workload metrics, an inline task inspector, and an explicit calendar-aware drag-to-reschedule grid. The simplified Task List now surfaces today, overdue, and workload context while keeping advanced controls optional.
 - Rebuilt Workspace around the Solo-focused `Space`, `Task List`, and `Timeline` views, removed the legacy project sidebar, and simplified the default task table to the six fields most users need while keeping additional fields optional.
 - Reworked calendar quick-create with the shared Needt popover, input, control, and focus tokens; matched the current-time dot/rule to Motion and aligned hour labels directly with their horizontal grid lines.
 - Restyled the calendar task-actions menu and Start task dialog with the shared Needt menu, dialog, control, and status tokens.

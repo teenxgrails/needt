@@ -79,6 +79,7 @@ export default function TasksPage() {
     string | null | undefined
   >(undefined);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
+  const [isReflowing, setIsReflowing] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -176,25 +177,62 @@ export default function TasksPage() {
     }
   };
 
-  const activePrimaryView =
-    viewMode === "board" || viewMode === "deadlines" ? "list" : viewMode;
+  const handleReflow = async () => {
+    if (isReflowing) return;
+    setIsReflowing(true);
+    try {
+      await scheduleAllTasks();
+    } catch (scheduleError) {
+      void logger.error(
+        "Failed to reflow Workspace tasks",
+        {
+          error:
+            scheduleError instanceof Error
+              ? scheduleError.message
+              : String(scheduleError),
+        },
+        LOG_SOURCE
+      );
+    } finally {
+      setIsReflowing(false);
+    }
+  };
+
+  const activePrimaryView = PRIMARY_VIEWS.some((view) => view.id === viewMode)
+    ? viewMode
+    : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--surface-canvas)] text-[var(--text-primary)]">
-      <header className="flex h-12 flex-none items-center border-b border-[var(--border-subtle)] px-3">
+      <header className="flex h-14 flex-none items-center border-b border-[var(--border-subtle)] px-3">
         <div className="flex min-w-0 items-center gap-2">
-          <Box className="h-4 w-4 text-[var(--text-secondary)]" />
-          <h1 className="truncate text-[14px] font-semibold">Workspace</h1>
+          <div className="grid h-8 w-8 place-items-center rounded-[var(--control-radius)] border border-[var(--border-control)] bg-[var(--surface-raised)]">
+            <Box className="h-4 w-4 text-[var(--text-secondary)]" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <h1 className="truncate text-[14px] font-semibold">Workspace</h1>
+              <span className="rounded bg-[var(--surface-raised)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                Solo
+              </span>
+            </div>
+            <p className="text-[10px] text-[var(--text-muted)]">
+              Plan, focus, and move work without losing the day
+            </p>
+          </div>
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => scheduleAllTasks()}
+            onClick={handleReflow}
+            disabled={isReflowing}
             className="flex h-8 items-center gap-1.5 rounded-[var(--control-radius)] border border-[var(--control-border)] bg-[var(--control-bg)] px-2.5 text-[12px] font-medium text-[var(--control-fg-muted)] hover:bg-[var(--control-bg-hover)] hover:text-[var(--control-fg)]"
           >
-            <RotateCw className="h-3.5 w-3.5" />
-            Refresh tasks
+            <RotateCw
+              className={cn("h-3.5 w-3.5", isReflowing && "animate-spin")}
+            />
+            {isReflowing ? "Reflowing..." : "Reflow schedule"}
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex h-8 items-center gap-1.5 rounded-[var(--control-radius)] border border-[var(--control-border)] bg-[var(--control-bg)] px-2.5 text-[12px] font-medium text-[var(--control-fg)] hover:bg-[var(--control-bg-hover)]">
@@ -222,7 +260,7 @@ export default function TasksPage() {
         </div>
       </header>
 
-      <div className="flex h-11 flex-none items-end border-b border-[var(--border-subtle)] px-2">
+      <div className="flex h-10 flex-none items-end border-b border-[var(--border-subtle)] px-2">
         <nav aria-label="Workspace views" className="flex min-w-0 items-end">
           {PRIMARY_VIEWS.map((view) => {
             const Icon = view.icon;
@@ -362,6 +400,8 @@ export default function TasksPage() {
                 tasks={tasks}
                 onOpenTask={openTask}
                 onRescheduleTask={handleSpaceReschedule}
+                onStatusChange={handleStatusChange}
+                onCreateTask={openCreateTask}
               />
             ) : viewMode === "timeline" ? (
               <div className="h-full p-3">
