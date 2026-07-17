@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added a minimal `/quick-add` route: a single brain-dump input that runs text through the existing `/api/ai/parse-tasks` parser and creates the resulting tasks (Cmd/Ctrl+Enter to submit), house-format and dependency-free.
 - Added Space as the primary Solo workspace view: a lightweight animated constellation of the same scheduled tasks used by Calendar, with project clusters, task details, pan/zoom, completed-task visibility, and drag-to-reschedule across the next 14 days.
 - Added configurable Solo workspace views and Motion-style menus for grouping, sorting, layout, filters, projects, visible columns, view management, creation, and task actions.
 - Added a Motion-matched calendar task actions menu with completion, cancellation, link, scheduling, duplication, project, template, archive, and delete actions.
