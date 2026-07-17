@@ -894,8 +894,8 @@ export function TaskSyncSettings() {
 
   return (
     <SettingsSection
-      title="Task defaults"
-      description="Choose the connected task source and the defaults used when work is brought into the planner."
+      title="Task integrations"
+      description="Choose a connected task source and map external work into Needt."
     >
       {compatibleAccounts.length === 0 ? (
         <SettingRow

@@ -7,8 +7,8 @@ import Link from "next/link";
 
 import { HelpCircle, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
 
-import { useAppSession } from "@/components/providers/SessionProvider";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { useAppSession } from "@/components/providers/app-session-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {

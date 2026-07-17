@@ -54,3 +54,7 @@
 - 2026-07-12: Custom AI deployments can set `AI_CUSTOM_URL` once so its OAuth connection is a user-level select-and-connect action; OpenAI and Anthropic retain an explicit API-key setup flow because their direct APIs do not accept normal product-account OAuth tokens.
 - 2026-07-13: Empty calendar-slot creation is task-first to match the planner’s scheduling model: Enter creates an auto-scheduled task using the selected duration, while Event remains an explicit fixed-time choice and both full editors preserve the existing stores and scheduling engine.
 - 2026-07-16: The finished Calendar is the Needt visual source of truth; styling now follows primitive → semantic → component CSS tokens, with `data-app-theme` reserved for palette presets and `data-theme` kept exclusively for light/dark mode.
+
+# Settings schedules
+
+- 2026-07-17: The Motion-style Schedules editor writes per-day hours to the existing `SchedulingPreferences.workHours` JSON used by the deterministic engine, while mirroring its primary range into legacy calendar/auto-schedule settings for compatibility; no duplicate schedule table was added.

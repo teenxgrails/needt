@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { useAppSession } from "@/components/providers/SessionProvider";
+import { useAppSession } from "@/components/providers/app-session-context";
 
 import { logger } from "@/lib/logger";
 

@@ -4,7 +4,11 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import { logger } from "@/lib/logger";
+
 import { SettingsSection } from "./SettingsSection";
+
+const LOG_SOURCE = "SettingsPanelBoundary";
 
 interface SettingsPanelBoundaryProps {
   children: ReactNode;
@@ -26,7 +30,14 @@ export class SettingsPanelBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Settings panel failed to render", error, errorInfo);
+    logger.error(
+      "Settings panel failed to render",
+      {
+        error: error.message,
+        componentStack: errorInfo.componentStack ?? null,
+      },
+      LOG_SOURCE
+    );
   }
 
   componentDidUpdate(previousProps: SettingsPanelBoundaryProps) {

@@ -4,15 +4,20 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   Bell,
-  Brain,
+  Bot,
   CalendarDays,
-  Download,
-  ListChecks,
+  CalendarRange,
+  CheckCircle2,
+  ChevronLeft,
+  Clock3,
+  Code2,
+  Eye,
+  Laptop,
+  Logs,
   Palette,
   Plug,
-  ScrollText,
   Server,
-  Sparkles,
+  SlidersHorizontal,
   UserRound,
 } from "lucide-react";
 
@@ -24,9 +29,12 @@ import { CalendarSettings } from "@/components/settings/CalendarSettings";
 import { ConnectorSettings } from "@/components/settings/ConnectorSettings";
 import { CustomizationSettings } from "@/components/settings/CustomizationSettings";
 import { DataSettings } from "@/components/settings/DataSettings";
+import { DesktopSettings } from "@/components/settings/DesktopSettings";
 import { ImportExportSettings } from "@/components/settings/ImportExportSettings";
+import { IntegrationSettings } from "@/components/settings/IntegrationSettings";
 import { LogViewer } from "@/components/settings/LogViewer";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
+import { ScheduleSettings } from "@/components/settings/ScheduleSettings";
 import { SettingsPanelBoundary } from "@/components/settings/SettingsPanelBoundary";
 import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSettings";
 import { SystemSettings } from "@/components/settings/SystemSettings";
@@ -34,7 +42,6 @@ import { TaskSyncSettings } from "@/components/settings/TaskSyncSettings";
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
 
-import { APP_NAME } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
 
 import { useAdmin } from "@/hooks/use-admin";
@@ -42,295 +49,288 @@ import { useAdmin } from "@/hooks/use-admin";
 import { useSettingsStore } from "@/store/settings";
 
 type SettingsTab =
-  | "account"
   | "calendars"
-  | "scheduling"
-  | "tasks"
-  | "appearance"
-  | "ai"
+  | "auto-scheduling"
+  | "task-defaults"
+  | "theme"
+  | "timezone"
+  | "notifications"
+  | "schedules"
+  | "desktop"
   | "integrations"
+  | "api"
+  | "privacy"
+  | "ai"
+  | "account"
   | "system"
-  | "logs"
-  | "import-export"
-  | "notifications";
+  | "logs";
+
+interface SettingsNavItem {
+  id: SettingsTab;
+  label: string;
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  adminOnly?: boolean;
+}
+
+const GENERAL_TABS: SettingsNavItem[] = [
+  { id: "calendars", label: "Calendars", icon: CalendarDays },
+  {
+    id: "auto-scheduling",
+    label: "Auto-scheduling",
+    icon: SlidersHorizontal,
+  },
+  { id: "task-defaults", label: "Task defaults", icon: CheckCircle2 },
+  { id: "theme", label: "Theme", icon: Palette },
+  { id: "timezone", label: "Timezone", icon: Clock3 },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "schedules", label: "Schedules", icon: CalendarRange },
+  { id: "desktop", label: "Desktop app", icon: Laptop },
+  { id: "integrations", label: "Integrations", icon: Plug },
+  { id: "api", label: "API", icon: Code2 },
+  { id: "privacy", label: "Privacy", icon: Eye },
+  { id: "ai", label: "AI Assistant", icon: Bot },
+];
+
+const ACCOUNT_TABS: SettingsNavItem[] = [
+  { id: "account", label: "Account settings", icon: UserRound },
+  { id: "system", label: "System", icon: Server, adminOnly: true },
+  { id: "logs", label: "Logs", icon: Logs, adminOnly: true },
+];
+
+const LEGACY_TAB_MAP: Record<string, SettingsTab> = {
+  calendar: "calendars",
+  scheduling: "auto-scheduling",
+  "auto-schedule": "auto-scheduling",
+  "smart-scheduling": "auto-scheduling",
+  tasks: "task-defaults",
+  "task-sync": "integrations",
+  "task-urgency": "task-defaults",
+  appearance: "theme",
+  user: "theme",
+  customization: "theme",
+  "ai-assistant": "ai",
+  connectors: "api",
+  "import-export": "privacy",
+  accounts: "account",
+};
+
+const ALL_TAB_IDS = [...GENERAL_TABS, ...ACCOUNT_TABS].map(({ id }) => id);
+
+function SettingsNavGroup({
+  activeTab,
+  items,
+  label,
+  onSelect,
+}: {
+  activeTab: SettingsTab;
+  items: SettingsNavItem[];
+  label: string;
+  onSelect: (tab: SettingsTab) => void;
+}) {
+  return (
+    <div>
+      <div className="px-2 pb-1 text-[12px] font-medium leading-5 text-[var(--text-muted)]">
+        {label}
+      </div>
+      <nav className="space-y-px" aria-label={`${label} settings`}>
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <a
+              key={item.id}
+              href={`#${item.id}`}
+              onClick={(event) => {
+                event.preventDefault();
+                onSelect(item.id);
+              }}
+              className={cn(
+                "flex h-[31px] items-center gap-2 rounded-[4px] px-2 text-[13px] font-medium transition-colors duration-150",
+                activeTab === item.id
+                  ? "bg-[var(--surface-hover)] text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              )}
+            >
+              <Icon className="h-4 w-4" strokeWidth={1.7} />
+              <span>{item.label}</span>
+            </a>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>("calendars");
   const [isHydrated, setIsHydrated] = useState(false);
   const { isAdmin, isLoading: isAdminLoading } = useAdmin();
-  const { initializeSettings } = useSettingsStore();
+  const initializeSettings = useSettingsStore(
+    (state) => state.initializeSettings
+  );
 
-  // Always initialize settings on mount
+  const accountTabs = useMemo(
+    () => ACCOUNT_TABS.filter((tab) => !tab.adminOnly || isAdmin),
+    [isAdmin]
+  );
+  const activeLabel =
+    [...GENERAL_TABS, ...ACCOUNT_TABS].find((tab) => tab.id === activeTab)
+      ?.label ?? "Settings";
+
   useEffect(() => {
     initializeSettings();
   }, [initializeSettings]);
 
-  const tabs = useMemo(() => {
-    const baseTabs = [
-      { id: "calendars", label: "Calendars", icon: CalendarDays },
-      { id: "scheduling", label: "Scheduling", icon: Brain },
-      { id: "tasks", label: "Tasks", icon: ListChecks },
-      { id: "appearance", label: "Appearance", icon: Palette },
-      { id: "notifications", label: "Notifications", icon: Bell },
-      { id: "ai", label: "AI", icon: Sparkles },
-      { id: "integrations", label: "Integrations", icon: Plug },
-      { id: "import-export", label: "Import / Export", icon: Download },
-      { id: "account", label: "Account", icon: UserRound },
-    ] as const;
-
-    // Add admin-only tabs
-    if (isAdmin) {
-      const adminTabs = [
-        { id: "system", label: "System", icon: Server },
-        { id: "logs", label: "Logs", icon: ScrollText },
-      ] as const;
-
-      return [...baseTabs, ...adminTabs] as const;
-    }
-
-    return baseTabs;
-  }, [isAdmin]);
-
-  const [activeTab, setActiveTab] = useState<SettingsTab>("calendars");
-
-  // Check initial hash and handle changes
   useEffect(() => {
-    const handleHashChange = () => {
+    const readHash = () => {
       const rawHash = window.location.hash.slice(1);
-      const legacyTabMap: Record<string, SettingsTab> = {
-        calendar: "calendars",
-        "auto-schedule": "scheduling",
-        "smart-scheduling": "scheduling",
-        "task-sync": "tasks",
-        "task-urgency": "tasks",
-        user: "appearance",
-        customization: "appearance",
-        "ai-assistant": "ai",
-        connectors: "integrations",
-        accounts: "account",
-      };
-      const hash = (legacyTabMap[rawHash] || rawHash) as SettingsTab;
-
-      // Check if the hash is a valid tab ID, regardless of admin status
-      const allPossibleTabIds: SettingsTab[] = [
-        "account",
-        "calendars",
-        "scheduling",
-        "tasks",
-        "appearance",
-        "ai",
-        "integrations",
-        "system",
-        "logs",
-        "import-export",
-        "notifications",
-      ];
-
-      if (allPossibleTabIds.includes(hash)) {
-        setActiveTab(hash);
+      const hash = LEGACY_TAB_MAP[rawHash] ?? rawHash;
+      if (ALL_TAB_IDS.includes(hash as SettingsTab)) {
+        setActiveTab(hash as SettingsTab);
       }
     };
-
-    // Handle initial hash
-    handleHashChange();
-
-    // Listen for hash changes
-    window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []); // Remove tabs dependency since we're now checking against all possible tabs
-
-  // Set hydrated state after mount
-  useEffect(() => {
+    readHash();
+    window.addEventListener("hashchange", readHash);
     setIsHydrated(true);
+    return () => window.removeEventListener("hashchange", readHash);
   }, []);
 
-  // Update hash when tab changes
   useEffect(() => {
-    if (isHydrated) {
-      window.location.hash = activeTab;
+    if (isHydrated && window.location.hash.slice(1) !== activeTab) {
+      window.history.replaceState(null, "", `#${activeTab}`);
     }
   }, [activeTab, isHydrated]);
 
-  const renderContent = () => {
-    // Admin-only tabs
-    const adminOnlyTabs = ["system", "logs"];
+  const selectTab = (tab: SettingsTab) => {
+    setActiveTab(tab);
+    window.history.replaceState(null, "", `#${tab}`);
+  };
 
-    // If admin status is still loading and the active tab is admin-only, show loading state
-    if (adminOnlyTabs.includes(activeTab) && isAdminLoading) {
+  const renderTabContent = () => {
+    if (["system", "logs"].includes(activeTab) && isAdminLoading) {
       return (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <p className="text-muted-foreground">Checking access privileges...</p>
+        <div className="text-[13px] text-[var(--text-secondary)]">
+          Checking access privileges…
         </div>
       );
     }
 
-    // Check if the active tab is admin-only and the user is not an admin
-    if (adminOnlyTabs.includes(activeTab) && !isAdmin) {
+    if (["system", "logs"].includes(activeTab) && !isAdmin) {
       return (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <h2 className="mb-4 text-2xl font-bold">Admin Access Required</h2>
-          <p className="text-muted-foreground">
-            You need administrator privileges to access this section.
-          </p>
+        <div className="text-[13px] text-[var(--text-secondary)]">
+          Administrator access is required for this page.
         </div>
       );
     }
 
     switch (activeTab) {
-      case "account":
-        return <AccountSettings />;
       case "calendars":
         return (
-          <div className="space-y-10">
+          <div className="space-y-9">
             <AccountManager />
             <CalendarSettings />
           </div>
         );
-      case "scheduling":
+      case "auto-scheduling":
         return (
-          <div className="space-y-10">
+          <div className="space-y-9">
             <AutoScheduleSettings />
             <SmartSchedulingSettings />
           </div>
         );
-      case "tasks":
+      case "task-defaults":
         return (
-          <div className="space-y-10">
-            <TaskSyncSettings />
+          <div className="space-y-9">
             <TaskUrgencySettings />
           </div>
         );
-      case "appearance":
+      case "theme":
         return (
-          <div className="space-y-10">
-            <UserSettings />
+          <div className="space-y-9">
+            <UserSettings page="theme" />
             <CustomizationSettings />
           </div>
         );
-      case "ai":
-        return <AIAssistantSettings />;
-      case "integrations":
-        return <ConnectorSettings />;
+      case "timezone":
+        return <UserSettings page="timezone" />;
       case "notifications":
         return <NotificationSettings />;
-      case "system":
-        return <SystemSettings />;
-      case "logs":
-        return <LogViewer />;
-      case "import-export":
+      case "schedules":
+        return <ScheduleSettings />;
+      case "desktop":
+        return <DesktopSettings />;
+      case "integrations":
         return (
-          <div className="space-y-10">
+          <div className="space-y-9">
+            <IntegrationSettings />
+            <TaskSyncSettings />
+          </div>
+        );
+      case "api":
+        return <ConnectorSettings />;
+      case "privacy":
+        return (
+          <div className="space-y-9">
             <ImportExportSettings />
             <DataSettings />
           </div>
         );
+      case "ai":
+        return <AIAssistantSettings />;
+      case "account":
+        return <AccountSettings />;
+      case "system":
+        return <SystemSettings />;
+      case "logs":
+        return <LogViewer />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#1A1D1E] text-white">
-      <div className="flex min-h-screen flex-col lg:flex-row">
-        <aside className="border-b border-[#2B2F31] lg:w-[244px] lg:flex-none lg:border-b-0 lg:border-r">
-          <div className="sticky top-0 p-2">
-            <a
-              href="/calendar"
-              className="mb-2 flex h-[30px] items-center rounded-[2px] px-2.5 text-[13px] text-[#9BA1A6] transition-colors duration-150 ease-out hover:bg-[#2B2F31] hover:text-white"
-            >
-              Back to {APP_NAME}
-            </a>
-            <div className="space-y-3">
-              <div>
-                <div className="ml-2 pb-1 text-[13px] font-medium leading-[17px] text-[#697177]">
-                  General
-                </div>
-                <nav className="space-y-0.5">
-                  {tabs
-                    .filter(
-                      (tab) => !["account", "system", "logs"].includes(tab.id)
-                    )
-                    .map((tab) => {
-                      const Icon = tab.icon;
-
-                      return (
-                        <a
-                          key={tab.id}
-                          href={`#${tab.id}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setActiveTab(tab.id as SettingsTab);
-                          }}
-                          className={cn(
-                            "flex h-[32px] w-full items-center gap-2.5 rounded-[4px] px-2.5 text-[14px] font-medium leading-[21px] transition-colors duration-150 ease-out",
-                            activeTab === tab.id
-                              ? "bg-[#2B2F31] text-white"
-                              : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
-                          )}
-                        >
-                          <Icon
-                            className="h-4 w-4 shrink-0"
-                            strokeWidth={1.75}
-                          />
-                          {tab.label}
-                        </a>
-                      );
-                    })}
-                </nav>
-              </div>
-              <div>
-                <div className="ml-2 pb-1 text-[13px] font-medium leading-[17px] text-[#697177]">
-                  Account
-                </div>
-                <nav className="space-y-0.5">
-                  {tabs
-                    .filter((tab) =>
-                      ["account", "system", "logs"].includes(tab.id)
-                    )
-                    .map((tab) => {
-                      const Icon = tab.icon;
-
-                      return (
-                        <a
-                          key={tab.id}
-                          href={`#${tab.id}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setActiveTab(tab.id as SettingsTab);
-                          }}
-                          className={cn(
-                            "flex h-[32px] w-full items-center gap-2.5 rounded-[4px] px-2.5 text-[14px] font-medium leading-[21px] transition-colors duration-150 ease-out",
-                            activeTab === tab.id
-                              ? "bg-[#2B2F31] text-white"
-                              : "text-[#9AA0A6] hover:bg-[#2B2F31] hover:text-white"
-                          )}
-                        >
-                          <Icon
-                            className="h-4 w-4 shrink-0"
-                            strokeWidth={1.75}
-                          />
-                          {tab.label}
-                        </a>
-                      );
-                    })}
-                </nav>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[var(--surface-canvas)] text-[var(--text-primary)]">
+      <div className="flex min-h-screen">
+        <aside className="fixed inset-y-0 left-0 z-20 w-[230px] overflow-y-auto border-r border-[var(--border-subtle)] bg-[var(--surface-canvas)] p-2">
+          <a
+            href="/calendar"
+            className="mb-3 flex h-[25px] items-center gap-1 rounded-[4px] px-1.5 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            Back to Needt
+          </a>
+          <div className="space-y-4">
+            <SettingsNavGroup
+              label="General"
+              items={GENERAL_TABS}
+              activeTab={activeTab}
+              onSelect={selectTab}
+            />
+            <SettingsNavGroup
+              label="Account"
+              items={accountTabs}
+              activeTab={activeTab}
+              onSelect={selectTab}
+            />
           </div>
         </aside>
-        <div className="min-w-0 flex-1 px-5 py-3 sm:px-[34px]">
-          <div className={cn("space-y-6", !isHydrated && "opacity-0")}>
-            <div>
-              <h1 className="text-lg font-semibold leading-7">
-                {tabs.find((tab) => tab.id === activeTab)?.label ?? "Settings"}
-              </h1>
-            </div>
-            <div key={activeTab}>
-              <SettingsPanelBoundary resetKey={activeTab}>
-                {renderContent()}
-              </SettingsPanelBoundary>
-            </div>
+
+        <main className="ml-[230px] min-h-screen min-w-0 flex-1 bg-[var(--surface-panel)]">
+          <header className="sticky top-0 z-10 flex h-[57px] items-center border-b border-[var(--border-subtle)] bg-[var(--surface-panel)] px-12">
+            <h1 className="text-[18px] font-semibold leading-7">
+              {activeLabel}
+            </h1>
+          </header>
+          <div
+            className={cn(
+              "px-12 py-6 transition-opacity duration-150",
+              !isHydrated && "opacity-0"
+            )}
+          >
+            <SettingsPanelBoundary resetKey={activeTab}>
+              {renderTabContent()}
+            </SettingsPanelBoundary>
           </div>
-        </div>
+        </main>
       </div>
     </div>
   );

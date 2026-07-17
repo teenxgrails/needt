@@ -86,7 +86,14 @@ export function AccountManager() {
     try {
       await removeAccount(accountId);
     } catch (error) {
-      console.error("Failed to remove account:", error);
+      logger.error(
+        "Failed to remove calendar account",
+        {
+          accountId,
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+        LOG_SOURCE
+      );
     }
   };
 

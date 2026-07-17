@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added a Motion-style Settings information architecture with dedicated Calendars, Auto-scheduling, Task defaults, Theme, Timezone, Notifications, Schedules, Desktop app, Integrations, API, Privacy, AI Assistant, and Account pages.
+- Added a full-screen weekly schedule editor with per-day drag selection, copy-to-week, timezone context, and persistent scheduling-engine work hours.
 - Added a minimal `/quick-add` route: a single brain-dump input that runs text through the existing `/api/ai/parse-tasks` parser and creates the resulting tasks (Cmd/Ctrl+Enter to submit), house-format and dependency-free.
 - Added Space as the primary Solo workspace view: a lightweight animated constellation of the same scheduled tasks used by Calendar, with project clusters, task details, pan/zoom, completed-task visibility, and drag-to-reschedule across the next 14 days.
 - Added configurable Solo workspace views and Motion-style menus for grouping, sorting, layout, filters, projects, visible columns, view management, creation, and task actions.
@@ -28,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Rebuilt Settings around the measured Motion layout: a compact 230px navigation rail, 57px page header, dense token-based rows, and shared Needt controls throughout.
+- Moved existing Needt-only features into the closest Settings homes without dropping functionality: task sync under Integrations, connector tokens and webhooks under API, import/export and retention under Privacy, and advanced energy rules under Auto-scheduling.
 - Rebranded the application shell, metadata, PWA assets, AI copy, local calendars, and documentation from Flowday to Needt through the shared app configuration.
 - Replaced the inherited root landing page with an auth-aware redirect to Calendar or Sign In.
 - Consolidated Needt into one production build by removing edition-specific routing, file variants, feature gates, repository sync tooling, and the legacy worker scripts.
@@ -55,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Split the shared app-session context from its provider component so Settings, account controls, and admin checks consume the same stable client export without a Turbopack runtime mismatch.
 - Unified client session reads behind one provider so the sidebar keeps a skeleton during authentication instead of flashing an empty avatar or Sign In action.
 - Prevented mount-time FullCalendar selections from opening quick-create without an explicit user click or drag.
 - Kept Timeline task bars inside their project rows and aligned them to the date grid, with muted completed tasks and hatched weekend columns.

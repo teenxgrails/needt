@@ -12,11 +12,8 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 
 import {
-  formatTime,
   parseSelectedCalendars,
-  parseWorkDays,
   stringifySelectedCalendars,
-  stringifyWorkDays,
 } from "@/lib/autoSchedule";
 
 import { useCalendarStore } from "@/store/calendar";
@@ -25,7 +22,7 @@ import { useSettingsStore } from "@/store/settings";
 import { SettingRow, SettingsSection } from "./SettingsSection";
 
 export function AutoScheduleSettings() {
-  const { autoSchedule, updateAutoScheduleSettings, user } = useSettingsStore();
+  const { autoSchedule, updateAutoScheduleSettings } = useSettingsStore();
   const { feeds, loadFromDatabase } = useCalendarStore();
 
   // Load calendar feeds when component mounts
@@ -33,25 +30,9 @@ export function AutoScheduleSettings() {
     loadFromDatabase();
   }, [loadFromDatabase]);
 
-  const workingDays = [
-    { value: 0, label: "Sunday" },
-    { value: 1, label: "Monday" },
-    { value: 2, label: "Tuesday" },
-    { value: 3, label: "Wednesday" },
-    { value: 4, label: "Thursday" },
-    { value: 5, label: "Friday" },
-    { value: 6, label: "Saturday" },
-  ];
-
-  const timeOptions = Array.from({ length: 24 }, (_, i) => ({
-    value: i,
-    label: formatTime(i, user.timeFormat),
-  }));
-
   const selectedCalendars = parseSelectedCalendars(
     autoSchedule.selectedCalendars
   );
-  const workDays = parseWorkDays(autoSchedule.workDays);
 
   return (
     <SettingsSection
@@ -90,82 +71,6 @@ export function AutoScheduleSettings() {
               No calendars found. Please add calendars in the Calendar Settings.
             </div>
           )}
-        </div>
-      </SettingRow>
-
-      <SettingRow
-        label="Working Hours"
-        description="Set your preferred working hours for task scheduling"
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Start Time</Label>
-              <Select
-                value={autoSchedule.workHourStart.toString()}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    workHourStart: parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>End Time</Label>
-              <Select
-                value={autoSchedule.workHourEnd.toString()}
-                onValueChange={(value) =>
-                  updateAutoScheduleSettings({
-                    workHourEnd: parseInt(value),
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeOptions.map((time) => (
-                    <SelectItem key={time.value} value={time.value.toString()}>
-                      {time.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <Label>Working Days</Label>
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {workingDays.map((day) => (
-                <div key={day.value} className="flex items-center space-x-2">
-                  <Switch
-                    checked={workDays.includes(day.value)}
-                    onCheckedChange={(checked) => {
-                      const days = checked
-                        ? [...workDays, day.value]
-                        : workDays.filter((d) => d !== day.value);
-                      updateAutoScheduleSettings({
-                        workDays: stringifyWorkDays(days),
-                      });
-                    }}
-                  />
-                  <Label className="text-sm">{day.label}</Label>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </SettingRow>
 

@@ -1,95 +1,151 @@
-import { BsGoogle } from "react-icons/bs";
+import { CalendarDays } from "lucide-react";
+import { SiGooglecalendar } from "react-icons/si";
 
-import { useAppSession } from "@/components/providers/SessionProvider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 import { useSettingsStore } from "@/store/settings";
 
 import { SettingRow, SettingsSection } from "./SettingsSection";
 
+const SYNC_INTERVALS = [1, 5, 10, 15, 30, 60];
+
 export function IntegrationSettings() {
-  const { data: session, status } = useAppSession();
   const { integrations, updateIntegrationSettings } = useSettingsStore();
 
   return (
     <SettingsSection
-      title="Integration Settings"
-      description="Manage your calendar integrations and synchronization settings."
+      title="Calendar integrations"
+      description="Control background synchronization for connected calendar accounts."
     >
       <SettingRow
         label="Google Calendar"
-        description="Configure your Google Calendar integration"
+        description="Keep changes synchronized with connected Google calendars."
       >
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <BsGoogle className="h-6 w-6 text-gray-500" />
-              <div>
-                <div className="font-medium">Google Calendar</div>
-                <div className="text-sm text-gray-500">
-                  {status === "loading"
-                    ? "Loading account…"
-                    : session?.user?.email || "Not connected"}
-                </div>
-              </div>
-            </div>
-            <label className="relative inline-flex cursor-pointer items-center">
-              <input
-                type="checkbox"
-                checked={integrations.googleCalendar.enabled}
-                onChange={(e) =>
+          <div className="flex items-center gap-3">
+            <SiGooglecalendar className="h-4 w-4 text-[var(--text-secondary)]" />
+            <span className="flex-1 text-[13px]">Enable integration</span>
+            <Switch
+              checked={integrations.googleCalendar.enabled}
+              onCheckedChange={(enabled) =>
+                updateIntegrationSettings({
+                  googleCalendar: {
+                    ...integrations.googleCalendar,
+                    enabled,
+                  },
+                })
+              }
+            />
+          </div>
+          {integrations.googleCalendar.enabled && (
+            <div className="grid gap-3 border-t border-[var(--border-subtle)] pt-3 sm:grid-cols-2">
+              <label className="flex items-center justify-between gap-3 text-[13px]">
+                Automatic sync
+                <Switch
+                  checked={integrations.googleCalendar.autoSync}
+                  onCheckedChange={(autoSync) =>
+                    updateIntegrationSettings({
+                      googleCalendar: {
+                        ...integrations.googleCalendar,
+                        autoSync,
+                      },
+                    })
+                  }
+                />
+              </label>
+              <Select
+                value={String(integrations.googleCalendar.syncInterval)}
+                onValueChange={(value) =>
                   updateIntegrationSettings({
                     googleCalendar: {
                       ...integrations.googleCalendar,
-                      enabled: e.target.checked,
+                      syncInterval: Number(value),
                     },
                   })
                 }
-                className="peer sr-only"
-              />
-              <div className="peer h-6 w-11 rounded-full bg-gray-200 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300"></div>
-            </label>
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SYNC_INTERVALS.map((minutes) => (
+                    <SelectItem key={minutes} value={String(minutes)}>
+                      Every {minutes} {minutes === 1 ? "minute" : "minutes"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      </SettingRow>
+
+      <SettingRow
+        label="Outlook Calendar"
+        description="Keep changes synchronized with connected Microsoft calendars."
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <CalendarDays className="h-4 w-4 text-[var(--text-secondary)]" />
+            <span className="flex-1 text-[13px]">Enable integration</span>
+            <Switch
+              checked={integrations.outlookCalendar.enabled}
+              onCheckedChange={(enabled) =>
+                updateIntegrationSettings({
+                  outlookCalendar: {
+                    ...integrations.outlookCalendar,
+                    enabled,
+                  },
+                })
+              }
+            />
           </div>
-
-          {integrations.googleCalendar.enabled && (
-            <>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={integrations.googleCalendar.autoSync}
-                  onChange={(e) =>
+          {integrations.outlookCalendar.enabled && (
+            <div className="grid gap-3 border-t border-[var(--border-subtle)] pt-3 sm:grid-cols-2">
+              <label className="flex items-center justify-between gap-3 text-[13px]">
+                Automatic sync
+                <Switch
+                  checked={integrations.outlookCalendar.autoSync}
+                  onCheckedChange={(autoSync) =>
                     updateIntegrationSettings({
-                      googleCalendar: {
-                        ...integrations.googleCalendar,
-                        autoSync: e.target.checked,
+                      outlookCalendar: {
+                        ...integrations.outlookCalendar,
+                        autoSync,
                       },
                     })
                   }
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span className="ml-2 text-sm">Enable auto-sync</span>
               </label>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Sync Interval (minutes)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="60"
-                  value={integrations.googleCalendar.syncInterval}
-                  onChange={(e) =>
-                    updateIntegrationSettings({
-                      googleCalendar: {
-                        ...integrations.googleCalendar,
-                        syncInterval: Number(e.target.value),
-                      },
-                    })
-                  }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                />
-              </div>
-            </>
+              <Select
+                value={String(integrations.outlookCalendar.syncInterval)}
+                onValueChange={(value) =>
+                  updateIntegrationSettings({
+                    outlookCalendar: {
+                      ...integrations.outlookCalendar,
+                      syncInterval: Number(value),
+                    },
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SYNC_INTERVALS.map((minutes) => (
+                    <SelectItem key={minutes} value={String(minutes)}>
+                      Every {minutes} {minutes === 1 ? "minute" : "minutes"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
         </div>
       </SettingRow>

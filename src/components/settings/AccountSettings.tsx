@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-import { useAppSession } from "@/components/providers/SessionProvider";
+import { useAppSession } from "@/components/providers/app-session-context";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { SettingRow, SettingsSection } from "./SettingsSection";
