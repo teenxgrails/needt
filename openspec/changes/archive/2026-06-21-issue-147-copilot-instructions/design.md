@@ -13,7 +13,7 @@ two that already exist, without code changes.
 **Goals:**
 
 - Give Copilot's coding agent the same project context human contributors get.
-- Surface the highest-risk rule first: the SAAS vs open-source build separation.
+- Surface the highest-risk rule first: Needt uses one unified build.
 - Keep the file short and high-signal so it stays maintainable and Copilot uses it.
 
 **Non-Goals:**
@@ -36,9 +36,9 @@ two that already exist, without code changes.
   `openspec/project.md` and names `CLAUDE.md` as the canonical source, so the two do
   not drift into conflicting advice. Alternative: a fully independent doc - rejected
   because two contradictory instruction sets are worse than one.
-- **Lead with SAAS/open-source separation.** It is the most error-prone area
-  (getting it wrong leaks SAAS code into the public repo), so it is called out
-  prominently rather than buried in a conventions list.
+- **Lead with the unified-build rule.** It prevents edition gates and parallel variants
+  from being reintroduced, so it is called out prominently rather than buried in a
+  conventions list.
 
 ## Risks / Trade-offs
 

@@ -11,7 +11,6 @@ NEXTAUTH_URL="http://localhost:3000"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 NEXTAUTH_SECRET="replace-with-a-random-32-plus-character-secret"
-NEXT_PUBLIC_ENABLE_SAAS_FEATURES=false
 CRON_SECRET="replace-with-random-cron-secret"
 ```
 

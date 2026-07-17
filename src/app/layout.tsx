@@ -1,6 +1,7 @@
 import { AmbientBackdrop } from "@/components/liquid";
 import { Providers } from "@/components/providers";
 
+import "./globals.css";
 import { metadata as baseMetadata, viewport as baseViewport } from "./metadata";
 
 export const metadata = baseMetadata;

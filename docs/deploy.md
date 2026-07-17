@@ -39,7 +39,6 @@ NEXT_PUBLIC_APP_URL="https://app.flowday.local"
 NEXT_PUBLIC_SITE_URL="https://app.flowday.local"
 NEXTAUTH_SECRET="random-32-plus-character-secret"
 CRON_SECRET="random-cron-secret"
-NEXT_PUBLIC_ENABLE_SAAS_FEATURES=false
 ```
 
 Calendar OAuth:

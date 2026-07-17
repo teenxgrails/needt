@@ -1,7 +1,7 @@
 import { APP_NAME } from "@/lib/app-config";
 import { logger } from "@/lib/logger";
 
-import { EmailService } from "./email-service.open";
+import { EmailService } from "./email-service";
 import { getPasswordResetTemplate } from "./templates/password-reset";
 
 const LOG_SOURCE = "PasswordResetEmail";

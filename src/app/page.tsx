@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { APP_NAME } from "@/lib/app-config";
 import { getAppVersion, getVersionGithubUrl } from "@/lib/version";
 
-export default function OpenSourceHomePage() {
+export default function HomePage() {
   const { data: session } = useSession();
   const router = useRouter();
 

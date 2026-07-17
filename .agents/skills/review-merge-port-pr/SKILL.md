@@ -177,47 +177,13 @@ Immediately after a successful merge, send an email via `mgc` (Outlook / Microso
 first):
 
 - Subject: `[PR #<N>] merged`
-- Body: PR title + URL, one-line summary of what shipped, and whether a SAAS port is coming
-  (filled in after step 8).
+- Body: PR title + URL and a one-line summary of what shipped.
 
-### 8. Decide whether the SAAS repo needs the fix
+### 8. Confirm unified-build scope
 
-The SAAS repo (`~/src/fluid-calendar-saas`) is the private superset; the public repo is
-normally generated from it. Here the fix originated in the public repo, so decide by looking at
-**what the diff actually touched**:
-
-- **Needs porting** when the change touches shared/core code that also exists in the SAAS repo:
-  files NOT marked `*.open.ts(x)` and NOT under `src/app/(open)/` - e.g. `src/lib/`,
-  `src/services/`, `src/components/` shared files, `src/store/`, `prisma/schema.prisma`,
-  API routes, config. Confirm by checking the same path exists in `~/src/fluid-calendar-saas`
-  and lacks the fix.
-- **Does NOT need porting** when the change is open-source-only: `*.open.ts(x)` files,
-  `src/app/(open)/` route group, or anything gated to the OS build. The SAAS repo has its own
-  `.saas` variant.
-- Inspect the merged diff to decide:
-  `gh pr diff <PR#> --name-only` then check each path against the rules above and against
-  `~/src/fluid-calendar-saas`.
-
-State your decision explicitly (port / no port) and why.
-
-### 9. Port to SAAS (only if step 8 says yes)
-
-**Do NOT run `scripts/sync-repos.sh`** - that regenerates the whole public repo and is the wrong
-direction. Apply the change manually.
-
-```bash
-cd ~/src/fluid-calendar-saas
-git fetch origin main && git checkout -b port/<short-name> origin/main
-```
-
-- Re-implement the equivalent change by hand on the corresponding SAAS files. Adapt for SAAS
-  structure where it differs (`.saas` variants, `src/app/(saas)/`, feature gating via
-  `isSaasEnabled`/`isFeatureEnabled`). Do not blindly copy if the file shape differs.
-- Run `npm run type-check` and `npm run lint` (use `npm install --legacy-peer-deps` if needed).
-- Run the **Codex review loop (step 3) until green** in the SAAS repo.
-- Push and open a PR - **do not merge the SAAS PR**, just create it:
-  `gh pr create --repo dotnetfactory/fluid-calendar-saas --fill`.
-- Include the SAAS PR link in the merge notification email (step 7) or send a short follow-up.
+Needt uses one repository and one production build. Inspect the merged diff with
+`gh pr diff <PR#> --name-only` and confirm the change is fully represented here. Do not create
+a second-edition port or synchronize a parallel source tree.
 
 ### 10. Clean up the worktree and report
 
@@ -231,11 +197,10 @@ git worktree prune
 ```
 
 Always clean up - even on the blocked/email path (step 6), the worktree should not be left
-behind. (The SAAS port in step 9 happens in the separate `~/src/fluid-calendar-saas` repo and
-is unaffected by this cleanup.)
+behind.
 
-Then report back to the user: Codex `/code-review` + Codex outcomes, that the PR merged (with
-link), the SAAS decision (port or not, with reasoning), and the SAAS PR link if one was opened.
+Then report back to the user: Codex `/code-review` + Codex outcomes and that the PR merged
+(with link).
 
 ## Quick reference
 
@@ -250,8 +215,6 @@ link), the SAAS decision (port or not, with reasoning), and the SAAS PR link if 
 | Merge | `gh pr merge <N> --squash --delete-branch` (run from main checkout) |
 | Worktree cleanup | `git worktree remove .Codex/worktrees/pr-<N>` |
 | Email | `mgc` (Outlook) to `emad@elitecoders.co` - run the pre-send identity check first |
-| SAAS diff | `gh pr diff <N> --name-only` |
-| SAAS PR | `gh pr create --repo dotnetfactory/fluid-calendar-saas --fill` (do not merge) |
 
 ## Common mistakes
 
@@ -259,15 +222,8 @@ link), the SAAS decision (port or not, with reasoning), and the SAAS PR link if 
   reviewers AND passing CI. A nit is not a blocker; a regression is.
 - **Skipping the re-review after a fix.** Every code change re-opens the Codex loop. Re-run it.
 - **Infinite loops.** Cap at 5 rounds; escalate by email if not green.
-- **Running `scripts/sync-repos.sh` to port.** Wrong direction and clobbers the public repo.
-  Port to SAAS by hand.
-- **Merging the SAAS PR.** Step 9 only opens a SAAS PR; leave it for review.
-- **Forgetting the SAAS decision.** Always state port / no-port with reasoning, even when the
-  answer is no.
 - **Not emailing.** Email on a true blocker (step 6) and on a successful merge (step 7) -
   both to `emad@elitecoders.co` via `mgc` (Outlook), after the pre-send identity check.
-- **Treating open-only code as needing a port.** `*.open.*` and `(open)` route-group changes do
-  not go to SAAS.
 - **Leaving the worktree behind.** Always `git worktree remove .Codex/worktrees/pr-<N>` when
   done (step 10), including on the blocked/email path. A stale worktree blocks the
   `--delete-branch` on merge and clutters the repo.

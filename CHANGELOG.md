@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Consolidated Needt into one production build by removing edition-specific routing, file variants, feature gates, repository sync tooling, and the legacy worker scripts.
 - Unified Workspace and Calendar control styling through one shared compact toolbar contract, and moved Space zoom into a small canvas control with cursor-anchored wheel zoom.
 - Removed the Space Inbox cluster and orbit rings: tasks without a project now float independently, project centers use compact neutral labels, and lightweight star layers drift and pulse without a JavaScript animation loop.
 - Upgraded Workspace into a practical mission-control view: readable project constellations and task chips, Today/7-day/14-day horizons, search and project focus, workload metrics, an inline task inspector, and an explicit calendar-aware drag-to-reschedule grid. The simplified Task List now surfaces today, overdue, and workload context while keeping advanced controls optional.

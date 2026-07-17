@@ -2,7 +2,6 @@ import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { isSaasEnabled } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import {
   beginTaskMutation,
@@ -389,76 +388,7 @@ export const useTaskStore = create<TaskState>()(
       triggerScheduleAllTasks: async () => {
         set({ loading: true, error: null });
         try {
-          // For open source version, call scheduleAllTasks directly
-          if (!isSaasEnabled) {
-            await get().scheduleAllTasks();
-            return;
-          }
-
-          // For SAAS version, use the background job queue
-          const jobResponse = await fetch("/api/tasks/schedule-all/queue", {
-            method: "POST",
-          });
-
-          if (!jobResponse.ok) {
-            throw new Error("Failed to queue task scheduling job");
-          }
-
-          // Set up SSE connection if not already connected
-          if (
-            !window.taskScheduleSSE ||
-            window.taskScheduleSSE.readyState === 2
-          ) {
-            const setupSSE = () => {
-              // Close existing connection if it exists but is in a closed state
-              if (window.taskScheduleSSE) {
-                window.taskScheduleSSE.close();
-              }
-
-              const eventSource = new EventSource("/api/sse");
-
-              eventSource.onmessage = (event) => {
-                try {
-                  const data = JSON.parse(event.data);
-                  if (data.type === "TASK_SCHEDULE_COMPLETE") {
-                    void get()
-                      .fetchTasks()
-                      .then(() => get().notifyScheduleAnimation());
-                    // Dispatch a custom event for the NotificationProvider
-                    window.dispatchEvent(
-                      new CustomEvent("task-schedule-complete", {
-                        detail: data,
-                      })
-                    );
-                  }
-                } catch (error) {
-                  void logger.error(
-                    "Error parsing task scheduling event",
-                    {
-                      error:
-                        error instanceof Error ? error.message : String(error),
-                    },
-                    LOG_SOURCE
-                  );
-                }
-              };
-
-              eventSource.onerror = () => {
-                void logger.error(
-                  "Task scheduling event stream disconnected",
-                  undefined,
-                  LOG_SOURCE
-                );
-                eventSource.close();
-                // Try to reconnect after a delay
-                setTimeout(setupSSE, 5000);
-              };
-
-              window.taskScheduleSSE = eventSource;
-            };
-
-            setupSSE();
-          }
+          await get().scheduleAllTasks();
         } catch (error) {
           set({ error: error as Error });
           throw error;

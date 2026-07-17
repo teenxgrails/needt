@@ -2,7 +2,7 @@
 
 The version string exists only in `package.json` (`"version": "0.1.0"`) and is not exposed to the client anywhere. All authenticated pages render through `src/app/(common)/layout.tsx`, a client component that renders `<AppNav />` (a top navbar) and a `<main className="relative flex-1">` inside a `flex min-h-screen flex-col` column. There is no footer component anywhere in `src/components`.
 
-The repo reads build-time configuration through `NEXT_PUBLIC_*` env vars (e.g. `NEXT_PUBLIC_ENABLE_SAAS_FEATURES`, `NEXT_PUBLIC_APP_URL`). `next.config.js` does not currently set an `env` block; it only computes `pageExtensions` from the SAAS flag. The canonical GitHub URL is `https://github.com/dotnetfactory/fluid-calendar` (already referenced in `src/app/(open)/page.open.tsx`).
+The repo reads public build-time configuration through `NEXT_PUBLIC_*` env vars such as `NEXT_PUBLIC_APP_URL`. `next.config.js` exposes the package version and uses the standard page extensions. The canonical GitHub URL is `https://github.com/dotnetfactory/fluid-calendar`.
 
 The Jest config is Node-env with `testMatch: src/**/__tests__/**/*.test.ts` and no jsdom, so `.tsx` components cannot be rendered in tests; only pure `.ts` logic is unit-testable.
 

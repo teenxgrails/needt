@@ -6,7 +6,7 @@ import { AIActionCursor } from "@/components/ai/AIActionCursor";
 import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
 import { DndProvider } from "@/components/dnd/DndProvider";
 import { AppNav } from "@/components/navigation/AppNav";
-import { NotificationProvider } from "@/components/providers/NotificationProvider.open";
+import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { PrivacyProvider } from "@/components/providers/PrivacyProvider";
 import { SetupCheck } from "@/components/setup/SetupCheck";
 import { CommandPalette } from "@/components/ui/command-palette";
@@ -19,8 +19,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 import { useShortcutsStore } from "@/store/shortcuts";
-
-import "../globals.css";
 
 export default function RootLayout({
   children,

@@ -27,17 +27,17 @@ gate a contribution must pass before review.
 - **AND** it references the `dev`, `build`, `test:unit`, `lint`, and `type-check` npm scripts
 - **AND** it states that lint must pass with zero warnings
 
-### Requirement: Instructions capture the SAAS vs open-source separation
+### Requirement: Instructions capture the unified build
 
-The instructions file SHALL describe the open-source vs SAAS dual-build model so
-Copilot does not leak SAAS-only code into the public build.
+The instructions file SHALL describe Needt as one product with one source tree and one
+production build.
 
-#### Scenario: Dual-build rules documented
+#### Scenario: Unified-build rules documented
 
 - **WHEN** Copilot is asked to add or modify a feature
-- **THEN** the file explains that SAAS-only code lives under `src/saas/`
-- **AND** it explains the `*.saas.ts(x)` / `*.open.ts(x)` file-extension convention
-- **AND** it notes that `.gitignore` must not be used to hide SAAS files
+- **THEN** the file explains that components and routes use standard TypeScript filenames
+- **AND** it explains that route groups are structural rather than product editions
+- **AND** it forbids adding edition flags or repository-sync gates
 
 ### Requirement: Instructions capture core code-style conventions
 
@@ -61,4 +61,3 @@ The instructions file SHALL be grounded in the repository's existing guidance
 
 - **WHEN** the instructions file is compared against `CLAUDE.md` and `openspec/project.md`
 - **THEN** the commands, paths, and conventions it states match those documents
-

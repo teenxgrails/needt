@@ -426,39 +426,9 @@ POST /api/tasks/sync/resolve/:taskId - Resolve a sync conflict
 
 ## Background Jobs
 
-### Sync Job Processor
-
-Implement a BullMQ job processor for task sync operations:
-
-```typescript
-// src/saas/jobs/task-sync-processor.ts
-export class TaskSyncProcessor {
-  // Process sync job for a specific mapping
-  processMappingSync(job: Job): Promise<SyncResult>;
-
-  // Process sync job for an entire provider
-  processProviderSync(job: Job): Promise<SyncResult[]>;
-
-  // Schedule periodic sync jobs based on user settings
-  schedulePeriodicSync(userId: string): Promise<void>;
-}
-```
-
-### Sync Queue Setup
-
-```typescript
-// src/saas/jobs/queues.ts
-export const taskSyncQueue = new Queue("taskSync", {
-  connection: redisConnection,
-  defaultJobOptions: {
-    attempts: 3,
-    backoff: {
-      type: "exponential",
-      delay: 5000,
-    },
-  },
-});
-```
+A separate task-sync worker is not part of the current unified build. The existing
+task-sync API performs the supported operations directly; worker architecture will be
+specified separately before asynchronous processing is introduced.
 
 ## UI Components
 

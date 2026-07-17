@@ -2,16 +2,13 @@
 
 ## Purpose
 
-FluidCalendar is an open-source alternative to Motion: intelligent task scheduling plus
-calendar management. It ships in two flavors from one codebase - a free self-hosted **open
-source** build and a hosted **SAAS** build with premium features (billing, advanced AI
-scheduling).
+Needt is a single intelligent planner product built from the FluidCalendar fork. It ships
+from one source tree as one Next.js application and one production build.
 
 ## Tech Stack
 
 Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) ·
-Zustand · TanStack Query · FullCalendar · Tailwind + shadcn/ui (Radix) · Zod · BullMQ + Redis
-(background jobs) · Stripe (SAAS billing).
+Zustand · TanStack Query · FullCalendar · Tailwind + shadcn/ui (Radix) · Zod.
 
 ## Project Conventions
 
@@ -32,19 +29,15 @@ Zustand · TanStack Query · FullCalendar · Tailwind + shadcn/ui (Radix) · Zod
 - **Local-first calendar sync.** External calendars (Google / Outlook / CalDAV) are never read live in the UI; each provider syncs into our DB (`CalendarFeed` + `CalendarEvent`) and the app always operates on local data. Provider logic lives in `src/lib/{google,outlook,caldav}-*.ts` and `src/lib/token-manager.ts`.
 - **Task scheduling engine** (`src/services/scheduling/`): `TaskSchedulingService` orchestrates auto-scheduling; `TimeSlotManager` enumerates candidate slots; `SlotScorer` ranks them; `CalendarServiceImpl` checks availability.
 - **Task sync** (`src/lib/task-sync/`): one-way sync from external task providers using selective field sync (external-owned fields overwritten each sync; local-owned fields preserved).
-- **Background jobs**: BullMQ + Redis; all job code lives in `src/saas/jobs/` (SAAS-only) and runs in a separate worker process.
+- **Scheduled maintenance**: existing handlers live in `src/app/api/cron/`; a separate worker is intentionally outside the current build.
 - **State**: small focused Zustand stores in `src/store/`; server state via TanStack Query; cmdk commands in `src/lib/commands/`.
 
-### SAAS vs Open Source (critical)
+### Unified build (critical)
 
-The private SAAS repo is the superset; the public open-source repo is generated from it via
-`scripts/sync-repos.sh`. Getting this wrong leaks SAAS code into the public repo.
-
-- All SAAS-only code goes in **`src/saas/`**.
-- Route groups: `src/app/(saas)/`, `src/app/(open)/`, `src/app/(common)/`.
-- File-extension convention: `*.saas.ts(x)` compile only in the SAAS build, `*.open.ts(x)` only in open-source, plain files in both. Always give files in `(saas)`/`(open)` an explicit `.saas`/`.open` extension.
-- Feature-gate with `isSaasEnabled` / `isFeatureEnabled()` from `src/lib/config.ts`.
-- Do **not** use `.gitignore` to hide SAAS files - exclusions belong in `sync-repos.sh`.
+- Keep one source tree and one production build. Do not introduce edition flags, repository-sync gates, or parallel product variants.
+- `next.config.js` uses standard Next.js page extensions.
+- `src/app/(app)/` is only a structural group for the shared application shell.
+- Components, routes, and services use plain `.ts` and `.tsx` filenames.
 
 ### Testing Strategy
 
@@ -55,16 +48,14 @@ The private SAAS repo is the superset; the public open-source repo is generated 
 
 ## Domain Context
 
-Two-flavor product (open source + SAAS) sharing one codebase. Auto-scheduling assigns
+Single Needt product with one application build. Auto-scheduling assigns
 `scheduledStart/End` and a `scheduleScore` to tasks marked `isAutoScheduled`. User-facing
 changes are recorded in `CHANGELOG.md` under `[Unreleased]`.
 
 ## Important Constraints
 
-- Decide for each feature whether it is open-source, SAAS-only, or core-with-premium-enhancement; when unsure, ask.
-- Never let SAAS-only code reach the public build (respect the file-extension and route-group rules above).
+- Keep product behavior in the unified build unless an explicit requirement says otherwise.
 
 ## External Dependencies
 
-PostgreSQL · Redis (BullMQ jobs) · Google / Microsoft (Outlook) / CalDAV calendar + task APIs ·
-NextAuth OAuth providers · Stripe (SAAS billing).
+PostgreSQL · Google / Microsoft (Outlook) / CalDAV calendar + task APIs · NextAuth OAuth providers.

@@ -18,28 +18,8 @@ const nextConfig = {
   // so skip it when building on Vercel.
   output: process.env.VERCEL ? undefined : "standalone",
 
-  // Determine which file extensions to use based on SAAS enablement
-  pageExtensions: (() => {
-    const isSaasEnabled =
-      process.env.NEXT_PUBLIC_ENABLE_SAAS_FEATURES === "true";
-
-    // Base extensions
-    const baseExtensions = ["js", "jsx", "ts", "tsx"];
-
-    if (isSaasEnabled) {
-      // For SAAS version, include .saas. files and exclude .open. files
-      return [
-        ...baseExtensions.map((ext) => ext),
-        ...baseExtensions.map((ext) => `saas.${ext}`),
-      ].filter((ext) => !ext.includes(".open."));
-    } else {
-      // For open source version, include .open. files and exclude .saas. files
-      return [
-        ...baseExtensions.map((ext) => ext),
-        ...baseExtensions.map((ext) => `open.${ext}`),
-      ].filter((ext) => !ext.includes(".saas."));
-    }
-  })(),
+  // Needt has one unified build with the standard Next.js extensions.
+  pageExtensions: ["ts", "tsx", "js", "jsx"],
 };
 
 module.exports = nextConfig;

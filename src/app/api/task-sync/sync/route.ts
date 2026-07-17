@@ -243,14 +243,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
 /**
  * GET /api/task-sync/sync/status?jobId=xxx
- * Gets the status of a sync job - not needed in open source version since sync is synchronous
+ * Gets the status of a sync job - not needed while sync is synchronous.
  */
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json(
     {
       error: "Not implemented",
       message:
-        "Status check is not needed in open source version as sync is handled synchronously",
+        "Status check is not needed because sync is handled synchronously",
     },
     { status: 501 }
   );

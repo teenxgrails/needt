@@ -4,14 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-FluidCalendar is an open-source alternative to Motion: intelligent task scheduling plus calendar management. It ships in two flavors from one codebase - a free self-hosted **open source** build and a hosted **SAAS** build with premium features (billing, advanced AI scheduling).
+Needt is a single intelligent planner product built from the FluidCalendar fork. It has one unified Next.js application and one production build.
 
 ## Commands
 
 ```bash
 npm run dev               # Dev server (Next.js + Turbopack) on :3000
-npm run build             # Production build (SAAS extensions if NEXT_PUBLIC_ENABLE_SAAS_FEATURES=true)
-npm run build:os          # Open-source build (forces SAAS features off)
+npm run build             # Production build
 npm run type-check        # tsc --noEmit
 npm run lint              # next lint (CI requires --max-warnings=0; lint-staged enforces this)
 npm run format            # prettier --write
@@ -25,8 +24,6 @@ npm run prisma:generate   # Regenerate Prisma client after schema changes
 npm run prisma:studio     # Browse the DB
 npm run db:up             # Start the Postgres container (docker compose)
 
-npm run build:worker      # Compile the BullMQ worker (tsconfig.worker.json -> dist/)
-npm run start:worker      # Run the compiled background job worker
 ```
 
 - **Install with `npm install --legacy-peer-deps`** (React 19 peer-dep conflicts otherwise).
@@ -35,7 +32,7 @@ npm run start:worker      # Run the compiled background job worker
 
 ## Tech Stack
 
-Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) · Zustand · TanStack Query · FullCalendar · Tailwind + shadcn/ui (Radix) · Zod · BullMQ + Redis (jobs) · Stripe (SAAS billing).
+Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) · Zustand · TanStack Query · FullCalendar · Tailwind + shadcn/ui (Radix) · Zod.
 
 ## Architecture
 
@@ -45,21 +42,16 @@ Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · Next
 
 **Task sync** (`src/lib/task-sync/`): one-way sync from external task providers (Outlook, Google Tasks) into FluidCalendar using **selective field sync** - external-owned fields (title, status, due date, recurrence) are overwritten on each sync; local-owned fields (start date, duration, priority, energy level) are preserved. See `src/lib/task-sync/README.md`.
 
-**Background jobs** use BullMQ + Redis. All job code lives in `src/saas/jobs/` (SAAS-only) and runs in a separate worker process (`build:worker` / `start:worker`).
+**Scheduled maintenance** is exposed through the existing `src/app/api/cron/` route handlers. A separate worker is intentionally not part of the current build.
 
 **State**: Zustand stores in `src/store/` (small, focused, one concern each - `calendar.ts`, `task.ts`, `settings.ts`, etc.). Server state via TanStack Query. Command palette (cmdk) commands live in `src/lib/commands/`.
 
-## SAAS vs Open Source (critical)
+## Unified build (critical)
 
-The private SAAS repo is the superset; the public open-source repo is generated from it via `scripts/sync-repos.sh`. Get this wrong and SAAS code leaks into the public repo.
-
-- All SAAS-only code goes in **`src/saas/`**.
-- Route groups: `src/app/(saas)/`, `src/app/(open)/`, `src/app/(common)/`.
-- File-extension convention: `*.saas.ts(x)` compile only in the SAAS build, `*.open.ts(x)` only in open-source, plain files in both. `next.config.js` derives `pageExtensions` from `NEXT_PUBLIC_ENABLE_SAAS_FEATURES`. **Always give files in `(saas)`/`(open)` an explicit `.saas`/`.open` extension** so the wrong build doesn't compile them.
-- For divergent shared components, create `Component.saas.tsx` and `Component.open.tsx` side-by-side and pick via dynamic import keyed on the env var (see `src/app/(common)/settings/page.tsx`).
-- Feature-gate with `isSaasEnabled` / `isFeatureEnabled()` from `src/lib/config.ts`.
-- Do **not** use `.gitignore` to hide SAAS files - exclusions belong in `sync-repos.sh`.
-- When adding a feature, decide whether it's open-source, SAAS-only, or core-with-premium-enhancement. If unsure, ask.
+- Needt ships as one product from one source tree. Do not add edition flags, parallel component variants, or repository-sync gates.
+- `next.config.js` uses the standard `ts`, `tsx`, `js`, and `jsx` page extensions.
+- `src/app/(app)/` is a structural route group for the authenticated application shell; route groups must not select product editions.
+- Keep shared components and routes in plain `.ts` and `.tsx` files. New functionality belongs in the unified build unless an explicit product requirement says otherwise.
 
 ## Conventions
 
@@ -83,7 +75,7 @@ The private SAAS repo is the superset; the public open-source repo is generated 
 - `src/components/` - feature-foldered UI (calendar, tasks, settings, auth, ...)
 - `src/app/api/` - route handlers
 - `prisma/schema.prisma` - Postgres schema (27 models; auth, calendar, tasks, settings, jobs, waitlist, subscriptions)
-- `src/saas/jobs/` - BullMQ background jobs (SAAS, separate worker process)
+- `src/app/(app)/` - application pages using the shared navigation and provider shell
 
 <!-- mulch:start -->
 ## Project Expertise (Mulch)

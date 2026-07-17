@@ -52,7 +52,7 @@ This is for personal use first. Do **not** build team/multi-tenant/billing featu
 
 ## 3. Phase 1 — Strip to single-user & rebrand
 
-- Remove/short-circuit any multi-user, team, SaaS, and billing code paths (`src/saas`, feature flags gating team features). Keep a single local user. Auth can stay (NextAuth) but default to one account; do not build invites, orgs, roles, seats.
+- Remove/short-circuit any multi-user, team, and billing code paths left by the legacy edition architecture. Keep a single local user. Auth can stay (NextAuth) but default to one account; do not build invites, orgs, roles, seats.
 - Rebrand: app name → **"teenx planner"** (keep it configurable via one constant `APP_NAME`). Replace visible "FluidCalendar" strings in UI/emails with `APP_NAME`. Do not touch the LICENSE or upstream attribution in README.
 - Ensure the CalDAV integration is exposed in Settings clearly labeled **"Apple / iCloud Calendar"** with instructions to use an app-specific password (`caldav.icloud.com`). Under the hood this is the existing CalDAV provider — just wire the Apple preset (server URL, principal discovery) and label it.
 

@@ -19,7 +19,7 @@ export interface EmailJobData {
 }
 
 /**
- * Email service for sending emails directly (open source version)
+ * Email service for sending emails directly in the unified Needt build.
  */
 export class EmailService {
   /**

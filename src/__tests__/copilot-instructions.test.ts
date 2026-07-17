@@ -30,11 +30,11 @@ describe("Copilot custom instructions", () => {
     expect(content).toContain("npm run type-check");
   });
 
-  it("captures the SAAS vs open-source separation", () => {
+  it("documents the unified Needt build", () => {
     const content = read();
-    expect(content).toContain("src/saas/");
-    expect(content).toMatch(/\.saas\.ts/);
-    expect(content).toMatch(/\.open\.ts/);
+    expect(content).toContain("Unified build");
+    expect(content).toContain("src/app/(app)/");
+    expect(content).toContain("standard page extensions");
   });
 
   it("captures core code-style conventions", () => {

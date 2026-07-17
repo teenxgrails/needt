@@ -1,4 +1,4 @@
-# GitHub Copilot Instructions for FluidCalendar
+# GitHub Copilot Instructions for Needt
 
 These are repository-wide instructions for GitHub Copilot's coding agent. They are a
 condensed mirror of `CLAUDE.md` and `openspec/project.md`; when anything here is
@@ -7,14 +7,12 @@ with it.
 
 ## Overview
 
-FluidCalendar is an open-source alternative to Motion: intelligent task scheduling plus
-calendar management. It ships in two flavors from one codebase - a free self-hosted
-**open source** build and a hosted **SAAS** build with premium features (billing,
-advanced AI scheduling).
+Needt is a single intelligent planner product built from the FluidCalendar fork. It has
+one source tree, one Next.js application, and one production build.
 
 **Tech stack:** Next.js 15 (App Router) - React 19 - TypeScript - Prisma + PostgreSQL -
 NextAuth.js (v4) - Zustand - TanStack Query - FullCalendar - Tailwind + shadcn/ui
-(Radix) - Zod - BullMQ + Redis (background jobs) - Stripe (SAAS billing).
+(Radix) - Zod.
 
 ## Setup and commands
 
@@ -24,7 +22,6 @@ NextAuth.js (v4) - Zustand - TanStack Query - FullCalendar - Tailwind + shadcn/u
 ```bash
 npm run dev          # Dev server (Next.js + Turbopack) on :3000
 npm run build        # Production build
-npm run build:os     # Open-source build (forces SAAS features off)
 npm run type-check   # tsc --noEmit
 npm run lint         # next lint (CI requires zero warnings)
 npm run test:unit    # Jest unit tests (Node env, src/**/__tests__/**/*.test.ts)
@@ -57,26 +54,18 @@ type-check on staged files) also exists in `package.json`.
 - **Task sync** (`src/lib/task-sync/`): one-way sync from external task providers using
   selective field sync (external-owned fields overwritten each sync; local-owned fields
   preserved).
-- **Background jobs**: BullMQ + Redis; all job code lives in `src/saas/jobs/`
-  (SAAS-only) and runs in a separate worker process.
+- **Scheduled maintenance**: existing handlers live in `src/app/api/cron/`; a separate
+  worker is intentionally outside the current build.
 - **State**: small focused Zustand stores in `src/store/`; server state via TanStack
   Query; command-palette (cmdk) commands in `src/lib/commands/`.
 
-## SAAS vs open source (most important rule)
+## Unified build (most important rule)
 
-The private SAAS repo is the superset; the public open-source repo is generated from it
-via `scripts/sync-repos.sh`. Getting this wrong leaks SAAS code into the public repo.
-
-- All SAAS-only code goes in **`src/saas/`**.
-- Route groups: `src/app/(saas)/`, `src/app/(open)/`, `src/app/(common)/`.
-- File-extension convention: `*.saas.ts(x)` compile only in the SAAS build,
-  `*.open.ts(x)` only in open-source, plain files in both. **Always** give files in
-  `(saas)`/`(open)` an explicit `.saas`/`.open` extension.
-- Feature-gate with `isSaasEnabled` / `isFeatureEnabled()` from `src/lib/config.ts`.
-- Do **not** use `.gitignore` to hide SAAS files - exclusions belong in
-  `sync-repos.sh`.
-- When adding a feature, decide whether it is open-source, SAAS-only, or
-  core-with-premium-enhancement. If unsure, ask in the PR rather than guessing.
+- Keep one source tree and one production build. Do not introduce edition flags,
+  repository-sync gates, or parallel product variants.
+- `next.config.js` uses the standard page extensions.
+- `src/app/(app)/` is only a structural group for the shared application shell.
+- Components, routes, and services use plain `.ts` and `.tsx` filenames.
 
 ## Code-style conventions
 
@@ -107,5 +96,5 @@ via `scripts/sync-repos.sh`. Getting this wrong leaks SAAS code into the public 
 - `src/components/` - feature-foldered UI (calendar, tasks, settings, auth, ...)
 - `src/app/api/` - route handlers
 - `prisma/schema.prisma` - Postgres schema
-- `src/saas/jobs/` - BullMQ background jobs (SAAS, separate worker process)
+- `src/app/(app)/` - application pages using the shared navigation and provider shell
 - `openspec/` - OpenSpec proposals and specs for non-trivial changes
