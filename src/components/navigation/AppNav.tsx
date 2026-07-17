@@ -14,6 +14,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Sun,
 } from "lucide-react";
 
 import { BoardsSidebarSection } from "@/components/boards/BoardsSidebarSection";
@@ -76,9 +77,15 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
   // Warm the router cache for every section so switching is instant (matters in
   // production, where prefetch is enabled).
   useEffect(() => {
-    ["/calendar", "/tasks", "/focus", "/mail", "/settings", "/chat"].forEach(
-      (route) => router.prefetch(route)
-    );
+    [
+      "/today",
+      "/calendar",
+      "/tasks",
+      "/focus",
+      "/mail",
+      "/settings",
+      "/chat",
+    ].forEach((route) => router.prefetch(route));
   }, [router]);
 
   useEffect(() => {
@@ -123,6 +130,7 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
   }
 
   const links = [
+    { href: "/today", label: "Today", icon: Sun },
     {
       href: "/calendar",
       label: "Calendar",

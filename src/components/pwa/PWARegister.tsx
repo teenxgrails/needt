@@ -18,10 +18,22 @@ export function PWARegister() {
     useState<BeforeInstallPromptEvent | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [installed, setInstalled] = useState(false);
+  // Only surface the install banner from the second visit onward, so a
+  // first-time visitor isn't nagged before they've seen the app.
+  const [returning, setReturning] = useState(false);
 
   useEffect(() => {
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    }
+
+    try {
+      const key = "needt-visit-count";
+      const count = Number(localStorage.getItem(key) ?? "0") + 1;
+      localStorage.setItem(key, String(count));
+      setReturning(count >= 2);
+    } catch {
+      // localStorage unavailable (private mode) — leave the banner suppressed.
     }
 
     const updateOnline = () => {
@@ -57,7 +69,8 @@ export function PWARegister() {
     };
   }, []);
 
-  if (!isOffline && (!installPrompt || installed)) return null;
+  const showInstall = Boolean(installPrompt) && !installed && returning;
+  if (!isOffline && !showInstall) return null;
 
   return (
     <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs shadow-lg">
@@ -69,7 +82,7 @@ export function PWARegister() {
       ) : (
         <>
           <Download className="h-4 w-4 text-blue-400" />
-          Install {APP_NAME}
+          Add {APP_NAME} to your home screen
           <Button
             type="button"
             size="sm"

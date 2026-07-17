@@ -60,6 +60,8 @@ import {
 } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
+import { useIsMobile } from "@/hooks/use-is-mobile";
+
 import { Project } from "@/types/project";
 import { Priority, Task, TaskStatus } from "@/types/task";
 
@@ -270,6 +272,7 @@ export function SpaceView({
     panX: number;
     panY: number;
   } | null>(null);
+  const isMobile = useIsMobile();
 
   const today = startOfDay(newDate());
   const normalizedQuery = query.trim().toLowerCase();
@@ -520,6 +523,24 @@ export function SpaceView({
     setDraggingTaskId(null);
     setDropPreview(null);
   };
+
+  // The Space canvas relies on pan/zoom and drag interactions that don't work
+  // well on a small touch screen; show a placeholder and point to desktop.
+  if (isMobile) {
+    return (
+      <section className="flex h-full min-h-[540px] flex-col items-center justify-center gap-3 bg-[var(--surface-canvas)] px-6 text-center">
+        <Orbit className="h-10 w-10 text-[var(--text-muted)]" />
+        <h2 className="text-base font-semibold text-[var(--text-primary)]">
+          Space is best on desktop
+        </h2>
+        <p className="max-w-xs text-sm text-[var(--text-secondary)]">
+          The constellation view uses pan, zoom, and drag that need a larger
+          screen. Open Needt on desktop to explore Space, or use the Task List
+          and Board views here.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="flex h-full min-h-[540px] flex-col overflow-hidden bg-[var(--surface-canvas)]">

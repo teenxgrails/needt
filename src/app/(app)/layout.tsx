@@ -6,6 +6,7 @@ import { AIActionCursor } from "@/components/ai/AIActionCursor";
 import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
 import { DndProvider } from "@/components/dnd/DndProvider";
 import { AppNav } from "@/components/navigation/AppNav";
+import { MobileTopBar } from "@/components/navigation/MobileTopBar";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { PrivacyProvider } from "@/components/providers/PrivacyProvider";
 import { SetupCheck } from "@/components/setup/SetupCheck";
@@ -64,8 +65,9 @@ export default function RootLayout({
               isOpen={shortcutsOpen}
               onClose={() => setShortcutsOpen(false)}
             />
+            <MobileTopBar />
             <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
-            <main className="needt-route-content relative min-w-0 flex-1 max-md:pb-16">
+            <main className="needt-route-content relative min-w-0 flex-1 max-md:pb-16 max-md:pt-14">
               <NotificationProvider>{children}</NotificationProvider>
             </main>
             <AIChatOverlay
