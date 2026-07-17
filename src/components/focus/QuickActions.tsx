@@ -68,6 +68,13 @@ export function QuickActions() {
     <div className="flex flex-col space-y-4 p-4">
       <h2 className="text-lg font-semibold">Quick Actions</h2>
 
+      {!currentTask && (
+        <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--text-secondary)]">
+          Pick a task from the queue to enable these actions. A free session
+          runs without one.
+        </p>
+      )}
+
       <div className="glass--subtle flex flex-col space-y-2 p-3">
         {/* Complete Task */}
         <Button

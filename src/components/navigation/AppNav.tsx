@@ -31,11 +31,11 @@ import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
 import { useViewStore } from "@/store/calendar";
-import { useFocusModeStore } from "@/store/focusMode";
 import { useTaskStore } from "@/store/task";
 
 import { TaskStatus } from "@/types/task";
 
+import { FocusNavBadge } from "./FocusNavBadge";
 import { UserMenu } from "./UserMenu";
 
 const LOG_SOURCE = "AppNav";
@@ -68,8 +68,6 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
           newDate(task.dueDate) < newDate()
       ).length
   );
-  const currentTaskId = useFocusModeStore((state) => state.currentTaskId);
-  const isProcessing = useFocusModeStore((state) => state.isProcessing);
   const currentDate = useViewStore((state) => state.date);
   const setDate = useViewStore((state) => state.setDate);
   const router = useRouter();
@@ -174,7 +172,6 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
           const Icon = link.icon;
           const isActive = pathname === link.href;
           const isFocus = link.href === "/focus";
-          const focusLive = isFocus && (currentTaskId || isProcessing);
 
           return (
             <Link
@@ -208,11 +205,7 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
                   ‼ {link.badge}
                 </span>
               )}
-              {focusLive && (
-                <span className="rounded bg-[var(--accent)] px-1.5 py-0.5 text-[10px] font-medium text-white max-md:hidden">
-                  Live
-                </span>
-              )}
+              {isFocus && <FocusNavBadge />}
             </Link>
           );
         })}

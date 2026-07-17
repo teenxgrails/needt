@@ -19,9 +19,11 @@ import {
   Package,
   Play,
   Puzzle,
+  Timer,
   Trash2,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { StartTaskModal } from "@/components/tasks/StartTaskModal";
@@ -38,6 +40,7 @@ import { logger } from "@/lib/logger";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
+import { useFocusModeStore } from "@/store/focusMode";
 import { useProjectStore } from "@/store/project";
 
 import {
@@ -93,6 +96,14 @@ export function CalendarTaskActionsMenu({
   const { createTask, updateTask, completeTask, deleteTask } =
     useTaskMutations();
   const createProject = useProjectStore((state) => state.createProject);
+  const switchToTask = useFocusModeStore((state) => state.switchToTask);
+  const router = useRouter();
+
+  const startFocus = () => {
+    // Bind this task in Focus, then open the Focus page to start a session.
+    switchToTask(task.id);
+    router.push("/focus");
+  };
 
   const run = (label: string, action: () => Promise<unknown>) => {
     void action().catch((error: unknown) => {
@@ -268,6 +279,10 @@ export function CalendarTaskActionsMenu({
           >
             <Play />
             Start task now
+          </DropdownMenuItem>
+          <DropdownMenuItem className={MENU_ITEM_CLASS} onSelect={startFocus}>
+            <Timer />
+            Start focus
           </DropdownMenuItem>
           <DropdownMenuItem
             className={MENU_ITEM_CLASS}
