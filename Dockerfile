@@ -28,6 +28,23 @@ RUN npm run prisma:generate
 RUN npm run build:worker
 RUN npm run build
 
+# Worker stage - same image, runs the BullMQ worker instead of the web server.
+# Coolify: set this service's "Docker Build Stage Target" to `worker`.
+FROM base AS worker
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/dist/worker ./dist/worker
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma ./prisma
+COPY entrypoint.sh .
+RUN chmod +x /app/entrypoint.sh
+
+# entrypoint.sh runs `exec "$@"`, so this CMD becomes the worker process.
+CMD ["node", "dist/worker/index.js"]
+
 # Production stage
 FROM base AS production
 WORKDIR /app
