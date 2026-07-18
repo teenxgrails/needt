@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  activeSummary,
-  getActiveSession,
-} from "@/services/focus/focusSession";
+import { activeSummary, getActiveSession } from "@/services/focus/focusSession";
 
+import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 
 const LOG_SOURCE = "focus-active-route";
@@ -22,6 +20,15 @@ export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
 
-  const session = await getActiveSession(auth.userId);
-  return NextResponse.json(activeSummary(session));
+  try {
+    const session = await getActiveSession(auth.userId);
+    return NextResponse.json(activeSummary(session));
+  } catch (error) {
+    return routeErrorResponse(
+      error,
+      "Failed to load focus summary",
+      LOG_SOURCE,
+      "Could not load focus summary."
+    );
+  }
 }

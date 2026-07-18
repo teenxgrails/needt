@@ -63,7 +63,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
-import { format, newDate } from "@/lib/date-utils";
+import { format, formatToLocalISOString, newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { readTaskDefaults, resolveTaskDefaultDate } from "@/lib/task-defaults";
 import { cn } from "@/lib/utils";
@@ -280,13 +280,13 @@ export function TaskModal({
       // Handle date string from API
       if (task.dueDate) {
         const date = newDate(task.dueDate);
-        setDueDate(date.toISOString().split("T")[0]);
+        setDueDate(formatToLocalISOString(date).split("T")[0]);
       } else {
         setDueDate("");
       }
       if (task.startDate) {
         const date = newDate(task.startDate);
-        setStartDate(date.toISOString().split("T")[0]);
+        setStartDate(formatToLocalISOString(date).split("T")[0]);
       } else {
         setStartDate("");
       }
@@ -307,7 +307,7 @@ export function TaskModal({
       setMaxChunkMinutes(task.maxChunkMinutes?.toString() || "");
       if (task.deadline) {
         const date = newDate(task.deadline);
-        setDeadline(date.toISOString().slice(0, 16));
+        setDeadline(formatToLocalISOString(date));
       } else {
         setDeadline("");
       }
@@ -327,8 +327,8 @@ export function TaskModal({
     } else if (!task && isOpen) {
       resetForm();
       if (initialStart) {
-        setStartDate(initialStart.toISOString().split("T")[0]);
-        setDeadline(initialStart.toISOString().slice(0, 16));
+        setStartDate(formatToLocalISOString(initialStart).split("T")[0]);
+        setDeadline(formatToLocalISOString(initialStart));
       }
       if (initialStart && initialEnd) {
         const diffMinutes = Math.max(

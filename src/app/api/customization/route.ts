@@ -15,7 +15,7 @@ const DEFAULT_CUSTOMIZATION = {
   fontFamily: "system",
   eventChipStyle: "flat",
   animationsEnabled: true,
-  themePreset: "flowday",
+  themePreset: "needt",
 };
 
 function cleanHex(value: unknown, fallback: string) {
@@ -99,7 +99,7 @@ export async function PATCH(request: NextRequest) {
         "flat"
       ),
       animationsEnabled: body.animationsEnabled !== false,
-      themePreset: "flowday",
+      themePreset: "needt",
     };
 
     const customization = await prisma.userCustomization.upsert({

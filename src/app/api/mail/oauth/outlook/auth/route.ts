@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { routeErrorResponse } from "@/lib/api/route-error";
 import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { MICROSOFT_GRAPH_AUTH_ENDPOINTS } from "@/lib/outlook";
@@ -9,25 +10,40 @@ const LOG_SOURCE = "OutlookMailOAuthStart";
 export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
-  const { clientId } = await getOutlookCredentials();
-  const redirectUrl = `${process.env.NEXTAUTH_URL}/api/mail/oauth/outlook/callback`;
-  const params = new URLSearchParams({
-    client_id: clientId,
-    response_type: "code",
-    redirect_uri: redirectUrl,
-    response_mode: "query",
-    prompt: "consent",
-    scope: [
-      "openid",
-      "profile",
-      "email",
-      "offline_access",
-      "User.Read",
-      "Mail.Read",
-      "Mail.ReadWrite",
-    ].join(" "),
-  });
-  return NextResponse.redirect(
-    `${MICROSOFT_GRAPH_AUTH_ENDPOINTS.auth}?${params}`
-  );
+  try {
+    const { clientId, clientSecret } = await getOutlookCredentials();
+    if (!clientId || !clientSecret) {
+      return NextResponse.json(
+        { error: "Outlook Mail is not configured." },
+        { status: 503 }
+      );
+    }
+    const redirectUrl = `${process.env.NEXTAUTH_URL}/api/mail/oauth/outlook/callback`;
+    const params = new URLSearchParams({
+      client_id: clientId,
+      response_type: "code",
+      redirect_uri: redirectUrl,
+      response_mode: "query",
+      prompt: "consent",
+      scope: [
+        "openid",
+        "profile",
+        "email",
+        "offline_access",
+        "User.Read",
+        "Mail.Read",
+        "Mail.ReadWrite",
+      ].join(" "),
+    });
+    return NextResponse.redirect(
+      `${MICROSOFT_GRAPH_AUTH_ENDPOINTS.auth}?${params}`
+    );
+  } catch (error) {
+    return routeErrorResponse(
+      error,
+      "Failed to start Outlook Mail OAuth",
+      LOG_SOURCE,
+      "Could not start Outlook Mail connection."
+    );
+  }
 }

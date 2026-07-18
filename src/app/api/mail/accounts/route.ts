@@ -5,6 +5,7 @@ import { MailProvider } from "@prisma/client";
 import { ImapFlow } from "imapflow";
 import { z } from "zod";
 
+import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
 import { listMailAccounts } from "@/lib/mail-db";
@@ -25,13 +26,24 @@ const imapAccountSchema = z.object({
 export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
-  return NextResponse.json(await listMailAccounts(auth.userId));
+  try {
+    return NextResponse.json(await listMailAccounts(auth.userId));
+  } catch (error) {
+    return routeErrorResponse(
+      error,
+      "Failed to list mail accounts",
+      LOG_SOURCE,
+      "Could not load mail accounts."
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
-  const parsed = imapAccountSchema.safeParse(await request.json());
+  const parsed = imapAccountSchema.safeParse(
+    await request.json().catch(() => null)
+  );
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid IMAP account details." },
@@ -62,26 +74,35 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const account = await prisma.mailAccount.upsert({
-    where: {
-      userId_provider_address: {
+  try {
+    const account = await prisma.mailAccount.upsert({
+      where: {
+        userId_provider_address: {
+          userId: auth.userId,
+          provider: MailProvider.IMAP,
+          address,
+        },
+      },
+      update: {
+        encryptedCredentials: encryptSecret(JSON.stringify(credentials)),
+        status: "ACTIVE",
+      },
+      create: {
         userId: auth.userId,
         provider: MailProvider.IMAP,
         address,
+        encryptedCredentials: encryptSecret(JSON.stringify(credentials)),
       },
-    },
-    update: {
-      encryptedCredentials: encryptSecret(JSON.stringify(credentials)),
-      status: "ACTIVE",
-    },
-    create: {
-      userId: auth.userId,
-      provider: MailProvider.IMAP,
-      address,
-      encryptedCredentials: encryptSecret(JSON.stringify(credentials)),
-    },
-  });
-  await ensureMailSyncSchedule(account.id);
-  await enqueueMailSync(account.id);
-  return NextResponse.json(account, { status: 201 });
+    });
+    await ensureMailSyncSchedule(account.id);
+    await enqueueMailSync(account.id);
+    return NextResponse.json(account, { status: 201 });
+  } catch (error) {
+    return routeErrorResponse(
+      error,
+      "Failed to save IMAP account",
+      LOG_SOURCE,
+      "Could not save this IMAP account."
+    );
+  }
 }

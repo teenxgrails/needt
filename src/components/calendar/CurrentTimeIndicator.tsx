@@ -7,9 +7,10 @@ interface CurrentTimeIndicatorProps {
 }
 
 export function CurrentTimeIndicator({ date }: CurrentTimeIndicatorProps) {
-  const [now, setNow] = useState(newDate());
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
+    setNow(newDate());
     // Update every minute
     const interval = setInterval(() => {
       setNow(newDate());
@@ -18,7 +19,7 @@ export function CurrentTimeIndicator({ date }: CurrentTimeIndicatorProps) {
     return () => clearInterval(interval);
   }, []);
 
-  if (!isSameDay(date, now)) {
+  if (!now || !isSameDay(date, now)) {
     return null;
   }
 

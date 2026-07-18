@@ -72,6 +72,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Prevented development service workers from serving stale client bundles after HMR or reload, and kept authenticated navigation off auth, setup, and Settings routes where it could trigger unrelated feature requests.
+- Hardened the post-reland feature seams: the sidebar AI pill and Cmd/Ctrl+/ now open the chat overlay, elapsed Focus sessions keep their completion prompt, Flow sessions preserve their completion status after reload, and task deadline inputs retain local wall-clock time.
+- Made optional integrations fail soft: Stripe no longer throws at module import without a key, Redis-backed enqueue/realtime publishing becomes a guarded no-op in the web process, SSE reconnects back off while Redis is unavailable, and unconfigured Google/Outlook calendar and Mail actions render as neutral disabled states.
+- Added controlled logging/error responses around Boards, Focus, and Mail routes plus feature-local Mail and Boards render fallbacks, so an isolated provider or database failure does not blank the app or escape as an unhandled route rejection.
+- Recomputed Outlook sync windows per request and parsed opaque delta tokens safely, instead of freezing the date range at module import or retaining trailing query parameters.
+- Added a SavedView-to-Board foreign key with `SET NULL` cleanup, completed the customization/token rebrand defaults, and kept the integrated CalendarWebhook, Mail, Focus, Boards, AgentMemory, and AiUsage schema additive.
 - Split the shared app-session context from its provider component so Settings, account controls, and admin checks consume the same stable client export without a Turbopack runtime mismatch.
 - Unified client session reads behind one provider so the sidebar keeps a skeleton during authentication instead of flashing an empty avatar or Sign In action.
 - Prevented mount-time FullCalendar selections from opening quick-create without an explicit user click or drag.

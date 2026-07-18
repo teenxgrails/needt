@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
 export async function getGoogleCredentials() {
+  if (!process.env.DATABASE_URL) {
+    return {
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+    };
+  }
+
   try {
     const settings = await prisma.systemSettings.findFirst();
     if (settings) {
@@ -22,6 +29,14 @@ export async function getGoogleCredentials() {
 }
 
 export async function getOutlookCredentials() {
+  if (!process.env.DATABASE_URL) {
+    return {
+      clientId: process.env.AZURE_AD_CLIENT_ID || "",
+      clientSecret: process.env.AZURE_AD_CLIENT_SECRET || "",
+      tenantId: process.env.AZURE_AD_TENANT_ID || "common",
+    };
+  }
+
   try {
     const settings = await prisma.systemSettings.findFirst();
     if (settings) {

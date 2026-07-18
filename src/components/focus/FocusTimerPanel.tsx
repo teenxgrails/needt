@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import NumberFlow from "@number-flow/react";
-import { Headphones, Pause, Play, Square } from "lucide-react";
+import { Pause, Play, Square } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 
@@ -24,17 +24,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { formatClock } from "@/lib/focus-timer";
 import {
   ensureNotificationPermission,
   notifyFocusComplete,
 } from "@/lib/focus-notifications";
+import { formatClock } from "@/lib/focus-timer";
 import { springSoft } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { useFocusTimer } from "@/hooks/use-focus-timer";
 
-import { useFocusTimerStore, type FocusMode } from "@/store/focusTimer";
+import { type FocusMode, useFocusTimerStore } from "@/store/focusTimer";
 import { useTaskStore } from "@/store/task";
 
 import { Task, TaskStatus } from "@/types/task";
@@ -111,7 +111,11 @@ export function FocusTimerPanel({
     null;
 
   const plannedMinutes =
-    mode === "POMODORO" ? workMinutes : mode === "DEEP_FOCUS" ? deepMinutes : null;
+    mode === "POMODORO"
+      ? workMinutes
+      : mode === "DEEP_FOCUS"
+        ? deepMinutes
+        : null;
 
   const activePlanned = session?.plannedMinutes ?? null;
   const activeTotalSeconds = activePlanned ? activePlanned * 60 : 0;
@@ -169,7 +173,7 @@ export function FocusTimerPanel({
 
   async function handleStop() {
     try {
-      await stop({ completed: mode === "FLOW" });
+      await stop({ completed: session?.mode === "FLOW" });
       await loadReport();
     } catch {
       toast.error("Could not stop focus session");
@@ -181,11 +185,9 @@ export function FocusTimerPanel({
     clearPendingCompletion();
     if (markTaskDone && hadTask && pendingCompletion?.taskId) {
       try {
-        await useTaskStore
-          .getState()
-          .updateTask(pendingCompletion.taskId, {
-            status: TaskStatus.COMPLETED,
-          });
+        await useTaskStore.getState().updateTask(pendingCompletion.taskId, {
+          status: TaskStatus.COMPLETED,
+        });
       } catch {
         toast.error("Could not mark task done");
       }
@@ -195,7 +197,11 @@ export function FocusTimerPanel({
 
   async function startBreak() {
     clearPendingCompletion();
-    await start({ taskId: null, mode: "POMODORO", plannedMinutes: breakMinutes });
+    await start({
+      taskId: null,
+      mode: "POMODORO",
+      plannedMinutes: breakMinutes,
+    });
   }
 
   const isDeepLocked = session?.mode === "DEEP_FOCUS" && isRunning;
@@ -368,10 +374,6 @@ export function FocusTimerPanel({
               </>
             )}
           </div>
-          <div className="flex items-center gap-2 border-t border-[var(--border-subtle)] pt-3 text-xs text-[var(--text-muted)]">
-            <Headphones className="h-3.5 w-3.5" />
-            Soundscape: rain, brown noise, or silence can plug in here.
-          </div>
         </div>
       </div>
 
@@ -462,7 +464,11 @@ export function FocusTimerPanel({
                 Mark task done
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={() => startBreak()}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => startBreak()}
+            >
               Start break
             </Button>
             <Button type="button" onClick={() => finishCompletion(false)}>
@@ -475,7 +481,11 @@ export function FocusTimerPanel({
   );
 }
 
-function WeekBarChart({ data }: { data: { label: string; minutes: number }[] }) {
+function WeekBarChart({
+  data,
+}: {
+  data: { label: string; minutes: number }[];
+}) {
   const max = Math.max(1, ...data.map((day) => day.minutes));
   return (
     <div className="mt-6">

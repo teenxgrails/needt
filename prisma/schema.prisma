@@ -493,18 +493,19 @@ model FocusStats {
 }
 
 model Board {
-  id        String        @id @default(cuid())
-  userId    String
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  icon      String? // emoji
-  position  Float         @default(0)
+  id         String        @id @default(cuid())
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  icon       String? // emoji
+  position   Float         @default(0)
   // "manual" columns, or auto-group by status | priority | project | tag.
-  groupBy   String        @default("manual")
-  columns   BoardColumn[]
-  tasks     Task[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  groupBy    String        @default("manual")
+  columns    BoardColumn[]
+  tasks      Task[]
+  savedViews SavedView[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   @@index([userId])
 }
@@ -531,6 +532,7 @@ model SavedView {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   boardId   String?
+  board     Board?   @relation(fields: [boardId], references: [id], onDelete: SetNull)
   // board | list | timeline | calendar
   type      String
   groupBy   String?
@@ -832,7 +834,7 @@ model UserCustomization {
   fontFamily        String   @default("system")
   eventChipStyle    String   @default("flat")
   animationsEnabled Boolean  @default(true)
-  themePreset       String   @default("flowday")
+  themePreset       String   @default("needt")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

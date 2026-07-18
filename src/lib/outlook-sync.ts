@@ -58,12 +58,30 @@ interface OutlookEvent {
   attendees?: OutlookAttendee[];
   seriesMasterId?: string;
 }
-const now = newDate();
-const timeMin = newDateFromYMD(now.getFullYear() - 1, 0, 1); // 2 years ago, January 1st
-const timeMax = newDateFromYMD(now.getFullYear() + 1, 11, 31); // End of next year
 const PAGE_SIZE = 200;
 
 const LOG_SOURCE = "OutlookSync";
+
+export function getOutlookSyncWindow(reference = newDate()) {
+  return {
+    timeMin: newDateFromYMD(reference.getFullYear() - 1, 0, 1),
+    timeMax: newDateFromYMD(reference.getFullYear() + 1, 11, 31),
+  };
+}
+
+export function extractOutlookDeltaToken(deltaLink?: string | null) {
+  if (!deltaLink) return undefined;
+  try {
+    const url = new URL(deltaLink, "https://graph.microsoft.com");
+    return (
+      url.searchParams.get("$deltatoken") ??
+      url.searchParams.get("deltatoken") ??
+      undefined
+    );
+  } catch {
+    return undefined;
+  }
+}
 
 // Helper to create base event data shared between master and instance events
 export function createBaseEventData(
@@ -180,6 +198,7 @@ export async function fetchAllEvents(
     );
     queryParams.push(`$deltatoken=${syncToken}`);
   } else {
+    const { timeMin, timeMax } = getOutlookSyncWindow();
     queryParams.push(`startDateTime=${timeMin.toISOString()}`);
     queryParams.push(`endDateTime=${timeMax.toISOString()}`);
   }
@@ -235,7 +254,7 @@ export async function fetchAllEvents(
   return {
     events: activeEvents,
     deletedEventIds: deletedEvents.map((event: OutlookEvent) => event.id),
-    nextSyncToken: deltaLink?.split("deltatoken=")[1],
+    nextSyncToken: extractOutlookDeltaToken(deltaLink),
   };
 }
 
@@ -247,6 +266,7 @@ export async function fetchEventInstances(
 ) {
   let allInstances = [];
   let nextLink = null;
+  const { timeMin, timeMax } = getOutlookSyncWindow();
 
   // Initial request
   let response = await client

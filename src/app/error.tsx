@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { APP_NAME } from "@/lib/app-config";
 import { inter } from "@/lib/fonts";
+import { logger } from "@/lib/logger";
 import { getAppVersion, getVersionGithubUrl } from "@/lib/version";
 
 import "../app/globals.css";
@@ -24,8 +25,11 @@ export default function Error({
     setMounted(true);
     // Set document title on the client side
     document.title = `Error - ${APP_NAME}`;
-    // Log the error to an error reporting service
-    console.error(error);
+    void logger.error(
+      "Application error boundary rendered",
+      { error: error.message, digest: error.digest ?? null },
+      "ApplicationErrorBoundary"
+    );
   }, [error]);
 
   // Only render the full content after mounting on the client

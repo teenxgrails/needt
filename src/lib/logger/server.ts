@@ -49,7 +49,7 @@ const getRetentionDays = (level: LogLevel, retention: LogRetention): number => {
 
 export class ServerLogger {
   private async getLogSettings(): Promise<LogSettings> {
-    if (process.env.NODE_ENV === "test") {
+    if (process.env.NODE_ENV === "test" || !process.env.DATABASE_URL) {
       return DISABLED_LOG_SETTINGS;
     }
 

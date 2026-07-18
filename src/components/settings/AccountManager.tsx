@@ -171,18 +171,30 @@ export function AccountManager() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[310px]">
             <DropdownMenuItem
+              disabled={!integrationStatus.google.configured}
               onSelect={() => connectProvider("GOOGLE")}
               className="min-h-10 rounded-[var(--control-radius)] px-3 text-[14px]"
             >
               <SiGooglecalendar className="h-5 w-5" />
               Add Google Calendar
+              {!integrationStatus.google.configured && (
+                <span className="ml-auto text-[11px] text-[var(--text-muted)]">
+                  Not configured
+                </span>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem
+              disabled={!integrationStatus.outlook.configured}
               onSelect={() => connectProvider("OUTLOOK")}
               className="min-h-10 rounded-[var(--control-radius)] px-3 text-[14px]"
             >
               <FaMicrosoft className="h-5 w-5 text-[#6CA9FF]" />
               Add Outlook Calendar
+              {!integrationStatus.outlook.configured && (
+                <span className="ml-auto text-[11px] text-[var(--text-muted)]">
+                  Not configured
+                </span>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem
               onSelect={() => setShowCalDAVForm(true)}
