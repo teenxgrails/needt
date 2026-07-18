@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { canAddMailbox } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { listMailAccounts } from "@/lib/mail-db";
 import { prisma } from "@/lib/prisma";
@@ -52,6 +53,16 @@ export async function POST(request: NextRequest) {
   }
 
   const { address, ...credentials } = parsed.data;
+  const entitlement = await canAddMailbox(auth.userId, {
+    provider: MailProvider.IMAP,
+    address,
+  });
+  if (!entitlement.allowed) {
+    return NextResponse.json(
+      { error: "Mailbox limit reached.", entitlement },
+      { status: 403 }
+    );
+  }
   const client = new ImapFlow({
     host: credentials.host,
     port: credentials.port,

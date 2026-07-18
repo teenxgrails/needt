@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
   if ("response" in auth) return auth.response;
 
   try {
-    if (!(await canCreateBoard(auth.userId))) {
+    const entitlement = await canCreateBoard(auth.userId);
+    if (!entitlement.allowed) {
       return NextResponse.json(
-        { error: "Board limit reached" },
+        { error: "Board limit reached", entitlement },
         { status: 403 }
       );
     }

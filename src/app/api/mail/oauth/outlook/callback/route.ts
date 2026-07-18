@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { canAddMailbox } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { createOAuthMailAccount } from "@/lib/mail-db";
 import {
@@ -49,6 +50,15 @@ export async function GET(request: NextRequest) {
       (await profileResponse.json()) as MSGraphUser
     );
     if (!address) throw new Error("Outlook email address is unavailable.");
+    const entitlement = await canAddMailbox(auth.userId, {
+      provider: "OUTLOOK",
+      address,
+    });
+    if (!entitlement.allowed) {
+      return NextResponse.redirect(
+        new URL("/mail?error=mailbox-limit", request.url)
+      );
+    }
     const connectionRef = await TokenManager.getInstance().storeTokens(
       "OUTLOOK",
       address,

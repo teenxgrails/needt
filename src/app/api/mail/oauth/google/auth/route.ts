@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { getGoogleCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { canAddMailbox } from "@/lib/entitlements";
 import { createGoogleOAuthClient } from "@/lib/google";
 
 const LOG_SOURCE = "GoogleMailOAuthStart";
@@ -11,6 +12,13 @@ export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   try {
+    const entitlement = await canAddMailbox(auth.userId);
+    if (!entitlement.allowed) {
+      return NextResponse.json(
+        { error: "Mailbox limit reached.", entitlement },
+        { status: 403 }
+      );
+    }
     const credentials = await getGoogleCredentials();
     if (!credentials.clientId || !credentials.clientSecret) {
       return NextResponse.json(

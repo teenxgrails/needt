@@ -51,7 +51,7 @@ interface FocusPayload {
     currentStreak: number;
     longestStreak: number;
     lifetimeMinutes: number;
-  };
+  } | null;
   weeklyReport: {
     focusMinutes: number;
     sessionsCompleted: number;
@@ -59,7 +59,8 @@ interface FocusPayload {
     estimateAccuracyPercent: number | null;
     dailyMinutes: { label: string; minutes: number }[];
     streakStatus: { current: number; longest: number; atRisk: boolean };
-  };
+  } | null;
+  upgradeRequired: boolean;
 }
 
 const modeLabels: Record<FocusMode, string> = {
@@ -383,7 +384,7 @@ export function FocusTimerPanel({
         </div>
       )}
 
-      {report && (
+      {report?.stats && report.weeklyReport && (
         <>
           <div className="mt-8 grid grid-cols-2 border-y border-[var(--border-subtle)] sm:grid-cols-4">
             {[
@@ -427,7 +428,22 @@ export function FocusTimerPanel({
         </>
       )}
 
-      {report?.weeklyReport.streakStatus.atRisk && (
+      {report?.upgradeRequired && (
+        <div className="mt-8 rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3">
+          <div className="text-[13px] font-medium text-[var(--text-primary)]">
+            Focus stats are included with Pro and Lifetime
+          </div>
+          <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+            The focus timer and session history still work on Free. Upgrade to
+            see scores, streaks, and weekly analytics.
+          </p>
+          <Button asChild className="mt-3" size="sm" variant="outline">
+            <a href="/settings#billing">View plans</a>
+          </Button>
+        </div>
+      )}
+
+      {report?.stats && report.weeklyReport?.streakStatus.atRisk && (
         <div className="glass--subtle mt-3 border-amber-300/30 bg-amber-500/10 p-2 text-xs text-amber-100">
           One completed session today keeps your{" "}
           <NumberFlow

@@ -146,7 +146,7 @@ export async function getConfiguredSchedulerAI(userId: string) {
   const hostedKey = process.env.NEEDT_AI_API_KEY?.trim() || null;
   const usage = await getHostedAiUsage(userId);
   const source = resolveAiAccessMode({
-    hasByok: Boolean(byokKey),
+    hasByok: usage.plan !== "FREE" && Boolean(byokKey),
     hostedAvailable: Boolean(hostedKey),
     hostedAllowed: usage.allowed,
   });

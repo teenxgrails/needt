@@ -233,7 +233,9 @@ async function computeStagedSnapshot(
       })
     );
 
-    await scheduleAllTasksForUser(stagingUser.id);
+    await scheduleAllTasksForUser(stagingUser.id, {
+      entitlementUserId: userId,
+    });
     const [stagedTasks, stagedBlocks] = await Promise.all([
       prisma.task.findMany({
         where: { userId: stagingUser.id },

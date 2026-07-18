@@ -71,7 +71,7 @@ NEEDT_AI_MONTHLY_ACTION_CAP="300"
 NEEDT_AI_LIFETIME_ACTION_CAP="3000"
 ```
 
-`NEEDT_AI_API_KEY` enables the hosted OpenAI-compatible fallback (DeepSeek by default). `NEEDT_AI_MODEL`, `NEEDT_AI_BASE_URL`, `NEEDT_AI_MONTHLY_ACTION_CAP`, and `NEEDT_AI_LIFETIME_ACTION_CAP` configure the deployment-wide model and per-plan allowances. Users can instead supply their own provider key in Settings for unlimited usage. Keys entered in Settings are encrypted at rest with `AI_ENCRYPTION_KEY` (or `NEXTAUTH_SECRET` when it is omitted).
+`NEEDT_AI_API_KEY` enables the hosted OpenAI-compatible fallback (DeepSeek by default). `NEEDT_AI_MODEL`, `NEEDT_AI_BASE_URL`, `NEEDT_AI_MONTHLY_ACTION_CAP`, and `NEEDT_AI_LIFETIME_ACTION_CAP` configure the deployment-wide model and paid-plan allowances. Pro and Lifetime users can instead supply their own provider key in Settings. Keys entered in Settings are encrypted at rest with `AI_ENCRYPTION_KEY` (or `NEXTAUTH_SECRET` when it is omitted).
 
 ### Custom AI OAuth (optional)
 
@@ -90,6 +90,31 @@ AI_CUSTOM_OAUTH_SCOPES="planner.read planner.write offline_access"
 - Register `${NEXTAUTH_URL}/api/ai/oauth/custom/callback` as the exact OAuth redirect URI.
 - Once these values are configured, a user selects Custom and clicks **Connect** in Settings—no OAuth URLs or client credentials need to be entered by the user.
 - OpenAI and Anthropic direct API access uses API keys, not account OAuth tokens. Settings links users to the relevant key page before they paste and connect their key.
+
+## Creem Billing
+
+Creem is optional. When these values are absent, the app starts normally on the
+Free plan and Settings shows a neutral "purchases not configured" state.
+
+```bash
+CREEM_API_KEY=""
+CREEM_WEBHOOK_SECRET=""
+CREEM_PRODUCT_PRO_MONTHLY=""
+CREEM_PRODUCT_PRO_YEARLY=""
+CREEM_PRODUCT_LIFETIME=""
+CREEM_API_URL=""
+```
+
+- Create three Creem products matching Needt Pro monthly ($6), Needt Pro yearly
+  ($60), and Needt Lifetime ($79), then put their product IDs in the matching
+  variables.
+- Configure the Creem webhook endpoint as
+  `${NEXTAUTH_URL}/api/billing/webhook` and copy its signing secret into
+  `CREEM_WEBHOOK_SECRET`.
+- Leave `CREEM_API_URL` empty for the normal Creem environment. Set it only
+  when Creem supplies a test or custom API origin.
+- Creem acts as merchant of record for checkout, invoices, subscription
+  management, and applicable sales tax.
 
 ## Web Push
 

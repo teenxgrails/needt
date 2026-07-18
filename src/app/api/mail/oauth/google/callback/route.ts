@@ -4,6 +4,7 @@ import { google } from "googleapis";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { canAddMailbox } from "@/lib/entitlements";
 import { createGoogleOAuthClient } from "@/lib/google";
 import { logger } from "@/lib/logger";
 import { createOAuthMailAccount } from "@/lib/mail-db";
@@ -27,6 +28,15 @@ export async function GET(request: NextRequest) {
       .userinfo.get();
     if (!profile.data.email || !tokens.access_token) {
       throw new Error("Google mail profile is incomplete.");
+    }
+    const entitlement = await canAddMailbox(auth.userId, {
+      provider: "GMAIL",
+      address: profile.data.email,
+    });
+    if (!entitlement.allowed) {
+      return NextResponse.redirect(
+        new URL("/mail?error=mailbox-limit", request.url)
+      );
     }
     const connectionRef = await TokenManager.getInstance().storeTokens(
       "GOOGLE",

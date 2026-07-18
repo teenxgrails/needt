@@ -9,12 +9,14 @@
 import { getToken } from "next-auth/jwt";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { canAddCalendar } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 
 import * as utils from "../utils";
 
 jest.mock("next-auth/jwt", () => ({ getToken: jest.fn() }));
 jest.mock("@/lib/auth/api-auth", () => ({ authenticateRequest: jest.fn() }));
+jest.mock("@/lib/entitlements", () => ({ canAddCalendar: jest.fn() }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     connectedAccount: { findUnique: jest.fn() },
@@ -25,6 +27,9 @@ jest.mock("@/lib/prisma", () => ({
 const mockGetToken = getToken as jest.MockedFunction<typeof getToken>;
 const mockAuthenticateRequest = authenticateRequest as jest.MockedFunction<
   typeof authenticateRequest
+>;
+const mockCanAddCalendar = canAddCalendar as jest.MockedFunction<
+  typeof canAddCalendar
 >;
 
 /** Narrows a route handler's `Response | undefined` return to a defined Response. */
@@ -40,9 +45,7 @@ function jsonRequest(body: unknown) {
   return {
     json: async () => body,
     url: "http://localhost/api/calendar/caldav/test",
-  } as unknown as Parameters<
-    typeof import("../test/route")["POST"]
-  >[0];
+  } as unknown as Parameters<(typeof import("../test/route"))["POST"]>[0];
 }
 
 beforeEach(() => {
@@ -63,7 +66,11 @@ describe("CalDAV test route classifies login failures", () => {
     const { POST } = await import("../test/route");
 
     const res = await POST(
-      jsonRequest({ serverUrl: "https://dav.local", username: "u", password: "p" })
+      jsonRequest({
+        serverUrl: "https://dav.local",
+        username: "u",
+        password: "p",
+      })
     );
     const data = await res.json();
 
@@ -78,7 +85,11 @@ describe("CalDAV test route classifies login failures", () => {
     const { POST } = await import("../test/route");
 
     const res = await POST(
-      jsonRequest({ serverUrl: "https://dav.local", username: "u", password: "p" })
+      jsonRequest({
+        serverUrl: "https://dav.local",
+        username: "u",
+        password: "p",
+      })
     );
     const data = await res.json();
 
@@ -111,7 +122,11 @@ describe("CalDAV test route classifies login failures", () => {
     const { POST } = await import("../test/route");
 
     const res = await POST(
-      jsonRequest({ serverUrl: "https://dav.local", username: "u", password: "p" })
+      jsonRequest({
+        serverUrl: "https://dav.local",
+        username: "u",
+        password: "p",
+      })
     );
     const data = await res.json();
 
@@ -123,6 +138,14 @@ describe("CalDAV test route classifies login failures", () => {
 describe("CalDAV auth route classifies login failures", () => {
   beforeEach(() => {
     mockAuthenticateRequest.mockResolvedValue({ userId: "user-1" } as never);
+    mockCanAddCalendar.mockResolvedValue({
+      allowed: true,
+      limit: 1,
+      used: 0,
+      remaining: 1,
+      upgradeRequired: false,
+      plan: "FREE",
+    });
     jest
       .spyOn(utils, "createCalDAVClient")
       .mockReturnValue({} as ReturnType<typeof utils.createCalDAVClient>);
@@ -190,11 +213,9 @@ describe("CalDAV auth route classifies login failures", () => {
 
   it("keeps a malformed path (local URL construction error) as a 400 bad-path, not a 502", async () => {
     jest.spyOn(utils, "loginToCalDAVServer").mockResolvedValue(true);
-    jest
-      .spyOn(utils, "formatAbsoluteUrl")
-      .mockImplementation(() => {
-        throw new Error("Invalid base URL: https://dav.local");
-      });
+    jest.spyOn(utils, "formatAbsoluteUrl").mockImplementation(() => {
+      throw new Error("Invalid base URL: https://dav.local");
+    });
     const fetchSpy = jest
       .spyOn(utils, "fetchCalDAVCalendars")
       .mockResolvedValue([]);
@@ -238,9 +259,7 @@ describe("CalDAV available route classifies login failures", () => {
   function getRequest() {
     return {
       url: "http://localhost/api/calendar/caldav/available?accountId=acc-1",
-    } as unknown as Parameters<
-      typeof import("../available/route")["GET"]
-    >[0];
+    } as unknown as Parameters<(typeof import("../available/route"))["GET"]>[0];
   }
 
   it("returns a connection error (502) for `fetch failed`", async () => {
@@ -298,9 +317,12 @@ describe("CalDAV add-calendar route classifies login failures", () => {
 
   function addRequest() {
     return {
-      json: async () => ({ accountId: "acc-1", calendarId: "https://dav.local/c/" }),
+      json: async () => ({
+        accountId: "acc-1",
+        calendarId: "https://dav.local/c/",
+      }),
       url: "http://localhost/api/calendar/caldav",
-    } as unknown as Parameters<typeof import("../route")["POST"]>[0];
+    } as unknown as Parameters<(typeof import("../route"))["POST"]>[0];
   }
 
   it("returns a connection error (502) for `fetch failed`", async () => {

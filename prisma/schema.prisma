@@ -1090,6 +1090,7 @@ model PasswordReset {
 
 enum SubscriptionPlan {
   FREE
+  PRO
   LIFETIME
 }
 
@@ -1097,6 +1098,8 @@ enum SubscriptionStatus {
   ACTIVE
   PAYMENT_PENDING
   PAYMENT_FAILED
+  CANCELED
+  PAST_DUE
 }
 
 enum SchedulingEnergyLevel {
@@ -1163,6 +1166,12 @@ model Subscription {
   user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan                  SubscriptionPlan   @default(FREE)
   status                SubscriptionStatus @default(ACTIVE)
+  creemCustomerId       String?            @unique
+  creemSubscriptionId   String?            @unique
+  creemProductId        String?
+  interval              String?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
   stripeCustomerId      String?            @unique
   stripePaymentIntentId String?            @unique // For one-time payments like lifetime access
   amount                Int? // Amount paid in cents
@@ -1170,6 +1179,7 @@ model Subscription {
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
+  @@index([creemProductId])
   @@index([stripeCustomerId])
   @@index([stripePaymentIntentId])
 }

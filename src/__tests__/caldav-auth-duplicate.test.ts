@@ -1,13 +1,13 @@
+import { POST } from "@/app/api/calendar/caldav/auth/route";
+import * as caldavUtils from "@/app/api/calendar/caldav/utils";
 import { Prisma } from "@prisma/client";
 
 import * as apiAuth from "@/lib/auth/api-auth";
+import * as entitlements from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 
-import * as caldavUtils from "@/app/api/calendar/caldav/utils";
-
-import { POST } from "@/app/api/calendar/caldav/auth/route";
-
 jest.mock("@/lib/auth/api-auth");
+jest.mock("@/lib/entitlements");
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     connectedAccount: {
@@ -47,6 +47,14 @@ describe("CalDAV auth route - duplicate server handling", () => {
     jest.clearAllMocks();
     (apiAuth.authenticateRequest as jest.Mock).mockResolvedValue({
       userId: "user-1",
+    });
+    (entitlements.canAddCalendar as jest.Mock).mockResolvedValue({
+      allowed: true,
+      limit: 1,
+      used: 0,
+      remaining: 1,
+      upgradeRequired: false,
+      plan: "FREE",
     });
     (caldavUtils.loginToCalDAVServer as jest.Mock).mockResolvedValue(true);
   });

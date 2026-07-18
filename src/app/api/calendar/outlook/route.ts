@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { canAddCalendar } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import {
   MICROSOFT_GRAPH_AUTH_ENDPOINTS,
@@ -21,6 +22,13 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = auth.userId;
+    const entitlement = await canAddCalendar(userId);
+    if (!entitlement.allowed) {
+      return NextResponse.json(
+        { error: "Calendar limit reached.", entitlement },
+        { status: 403 }
+      );
+    }
 
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get("code");

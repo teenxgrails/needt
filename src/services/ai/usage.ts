@@ -1,9 +1,11 @@
 import { newDate } from "@/lib/date-utils";
+import { getPlan } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 
 export const HOSTED_AI_CONFIG = {
   monthlyActionCaps: {
-    FREE: Number(process.env.NEEDT_AI_MONTHLY_ACTION_CAP || 300),
+    FREE: 0,
+    PRO: Number(process.env.NEEDT_AI_MONTHLY_ACTION_CAP || 300),
     LIFETIME: Number(process.env.NEEDT_AI_LIFETIME_ACTION_CAP || 3_000),
   },
   baseUrl:
@@ -22,13 +24,13 @@ export function hostedUsageStatus(
   actionCount: number,
   plan: keyof typeof HOSTED_AI_CONFIG.monthlyActionCaps = "FREE"
 ) {
-  const limit = Math.max(1, HOSTED_AI_CONFIG.monthlyActionCaps[plan]);
+  const limit = Math.max(0, HOSTED_AI_CONFIG.monthlyActionCaps[plan]);
   return {
     plan,
     used: Math.max(0, actionCount),
     limit,
     remaining: Math.max(0, limit - actionCount),
-    allowed: actionCount < limit,
+    allowed: limit > 0 && actionCount < limit,
   };
 }
 
@@ -43,16 +45,13 @@ export function resolveAiAccessMode(input: {
 }
 
 export async function getHostedAiUsage(userId: string) {
-  const [row, subscription] = await Promise.all([
+  const [row, plan] = await Promise.all([
     prisma.aiUsage.findUnique({
       where: { userId_yearMonth: { userId, yearMonth: usageMonth() } },
     }),
-    prisma.subscription.findUnique({
-      where: { userId },
-      select: { plan: true },
-    }),
+    getPlan(userId),
   ]);
-  return hostedUsageStatus(row?.actionCount ?? 0, subscription?.plan || "FREE");
+  return hostedUsageStatus(row?.actionCount ?? 0, plan);
 }
 
 export async function canUseHostedAi(userId: string) {
@@ -61,16 +60,13 @@ export async function canUseHostedAi(userId: string) {
 
 export async function recordHostedAiAction(userId: string) {
   const yearMonth = usageMonth();
-  const [row, subscription] = await Promise.all([
+  const [row, plan] = await Promise.all([
     prisma.aiUsage.upsert({
       where: { userId_yearMonth: { userId, yearMonth } },
       create: { userId, yearMonth, actionCount: 1 },
       update: { actionCount: { increment: 1 } },
     }),
-    prisma.subscription.findUnique({
-      where: { userId },
-      select: { plan: true },
-    }),
+    getPlan(userId),
   ]);
-  return hostedUsageStatus(row.actionCount, subscription?.plan || "FREE");
+  return hostedUsageStatus(row.actionCount, plan);
 }

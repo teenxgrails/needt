@@ -1,7 +1,9 @@
-import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+import { Prisma } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { canAddCalendar } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -30,6 +32,13 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = auth.userId;
+    const entitlement = await canAddCalendar(userId);
+    if (!entitlement.allowed) {
+      return NextResponse.json(
+        { error: "Calendar limit reached.", entitlement },
+        { status: 403 }
+      );
+    }
 
     const { serverUrl, username, password, path } = await request.json();
 
@@ -198,8 +207,7 @@ export async function POST(request: NextRequest) {
         );
         return NextResponse.json(
           {
-            error:
-              "This CalDAV server is already connected for this account.",
+            error: "This CalDAV server is already connected for this account.",
           },
           { status: 409 }
         );

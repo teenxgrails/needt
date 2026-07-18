@@ -895,15 +895,23 @@ export async function POST(request: NextRequest) {
     auth.userId
   );
   if (source === "none") {
+    const upgradeRequired = usage.plan === "FREE";
     return NextResponse.json(
       {
-        error: usage.allowed
-          ? "Hosted AI is unavailable. Add your own provider key in Settings."
-          : "Monthly hosted AI limit reached. Add your own provider key for unlimited actions.",
-        code: usage.allowed ? "AI_UNAVAILABLE" : "HOSTED_LIMIT_REACHED",
+        error: upgradeRequired
+          ? "The AI agent is available on Needt Pro and Lifetime."
+          : usage.allowed
+            ? "Hosted AI is unavailable. Add your own provider key in Settings."
+            : "Monthly hosted AI limit reached. Add your own provider key for unlimited actions.",
+        code: upgradeRequired
+          ? "UPGRADE_REQUIRED"
+          : usage.allowed
+            ? "AI_UNAVAILABLE"
+            : "HOSTED_LIMIT_REACHED",
+        upgradeRequired,
         usage,
       },
-      { status: 409 }
+      { status: upgradeRequired ? 403 : 409 }
     );
   }
 

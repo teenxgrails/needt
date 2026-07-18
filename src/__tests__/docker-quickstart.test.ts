@@ -1,6 +1,5 @@
 import { readFileSync } from "fs";
 import { join } from "path";
-
 import { parse as parseYaml } from "yaml";
 
 // Issue #151: the Docker quick-start failed for operators whose `.env` contained
@@ -112,5 +111,21 @@ describe("Docker quick-start (issue #151)", () => {
       // port without updating NEXTAUTH_URL breaks auth. The note must say so.
       expect(portNote).toContain("NEXTAUTH_URL");
     });
+  });
+});
+
+describe("production migration tooling", () => {
+  const packageJson = JSON.parse(read("package.json")) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  const dockerfile = read("docker/production/Dockerfile");
+  const entrypoint = read("entrypoint.sh");
+
+  it("ships the pinned Prisma CLI in the production dependency layer", () => {
+    expect(packageJson.dependencies?.prisma).toBe("^6.3.1");
+    expect(packageJson.devDependencies?.prisma).toBeUndefined();
+    expect(dockerfile).toContain("npm ci --only=production");
+    expect(entrypoint).toContain("prisma migrate deploy");
   });
 });

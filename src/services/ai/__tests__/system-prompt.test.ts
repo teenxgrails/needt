@@ -31,9 +31,9 @@ describe("agent prompt assembly", () => {
 
 describe("hosted AI metering", () => {
   it("stops at the configured cap", () => {
-    const cap = hostedUsageStatus(Number.MAX_SAFE_INTEGER).limit;
-    expect(hostedUsageStatus(cap - 1).allowed).toBe(true);
-    expect(hostedUsageStatus(cap).allowed).toBe(false);
+    const cap = hostedUsageStatus(Number.MAX_SAFE_INTEGER, "PRO").limit;
+    expect(hostedUsageStatus(cap - 1, "PRO").allowed).toBe(true);
+    expect(hostedUsageStatus(cap, "PRO").allowed).toBe(false);
   });
 
   it("prefers BYOK and only falls back to hosted while allowance remains", () => {

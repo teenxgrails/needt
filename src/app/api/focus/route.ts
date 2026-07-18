@@ -10,6 +10,7 @@ import { FocusSessionMode } from "@prisma/client";
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { canViewFocusStats } from "@/lib/entitlements";
 
 const LOG_SOURCE = "focus-route";
 
@@ -24,9 +25,17 @@ export async function GET(request: NextRequest) {
   if ("response" in auth) return auth.response;
 
   try {
+    const entitlement = await canViewFocusStats(auth.userId);
+    if (!entitlement.allowed) {
+      return NextResponse.json({
+        stats: null,
+        weeklyReport: null,
+        upgradeRequired: entitlement.upgradeRequired,
+      });
+    }
     const stats = await recomputeFocusStats(auth.userId);
     const weeklyReport = await getWeeklyFocusReport(auth.userId);
-    return NextResponse.json({ stats, weeklyReport });
+    return NextResponse.json({ stats, weeklyReport, upgradeRequired: false });
   } catch (error) {
     return routeErrorResponse(
       error,
@@ -76,9 +85,23 @@ export async function POST(request: NextRequest) {
       endedAt,
     });
 
+    const entitlement = await canViewFocusStats(auth.userId);
+    if (!entitlement.allowed) {
+      return NextResponse.json({
+        session,
+        stats: null,
+        weeklyReport: null,
+        upgradeRequired: entitlement.upgradeRequired,
+      });
+    }
     const stats = await recomputeFocusStats(auth.userId);
     const weeklyReport = await getWeeklyFocusReport(auth.userId);
-    return NextResponse.json({ session, stats, weeklyReport });
+    return NextResponse.json({
+      session,
+      stats,
+      weeklyReport,
+      upgradeRequired: false,
+    });
   } catch (error) {
     return routeErrorResponse(
       error,

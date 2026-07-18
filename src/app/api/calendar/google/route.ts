@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { registerCalendarWebhookBestEffort } from "@/lib/calendar-webhooks/register";
 import { newDate } from "@/lib/date-utils";
+import { canAddCalendar } from "@/lib/entitlements";
 import { createGoogleOAuthClient } from "@/lib/google";
 import { getGoogleCalendarClient } from "@/lib/google-calendar";
 import { syncGoogleCalendar } from "@/lib/google-sync";
@@ -24,6 +25,13 @@ export async function GET(request: NextRequest) {
     }
     const auth = await authenticateRequest(request, LOG_SOURCE);
     if ("response" in auth) return auth.response;
+    const entitlement = await canAddCalendar(auth.userId);
+    if (!entitlement.allowed) {
+      return NextResponse.json(
+        { error: "Calendar limit reached.", entitlement },
+        { status: 403 }
+      );
+    }
 
     const oauth2Client = await createGoogleOAuthClient({
       redirectUrl: `${process.env.NEXTAUTH_URL}/api/calendar/google`,

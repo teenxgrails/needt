@@ -1,5 +1,6 @@
 import { getCalibrationContext } from "@/services/time-tracking/calibration";
 
+import { canAutoScheduleMore } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -285,7 +286,8 @@ function summarizeSchedule(result: ScheduleResult) {
 }
 
 export async function scheduleAllTasksForUser(
-  userId: string
+  userId: string,
+  options: { entitlementUserId?: string } = {}
 ): Promise<TaskWithRelations[]> {
   try {
     logger.info("Starting task scheduling for user", { userId }, LOG_SOURCE);
@@ -318,7 +320,7 @@ export async function scheduleAllTasksForUser(
       },
     });
 
-    const dbTasks = (await prisma.task.findMany({
+    let dbTasks = (await prisma.task.findMany({
       where: {
         OR: [{ isAutoScheduled: true }, { autoScheduled: true }],
         status: {
@@ -333,17 +335,36 @@ export async function scheduleAllTasksForUser(
         tags: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
       },
+      orderBy: { createdAt: "asc" },
     })) as DbTaskWithRelations[];
+    const entitlement = await canAutoScheduleMore(
+      options.entitlementUserId || userId
+    );
+    if (entitlement.remaining !== null) {
+      const alreadyScheduled = dbTasks.filter(
+        (task) =>
+          task.scheduledStart !== null || Boolean(task.scheduledBlocks?.length)
+      );
+      const newCandidates = dbTasks.filter(
+        (task) => task.scheduledStart === null && !task.scheduledBlocks?.length
+      );
+      dbTasks = [
+        ...alreadyScheduled,
+        ...newCandidates.slice(0, entitlement.remaining),
+      ];
+    }
 
     const result = scheduleTasks({
       tasks: dbTasks.map(toSchedulableTask),
-      busyBlocks: busyEvents.map((event): CalendarBusyBlock => ({
-        id: event.id,
-        title: event.title,
-        start: event.start,
-        end: event.end,
-        source: "calendar",
-      })),
+      busyBlocks: busyEvents.map(
+        (event): CalendarBusyBlock => ({
+          id: event.id,
+          title: event.title,
+          start: event.start,
+          end: event.end,
+          source: "calendar",
+        })
+      ),
       energyProfile:
         energyWindows.length > 0
           ? {
