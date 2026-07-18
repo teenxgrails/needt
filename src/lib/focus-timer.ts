@@ -8,6 +8,8 @@
  * shared between the API layer and the React rendering hook.
  */
 
+import { newDate } from "@/lib/date-utils";
+
 export interface FocusTiming {
   /** When the session started (server truth). */
   startedAt: Date | string;
@@ -23,7 +25,7 @@ export interface FocusTiming {
 }
 
 function ms(value: Date | string): number {
-  return value instanceof Date ? value.getTime() : new Date(value).getTime();
+  return value instanceof Date ? value.getTime() : newDate(value).getTime();
 }
 
 /**
@@ -78,7 +80,7 @@ export function projectedEndsAt(
   const remaining = remainingSeconds(timing, now);
   if (remaining === null) return null;
   const nowMs = typeof now === "number" ? now : now.getTime();
-  return new Date(nowMs + remaining * 1000);
+  return newDate(nowMs + remaining * 1000);
 }
 
 /** Whole minutes focused, for persisting onto the session and the task. */

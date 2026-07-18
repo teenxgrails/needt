@@ -6,11 +6,12 @@ import {
   projectedEndsAt,
   remainingSeconds,
 } from "@/lib/focus-timer";
+import { newDate } from "@/lib/date-utils";
 
-const START = new Date("2026-07-17T10:00:00.000Z");
+const START = newDate("2026-07-17T10:00:00.000Z");
 
 function at(secondsAfterStart: number): Date {
-  return new Date(START.getTime() + secondsAfterStart * 1000);
+  return newDate(START.getTime() + secondsAfterStart * 1000);
 }
 
 describe("focus-timer math", () => {
