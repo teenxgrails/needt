@@ -2,25 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { Lock, Palette, Save } from "lucide-react";
+import { Palette, Save } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  MotionPicker,
+  MotionSwitchRow,
+} from "@/components/settings/MotionSettingsControls";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 
 import { APP_NAME } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
 
-import { SettingRow, SettingsSection } from "./SettingsSection";
+import {
+  SettingRow,
+  SettingsAdvanced,
+  SettingsCard,
+  SettingsSection,
+} from "./SettingsSection";
 
 interface CustomizationState {
   accentColor: string;
@@ -43,12 +44,6 @@ const DEFAULTS: CustomizationState = {
   eventChipStyle: "flat",
   animationsEnabled: true,
 };
-
-const lockedThemes = [
-  ["Aurora", "Layered gradients and softer panels."],
-  ["Studio", "Editorial contrast with compact rows."],
-  ["Terminal", "Monospace, hard lines, low chrome."],
-];
 
 const ACCENT_COLORS = [
   "#6366F1",
@@ -109,7 +104,7 @@ export function CustomizationSettings() {
     () => ({
       borderRadius: settings.radius,
       backgroundColor: settings.backgroundTint,
-      borderColor: "var(--line-strong)",
+      borderColor: "var(--border-control)",
     }),
     [settings]
   );
@@ -143,81 +138,12 @@ export function CustomizationSettings() {
 
   return (
     <SettingsSection
-      title="Customization"
-      description="Tune density, radius, sidebar, and motion behavior."
+      title="Personalization"
+      description="Choose the accent and motion behavior used across Needt."
     >
       <SettingRow
-        label="Layout"
-        description="Keep the Motion-style density, with room for personal preference."
-      >
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>Density</Label>
-            <Select
-              value={settings.density}
-              onValueChange={(value) =>
-                update("density", value as CustomizationState["density"])
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="compact">Compact</SelectItem>
-                <SelectItem value="comfortable">Comfortable</SelectItem>
-                <SelectItem value="spacious">Spacious</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Sidebar width</Label>
-            <Input
-              type="number"
-              min={220}
-              max={320}
-              value={settings.sidebarWidth}
-              onChange={(event) =>
-                update("sidebarWidth", Number(event.target.value))
-              }
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Radius</Label>
-            <Input
-              type="number"
-              min={4}
-              max={16}
-              value={settings.radius}
-              onChange={(event) => update("radius", Number(event.target.value))}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Event chips</Label>
-            <Select
-              value={settings.eventChipStyle}
-              onValueChange={(value) =>
-                update(
-                  "eventChipStyle",
-                  value as CustomizationState["eventChipStyle"]
-                )
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="flat">Flat</SelectItem>
-                <SelectItem value="outlined">Outlined</SelectItem>
-                <SelectItem value="filled">Filled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </SettingRow>
-
-      <SettingRow
         label="Accent color"
-        description="Use color for selection, focus, and interactive states."
+        description="Used for selected controls, links, and important actions."
       >
         <div className="flex flex-wrap items-center gap-2">
           {ACCENT_COLORS.map((color) => (
@@ -226,10 +152,10 @@ export function CustomizationSettings() {
               type="button"
               onClick={() => update("accentColor", color)}
               className={cn(
-                "h-7 w-7 rounded-md border-2 transition-transform hover:scale-105",
+                "h-7 w-7 rounded-[var(--control-radius)] border-2 transition-colors",
                 settings.accentColor.toUpperCase() === color
-                  ? "border-white"
-                  : "border-transparent"
+                  ? "border-[var(--text-primary)]"
+                  : "border-transparent hover:border-[var(--border-control)]"
               )}
               style={{ backgroundColor: color }}
               aria-label={`Use accent ${color}`}
@@ -246,62 +172,105 @@ export function CustomizationSettings() {
       </SettingRow>
 
       <SettingRow
-        label="Background and motion"
-        description={`${APP_NAME} stays flat by default; animations can be disabled globally.`}
+        label="Motion"
+        description={`Reduce visual movement throughout ${APP_NAME}.`}
       >
-        <div className="space-y-3">
-          <Input
-            value={settings.backgroundTint}
-            onChange={(event) => update("backgroundTint", event.target.value)}
-            aria-label="Background color"
+        <MotionSwitchRow
+          label="Animations"
+          checked={settings.animationsEnabled}
+          onCheckedChange={(checked) => update("animationsEnabled", checked)}
+        />
+      </SettingRow>
+
+      <SettingsAdvanced
+        title="Advanced appearance"
+        description="Density, sizing, background, and calendar event style."
+      >
+        <div className="space-y-0.5">
+          <MotionPicker
+            label="Density"
+            value={settings.density}
+            valueLabel={
+              settings.density[0].toUpperCase() + settings.density.slice(1)
+            }
+            options={[
+              { value: "compact", label: "Compact" },
+              { value: "comfortable", label: "Comfortable" },
+              { value: "spacious", label: "Spacious" },
+            ]}
+            onValueChange={(value) =>
+              update("density", value as CustomizationState["density"])
+            }
           />
-          <label className="flex items-center justify-between gap-4">
-            <span className="text-sm">Animations</span>
-            <Switch
-              checked={settings.animationsEnabled}
-              onCheckedChange={(checked) =>
-                update("animationsEnabled", checked)
+          <MotionPicker
+            label="Event cards"
+            value={settings.eventChipStyle}
+            valueLabel={
+              settings.eventChipStyle[0].toUpperCase() +
+              settings.eventChipStyle.slice(1)
+            }
+            options={[
+              { value: "flat", label: "Flat" },
+              { value: "outlined", label: "Outlined" },
+              { value: "filled", label: "Filled" },
+            ]}
+            onValueChange={(value) =>
+              update(
+                "eventChipStyle",
+                value as CustomizationState["eventChipStyle"]
+              )
+            }
+          />
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="appearance-sidebar-width">Sidebar width</Label>
+            <Input
+              id="appearance-sidebar-width"
+              type="number"
+              min={220}
+              max={320}
+              value={settings.sidebarWidth}
+              onChange={(event) =>
+                update("sidebarWidth", Number(event.target.value))
               }
             />
-          </label>
-          <div className="rounded-md border p-3" style={previewStyle}>
-            <div className="flex items-center gap-2 text-sm">
-              <Palette className="h-4 w-4" />
-              Live {APP_NAME} preview
-            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="appearance-radius">Corner radius</Label>
+            <Input
+              id="appearance-radius"
+              type="number"
+              min={4}
+              max={16}
+              value={settings.radius}
+              onChange={(event) => update("radius", Number(event.target.value))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="appearance-background">Background</Label>
+            <Input
+              id="appearance-background"
+              value={settings.backgroundTint}
+              onChange={(event) => update("backgroundTint", event.target.value)}
+            />
           </div>
         </div>
-      </SettingRow>
+        <SettingsCard className="mt-4 p-3">
+          <div
+            className="flex items-center gap-2 text-[13px]"
+            style={previewStyle}
+          >
+            <Palette className="h-4 w-4 text-[var(--text-secondary)]" />
+            Live {APP_NAME} preview
+          </div>
+        </SettingsCard>
+      </SettingsAdvanced>
 
-      <SettingRow
-        label="Themes"
-        description="Three future visual systems are reserved without changing the current product."
-      >
-        <div className="grid gap-2 sm:grid-cols-3">
-          {lockedThemes.map(([name, description]) => (
-            <button
-              key={name}
-              type="button"
-              className="cursor-not-allowed rounded-md border border-[var(--line-strong)] bg-[var(--raised)] p-3 text-left opacity-80"
-              aria-disabled="true"
-            >
-              <div className="mb-2 flex items-center justify-between gap-2 text-sm font-medium">
-                {name}
-                <span className="inline-flex items-center gap-1 rounded bg-[var(--active)] px-1.5 py-0.5 text-[10px] text-[var(--text-lo)]">
-                  <Lock className="h-3 w-3" />
-                  Coming soon
-                </span>
-              </div>
-              <p className="text-xs text-[var(--text-lo)]">{description}</p>
-            </button>
-          ))}
-        </div>
-      </SettingRow>
-
-      <div className="flex justify-end">
+      <div className="mt-5 flex justify-end">
         <Button type="button" onClick={save} disabled={isSaving}>
           <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : "Save customization"}
+          {isSaving ? "Saving…" : "Save appearance"}
         </Button>
       </div>
     </SettingsSection>

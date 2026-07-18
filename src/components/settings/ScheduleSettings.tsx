@@ -271,8 +271,8 @@ export function ScheduleSettings() {
   return (
     <>
       <SettingsSection
-        title="Schedules"
-        description="Schedules tell Needt when tasks are allowed to be placed."
+        title="Work schedule"
+        description="Choose the days and hours where Needt may place tasks."
       >
         <div className="overflow-hidden rounded-[var(--control-radius)] border border-[var(--border-control)]">
           <button

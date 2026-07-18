@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRef } from "react";
 
-import { Download, Loader2, Upload } from "lucide-react";
+import { Download, FileJson2, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 
 import { APP_SLUG } from "@/lib/app-config";
 
-import { SettingRow, SettingsSection } from "./SettingsSection";
+import { SettingRow, SettingsCard, SettingsSection } from "./SettingsSection";
 
 export function ImportExportSettings() {
   const [includeCompleted, setIncludeCompleted] = useState(false);
@@ -133,8 +133,8 @@ export function ImportExportSettings() {
       description="Move tasks into or out of your planner without changing your calendar connections."
     >
       <SettingRow
-        label="Task archive"
-        description="Choose whether completed tasks are included in the exported JSON file."
+        label="Archive contents"
+        description="Completed tasks are excluded unless you include them."
       >
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -144,13 +144,15 @@ export function ImportExportSettings() {
               setIncludeCompleted(checked as boolean)
             }
           />
-          <Label htmlFor="includeCompleted">Include completed tasks</Label>
+          <Label htmlFor="includeCompleted" className="text-[14px]">
+            Include completed tasks
+          </Label>
         </div>
       </SettingRow>
 
       <SettingRow
-        label="Tasks"
-        description="Export a task archive or import a previously exported JSON file."
+        label="Transfer tasks"
+        description="Download a backup or restore a Needt JSON archive."
       >
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
@@ -163,7 +165,7 @@ export function ImportExportSettings() {
             ) : (
               <Download className="h-4 w-4" />
             )}
-            Export Tasks
+            Export tasks
           </Button>
 
           <Button
@@ -177,7 +179,7 @@ export function ImportExportSettings() {
             ) : (
               <Upload className="h-4 w-4" />
             )}
-            Import Tasks
+            Import tasks
           </Button>
 
           <input
@@ -191,23 +193,17 @@ export function ImportExportSettings() {
       </SettingRow>
 
       <SettingRow
-        label="File format"
-        description="Exports include tasks, projects, and tags. Imports add the valid items from the selected file."
+        label="Safe import"
+        description="Existing tasks are preserved when you import an archive."
       >
-        <div className="space-y-2 text-sm text-[#9BA1A6]">
-          <p>
-            <strong>Export:</strong> Creates a JSON file containing all your
-            tasks, projects, and tags.
+        <SettingsCard className="flex items-start gap-3 p-3">
+          <FileJson2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-secondary)]" />
+          <p className="text-[13px] leading-5 text-[var(--text-secondary)]">
+            Archives include tasks, projects, and tags. Importing adds valid
+            items without deleting existing data; importing the same archive
+            twice can create duplicates.
           </p>
-          <p>
-            <strong>Import:</strong> Imports tasks, projects, and tags from a
-            JSON file. Tasks will be associated with your account.
-          </p>
-          <p className="text-yellow-600 dark:text-yellow-400">
-            Note: Importing will not delete or modify your existing tasks, but
-            may create duplicates if tasks with similar titles exist.
-          </p>
-        </div>
+        </SettingsCard>
       </SettingRow>
     </SettingsSection>
   );

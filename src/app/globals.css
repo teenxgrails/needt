@@ -1423,6 +1423,38 @@ html[data-animations="off"] *::after {
   font-weight: 500 !important;
   opacity: 1 !important;
 }
+
+.settings-desktop-sidebar,
+.settings-desktop-header {
+  display: none;
+}
+
+.settings-mobile-header {
+  display: flex;
+}
+
+.settings-main {
+  margin-left: 0;
+}
+
+@media (min-width: 768px) {
+  .settings-desktop-sidebar {
+    display: block;
+  }
+
+  .settings-desktop-header {
+    display: flex;
+  }
+
+  .settings-mobile-header {
+    display: none;
+  }
+
+  .settings-main {
+    margin-left: 230px;
+  }
+}
+
 /* FullCalendar owns the drag mirror, so keep its lift aligned with the shared
    task drag overlay without adding glow to control chrome. */
 .fc .fc-event.fc-event-dragging,

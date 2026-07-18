@@ -1,17 +1,13 @@
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+  MotionPicker,
+  MotionSwitchRow,
+} from "@/components/settings/MotionSettingsControls";
 
 import { useSettingsStore } from "@/store/settings";
 
 import { TimeFormat, WeekStartDay } from "@/types/settings";
 
-import { SettingRow, SettingsSection } from "./SettingsSection";
+import { SettingsSection } from "./SettingsSection";
 
 interface UserSettingsProps {
   page?: "all" | "theme" | "timezone";
@@ -121,64 +117,45 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
   return (
     <SettingsSection
       title={
-        page === "theme" ? "Theme" : page === "timezone" ? "Timezone" : "Theme"
+        page === "theme"
+          ? "Display"
+          : page === "timezone"
+            ? "Time & timezone"
+            : "Display"
       }
       description={
         page === "timezone"
-          ? "Choose the timezone and time format used throughout Needt."
-          : "Choose how Needt looks and how calendar weeks are arranged."
+          ? "Choose how dates and times are shown throughout Needt."
+          : "Choose the color mode and calendar display defaults."
       }
     >
-      {page !== "timezone" && (
-        <>
-          <SettingRow label="Theme" description="Choose the app color mode.">
-            <Select
+      <div className="space-y-0.5">
+        {page !== "timezone" && (
+          <>
+            <MotionPicker
+              label="Theme"
               value={user.theme}
+              valueLabel={
+                themes.find((theme) => theme.value === user.theme)?.label
+              }
+              options={themes.map((theme) => ({ ...theme }))}
               onValueChange={(value) =>
                 updateUserSettings({ theme: value as typeof user.theme })
               }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {themes.map((theme) => (
-                  <SelectItem key={theme.value} value={theme.value}>
-                    {theme.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </SettingRow>
-
-          <SettingRow
-            label="Start week on"
-            description="Choose the first day shown in week views."
-          >
-            <Select
+            />
+            <MotionPicker
+              label="Start week on"
               value={user.weekStartDay}
+              valueLabel={
+                weekStarts.find((day) => day.value === user.weekStartDay)?.label
+              }
+              options={weekStarts}
               onValueChange={(value) =>
                 updateUserSettings({ weekStartDay: value as WeekStartDay })
               }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {weekStarts.map((day) => (
-                  <SelectItem key={day.value} value={day.value}>
-                    {day.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </SettingRow>
-
-          <SettingRow
-            label="Highlight working hours"
-            description="Show your schedule as a subtle highlight on the calendar."
-          >
-            <Switch
+            />
+            <MotionSwitchRow
+              label="Highlight working hours"
               checked={calendar.workingHours.enabled}
               onCheckedChange={(enabled) =>
                 updateCalendarSettings({
@@ -186,71 +163,37 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
                 })
               }
             />
-          </SettingRow>
-        </>
-      )}
+          </>
+        )}
 
-      {page !== "theme" && (
-        <>
-          <SettingRow
-            label="Time format"
-            description="Choose how times are displayed."
-          >
-            <Select
+        {page !== "theme" && (
+          <>
+            <MotionPicker
+              label="Time format"
               value={user.timeFormat}
+              valueLabel={
+                timeFormats.find((format) => format.value === user.timeFormat)
+                  ?.label
+              }
+              options={timeFormats}
               onValueChange={(value) =>
                 updateUserSettings({ timeFormat: value as TimeFormat })
               }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {timeFormats.map((format) => (
-                  <SelectItem key={format.value} value={format.value}>
-                    {format.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </SettingRow>
-
-          <SettingRow
-            label="Default timezone"
-            description="Tasks and events are shown in this timezone."
-          >
-            <Select
+            />
+            <MotionPicker
+              label="Timezone"
               value={user.timeZone}
+              valueLabel={user.timeZone.replace(/_/g, " ")}
+              options={timeZones.map((zone) => ({
+                value: zone,
+                label: zone.replace(/_/g, " "),
+              }))}
               onValueChange={(value) => updateUserSettings({ timeZone: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {timeZones.map((zone) => (
-                  <SelectItem key={zone} value={zone}>
-                    {zone.replace(/_/g, " ")}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </SettingRow>
-
-          <SettingRow
-            label="Secondary timezone"
-            description="Optionally show another timezone alongside the calendar."
-          >
-            <Select value="none" disabled>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-              </SelectContent>
-            </Select>
-          </SettingRow>
-        </>
-      )}
+              searchPlaceholder="Search timezones…"
+            />
+          </>
+        )}
+      </div>
     </SettingsSection>
   );
 }

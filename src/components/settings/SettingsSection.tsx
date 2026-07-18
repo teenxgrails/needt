@@ -12,6 +12,16 @@ interface SettingRowProps {
   children: React.ReactNode;
 }
 
+interface SettingsCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+}
+
+interface SettingsAdvancedProps {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}
+
 export function SettingsSection({
   title,
   description,
@@ -36,14 +46,19 @@ export function SettingsSection({
           )}
         </header>
       )}
-      <div>{children}</div>
+      <div className="[&>[data-setting-row]+[data-setting-row]]:border-t [&>[data-setting-row]+[data-setting-row]]:border-[var(--border-subtle)]">
+        {children}
+      </div>
     </section>
   );
 }
 
 export function SettingRow({ label, description, children }: SettingRowProps) {
   return (
-    <div className="grid gap-3 py-3 first:pt-0 md:grid-cols-[minmax(220px,1fr)_minmax(300px,1.2fr)] md:gap-8">
+    <div
+      data-setting-row
+      className="grid gap-3 py-4 first:pt-0 md:grid-cols-[minmax(220px,1fr)_minmax(300px,1.2fr)] md:gap-8"
+    >
       <div className="space-y-1">
         <div className="text-[14px] font-medium leading-5">{label}</div>
         <div className="max-w-[360px] text-[13px] leading-5 text-[var(--text-secondary)]">
@@ -52,5 +67,51 @@ export function SettingRow({ label, description, children }: SettingRowProps) {
       </div>
       <div className="min-w-0">{children}</div>
     </div>
+  );
+}
+
+export function SettingsCard({
+  children,
+  className,
+  ...props
+}: SettingsCardProps) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)]",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function SettingsAdvanced({
+  title,
+  description,
+  children,
+}: SettingsAdvancedProps) {
+  return (
+    <details className="group border-t border-[var(--border-subtle)] pt-4">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-[var(--control-radius)] py-1 text-[14px] font-medium text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
+        <span>
+          <span className="block">{title}</span>
+          {description && (
+            <span className="mt-1 block text-[12px] font-normal leading-5 text-[var(--text-muted)]">
+              {description}
+            </span>
+          )}
+        </span>
+        <span
+          aria-hidden="true"
+          className="text-[16px] transition-transform duration-150 group-open:rotate-45"
+        >
+          +
+        </span>
+      </summary>
+      <div className="pt-4">{children}</div>
+    </details>
   );
 }

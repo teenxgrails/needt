@@ -58,3 +58,4 @@
 # Settings schedules
 
 - 2026-07-17: The Motion-style Schedules editor writes per-day hours to the existing `SchedulingPreferences.workHours` JSON used by the deterministic engine, while mirroring its primary range into legacy calendar/auto-schedule settings for compatibility; no duplicate schedule table was added.
+- 2026-07-18: Settings keeps one visible page title, uses shared Motion rows/cards for every ordinary-user tab, hides advanced appearance/retention/webhook details by default, and omits destructive or export actions that have no implemented backend.

@@ -8,9 +8,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 
-import { SettingRow, SettingsSection } from "./SettingsSection";
+import {
+  SettingRow,
+  SettingsAdvanced,
+  SettingsCard,
+  SettingsSection,
+} from "./SettingsSection";
 
 interface ConnectorSettingsResponse {
   hasToken: boolean;
@@ -94,35 +100,53 @@ export function ConnectorSettings() {
 
   if (isLoading) {
     return (
-      <SettingsSection
-        title="Integrations"
-        description="Loading local connector settings."
+      <div
+        className="max-w-[896px] space-y-5"
+        aria-label="Loading API settings"
       >
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </SettingsSection>
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-4 w-[420px] max-w-full" />
+        <Skeleton className="h-28 w-full" />
+      </div>
     );
   }
 
   return (
     <SettingsSection
-      title="Integrations"
-      description="Let local scripts and automations create tasks, read the schedule, and trigger rescheduling."
+      title="Personal API"
+      description="Connect your own trusted automations to Needt."
     >
       <SettingRow
-        label="Personal Token"
-        description="A single bearer token for local tools. The full token is shown once."
+        label="Access token"
+        description="Used by scripts and automations. A new token is shown only once."
       >
         <div className="space-y-3">
-          <div className="rounded-md border p-3 text-sm">
-            {settings.hasToken
-              ? `Active token: ${settings.tokenPreview}`
-              : "No connector token yet."}
-          </div>
+          <SettingsCard className="flex min-h-[54px] items-center justify-between gap-3 px-4">
+            <div>
+              <div className="text-[14px] font-medium">
+                {settings.hasToken ? "Active token" : "No active token"}
+              </div>
+              <div className="mt-0.5 font-mono text-[12px] text-[var(--text-secondary)]">
+                {settings.tokenPreview || "Generate one when you are ready"}
+              </div>
+            </div>
+            <span
+              className={`h-2 w-2 rounded-full ${
+                settings.hasToken
+                  ? "bg-[var(--color-success)]"
+                  : "bg-[var(--text-muted)]"
+              }`}
+              aria-hidden="true"
+            />
+          </SettingsCard>
           {newToken && (
-            <div className="space-y-2 rounded-md border border-primary/40 bg-primary/10 p-3">
-              <Label>Copy this token now</Label>
+            <div className="space-y-2 rounded-[var(--control-radius)] border border-[var(--border-control)] bg-[var(--surface-panel)] p-3">
+              <Label htmlFor="new-connector-token">
+                Copy this token now — it will not be shown again
+              </Label>
               <div className="flex gap-2">
                 <Input
+                  id="new-connector-token"
                   value={newToken}
                   readOnly
                   className="font-mono text-xs"
@@ -131,7 +155,14 @@ export function ConnectorSettings() {
                   type="button"
                   variant="outline"
                   size="icon"
-                  onClick={() => navigator.clipboard.writeText(newToken)}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(newToken);
+                      toast.success("Token copied");
+                    } catch {
+                      toast.error("Could not copy token");
+                    }
+                  }}
                   aria-label="Copy connector token"
                 >
                   <Copy className="h-4 w-4" />
@@ -141,61 +172,66 @@ export function ConnectorSettings() {
           )}
           <Button type="button" variant="outline" onClick={generateToken}>
             <KeyRound className="mr-2 h-4 w-4" />
-            {settings.hasToken ? "Rotate Token" : "Generate Token"}
+            {settings.hasToken ? "Rotate token" : "Generate token"}
           </Button>
         </div>
       </SettingRow>
 
-      <SettingRow
-        label="Outbound Webhook"
-        description="Optional local webhook for schedule changes or task completion."
+      <SettingsAdvanced
+        title="Webhooks"
+        description="Send schedule and completion events to an automation URL."
       >
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="connector-webhook">Webhook URL</Label>
-            <Input
-              id="connector-webhook"
-              value={settings.webhookUrl || ""}
-              onChange={(event) =>
-                setSettings((current) => ({
-                  ...current,
-                  webhookUrl: event.target.value,
-                }))
-              }
-              placeholder="http://localhost:5678/webhook/needt"
-            />
+        <SettingRow
+          label="Destination"
+          description="Needt sends a POST request when an enabled event occurs."
+        >
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="connector-webhook">Webhook URL</Label>
+              <Input
+                id="connector-webhook"
+                value={settings.webhookUrl || ""}
+                onChange={(event) =>
+                  setSettings((current) => ({
+                    ...current,
+                    webhookUrl: event.target.value,
+                  }))
+                }
+                placeholder="http://localhost:5678/webhook/needt"
+              />
+            </div>
+            <label className="flex min-h-8 items-center justify-between gap-4 text-[14px]">
+              <span>Schedule changes</span>
+              <Switch
+                checked={settings.webhookSchedule}
+                onCheckedChange={(checked) =>
+                  setSettings((current) => ({
+                    ...current,
+                    webhookSchedule: checked,
+                  }))
+                }
+              />
+            </label>
+            <label className="flex min-h-8 items-center justify-between gap-4 text-[14px]">
+              <span>Task completion</span>
+              <Switch
+                checked={settings.webhookTaskComplete}
+                onCheckedChange={(checked) =>
+                  setSettings((current) => ({
+                    ...current,
+                    webhookTaskComplete: checked,
+                  }))
+                }
+              />
+            </label>
           </div>
-          <label className="flex items-center justify-between gap-4">
-            <span className="text-sm">Schedule changes</span>
-            <Switch
-              checked={settings.webhookSchedule}
-              onCheckedChange={(checked) =>
-                setSettings((current) => ({
-                  ...current,
-                  webhookSchedule: checked,
-                }))
-              }
-            />
-          </label>
-          <label className="flex items-center justify-between gap-4">
-            <span className="text-sm">Task completion</span>
-            <Switch
-              checked={settings.webhookTaskComplete}
-              onCheckedChange={(checked) =>
-                setSettings((current) => ({
-                  ...current,
-                  webhookTaskComplete: checked,
-                }))
-              }
-            />
-          </label>
-        </div>
-      </SettingRow>
+        </SettingRow>
+      </SettingsAdvanced>
 
-      <div className="flex justify-end">
+      <div className="mt-5 flex justify-end">
         <Button type="button" onClick={saveSettings} disabled={isSaving}>
           <Save className="mr-2 h-4 w-4" />
-          {isSaving ? "Saving..." : "Save Connector Settings"}
+          {isSaving ? "Saving…" : "Save API settings"}
         </Button>
       </div>
     </SettingsSection>

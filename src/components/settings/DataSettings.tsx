@@ -1,25 +1,29 @@
-import { Button } from "@/components/ui/button";
+import { MotionSwitchRow } from "@/components/settings/MotionSettingsControls";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 
 import { useSettingsStore } from "@/store/settings";
 
-import { SettingRow, SettingsSection } from "./SettingsSection";
+import {
+  SettingRow,
+  SettingsAdvanced,
+  SettingsSection,
+} from "./SettingsSection";
 
 export function DataSettings() {
   const { data, updateDataSettings } = useSettingsStore();
 
   return (
     <SettingsSection
-      title="Data & retention"
-      description="Control local backup and retention preferences for your planner data."
+      title="Storage"
+      description="Choose how long Needt keeps older planner data."
     >
       <SettingRow
-        label="Automatic Backup"
-        description="Keep a periodic backup of your planner data."
+        label="Automatic backup"
+        description="Keep a periodic local backup of planner data."
       >
         <div className="space-y-3">
-          <Switch
+          <MotionSwitchRow
+            label="Enabled"
             checked={data.autoBackup}
             onCheckedChange={(autoBackup) => updateDataSettings({ autoBackup })}
           />
@@ -27,10 +31,10 @@ export function DataSettings() {
           {data.autoBackup && (
             <div className="max-w-[160px] space-y-2">
               <label
-                className="text-sm text-[#9BA1A6]"
+                className="text-[12px] text-[var(--text-secondary)]"
                 htmlFor="backup-interval"
               >
-                Every (days)
+                Backup every (days)
               </label>
               <Input
                 id="backup-interval"
@@ -49,57 +53,36 @@ export function DataSettings() {
         </div>
       </SettingRow>
 
-      <SettingRow
-        label="Data Retention"
-        description="Archive events after the selected number of days."
+      <SettingsAdvanced
+        title="Retention"
+        description="Archive older events without deleting current tasks."
       >
-        <div className="max-w-[160px] space-y-2">
-          <label className="text-sm text-[#9BA1A6]" htmlFor="retain-data">
-            Days to retain
-          </label>
-          <Input
-            id="retain-data"
-            type="number"
-            min="30"
-            max="3650"
-            value={data.retainDataFor}
-            onChange={(e) =>
-              updateDataSettings({
-                retainDataFor: Number(e.target.value),
-              })
-            }
-          />
-        </div>
-      </SettingRow>
-
-      <SettingRow label="Export Data" description="Download your calendar data">
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline">
-            Export as iCal
-          </Button>
-          <Button type="button" variant="outline">
-            Export as JSON
-          </Button>
-        </div>
-      </SettingRow>
-
-      <SettingRow label="Clear Data" description="Remove all calendar data">
-        <Button
-          type="button"
-          variant="destructive"
-          onClick={() => {
-            if (
-              window.confirm(
-                "Are you sure you want to clear all calendar data? This action cannot be undone."
-              )
-            ) {
-              // TODO: Implement clear data functionality
-            }
-          }}
+        <SettingRow
+          label="Event history"
+          description="Events older than this can be archived by maintenance jobs."
         >
-          Clear All Data
-        </Button>
-      </SettingRow>
+          <div className="max-w-[180px] space-y-2">
+            <label
+              className="text-[12px] text-[var(--text-secondary)]"
+              htmlFor="retain-data"
+            >
+              Days to retain
+            </label>
+            <Input
+              id="retain-data"
+              type="number"
+              min="30"
+              max="3650"
+              value={data.retainDataFor}
+              onChange={(event) =>
+                updateDataSettings({
+                  retainDataFor: Number(event.target.value),
+                })
+              }
+            />
+          </div>
+        </SettingRow>
+      </SettingsAdvanced>
     </SettingsSection>
   );
 }

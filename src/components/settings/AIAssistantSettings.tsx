@@ -22,12 +22,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 import { APP_NAME } from "@/lib/app-config";
 
-import { SettingRow, SettingsSection } from "./SettingsSection";
+import { SettingRow, SettingsCard, SettingsSection } from "./SettingsSection";
 
 type AIProvider = "NONE" | "ANTHROPIC" | "OPENAI" | "GROK" | "GLM" | "CUSTOM";
 type SoulPreset = "business" | "coach";
@@ -257,12 +258,14 @@ export function AIAssistantSettings() {
 
   if (isLoading) {
     return (
-      <SettingsSection
-        title="AI Assistant"
-        description="Loading AI provider settings."
+      <div
+        className="max-w-[896px] space-y-5"
+        aria-label="Loading AI assistant settings"
       >
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </SettingsSection>
+        <Skeleton className="h-5 w-24" />
+        <Skeleton className="h-4 w-[480px] max-w-full" />
+        <Skeleton className="h-36 w-full" />
+      </div>
     );
   }
 
@@ -273,11 +276,11 @@ export function AIAssistantSettings() {
 
   return (
     <SettingsSection
-      title="AI Assistant"
-      description="Optional scheduling help. Deterministic scheduling stays the default and fallback."
+      title="Provider"
+      description="Optional planning help. Deterministic scheduling always remains available as the fallback."
     >
       <SettingRow
-        label="Provider"
+        label="Assistant"
         description={`None keeps ${APP_NAME} fully offline. API keys are encrypted before storage.`}
       >
         <div className="space-y-4">
@@ -299,25 +302,33 @@ export function AIAssistantSettings() {
               <SelectItem value="CUSTOM">Custom</SelectItem>
             </SelectContent>
           </Select>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div
+            className="grid gap-2 sm:grid-cols-2"
+            role="radiogroup"
+            aria-label="Assistant personality"
+          >
             <button
               type="button"
+              role="radio"
+              aria-checked={settings.soulPreset === "business"}
               onClick={() => updateSetting("soulPreset", "business")}
-              className={`rounded-md border px-3 py-2 text-left text-sm ${
+              className={`rounded-[var(--control-radius)] border px-3 py-2 text-left text-[13px] transition-colors ${
                 settings.soulPreset === "business"
-                  ? "border-[#3E63DD] bg-[#2B2F31]"
-                  : "border-[#323234] bg-[#262627]"
+                  ? "border-[var(--color-accent)] bg-[var(--surface-hover)]"
+                  : "border-[var(--border-control)] bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)]"
               }`}
             >
               Brief business assistant
             </button>
             <button
               type="button"
+              role="radio"
+              aria-checked={settings.soulPreset === "coach"}
               onClick={() => updateSetting("soulPreset", "coach")}
-              className={`rounded-md border px-3 py-2 text-left text-sm ${
+              className={`rounded-[var(--control-radius)] border px-3 py-2 text-left text-[13px] transition-colors ${
                 settings.soulPreset === "coach"
-                  ? "border-[#3E63DD] bg-[#2B2F31]"
-                  : "border-[#323234] bg-[#262627]"
+                  ? "border-[var(--color-accent)] bg-[var(--surface-hover)]"
+                  : "border-[var(--border-control)] bg-[var(--surface-raised)] hover:bg-[var(--surface-hover)]"
               }`}
             >
               Friendly ADHD coach
@@ -365,29 +376,29 @@ export function AIAssistantSettings() {
                 }
                 placeholder="https://ai.example.com"
               />
-              <p className="text-xs text-[var(--text-lo)]">
+              <p className="text-xs text-[var(--text-secondary)]">
                 This is usually prefilled by your planner administrator.
               </p>
             </div>
           )}
           {settings.provider === "CUSTOM" && (
-            <div className="rounded-md border border-[var(--line-strong)] bg-[var(--raised)] p-3">
+            <SettingsCard className="p-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-sm font-medium">Connect Custom AI</div>
-                  <p className="mt-1 text-xs leading-5 text-[var(--text-lo)]">
+                  <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
                     Sign in once. Your encrypted connection refreshes itself.
                   </p>
                 </div>
                 {settings.oauth.connected && (
-                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--acc-blue)]" />
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-[var(--color-success)]" />
                 )}
               </div>
               <div className="mt-3">
                 {settings.oauth.available ? (
                   settings.oauth.connected ? (
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-[var(--text-lo)]">
+                      <span className="text-xs text-[var(--text-secondary)]">
                         Connected
                         {settings.oauth.expiresAt
                           ? ` · refreshes after ${new Date(
@@ -421,12 +432,12 @@ export function AIAssistantSettings() {
                     </Button>
                   )
                 ) : (
-                  <p className="text-xs text-[var(--text-lo)]">
+                  <p className="text-xs text-[var(--text-secondary)]">
                     Ask your planner administrator to enable Custom AI OAuth.
                   </p>
                 )}
               </div>
-            </div>
+            </SettingsCard>
           )}
           {settings.provider !== "NONE" && (
             <div className="space-y-2">
@@ -443,19 +454,19 @@ export function AIAssistantSettings() {
                 }
               />
               {settings.provider === "CUSTOM" ? (
-                <p className="text-xs text-[var(--text-lo)]">
+                <p className="text-xs text-[var(--text-secondary)]">
                   Optional fallback if your Custom AI service also supports API
                   keys.
                 </p>
               ) : (
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[var(--text-lo)]">
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[var(--text-secondary)]">
                   <span>Paste a key once, then use the planner normally.</span>
                   {providerKeyLink && (
                     <a
                       href={providerKeyLink}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[var(--accent)] hover:opacity-80"
+                      className="inline-flex items-center gap-1 text-[var(--color-accent)] hover:opacity-80"
                     >
                       Get an API key
                       <ArrowUpRight className="h-3 w-3" />
@@ -469,10 +480,10 @@ export function AIAssistantSettings() {
       </SettingRow>
 
       <SettingRow
-        label="Allowed Actions"
+        label="Permissions"
         description={`AI suggestions are shown as suggestions; ${APP_NAME} does not silently reshuffle.`}
       >
-        <div className="space-y-3">
+        <SettingsCard className="divide-y divide-[var(--border-subtle)]">
           {[
             ["allowParseTasks", "Parse brain dumps"],
             ["allowReorder", "Suggest reorder"],
@@ -481,9 +492,9 @@ export function AIAssistantSettings() {
           ].map(([key, label]) => (
             <label
               key={key}
-              className="flex items-center justify-between gap-4"
+              className="flex min-h-11 items-center justify-between gap-4 px-3"
             >
-              <span className="text-sm">{label}</span>
+              <span className="text-[13px]">{label}</span>
               <Switch
                 checked={Boolean(settings[key as keyof AISettingsResponse])}
                 onCheckedChange={(checked) =>
@@ -495,12 +506,12 @@ export function AIAssistantSettings() {
               />
             </label>
           ))}
-        </div>
+        </SettingsCard>
       </SettingRow>
 
       <SettingRow
-        label="Brain Dump"
-        description={`Paste messy notes and preview structured tasks. With provider None, ${APP_NAME} uses a local parser.`}
+        label="Parser preview"
+        description={`Test how messy notes become tasks. With provider None, ${APP_NAME} uses its local parser.`}
       >
         <div className="space-y-3">
           <Textarea
@@ -519,11 +530,11 @@ export function AIAssistantSettings() {
             {isParsing ? "Parsing..." : "Preview Tasks"}
           </Button>
           {parsedTasks.length > 0 && (
-            <div className="space-y-2 rounded-md border p-3">
+            <SettingsCard className="space-y-2 p-3">
               {parsedTasks.map((task, index) => (
                 <div key={`${task.title}-${index}`} className="text-sm">
                   <div className="font-medium">{task.title}</div>
-                  <div className="text-muted-foreground">
+                  <div className="text-[var(--text-secondary)]">
                     {[
                       task.estimatedMinutes && `${task.estimatedMinutes}m`,
                       task.priority,
@@ -535,7 +546,7 @@ export function AIAssistantSettings() {
                   </div>
                 </div>
               ))}
-            </div>
+            </SettingsCard>
           )}
         </div>
       </SettingRow>

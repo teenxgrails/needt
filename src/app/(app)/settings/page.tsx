@@ -39,6 +39,13 @@ import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSe
 import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings";
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { cn } from "@/lib/utils";
 
@@ -258,7 +265,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-[var(--surface-canvas)] text-[var(--text-primary)]">
       <div className="flex min-h-screen">
-        <aside className="fixed inset-y-0 left-0 z-20 w-[230px] overflow-y-auto border-r border-[var(--border-subtle)] bg-[var(--surface-canvas)] p-2">
+        <aside className="settings-desktop-sidebar fixed inset-y-0 left-0 z-20 w-[230px] overflow-y-auto border-r border-[var(--border-subtle)] bg-[var(--surface-canvas)] p-2">
           <a
             href="/calendar"
             className="mb-3 flex h-[25px] items-center gap-1 rounded-[4px] px-1.5 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
@@ -282,15 +289,42 @@ export default function SettingsPage() {
           </div>
         </aside>
 
-        <main className="ml-[230px] min-h-screen min-w-0 flex-1 bg-[var(--surface-canvas)]">
-          <header className="sticky top-0 z-10 flex h-[57px] items-center border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-12">
+        <main className="settings-main min-h-screen min-w-0 flex-1 bg-[var(--surface-canvas)]">
+          <div className="settings-mobile-header sticky top-0 z-30 min-h-[57px] items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-4">
+            <a
+              href="/calendar"
+              aria-label="Back to Needt"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--control-radius)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </a>
+            <Select
+              value={activeTab}
+              onValueChange={(value) => selectTab(value as SettingsTab)}
+            >
+              <SelectTrigger
+                className="h-9 min-w-0 flex-1"
+                aria-label="Settings page"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[...GENERAL_TABS, ...ACCOUNT_TABS].map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <header className="settings-desktop-header sticky top-0 z-10 h-[57px] items-center border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-12">
             <h1 className="text-[18px] font-semibold leading-7">
               {activeLabel}
             </h1>
           </header>
           <div
             className={cn(
-              "px-12 py-6 transition-opacity duration-150",
+              "px-4 py-5 transition-opacity duration-150 sm:px-6 md:px-12 md:py-6",
               !isHydrated && "opacity-0"
             )}
           >
