@@ -9,6 +9,7 @@ import {
   ClipboardList,
   KeyRound,
   Save,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,6 +46,13 @@ interface AISettingsResponse {
   allowSuggestEnergy: boolean;
   allowFullAuto: boolean;
   requestTimeoutSeconds: number;
+  hostedAvailable?: boolean;
+  usage?: {
+    used: number;
+    limit: number;
+    remaining: number;
+    allowed: boolean;
+  };
   oauth: {
     available: boolean;
     connected: boolean;
@@ -58,6 +66,14 @@ interface ParsedTaskPreview {
   priority?: string;
   energyRequired?: string;
   contextTag?: string;
+}
+
+interface AgentMemory {
+  id: string;
+  kind: "preference" | "pattern" | "goal" | "fact";
+  content: string;
+  source: "chat" | "inferred";
+  weight: number;
 }
 
 const DEFAULT_SETTINGS: AISettingsResponse = {
@@ -119,15 +135,26 @@ export function AIAssistantSettings() {
   const [isParsing, setIsParsing] = useState(false);
   const [isDisconnectingOAuth, setIsDisconnectingOAuth] = useState(false);
   const [isConnectingOAuth, setIsConnectingOAuth] = useState(false);
+  const [memories, setMemories] = useState<AgentMemory[]>([]);
+  const [isClearingMemories, setIsClearingMemories] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const response = await fetch("/api/ai-settings");
-        if (!response.ok) throw new Error("Failed to load AI settings");
-        const data = (await response.json()) as AISettingsResponse;
-        if (!cancelled) setSettings(data);
+        const [settingsResponse, memoriesResponse] = await Promise.all([
+          fetch("/api/ai-settings"),
+          fetch("/api/ai/memories"),
+        ]);
+        if (!settingsResponse.ok) throw new Error("Failed to load AI settings");
+        const data = (await settingsResponse.json()) as AISettingsResponse;
+        const memoryData = memoriesResponse.ok
+          ? ((await memoriesResponse.json()) as { memories: AgentMemory[] })
+          : { memories: [] };
+        if (!cancelled) {
+          setSettings(data);
+          setMemories(memoryData.memories);
+        }
       } catch (error) {
         toast.error("Could not load AI settings", {
           description:
@@ -256,6 +283,41 @@ export function AIAssistantSettings() {
     }
   };
 
+  const deleteMemory = async (memoryId: string) => {
+    const response = await fetch("/api/ai/memories", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memoryId }),
+    });
+    if (!response.ok) {
+      toast.error("Could not delete memory");
+      return;
+    }
+    setMemories((current) =>
+      current.filter((memory) => memory.id !== memoryId)
+    );
+  };
+
+  const clearMemories = async () => {
+    setIsClearingMemories(true);
+    try {
+      const response = await fetch("/api/ai/memories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      if (!response.ok) throw new Error("Failed to clear memories");
+      setMemories([]);
+      toast.success("AI memory cleared");
+    } catch (error) {
+      toast.error("Could not clear AI memory", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsClearingMemories(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div
@@ -277,11 +339,11 @@ export function AIAssistantSettings() {
   return (
     <SettingsSection
       title="Provider"
-      description="Optional planning help. Deterministic scheduling always remains available as the fallback."
+      description="Hosted planning help is ready by default. Deterministic scheduling always remains the source of truth."
     >
       <SettingRow
         label="Assistant"
-        description={`None keeps ${APP_NAME} fully offline. API keys are encrypted before storage.`}
+        description={`Use hosted AI within the monthly allowance, or bring your own key for unlimited actions. Keys are encrypted before storage.`}
       >
         <div className="space-y-4">
           <Select
@@ -294,7 +356,7 @@ export function AIAssistantSettings() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="NONE">None</SelectItem>
+              <SelectItem value="NONE">Needt hosted</SelectItem>
               <SelectItem value="ANTHROPIC">Anthropic</SelectItem>
               <SelectItem value="OPENAI">OpenAI</SelectItem>
               <SelectItem value="GROK">Grok (xAI)</SelectItem>
@@ -343,7 +405,7 @@ export function AIAssistantSettings() {
                 onChange={(event) => updateSetting("model", event.target.value)}
                 placeholder={
                   settings.provider === "NONE"
-                    ? "deterministic only"
+                    ? "hosted default"
                     : providerDefaults[settings.provider]
                 }
               />
@@ -439,10 +501,22 @@ export function AIAssistantSettings() {
               </div>
             </SettingsCard>
           )}
+          {settings.usage && settings.provider === "NONE" && (
+            <SettingsCard className="p-3">
+              <div className="text-sm font-medium">
+                {settings.usage.remaining}/{settings.usage.limit} actions left
+                this month
+              </div>
+              <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                Hosted actions reset monthly. Bring your own provider key below
+                for unlimited usage.
+              </p>
+            </SettingsCard>
+          )}
           {settings.provider !== "NONE" && (
             <div className="space-y-2">
               <Label htmlFor="ai-key">
-                API key {hasSavedProviderKey ? "(saved)" : ""}
+                Your API key {hasSavedProviderKey ? "(saved)" : ""}
               </Label>
               <Input
                 id="ai-key"
@@ -460,7 +534,7 @@ export function AIAssistantSettings() {
                 </p>
               ) : (
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[var(--text-secondary)]">
-                  <span>Paste a key once, then use the planner normally.</span>
+                  <span>Advanced · bypasses the hosted monthly limit.</span>
                   {providerKeyLink && (
                     <a
                       href={providerKeyLink}
@@ -475,6 +549,55 @@ export function AIAssistantSettings() {
                 </div>
               )}
             </div>
+          )}
+        </div>
+      </SettingRow>
+
+      <SettingRow
+        label="AI Memory"
+        description="Durable non-sensitive preferences and goals the assistant can reuse. Credentials, health, financial data, and email bodies are never stored here."
+      >
+        <div className="space-y-3">
+          <SettingsCard className="divide-y divide-[var(--border-subtle)]">
+            {memories.length ? (
+              memories.map((memory) => (
+                <div
+                  key={memory.id}
+                  className="flex items-start gap-3 px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] uppercase tracking-wide text-[var(--text-secondary)]">
+                      {memory.kind}
+                    </div>
+                    <div className="mt-0.5 text-[13px]">{memory.content}</div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Delete memory: ${memory.content}`}
+                    onClick={() => deleteMemory(memory.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-4 text-sm text-[var(--text-secondary)]">
+                No saved memories yet.
+              </div>
+            )}
+          </SettingsCard>
+          {memories.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={clearMemories}
+              disabled={isClearingMemories}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {isClearingMemories ? "Clearing..." : "Clear all memory"}
+            </Button>
           )}
         </div>
       </SettingRow>
@@ -511,7 +634,7 @@ export function AIAssistantSettings() {
 
       <SettingRow
         label="Parser preview"
-        description={`Test how messy notes become tasks. With provider None, ${APP_NAME} uses its local parser.`}
+        description={`Test how messy notes become tasks. If AI is unavailable, ${APP_NAME} uses its local parser.`}
       >
         <div className="space-y-3">
           <Textarea

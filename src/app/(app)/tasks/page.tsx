@@ -62,15 +62,8 @@ const PRIMARY_VIEWS: Array<{
 ];
 
 export default function TasksPage() {
-  const {
-    tasks,
-    tags,
-    error,
-    fetchTasks,
-    fetchTags,
-    createTag,
-    scheduleAllTasks,
-  } = useTaskStore();
+  const { tasks, tags, error, fetchTasks, fetchTags, createTag } =
+    useTaskStore();
   const { createTask, updateTask, completeTask, deleteTask } =
     useTaskMutations();
   const { projects, fetchProjects, activeProject } = useProjectStore();
@@ -84,6 +77,16 @@ export default function TasksPage() {
   >(undefined);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [isReflowing, setIsReflowing] = useState(false);
+  const [reflowPreview, setReflowPreview] = useState<{
+    previewToken: string;
+    changes: Array<{
+      taskId: string;
+      title: string;
+      fromStart: string | null;
+      toStart: string | null;
+    }>;
+  } | null>(null);
+  const [reflowUndoToken, setReflowUndoToken] = useState<string | null>(null);
   const [openedTaskParam, setOpenedTaskParam] = useState<string | null>(null);
 
   useEffect(() => {
@@ -197,7 +200,13 @@ export default function TasksPage() {
     if (isReflowing) return;
     setIsReflowing(true);
     try {
-      await scheduleAllTasks();
+      const response = await fetch("/api/tasks/reschedule-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "preview" }),
+      });
+      if (!response.ok) throw new Error("Failed to prepare schedule preview");
+      setReflowPreview(await response.json());
     } catch (scheduleError) {
       void logger.error(
         "Failed to reflow Workspace tasks",
@@ -209,6 +218,45 @@ export default function TasksPage() {
         },
         LOG_SOURCE
       );
+    } finally {
+      setIsReflowing(false);
+    }
+  };
+
+  const applyReflow = async () => {
+    if (!reflowPreview) return;
+    setIsReflowing(true);
+    try {
+      const response = await fetch("/api/tasks/reschedule-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "apply",
+          token: reflowPreview.previewToken,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to apply schedule preview");
+      const data = (await response.json()) as { undoToken: string };
+      setReflowUndoToken(data.undoToken);
+      setReflowPreview(null);
+      await fetchTasks();
+    } finally {
+      setIsReflowing(false);
+    }
+  };
+
+  const undoReflow = async () => {
+    if (!reflowUndoToken) return;
+    setIsReflowing(true);
+    try {
+      const response = await fetch("/api/tasks/reschedule-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "undo", token: reflowUndoToken }),
+      });
+      if (!response.ok) throw new Error("Failed to undo schedule changes");
+      setReflowUndoToken(null);
+      await fetchTasks();
     } finally {
       setIsReflowing(false);
     }
@@ -263,6 +311,55 @@ export default function TasksPage() {
           </DropdownMenu>
         </div>
       </header>
+
+      {(reflowPreview || reflowUndoToken) && (
+        <div className="flex flex-none items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-xs">
+          {reflowPreview ? (
+            <>
+              <div className="min-w-0">
+                <div className="font-medium">
+                  Preview: {reflowPreview.changes.length} schedule changes
+                </div>
+                <div className="mt-1 max-w-3xl truncate text-[var(--text-secondary)]">
+                  {reflowPreview.changes
+                    .slice(0, 4)
+                    .map((change) => change.title)
+                    .join(" · ") || "Your schedule is already up to date."}
+                </div>
+              </div>
+              <div className="flex flex-none gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReflowPreview(null)}
+                  className={APP_TOOLBAR_BUTTON_CLASS}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={applyReflow}
+                  disabled={!reflowPreview.changes.length || isReflowing}
+                  className={APP_TOOLBAR_BUTTON_CLASS}
+                >
+                  Apply
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span>Schedule updated.</span>
+              <button
+                type="button"
+                onClick={undoReflow}
+                disabled={isReflowing}
+                className={APP_TOOLBAR_BUTTON_CLASS}
+              >
+                Undo
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="flex h-10 flex-none items-center gap-1 border-b border-[var(--border-subtle)] px-2">
         <nav

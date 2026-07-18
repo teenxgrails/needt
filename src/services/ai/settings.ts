@@ -6,6 +6,11 @@ import { decryptSecret } from "./encryption";
 import { getCustomAIOAuthAccessToken, getCustomAIOAuthConfig } from "./oauth";
 import { createSchedulerAI } from "./providers";
 import { AIProviderName, SchedulerAIConfig } from "./types";
+import {
+  HOSTED_AI_CONFIG,
+  getHostedAiUsage,
+  resolveAiAccessMode,
+} from "./usage";
 
 export function getDefaultCustomAIUrl() {
   return process.env.AI_CUSTOM_URL?.trim() || null;
@@ -54,6 +59,7 @@ export function publicAISettings(
     allowSuggestEnergy: settings.allowSuggestEnergy,
     allowFullAuto: settings.allowFullAuto,
     requestTimeoutSeconds: settings.requestTimeoutSeconds,
+    hostedAvailable: Boolean(process.env.NEEDT_AI_API_KEY?.trim()),
     oauth: oauth || {
       available: false,
       connected: false,
@@ -78,11 +84,14 @@ export async function publicAISettingsWithOAuth(
     // Bad deployment configuration must not make the whole settings page fail.
   }
 
-  return publicAISettings(settings, {
-    available,
-    connected: Boolean(connection),
-    expiresAt: connection?.expiresAt?.toISOString() || null,
-  });
+  return {
+    ...publicAISettings(settings, {
+      available,
+      connected: Boolean(connection),
+      expiresAt: connection?.expiresAt?.toISOString() || null,
+    }),
+    usage: await getHostedAiUsage(settings.userId),
+  };
 }
 
 export function getEncryptedKeyForProvider(
@@ -131,19 +140,44 @@ export async function getConfiguredSchedulerAI(userId: string) {
       // available even if an administrator misconfigures its OAuth endpoint.
     }
   }
-  const config: SchedulerAIConfig = {
-    provider: settings.provider as AIProviderName,
-    apiKey:
-      oauthToken ||
-      decryptSecret(getEncryptedKeyForProvider(settings, settings.provider)),
-    customUrl: settings.customUrl || getDefaultCustomAIUrl(),
-    model: settings.model || defaultModelForProvider(settings.provider),
-    timeoutMs: settings.requestTimeoutSeconds * 1000,
-    soulPreset:
-      settings.soulPreset === "coach" || settings.soulPreset === "business"
-        ? settings.soulPreset
-        : "business",
-  };
+  const byokKey =
+    oauthToken ||
+    decryptSecret(getEncryptedKeyForProvider(settings, settings.provider));
+  const hostedKey = process.env.NEEDT_AI_API_KEY?.trim() || null;
+  const usage = await getHostedAiUsage(userId);
+  const source = resolveAiAccessMode({
+    hasByok: Boolean(byokKey),
+    hostedAvailable: Boolean(hostedKey),
+    hostedAllowed: usage.allowed,
+  });
+  const config: SchedulerAIConfig =
+    source === "hosted"
+      ? {
+          provider: "OPENAI",
+          apiKey: hostedKey,
+          baseUrl: HOSTED_AI_CONFIG.baseUrl,
+          model: HOSTED_AI_CONFIG.model,
+          timeoutMs: settings.requestTimeoutSeconds * 1000,
+          soulPreset: settings.soulPreset === "coach" ? "coach" : "business",
+        }
+      : {
+          provider:
+            source === "byok" ? (settings.provider as AIProviderName) : "NONE",
+          apiKey: byokKey,
+          customUrl: settings.customUrl || getDefaultCustomAIUrl(),
+          model: settings.model || defaultModelForProvider(settings.provider),
+          timeoutMs: settings.requestTimeoutSeconds * 1000,
+          soulPreset:
+            settings.soulPreset === "coach" ||
+            settings.soulPreset === "business"
+              ? settings.soulPreset
+              : "business",
+        };
 
-  return { settings, ai: createSchedulerAI(config) };
+  return {
+    settings,
+    ai: createSchedulerAI(config),
+    source,
+    usage,
+  };
 }

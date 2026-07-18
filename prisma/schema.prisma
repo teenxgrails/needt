@@ -98,6 +98,8 @@ model User {
   aiOAuthStates         AIOAuthState[]
   aiConversations       AiConversation[]
   aiMessages            AiMessage[]
+  agentMemories         AgentMemory[]
+  aiUsage               AiUsage[]
   connectorSettings     ConnectorSettings?
   timeEntries           TimeEntry[]
   scheduledBlocks       ScheduledBlock[]
@@ -297,27 +299,27 @@ model Task {
   preferredTime String? // enum: 'morning', 'afternoon', 'evening'
 
   // Smart scheduling fields
-  energyRequired   SchedulingEnergyLevel  @default(MEDIUM)
-  estimatedMinutes Int?
-  estOptimistic    Int?
-  estLikely        Int?
-  estPessimistic   Int?
-  actualMinutes    Int?
-  actualFocusedMinutes Int @default(0)
-  estimateDelta    Int?
-  optimisticDelta  Int?
-  likelyDelta      Int?
-  pessimisticDelta Int?
-  minChunkMinutes  Int?
-  maxChunkMinutes  Int?
-  deadline         DateTime?
-  priorityLevel    SchedulingTaskPriority @default(MEDIUM)
-  contextTag       String?
-  isFrozen         Boolean                @default(false)
-  dependsOnId      String?
-  dependsOn        Task?                  @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
-  dependents       Task[]                 @relation("TaskDependencies")
-  autoScheduled    Boolean                @default(false)
+  energyRequired       SchedulingEnergyLevel  @default(MEDIUM)
+  estimatedMinutes     Int?
+  estOptimistic        Int?
+  estLikely            Int?
+  estPessimistic       Int?
+  actualMinutes        Int?
+  actualFocusedMinutes Int                    @default(0)
+  estimateDelta        Int?
+  optimisticDelta      Int?
+  likelyDelta          Int?
+  pessimisticDelta     Int?
+  minChunkMinutes      Int?
+  maxChunkMinutes      Int?
+  deadline             DateTime?
+  priorityLevel        SchedulingTaskPriority @default(MEDIUM)
+  contextTag           String?
+  isFrozen             Boolean                @default(false)
+  dependsOnId          String?
+  dependsOn            Task?                  @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  dependents           Task[]                 @relation("TaskDependencies")
+  autoScheduled        Boolean                @default(false)
 
   // Auto-scheduling
   isAutoScheduled Boolean   @default(false)
@@ -450,25 +452,25 @@ model ScheduledBlock {
 }
 
 model FocusSession {
-  id             String           @id @default(cuid())
-  userId         String
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskId         String?
-  task           Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  mode           FocusSessionMode
-  plannedMinutes Int?
-  elapsedMinutes Int              @default(0)
-  completed      Boolean          @default(false)
-  abandoned      Boolean          @default(false)
+  id                 String           @id @default(cuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId             String?
+  task               Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  mode               FocusSessionMode
+  plannedMinutes     Int?
+  elapsedMinutes     Int              @default(0)
+  completed          Boolean          @default(false)
+  abandoned          Boolean          @default(false)
   // Server-truth timing. An active session has endedAt = null. pausedTotalSeconds
   // accumulates completed pause spans; pausedAt is set while currently paused.
   startedAt          DateTime
   endedAt            DateTime?
   pausedAt           DateTime?
-  pausedTotalSeconds Int       @default(0)
-  source             String    @default("web")
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  pausedTotalSeconds Int              @default(0)
+  source             String           @default("web")
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
   @@index([userId, startedAt])
   @@index([userId, endedAt])
@@ -508,33 +510,33 @@ model Board {
 }
 
 model BoardColumn {
-  id       String  @id @default(cuid())
-  boardId  String
-  board    Board   @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  name     String
-  color    String?
-  position Float   @default(0)
+  id         String   @id @default(cuid())
+  boardId    String
+  board      Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name       String
+  color      String?
+  position   Float    @default(0)
   // For auto-grouped boards, the derived value this column maps to (e.g. a
   // status or priority value). Null for manual columns.
   mappingKey String?
-  tasks    Task[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tasks      Task[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([boardId])
 }
 
 model SavedView {
-  id       String  @id @default(cuid())
-  userId   String
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  boardId  String?
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  boardId   String?
   // board | list | timeline | calendar
-  type     String
-  groupBy  String?
-  filters  Json?
-  sort     Json?
-  position Float   @default(0)
+  type      String
+  groupBy   String?
+  filters   Json?
+  sort      Json?
+  position  Float    @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -603,6 +605,34 @@ model AISettings {
   @@index([provider])
 }
 
+model AgentMemory {
+  id         String            @id @default(cuid())
+  userId     String
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       AgentMemoryKind
+  content    String
+  source     AgentMemorySource @default(chat)
+  weight     Float             @default(1)
+  createdAt  DateTime          @default(now())
+  lastUsedAt DateTime          @default(now())
+
+  @@index([userId, lastUsedAt])
+  @@index([userId, weight])
+}
+
+model AiUsage {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yearMonth   String
+  actionCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, yearMonth])
+  @@index([yearMonth])
+}
+
 // OAuth credentials are kept separate from AISettings so API-key configuration
 // can remain intact when a user connects or disconnects an OAuth-capable custom
 // provider. Tokens are encrypted application-side before being written here.
@@ -627,15 +657,15 @@ model AIOAuthConnection {
 // a hash while the PKCE verifier is encrypted because it must be sent to the
 // token endpoint after the browser returns.
 model AIOAuthState {
-  id                   String     @id @default(cuid())
-  userId               String
-  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider             AIProvider
-  stateHash            String     @unique
+  id                    String     @id @default(cuid())
+  userId                String
+  user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider              AIProvider
+  stateHash             String     @unique
   encryptedCodeVerifier String
-  redirectUri          String
-  expiresAt            DateTime
-  createdAt            DateTime   @default(now())
+  redirectUri           String
+  expiresAt             DateTime
+  createdAt             DateTime   @default(now())
 
   @@index([userId, provider])
   @@index([expiresAt])
@@ -654,17 +684,17 @@ model AiConversation {
 }
 
 model AiMessage {
-  id             String         @id @default(cuid())
-  conversationId String
-  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  userId         String
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role           String
-  content        String
-  toolName       String?
-  toolPayload    Json?
+  id              String         @id @default(cuid())
+  conversationId  String
+  conversation    AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            String
+  content         String
+  toolName        String?
+  toolPayload     Json?
   requiresConfirm Boolean        @default(false)
-  createdAt      DateTime      @default(now())
+  createdAt       DateTime       @default(now())
 
   @@index([conversationId, createdAt])
   @@index([userId, createdAt])
@@ -1099,6 +1129,18 @@ enum AIProvider {
   GROK
   GLM
   CUSTOM
+}
+
+enum AgentMemoryKind {
+  preference
+  pattern
+  goal
+  fact
+}
+
+enum AgentMemorySource {
+  chat
+  inferred
 }
 
 enum MailProvider {

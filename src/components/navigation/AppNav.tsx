@@ -61,6 +61,7 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
   const pathname = usePathname();
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [unreadMailCount, setUnreadMailCount] = useState(0);
+  const [isOverloaded, setIsOverloaded] = useState(false);
   const overdueCount = useTaskStore(
     (state) =>
       state.tasks.filter(
@@ -115,6 +116,20 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
     window.addEventListener("mail-unread-changed", refreshUnread);
     return () =>
       window.removeEventListener("mail-unread-changed", refreshUnread);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (pathname.startsWith("/auth") || pathname === "/setup") return;
+    fetch("/api/ai/briefing-status")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((status) => setIsOverloaded(Boolean(status?.overloaded)))
+      .catch((error) => {
+        void logger.debug(
+          "AI overload status is unavailable",
+          { error: error instanceof Error ? error.message : String(error) },
+          LOG_SOURCE
+        );
+      });
   }, [pathname]);
 
   const todayLabel = new Intl.DateTimeFormat(undefined, {
@@ -226,7 +241,13 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
 
       <div className="mt-auto max-md:hidden">
         <Link
-          href="/chat"
+          href={
+            isOverloaded
+              ? `/chat?prompt=${encodeURIComponent(
+                  "My day is overloaded. Show me what to defer or reschedule, but do not change anything yet."
+                )}`
+              : "/chat"
+          }
           className={cn(
             "mb-2 flex min-w-0 items-center gap-2 rounded-md border border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_18%,var(--raised))] px-2.5 py-2 text-[13px] font-medium transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_24%,var(--raised))]",
             pathname === "/chat" && "text-white"
@@ -237,6 +258,12 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
             strokeWidth={1.75}
           />
           <span className="truncate">AI Chat</span>
+          {isOverloaded && (
+            <span
+              className="h-2 w-2 flex-none rounded-full bg-[var(--color-warning)]"
+              aria-label="Today's workload exceeds your work hours"
+            />
+          )}
           <kbd className="ml-auto rounded bg-[var(--app-bg)] px-1.5 py-0.5 text-[10px] text-[var(--text-lo)]">
             ⌘/
           </kbd>

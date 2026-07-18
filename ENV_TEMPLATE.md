@@ -64,9 +64,14 @@ ANTHROPIC_API_KEY=""
 OPENAI_API_KEY=""
 AI_CUSTOM_URL=""
 AI_ENCRYPTION_KEY=""
+NEEDT_AI_API_KEY=""
+NEEDT_AI_MODEL="deepseek-chat"
+NEEDT_AI_BASE_URL="https://api.deepseek.com/v1"
+NEEDT_AI_MONTHLY_ACTION_CAP="300"
+NEEDT_AI_LIFETIME_ACTION_CAP="3000"
 ```
 
-The human must supply provider API keys or a custom endpoint when enabling the AI assistant. Keys entered in Settings are encrypted at rest with `AI_ENCRYPTION_KEY` (or `NEXTAUTH_SECRET` when it is omitted).
+`NEEDT_AI_API_KEY` enables the hosted OpenAI-compatible fallback (DeepSeek by default). `NEEDT_AI_MODEL`, `NEEDT_AI_BASE_URL`, `NEEDT_AI_MONTHLY_ACTION_CAP`, and `NEEDT_AI_LIFETIME_ACTION_CAP` configure the deployment-wide model and per-plan allowances. Users can instead supply their own provider key in Settings for unlimited usage. Keys entered in Settings are encrypted at rest with `AI_ENCRYPTION_KEY` (or `NEXTAUTH_SECRET` when it is omitted).
 
 ### Custom AI OAuth (optional)
 

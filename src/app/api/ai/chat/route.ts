@@ -1,23 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { buildAgentPromptForUser } from "@/services/ai/context";
 import {
-  getConfiguredSchedulerAI,
-  getEncryptedKeyForProvider,
-} from "@/services/ai/settings";
+  forgetForUser,
+  listAgentMemories,
+  rememberForUser,
+} from "@/services/ai/memory";
+import { createReschedulePreview } from "@/services/ai/reschedule-preview";
+import { getConfiguredSchedulerAI } from "@/services/ai/settings";
+import {
+  getAgentToolDefinitions,
+  isDangerousAgentTool,
+  validateAgentToolCall,
+} from "@/services/ai/tool-catalog";
 import {
   AIChatMessage,
   AIChatRequest,
   AIChatToolCall,
-  AIChatToolDefinition,
   SchedulerAI,
 } from "@/services/ai/types";
-import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
-import { Prisma } from "@prisma/client";
+import { recordHostedAiAction } from "@/services/ai/usage";
+import {
+  createBoard,
+  createColumn,
+  getBoard,
+  listBoards,
+  moveCard,
+} from "@/services/boards/boardService";
+import {
+  finalizeSession,
+  getActiveSession,
+  startSession,
+} from "@/services/focus/focusSession";
+import { getWeeklyFocusReport } from "@/services/focus/focusStats";
+import { FocusSessionMode, Prisma } from "@prisma/client";
 
-import { APP_NAME } from "@/lib/app-config";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { logger } from "@/lib/logger";
+import { getMailMessage } from "@/lib/mail-db";
 import { prisma } from "@/lib/prisma";
+import { publishRealtimeEvent } from "@/lib/realtime/publish";
 
 const LOG_SOURCE = "ai-chat";
 
@@ -63,144 +86,16 @@ function jsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
-function isDangerousTool(toolName: string) {
-  return toolName === "delete_task" || toolName === "auto_schedule";
-}
-
-function buildSystemPrompt(soulPreset: string) {
-  const tone =
-    soulPreset === "coach"
-      ? "Be warm, brief, and ADHD-friendly. Reduce friction and avoid shame."
-      : "Be concise, direct, and businesslike.";
-
-  return [
-    `You are ${APP_NAME}'s single-user planner assistant.`,
-    tone,
-    "Use tools when the user asks to create, edit, delete, schedule, parse, query, or manage planner data.",
-    "Never claim a tool changed data unless the server tool result says it did.",
-    "Dangerous tools require server confirmation; ask plainly when confirmation is needed.",
-    "For ordinary chat, answer without inventing unavailable calendar details.",
-  ].join(" ");
-}
-
-function toolDefinitions(settings: {
-  allowParseTasks: boolean;
-  allowFullAuto: boolean;
-}): AIChatToolDefinition[] {
-  const tools: AIChatToolDefinition[] = [
-    {
-      name: "create_task",
-      description: "Create one planner task.",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          title: { type: "string" },
-          estimatedMinutes: { type: "number" },
-          priority: {
-            type: "string",
-            enum: ["LOW", "MEDIUM", "HIGH", "URGENT"],
-          },
-          dueDate: { type: "string", description: "ISO datetime if supplied." },
-          autoSchedule: { type: "boolean" },
-        },
-        required: ["title"],
-      },
-    },
-    {
-      name: "edit_task",
-      description: "Edit an existing task by id or exact title.",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          taskId: { type: "string" },
-          titleQuery: { type: "string" },
-          title: { type: "string" },
-          status: {
-            type: "string",
-            enum: ["todo", "in_progress", "completed"],
-          },
-          estimatedMinutes: { type: "number" },
-          dueDate: { type: "string", description: "ISO datetime or empty." },
-        },
-      },
-    },
-    {
-      name: "delete_task",
-      description: "Delete a task by id or exact title. Requires confirmation.",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          taskId: { type: "string" },
-          titleQuery: { type: "string" },
-        },
-      },
-    },
-    {
-      name: "query_schedule",
-      description: "Read upcoming open tasks and scheduled blocks.",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          limit: { type: "number" },
-        },
-      },
-    },
-    {
-      name: "manage_projects",
-      description: "List, create, update, or archive projects.",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          action: {
-            type: "string",
-            enum: ["list", "create", "update", "archive"],
-          },
-          projectId: { type: "string" },
-          name: { type: "string" },
-          color: { type: "string" },
-          icon: { type: "string" },
-        },
-        required: ["action"],
-      },
-    },
-  ];
-
-  if (settings.allowParseTasks) {
-    tools.push({
-      name: "parse_brain_dump",
-      description:
-        "Parse messy text into structured tasks without creating them.",
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          text: { type: "string" },
-        },
-        required: ["text"],
-      },
-    });
+async function publishAgentMutation(userId: string) {
+  try {
+    await publishRealtimeEvent(userId, "tasks-updated");
+  } catch (error) {
+    logger.warn(
+      "Could not publish AI mutation realtime event",
+      { userId, error: error instanceof Error ? error.message : String(error) },
+      LOG_SOURCE
+    );
   }
-
-  if (settings.allowFullAuto) {
-    tools.push({
-      name: "auto_schedule",
-      description: `Run ${APP_NAME}'s deterministic scheduler for the current user. Requires confirmation.`,
-      parameters: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          reason: { type: "string" },
-        },
-      },
-    });
-  }
-
-  return tools;
 }
 
 async function findTask(userId: string, args: Record<string, unknown>) {
@@ -252,7 +147,23 @@ async function executeTool(
   userId: string,
   confirmed: boolean
 ): Promise<ToolResult> {
-  if (isDangerousTool(call.name) && !confirmed) {
+  const validatedArguments = validateAgentToolCall(call.name, call.arguments);
+  if (!validatedArguments) {
+    return {
+      text: "The tool request was invalid, so no planner data was changed.",
+      toolName: call.name,
+      requiresConfirm: false,
+    };
+  }
+  call = { ...call, arguments: validatedArguments };
+
+  logger.info(
+    "Executing AI agent tool",
+    { userId, toolName: call.name, confirmed },
+    LOG_SOURCE
+  );
+
+  if (isDangerousAgentTool(call.name, call.arguments) && !confirmed) {
     return {
       text: "This action can change or delete planner data. Confirm it to continue.",
       toolName: "confirmation_required",
@@ -304,6 +215,7 @@ async function executeTool(
                   : "MEDIUM",
         },
       });
+      await publishAgentMutation(userId);
 
       return {
         text: `Created task "${task.title}".`,
@@ -345,6 +257,7 @@ async function executeTool(
           ...(dueDate ? { dueDate, deadline: dueDate } : {}),
         },
       });
+      await publishAgentMutation(userId);
 
       return {
         text: `Updated task "${updated.title}".`,
@@ -364,6 +277,7 @@ async function executeTool(
         };
       }
       await prisma.task.delete({ where: { id: task.id } });
+      await publishAgentMutation(userId);
       return {
         text: `Deleted task "${task.title}".`,
         toolName: "delete_task",
@@ -373,11 +287,388 @@ async function executeTool(
     }
 
     case "auto_schedule": {
-      const tasks = await scheduleAllTasksForUser(userId);
+      const preview = await createReschedulePreview(userId);
       return {
-        text: `Ran the deterministic auto-scheduler. ${tasks.length} tasks are now reflected in the planner response.`,
+        text: preview.changes.length
+          ? `Prepared a dry-run with ${preview.changes.length} schedule changes. Review the diff, then choose Apply or Cancel.`
+          : "The dry-run found no schedule changes to apply.",
         toolName: "auto_schedule",
-        toolPayload: jsonValue({ taskCount: tasks.length }),
+        toolPayload: jsonValue(preview),
+        requiresConfirm: false,
+      };
+    }
+
+    case "list_boards": {
+      const boards = await listBoards(userId);
+      return {
+        text: boards.length
+          ? `Boards: ${boards.map((board) => board.name).join(", ")}.`
+          : "No boards yet.",
+        toolName: call.name,
+        toolPayload: jsonValue({ boards }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "query_board": {
+      const boardId = stringArg(call.arguments, "boardId");
+      const board = boardId ? await getBoard(userId, boardId) : null;
+      return {
+        text: board
+          ? `${board.name} has ${board.columns.length} columns and ${board.tasks.length} cards.`
+          : "I could not find that board.",
+        toolName: call.name,
+        toolPayload: jsonValue({ board }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "create_board": {
+      const name = stringArg(call.arguments, "name");
+      const columns = Array.isArray(call.arguments.columns)
+        ? call.arguments.columns.filter(
+            (value): value is string => typeof value === "string"
+          )
+        : undefined;
+      if (!name) {
+        return {
+          text: "I need a board name.",
+          toolName: call.name,
+          requiresConfirm: false,
+        };
+      }
+      const board = await createBoard(userId, {
+        name,
+        icon: stringArg(call.arguments, "icon"),
+        columns,
+      });
+      return {
+        text: `Created board "${board.name}".`,
+        toolName: call.name,
+        toolPayload: jsonValue({ boardId: board.id, columns: board.columns }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "create_column": {
+      const boardId = stringArg(call.arguments, "boardId");
+      const name = stringArg(call.arguments, "name");
+      const column =
+        boardId && name
+          ? await createColumn(userId, boardId, {
+              name,
+              color: stringArg(call.arguments, "color"),
+            })
+          : null;
+      return {
+        text: column
+          ? `Created column "${column.name}".`
+          : "I could not create that column.",
+        toolName: call.name,
+        toolPayload: jsonValue({ column }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "move_card": {
+      const moved = await moveCard(userId, {
+        taskId: stringArg(call.arguments, "taskId") || "",
+        boardId: stringArg(call.arguments, "boardId") || "",
+        columnId: stringArg(call.arguments, "columnId") || "",
+        toIndex: numberArg(call.arguments, "toIndex") || 0,
+      });
+      if (moved) await publishAgentMutation(userId);
+      return {
+        text: moved
+          ? `Moved card "${moved.title}".`
+          : "I could not move that card.",
+        toolName: call.name,
+        toolPayload: jsonValue({ taskId: moved?.id || null }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "start_focus_session": {
+      const taskId = stringArg(call.arguments, "taskId");
+      if (
+        taskId &&
+        !(await prisma.task.findFirst({ where: { id: taskId, userId } }))
+      ) {
+        return {
+          text: "I could not find that task for this focus session.",
+          toolName: call.name,
+          requiresConfirm: false,
+        };
+      }
+      const session = await startSession({
+        userId,
+        taskId,
+        mode: (stringArg(call.arguments, "mode") ||
+          "POMODORO") as FocusSessionMode,
+        plannedMinutes: numberArg(call.arguments, "plannedMinutes"),
+        source: "ai-agent",
+      });
+      return {
+        text: `Started a ${session.mode.toLowerCase().replace(/_/g, " ")} focus session.`,
+        toolName: call.name,
+        toolPayload: jsonValue({ sessionId: session.id }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "stop_focus_session": {
+      const active = await getActiveSession(userId);
+      const sessionId = stringArg(call.arguments, "sessionId") || active?.id;
+      const session = sessionId
+        ? await finalizeSession({
+            userId,
+            sessionId,
+            completed: booleanArg(call.arguments, "completed") ?? true,
+            markTaskDone: booleanArg(call.arguments, "markTaskDone") ?? false,
+          })
+        : null;
+      return {
+        text: session
+          ? `Stopped the focus session after ${session.elapsedMinutes} minutes.`
+          : "There is no active focus session to stop.",
+        toolName: call.name,
+        toolPayload: jsonValue({ sessionId: session?.id || null }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "get_focus_stats": {
+      const report = await getWeeklyFocusReport(userId);
+      return {
+        text: `This week: ${report.focusMinutes} focused minutes across ${report.sessionsCompleted} completed sessions.`,
+        toolName: call.name,
+        toolPayload: jsonValue(report),
+        requiresConfirm: false,
+      };
+    }
+
+    case "search_mail": {
+      const query = stringArg(call.arguments, "query") || "";
+      const limit = Math.min(numberArg(call.arguments, "limit") || 8, 20);
+      const messages = await prisma.mailMessage.findMany({
+        where: {
+          account: { userId },
+          isArchived: false,
+          OR: [
+            { subject: { contains: query, mode: "insensitive" } },
+            { snippet: { contains: query, mode: "insensitive" } },
+            { fromName: { contains: query, mode: "insensitive" } },
+            { fromAddress: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        orderBy: { date: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          subject: true,
+          fromName: true,
+          fromAddress: true,
+          snippet: true,
+          date: true,
+          isRead: true,
+        },
+      });
+      return {
+        text: messages.length
+          ? messages
+              .map(
+                (message) =>
+                  `${message.subject} — ${message.fromName || message.fromAddress || "unknown sender"}`
+              )
+              .join("; ")
+          : "No synced mail matched that search.",
+        toolName: call.name,
+        toolPayload: jsonValue({ messages }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "get_message": {
+      const messageId = stringArg(call.arguments, "messageId");
+      const message = messageId
+        ? await getMailMessage(userId, messageId)
+        : null;
+      const body = (message?.bodyHtml || message?.snippet || "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 4_000);
+      return {
+        text: message
+          ? `From ${message.fromName || message.fromAddress || "unknown sender"}: ${message.subject}. ${body}`
+          : "I could not find that synced message.",
+        toolName: call.name,
+        toolPayload: jsonValue(
+          message
+            ? {
+                id: message.id,
+                subject: message.subject,
+                fromName: message.fromName,
+                fromAddress: message.fromAddress,
+                date: message.date,
+              }
+            : null
+        ),
+        requiresConfirm: false,
+      };
+    }
+
+    case "create_task_from_email": {
+      const messageId = stringArg(call.arguments, "messageId");
+      const message = messageId
+        ? await getMailMessage(userId, messageId)
+        : null;
+      if (!message) {
+        return {
+          text: "I could not find that synced message.",
+          toolName: call.name,
+          requiresConfirm: false,
+        };
+      }
+      const minutes = numberArg(call.arguments, "estimatedMinutes");
+      const task = await prisma.task.create({
+        data: {
+          userId,
+          title:
+            stringArg(call.arguments, "title")?.slice(0, 160) ||
+            `Follow up: ${message.subject}`.slice(0, 160),
+          description: `From ${message.fromName || message.fromAddress || "unknown sender"}\n\n${message.snippet}`,
+          status: "todo",
+          source: "mail",
+          estimatedMinutes: minutes ? Math.round(minutes) : undefined,
+          duration: minutes ? Math.round(minutes) : undefined,
+          isAutoScheduled: true,
+        },
+      });
+      await publishAgentMutation(userId);
+      return {
+        text: `Created task "${task.title}" from the email.`,
+        toolName: call.name,
+        toolPayload: jsonValue({ taskId: task.id, messageId: message.id }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "get_user_settings": {
+      const preferences = await prisma.schedulingPreferences.findUnique({
+        where: { userId },
+      });
+      return {
+        text: preferences
+          ? `Work hours and scheduling preferences are available in the tool result.`
+          : "Scheduling preferences have not been configured yet.",
+        toolName: call.name,
+        toolPayload: jsonValue({ preferences }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "update_work_hours": {
+      const workHours = call.arguments.workHours as Prisma.InputJsonValue;
+      const preferences = await prisma.schedulingPreferences.upsert({
+        where: { userId },
+        create: { userId, workHours },
+        update: { workHours },
+      });
+      return {
+        text: "Updated work hours.",
+        toolName: call.name,
+        toolPayload: jsonValue({ workHours: preferences.workHours }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "update_scheduling_preferences": {
+      const allowed = [
+        "bufferMinutes",
+        "maxDeepWorkPerDay",
+        "minBreakMinutes",
+        "autoRescheduleOnMiss",
+        "enableBodyDoubling",
+        "enableTaskBatching",
+        "hardStopTime",
+        "bufferMultiplier",
+      ] as const;
+      const data = Object.fromEntries(
+        allowed
+          .filter((key) => call.arguments[key] !== undefined)
+          .map((key) => [key, call.arguments[key]])
+      ) as Prisma.SchedulingPreferencesUncheckedUpdateInput;
+      await prisma.schedulingPreferences.upsert({
+        where: { userId },
+        create: { userId },
+        update: {},
+      });
+      const preferences = await prisma.schedulingPreferences.update({
+        where: { userId },
+        data,
+      });
+      return {
+        text: "Updated scheduling preferences.",
+        toolName: call.name,
+        toolPayload: jsonValue({ preferences }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "remember": {
+      const content = stringArg(call.arguments, "content") || "";
+      if (
+        /(password|api[- ]?key|secret|token|credit card|bank|diagnos|medication|health)/i.test(
+          content
+        )
+      ) {
+        return {
+          text: "I did not save that because assistant memory excludes sensitive information.",
+          toolName: call.name,
+          requiresConfirm: false,
+        };
+      }
+      const memory = await rememberForUser(userId, {
+        kind: stringArg(call.arguments, "kind") as
+          | "preference"
+          | "pattern"
+          | "goal"
+          | "fact",
+        content,
+        weight: numberArg(call.arguments, "weight") || 1,
+        source: "chat",
+      });
+      return {
+        text: "Remembered.",
+        toolName: call.name,
+        toolPayload: jsonValue({ memoryId: memory.id }),
+        requiresConfirm: false,
+      };
+    }
+
+    case "forget": {
+      const memoryId = stringArg(call.arguments, "memoryId") || "";
+      const forgotten = await forgetForUser(userId, memoryId);
+      return {
+        text: forgotten
+          ? "Forgot that memory."
+          : "I could not find that memory.",
+        toolName: call.name,
+        requiresConfirm: false,
+      };
+    }
+
+    case "list_memories": {
+      const memories = await listAgentMemories(userId);
+      return {
+        text: memories.length
+          ? memories
+              .map((memory) => `${memory.kind}: ${memory.content}`)
+              .join("; ")
+          : "No assistant memories are saved.",
+        toolName: call.name,
+        toolPayload: jsonValue({ memories }),
         requiresConfirm: false,
       };
     }
@@ -600,13 +891,18 @@ export async function POST(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
 
-  const { settings, ai } = await getConfiguredSchedulerAI(auth.userId);
-  if (
-    settings.provider === "NONE" ||
-    !getEncryptedKeyForProvider(settings, settings.provider)
-  ) {
+  const { settings, ai, source, usage } = await getConfiguredSchedulerAI(
+    auth.userId
+  );
+  if (source === "none") {
     return NextResponse.json(
-      { error: "Connect an AI provider key before using chat." },
+      {
+        error: usage.allowed
+          ? "Hosted AI is unavailable. Add your own provider key in Settings."
+          : "Monthly hosted AI limit reached. Add your own provider key for unlimited actions.",
+        code: usage.allowed ? "AI_UNAVAILABLE" : "HOSTED_LIMIT_REACHED",
+        usage,
+      },
       { status: 409 }
     );
   }
@@ -644,8 +940,14 @@ export async function POST(request: NextRequest) {
   });
 
   const history = await recentMessages(conversation.id);
-  const systemPrompt = buildSystemPrompt(settings.soulPreset);
-  const tools = toolDefinitions(settings);
+  if (source === "hosted") {
+    await recordHostedAiAction(auth.userId);
+  }
+  const systemPrompt = await buildAgentPromptForUser(
+    auth.userId,
+    settings.soulPreset
+  );
+  const tools = getAgentToolDefinitions(settings);
   const chatRequest: AIChatRequest = {
     systemPrompt,
     messages: history,
@@ -656,7 +958,12 @@ export async function POST(request: NextRequest) {
   let selectedTool: AIChatToolCall | null = null;
   try {
     selectedTool = (await ai.selectChatTool?.(chatRequest)) || null;
-  } catch {
+  } catch (error) {
+    logger.warn(
+      "AI tool selection failed; using local fallback",
+      { error: error instanceof Error ? error.message : String(error) },
+      LOG_SOURCE
+    );
     selectedTool = fallbackToolFromMessage(message);
   }
 
@@ -739,7 +1046,7 @@ export async function POST(request: NextRequest) {
       });
       await prisma.aiConversation.update({
         where: { id: conversation.id },
-        data: { updatedAt: new Date() },
+        data: { updatedAt: newDate() },
       });
       controller.close();
     },

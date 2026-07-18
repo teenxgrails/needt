@@ -27,8 +27,6 @@ WORKDIR /app
 # Install production dependencies
 COPY --from=builder /app/package*.json ./
 RUN npm ci --only=production --legacy-peer-deps --ignore-scripts
-# Rebuild bcrypt explicitly
-RUN cd node_modules/bcrypt && npm rebuild bcrypt --build-from-source
 
 # Copy built application
 COPY --from=builder /app/.next/standalone ./
@@ -55,4 +53,4 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Start the application
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["node", "server.js"] 
+CMD ["node", "server.js"]
