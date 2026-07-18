@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await enqueueCalendarSync(webhook.feedId);
+    const job = await enqueueCalendarSync(webhook.feedId);
+    if (!job) {
+      return NextResponse.json({ error: "Queue unavailable" }, { status: 503 });
+    }
     return new NextResponse(null, { status: 200 });
   } catch (error) {
     await logger.error(

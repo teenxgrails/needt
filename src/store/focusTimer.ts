@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 import { logger } from "@/lib/logger";
 
 const LOG_SOURCE = "focusTimer";
+let activeSessionRequest: Promise<void> | null = null;
 
 export type FocusMode = "POMODORO" | "FLOW" | "DEEP_FOCUS";
 
@@ -66,23 +67,31 @@ export const useFocusTimerStore = create<FocusTimerStore>()(
       pendingCompletion: null,
 
       fetchActive: async () => {
-        try {
-          const response = await fetch("/api/focus/session");
-          if (response.ok) {
-            const data = (await response.json()) as {
-              session: FocusSessionSnapshot | null;
-            };
-            set({ session: data.session ?? null, hydrated: true });
-            return;
+        if (activeSessionRequest) return activeSessionRequest;
+        activeSessionRequest = (async () => {
+          try {
+            const response = await fetch("/api/focus/session");
+            if (response.ok) {
+              const data = (await response.json()) as {
+                session: FocusSessionSnapshot | null;
+              };
+              set({ session: data.session ?? null, hydrated: true });
+              return;
+            }
+          } catch (error) {
+            await logger.error(
+              "Failed to fetch active focus session",
+              { error: error instanceof Error ? error.message : String(error) },
+              LOG_SOURCE
+            );
           }
-        } catch (error) {
-          logger.error(
-            "Failed to fetch active focus session",
-            { error: error instanceof Error ? error.message : String(error) },
-            LOG_SOURCE
-          );
+          set({ hydrated: true });
+        })();
+        try {
+          await activeSessionRequest;
+        } finally {
+          activeSessionRequest = null;
         }
-        set({ hydrated: true });
       },
 
       start: async (options) => {
@@ -131,9 +140,30 @@ export const useFocusTimerStore = create<FocusTimerStore>()(
       handleElapsed: () => {
         const current = get().session;
         if (!current || current.plannedMinutes == null) return;
-        // Surface the completion prompt and finalize the session as completed.
+        // Finalize without calling `stop()`: manual stop intentionally clears
+        // pendingCompletion, while an elapsed countdown must keep the prompt
+        // visible after the server closes the active session.
         set({ pendingCompletion: current });
-        void get().stop({ completed: true });
+        void post({
+          action: "stop",
+          sessionId: current.id,
+          completed: true,
+          markTaskDone: false,
+        })
+          .then(() => {
+            set({ session: null, pendingCompletion: current });
+          })
+          .catch(async (error) => {
+            await logger.error(
+              "Failed to complete elapsed focus session",
+              {
+                sessionId: current.id,
+                error: error instanceof Error ? error.message : String(error),
+              },
+              LOG_SOURCE
+            );
+            await get().fetchActive();
+          });
       },
 
       clearPendingCompletion: () => set({ pendingCompletion: null }),

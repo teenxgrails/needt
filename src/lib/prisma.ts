@@ -1,5 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import type { PrismaNeon as PrismaNeonAdapter } from "@prisma/adapter-neon";
+import {
+  PrismaNeon,
+  type PrismaNeon as PrismaNeonAdapter,
+} from "@prisma/adapter-neon";
 
 type PrismaClientOptions = NonNullable<
   ConstructorParameters<typeof PrismaClient>[0]
@@ -15,15 +18,6 @@ function isNeonPooledUrl(url: string | undefined): boolean {
 
 function createNeonAdapter(url: string): PrismaNeonAdapter | null {
   try {
-    // Optional runtime dependency: local development can run without these
-    // packages installed, while Vercel/Neon uses them once dependencies are
-    // installed from package.json.
-    const optionalRequire = eval("require") as (moduleName: string) => unknown;
-    const { PrismaNeon } = optionalRequire("@prisma/adapter-neon") as {
-      PrismaNeon: new (config: {
-        connectionString: string;
-      }) => PrismaNeonAdapter;
-    };
     return new PrismaNeon({ connectionString: url });
   } catch {
     return null;

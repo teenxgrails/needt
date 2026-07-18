@@ -7,12 +7,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAppSession } from "@/components/providers/app-session-context";
 
 import { logger } from "@/lib/logger";
+import {
+  INITIAL_REALTIME_RECONNECT_DELAY_MS,
+  nextRealtimeReconnectDelay,
+} from "@/lib/realtime/reconnect";
 
 import { useCalendarStore } from "@/store/calendar";
 import { useTaskStore } from "@/store/task";
 
 const LOG_SOURCE = "RealtimeSyncHook";
-const RECONNECT_DELAY_MS = 2_000;
 
 export function useRealtimeSync(): void {
   const queryClient = useQueryClient();
@@ -23,6 +26,7 @@ export function useRealtimeSync(): void {
 
     let eventSource: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let reconnectDelayMs = INITIAL_REALTIME_RECONNECT_DELAY_MS;
     let stopped = false;
 
     const refreshCalendar = () => {
@@ -43,6 +47,9 @@ export function useRealtimeSync(): void {
       eventSource = new EventSource("/api/stream");
       eventSource.addEventListener("calendar-updated", refreshCalendar);
       eventSource.addEventListener("tasks-updated", refreshTasks);
+      eventSource.onopen = () => {
+        reconnectDelayMs = INITIAL_REALTIME_RECONNECT_DELAY_MS;
+      };
       eventSource.onerror = () => {
         eventSource?.close();
         eventSource = null;
@@ -50,7 +57,8 @@ export function useRealtimeSync(): void {
           reconnectTimer = setTimeout(() => {
             reconnectTimer = null;
             connect();
-          }, RECONNECT_DELAY_MS);
+          }, reconnectDelayMs);
+          reconnectDelayMs = nextRealtimeReconnectDelay(reconnectDelayMs);
         }
       };
     };

@@ -39,6 +39,9 @@ export default function RootLayout({
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setCommandPaletteOpen((open) => !open);
+      } else if (e.key === "/" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setChatOverlayOpen((open) => !open);
       } else if (e.key === "?" && !(e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setShortcutsOpen(true);

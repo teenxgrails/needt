@@ -6,12 +6,12 @@ import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import {
   BottomSheet,
   BottomSheetContent,
   BottomSheetTitle,
 } from "@/components/ui/bottom-sheet";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { endOfDay, newDate, startOfDay } from "@/lib/date-utils";
@@ -57,19 +57,21 @@ export function TodayView() {
   const [addOpen, setAddOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
     void fetchTasks();
     void loadFromDatabase();
+    setNow(newDate());
   }, [fetchTasks, loadFromDatabase]);
 
   //todo(mobile): pull-to-refresh to trigger sync, and long-press on a task row
   // for an action sheet (Complete / Postpone 1h/1d / Edit). Deferred from the
   // MOBILE pass — the bottom-sheet primitive it needs already exists.
 
-  const now = newDate();
-  const dayStart = startOfDay(now);
-  const dayEnd = endOfDay(now);
+  const effectiveNow = now ?? newDate(0);
+  const dayStart = startOfDay(effectiveNow);
+  const dayEnd = endOfDay(effectiveNow);
 
   // Merged events + scheduled tasks for today, chronological. `events` is a
   // dependency so the list re-derives once the calendar finishes loading.
@@ -129,6 +131,18 @@ export function TodayView() {
       setSaving(false);
     }
   };
+
+  if (!now) {
+    return (
+      <div
+        className="mx-auto h-full w-full max-w-2xl animate-pulse px-4 py-5"
+        aria-label="Loading today"
+      >
+        <div className="h-7 w-24 rounded bg-[var(--surface-raised)]" />
+        <div className="mt-3 h-4 w-44 rounded bg-[var(--surface-raised)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative mx-auto flex h-full max-w-2xl flex-col overflow-y-auto px-4 py-5 pb-24">

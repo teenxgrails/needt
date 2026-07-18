@@ -24,7 +24,21 @@ export function PWARegister() {
 
   useEffect(() => {
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+      if (process.env.NODE_ENV === "development") {
+        // A production service worker caching dev chunks leaves localhost on a
+        // stale client bundle after HMR/reload and can manufacture hydration
+        // mismatches that do not exist in the current source.
+        void navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) =>
+            Promise.all(
+              registrations.map((registration) => registration.unregister())
+            )
+          )
+          .catch(() => undefined);
+      } else {
+        void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+      }
     }
 
     try {

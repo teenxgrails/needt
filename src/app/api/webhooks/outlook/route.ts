@@ -48,9 +48,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await Promise.all(
+    const jobs = await Promise.all(
       [...feedIds].map((feedId) => enqueueCalendarSync(feedId))
     );
+    if (jobs.some((job) => !job)) {
+      return NextResponse.json({ error: "Queue unavailable" }, { status: 503 });
+    }
     return new NextResponse(null, { status: 202 });
   } catch (error) {
     await logger.error(

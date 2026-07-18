@@ -72,6 +72,16 @@ interface OpenMailMessage extends MailMessageItem {
   hasRemoteImages: boolean;
 }
 
+interface MailOAuthAvailability {
+  google: { configured: boolean };
+  outlook: { configured: boolean };
+}
+
+const NO_MAIL_OAUTH: MailOAuthAvailability = {
+  google: { configured: false },
+  outlook: { configured: false },
+};
+
 function providerLabel(provider: MailProvider) {
   if (provider === "GMAIL") return "Gmail";
   if (provider === "OUTLOOK") return "Outlook";
@@ -123,6 +133,8 @@ export function MailPage() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [oauthAvailability, setOAuthAvailability] =
+    useState<MailOAuthAvailability>(NO_MAIL_OAUTH);
   const [mobilePane, setMobilePane] = useState<
     "accounts" | "messages" | "message"
   >("messages");
@@ -166,6 +178,17 @@ export function MailPage() {
       toast.error("Could not load Mail");
     });
   }, [loadAccounts, loadMessages]);
+
+  useEffect(() => {
+    void fetch("/api/integration-status")
+      .then((response) =>
+        response.ok
+          ? (response.json() as Promise<MailOAuthAvailability>)
+          : NO_MAIL_OAUTH
+      )
+      .then(setOAuthAvailability)
+      .catch(() => setOAuthAvailability(NO_MAIL_OAUTH));
+  }, []);
 
   const openMail = async (message: MailMessageItem) => {
     setSelectedId(message.id);
@@ -604,6 +627,7 @@ export function MailPage() {
       <ConnectMailDialog
         open={connectOpen}
         onOpenChange={setConnectOpen}
+        oauthAvailability={oauthAvailability}
         onConnected={async () => {
           await loadAccounts();
           setConnectOpen(false);
@@ -616,10 +640,12 @@ export function MailPage() {
 function ConnectMailDialog({
   open,
   onOpenChange,
+  oauthAvailability,
   onConnected,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  oauthAvailability: MailOAuthAvailability;
   onConnected: () => Promise<void>;
 }) {
   const [showImap, setShowImap] = useState(false);
@@ -663,17 +689,41 @@ function ConnectMailDialog({
         </DialogHeader>
         {!showImap ? (
           <div className="space-y-2 py-2">
-            <Button asChild variant="outline" className="w-full justify-start">
-              <a href="/api/mail/oauth/google/auth">
-                <Mail className="mr-2 h-4 w-4" />
-                Continue with Gmail
-              </a>
+            <Button
+              asChild={oauthAvailability.google.configured}
+              variant="outline"
+              className="w-full justify-start"
+              disabled={!oauthAvailability.google.configured}
+            >
+              {oauthAvailability.google.configured ? (
+                <a href="/api/mail/oauth/google/auth">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Continue with Gmail
+                </a>
+              ) : (
+                <span>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Gmail is not configured
+                </span>
+              )}
             </Button>
-            <Button asChild variant="outline" className="w-full justify-start">
-              <a href="/api/mail/oauth/outlook/auth">
-                <Mail className="mr-2 h-4 w-4" />
-                Continue with Outlook
-              </a>
+            <Button
+              asChild={oauthAvailability.outlook.configured}
+              variant="outline"
+              className="w-full justify-start"
+              disabled={!oauthAvailability.outlook.configured}
+            >
+              {oauthAvailability.outlook.configured ? (
+                <a href="/api/mail/oauth/outlook/auth">
+                  <Mail className="mr-2 h-4 w-4" />
+                  Continue with Outlook
+                </a>
+              ) : (
+                <span>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Outlook is not configured
+                </span>
+              )}
             </Button>
             <Button
               variant="outline"

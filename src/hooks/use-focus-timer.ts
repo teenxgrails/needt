@@ -24,10 +24,11 @@ export function useFocusTimer() {
 
   const [now, setNow] = useState(() => Date.now());
 
-  // Resume rendering an active session on first mount (survives reload).
+  // Always reconcile with server truth on mount. Persisted client hydration is
+  // only a rendering hint and must never suppress this reload recovery.
   useEffect(() => {
-    if (!hydrated) void fetchActive();
-  }, [hydrated, fetchActive]);
+    void fetchActive();
+  }, [fetchActive]);
 
   const isRunning = Boolean(session && !session.pausedAt && !session.endedAt);
 

@@ -57,11 +57,15 @@ function openCommandPalette() {
   );
 }
 
-export const AppNav = memo(function AppNav({ className }: AppNavProps) {
+export const AppNav = memo(function AppNav({
+  className,
+  onOpenChatOverlay,
+}: AppNavProps) {
   const pathname = usePathname();
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [unreadMailCount, setUnreadMailCount] = useState(0);
   const [isOverloaded, setIsOverloaded] = useState(false);
+  const [todayLabel, setTodayLabel] = useState<string | null>(null);
   const overdueCount = useTaskStore(
     (state) =>
       state.tasks.filter(
@@ -132,15 +136,23 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
       });
   }, [pathname]);
 
-  const todayLabel = new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(newDate());
+  useEffect(() => {
+    setTodayLabel(
+      new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }).format(newDate())
+    );
+  }, []);
 
   // Motion swaps its product rail for the settings rail on settings pages.
   // Keeping both creates an unnecessary second navigation column.
-  if (pathname.startsWith("/settings")) {
+  if (
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/auth") ||
+    pathname === "/setup"
+  ) {
     return null;
   }
 
@@ -248,6 +260,11 @@ export const AppNav = memo(function AppNav({ className }: AppNavProps) {
                 )}`
               : "/chat"
           }
+          onClick={(event) => {
+            if (!onOpenChatOverlay) return;
+            event.preventDefault();
+            onOpenChatOverlay();
+          }}
           className={cn(
             "mb-2 flex min-w-0 items-center gap-2 rounded-md border border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_18%,var(--raised))] px-2.5 py-2 text-[13px] font-medium transition-colors hover:bg-[color-mix(in_srgb,var(--accent)_24%,var(--raised))]",
             pathname === "/chat" && "text-white"

@@ -18,8 +18,19 @@ jest.mock("@/lib/queue/queues", () => ({
 }));
 
 describe("queue enqueue helpers", () => {
+  const originalRedisUrl = process.env.REDIS_URL;
+
   beforeEach(() => {
     jest.clearAllMocks();
+    process.env.REDIS_URL = "redis://localhost:6379";
+  });
+
+  afterAll(() => {
+    if (originalRedisUrl === undefined) {
+      delete process.env.REDIS_URL;
+    } else {
+      process.env.REDIS_URL = originalRedisUrl;
+    }
   });
 
   test("deduplicates calendar sync jobs by feed", async () => {
@@ -60,5 +71,14 @@ describe("queue enqueue helpers", () => {
       { provider: "GOOGLE", feedId: "feed-123" },
       { jobId: "webhook-renew-GOOGLE-feed-123" }
     );
+  });
+
+  test("treats a missing Redis URL as an optional web-process integration", async () => {
+    delete process.env.REDIS_URL;
+
+    await expect(enqueueCalendarSync("feed-123")).resolves.toBeNull();
+    await expect(enqueueMailSync("account-123")).resolves.toBeNull();
+    expect(calendarAdd).not.toHaveBeenCalled();
+    expect(mailAdd).not.toHaveBeenCalled();
   });
 });

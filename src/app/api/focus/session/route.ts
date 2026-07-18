@@ -9,6 +9,7 @@ import {
 } from "@/services/focus/focusSession";
 import { FocusSessionMode } from "@prisma/client";
 
+import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
 
@@ -25,8 +26,17 @@ export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
 
-  const session = await getActiveSession(auth.userId);
-  return NextResponse.json({ active: Boolean(session), session });
+  try {
+    const session = await getActiveSession(auth.userId);
+    return NextResponse.json({ active: Boolean(session), session });
+  } catch (error) {
+    return routeErrorResponse(
+      error,
+      "Failed to load active focus session",
+      LOG_SOURCE,
+      "Could not load active focus session."
+    );
+  }
 }
 
 // POST /api/focus/session -> lifecycle actions keyed by body.action:
@@ -74,13 +84,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ session });
       }
       default:
-        return NextResponse.json(
-          { error: "Unknown action" },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
   } catch (error) {
-    logger.error(
+    await logger.error(
       "Focus session action failed",
       { action, error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE

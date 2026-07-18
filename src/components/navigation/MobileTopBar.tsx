@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { usePathname } from "next/navigation";
 
 import { UserMenu } from "@/components/navigation/UserMenu";
@@ -14,15 +16,21 @@ import { newDate } from "@/lib/date-utils";
  */
 export function MobileTopBar() {
   const pathname = usePathname();
+  const [dateLabel, setDateLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDateLabel(
+      new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }).format(newDate())
+    );
+  }, []);
+
   if (pathname.startsWith("/settings") || pathname.startsWith("/auth")) {
     return null;
   }
-
-  const dateLabel = new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(newDate());
 
   return (
     <header className="fixed inset-x-0 top-0 z-20 flex h-14 items-center justify-between border-b border-[var(--line-strong)] bg-[var(--app-bg)] px-4 md:hidden">
@@ -30,7 +38,9 @@ export function MobileTopBar() {
         <span className="text-sm font-semibold text-[var(--text-hi)]">
           {APP_NAME}
         </span>
-        <span className="text-[11px] text-[var(--text-lo)]">{dateLabel}</span>
+        {dateLabel && (
+          <span className="text-[11px] text-[var(--text-lo)]">{dateLabel}</span>
+        )}
       </div>
       <UserMenu />
     </header>
