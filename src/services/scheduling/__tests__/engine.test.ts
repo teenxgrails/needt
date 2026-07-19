@@ -185,13 +185,13 @@ describe("scheduleTasks", () => {
       busyBlocks: [
         busy({
           id: "future-1",
-          start: new Date("2026-07-13T07:00:00.000Z"),
-          end: new Date("2026-07-13T08:00:00.000Z"),
+          start: new Date(2026, 6, 13, 9, 0, 0),
+          end: new Date(2026, 6, 13, 10, 0, 0),
         }),
         busy({
           id: "future-2",
-          start: new Date("2026-07-20T07:00:00.000Z"),
-          end: new Date("2026-07-20T08:00:00.000Z"),
+          start: new Date(2026, 6, 20, 9, 0, 0),
+          end: new Date(2026, 6, 20, 10, 0, 0),
         }),
       ],
       energyProfile,
