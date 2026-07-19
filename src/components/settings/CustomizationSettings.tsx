@@ -90,7 +90,10 @@ export function CustomizationSettings() {
     root.style.removeProperty("--accent");
     root.style.removeProperty("--app-bg");
     root.style.setProperty("--color-accent", settings.accentColor);
-    root.style.setProperty("--surface-canvas", settings.backgroundTint);
+    // A custom tint belongs to dark mode only. Storing it in a dedicated
+    // token keeps light mode on its semantic canvas instead of pinning the
+    // whole application to a dark inline background.
+    root.style.setProperty("--custom-background-tint", settings.backgroundTint);
     root.style.setProperty("--radius", `${settings.radius}px`);
     root.style.setProperty(
       "--flowday-sidebar-width",

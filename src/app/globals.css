@@ -282,7 +282,10 @@
   .dark {
     color-scheme: dark;
     /* Semantic layer: the finished Calendar is the dark-theme reference. */
-    --surface-canvas: var(--primitive-neutral-900);
+    --surface-canvas: var(
+      --custom-background-tint,
+      var(--primitive-neutral-900)
+    );
     --surface-panel: var(--primitive-neutral-850);
     --surface-raised: var(--primitive-neutral-800);
     --surface-control: var(--primitive-neutral-700);

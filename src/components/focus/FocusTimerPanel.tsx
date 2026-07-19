@@ -7,6 +7,12 @@ import { Minus, Pause, Play, Plus, Square } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
 
+import {
+  BottomSheet,
+  BottomSheetContent,
+  BottomSheetDescription,
+  BottomSheetTitle,
+} from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -79,6 +85,7 @@ export function FocusTimerPanel({
   const [breakMinutes, setBreakMinutes] = useState(5);
   const [deepMinutes, setDeepMinutes] = useState(50);
   const [report, setReport] = useState<FocusPayload | null>(null);
+  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const prefersReducedMotion = useReducedMotion();
 
   const {
@@ -176,6 +183,11 @@ export function FocusTimerPanel({
     }
   }
 
+  async function confirmStop() {
+    setLeaveConfirmOpen(false);
+    await handleStop();
+  }
+
   async function finishCompletion(markTaskDone: boolean) {
     const hadTask = Boolean(pendingCompletion?.taskId);
     clearPendingCompletion();
@@ -226,7 +238,7 @@ export function FocusTimerPanel({
         immersive && "my-auto"
       )}
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center sm:gap-3">
         <div>
           <p className="text-[11px] font-medium uppercase text-[var(--text-muted)]">
             Focus session
@@ -245,7 +257,7 @@ export function FocusTimerPanel({
           onValueChange={(value) => setMode(value as FocusMode)}
           disabled={running}
         >
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="h-11 w-full sm:h-9 sm:w-36">
             <SelectValue>{modeLabels[session?.mode ?? mode]}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -256,9 +268,9 @@ export function FocusTimerPanel({
         </Select>
       </div>
 
-      <div className="mx-auto mt-10 max-w-[520px]">
-        <div className="overflow-hidden rounded-[24px] border border-[var(--border-control)] bg-[linear-gradient(160deg,var(--surface-control),var(--surface-panel))] p-3">
-          <div className="relative grid min-h-[190px] place-items-center overflow-hidden rounded-[18px] border border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-5 text-center">
+      <div className="mx-auto mt-8 max-w-[520px] sm:mt-10">
+        <div className="overflow-hidden rounded-[24px] border border-[var(--border-control)] bg-[var(--surface-panel)] p-3">
+          <div className="relative grid min-h-[172px] place-items-center overflow-hidden rounded-[18px] border border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-5 text-center sm:min-h-[190px]">
             <div
               aria-label={`${Math.round(progress * 100)}% focus progress`}
               className="absolute inset-x-0 bottom-0 h-1 bg-[var(--surface-control)]"
@@ -271,7 +283,7 @@ export function FocusTimerPanel({
               />
             </div>
             <div>
-              <div className="text-[58px] font-semibold leading-none tracking-[-0.055em] tabular-nums text-[var(--text-primary)] sm:text-[72px]">
+              <div className="text-[52px] font-semibold leading-none tracking-[-0.055em] tabular-nums text-[var(--text-primary)] sm:text-[72px]">
                 {formatClock(displaySeconds)}
               </div>
               <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">
@@ -318,7 +330,7 @@ export function FocusTimerPanel({
                 onChange={(event) =>
                   setBreakMinutes(Math.max(1, Number(event.target.value)))
                 }
-                className="h-8 w-16 text-center"
+                className="h-10 w-16 text-center text-base sm:h-8 sm:text-sm"
               />
               min
             </label>
@@ -363,7 +375,7 @@ export function FocusTimerPanel({
                   className="h-11 min-w-32"
                   variant="outline"
                   disabled={isDeepLocked}
-                  onClick={handleStop}
+                  onClick={() => setLeaveConfirmOpen(true)}
                 >
                   <Square className="h-4 w-4" />
                   {session?.mode === "FLOW" ? "Finish" : "Stop"}
@@ -489,6 +501,39 @@ export function FocusTimerPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BottomSheet open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
+        <BottomSheetContent className="sm:left-1/2 sm:right-auto sm:w-[420px] sm:-translate-x-1/2 sm:rounded-2xl sm:border">
+          <div className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-[var(--border-control)] bg-[var(--surface-raised)] text-[var(--text-secondary)]">
+            <Square className="h-4 w-4" />
+          </div>
+          <BottomSheetTitle className="mt-4 text-center">
+            Leave early?
+          </BottomSheetTitle>
+          <BottomSheetDescription className="mt-1 text-center leading-5">
+            The time you focused will still be logged. You can keep going if you
+            only needed a pause.
+          </BottomSheetDescription>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => setLeaveConfirmOpen(false)}
+            >
+              Never mind
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-11"
+              onClick={() => void confirmStop()}
+            >
+              End session
+            </Button>
+          </div>
+        </BottomSheetContent>
+      </BottomSheet>
     </motion.section>
   );
 }

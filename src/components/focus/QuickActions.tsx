@@ -83,7 +83,7 @@ export function QuickActions() {
         <Button
           variant="outline"
           onClick={() => completeCurrentTask()}
-          className="justify-start"
+          className="h-11 justify-start sm:h-9"
           disabled={!currentTask}
         >
           <span className="flex items-center">
@@ -96,7 +96,7 @@ export function QuickActions() {
         <Button
           variant="outline"
           onClick={() => setIsEditModalOpen(true)}
-          className="justify-start"
+          className="h-11 justify-start sm:h-9"
           disabled={!currentTask}
         >
           <span className="flex items-center">
@@ -109,7 +109,7 @@ export function QuickActions() {
         <Button
           variant="outline"
           onClick={handleDeleteTask}
-          className="justify-start text-destructive hover:text-destructive"
+          className="h-11 justify-start text-destructive hover:text-destructive sm:h-9"
           disabled={!currentTask}
         >
           <span className="flex items-center">
@@ -127,7 +127,7 @@ export function QuickActions() {
             variant="outline"
             size="sm"
             onClick={() => postponeTask("1h")}
-            className="flex items-center"
+            className="h-10 flex items-center sm:h-8"
             disabled={!currentTask}
           >
             <HiClock className="mr-1 h-3 w-3" /> 1 hour
@@ -136,7 +136,7 @@ export function QuickActions() {
             variant="outline"
             size="sm"
             onClick={() => postponeTask("3h")}
-            className="flex items-center"
+            className="h-10 flex items-center sm:h-8"
             disabled={!currentTask}
           >
             <HiClock className="mr-1 h-3 w-3" /> 3 hours
@@ -145,7 +145,7 @@ export function QuickActions() {
             variant="outline"
             size="sm"
             onClick={() => postponeTask("1d")}
-            className="flex items-center"
+            className="h-10 flex items-center sm:h-8"
             disabled={!currentTask}
           >
             <HiClock className="mr-1 h-3 w-3" /> 1 day
@@ -154,7 +154,7 @@ export function QuickActions() {
             variant="outline"
             size="sm"
             onClick={() => postponeTask("1w")}
-            className="flex items-center"
+            className="h-10 flex items-center sm:h-8"
             disabled={!currentTask}
           >
             <HiClock className="mr-1 h-3 w-3" /> 1 week

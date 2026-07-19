@@ -81,7 +81,7 @@ const GENERAL_TABS: SettingsNavItem[] = [
     icon: SlidersHorizontal,
   },
   { id: "task-defaults", label: "Task defaults", icon: CheckCircle2 },
-  { id: "theme", label: "Theme", icon: Palette },
+  { id: "theme", label: "Appearance", icon: Palette },
   { id: "timezone", label: "Timezone", icon: Clock3 },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "schedules", label: "Schedules", icon: CalendarRange },

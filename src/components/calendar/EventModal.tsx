@@ -388,11 +388,11 @@ export function EventModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="flex h-[min(748px,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden border-[#3A3F42] bg-[#202425] p-0 text-[#F2F2F2] sm:max-w-[680px]">
+        <DialogContent className="flex h-[min(748px,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden border-[var(--dialog-border)] bg-[var(--dialog-bg)] p-0 text-[var(--text-primary)] sm:max-w-[680px]">
           {isSubmitting && <LoadingOverlay />}
-          <DialogHeader className="flex-row items-center space-y-0 border-b border-[#2B2F31] px-5 py-3.5 pr-14">
+          <DialogHeader className="flex-row items-center space-y-0 border-b border-[var(--border-subtle)] px-5 py-3.5 pr-14">
             <DialogTitle className="flex items-center gap-3 text-base font-medium">
-              <span className="rounded-md border border-[#3A3F42] bg-[#1B1D1E] px-2.5 py-1 text-xs font-medium text-[#9BA1A6]">
+              <span className="rounded-md border border-[var(--border-control)] bg-[var(--surface-canvas)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]">
                 Event
               </span>
               {event?.id ? "Edit event" : ""}
@@ -405,175 +405,206 @@ export function EventModal({
           >
             <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="space-y-4 px-6 pb-4 pt-5">
-            <div className="space-y-2">
-              <Label htmlFor="title" className="sr-only">Event title</Label>
-              <Input
-                type="text"
-                id="title"
-                ref={titleInputRef}
-                data-testid="event-title-input"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Event title"
-                className="event-title h-11 border-0 bg-transparent px-0 text-xl text-[#F2F2F2] placeholder:text-[#737A80] focus-visible:ring-0"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start">Start</Label>
-                <Input
-                  type={isAllDay ? "date" : "datetime-local"}
-                  id="start"
-                  data-testid="event-start-date"
-                  value={
-                    isAllDay
-                      ? formatToLocalISOString(startDate).split("T")[0]
-                      : formatToLocalISOString(startDate)
-                  }
-                  onChange={(e) => setStartDate(newDate(e.target.value))}
-                  className={cn(
-                    "cursor-pointer px-3 py-2",
-                    "[&::-webkit-calendar-picker-indicator]:ml-auto",
-                    "[&::-webkit-calendar-picker-indicator]:mr-1",
-                    "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-                    "[&::-webkit-calendar-picker-indicator]:rounded-md",
-                    "[&::-webkit-calendar-picker-indicator]:hover:bg-accent",
-                    "[&::-webkit-calendar-picker-indicator]:dark:invert",
-                    "[&::-webkit-datetime-edit]:text-foreground",
-                    "[&::-webkit-datetime-edit-fields-wrapper]:p-0"
-                  )}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="end">End</Label>
-                <Input
-                  type={isAllDay ? "date" : "datetime-local"}
-                  id="end"
-                  data-testid="event-end-date"
-                  value={
-                    isAllDay
-                      ? formatToLocalISOString(endDate).split("T")[0]
-                      : formatToLocalISOString(endDate)
-                  }
-                  onChange={(e) => setEndDate(newDate(e.target.value))}
-                  className={cn(
-                    "cursor-pointer px-3 py-2",
-                    "[&::-webkit-calendar-picker-indicator]:ml-auto",
-                    "[&::-webkit-calendar-picker-indicator]:mr-1",
-                    "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-                    "[&::-webkit-calendar-picker-indicator]:rounded-md",
-                    "[&::-webkit-calendar-picker-indicator]:hover:bg-accent",
-                    "[&::-webkit-calendar-picker-indicator]:dark:invert",
-                    "[&::-webkit-datetime-edit]:text-foreground",
-                    "[&::-webkit-datetime-edit-fields-wrapper]:p-0"
-                  )}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-5">
-              <div className="flex items-center space-x-2">
-              <Checkbox
-                id="all-day"
-                checked={isAllDay}
-                onCheckedChange={(checked) => setIsAllDay(checked as boolean)}
-              />
-              <Label htmlFor="all-day" className="text-sm">
-                All day
-              </Label>
-              </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="recurring"
-                    checked={isRecurring}
-                    onCheckedChange={(checked) => {
-                      const isChecked = checked as boolean;
-                      setIsRecurring(isChecked);
-                      if (
-                        isChecked &&
-                        (recurrenceFreq === FREQUENCIES.NONE || !recurrenceFreq)
-                      ) {
-                        setRecurrenceFreq(FREQUENCIES.WEEKLY);
-                        const weekdayNum = startDate.getDay();
-                        const weekdays = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-                        setRecurrenceByDay([weekdays[weekdayNum]]);
-                      }
-                    }}
-                    data-testid="recurring-event-checkbox"
-                  />
-                  <Label htmlFor="recurring" className="text-sm font-normal">
-                    Does not repeat
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="sr-only">
+                    Event title
                   </Label>
+                  <Input
+                    type="text"
+                    id="title"
+                    ref={titleInputRef}
+                    data-testid="event-title-input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Event title"
+                    className="event-title h-11 border-0 bg-transparent px-0 text-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:ring-0"
+                    required
+                  />
                 </div>
-            </div>
 
-              {renderRecurrenceOptions()}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start">Start</Label>
+                    <Input
+                      type={isAllDay ? "date" : "datetime-local"}
+                      id="start"
+                      data-testid="event-start-date"
+                      value={
+                        isAllDay
+                          ? formatToLocalISOString(startDate).split("T")[0]
+                          : formatToLocalISOString(startDate)
+                      }
+                      onChange={(e) => setStartDate(newDate(e.target.value))}
+                      className={cn(
+                        "cursor-pointer px-3 py-2",
+                        "[&::-webkit-calendar-picker-indicator]:ml-auto",
+                        "[&::-webkit-calendar-picker-indicator]:mr-1",
+                        "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
+                        "[&::-webkit-calendar-picker-indicator]:rounded-md",
+                        "[&::-webkit-calendar-picker-indicator]:hover:bg-accent",
+                        "[&::-webkit-calendar-picker-indicator]:dark:invert",
+                        "[&::-webkit-datetime-edit]:text-foreground",
+                        "[&::-webkit-datetime-edit-fields-wrapper]:p-0"
+                      )}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="end">End</Label>
+                    <Input
+                      type={isAllDay ? "date" : "datetime-local"}
+                      id="end"
+                      data-testid="event-end-date"
+                      value={
+                        isAllDay
+                          ? formatToLocalISOString(endDate).split("T")[0]
+                          : formatToLocalISOString(endDate)
+                      }
+                      onChange={(e) => setEndDate(newDate(e.target.value))}
+                      className={cn(
+                        "cursor-pointer px-3 py-2",
+                        "[&::-webkit-calendar-picker-indicator]:ml-auto",
+                        "[&::-webkit-calendar-picker-indicator]:mr-1",
+                        "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
+                        "[&::-webkit-calendar-picker-indicator]:rounded-md",
+                        "[&::-webkit-calendar-picker-indicator]:hover:bg-accent",
+                        "[&::-webkit-calendar-picker-indicator]:dark:invert",
+                        "[&::-webkit-datetime-edit]:text-foreground",
+                        "[&::-webkit-datetime-edit-fields-wrapper]:p-0"
+                      )}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-5">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="all-day"
+                      checked={isAllDay}
+                      onCheckedChange={(checked) =>
+                        setIsAllDay(checked as boolean)
+                      }
+                    />
+                    <Label htmlFor="all-day" className="text-sm">
+                      All day
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="recurring"
+                      checked={isRecurring}
+                      onCheckedChange={(checked) => {
+                        const isChecked = checked as boolean;
+                        setIsRecurring(isChecked);
+                        if (
+                          isChecked &&
+                          (recurrenceFreq === FREQUENCIES.NONE ||
+                            !recurrenceFreq)
+                        ) {
+                          setRecurrenceFreq(FREQUENCIES.WEEKLY);
+                          const weekdayNum = startDate.getDay();
+                          const weekdays = [
+                            "SU",
+                            "MO",
+                            "TU",
+                            "WE",
+                            "TH",
+                            "FR",
+                            "SA",
+                          ];
+                          setRecurrenceByDay([weekdays[weekdayNum]]);
+                        }
+                      }}
+                      data-testid="recurring-event-checkbox"
+                    />
+                    <Label htmlFor="recurring" className="text-sm font-normal">
+                      Does not repeat
+                    </Label>
+                  </div>
+                </div>
+
+                {renderRecurrenceOptions()}
               </div>
 
-              <aside className="space-y-4 border-t border-[#2B2F31] px-6 pb-5 pt-4">
-                <p className="text-sm font-medium text-[#F2F2F2]">Event details</p>
+              <aside className="space-y-4 border-t border-[var(--border-subtle)] px-6 pb-5 pt-4">
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  Event details
+                </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="calendar">Calendar</Label>
-              <Select
-                value={selectedFeedId}
-                onValueChange={(value) => setSelectedFeedId(value)}
-                disabled={!!event?.id}
-              >
-                <SelectTrigger id="calendar" data-testid="calendar-select">
-                  <SelectValue placeholder="Select a calendar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {feeds
-                    .filter((feed) => feed.enabled)
-                    .map((feed) => (
-                      <SelectItem key={feed.id} value={feed.id}>
-                        {feed.name} {feed.type === "GOOGLE" ? "(Google)" : ""}
-                      </SelectItem>
+                <div className="space-y-2">
+                  <Label htmlFor="calendar">Calendar</Label>
+                  <Select
+                    value={selectedFeedId}
+                    onValueChange={(value) => setSelectedFeedId(value)}
+                    disabled={!!event?.id}
+                  >
+                    <SelectTrigger id="calendar" data-testid="calendar-select">
+                      <SelectValue placeholder="Select a calendar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {feeds
+                        .filter((feed) => feed.enabled)
+                        .map((feed) => (
+                          <SelectItem key={feed.id} value={feed.id}>
+                            {feed.name}{" "}
+                            {feed.type === "GOOGLE" ? "(Google)" : ""}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    type="text"
+                    id="location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="event-location"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <div className="flex items-center gap-1 py-1 text-xs text-[var(--text-secondary)]">
+                    {[
+                      "B",
+                      "I",
+                      "U",
+                      "S",
+                      "H₁",
+                      "H₂",
+                      "•",
+                      "1.",
+                      "</>",
+                      "↗",
+                    ].map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className="rounded px-2 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                      >
+                        {item}
+                      </button>
                     ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                type="text"
-                id="location"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="event-location"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <div className="flex items-center gap-1 py-1 text-xs text-[#9BA1A6]">
-                {["B", "I", "U", "S", "H₁", "H₂", "•", "1.", "</>", "↗"].map((item) => (
-                  <button key={item} type="button" className="rounded px-2 py-1 hover:bg-[#2B2F31] hover:text-white">
-                    {item}
-                  </button>
-                ))}
-              </div>
-              <Textarea
-                id="description"
-                data-testid="event-description-input"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Enter message"
-                className="event-description min-h-[150px] resize-none border-0 bg-[#1B1D1E] text-[#F2F2F2] focus-visible:ring-0"
-              />
-            </div>
+                  </div>
+                  <Textarea
+                    id="description"
+                    data-testid="event-description-input"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={3}
+                    placeholder="Enter message"
+                    className="event-description min-h-[150px] resize-none border-0 bg-[var(--surface-canvas)] text-[var(--text-primary)] focus-visible:ring-0"
+                  />
+                </div>
               </aside>
             </div>
 
-            <div className="flex items-center justify-between border-t border-[#2B2F31] bg-[#202425] px-5 py-3">
+            <div className="flex items-center justify-between border-t border-[var(--border-subtle)] bg-[var(--surface-panel)] px-5 py-3">
               {event?.id ? (
                 <Button
                   type="button"

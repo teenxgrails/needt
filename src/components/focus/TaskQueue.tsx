@@ -100,7 +100,7 @@ export function TaskQueue() {
       key={task.id}
       variant="ghost"
       className={cn(
-        "h-auto w-full justify-start px-3 py-2",
+        "min-h-11 h-auto w-full justify-start px-3 py-2 sm:min-h-9",
         "hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]",
         task.id === currentTaskId &&
           "bg-[var(--surface-hover)] font-medium text-[var(--text-primary)]"

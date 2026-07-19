@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { UserMenu } from "@/components/navigation/UserMenu";
+import { Sparkles } from "lucide-react";
 
 import { APP_NAME } from "@/lib/app-config";
 import { newDate } from "@/lib/date-utils";
@@ -43,7 +44,15 @@ export function MobileTopBar() {
           <span className="text-[11px] text-[var(--text-lo)]">{dateLabel}</span>
         )}
       </div>
-      <UserMenu />
+      {pathname !== "/chat" && (
+        <Link
+          href="/chat"
+          aria-label="Open AI Chat"
+          className="grid h-11 w-11 place-items-center rounded-full border border-[var(--border-control)] bg-[var(--surface-panel)] text-[var(--accent)] transition-colors duration-150 active:bg-[var(--surface-hover)]"
+        >
+          <Sparkles className="h-4 w-4" />
+        </Link>
+      )}
     </header>
   );
 }

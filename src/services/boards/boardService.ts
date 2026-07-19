@@ -28,7 +28,10 @@ export async function getBoard(userId: string, boardId: string) {
     where: { id: boardId, userId },
     include: {
       columns: { orderBy: { position: "asc" } },
-      tasks: { orderBy: { boardPosition: "asc" } },
+      tasks: {
+        orderBy: { boardPosition: "asc" },
+        include: { tags: true },
+      },
     },
   });
 }

@@ -3,6 +3,8 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 import {
+  VISUAL_TEST_BOARD_COLUMNS,
+  VISUAL_TEST_BOARD_ID,
   VISUAL_TEST_EMAIL,
   VISUAL_TEST_PASSWORD,
   VISUAL_TEST_TASK_IDS,
@@ -105,6 +107,53 @@ export default async function globalSetup() {
     }),
   ]);
 
+  await prisma.focusSession.deleteMany({ where: { userId: user.id } });
+
+  await prisma.board.upsert({
+    where: { id: VISUAL_TEST_BOARD_ID },
+    update: {
+      userId: user.id,
+      name: "Launch plan",
+      icon: "🚀",
+      position: 0,
+    },
+    create: {
+      id: VISUAL_TEST_BOARD_ID,
+      userId: user.id,
+      name: "Launch plan",
+      icon: "🚀",
+      position: 0,
+    },
+  });
+  await prisma.boardColumn.deleteMany({
+    where: { boardId: VISUAL_TEST_BOARD_ID },
+  });
+  await prisma.boardColumn.createMany({
+    data: [
+      {
+        id: VISUAL_TEST_BOARD_COLUMNS.next,
+        boardId: VISUAL_TEST_BOARD_ID,
+        name: "Next",
+        color: "#60a5fa",
+        position: 0,
+      },
+      {
+        id: VISUAL_TEST_BOARD_COLUMNS.doing,
+        boardId: VISUAL_TEST_BOARD_ID,
+        name: "In progress",
+        color: "#fbbf24",
+        position: 1,
+      },
+      {
+        id: VISUAL_TEST_BOARD_COLUMNS.done,
+        boardId: VISUAL_TEST_BOARD_ID,
+        name: "Done",
+        color: "#34d399",
+        position: 2,
+      },
+    ],
+  });
+
   await prisma.task.deleteMany({
     where: {
       OR: [{ userId: user.id }, { id: { in: [...VISUAL_TEST_TASK_IDS] } }],
@@ -124,6 +173,9 @@ export default async function globalSetup() {
         startDate: new Date("2026-07-16T00:00:00+02:00"),
         dueDate: new Date("2026-07-16T23:59:00+02:00"),
         isAutoScheduled: false,
+        boardId: VISUAL_TEST_BOARD_ID,
+        boardColumnId: VISUAL_TEST_BOARD_COLUMNS.next,
+        boardPosition: 0,
       },
       {
         id: "visual-task-morning",
@@ -140,6 +192,9 @@ export default async function globalSetup() {
         dueDate: new Date("2026-07-16T23:59:00+02:00"),
         isAutoScheduled: true,
         autoScheduled: true,
+        boardId: VISUAL_TEST_BOARD_ID,
+        boardColumnId: VISUAL_TEST_BOARD_COLUMNS.doing,
+        boardPosition: 0,
       },
       {
         id: "visual-task-afternoon",
@@ -155,6 +210,9 @@ export default async function globalSetup() {
         dueDate: new Date("2026-07-16T23:59:00+02:00"),
         isAutoScheduled: true,
         autoScheduled: true,
+        boardId: VISUAL_TEST_BOARD_ID,
+        boardColumnId: VISUAL_TEST_BOARD_COLUMNS.next,
+        boardPosition: 1,
       },
       {
         id: "visual-task-evening",
@@ -171,5 +229,94 @@ export default async function globalSetup() {
         autoScheduled: true,
       },
     ],
+  });
+
+  const mailAccount = await prisma.mailAccount.upsert({
+    where: {
+      userId_provider_address: {
+        userId: user.id,
+        provider: "IMAP",
+        address: "visual@needt.local",
+      },
+    },
+    update: {
+      status: "ACTIVE",
+      lastSyncAt: new Date("2026-07-16T10:20:00+02:00"),
+    },
+    create: {
+      userId: user.id,
+      provider: "IMAP",
+      address: "visual@needt.local",
+      status: "ACTIVE",
+      lastSyncAt: new Date("2026-07-16T10:20:00+02:00"),
+    },
+  });
+  await prisma.mailMessage.deleteMany({ where: { accountId: mailAccount.id } });
+  await prisma.mailMessage.createMany({
+    data: [
+      {
+        accountId: mailAccount.id,
+        externalId: "visual-mail-launch",
+        fromName: "Maya Chen",
+        fromAddress: "maya@example.com",
+        toAddresses: ["visual@needt.local"],
+        subject: "Launch review notes",
+        snippet: "The timeline looks good. Two decisions are still open.",
+        date: new Date("2026-07-16T09:42:00+02:00"),
+        isRead: false,
+        labels: ["inbox"],
+        bodyHtml:
+          "<p>Hi,</p><p>The timeline looks good. We only need to settle the launch copy and the final calendar check.</p><p>Thanks,<br>Maya</p>",
+      },
+      {
+        accountId: mailAccount.id,
+        externalId: "visual-mail-calendar",
+        fromName: "Calendar operations",
+        fromAddress: "ops@example.com",
+        toAddresses: ["visual@needt.local"],
+        subject: "Calendar sync is ready",
+        snippet: "All provider checks passed this morning.",
+        date: new Date("2026-07-16T08:15:00+02:00"),
+        isRead: true,
+        labels: ["inbox"],
+        bodyHtml:
+          "<p>All provider checks passed this morning. No action is needed.</p>",
+      },
+    ],
+  });
+
+  await prisma.aISettings.upsert({
+    where: { userId: user.id },
+    update: { provider: "NONE", encryptedApiKey: null },
+    create: { userId: user.id, provider: "NONE" },
+  });
+  await prisma.aiConversation.deleteMany({ where: { userId: user.id } });
+  await prisma.aiConversation.create({
+    data: {
+      id: "visual-ai-conversation",
+      userId: user.id,
+      title: "Today’s priorities",
+      createdAt: new Date("2026-07-16T08:00:00+02:00"),
+      updatedAt: new Date("2026-07-16T08:05:00+02:00"),
+      messages: {
+        create: [
+          {
+            id: "visual-ai-message-user",
+            userId: user.id,
+            role: "user",
+            content: "What should I focus on first?",
+            createdAt: new Date("2026-07-16T08:00:00+02:00"),
+          },
+          {
+            id: "visual-ai-message-assistant",
+            userId: user.id,
+            role: "assistant",
+            content:
+              "Start with Morning deep work while your energy window is high, then review calendar sync after lunch.",
+            createdAt: new Date("2026-07-16T08:01:00+02:00"),
+          },
+        ],
+      },
+    },
   });
 }

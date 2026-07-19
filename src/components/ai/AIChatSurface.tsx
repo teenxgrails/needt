@@ -6,11 +6,13 @@ import Link from "next/link";
 
 import {
   CalendarCheck,
+  LoaderCircle,
   PanelLeftClose,
   Plus,
   RotateCcw,
   Search,
   Send,
+  X,
 } from "lucide-react";
 
 import { APP_NAME } from "@/lib/app-config";
@@ -308,21 +310,43 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
 
   return (
     <div className="relative flex h-full min-h-0 bg-[var(--surface-canvas)] text-[var(--text-primary)]">
+      {historyOpen && isMobile && (
+        <button
+          type="button"
+          aria-label="Close chat history"
+          className="absolute inset-0 z-10 bg-black/45"
+          onClick={() => setHistoryOpen(false)}
+        />
+      )}
       {historyOpen && (
         <aside
           className={cn(
             "w-[260px] flex-none border-r border-[var(--border-subtle)] bg-[var(--surface-canvas)] p-2",
-            isMobile && "absolute inset-y-0 left-0 z-20 shadow-xl"
+            isMobile &&
+              "absolute inset-y-0 left-0 z-20 w-[min(86vw,320px)] shadow-xl"
           )}
         >
-          <div className="mb-2 flex items-center gap-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-panel)] px-2.5 py-2 text-[13px] text-[var(--text-secondary)]">
+          {isMobile && (
+            <div className="mb-2 flex min-h-11 items-center justify-between px-1 text-sm font-medium">
+              Chat history
+              <button
+                type="button"
+                aria-label="Close chat history"
+                className="grid h-11 w-11 place-items-center rounded-md text-[var(--text-secondary)] active:bg-[var(--surface-hover)]"
+                onClick={() => setHistoryOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          <div className="mb-2 flex min-h-11 items-center gap-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-panel)] px-2.5 py-2 text-[13px] text-[var(--text-secondary)] sm:min-h-9">
             <Search className="h-4 w-4" strokeWidth={1.75} />
             Search chats...
           </div>
           <button
             type="button"
             onClick={newChat}
-            className="mb-4 flex w-full items-center gap-2 rounded-md bg-[var(--accent)] px-3 py-2 text-[13px] font-medium text-white"
+            className="mb-4 flex min-h-11 w-full items-center gap-2 rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-3 py-2 text-[13px] font-medium text-[var(--button-primary-fg)] shadow-[var(--button-primary-shadow)] sm:min-h-9"
           >
             <Plus className="h-4 w-4" />
             New chat
@@ -337,7 +361,7 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
                   key={item.id}
                   onClick={() => setActiveId(item.id)}
                   className={cn(
-                    "mt-1 w-full truncate rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)]",
+                    "mt-1 min-h-11 w-full truncate rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] sm:min-h-9",
                     item.id === activeId && "bg-[var(--surface-hover)]"
                   )}
                 >
@@ -350,18 +374,19 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
       )}
 
       <main className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-11 items-center border-b border-[var(--border-subtle)] px-3">
+        <header className="flex min-h-16 items-center border-b border-[var(--border-subtle)] px-3 sm:min-h-11">
           <button
             type="button"
             onClick={() => setHistoryOpen((open) => !open)}
-            className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+            aria-label={historyOpen ? "Hide chat history" : "Show chat history"}
+            className="grid h-11 w-11 place-items-center rounded-md text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-8 sm:w-8"
           >
             <PanelLeftClose className="h-4 w-4" />
           </button>
           <div className="ml-2 text-sm font-medium">AI Chat</div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:p-6">
           {!messages.length ? (
             <div className="mx-auto flex h-full max-w-[760px] flex-col justify-center text-center">
               <h1 className="text-2xl font-medium">{APP_NAME} is ready.</h1>
@@ -398,25 +423,34 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
               </div>
             </div>
           ) : (
-            <div className="mx-auto max-w-[760px] space-y-3">
+            <div className="mx-auto max-w-[760px] space-y-5">
               {messages.map((message) => (
                 <div
                   key={message.id}
                   className={cn(
-                    "rounded-md border border-[var(--border-subtle)] px-3 py-2 text-sm",
+                    "text-sm leading-6",
                     message.role === "user"
-                      ? "ml-auto max-w-[82%] bg-[var(--surface-hover)]"
-                      : "mr-auto max-w-[90%] bg-[var(--surface-panel)]"
+                      ? "ml-auto max-w-[88%] rounded-lg bg-[var(--surface-hover)] px-3 py-2"
+                      : "mr-auto max-w-[94%] px-1 py-1 text-[var(--text-secondary)]"
                   )}
                 >
                   {message.content}
                 </div>
               ))}
+              {streaming && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 px-1 text-sm text-[var(--text-muted)]"
+                >
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  Thinking…
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        <div className="border-t border-[var(--border-subtle)] p-3">
+        <div className="border-t border-[var(--border-subtle)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           {settings?.usage && !settings.hasApiKey && (
             <div className="mx-auto mb-2 max-w-[760px] text-right text-xs text-[var(--text-secondary)]">
               {settings.usage.remaining}/{settings.usage.limit} actions left
@@ -499,7 +533,7 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
             </div>
           )}
           <form
-            className="mx-auto flex min-h-12 max-w-[760px] items-center gap-2 rounded-[10px] border border-[var(--border-control)] bg-[var(--surface-panel)] p-2 transition-colors duration-150 focus-within:border-[var(--text-muted)]"
+            className="mx-auto flex min-h-14 max-w-[760px] items-center gap-2 rounded-[10px] border border-[var(--border-control)] bg-[var(--surface-panel)] p-2 transition-colors duration-150 focus-within:border-[var(--text-muted)] sm:min-h-12"
             onSubmit={(event) => {
               event.preventDefault();
               send();
@@ -515,7 +549,8 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
             <button
               type="submit"
               disabled={!canChat || streaming || !input.trim()}
-              className="grid h-8 w-8 place-items-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)] shadow-[var(--button-primary-shadow)] disabled:opacity-40"
+              aria-label="Send message"
+              className="grid h-10 w-10 place-items-center rounded-md border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)] shadow-[var(--button-primary-shadow)] disabled:opacity-40 sm:h-8 sm:w-8"
             >
               <Send className="h-4 w-4" />
             </button>

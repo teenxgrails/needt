@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Link from "next/link";
 
@@ -117,6 +117,7 @@ export function Calendar({
   const [isRefreshingTasks, setIsRefreshingTasks] = useState(false);
   const [isMobileCreateOpen, setIsMobileCreateOpen] = useState(false);
   const [isMobileOptionsOpen, setIsMobileOptionsOpen] = useState(false);
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   // Use initial data from server for hydration
   useEffect(() => {
@@ -495,8 +496,24 @@ export function Calendar({
 
         {/* Calendar Grid */}
         <div
-          className="flex-1 overflow-hidden"
+          className="flex-1 touch-pan-y overflow-hidden"
           data-schedule-revision={scheduleAnimationRevision}
+          onTouchStart={(event) => {
+            if (!isPhone || effectiveView !== "day") return;
+            const touch = event.touches[0];
+            swipeStart.current = { x: touch.clientX, y: touch.clientY };
+          }}
+          onTouchEnd={(event) => {
+            if (!isPhone || effectiveView !== "day" || !swipeStart.current)
+              return;
+            const touch = event.changedTouches[0];
+            const deltaX = touch.clientX - swipeStart.current.x;
+            const deltaY = touch.clientY - swipeStart.current.y;
+            swipeStart.current = null;
+            if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY))
+              return;
+            moveDate(deltaX > 0 ? -1 : 1);
+          }}
         >
           <LayoutGroup id="calendar-schedule">
             <AnimatePresence mode="wait" initial={false}>

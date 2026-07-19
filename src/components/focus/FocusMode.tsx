@@ -56,7 +56,7 @@ export function FocusMode() {
         />
       )}
 
-      <header className="flex h-16 flex-none items-center border-b border-[var(--border-subtle)] px-5 sm:px-8">
+      <header className="flex min-h-16 flex-none items-center border-b border-[var(--border-subtle)] px-5 sm:min-h-14 sm:px-8">
         <div>
           <h1 className="text-[18px] font-semibold text-[var(--text-primary)]">
             Focus
@@ -72,7 +72,7 @@ export function FocusMode() {
           <motion.div
             layout={!prefersReducedMotion}
             transition={prefersReducedMotion ? { duration: 0 } : springSoft}
-            className="min-w-0 px-5 py-8 sm:px-10 sm:py-12"
+            className="min-w-0 px-4 py-6 sm:px-10 sm:py-10"
           >
             <FocusTimerPanel
               task={currentTask}
@@ -100,7 +100,7 @@ export function FocusMode() {
             aria-hidden={sessionActive}
             animate={{ opacity: sessionActive ? 0.35 : 1 }}
             transition={prefersReducedMotion ? { duration: 0 } : springSoft}
-            className="border-t border-[var(--border-subtle)] bg-[var(--surface-panel)] xl:border-l xl:border-t-0"
+            className="border-t border-[var(--border-subtle)] bg-[var(--surface-panel)] pb-[env(safe-area-inset-bottom)] xl:border-l xl:border-t-0"
             style={{ pointerEvents: sessionActive ? "none" : "auto" }}
           >
             <div className="border-b border-[var(--border-subtle)]">

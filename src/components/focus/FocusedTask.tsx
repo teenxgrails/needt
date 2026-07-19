@@ -15,9 +15,18 @@ interface FocusedTaskProps {
 export function FocusedTask({ task }: FocusedTaskProps) {
   if (!task) {
     return (
-      <div className="flex h-full flex-col items-center justify-center">
-        <p className="text-lg text-muted-foreground">No task selected</p>
-      </div>
+      <section className="pt-8">
+        <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[var(--text-muted)]">
+          Free session
+        </p>
+        <h2 className="mt-2 text-lg font-semibold text-[var(--text-primary)]">
+          Focus without attaching a task
+        </h2>
+        <p className="mt-1 max-w-lg text-sm leading-6 text-[var(--text-secondary)]">
+          Your time will still be logged. Choose something from Next up if you
+          want the session connected to a task.
+        </p>
+      </section>
     );
   }
 
@@ -54,9 +63,9 @@ export function FocusedTask({ task }: FocusedTaskProps) {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mb-6 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--border-subtle)] sm:grid-cols-2">
         {task.dueDate && (
-          <div className="border-l-2 border-[var(--accent)] bg-[var(--surface-panel)] p-3">
+          <div className="bg-[var(--surface-panel)] p-3">
             <h3 className="mb-1 text-sm font-medium">Due Date</h3>
             <p className="text-muted-foreground">
               {format(task.dueDate, "PPP")}
@@ -64,7 +73,7 @@ export function FocusedTask({ task }: FocusedTaskProps) {
           </div>
         )}
         {task.completedAt && task.status === TaskStatus.COMPLETED && (
-          <div className="border-l-2 border-[var(--color-success)] bg-[var(--surface-panel)] p-3">
+          <div className="bg-[var(--surface-panel)] p-3">
             <h3 className="mb-1 text-sm font-medium">Completed On</h3>
             <p className="text-muted-foreground">
               {format(task.completedAt, "PPP p")}
@@ -72,13 +81,13 @@ export function FocusedTask({ task }: FocusedTaskProps) {
           </div>
         )}
         {task.duration && (
-          <div className="border-l-2 border-[var(--border-control)] bg-[var(--surface-panel)] p-3">
+          <div className="bg-[var(--surface-panel)] p-3">
             <h3 className="mb-1 text-sm font-medium">Estimated Duration</h3>
             <p className="text-muted-foreground">{task.duration} minutes</p>
           </div>
         )}
         {task.scheduleScore && (
-          <div className="border-l-2 border-[var(--border-control)] bg-[var(--surface-panel)] p-3">
+          <div className="bg-[var(--surface-panel)] p-3">
             <h3 className="mb-1 text-sm font-medium">Focus Score</h3>
             <p className="text-muted-foreground">
               {task.scheduleScore.toFixed(2)}
@@ -86,7 +95,7 @@ export function FocusedTask({ task }: FocusedTaskProps) {
           </div>
         )}
         {task.isRecurring && (
-          <div className="border-l-2 border-[var(--border-control)] bg-[var(--surface-panel)] p-3">
+          <div className="bg-[var(--surface-panel)] p-3">
             <h3 className="mb-1 text-sm font-medium">Recurring Task</h3>
             <p className="text-muted-foreground">This task repeats</p>
           </div>

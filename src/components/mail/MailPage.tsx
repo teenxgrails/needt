@@ -298,20 +298,20 @@ export function MailPage() {
           mobilePane !== "accounts" && "max-xl:hidden"
         )}
       >
-        <div className="flex h-12 items-center border-b border-[var(--border-subtle)] px-3">
+        <div className="flex h-16 items-center border-b border-[var(--border-subtle)] px-3">
           <Mail className="mr-2 h-4 w-4 text-[var(--text-secondary)]" />
           <h1 className="text-[14px] font-semibold">Mail</h1>
           <Button
             variant="ghost"
             size="icon"
-            className="ml-auto h-7 w-7"
+            className="ml-auto h-11 w-11 xl:h-8 xl:w-8"
             onClick={() => setConnectOpen(true)}
             aria-label="Connect mail account"
           >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
-        <ScrollArea className="h-[calc(100%_-_3rem)]">
+        <ScrollArea className="h-[calc(100%_-_4rem)]">
           <nav className="space-y-1 p-2" aria-label="Mail accounts">
             <button
               type="button"
@@ -320,7 +320,7 @@ export function MailPage() {
                 setMobilePane("messages");
               }}
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors hover:bg-[var(--surface-hover)]",
+                "flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
                 !selectedAccount && "bg-[var(--surface-hover)]"
               )}
             >
@@ -342,7 +342,7 @@ export function MailPage() {
                   setMobilePane("messages");
                 }}
                 className={cn(
-                  "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors hover:bg-[var(--surface-hover)]",
+                  "flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
                   selectedAccount === account.id && "bg-[var(--surface-hover)]"
                 )}
               >
@@ -394,11 +394,11 @@ export function MailPage() {
           mobilePane !== "messages" && "max-xl:hidden"
         )}
       >
-        <header className="flex h-12 items-center gap-1 border-b border-[var(--border-subtle)] px-2">
+        <header className="flex h-16 items-center gap-1 border-b border-[var(--border-subtle)] px-2">
           <Button
             variant="ghost"
             size="icon"
-            className="hidden h-7 w-7 max-xl:inline-flex"
+            className="hidden h-11 w-11 max-xl:inline-flex"
             onClick={() => setMobilePane("accounts")}
             aria-label="Show mail accounts"
           >
@@ -413,7 +413,7 @@ export function MailPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-11 w-11 xl:h-8 xl:w-8"
             onClick={() => void syncMail()}
             disabled={syncing || !accounts.length}
             aria-label="Sync mail"
@@ -421,7 +421,7 @@ export function MailPage() {
             <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
           </Button>
         </header>
-        <ScrollArea className="h-[calc(100%_-_3rem)]">
+        <ScrollArea className="h-[calc(100%_-_4rem)]">
           {loading ? (
             <div className="p-6 text-center text-[12px] text-[var(--text-muted)]">
               Loading inbox...
@@ -435,7 +435,7 @@ export function MailPage() {
                   role="listitem"
                   onClick={() => void openMail(message)}
                   className={cn(
-                    "group flex w-full gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-hover)]",
+                    "group flex min-h-16 w-full gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 text-left transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-10 xl:py-1",
                     selectedId === message.id && "bg-[var(--surface-hover)]"
                   )}
                 >
@@ -473,7 +473,7 @@ export function MailPage() {
                     >
                       {message.subject}
                     </span>
-                    <span className="mt-0.5 block truncate text-[11px] text-[var(--text-muted)]">
+                    <span className="mt-0.5 block truncate text-[11px] text-[var(--text-muted)] xl:hidden">
                       {message.snippet}
                     </span>
                   </span>
@@ -515,11 +515,11 @@ export function MailPage() {
       >
         {openMessage ? (
           <div className="flex h-full min-h-0 flex-col">
-            <header className="flex h-12 flex-none items-center gap-1 border-b border-[var(--border-subtle)] px-2">
+            <header className="flex h-16 flex-none items-center gap-1 border-b border-[var(--border-subtle)] px-2">
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden h-7 w-7 max-xl:inline-flex"
+                className="hidden h-11 w-11 max-xl:inline-flex"
                 onClick={() => setMobilePane("messages")}
                 aria-label="Back to messages"
               >
@@ -528,7 +528,7 @@ export function MailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5 text-[12px]"
+                className="h-11 gap-1.5 text-[12px] xl:h-8"
                 onClick={() =>
                   void updateMessage(openMessage, {
                     isRead: !openMessage.isRead,
@@ -547,7 +547,7 @@ export function MailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5 text-[12px]"
+                className="h-11 gap-1.5 text-[12px] xl:h-8"
                 onClick={() =>
                   void updateMessage(openMessage, { archive: true })
                 }
@@ -558,7 +558,7 @@ export function MailPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-auto h-8 gap-1.5 text-[12px]"
+                className="ml-auto h-11 gap-1.5 text-[12px] xl:h-8"
                 onClick={() => void createTask(openMessage)}
               >
                 <Sparkles className="h-3.5 w-3.5" />

@@ -492,7 +492,7 @@ function DaySection({
 }) {
   return (
     <section>
-      <div className="mb-2 flex items-center gap-2 border-b border-[var(--border-subtle)] pb-2">
+      <div className="mb-3 flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 sm:mb-2 sm:rounded-none sm:border-x-0 sm:border-t-0 sm:bg-transparent sm:px-0 sm:pb-2 sm:pt-0">
         <span className="flex items-center gap-2 text-[13px] font-semibold text-[var(--text-primary)]">
           <Icon className="h-3.5 w-3.5" style={{ color: tone }} />
           {label}
@@ -501,7 +501,7 @@ function DaySection({
           {items.length}
         </span>
       </div>
-      <ul>
+      <ul className="space-y-2 sm:space-y-0">
         {items.map((item) => (
           <li key={item.id}>
             <TaskRow
@@ -537,7 +537,7 @@ function TaskRow({
   onComplete?: () => void;
 }) {
   return (
-    <div className="group flex min-h-11 items-center gap-3 border-b border-[var(--border-subtle)] px-1 py-2 transition-colors duration-150 hover:bg-[var(--surface-hover)]">
+    <div className="group flex min-h-11 items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-panel)] px-3 py-3 transition-colors duration-150 hover:bg-[var(--surface-hover)] sm:rounded-none sm:border-x-0 sm:border-t-0 sm:bg-transparent sm:px-1 sm:py-2">
       <span
         className="h-2 w-2 flex-none rounded-full"
         style={{ backgroundColor: completed ? "var(--text-muted)" : color }}
@@ -561,7 +561,7 @@ function TaskRow({
           type="button"
           onClick={onComplete}
           aria-label={`Complete ${title}`}
-          className="grid h-9 w-9 flex-none touch-manipulation place-items-center rounded-md text-[var(--text-muted)] opacity-70 transition-[color,background-color,opacity] duration-150 hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] group-hover:opacity-100"
+          className="grid h-11 w-11 flex-none touch-manipulation place-items-center rounded-md text-[var(--text-muted)] opacity-70 transition-[color,background-color,opacity] duration-150 hover:bg-[var(--surface-raised)] hover:text-[var(--text-primary)] group-hover:opacity-100 sm:h-9 sm:w-9"
         >
           <span
             aria-hidden

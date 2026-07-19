@@ -7,7 +7,7 @@ const SETTINGS_TABS = [
   ["calendars", "Calendars"],
   ["auto-scheduling", "Auto-scheduling"],
   ["task-defaults", "Task defaults"],
-  ["theme", "Theme"],
+  ["theme", "Appearance"],
   ["timezone", "Timezone"],
   ["notifications", "Notifications"],
   ["schedules", "Schedules"],
@@ -41,6 +41,10 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
   });
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
   await signInVisualUser(page);
+  const themeResponse = await page.request.patch("/api/user-settings", {
+    data: { theme: "dark" },
+  });
+  expect(themeResponse.ok()).toBeTruthy();
 
   for (const [tab, label] of SETTINGS_TABS) {
     await page.goto(`/settings#${tab}`, { waitUntil: "networkidle" });
