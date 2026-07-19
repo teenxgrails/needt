@@ -572,7 +572,7 @@ export function TaskModal({
               Create or edit a schedulable task, its description, project,
               timing, priority, and planner settings.
             </DialogDescription>
-            <div className="flex h-[25px] items-center justify-between gap-4">
+            <div className="flex min-h-10 items-center justify-between gap-4 sm:h-[25px] sm:min-h-0">
               <DialogTitle className="flex items-center gap-2 text-[13px] font-normal text-[var(--text-muted)]">
                 <CheckSquare2 className="h-4 w-4" />
                 Task
@@ -585,20 +585,20 @@ export function TaskModal({
                         type="button"
                         onClick={handleMarkComplete}
                         disabled={isSubmitting}
-                        className="flex h-[25px] items-center gap-1.5 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-2 text-[var(--text-primary)] hover:bg-[var(--surface-control-hover)]"
+                        className="flex min-h-10 items-center gap-1.5 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-2 text-[var(--text-primary)] hover:bg-[var(--surface-control-hover)] sm:h-[25px] sm:min-h-0"
                       >
                         <Check className="h-3.5 w-3.5" />
                         Mark complete
                       </button>
                     ) : (
-                      <span className="flex h-[25px] items-center gap-1.5 rounded-md bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] px-2 text-[var(--color-success)]">
+                      <span className="flex min-h-10 items-center gap-1.5 rounded-md bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] px-2 text-[var(--color-success)] sm:h-[25px] sm:min-h-0">
                         <Check className="h-3.5 w-3.5" /> Completed
                       </span>
                     )}
                     <button
                       type="button"
                       onClick={() => void copyTask()}
-                      className="grid h-[25px] w-[25px] place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                      className="grid h-10 w-10 place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-[25px] sm:w-[25px]"
                       aria-label="Copy task"
                     >
                       <Copy className="h-4 w-4" />
@@ -606,7 +606,7 @@ export function TaskModal({
                     <button
                       type="button"
                       onClick={() => setIsAdvancedOpen((open) => !open)}
-                      className="grid h-[25px] w-[25px] place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                      className="grid h-10 w-10 place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-[25px] sm:w-[25px]"
                       aria-label="More task settings"
                     >
                       <Ellipsis className="h-4 w-4" />
@@ -621,7 +621,7 @@ export function TaskModal({
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="flex h-[25px] items-center gap-1.5 rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                          className="flex min-h-10 items-center gap-1.5 rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-[25px] sm:min-h-0"
                         >
                           <BookTemplate className="h-4 w-4" /> Use template
                         </button>
@@ -668,7 +668,7 @@ export function TaskModal({
                         }
                       }}
                       className={cn(
-                        "flex h-[25px] items-center gap-1.5 rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]",
+                        "flex min-h-10 items-center gap-1.5 rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-[25px] sm:min-h-0",
                         isRecurring &&
                           "bg-[var(--surface-hover)] text-[var(--text-primary)]"
                       )}
@@ -718,19 +718,19 @@ export function TaskModal({
           <aside className="flex-none border-t border-[var(--border-subtle)] bg-[var(--surface-panel)] lg:min-h-0 lg:overflow-y-auto lg:[grid-area:aside] lg:border-l lg:border-t-0">
             <div className="space-y-0.5 px-3 py-4 lg:px-5">
               <div
-                className="flex h-[28px] w-full items-center gap-2 px-1 text-left text-[14px]"
+                className="flex min-h-11 w-full items-center gap-2 px-1 text-left text-[14px] sm:h-[28px] sm:min-h-0"
                 aria-label="Workspace"
               >
                 <Layers3 className="h-4 w-4 text-[var(--text-muted)]" /> My
                 Workspace
               </div>
               <div
-                className="flex h-[28px] w-full items-center gap-2 px-1 text-left text-[14px] text-[var(--text-muted)]"
+                className="flex min-h-11 w-full items-center gap-2 px-1 text-left text-[14px] text-[var(--text-muted)] sm:h-[28px] sm:min-h-0"
                 aria-label="No folder"
               >
                 <Folder className="h-4 w-4" /> No folder
               </div>
-              <div className="flex h-[28px] items-center gap-2 px-1">
+              <div className="flex min-h-11 items-center gap-2 px-1 sm:h-[28px] sm:min-h-0">
                 <Box className="h-4 w-4 flex-none text-[var(--text-muted)]" />
                 <Select
                   value={projectId || "none"}
@@ -738,7 +738,7 @@ export function TaskModal({
                     setProjectId(value === "none" ? null : value)
                   }
                 >
-                  <SelectTrigger className="h-[28px] min-w-0 flex-1 border-0 bg-transparent px-0 text-[14px] shadow-none focus:ring-0">
+                  <SelectTrigger className="h-11 min-w-0 flex-1 border-0 bg-transparent px-0 text-[14px] shadow-none focus:ring-0 sm:h-[28px]">
                     <SelectValue placeholder="No project" />
                   </SelectTrigger>
                   <SelectContent>
@@ -780,14 +780,14 @@ export function TaskModal({
             </label>
 
             <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <UserRound className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Assignee:
                 </span>
                 <span>Me</span>
               </div>
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <Circle className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Status:
@@ -796,7 +796,7 @@ export function TaskModal({
                   value={status}
                   onValueChange={(value) => setStatus(value as TaskStatus)}
                 >
-                  <SelectTrigger className="h-[28px] flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none">
+                  <SelectTrigger className="h-11 flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none sm:h-[28px]">
                     <SelectValue>{formatEnumValue(status)}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -808,7 +808,7 @@ export function TaskModal({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <Flag className="h-4 w-4 text-[var(--color-warning)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Priority:
@@ -817,7 +817,7 @@ export function TaskModal({
                   value={priority || Priority.NONE}
                   onValueChange={(value) => setPriority(value as Priority)}
                 >
-                  <SelectTrigger className="h-[28px] flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none">
+                  <SelectTrigger className="h-11 flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none sm:h-[28px]">
                     <SelectValue>
                       {formatEnumValue(priority || Priority.NONE)}
                     </SelectValue>
@@ -834,7 +834,7 @@ export function TaskModal({
             </div>
 
             <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <span className="w-[100px] text-[var(--text-secondary)]">
                   Duration:
                 </span>
@@ -845,11 +845,11 @@ export function TaskModal({
                   value={duration}
                   onChange={(event) => setDuration(event.target.value)}
                   placeholder="30"
-                  className="h-[28px] flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0"
+                  className="h-11 flex-1 border-0 bg-transparent px-0 text-[16px] shadow-none focus-visible:ring-0 sm:h-[28px] sm:text-[13px]"
                 />
                 <span className="text-[var(--text-secondary)]">min</span>
               </div>
-              <div className="flex h-[30px] items-center gap-2 pl-3">
+              <div className="flex min-h-11 items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0">
                 <span className="w-[88px] text-[var(--text-secondary)]">
                   └ Min chunk:
                 </span>
@@ -860,10 +860,10 @@ export function TaskModal({
                   value={minChunkMinutes}
                   onChange={(event) => setMinChunkMinutes(event.target.value)}
                   placeholder="No Chunks"
-                  className="h-[28px] flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0"
+                  className="h-11 flex-1 border-0 bg-transparent px-0 text-[16px] shadow-none focus-visible:ring-0 sm:h-[28px] sm:text-[13px]"
                 />
               </div>
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <CalendarDays className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Start date:
@@ -881,10 +881,10 @@ export function TaskModal({
                   placeholder="No start date"
                   ariaLabel="Choose task start date"
                   showIcon={false}
-                  className="h-[28px] min-w-0 flex-1 px-0"
+                  className="min-h-11 min-w-0 flex-1 px-0 sm:h-[28px] sm:min-h-0"
                 />
               </div>
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <CalendarDays className="h-4 w-4 text-[var(--color-accent)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Deadline:
@@ -900,11 +900,11 @@ export function TaskModal({
                   placeholder="No deadline"
                   ariaLabel="Choose task deadline"
                   showIcon={false}
-                  className="h-[28px] min-w-0 flex-1 px-0"
+                  className="min-h-11 min-w-0 flex-1 px-0 sm:h-[28px] sm:min-h-0"
                 />
                 <Bell className="h-4 w-4 text-[var(--color-accent)]" />
               </div>
-              <label className="flex h-[30px] cursor-pointer items-center gap-2 pl-3">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0">
                 <span className="w-[88px] text-[var(--text-secondary)]">
                   └ Hard deadline:
                 </span>
@@ -914,7 +914,7 @@ export function TaskModal({
                   className="h-4 w-[26px] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
                 />
               </label>
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <CalendarDays className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Schedule:
@@ -927,7 +927,7 @@ export function TaskModal({
                     )
                   }
                 >
-                  <SelectTrigger className="h-[28px] flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none">
+                  <SelectTrigger className="h-11 flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none sm:h-[28px]">
                     <SelectValue>
                       {preferredTime
                         ? formatEnumValue(preferredTime)
@@ -947,7 +947,7 @@ export function TaskModal({
             </div>
 
             <div className="px-5 py-3 text-[13px]">
-              <div className="flex h-[30px] items-center gap-2">
+              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <TagIcon className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Labels:
@@ -965,7 +965,7 @@ export function TaskModal({
                 type="button"
                 onClick={() => setIsAdvancedOpen((open) => !open)}
                 aria-expanded={isAdvancedOpen}
-                className="mt-1 flex h-[30px] w-full items-center gap-2 rounded px-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                className="mt-1 flex min-h-11 w-full items-center gap-2 rounded px-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-[30px] sm:min-h-0"
               >
                 <Plus className="h-4 w-4" /> Advanced settings{" "}
                 <ChevronDown
@@ -1240,7 +1240,7 @@ export function TaskModal({
               variant="ghost"
               size="sm"
               onClick={requestClose}
-              className="h-[30px] px-2 text-[13px] text-[var(--text-secondary)]"
+              className="h-11 px-2 text-[13px] text-[var(--text-secondary)] sm:h-[30px]"
             >
               Cancel{" "}
               <kbd className="ml-1 rounded bg-[var(--surface-control)] px-1 text-[10px]">
@@ -1250,7 +1250,7 @@ export function TaskModal({
             <Button
               type="submit"
               disabled={isSubmitting || !title.trim()}
-              className="h-[34px] px-3 text-[13px]"
+              className="h-11 px-3 text-[13px] sm:h-[34px]"
             >
               {saveState === "saving"
                 ? "Saving…"
