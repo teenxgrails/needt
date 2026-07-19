@@ -42,6 +42,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -66,6 +67,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { format, formatToLocalISOString, newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { readTaskDefaults, resolveTaskDefaultDate } from "@/lib/task-defaults";
+import {
+  type TaskDescriptionFormat,
+  formatTaskDescription,
+} from "@/lib/task-description-format";
 import { cn } from "@/lib/utils";
 
 import { useProjectStore } from "@/store/project";
@@ -146,6 +151,28 @@ const TASK_TEMPLATES: TaskTemplate[] = [
 
 const LOG_SOURCE = "TaskModal";
 const SAVED_TASK_TEMPLATES_KEY = "needt-task-templates";
+const DESCRIPTION_ACTIONS: Array<{
+  icon: typeof Bold;
+  label: string;
+  format: TaskDescriptionFormat;
+}> = [
+  { icon: Bold, label: "Bold", format: "bold" },
+  { icon: Italic, label: "Italic", format: "italic" },
+  { icon: Underline, label: "Underline", format: "underline" },
+  {
+    icon: Strikethrough,
+    label: "Strikethrough",
+    format: "strikethrough",
+  },
+  { icon: Heading1, label: "Heading 1", format: "heading1" },
+  { icon: Heading2, label: "Heading 2", format: "heading2" },
+  { icon: List, label: "Bulleted list", format: "bulletList" },
+  { icon: ListOrdered, label: "Numbered list", format: "numberedList" },
+  { icon: ListChecks, label: "Checklist", format: "checklist" },
+  { icon: Image, label: "Image link", format: "image" },
+  { icon: Code2, label: "Inline code", format: "code" },
+  { icon: Link2, label: "Link", format: "link" },
+];
 
 export function TaskModal({
   isOpen,
@@ -207,6 +234,7 @@ export function TaskModal({
   const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
   const [savedTemplates, setSavedTemplates] = useState<TaskTemplate[]>([]);
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   const resetForm = useCallback(() => {
     const defaults = readTaskDefaults();
@@ -495,11 +523,50 @@ export function TaskModal({
     setIsTemplateMenuOpen(false);
   };
 
+  const applyDescriptionFormat = (formatType: TaskDescriptionFormat) => {
+    const input = descriptionInputRef.current;
+    const selectionStart = input?.selectionStart ?? description.length;
+    const selectionEnd = input?.selectionEnd ?? selectionStart;
+    const formatted = formatTaskDescription(
+      description,
+      selectionStart,
+      selectionEnd,
+      formatType
+    );
+
+    setDescription(formatted.value);
+    requestAnimationFrame(() => {
+      const nextInput = descriptionInputRef.current;
+      if (!nextInput) return;
+      nextInput.focus();
+      nextInput.setSelectionRange(
+        formatted.selectionStart,
+        formatted.selectionEnd
+      );
+    });
+  };
+
+  const copyTask = async () => {
+    try {
+      await navigator.clipboard.writeText(
+        [title, description].filter(Boolean).join("\n\n")
+      );
+      toast.success("Task copied");
+    } catch (error) {
+      void logger.warn(
+        "Could not copy task",
+        { error: error instanceof Error ? error.message : String(error) },
+        LOG_SOURCE
+      );
+      toast.error("Could not copy the task");
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         data-testid="task-modal"
-        className="h-[min(767px,calc(100dvh-1rem))] max-h-[calc(100dvh-1rem)] !w-[calc(100vw-1rem)] gap-0 overflow-hidden border-[#313538] bg-[#202425] p-0 text-[#F2F2F2] shadow-none sm:h-[min(767px,calc(100dvh-3.875rem))] sm:max-h-[calc(100dvh-3.875rem)] sm:!w-[calc(100vw-3rem)] sm:!max-w-[1016px] lg:[&>button.absolute]:-right-8 lg:[&>button.absolute]:top-0"
+        className="h-[min(767px,calc(100dvh-1rem))] max-h-[calc(100dvh-1rem)] !w-[calc(100vw-1rem)] gap-0 overflow-hidden border-[var(--dialog-border)] bg-[var(--surface-canvas)] p-0 text-[var(--text-primary)] shadow-none sm:h-[min(767px,calc(100dvh-3.875rem))] sm:max-h-[calc(100dvh-3.875rem)] sm:!w-[calc(100vw-3rem)] sm:!max-w-[1016px] lg:[&>button.absolute]:-right-8 lg:[&>button.absolute]:top-0"
       >
         {isSubmitting && <LoadingOverlay />}
         <form
@@ -507,12 +574,16 @@ export function TaskModal({
           className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,696px)_320px] lg:grid-rows-[95px_minmax(0,1fr)_54px] lg:[grid-template-areas:'header_aside''main_aside''mainFooter_asideFooter']"
         >
           <DialogHeader className="space-y-0 px-6 py-4 lg:[grid-area:header] lg:px-10 lg:pt-4">
+            <DialogDescription className="sr-only">
+              Create or edit a schedulable task, its description, project,
+              timing, priority, and planner settings.
+            </DialogDescription>
             <div className="flex h-[25px] items-center justify-between gap-4">
-              <DialogTitle className="flex items-center gap-2 text-[13px] font-normal text-[#737A80]">
+              <DialogTitle className="flex items-center gap-2 text-[13px] font-normal text-[var(--text-muted)]">
                 <CheckSquare2 className="h-4 w-4" />
                 Task
               </DialogTitle>
-              <div className="mr-4 flex items-center gap-1 text-[13px] text-[#9BA1A6] lg:mr-0">
+              <div className="mr-4 flex items-center gap-1 text-[13px] text-[var(--text-secondary)] lg:mr-0">
                 {task ? (
                   <>
                     {status !== TaskStatus.COMPLETED ? (
@@ -520,25 +591,20 @@ export function TaskModal({
                         type="button"
                         onClick={handleMarkComplete}
                         disabled={isSubmitting}
-                        className="flex h-[25px] items-center gap-1.5 rounded-md border border-[#3A3F42] bg-[#313538] px-2 text-white hover:bg-[#383D40]"
+                        className="flex h-[25px] items-center gap-1.5 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-2 text-[var(--text-primary)] hover:bg-[var(--surface-control-hover)]"
                       >
                         <Check className="h-3.5 w-3.5" />
                         Mark complete
                       </button>
                     ) : (
-                      <span className="flex h-[25px] items-center gap-1.5 rounded-md bg-[#244B3B] px-2 text-[#67D69B]">
+                      <span className="flex h-[25px] items-center gap-1.5 rounded-md bg-[color-mix(in_srgb,var(--color-success)_15%,transparent)] px-2 text-[var(--color-success)]">
                         <Check className="h-3.5 w-3.5" /> Completed
                       </span>
                     )}
                     <button
                       type="button"
-                      onClick={() => {
-                        void navigator.clipboard.writeText(
-                          [title, description].filter(Boolean).join("\n\n")
-                        );
-                        toast.success("Task copied");
-                      }}
-                      className="grid h-[25px] w-[25px] place-items-center rounded-md hover:bg-[#2B2F31] hover:text-white"
+                      onClick={() => void copyTask()}
+                      className="grid h-[25px] w-[25px] place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                       aria-label="Copy task"
                     >
                       <Copy className="h-4 w-4" />
@@ -546,7 +612,7 @@ export function TaskModal({
                     <button
                       type="button"
                       onClick={() => setIsAdvancedOpen((open) => !open)}
-                      className="grid h-[25px] w-[25px] place-items-center rounded-md hover:bg-[#2B2F31] hover:text-white"
+                      className="grid h-[25px] w-[25px] place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                       aria-label="More task settings"
                     >
                       <Ellipsis className="h-4 w-4" />
@@ -561,14 +627,14 @@ export function TaskModal({
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="flex h-[25px] items-center gap-1.5 rounded-md px-2 hover:bg-[#2B2F31] hover:text-white"
+                          className="flex h-[25px] items-center gap-1.5 rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                         >
                           <BookTemplate className="h-4 w-4" /> Use template
                         </button>
                       </PopoverTrigger>
                       <PopoverContent
                         align="end"
-                        className="w-72 border-[#3A3F42] bg-[#202425] p-1.5 text-[#F2F2F2]"
+                        className="w-72 border-[var(--popover-border)] bg-[var(--popover-bg)] p-1.5 text-[var(--text-primary)]"
                       >
                         <div className="px-2 py-1.5 text-[13px] font-semibold">
                           Task templates
@@ -579,12 +645,12 @@ export function TaskModal({
                               key={template.id}
                               type="button"
                               onClick={() => applyTemplate(template)}
-                              className="w-full rounded px-2 py-2 text-left hover:bg-[#2B2F31]"
+                              className="w-full rounded px-2 py-2 text-left hover:bg-[var(--surface-hover)]"
                             >
                               <span className="block text-[13px] font-medium">
                                 {template.name}
                               </span>
-                              <span className="block text-[11px] text-[#9BA1A6]">
+                              <span className="block text-[11px] text-[var(--text-secondary)]">
                                 {template.duration} min · {template.contextTag}
                               </span>
                             </button>
@@ -608,8 +674,9 @@ export function TaskModal({
                         }
                       }}
                       className={cn(
-                        "flex h-[25px] items-center gap-1.5 rounded-md px-2 hover:bg-[#2B2F31] hover:text-white",
-                        isRecurring && "bg-[#2B2F31] text-white"
+                        "flex h-[25px] items-center gap-1.5 rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]",
+                        isRecurring &&
+                          "bg-[var(--surface-hover)] text-[var(--text-primary)]"
                       )}
                     >
                       <Repeat2 className="h-4 w-4" /> Recurring
@@ -628,34 +695,23 @@ export function TaskModal({
               onChange={(event) => setTitle(event.target.value)}
               required
               placeholder="Task name"
-              className="mt-1 h-[42px] border-0 bg-transparent px-0 text-[22px] font-semibold text-[#F2F2F2] shadow-none placeholder:text-[#737A80] focus-visible:border-0 focus-visible:ring-0"
+              className="mt-1 h-[42px] border-0 bg-transparent px-0 text-[22px] font-semibold text-[var(--text-primary)] shadow-none placeholder:text-[var(--text-muted)] focus-visible:border-0 focus-visible:ring-0"
             />
           </DialogHeader>
 
           <main className="flex min-h-0 flex-col px-6 pb-3 lg:[grid-area:main] lg:px-10 lg:pb-6">
             <div
               aria-label="Description toolbar"
-              className="flex h-[52px] flex-none items-start gap-0.5 pt-1 text-[#737A80]"
+              className="flex h-[52px] flex-none items-start gap-0.5 overflow-x-auto pt-1 text-[var(--text-muted)]"
             >
-              {[
-                [Bold, "Bold"],
-                [Italic, "Italic"],
-                [Underline, "Underline"],
-                [Strikethrough, "Strikethrough"],
-                [Heading1, "Heading 1"],
-                [Heading2, "Heading 2"],
-                [List, "Bulleted list"],
-                [ListOrdered, "Numbered list"],
-                [ListChecks, "Checklist"],
-                [Image, "Image"],
-                [Code2, "Code"],
-                [Link2, "Link"],
-              ].map(([Icon, label]) => (
+              {DESCRIPTION_ACTIONS.map(({ icon: Icon, label, format }) => (
                 <button
-                  key={label as string}
+                  key={format}
                   type="button"
-                  title={label as string}
-                  className="grid h-[30px] w-[30px] place-items-center rounded-md hover:bg-[#2B2F31] hover:text-[#F2F2F2]"
+                  title={label}
+                  aria-label={label}
+                  onClick={() => applyDescriptionFormat(format)}
+                  className="grid h-[30px] w-[30px] flex-none place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                 >
                   <Icon className="h-4 w-4" />
                 </button>
@@ -663,41 +719,43 @@ export function TaskModal({
             </div>
             <Textarea
               id="description"
+              ref={descriptionInputRef}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Description"
-              className="min-h-[260px] flex-1 resize-none border-0 bg-transparent px-0 py-0 text-[14px] leading-6 text-[#F2F2F2] shadow-none placeholder:text-[#9BA1A6] focus-visible:border-0 focus-visible:ring-0"
+              className="min-h-[260px] flex-1 resize-none border-0 bg-transparent px-0 py-0 text-[14px] leading-6 text-[var(--text-primary)] shadow-none placeholder:text-[var(--text-secondary)] focus-visible:border-0 focus-visible:ring-0"
             />
             <div className="flex h-[50px] flex-none items-center justify-between text-[13px]">
-              <span className="flex items-center gap-2 font-semibold text-[#F2F2F2]">
-                <Paperclip className="h-4 w-4 text-[#737A80]" /> Attachments
+              <span className="flex items-center gap-2 font-semibold text-[var(--text-primary)]">
+                <Paperclip className="h-4 w-4 text-[var(--text-muted)]" />{" "}
+                Attachments
               </span>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded px-2 py-1 text-[#9BA1A6] hover:bg-[#2B2F31] hover:text-white"
+              <span
+                title="Choose file storage before enabling task attachments"
+                className="flex items-center gap-1.5 rounded px-2 py-1 text-[var(--text-muted)]"
               >
-                <Plus className="h-4 w-4" /> Add attachment
-              </button>
+                Storage not configured
+              </span>
             </div>
           </main>
 
-          <aside className="min-h-0 overflow-y-auto border-t border-[#313538] bg-[#202425] lg:[grid-area:aside] lg:border-l lg:border-t-0">
+          <aside className="min-h-0 overflow-y-auto border-t border-[var(--border-subtle)] bg-[var(--surface-panel)] lg:[grid-area:aside] lg:border-l lg:border-t-0">
             <div className="space-y-0.5 px-3 py-4 lg:px-5">
-              <button
-                type="button"
-                className="flex h-[28px] w-full items-center gap-2 rounded px-1 text-left text-[14px] hover:bg-[#2B2F31]"
+              <div
+                className="flex h-[28px] w-full items-center gap-2 px-1 text-left text-[14px]"
+                aria-label="Workspace"
               >
-                <Layers3 className="h-4 w-4 text-[#737A80]" /> My Workspace
-              </button>
-              <button
-                type="button"
-                disabled
-                className="flex h-[28px] w-full items-center gap-2 rounded px-1 text-left text-[14px] text-[#737A80]"
+                <Layers3 className="h-4 w-4 text-[var(--text-muted)]" /> My
+                Workspace
+              </div>
+              <div
+                className="flex h-[28px] w-full items-center gap-2 px-1 text-left text-[14px] text-[var(--text-muted)]"
+                aria-label="No folder"
               >
                 <Folder className="h-4 w-4" /> No folder
-              </button>
+              </div>
               <div className="flex h-[28px] items-center gap-2 px-1">
-                <Box className="h-4 w-4 flex-none text-[#737A80]" />
+                <Box className="h-4 w-4 flex-none text-[var(--text-muted)]" />
                 <Select
                   value={projectId || "none"}
                   onValueChange={(value) =>
@@ -725,8 +783,8 @@ export function TaskModal({
               className={cn(
                 "flex h-[48px] cursor-pointer items-center gap-2 px-5 text-[13px]",
                 isAutoScheduled
-                  ? "bg-[#4C2365] text-[#CE8CFF]"
-                  : "bg-[#2B2F31] text-[#F2F2F2]"
+                  ? "bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--surface-panel))] text-[var(--color-accent)]"
+                  : "bg-[var(--surface-hover)] text-[var(--text-primary)]"
               )}
             >
               <Switch
@@ -745,15 +803,19 @@ export function TaskModal({
               </span>
             </label>
 
-            <div className="space-y-0.5 border-b border-[#2B2F31] px-5 py-3 text-[13px]">
+            <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
               <div className="flex h-[30px] items-center gap-2">
-                <UserRound className="h-4 w-4 text-[#737A80]" />
-                <span className="w-[76px] text-[#9BA1A6]">Assignee:</span>
+                <UserRound className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="w-[76px] text-[var(--text-secondary)]">
+                  Assignee:
+                </span>
                 <span>Me</span>
               </div>
               <div className="flex h-[30px] items-center gap-2">
-                <Circle className="h-4 w-4 text-[#737A80]" />
-                <span className="w-[76px] text-[#9BA1A6]">Status:</span>
+                <Circle className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="w-[76px] text-[var(--text-secondary)]">
+                  Status:
+                </span>
                 <Select
                   value={status}
                   onValueChange={(value) => setStatus(value as TaskStatus)}
@@ -771,8 +833,10 @@ export function TaskModal({
                 </Select>
               </div>
               <div className="flex h-[30px] items-center gap-2">
-                <Flag className="h-4 w-4 text-[#F7B642]" />
-                <span className="w-[76px] text-[#9BA1A6]">Priority:</span>
+                <Flag className="h-4 w-4 text-[var(--color-warning)]" />
+                <span className="w-[76px] text-[var(--text-secondary)]">
+                  Priority:
+                </span>
                 <Select
                   value={priority || Priority.NONE}
                   onValueChange={(value) => setPriority(value as Priority)}
@@ -793,9 +857,11 @@ export function TaskModal({
               </div>
             </div>
 
-            <div className="space-y-0.5 border-b border-[#2B2F31] px-5 py-3 text-[13px]">
+            <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
               <div className="flex h-[30px] items-center gap-2">
-                <span className="w-[100px] text-[#9BA1A6]">Duration:</span>
+                <span className="w-[100px] text-[var(--text-secondary)]">
+                  Duration:
+                </span>
                 <Input
                   id="duration"
                   type="number"
@@ -805,10 +871,12 @@ export function TaskModal({
                   placeholder="30"
                   className="h-[28px] flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0"
                 />
-                <span className="text-[#9BA1A6]">min</span>
+                <span className="text-[var(--text-secondary)]">min</span>
               </div>
               <div className="flex h-[30px] items-center gap-2 pl-3">
-                <span className="w-[88px] text-[#9BA1A6]">└ Min chunk:</span>
+                <span className="w-[88px] text-[var(--text-secondary)]">
+                  └ Min chunk:
+                </span>
                 <Input
                   id="minChunkMinutes"
                   type="number"
@@ -820,8 +888,10 @@ export function TaskModal({
                 />
               </div>
               <div className="flex h-[30px] items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-[#737A80]" />
-                <span className="w-[76px] text-[#9BA1A6]">Start date:</span>
+                <CalendarDays className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="w-[76px] text-[var(--text-secondary)]">
+                  Start date:
+                </span>
                 <Input
                   id="startDate"
                   type="date"
@@ -831,19 +901,21 @@ export function TaskModal({
                 />
               </div>
               <div className="flex h-[30px] items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-[#CE8CFF]" />
-                <span className="w-[76px] text-[#9BA1A6]">Deadline:</span>
+                <CalendarDays className="h-4 w-4 text-[var(--color-accent)]" />
+                <span className="w-[76px] text-[var(--text-secondary)]">
+                  Deadline:
+                </span>
                 <Input
                   id="deadline"
                   type="datetime-local"
                   value={deadline}
                   onChange={(event) => setDeadline(event.target.value)}
-                  className="h-[28px] min-w-0 flex-1 border-0 bg-transparent px-0 text-[13px] text-[#CE8CFF] shadow-none focus-visible:ring-0"
+                  className="h-[28px] min-w-0 flex-1 border-0 bg-transparent px-0 text-[13px] text-[var(--color-accent)] shadow-none focus-visible:ring-0"
                 />
-                <Bell className="h-4 w-4 text-[#CE8CFF]" />
+                <Bell className="h-4 w-4 text-[var(--color-accent)]" />
               </div>
               <label className="flex h-[30px] cursor-pointer items-center gap-2 pl-3">
-                <span className="w-[88px] text-[#9BA1A6]">
+                <span className="w-[88px] text-[var(--text-secondary)]">
                   └ Hard deadline:
                 </span>
                 <Switch
@@ -853,8 +925,10 @@ export function TaskModal({
                 />
               </label>
               <div className="flex h-[30px] items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-[#737A80]" />
-                <span className="w-[76px] text-[#9BA1A6]">Schedule:</span>
+                <CalendarDays className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="w-[76px] text-[var(--text-secondary)]">
+                  Schedule:
+                </span>
                 <Select
                   value={preferredTime || "none"}
                   onValueChange={(value) =>
@@ -884,8 +958,10 @@ export function TaskModal({
 
             <div className="px-5 py-3 text-[13px]">
               <div className="flex h-[30px] items-center gap-2">
-                <TagIcon className="h-4 w-4 text-[#737A80]" />
-                <span className="w-[76px] text-[#9BA1A6]">Labels:</span>
+                <TagIcon className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="w-[76px] text-[var(--text-secondary)]">
+                  Labels:
+                </span>
                 <span className="truncate">
                   {selectedTagIds.length
                     ? tags
@@ -899,7 +975,7 @@ export function TaskModal({
                 type="button"
                 onClick={() => setIsAdvancedOpen((open) => !open)}
                 aria-expanded={isAdvancedOpen}
-                className="mt-1 flex h-[30px] w-full items-center gap-2 rounded px-1 text-[#9BA1A6] hover:bg-[#2B2F31] hover:text-white"
+                className="mt-1 flex h-[30px] w-full items-center gap-2 rounded px-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               >
                 <Plus className="h-4 w-4" /> Advanced settings{" "}
                 <ChevronDown
@@ -912,9 +988,9 @@ export function TaskModal({
             </div>
 
             {isAdvancedOpen && (
-              <div className="space-y-3 border-t border-[#2B2F31] px-5 py-4 text-[12px]">
+              <div className="space-y-3 border-t border-[var(--border-subtle)] px-5 py-4 text-[12px]">
                 {isMissedDeadline && (
-                  <div className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-red-300">
+                  <div className="rounded border border-[color-mix(in_srgb,var(--color-danger)_40%,transparent)] bg-[color-mix(in_srgb,var(--color-danger)_10%,transparent)] px-2 py-1.5 text-[var(--color-danger)]">
                     Missed deadline
                   </div>
                 )}
@@ -1082,8 +1158,8 @@ export function TaskModal({
                         className={cn(
                           "cursor-pointer rounded px-2 py-1",
                           selectedTagIds.includes(tag.id)
-                            ? "bg-[#2B2F31] text-white"
-                            : "bg-[#151718] text-[#9BA1A6]"
+                            ? "bg-[var(--surface-hover)] text-[var(--text-primary)]"
+                            : "bg-[var(--surface-input)] text-[var(--text-secondary)]"
                         )}
                       >
                         <Checkbox
@@ -1125,7 +1201,7 @@ export function TaskModal({
                   </div>
                 </div>
                 {isRecurring && (
-                  <div className="rounded border border-[#2B2F31] bg-[#151718] p-2 text-[#9BA1A6]">
+                  <div className="rounded border border-[var(--border-subtle)] bg-[var(--surface-input)] p-2 text-[var(--text-secondary)]">
                     Repeats weekly. Recurrence details are saved with this task.
                   </div>
                 )}
@@ -1134,28 +1210,48 @@ export function TaskModal({
           </aside>
 
           <footer className="flex items-center px-6 lg:[grid-area:mainFooter] lg:px-10">
-            <a
-              href="/tutorials/managing-tasks"
-              className="flex items-center gap-2 rounded bg-[#4C2365] px-2 py-1 text-[12px] font-medium text-[#CE8CFF]"
-            >
-              <BookOpen className="h-4 w-4" /> Tutorial
-            </a>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded bg-[color-mix(in_srgb,var(--color-accent)_18%,transparent)] px-2 py-1 text-[12px] font-medium text-[var(--color-accent)] hover:bg-[color-mix(in_srgb,var(--color-accent)_24%,transparent)]"
+                >
+                  <BookOpen className="h-4 w-4" /> Task guide
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-72 border-[var(--popover-border)] bg-[var(--popover-bg)] p-3 text-[var(--text-primary)]"
+              >
+                <h3 className="text-[13px] font-semibold">
+                  Build a schedulable task
+                </h3>
+                <ol className="mt-2 space-y-1.5 text-[12px] leading-5 text-[var(--text-secondary)]">
+                  <li>1. Name the concrete outcome.</li>
+                  <li>2. Add a realistic duration and deadline.</li>
+                  <li>3. Keep Auto-scheduled on to let Needt place it.</li>
+                  <li>4. Use chunks for work that can be split.</li>
+                </ol>
+              </PopoverContent>
+            </Popover>
           </footer>
-          <div className="flex items-center justify-end gap-2 border-t border-[#313538] bg-[#202425] px-3 lg:[grid-area:asideFooter] lg:border-l">
-            <button
+          <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] bg-[var(--surface-panel)] px-3 lg:[grid-area:asideFooter] lg:border-l">
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={onClose}
-              className="h-[30px] rounded px-2 text-[13px] text-[#9BA1A6] hover:bg-[#2B2F31] hover:text-white"
+              className="h-[30px] px-2 text-[13px] text-[var(--text-secondary)]"
             >
               Cancel{" "}
-              <kbd className="ml-1 rounded bg-[#313538] px-1 text-[10px]">
+              <kbd className="ml-1 rounded bg-[var(--surface-control)] px-1 text-[10px]">
                 Esc
               </kbd>
-            </button>
+            </Button>
             <Button
               type="submit"
               disabled={isSubmitting || !title.trim()}
-              className="h-[34px] border-[#3A3F42] bg-[#313538] px-3 text-[13px] hover:bg-[#383D40]"
+              className="h-[34px] px-3 text-[13px]"
             >
               {isSubmitting ? "Saving..." : task ? "Save changes" : "Save task"}
             </Button>

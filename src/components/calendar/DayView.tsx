@@ -12,6 +12,10 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 
+import {
+  formatCalendarHour,
+  getCalendarBusinessHours,
+} from "@/lib/calendar-display";
 import { getEventEditability } from "@/lib/calendar-drag";
 import {
   getSelectionRange,
@@ -378,19 +382,12 @@ export function DayView({ currentDate }: DayViewProps) {
           meridiem: userSettings.timeFormat === "12h" ? "short" : false,
           hour12: userSettings.timeFormat === "12h",
         }}
-        slotLabelFormat={
-          userSettings.timeFormat === "12h"
-            ? { hour: "numeric", meridiem: "short", hour12: true }
-            : { hour: "2-digit", minute: "2-digit", hour12: false }
+        slotLabelInterval="01:00:00"
+        slotLabelContent={(arg) =>
+          formatCalendarHour(arg.date, userSettings.timeFormat)
         }
         firstDay={userSettings.weekStartDay === "monday" ? 1 : 0}
-        businessHours={{
-          daysOfWeek: calendarSettings.workingHours.enabled
-            ? calendarSettings.workingHours.days
-            : [0, 1, 2, 3, 4, 5, 6],
-          startTime: calendarSettings.workingHours.start,
-          endTime: calendarSettings.workingHours.end,
-        }}
+        businessHours={getCalendarBusinessHours(calendarSettings.workingHours)}
         dayHeaderContent={(arg) => {
           const weekday = new Intl.DateTimeFormat("en-US", {
             weekday: "short",
@@ -398,14 +395,14 @@ export function DayView({ currentDate }: DayViewProps) {
           const day = arg.date.getDate();
           return (
             <div className="flex items-center justify-center gap-1.5">
-              <span className="text-[13px] font-medium text-[#9BA1A6]">
+              <span className="text-[13px] font-medium text-[var(--text-secondary)]">
                 {weekday}
               </span>
               <span
                 className={
                   arg.isToday
                     ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-md bg-[var(--accent)] px-1 text-[13px] font-semibold text-white"
-                    : "text-[14px] font-semibold text-[#9BA1A6]"
+                    : "text-[14px] font-semibold text-[var(--text-secondary)]"
                 }
               >
                 {day}

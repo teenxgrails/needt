@@ -16,6 +16,7 @@
 
     /* Primitive palette: raw values are defined in this layer only. */
     --primitive-white: #ffffff;
+    --primitive-black: #000000;
     --primitive-neutral-025: #f6f7fb;
     --primitive-neutral-050: #f2f2f2;
     --primitive-neutral-100: #ecedee;
@@ -68,6 +69,7 @@
     --color-accent-contrast: var(--primitive-white);
     --color-danger: var(--primitive-red-500);
     --color-success: var(--primitive-green-500);
+    --color-warning: var(--primitive-gold-400);
 
     /* Component layer: shared geometry and chrome. */
     --control-height: 36px;
@@ -125,25 +127,17 @@
     --calendar-toolbar-font-size: 13px;
     --calendar-options-width: 322px;
     --calendar-options-control-height: 30px;
-    --calendar-working-hours-bg: color-mix(
-      in srgb,
-      var(--surface-canvas) 96%,
-      var(--text-primary)
-    );
+    --calendar-working-hours-bg: var(--surface-canvas);
     --calendar-non-working-hours-bg: color-mix(
       in srgb,
-      var(--surface-canvas) 92%,
+      var(--surface-canvas) 98%,
       var(--text-primary)
     );
-    --calendar-today-non-working-hours-bg: color-mix(
-      in srgb,
-      var(--surface-canvas) 94%,
-      var(--text-primary)
-    );
+    --calendar-today-non-working-hours-bg: var(--calendar-non-working-hours-bg);
     --calendar-task-bg: var(--surface-control);
     --calendar-task-border: var(--border-control);
     --calendar-now-indicator: var(--text-primary);
-    --calendar-now-dot-size: 16px;
+    --calendar-now-dot-size: 10px;
     --calendar-now-line-end-inset: 8px;
     --calendar-week-slot-label-offset: -16px;
     --calendar-day-slot-label-offset: -17.5px;
@@ -153,7 +147,11 @@
     /* Space canvas: intentionally dark in every app theme. Keeping its
        palette semantic makes future custom themes a token swap instead of a
        component rewrite. */
-    --space-canvas: var(--primitive-neutral-950);
+    --space-canvas: color-mix(
+      in srgb,
+      var(--primitive-neutral-950) 86%,
+      var(--primitive-black)
+    );
     --space-panel: color-mix(
       in srgb,
       var(--primitive-neutral-900) 94%,
@@ -292,9 +290,13 @@
     --color-accent-contrast: var(--primitive-white);
     --color-danger: var(--primitive-red-500);
     --color-success: var(--primitive-green-500);
-    --calendar-working-hours-bg: var(--primitive-neutral-875);
-    --calendar-non-working-hours-bg: var(--primitive-neutral-825);
-    --calendar-today-non-working-hours-bg: var(--primitive-neutral-865);
+    --calendar-working-hours-bg: var(--surface-canvas);
+    --calendar-non-working-hours-bg: color-mix(
+      in srgb,
+      var(--surface-canvas) 98%,
+      var(--text-primary)
+    );
+    --calendar-today-non-working-hours-bg: var(--calendar-non-working-hours-bg);
     --calendar-task-bg: var(--primitive-neutral-705);
     --calendar-task-border: var(--primitive-neutral-590);
     --calendar-now-indicator: var(--text-primary);
@@ -984,9 +986,8 @@ html[data-animations="off"] *::after {
   display: none;
 }
 
-/* Calendar color hierarchy stays intentionally close to the app canvas
-   (#1B1D1E): today is flat, while working and non-working hours are subtly
-   stepped without turning the calendar into grey blocks. */
+/* Working hours use the unmodified app canvas. When enabled, non-working
+   hours receive one quiet tint. Today never gets a separate column wash. */
 .fc .fc-timegrid-col-frame {
   background: var(--calendar-working-hours-bg);
 }
@@ -1000,7 +1001,7 @@ html[data-animations="off"] *::after {
 }
 
 .fc .fc-day-today .fc-timegrid-col-frame {
-  background: var(--calendar-canvas-bg);
+  background: var(--calendar-working-hours-bg);
 }
 
 .fc .fc-day-today .fc-timegrid-col-bg .fc-non-business {

@@ -2,7 +2,6 @@
 
 import {
   CSSProperties,
-  DragEvent,
   PointerEvent,
   WheelEvent,
   useMemo,
@@ -30,11 +29,6 @@ import {
 } from "lucide-react";
 
 import {
-  APP_TOOLBAR_BUTTON_CLASS,
-  APP_TOOLBAR_SEGMENT_BUTTON_CLASS,
-  APP_TOOLBAR_SEGMENT_CLASS,
-} from "@/components/ui/app-toolbar";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -52,7 +46,6 @@ import {
 
 import {
   addDays,
-  addMinutes,
   format,
   isSameDay,
   newDate,
@@ -71,7 +64,6 @@ interface SpaceViewProps {
   projects: Project[];
   tasks: Task[];
   onOpenTask: (task: Task) => void;
-  onRescheduleTask: (task: Task, start: Date, end: Date) => void;
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   onCreateTask: () => void;
 }
@@ -94,13 +86,6 @@ interface SpaceCluster extends SpacePoint {
   tasks: SpaceTaskNode[];
 }
 
-interface DropPreview {
-  x: number;
-  y: number;
-  start: Date;
-  end: Date;
-}
-
 const PROJECT_COLORS = [
   "var(--space-cluster-blue)",
   "var(--space-cluster-violet)",
@@ -119,6 +104,8 @@ const HORIZONS: Array<{ value: SpaceHorizon; label: string }> = [
 const MIN_SCALE = 0.7;
 const MAX_SCALE = 1.5;
 const SCALE_STEP = 0.1;
+const SPACE_CONTROL_CLASS =
+  "flex h-7 items-center gap-1.5 rounded-[var(--control-radius)] border border-[var(--space-border)] bg-[var(--space-panel-raised)] px-2 text-[11px] font-medium text-[var(--space-text-secondary)] transition-colors hover:bg-[var(--space-panel-hover)] hover:text-[var(--space-text-primary)]";
 
 function hashString(value: string) {
   return Array.from(value).reduce(
@@ -149,8 +136,8 @@ function isTaskOverdue(task: Task) {
   const deadline = getTaskDeadline(task);
   return Boolean(
     deadline &&
-    task.status !== TaskStatus.COMPLETED &&
-    deadline.getTime() < newDate().getTime()
+      task.status !== TaskStatus.COMPLETED &&
+      deadline.getTime() < newDate().getTime()
   );
 }
 
@@ -250,7 +237,6 @@ export function SpaceView({
   projects,
   tasks,
   onOpenTask,
-  onRescheduleTask,
   onStatusChange,
   onCreateTask,
 }: SpaceViewProps) {
@@ -262,7 +248,6 @@ export function SpaceView({
   );
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
-  const [dropPreview, setDropPreview] = useState<DropPreview | null>(null);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -402,10 +387,6 @@ export function SpaceView({
   const selectedProjectName = projects.find(
     (project) => project.id === selectedProjectId
   )?.name;
-  const horizonDays = Array.from({ length: horizon }, (_, index) =>
-    addDays(today, index)
-  );
-
   const resetView = () => {
     setScale(1);
     setPan({ x: 0, y: 0 });
@@ -474,54 +455,9 @@ export function SpaceView({
     event.currentTarget.releasePointerCapture(event.pointerId);
   };
 
-  const calculateDropPreview = (
-    event: DragEvent<HTMLDivElement>,
-    task: Task
-  ): DropPreview => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const localX = Math.max(
-      0,
-      Math.min(bounds.width, event.clientX - bounds.left)
-    );
-    const localY = Math.max(
-      0,
-      Math.min(bounds.height, event.clientY - bounds.top)
-    );
-    const normalizedX = localX / Math.max(1, bounds.width);
-    const normalizedY = Math.max(
-      0,
-      Math.min(1, (localY / Math.max(1, bounds.height) - 0.08) / 0.82)
-    );
-    const dayOffset = Math.min(horizon - 1, Math.floor(normalizedX * horizon));
-    const workdayStart = 8 * 60;
-    const workdayMinutes = 12 * 60;
-    const minutes =
-      workdayStart + Math.round((normalizedY * workdayMinutes) / 15) * 15;
-    const start = addDays(today, dayOffset);
-    start.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-    const end = addMinutes(start, taskDuration(task));
-    return { x: localX, y: localY, start, end };
-  };
-
-  const handleCanvasDragOver = (event: DragEvent<HTMLDivElement>) => {
-    if (!draggingTaskId) return;
-    const task = tasks.find((item) => item.id === draggingTaskId);
-    if (!task) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    setDropPreview(calculateDropPreview(event, task));
-  };
-
-  const handleCanvasDrop = (event: DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    if (!draggingTaskId) return;
-    const task = tasks.find((item) => item.id === draggingTaskId);
-    if (!task) return;
-    const preview = dropPreview ?? calculateDropPreview(event, task);
-    onRescheduleTask(task, preview.start, preview.end);
-    setSelectedTaskId(task.id);
+  const finishDecorativeDrag = () => {
+    if (draggingTaskId) setSelectedTaskId(draggingTaskId);
     setDraggingTaskId(null);
-    setDropPreview(null);
   };
 
   // The Space canvas relies on pan/zoom and drag interactions that don't work
@@ -543,8 +479,8 @@ export function SpaceView({
   }
 
   return (
-    <section className="flex h-full min-h-[540px] flex-col overflow-hidden bg-[var(--surface-canvas)]">
-      <div className="flex h-10 flex-none items-center gap-1.5 border-b border-[var(--border-subtle)] px-2">
+    <section className="flex h-full min-h-[540px] flex-col overflow-hidden bg-[var(--space-canvas)]">
+      <div className="flex h-11 flex-none items-center gap-1.5 border-b border-[var(--space-border)] bg-[var(--space-panel)] px-2.5">
         <div className="mr-1 flex min-w-0 items-center gap-2">
           <Orbit className="h-4 w-4 text-[var(--text-primary)]" />
           <h2 className="text-[13px] font-semibold text-[var(--text-primary)]">
@@ -552,17 +488,17 @@ export function SpaceView({
           </h2>
         </div>
 
-        <div className={APP_TOOLBAR_SEGMENT_CLASS}>
+        <div className="flex items-center gap-0.5 rounded-[var(--control-radius)] border border-[var(--space-border)] bg-[var(--space-panel-raised)] p-0.5">
           {HORIZONS.map((item) => (
             <button
               key={item.value}
               type="button"
               onClick={() => setHorizon(item.value)}
               className={cn(
-                APP_TOOLBAR_SEGMENT_BUTTON_CLASS,
+                "h-6 rounded px-2 text-[10px] font-medium transition-colors",
                 horizon === item.value
-                  ? "bg-[var(--surface-hover)] text-[var(--text-primary)]"
-                  : "text-[var(--text-muted)]"
+                  ? "bg-[var(--space-panel-hover)] text-[var(--space-text-primary)]"
+                  : "text-[var(--space-text-muted)] hover:text-[var(--space-text-primary)]"
               )}
             >
               {item.label}
@@ -571,9 +507,7 @@ export function SpaceView({
         </div>
 
         <DropdownMenu>
-          <DropdownMenuTrigger
-            className={cn(APP_TOOLBAR_BUTTON_CLASS, "min-w-28")}
-          >
+          <DropdownMenuTrigger className={cn(SPACE_CONTROL_CLASS, "min-w-28")}>
             <Box className="h-3.5 w-3.5" />
             <span className="max-w-28 truncate">
               {selectedProjectId
@@ -621,7 +555,7 @@ export function SpaceView({
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Find a task or project"
             aria-label="Search Task Space"
-            className="h-[var(--calendar-toolbar-height)] border-[var(--input-border)] bg-[var(--input-bg)] pl-8 text-[length:var(--calendar-toolbar-font-size)]"
+            className="h-7 border-[var(--space-border)] bg-[var(--space-panel-raised)] pl-8 text-[11px] text-[var(--space-text-primary)] placeholder:text-[var(--space-text-muted)]"
           />
           {query && (
             <button
@@ -635,9 +569,7 @@ export function SpaceView({
           )}
         </div>
 
-        <label
-          className={cn(APP_TOOLBAR_BUTTON_CLASS, "ml-auto cursor-pointer")}
-        >
+        <label className={cn(SPACE_CONTROL_CLASS, "ml-auto cursor-pointer")}>
           Completed
           <Switch
             checked={showCompleted}
@@ -647,7 +579,7 @@ export function SpaceView({
         </label>
       </div>
 
-      <div className="flex h-10 flex-none items-center divide-x divide-[var(--border-subtle)] border-b border-[var(--border-subtle)] bg-[var(--surface-raised)]">
+      <div className="flex h-10 flex-none items-center divide-x divide-[var(--space-border)] border-b border-[var(--space-border)] bg-[var(--space-panel)]">
         <SpaceMetric
           icon={CircleDot}
           value={openVisibleTasks.length}
@@ -693,57 +625,24 @@ export function SpaceView({
         onPointerMove={handleCanvasPointerMove}
         onPointerUp={handleCanvasPointerUp}
         onPointerCancel={handleCanvasPointerUp}
-        onDragOver={handleCanvasDragOver}
-        onDrop={handleCanvasDrop}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-            setDropPreview(null);
-          }
+        onDragOver={(event) => {
+          if (!draggingTaskId) return;
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          finishDecorativeDrag();
         }}
         onDoubleClick={(event) => {
           if (!(event.target as HTMLElement).closest("button")) onCreateTask();
         }}
       >
         {draggingTaskId && (
-          <div className="pointer-events-none absolute inset-0 z-20">
-            <div className="absolute inset-0 bg-[var(--space-drag-overlay)]" />
-            <div className="absolute inset-0 flex">
-              {horizonDays.map((day) => (
-                <div
-                  key={day.toISOString()}
-                  className="relative flex-1 border-r border-[var(--space-grid-strong)] last:border-r-0"
-                >
-                  <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded bg-[var(--space-panel)] px-2 py-1 text-[10px] font-medium text-[var(--space-text-secondary)]">
-                    {format(day, horizon === 14 ? "EEE d" : "EEE, MMM d")}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {[8, 12, 16, 20].map((hour, index) => (
-              <div
-                key={hour}
-                className="absolute left-0 right-0 border-t border-[var(--space-grid-strong)]"
-                style={{ top: `${8 + index * 27.33}%` }}
-              >
-                <span className="absolute left-2 top-1 text-[9px] text-[var(--space-text-muted)]">
-                  {format(newDate().setHours(hour, 0, 0, 0), "h a")}
-                </span>
-              </div>
-            ))}
-            {dropPreview && (
-              <div
-                className="absolute z-30 -translate-x-1/2 -translate-y-full rounded-[var(--control-radius)] border border-[var(--space-border)] bg-[var(--space-panel)] px-2.5 py-1.5 text-[11px] text-[var(--space-text-primary)]"
-                style={{ left: dropPreview.x, top: dropPreview.y - 8 }}
-              >
-                <span className="font-medium">
-                  {format(dropPreview.start, "EEE, MMM d")}
-                </span>
-                <span className="ml-1 text-[var(--space-text-secondary)]">
-                  {format(dropPreview.start, "h:mm a")} –{" "}
-                  {format(dropPreview.end, "h:mm a")}
-                </span>
-              </div>
-            )}
+          <div className="pointer-events-none absolute inset-0 z-20 border border-dashed border-[var(--space-border)] bg-[color-mix(in_srgb,var(--space-canvas)_82%,transparent)]">
+            <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-[var(--space-border)] bg-[var(--space-label-bg)] px-3 py-1.5 text-[10px] text-[var(--space-text-secondary)]">
+              Explore freely — dropping here never changes the schedule
+            </span>
           </div>
         )}
 
@@ -848,9 +747,6 @@ export function SpaceView({
                       left: `${x}%`,
                       top: `${y}%`,
                       borderColor: `color-mix(in srgb, ${color} ${selected ? "72%" : "38%"}, var(--space-border))`,
-                      boxShadow: selected
-                        ? `0 10px 32px color-mix(in srgb, ${color} 26%, transparent)`
-                        : `0 8px 20px color-mix(in srgb, ${color} 10%, transparent)`,
                       "--space-delay": `${-(hashString(task.id) % 5000)}ms`,
                       "--space-distance": `${1 + (hashString(task.id) % 3)}px`,
                     } as CSSProperties;
@@ -870,7 +766,6 @@ export function SpaceView({
                             }}
                             onDragEnd={() => {
                               setDraggingTaskId(null);
-                              setDropPreview(null);
                             }}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -928,8 +823,8 @@ export function SpaceView({
                             {task.title}
                           </p>
                           <p className="mt-0.5 text-[10px] text-[var(--text-secondary)]">
-                            {cluster.name} · {formatTaskDate(task)} · Drag to
-                            reschedule
+                            {cluster.name} · {formatTaskDate(task)} · Dragging
+                            in Space does not change the schedule
                           </p>
                         </TooltipContent>
                       </Tooltip>
@@ -1080,8 +975,8 @@ export function SpaceView({
 
         <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-[var(--control-radius)] border border-[var(--space-border)] bg-[var(--space-label-bg)] px-3 py-1.5 text-[9px] text-[var(--space-text-muted)]">
           <Crosshair className="h-3 w-3" />
-          Click to inspect · Scroll to zoom · Drag the canvas to move ·
-          Double-click empty space to create
+          Click to inspect · Scroll to zoom · Drag to explore · Schedule stays
+          unchanged
         </div>
       </div>
     </section>

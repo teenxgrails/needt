@@ -244,7 +244,7 @@ export function Calendar({
 
                   <div className="flex h-[30px] items-center justify-between gap-3">
                     <span className="text-[14px] text-[var(--text-secondary)]">
-                      Highlight working hours
+                      Shade non-working hours
                     </span>
                     <Switch
                       className="h-4 w-[26px] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"

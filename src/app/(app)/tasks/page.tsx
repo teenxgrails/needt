@@ -154,30 +154,6 @@ export default function TasksPage() {
     await fetchProjects();
   };
 
-  const handleSpaceReschedule = (task: Task, start: Date, end: Date) => {
-    void updateTask(task.id, {
-      startDate: start,
-      scheduledStart: start,
-      scheduledEnd: end,
-      isAutoScheduled: true,
-      autoScheduled: false,
-      scheduleLocked: true,
-      isFrozen: true,
-    }).catch((scheduleError: unknown) => {
-      void logger.error(
-        "Failed to reschedule task from Space",
-        {
-          taskId: task.id,
-          error:
-            scheduleError instanceof Error
-              ? scheduleError.message
-              : String(scheduleError),
-        },
-        LOG_SOURCE
-      );
-    });
-  };
-
   const handleCreateTag = async (name: string, color?: string) => {
     try {
       const newTag = await createTag({ name, color });
@@ -509,7 +485,6 @@ export default function TasksPage() {
                 projects={projects}
                 tasks={tasks}
                 onOpenTask={openTask}
-                onRescheduleTask={handleSpaceReschedule}
                 onStatusChange={handleStatusChange}
                 onCreateTask={openCreateTask}
               />

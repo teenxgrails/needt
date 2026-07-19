@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refined Calendar, Today, Create Task, and Space as one coherent Needt UI pass: 12-hour grid labels now use `1 PM` spacing, the current-time dot is smaller, working hours use the plain canvas while non-working hours receive the optional quiet tint, Today uses a centered day/date hierarchy with time-of-day task groups, and the full task editor consumes shared theme tokens with a functional description-formatting toolbar.
+- Made Space a purely exploratory environment: its darker animated star canvas and compact controls remain draggable and zoomable, but moving task nodes no longer rewrites or freezes their scheduling fields.
 - Finished the remaining Settings tabs with the shared Motion-style row, card, picker, switch, loading, and advanced-section patterns; Theme, Timezone, Notifications, API, Privacy, AI Assistant, Schedules, Desktop, and Account now share the same responsive user-facing layout.
 - Finished the ordinary-user Settings experience around Motion's measured layout: matching calendar account/group dialogs, compact auto-scheduling choices, searchable task pickers, integration cards, a unified canvas background, and collapsed advanced-only controls.
 - Removed System and Logs from the user Settings navigation and replaced calendar credential error panels with quiet provider availability feedback.

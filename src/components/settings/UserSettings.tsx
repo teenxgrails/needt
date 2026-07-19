@@ -155,7 +155,7 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
               }
             />
             <MotionSwitchRow
-              label="Highlight working hours"
+              label="Shade non-working hours"
               checked={calendar.workingHours.enabled}
               onCheckedChange={(enabled) =>
                 updateCalendarSettings({
