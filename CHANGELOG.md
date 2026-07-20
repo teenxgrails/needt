@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added a token-based Animated Beam connection map to Settings → Integrations, showing Google Calendar, Outlook, iCloud, and the Needt API flowing into one planner with active calendar links reflected in green and reduced-motion support.
 - Expanded Boards into a full-page Notion-style workspace with persistent Table, Board, List, Timeline, Calendar, and Gallery views over the same Needt tasks. Timeline and Calendar also surface existing calendar events as read-only context; Boards now have a dedicated index, inline title/icon editing, a full-screen view-first creation flow, and responsive dark/light visual coverage.
 - Added deterministic Playwright visual-regression coverage for Calendar, Today, and Space at 1440px desktop, 768px tablet, and 375px mobile viewports, including isolated test data, fixed time/timezone, and portable baseline names.
 - Replaced the inherited placeholder/Stripe billing path with Creem merchant-of-record checkout for Needt Pro ($6 monthly or $60 yearly) and Lifetime ($79), a signed idempotent webhook mapper, customer portal access, subscription lifecycle fields, and a complete house-format Billing settings page. Added server-side Free/Pro/Lifetime entitlements for calendars, auto-scheduling, Boards, Mail, AI, and Focus analytics, with neutral behavior when Creem is not configured.
