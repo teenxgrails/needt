@@ -37,7 +37,7 @@ interface BoardsStore {
   setBoardIcon: (boardId: string, icon: string | null) => Promise<void>;
   deleteBoard: (boardId: string) => Promise<void>;
 
-  addColumn: (boardId: string, name: string) => Promise<void>;
+  addColumn: (boardId: string, name: string) => Promise<BoardColumn>;
   updateColumn: (
     boardId: string,
     columnId: string,
@@ -136,6 +136,7 @@ export const useBoardsStore = create<BoardsStore>((set, get) => ({
           : board
       ),
     });
+    return data.column;
   },
 
   updateColumn: async (boardId, columnId, updates) => {

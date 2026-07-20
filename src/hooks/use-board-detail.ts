@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { logger } from "@/lib/logger";
 
 import type { BoardColumn } from "@/store/boards";
+
 import { Task } from "@/types/task";
 
 const LOG_SOURCE = "useBoardDetail";
@@ -18,6 +19,18 @@ export interface BoardDetail {
   tasks: Task[];
 }
 
+export interface BoardCalendarEvent {
+  id: string;
+  title: string;
+  start: Date | string;
+  end: Date | string;
+  allDay: boolean;
+  feed?: {
+    name: string;
+    color: string | null;
+  };
+}
+
 /**
  * Loads one board's columns and cards and exposes the card/column mutations the
  * canvas needs. Server is the source of truth for ordering (fractional
@@ -25,6 +38,9 @@ export interface BoardDetail {
  */
 export function useBoardDetail(boardId: string) {
   const [board, setBoard] = useState<BoardDetail | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<BoardCalendarEvent[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -52,6 +68,28 @@ export function useBoardDetail(boardId: string) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadCalendarEvents = async () => {
+      try {
+        const response = await fetch("/api/events");
+        if (cancelled) return;
+        if (!response.ok) {
+          setCalendarEvents([]);
+          return;
+        }
+        const events = (await response.json()) as BoardCalendarEvent[];
+        if (!cancelled) setCalendarEvents(events);
+      } catch {
+        if (!cancelled) setCalendarEvents([]);
+      }
+    };
+    void loadCalendarEvents();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId]);
+
   const moveCard = useCallback(
     async (taskId: string, columnId: string, toIndex: number) => {
       await fetch(`/api/boards/${boardId}/cards`, {
@@ -76,5 +114,13 @@ export function useBoardDetail(boardId: string) {
     [boardId, refresh]
   );
 
-  return { board, loading, error, refresh, moveCard, addCard };
+  return {
+    board,
+    calendarEvents,
+    loading,
+    error,
+    refresh,
+    moveCard,
+    addCard,
+  };
 }

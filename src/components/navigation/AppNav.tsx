@@ -90,6 +90,7 @@ export const AppNav = memo(function AppNav({
       "/calendar",
       "/tasks",
       "/focus",
+      "/boards",
       "/mail",
       "/settings",
       "/chat",
@@ -218,7 +219,8 @@ export const AppNav = memo(function AppNav({
       <nav className="space-y-0.5 text-[13px] max-lg:hidden">
         {desktopLinks.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.href;
+          const isActive =
+            pathname === link.href || pathname.startsWith(`${link.href}/`);
           const isFocus = link.href === "/focus";
 
           return (
@@ -263,7 +265,8 @@ export const AppNav = memo(function AppNav({
       <nav className="hidden flex-1 items-stretch justify-around text-[13px] max-lg:flex">
         {mobileLinks.map((link) => {
           const Icon = link.icon;
-          const isActive = pathname === link.href;
+          const isActive =
+            pathname === link.href || pathname.startsWith(`${link.href}/`);
           return (
             <Link
               key={link.href}

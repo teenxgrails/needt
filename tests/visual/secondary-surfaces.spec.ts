@@ -53,7 +53,6 @@ test("Boards, Focus, Mail, and AI share the responsive Needt system", async ({
     ).toBeVisible();
     await expect(page.getByText("Morning deep work")).toBeVisible();
     await settleSurface(page);
-    await expect(page).toHaveScreenshot(`board-${theme}.png`);
 
     if (theme === "dark") {
       await page

@@ -31,9 +31,12 @@ export function BoardsSidebarSection() {
   return (
     <div className="mt-3 max-lg:hidden">
       <div className="mb-1 flex items-center justify-between px-2.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-lo)]">
+        <Link
+          href="/boards"
+          className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-lo)] hover:text-[var(--text-hi)]"
+        >
           Boards
-        </span>
+        </Link>
         <button
           type="button"
           onClick={() => setDialogOpen(true)}

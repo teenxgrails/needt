@@ -533,7 +533,7 @@ model SavedView {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   boardId   String?
   board     Board?   @relation(fields: [boardId], references: [id], onDelete: SetNull)
-  // board | list | timeline | calendar
+  // table | board | list | timeline | calendar | gallery
   type      String
   groupBy   String?
   filters   Json?
