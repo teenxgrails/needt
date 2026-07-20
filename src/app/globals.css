@@ -116,22 +116,8 @@
     --button-secondary-bg: var(--control-bg);
     --button-secondary-bg-hover: var(--control-bg-hover);
     --button-secondary-border: var(--control-border);
-    --ai-cta-start: color-mix(
-      in srgb,
-      var(--primitive-violet-500) 72%,
-      var(--primitive-white)
-    );
-    --ai-cta-end: color-mix(
-      in srgb,
-      var(--primitive-indigo-500) 82%,
-      var(--primitive-violet-500)
-    );
-    --ai-cta-border: color-mix(
-      in srgb,
-      var(--primitive-white) 42%,
-      var(--primitive-violet-500)
-    );
-    --ai-cta-fg: var(--primitive-white);
+    --rainbow-button-bg: var(--primitive-neutral-900);
+    --rainbow-button-fg: var(--primitive-white);
     --button-danger-bg: color-mix(
       in srgb,
       var(--color-danger) 15%,
@@ -650,63 +636,44 @@
     background: var(--scrim);
   }
 
-  .needt-ai-cta {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    color: var(--ai-cta-fg);
-    border-color: var(--ai-cta-border);
-    background: linear-gradient(
-      180deg,
-      var(--ai-cta-start) 0%,
-      var(--ai-cta-end) 100%
-    );
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, var(--primitive-white) 38%, transparent),
-      inset 0 -1px 0 color-mix(in srgb, var(--primitive-black) 20%, transparent),
-      0 5px 12px color-mix(in srgb, var(--primitive-black) 22%, transparent);
-    transition:
-      transform var(--motion-duration-fast) var(--motion-ease-standard),
-      filter var(--motion-duration-fast) var(--motion-ease-standard),
-      box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
-  }
-
-  .needt-ai-cta::before {
-    position: absolute;
-    inset: 1px 1px 52%;
-    border-radius: inherit;
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--primitive-white) 26%, transparent),
-      transparent
-    );
-    content: "";
-    pointer-events: none;
-  }
-
-  .needt-ai-cta:hover {
-    filter: saturate(1.08) brightness(1.04);
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, var(--primitive-white) 42%, transparent),
-      inset 0 -1px 0 color-mix(in srgb, var(--primitive-black) 20%, transparent),
-      0 7px 14px color-mix(in srgb, var(--primitive-black) 26%, transparent);
-  }
-
-  .needt-ai-cta:active {
-    filter: saturate(1.02);
-    transform: translateY(0) scale(0.985);
+  .needt-rainbow-button {
+    border: 1px solid transparent;
+    color: var(--rainbow-button-fg);
+    background:
+      linear-gradient(var(--rainbow-button-bg), var(--rainbow-button-bg))
+        padding-box,
+      linear-gradient(
+          90deg,
+          var(--primitive-indigo-500),
+          var(--primitive-magenta-500),
+          var(--primitive-teal-400),
+          var(--primitive-violet-500),
+          var(--primitive-indigo-500)
+        )
+        border-box;
+    background-position:
+      0 0,
+      0 0;
+    background-size:
+      100% 100%,
+      220% 100%;
+    box-shadow: inset 0 1px 0
+      color-mix(in srgb, var(--primitive-white) 7%, transparent);
+    animation: needt-rainbow-border 4s linear infinite;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .needt-ai-cta {
-    transition: none;
+  .needt-rainbow-button {
+    animation: none;
   }
+}
 
-  .needt-ai-cta:hover,
-  .needt-ai-cta:active {
-    transform: none;
+@keyframes needt-rainbow-border {
+  to {
+    background-position:
+      0 0,
+      220% 0;
   }
 }
 
@@ -1854,8 +1821,8 @@ html[data-animations="off"] *::after {
 }
 
 .needt-day-display {
-  font-family: "New York", "Iowan Old Style", "Palatino Linotype", Georgia,
-    ui-serif, serif;
+  font-family:
+    "New York", "Iowan Old Style", "Palatino Linotype", Georgia, ui-serif, serif;
   font-weight: 600;
   text-wrap: balance;
 }
@@ -1957,8 +1924,7 @@ html[data-animations="off"] *::after {
 @supports not (view-transition-name: none) {
   @media (max-width: 639px) and (prefers-reduced-motion: no-preference) {
     .needt-mobile-route-fallback {
-      animation: needt-mobile-route-in 220ms
-        cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      animation: needt-mobile-route-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
   }
 }

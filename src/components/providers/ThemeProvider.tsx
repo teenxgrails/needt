@@ -7,6 +7,8 @@ import React, {
   useEffect,
 } from "react";
 
+import { animateThemeTransition } from "@/components/ui/animated-theme-toggler";
+
 import { useSettingsStore } from "@/store/settings";
 
 import { ThemeMode } from "@/types/settings";
@@ -117,14 +119,11 @@ export function ThemeProvider({
   }, [user.theme, forcedTheme, enableSystem, applyTheme]);
 
   const setTheme = (theme: ThemeMode) => {
-    // Always update the user settings
-    updateUserSettings({ theme });
-
-    // If forcedTheme is set, we don't apply the theme change directly
-    // as the forcedTheme will override it in the UI
-    if (!forcedTheme) {
-      applyTheme(theme);
-    }
+    if (theme === currentTheme) return;
+    animateThemeTransition(() => {
+      updateUserSettings({ theme });
+      if (!forcedTheme) applyTheme(theme);
+    });
   };
 
   return (

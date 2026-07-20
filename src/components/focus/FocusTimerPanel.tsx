@@ -1,18 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import NumberFlow from "@number-flow/react";
-import { Minus, Pause, Play, Plus, Square } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  BottomSheet,
-  BottomSheetContent,
-  BottomSheetDescription,
-  BottomSheetTitle,
-} from "@/components/ui/bottom-sheet";
+import { AnimatedCircularProgressBar } from "@/components/ui/animated-circular-progress-bar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,75 +14,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import {
   ensureNotificationPermission,
   notifyFocusComplete,
 } from "@/lib/focus-notifications";
 import { formatClock } from "@/lib/focus-timer";
-import { springSoft } from "@/lib/motion";
-import { cn } from "@/lib/utils";
 
 import { useFocusTimer } from "@/hooks/use-focus-timer";
 
-import { type FocusMode, useFocusTimerStore } from "@/store/focusTimer";
+import { useFocusTimerStore } from "@/store/focusTimer";
 import { useTaskStore } from "@/store/task";
 
 import { Task, TaskStatus } from "@/types/task";
 
 interface FocusTimerPanelProps {
   task: Task | null;
-  immersive?: boolean;
-  onRunningChange?: (running: boolean) => void;
 }
 
-interface FocusPayload {
-  stats: {
-    focusScore: number;
-    currentStreak: number;
-    longestStreak: number;
-    lifetimeMinutes: number;
-  } | null;
-  weeklyReport: {
-    focusMinutes: number;
-    sessionsCompleted: number;
-    bestDay: string | null;
-    estimateAccuracyPercent: number | null;
-    dailyMinutes: { label: string; minutes: number }[];
-    streakStatus: { current: number; longest: number; atRisk: boolean };
-  } | null;
-  upgradeRequired: boolean;
-}
+const DEFAULT_FOCUS_MINUTES = 25;
 
-const modeLabels: Record<FocusMode, string> = {
-  POMODORO: "Pomodoro",
-  FLOW: "Flow",
-  DEEP_FOCUS: "Deep Focus",
-};
-
-export function FocusTimerPanel({
-  task,
-  immersive = false,
-  onRunningChange,
-}: FocusTimerPanelProps) {
-  const [mode, setMode] = useState<FocusMode>("POMODORO");
-  const [workMinutes, setWorkMinutes] = useState(25);
-  const [breakMinutes, setBreakMinutes] = useState(5);
-  const [deepMinutes, setDeepMinutes] = useState(50);
-  const [report, setReport] = useState<FocusPayload | null>(null);
-  const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
-  const prefersReducedMotion = useReducedMotion();
-
+export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
+  const [isChangingState, setIsChangingState] = useState(false);
   const {
     session,
+    hydrated,
     isActive,
     isRunning,
     isPaused,
@@ -99,7 +48,6 @@ export function FocusTimerPanel({
   const start = useFocusTimerStore((state) => state.start);
   const pause = useFocusTimerStore((state) => state.pause);
   const resume = useFocusTimerStore((state) => state.resume);
-  const stop = useFocusTimerStore((state) => state.stop);
   const pendingCompletion = useFocusTimerStore(
     (state) => state.pendingCompletion
   );
@@ -108,48 +56,30 @@ export function FocusTimerPanel({
   );
   const tasks = useTaskStore((state) => state.tasks);
 
-  // The bound task is whatever the active session points at; otherwise the
-  // task selected on the page (if any).
   const boundTask =
-    (session?.taskId && tasks.find((t) => t.id === session.taskId)) ||
+    (session?.taskId &&
+      tasks.find((candidate) => candidate.id === session.taskId)) ||
     (!session ? task : null) ||
     null;
-
-  const plannedMinutes =
-    mode === "POMODORO"
-      ? workMinutes
-      : mode === "DEEP_FOCUS"
-        ? deepMinutes
-        : null;
-
-  const activePlanned = session?.plannedMinutes ?? null;
-  const activeTotalSeconds = activePlanned ? activePlanned * 60 : 0;
-  const progress =
-    activePlanned && activeTotalSeconds > 0
-      ? Math.min(1, 1 - (remainingSeconds ?? 0) / activeTotalSeconds)
-      : isActive
-        ? 1
-        : 0;
+  const defaultMinutes = Math.max(
+    1,
+    boundTask?.estimatedMinutes ?? boundTask?.duration ?? DEFAULT_FOCUS_MINUTES
+  );
+  const plannedMinutes = session?.plannedMinutes ?? defaultMinutes;
+  const totalSeconds = Math.max(1, plannedMinutes * 60);
+  const isOpenTimer = isActive && session?.plannedMinutes == null;
   const displaySeconds = isActive
-    ? session?.plannedMinutes == null
+    ? isOpenTimer
       ? elapsedSeconds
       : (remainingSeconds ?? 0)
-    : (plannedMinutes ?? 0) * 60;
+    : totalSeconds;
+  const progressMax = isOpenTimer ? 60 : totalSeconds;
+  const progressValue = isActive
+    ? isOpenTimer
+      ? elapsedSeconds % progressMax
+      : Math.min(totalSeconds, elapsedSeconds)
+    : 0;
 
-  const loadReport = useCallback(async () => {
-    const response = await fetch("/api/focus");
-    if (response.ok) setReport(await response.json());
-  }, []);
-
-  useEffect(() => {
-    loadReport().catch(() => undefined);
-  }, [loadReport]);
-
-  useEffect(() => {
-    onRunningChange?.(isRunning);
-  }, [onRunningChange, isRunning]);
-
-  // When a session completes, notify + toast, and refresh stats.
   useEffect(() => {
     if (!pendingCompletion) return;
     notifyFocusComplete(
@@ -157,311 +87,94 @@ export function FocusTimerPanel({
       boundTask ? `Nice work on “${boundTask.title}”.` : "Nice focused block."
     );
     toast.success("Focus session complete");
-    loadReport().catch(() => undefined);
+    // The store keeps this completion snapshot until the dialog is handled.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingCompletion]);
 
-  async function handleStart() {
-    await ensureNotificationPermission();
+  async function handlePrimaryAction() {
+    if (isChangingState) return;
+    setIsChangingState(true);
     try {
-      await start({
-        taskId: boundTask?.id ?? null,
-        mode,
-        plannedMinutes,
-      });
+      if (!isActive) {
+        await ensureNotificationPermission();
+        await start({
+          taskId: boundTask?.id ?? null,
+          mode: "POMODORO",
+          plannedMinutes: defaultMinutes,
+        });
+      } else if (isPaused) {
+        await resume();
+      } else {
+        await pause();
+      }
     } catch {
-      toast.error("Could not start focus session");
+      toast.error("Could not update focus session");
+    } finally {
+      setIsChangingState(false);
     }
-  }
-
-  async function handleStop() {
-    try {
-      await stop({ completed: session?.mode === "FLOW" });
-      await loadReport();
-    } catch {
-      toast.error("Could not stop focus session");
-    }
-  }
-
-  async function confirmStop() {
-    setLeaveConfirmOpen(false);
-    await handleStop();
   }
 
   async function finishCompletion(markTaskDone: boolean) {
-    const hadTask = Boolean(pendingCompletion?.taskId);
+    const taskId = pendingCompletion?.taskId;
     clearPendingCompletion();
-    if (markTaskDone && hadTask && pendingCompletion?.taskId) {
-      try {
-        await useTaskStore.getState().updateTask(pendingCompletion.taskId, {
-          status: TaskStatus.COMPLETED,
-        });
-      } catch {
-        toast.error("Could not mark task done");
-      }
+    if (!markTaskDone || !taskId) return;
+    try {
+      await useTaskStore.getState().updateTask(taskId, {
+        status: TaskStatus.COMPLETED,
+      });
+    } catch {
+      toast.error("Could not mark task done");
     }
-    await loadReport();
   }
 
-  async function startBreak() {
-    clearPendingCompletion();
-    await start({
-      taskId: null,
-      mode: "POMODORO",
-      plannedMinutes: breakMinutes,
-    });
-  }
-
-  const isDeepLocked = session?.mode === "DEEP_FOCUS" && isRunning;
-  const running = isActive;
-  const editableMinutes =
-    mode === "DEEP_FOCUS" ? deepMinutes : mode === "FLOW" ? 0 : workMinutes;
-  const adjustFocusMinutes = (delta: number) => {
-    if (mode === "FLOW") return;
-    if (mode === "DEEP_FOCUS") {
-      setDeepMinutes((current) => Math.max(5, current + delta));
-      return;
-    }
-    setWorkMinutes((current) => Math.max(5, current + delta));
-  };
+  const buttonLabel = !hydrated
+    ? "Loading"
+    : !isActive
+      ? "Start focus"
+      : isPaused
+        ? "Continue"
+        : "Pause";
 
   return (
-    <motion.section
-      layout={!prefersReducedMotion}
-      animate={{
-        scale: immersive && !prefersReducedMotion ? 1.025 : 1,
-        y: immersive && !prefersReducedMotion ? 24 : 0,
-      }}
-      transition={prefersReducedMotion ? { duration: 0 } : springSoft}
-      className={cn(
-        "relative border-b border-[var(--border-subtle)] pb-10",
-        immersive && "my-auto"
-      )}
-    >
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center sm:gap-3">
-        <div>
-          <p className="text-[11px] font-medium uppercase text-[var(--text-muted)]">
-            Focus session
-          </p>
-          <h2 className="mt-1 text-xl font-semibold text-[var(--text-primary)]">
-            {boundTask ? boundTask.title : "Free session"}
-          </h2>
-          <p className="mt-1 text-xs text-[var(--text-muted)]">
-            {boundTask
-              ? "Focused on this task"
-              : "No task bound — this logs focus time only"}
-          </p>
-        </div>
-        <Select
-          value={session?.mode ?? mode}
-          onValueChange={(value) => setMode(value as FocusMode)}
-          disabled={running}
-        >
-          <SelectTrigger className="h-11 w-full sm:h-9 sm:w-36">
-            <SelectValue>{modeLabels[session?.mode ?? mode]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="POMODORO">Pomodoro</SelectItem>
-            <SelectItem value="FLOW">Flow</SelectItem>
-            <SelectItem value="DEEP_FOCUS">Deep Focus</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="mx-auto mt-8 max-w-[520px] sm:mt-10">
-        <div className="needt-panel-depth overflow-hidden rounded-[24px] border border-[var(--border-control)] p-3">
-          <div className="needt-page-depth relative grid min-h-[172px] place-items-center overflow-hidden rounded-[18px] border border-[var(--border-subtle)] px-5 text-center sm:min-h-[190px]">
-            <div
-              aria-label={`${Math.round(progress * 100)}% focus progress`}
-              className="absolute inset-x-0 bottom-0 h-1 bg-[var(--surface-control)]"
-            >
-              <motion.div
-                className="h-full bg-[var(--color-accent)]"
-                initial={false}
-                animate={{ width: `${Math.round(progress * 100)}%` }}
-                transition={prefersReducedMotion ? { duration: 0 } : springSoft}
-              />
-            </div>
-            <div>
-              <div className="text-[52px] font-semibold leading-none tracking-[-0.055em] tabular-nums text-[var(--text-primary)] sm:text-[72px]">
-                {formatClock(displaySeconds)}
-              </div>
-              <div className="mt-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--text-muted)]">
-                {isPaused ? "Paused" : modeLabels[session?.mode ?? mode]}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-4">
-          {!running && (
-            <div className="flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => adjustFocusMinutes(-5)}
-                disabled={mode === "FLOW"}
-                className="grid h-12 w-12 place-items-center rounded-full border border-[var(--control-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] transition-colors duration-150 hover:bg-[var(--surface-control)] disabled:opacity-35"
-                aria-label="Reduce focus duration by five minutes"
-              >
-                <Minus className="h-5 w-5" />
-              </button>
-              <div className="flex h-14 min-w-[190px] items-center justify-center rounded-full border border-[var(--control-border)] bg-[var(--surface-panel)] px-6 text-[22px] font-semibold tabular-nums text-[var(--text-primary)]">
-                {mode === "FLOW" ? "Open timer" : `${editableMinutes} min`}
-              </div>
-              <button
-                type="button"
-                onClick={() => adjustFocusMinutes(5)}
-                disabled={mode === "FLOW"}
-                className="grid h-12 w-12 place-items-center rounded-full border border-[var(--control-border)] bg-[var(--surface-panel)] text-[var(--text-primary)] transition-colors duration-150 hover:bg-[var(--surface-control)] disabled:opacity-35"
-                aria-label="Increase focus duration by five minutes"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            </div>
+    <section className="flex w-full max-w-[460px] flex-col items-center text-center">
+      <AnimatedCircularProgressBar
+        min={0}
+        max={progressMax}
+        value={progressValue}
+        gaugePrimaryColor="var(--color-accent)"
+        gaugeSecondaryColor="color-mix(in srgb, var(--text-primary) 10%, transparent)"
+        ariaLabel={`${buttonLabel}: ${formatClock(displaySeconds)}`}
+        className="size-[min(76vw,340px)] text-[var(--text-primary)]"
+      >
+        <div className="flex flex-col items-center">
+          <time
+            className="text-[clamp(2.75rem,12vw,5rem)] font-semibold leading-none tracking-[-0.06em] tabular-nums"
+            dateTime={`PT${Math.max(0, displaySeconds)}S`}
+          >
+            {formatClock(displaySeconds)}
+          </time>
+          {isPaused && (
+            <span className="mt-3 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-muted)]">
+              Paused
+            </span>
           )}
-
-          {!running && (
-            <label className="mx-auto flex w-fit items-center gap-2 text-[12px] text-[var(--text-muted)]">
-              Break
-              <Input
-                type="number"
-                min="1"
-                value={breakMinutes}
-                onChange={(event) =>
-                  setBreakMinutes(Math.max(1, Number(event.target.value)))
-                }
-                className="h-10 w-16 text-center text-base sm:h-8 sm:text-sm"
-              />
-              min
-            </label>
-          )}
-
-          <div className="flex flex-wrap justify-center gap-2">
-            {!running ? (
-              <Button
-                type="button"
-                onClick={handleStart}
-                className="h-12 w-full max-w-[420px] rounded-full text-[15px]"
-              >
-                <Play className="h-4 w-4" />
-                {boundTask ? "Start focus" : "Start free session"}
-              </Button>
-            ) : (
-              <>
-                {session?.mode !== "DEEP_FOCUS" &&
-                  (isPaused ? (
-                    <Button
-                      type="button"
-                      className="h-11 min-w-32"
-                      variant="secondary"
-                      onClick={() => resume()}
-                    >
-                      <Play className="h-4 w-4" />
-                      Resume
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      className="h-11 min-w-32"
-                      variant="secondary"
-                      onClick={() => pause()}
-                    >
-                      <Pause className="h-4 w-4" />
-                      Pause
-                    </Button>
-                  ))}
-                <Button
-                  type="button"
-                  className="h-11 min-w-32"
-                  variant="outline"
-                  disabled={isDeepLocked}
-                  onClick={() => setLeaveConfirmOpen(true)}
-                >
-                  <Square className="h-4 w-4" />
-                  {session?.mode === "FLOW" ? "Finish" : "Stop"}
-                </Button>
-              </>
-            )}
-          </div>
         </div>
-      </div>
+      </AnimatedCircularProgressBar>
 
-      {isDeepLocked && (
-        <div className="mt-5 border-l-2 border-[var(--accent)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--text-secondary)]">
-          Deep Focus is a commitment block. It completes when the timer ends.
-        </div>
-      )}
-
-      {report?.stats && report.weeklyReport && (
-        <>
-          <div className="mt-8 grid grid-cols-2 border-y border-[var(--border-subtle)] sm:grid-cols-4">
-            {[
-              { label: "Focus score", value: report.stats.focusScore },
-              {
-                label: "Streak",
-                value: report.stats.currentStreak,
-                suffix: "d",
-              },
-              {
-                label: "Focus hours",
-                value: report.stats.lifetimeMinutes / 60,
-                suffix: "h",
-              },
-              {
-                label: "This week",
-                value: report.weeklyReport.focusMinutes / 60,
-                suffix: "h",
-              },
-            ].map(({ label, value, suffix }) => (
-              <div
-                key={label}
-                className="border-r border-[var(--border-subtle)] px-3 py-4 last:border-r-0"
-              >
-                <div className="text-[11px] text-[var(--text-muted)]">
-                  {label}
-                </div>
-                <div className="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-                  <NumberFlow
-                    value={value}
-                    suffix={suffix}
-                    format={{ maximumFractionDigits: 1 }}
-                    transformTiming={{ duration: 220, easing: "ease-out" }}
-                    respectMotionPreference
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-          <WeekBarChart data={report.weeklyReport.dailyMinutes} />
-        </>
-      )}
-
-      {report?.upgradeRequired && (
-        <div className="mt-8 rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3">
-          <div className="text-[13px] font-medium text-[var(--text-primary)]">
-            Focus stats are included with Pro and Lifetime
-          </div>
-          <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
-            The focus timer and session history still work on Free. Upgrade to
-            see scores, streaks, and weekly analytics.
-          </p>
-          <Button asChild className="mt-3" size="sm" variant="outline">
-            <a href="/settings#billing">View plans</a>
-          </Button>
-        </div>
-      )}
-
-      {report?.stats && report.weeklyReport?.streakStatus.atRisk && (
-        <div className="glass--subtle mt-3 border-amber-300/30 bg-amber-500/10 p-2 text-xs text-amber-100">
-          One completed session today keeps your{" "}
-          <NumberFlow
-            value={report.stats.currentStreak}
-            transformTiming={{ duration: 180, easing: "ease-out" }}
-            respectMotionPreference
-          />
-          -day streak warm.
-        </div>
-      )}
+      <Button
+        type="button"
+        size="lg"
+        onClick={() => void handlePrimaryAction()}
+        disabled={!hydrated || isChangingState}
+        className="mt-10 h-[52px] min-w-[190px] rounded-full px-10 text-[15px]"
+      >
+        {isActive && isRunning ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="h-4 w-4" />
+        )}
+        {buttonLabel}
+      </Button>
 
       <Dialog
         open={Boolean(pendingCompletion)}
@@ -474,104 +187,24 @@ export function FocusTimerPanel({
             <DialogTitle>Session complete</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-[var(--text-secondary)]">
-            {pendingCompletion?.taskId
-              ? "Mark the task done, or log the time and keep going."
-              : "Nice block. Keep the momentum going?"}
+            Your focus time has been saved.
           </p>
-          <DialogFooter className="flex-col gap-2 sm:flex-row">
+          <DialogFooter>
             {pendingCompletion?.taskId && (
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => finishCompletion(true)}
+                onClick={() => void finishCompletion(true)}
               >
                 Mark task done
               </Button>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => startBreak()}
-            >
-              Start break
-            </Button>
-            <Button type="button" onClick={() => finishCompletion(false)}>
-              Log and continue
+            <Button type="button" onClick={() => void finishCompletion(false)}>
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <BottomSheet open={leaveConfirmOpen} onOpenChange={setLeaveConfirmOpen}>
-        <BottomSheetContent className="sm:left-1/2 sm:right-auto sm:w-[420px] sm:-translate-x-1/2 sm:rounded-2xl sm:border">
-          <div className="mx-auto grid h-11 w-11 place-items-center rounded-full border border-[var(--border-control)] bg-[var(--surface-raised)] text-[var(--text-secondary)]">
-            <Square className="h-4 w-4" />
-          </div>
-          <BottomSheetTitle className="mt-4 text-center">
-            Leave early?
-          </BottomSheetTitle>
-          <BottomSheetDescription className="mt-1 text-center leading-5">
-            The time you focused will still be logged. You can keep going if you
-            only needed a pause.
-          </BottomSheetDescription>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11"
-              onClick={() => setLeaveConfirmOpen(false)}
-            >
-              Never mind
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-11"
-              onClick={() => void confirmStop()}
-            >
-              End session
-            </Button>
-          </div>
-        </BottomSheetContent>
-      </BottomSheet>
-    </motion.section>
-  );
-}
-
-function WeekBarChart({
-  data,
-}: {
-  data: { label: string; minutes: number }[];
-}) {
-  const max = Math.max(1, ...data.map((day) => day.minutes));
-  return (
-    <div className="mt-6">
-      <div className="mb-2 text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
-        This week
-      </div>
-      <div className="flex items-end gap-2" style={{ height: 96 }}>
-        {data.map((day, index) => (
-          <div
-            key={`${day.label}-${index}`}
-            className="flex flex-1 flex-col items-center gap-1"
-          >
-            <div className="flex w-full flex-1 items-end">
-              <div
-                className="w-full rounded-t bg-[var(--accent)]"
-                style={{
-                  height: `${Math.round((day.minutes / max) * 100)}%`,
-                  minHeight: day.minutes > 0 ? 4 : 2,
-                  opacity: day.minutes > 0 ? 1 : 0.25,
-                }}
-                title={`${day.minutes} min`}
-              />
-            </div>
-            <span className="text-[10px] text-[var(--text-muted)]">
-              {day.label}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
+    </section>
   );
 }

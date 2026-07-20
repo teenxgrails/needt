@@ -24,6 +24,7 @@ import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
 import { useAppSession } from "@/components/providers/app-session-context";
 import { TodaysTasksPanel } from "@/components/tasks/TodaysTasksPanel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { RainbowButton } from "@/components/ui/rainbow-button";
 import {
   Tooltip,
   TooltipContent,
@@ -361,39 +362,34 @@ export const AppNav = memo(function AppNav({
       </div>
 
       <div className="mt-auto max-lg:hidden">
-        <Link
-          href={
-            isOverloaded
-              ? `/chat?prompt=${encodeURIComponent(
-                  "My day is overloaded. Show me what to defer or reschedule, but do not change anything yet."
-                )}`
-              : "/chat"
-          }
-          onClick={(event) => {
-            if (!onOpenChatOverlay) return;
-            event.preventDefault();
-            onOpenChatOverlay();
-          }}
-          className={cn(
-            "needt-ai-cta mb-2 flex min-h-11 min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-[13px] font-semibold",
-            pathname === "/chat" && "brightness-105"
-          )}
-        >
-          <Sparkles
-            className="relative z-[1] h-[18px] w-[18px] flex-none text-white"
-            strokeWidth={2}
-          />
-          <span className="relative z-[1] truncate">AI Chat</span>
-          {isOverloaded && (
-            <span
-              className="relative z-[1] h-2 w-2 flex-none rounded-full bg-[var(--color-warning)]"
-              aria-label="Today's workload exceeds your work hours"
-            />
-          )}
-          <kbd className="relative z-[1] ml-auto rounded-md border border-white/15 bg-black/20 px-1.5 py-0.5 text-[10px] font-medium text-white/80">
-            ⌘/
-          </kbd>
-        </Link>
+        <RainbowButton asChild className="mb-2 w-full justify-start px-3">
+          <Link
+            href={
+              isOverloaded
+                ? `/chat?prompt=${encodeURIComponent(
+                    "My day is overloaded. Show me what to defer or reschedule, but do not change anything yet."
+                  )}`
+                : "/chat"
+            }
+            onClick={(event) => {
+              if (!onOpenChatOverlay) return;
+              event.preventDefault();
+              onOpenChatOverlay();
+            }}
+          >
+            <Sparkles className="h-[18px] w-[18px] flex-none" strokeWidth={2} />
+            <span className="truncate">AI Chat</span>
+            {isOverloaded && (
+              <span
+                className="h-2 w-2 flex-none rounded-full bg-[var(--color-warning)]"
+                aria-label="Today's workload exceeds your work hours"
+              />
+            )}
+            <kbd className="ml-auto rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-white/70">
+              ⌘/
+            </kbd>
+          </Link>
+        </RainbowButton>
         <div className="flex items-center justify-between gap-1 border-t border-[var(--line-strong)] pt-2">
           <UserMenu />
           <div className="flex items-center gap-1">

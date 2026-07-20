@@ -1,3 +1,4 @@
+import { useTheme } from "@/components/providers/ThemeProvider";
 import {
   MotionPicker,
   MotionSwitchRow,
@@ -16,6 +17,7 @@ interface UserSettingsProps {
 export function UserSettings({ page = "all" }: UserSettingsProps) {
   const { calendar, updateCalendarSettings, updateUserSettings, user } =
     useSettingsStore();
+  const { setTheme } = useTheme();
 
   const timeFormats: { value: TimeFormat; label: string }[] = [
     { value: "12h", label: "12-hour" },
@@ -139,9 +141,7 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
                 themes.find((theme) => theme.value === user.theme)?.label
               }
               options={themes.map((theme) => ({ ...theme }))}
-              onValueChange={(value) =>
-                updateUserSettings({ theme: value as typeof user.theme })
-              }
+              onValueChange={(value) => setTheme(value as typeof user.theme)}
             />
             <MotionPicker
               label="Start week on"
