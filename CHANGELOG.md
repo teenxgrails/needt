@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Rebuilt Today around a persistent per-day Agenda document: rich-text notes, `/task` creation and core slash commands share the center canvas with editable task rows, while the desktop right rail is now a full one-day Motion-style timeline. Task titles open the full editor, inline dates and durations save immediately, completed work remains visible in historical days, and the mobile route keeps its existing shell with the same Agenda task language.
+
 - Added a token-based Animated Beam connection map to Settings → Integrations, showing Google Calendar, Outlook, iCloud, and the Needt API flowing into one planner with active calendar links reflected in green and reduced-motion support.
 - Expanded Boards into a full-page Notion-style workspace with persistent Table, Board, List, Timeline, Calendar, and Gallery views over the same Needt tasks. Timeline and Calendar also surface existing calendar events as read-only context; Boards now have a dedicated index, inline title/icon editing, a full-screen view-first creation flow, and responsive dark/light visual coverage.
 - Added deterministic Playwright visual-regression coverage for Calendar, Today, and Space at 1440px desktop, 768px tablet, and 375px mobile viewports, including isolated test data, fixed time/timezone, and portable baseline names.

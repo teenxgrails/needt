@@ -31,6 +31,7 @@ interface DatePickerProps {
   className?: string;
   accent?: boolean;
   showIcon?: boolean;
+  labelFormat?: string;
 }
 
 interface Shortcut {
@@ -69,6 +70,7 @@ export function DatePicker({
   className,
   accent = false,
   showIcon = true,
+  labelFormat,
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile(640);
@@ -90,7 +92,10 @@ export function DatePicker({
       )}
       <span className="min-w-0 flex-1 truncate">
         {value
-          ? format(value, includeTime ? "EEE MMM d, h:mm a" : "EEE MMM d")
+          ? format(
+              value,
+              labelFormat ?? (includeTime ? "EEE MMM d, h:mm a" : "EEE MMM d")
+            )
           : placeholder}
       </span>
     </button>

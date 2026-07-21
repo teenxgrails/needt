@@ -62,3 +62,8 @@
 - 2026-07-18: Settings keeps one visible page title, uses shared Motion rows/cards for every ordinary-user tab, hides advanced appearance/retention/webhook details by default, and omits destructive or export actions that have no implemented backend.
 - 2026-07-21: Focus is temporarily reduced to one canvas, a live circular timer, and one Start/Pause/Continue action. Existing server-owned sessions, task binding, pause/resume, completion logging, notifications, task completion, queue/actions, analytics, breaks, modes, and early-stop services remain intact for the later Focus rebuild rather than being deleted.
 - 2026-07-21: Magic UI components are adapted to Needt rather than used verbatim: Rainbow Button keeps a black fill and thin animated border without blur/glow, while all theme entry points share one reduced-motion-safe circular View Transition and retain Light/Dark/System persistence.
+
+# 2026-07-22
+
+- Today follows Motion AI Agenda's document-per-day model: prose is stored in `DailyAgenda`, while task blocks remain references to canonical `Task` records so completion, scheduling, Calendar, and historical views never fork task data.
+- The Today redesign owns `src/components/today/*`, `/api/daily-agenda`, and the `DailyAgenda` schema/migration; parallel Settings or other-tab work should avoid these files until this block is merged.
