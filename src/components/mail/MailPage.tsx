@@ -320,7 +320,7 @@ export function MailPage() {
                 setMobilePane("messages");
               }}
               className={cn(
-                "needt-motion-list-item flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
+                "flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
                 !selectedAccount && "bg-[var(--surface-hover)]"
               )}
             >
@@ -342,7 +342,7 @@ export function MailPage() {
                   setMobilePane("messages");
                 }}
                 className={cn(
-                  "needt-motion-list-item flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
+                  "flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
                   selectedAccount === account.id && "bg-[var(--surface-hover)]"
                 )}
               >
@@ -427,7 +427,7 @@ export function MailPage() {
               Loading inbox...
             </div>
           ) : messages.length ? (
-            <div role="list" className="needt-motion-stagger">
+            <div role="list">
               {messages.map((message) => (
                 <button
                   key={message.id}
@@ -435,7 +435,7 @@ export function MailPage() {
                   role="listitem"
                   onClick={() => void openMail(message)}
                   className={cn(
-                    "needt-motion-list-item group flex min-h-16 w-full gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 text-left transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-10 xl:py-1",
+                    "group flex min-h-16 w-full gap-2 border-b border-[var(--border-subtle)] px-3 py-2.5 text-left transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-10 xl:py-1",
                     selectedId === message.id && "bg-[var(--surface-hover)]"
                   )}
                 >
@@ -568,7 +568,7 @@ export function MailPage() {
               </Button>
             </header>
             <ScrollArea className="min-h-0 flex-1">
-              <article className="needt-motion-surface mx-auto max-w-3xl px-6 py-5 max-sm:px-4">
+              <article className="mx-auto max-w-3xl px-6 py-5 max-sm:px-4">
                 <h2 className="text-[18px] font-semibold leading-6">
                   {openMessage.subject}
                 </h2>

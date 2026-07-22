@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Rolled back the global spring motion pass from PR #14 across routes and shared controls, restoring the previous local component animations while keeping reduced-motion support and the newer Calendar functionality.
 - Kept scheduled task blocks at their stated duration by reserving ADHD estimate inflation as a separate gap, retained completed tasks as dimmed checked calendar items, removed the Chrome install banner, and aligned the mini calendar's week start and light-theme styling with user settings.
 - Made the task editor's auto-schedule state explicit: a disabled switch now says `(Off)` instead of incorrectly looking like a pending scheduling request.
 - Restored the missing `20260711220000_calendar_workspace_upgrade` migration-history marker so existing production databases and the repository agree on migration order before newer Focus, Boards, realtime, Mail, AI, billing, design-token, and Today migrations are applied.
@@ -18,8 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added one persistent secondary Calendar timezone with add, edit, and remove controls, plus Motion-style per-day controls for starting later, stopping early, blocking hours or a whole day, and resetting the day's availability.
 - Added a local, privacy-preserving Needt AI companion: a round, diffused cyan/blue/violet aurora character whose symmetric geometric face and color field smoothly bend toward the pointer, shift from teal to violet/rose with distance, blink naturally, react to planner actions, occasionally offer route-aware suggestions, open the existing AI chat, adapt around the mobile dock, and respect reduced motion.
-
-- Added a shared, reduced-motion-aware Needt motion language across every app route except Today: spring route and Settings transitions, tactile controls, animated tabs, fields, toggles, checkboxes, sliders, cards, lists, menus, popovers, tooltips, dialogs, calendar events, and focused motion passes for Tasks, Boards, and Mail. The system reuses the existing semantic UI tokens and Motion runtime without glow or blur.
 
 - Rebuilt Today around a persistent per-day Agenda document: rich-text notes, `/task` creation and core slash commands share the center canvas with editable task rows, while the desktop right rail is now a full one-day Motion-style timeline. Task titles open the full editor, inline dates and durations save immediately, completed work remains visible in historical days, and the mobile route keeps its existing shell with the same Agenda task language.
 

@@ -50,7 +50,7 @@ export function BoardsHome() {
             <button
               type="button"
               onClick={() => setDialogOpen(true)}
-              className="needt-motion-surface mt-8 grid min-h-64 w-full place-items-center rounded-xl border border-dashed border-[var(--border-control)] px-6 text-center transition-colors hover:bg-[var(--surface-hover)]"
+              className="mt-8 grid min-h-64 w-full place-items-center rounded-xl border border-dashed border-[var(--border-control)] px-6 text-center transition-colors hover:bg-[var(--surface-hover)]"
             >
               <span>
                 <LayoutGrid className="mx-auto h-7 w-7 text-[var(--text-muted)]" />
@@ -63,12 +63,12 @@ export function BoardsHome() {
               </span>
             </button>
           ) : (
-            <div className="needt-motion-stagger grid grid-cols-1 gap-px bg-[var(--border-subtle)] sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-px bg-[var(--border-subtle)] sm:grid-cols-2 xl:grid-cols-3">
               {boards.map((board) => (
                 <Link
                   key={board.id}
                   href={`/boards/${board.id}`}
-                  className="needt-motion-list-item group min-h-44 bg-[var(--surface-canvas)] p-5 transition-colors hover:bg-[var(--surface-hover)]"
+                  className="group min-h-44 bg-[var(--surface-canvas)] p-5 transition-colors hover:bg-[var(--surface-hover)]"
                 >
                   <div className="text-2xl text-[var(--text-muted)]">
                     {board.icon || <LayoutGrid className="h-6 w-6" />}

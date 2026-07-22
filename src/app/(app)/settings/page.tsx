@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import {
   Bell,
@@ -45,7 +44,6 @@ import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
 import { cn } from "@/lib/utils";
-import { quickEase, springSnappy } from "@/lib/motion";
 
 import { useSettingsStore } from "@/store/settings";
 
@@ -170,22 +168,15 @@ function SettingsNavGroup({
                 onSelect(item.id);
               }}
               className={cn(
-                "needt-motion-list-item relative isolate flex h-[31px] items-center gap-2 overflow-hidden rounded-[4px] px-2 text-[13px] font-medium transition-colors duration-150",
+                "flex h-[31px] items-center gap-2 rounded-[4px] px-2 text-[13px] font-medium transition-colors duration-150",
                 activeTab === item.id
-                  ? "text-[var(--text-primary)]"
+                  ? "bg-[var(--surface-hover)] text-[var(--text-primary)]"
                   : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               )}
               aria-current={activeTab === item.id ? "page" : undefined}
             >
-              {activeTab === item.id && (
-                <motion.span
-                  layoutId="settings-active-tab"
-                  className="absolute inset-0 z-0 rounded-[4px] bg-[var(--surface-hover)]"
-                  transition={springSnappy}
-                />
-              )}
-              <Icon className="relative z-10 h-4 w-4" strokeWidth={1.7} />
-              <span className="relative z-10">{item.label}</span>
+              <Icon className="h-4 w-4" strokeWidth={1.7} />
+              <span>{item.label}</span>
             </a>
           );
         })}
@@ -198,7 +189,6 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("calendars");
   const [isHydrated, setIsHydrated] = useState(false);
   const [mobileOverview, setMobileOverview] = useState(true);
-  const prefersReducedMotion = useReducedMotion();
   const initializeSettings = useSettingsStore(
     (state) => state.initializeSettings
   );
@@ -378,25 +368,9 @@ export default function SettingsPage() {
               !isHydrated && "opacity-0"
             )}
           >
-            <AnimatePresence initial={false} mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={
-                  prefersReducedMotion ? false : { opacity: 0, y: 10, scale: 0.995 }
-                }
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={
-                  prefersReducedMotion
-                    ? { opacity: 1 }
-                    : { opacity: 0, y: -5, scale: 0.998 }
-                }
-                transition={prefersReducedMotion ? { duration: 0 } : quickEase}
-              >
-                <SettingsPanelBoundary resetKey={activeTab}>
-                  {renderTabContent()}
-                </SettingsPanelBoundary>
-              </motion.div>
-            </AnimatePresence>
+            <SettingsPanelBoundary resetKey={activeTab}>
+              {renderTabContent()}
+            </SettingsPanelBoundary>
           </div>
 
           <div
@@ -406,7 +380,7 @@ export default function SettingsPage() {
               !isHydrated && "opacity-0"
             )}
           >
-            <div className="needt-motion-stagger mx-auto max-w-xl space-y-7">
+            <div className="mx-auto max-w-xl space-y-7">
               {MOBILE_TAB_GROUPS.map((group) => (
                 <section
                   key={group.label}
@@ -426,7 +400,7 @@ export default function SettingsPage() {
                           key={item.id}
                           type="button"
                           onClick={() => selectTab(item.id)}
-                          className="needt-motion-list-item flex min-h-14 w-full items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-left text-[15px] text-[var(--text-primary)] transition-colors last:border-b-0 active:bg-[var(--surface-hover)]"
+                          className="flex min-h-14 w-full items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-left text-[15px] text-[var(--text-primary)] transition-colors last:border-b-0 active:bg-[var(--surface-hover)]"
                         >
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--control-radius)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
                             <Icon
