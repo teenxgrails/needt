@@ -1,28 +1,30 @@
-# Deploy Needt with Coolify + Neon
+# Deploy Needt with Coolify
 
-Needt production runs on the existing VPS through Coolify. Neon provides
-PostgreSQL, Redis backs realtime updates and BullMQ, and the same Docker image is
-deployed as a web service and a background worker. Coolify is the production
-source of truth for v0.1; Vercel is not part of the release path.
+Needt production runs on the existing VPS through Coolify. Coolify-managed
+PostgreSQL stores application data, Coolify-managed Redis backs realtime updates
+and BullMQ, and the same repository/Dockerfile is deployed as a web service and a
+background worker. Coolify is the production source of truth for v0.1; Vercel is
+not part of the release path.
 
-## 1. Create Neon
+## 1. Create the data services
 
-1. Create a Neon project.
-2. Copy the pooled connection string into `DATABASE_URL`.
-3. Copy the direct connection string into `DIRECT_URL`.
-4. Keep both values in the shared Coolify environment for the web and worker.
+1. Create a PostgreSQL resource in the Coolify production environment.
+2. Create a Redis resource in the same environment.
+3. Set the PostgreSQL internal URL as `DATABASE_URL` and `DIRECT_URL` for both
+   the web and worker services.
+4. Set the Redis internal URL as `REDIS_URL` for both services.
 
-`DATABASE_URL` is used by the app at runtime. `DIRECT_URL` is used by Prisma migrations.
+`DATABASE_URL` is used by the app at runtime. `DIRECT_URL` is used by Prisma
+migrations and may point to the same internal PostgreSQL endpoint.
 
 ## 2. Create the Coolify services
 
-1. Connect the GitHub repository and deploy `main` with
-   `docker/production/Dockerfile` as the web service.
+1. Connect the GitHub repository and deploy `main` with the root `Dockerfile`.
+   Use its `production` stage for the web service.
 2. Keep the image default command for web startup.
-3. Create a Redis resource and set its internal URL as `REDIS_URL` on both
-   services.
-4. Create a second service from the same repository, branch, Dockerfile, and
-   environment. Override only its command:
+3. Create a second service from the same repository, branch, Dockerfile, and
+   environment. Set its Docker build-stage target to `worker`; the image already
+   supplies the worker command:
 
 ```bash
 node dist/worker/index.js
@@ -39,8 +41,8 @@ node dist/worker/index.js
 Required:
 
 ```bash
-DATABASE_URL="postgresql://...-pooler..."
-DIRECT_URL="postgresql://..."
+DATABASE_URL="postgresql://postgres:...@postgres-resource:5432/postgres"
+DIRECT_URL="postgresql://postgres:...@postgres-resource:5432/postgres"
 NEXTAUTH_URL="https://use.needt.app"
 NEXT_PUBLIC_APP_URL="https://use.needt.app"
 NEXT_PUBLIC_SITE_URL="https://use.needt.app"
@@ -136,7 +138,9 @@ Expected result:
 ## 8. Notes
 
 - The app remains single-user in product behavior, but tables keep `userId` seams so future SaaS conversion does not require a database rewrite.
-- Prisma is configured with `directUrl`.
-- `@prisma/adapter-neon` and `@neondatabase/serverless` are installed. Runtime uses the Neon driver adapter automatically when `DATABASE_URL` is a Neon pooled URL containing `neon.tech` and `-pooler.`; local Postgres keeps the standard Prisma client path.
+- Prisma is configured with `directUrl`; production uses the standard PostgreSQL
+  client path against the Coolify internal database endpoint.
+- Neon adapter support remains available for development or a future database
+  move, but it is not part of the current production topology.
 - Production deploys are triggered from `main` in Coolify. Verify both web and
   worker show the same SHA before a release smoke.

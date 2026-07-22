@@ -32,7 +32,7 @@ the core planning loop.
   of the current milestone.
 - Production calendar and AI verification require user-owned provider credentials.
 - Production is Coolify on a VPS: one web service and one BullMQ worker using the
-  same Docker image and SHA, with Neon PostgreSQL and Redis.
+  same Dockerfile and SHA, with Coolify-managed PostgreSQL and Redis.
 - Shared UI must follow `design-refs/ui-conventions.md`: token-based, no glow or
   backdrop blur, and reuse the established controls.
 

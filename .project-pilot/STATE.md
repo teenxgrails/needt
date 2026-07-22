@@ -17,31 +17,31 @@ fixes, and release evidence.
     palette, responsive mobile shell, PWA/offline foundation, and realtime worker.
   - Dark/light design-token foundation and the current cross-screen design pass.
   - Docker startup fix pins the Prisma 6 CLI instead of downloading Prisma 7.
+  - `main`, the Coolify web service, and BullMQ worker are aligned; both runtime
+    services are healthy and production reports all 60 migrations applied.
+  - Production golden-loop smoke passed: create/edit, explicit auto-schedule,
+    Calendar/Today/Workspace persistence, Focus, Boards, cleanup, and schedule restore.
 - Active:
-  - Release stabilization and evidence collection.
-  - Coolify/VPS is confirmed as the v0.1 production target.
-  - Two local AI companion commits exist on `main` but are not yet on `origin/main`.
+  - Final engineering/provider release gate (RC3).
+  - Coolify/VPS with managed PostgreSQL and Redis is confirmed as production.
 - Verify:
-  - Latest Today, Focus, Boards, mobile, Settings, integration map, and AI companion
-    changes have implementation evidence but not one current end-to-end release pass.
-  - Production web + worker are running the latest schema and code.
-  - Authenticated create → schedule → complete/reschedule flow on desktop and PWA.
   - Live Google, Outlook, Apple/iCloud, Mail, AI, Redis/SSE, and connector behavior.
+  - Installed-PWA/mobile golden loop and final one-time engineering gate.
 - Blocked:
   - Provider-level verification needs production credentials and access owned by
     the project owner.
 
 ## Next action
 
-**Owner: Codex.** Publish the two local companion commits and the project-plan
-update, then deploy the same commit to the Coolify web and worker.
+**Owner: Codex.** Run RC3 once: targeted provider smoke where credentials exist,
+installed-PWA/mobile smoke, then lint, type-check, tests, app build, worker build,
+and production Docker build.
 
-Inputs: production access, database connection, Redis, and current environment
-values.
+Inputs: production provider credentials/sessions and the existing Coolify access.
 
-Done condition: `origin/main`, the production web service, and the worker report the
-same commit; migrations including `20260722013000_daily_agendas` are applied; the
-health endpoint reports database connectivity.
+Done condition: available provider paths and the installed PWA are recorded,
+engineering gates are green, unavailable external checks are explicit, and the
+personal beta can be tagged without a known release blocker.
 
 ## Open decisions
 

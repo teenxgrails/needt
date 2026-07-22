@@ -773,7 +773,9 @@ export function TaskModal({
               </span>
               <span className="font-medium">Auto-scheduled</span>
               <span className="text-current/80">
-                {task?.scheduledStart
+                {!isAutoScheduled
+                  ? "(Off)"
+                  : task?.scheduledStart
                   ? format(newDate(task.scheduledStart), "EEE MMM d, h:mm a")
                   : "(Pending)"}
               </span>

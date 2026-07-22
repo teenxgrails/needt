@@ -2,23 +2,26 @@
 
 ## Now
 
-- [ ] **RC0 — Align and deploy one production commit** (`S`)
-  - Use Coolify/VPS as the operational source of truth with Neon and Redis.
-  - Push the two local AI companion commits or explicitly drop them from the RC.
-  - Deploy web + worker from the same SHA and apply all pending migrations.
-  - Evidence: production SHA, `/api/health`, migration status, worker startup log.
+- [x] **RC0 — Align and deploy one production commit** (`S`)
+  - Coolify/VPS is the operational source of truth with managed PostgreSQL and Redis.
+  - Web and worker run the same `main` SHA; the AI companion is included.
+  - All 60 production migrations are present and Prisma reports no pending work.
+  - Evidence: matching Coolify SHAs, healthy `/api/health`, migration and worker logs.
 
-- [ ] **RC1 — Prove the golden planning loop** (`M`, depends on RC0)
+- [x] **RC1 — Prove the golden planning loop** (`M`, depends on RC0)
   - Sign in; create and edit a task; auto-schedule it around a busy calendar block.
   - Confirm it appears consistently in Calendar, Today, Focus, and Boards.
   - Complete/reschedule it and confirm persistence after reload and PWA navigation.
-  - Evidence: concise smoke log plus screenshots only for failures or visual gaps.
+  - Evidence: production task created/edited, auto-scheduled into a free slot,
+    persisted after reload, appeared in Today/Calendar/Workspace, and was removed;
+    Focus and Boards loaded without errors and the schedule returned to its prior state.
 
-- [ ] **RC2 — Fix release blockers only** (`M`, depends on RC1)
+- [x] **RC2 — Fix release blockers only** (`M`, depends on RC1)
   - Fix data loss, broken auth/navigation, failed migrations, scheduler correctness,
     provider failures, mobile overflow, or serious interaction jank found in RC1.
   - Cosmetic ideas and new features go to Backlog.
-  - Evidence: targeted regression check for each fix.
+  - Evidence: migration-history bridge shipped; task auto-schedule state now says
+    `(Off)` when disabled instead of incorrectly implying `(Pending)`.
 
 - [ ] **RC3 — Final release gate** (`M`, depends on RC2)
   - Run once: lint with zero warnings, type-check, unit tests, app build,
