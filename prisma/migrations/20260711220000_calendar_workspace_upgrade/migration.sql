@@ -1,0 +1,4 @@
+-- History bridge for a migration applied to production before its file was
+-- preserved in Git. The schema changes are already represented by the adjacent
+-- migrations and the current Prisma schema; keep this marker so migration order
+-- remains consistent across existing and fresh databases.

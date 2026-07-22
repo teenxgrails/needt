@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Restored the missing `20260711220000_calendar_workspace_upgrade` migration-history marker so existing production databases and the repository agree on migration order before newer Focus, Boards, realtime, Mail, AI, billing, design-token, and Today migrations are applied.
 - Fixed production startup accidentally downloading Prisma 7 through `npx`, which rejected the Prisma 6 datasource schema and skipped migrations. Runtime images now ship and invoke the lockfile-pinned CLI, reuse the client generated at build time, and no longer make a fragile middleware request back into the same container for the root redirect.
 
 ### Added
