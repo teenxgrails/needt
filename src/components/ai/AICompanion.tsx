@@ -8,12 +8,7 @@ import { ArrowUpRight, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-type CompanionEmotion =
-  | "calm"
-  | "attentive"
-  | "thinking"
-  | "happy"
-  | "concerned";
+type CompanionEmotion = "calm" | "attentive" | "thinking" | "happy";
 
 interface AICompanionProps {
   hidden?: boolean;
@@ -70,24 +65,108 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
     if (hidden) return;
     let frame = 0;
     const finePointer = window.matchMedia("(pointer: fine)");
-    if (!finePointer.matches) return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (!finePointer.matches || reducedMotion.matches) return;
+
+    const target = { x: 0, y: 0, distance: 0.52, angle: 0 };
+    const current = { ...target };
+
+    const renderFrame = () => {
+      const root = rootRef.current;
+      if (!root) {
+        frame = 0;
+        return;
+      }
+
+      current.x += (target.x - current.x) * 0.085;
+      current.y += (target.y - current.y) * 0.085;
+      current.distance += (target.distance - current.distance) * 0.055;
+      const angleDelta = ((target.angle - current.angle + 540) % 360) - 180;
+      current.angle += angleDelta * 0.07;
+
+      root.style.setProperty("--companion-look-x", `${current.x * 1.8}px`);
+      root.style.setProperty("--companion-look-y", `${current.y * 1.5}px`);
+      root.style.setProperty("--companion-face-x", `${current.x * 6.5}px`);
+      root.style.setProperty("--companion-face-y", `${current.y * 5.2}px`);
+      root.style.setProperty(
+        "--companion-face-rotate",
+        `${current.x * 2.2}deg`
+      );
+      root.style.setProperty("--companion-head-x", `${current.x * 3.4}px`);
+      root.style.setProperty("--companion-head-y", `${current.y * 2.8}px`);
+      root.style.setProperty(
+        "--companion-aura-angle",
+        `${current.angle * 0.04}deg`
+      );
+      root.style.setProperty("--companion-cyan-x", `${current.x * 9.1}px`);
+      root.style.setProperty("--companion-cyan-y", `${current.y * 7.7}px`);
+      root.style.setProperty(
+        "--companion-cyan-angle",
+        `${current.angle * 0.16}deg`
+      );
+      root.style.setProperty("--companion-violet-x", `${current.x * -8.1}px`);
+      root.style.setProperty("--companion-violet-y", `${current.y * -6.8}px`);
+      root.style.setProperty(
+        "--companion-violet-angle",
+        `${current.angle * -0.13}deg`
+      );
+      root.style.setProperty("--companion-rose-x", `${current.x * -11.7}px`);
+      root.style.setProperty("--companion-rose-y", `${current.y * -7.9}px`);
+      root.style.setProperty(
+        "--companion-rose-angle",
+        `${current.angle * -0.2}deg`
+      );
+      root.style.setProperty(
+        "--companion-saturation",
+        (0.98 + current.distance * 0.2).toFixed(3)
+      );
+      root.style.setProperty(
+        "--companion-distance",
+        current.distance.toFixed(3)
+      );
+      root.style.setProperty(
+        "--companion-cyan-opacity",
+        (0.9 - current.distance * 0.22).toFixed(3)
+      );
+      root.style.setProperty(
+        "--companion-violet-opacity",
+        (0.42 + current.distance * 0.38).toFixed(3)
+      );
+      root.style.setProperty(
+        "--companion-rose-opacity",
+        Math.max(0.02, (current.distance - 0.42) * 0.72).toFixed(3)
+      );
+
+      const remaining =
+        Math.abs(target.x - current.x) +
+        Math.abs(target.y - current.y) +
+        Math.abs(target.distance - current.distance) +
+        Math.abs(((target.angle - current.angle + 540) % 360) - 180) / 180;
+
+      if (remaining > 0.002) frame = window.requestAnimationFrame(renderFrame);
+      else frame = 0;
+    };
+
+    const requestRender = () => {
+      if (!frame) frame = window.requestAnimationFrame(renderFrame);
+    };
 
     const onPointerMove = (event: PointerEvent) => {
-      window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        const root = rootRef.current;
-        const orb = orbRef.current;
-        if (!root || !orb) return;
-        const bounds = orb.getBoundingClientRect();
-        const centerX = bounds.left + bounds.width / 2;
-        const centerY = bounds.top + bounds.height / 2;
-        const x = Math.max(-1, Math.min(1, (event.clientX - centerX) / 360));
-        const y = Math.max(-1, Math.min(1, (event.clientY - centerY) / 280));
-        root.style.setProperty("--companion-look-x", `${x * 3.4}px`);
-        root.style.setProperty("--companion-look-y", `${y * 2.8}px`);
-        root.style.setProperty("--companion-head-x", `${x * 5}px`);
-        root.style.setProperty("--companion-head-y", `${y * 4}px`);
-      });
+      const orb = orbRef.current;
+      if (!orb) return;
+      const bounds = orb.getBoundingClientRect();
+      const centerX = bounds.left + bounds.width / 2;
+      const centerY = bounds.top + bounds.height / 2;
+      const deltaX = event.clientX - centerX;
+      const deltaY = event.clientY - centerY;
+      target.x = Math.max(-1, Math.min(1, deltaX / 420));
+      target.y = Math.max(-1, Math.min(1, deltaY / 340));
+      target.distance = Math.max(
+        0,
+        Math.min(1, Math.hypot(deltaX, deltaY) / 820)
+      );
+      target.angle = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
+      requestRender();
     };
 
     window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -223,10 +302,12 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
         }}
         className="needt-ai-companion-orb group relative grid h-[116px] w-[116px] touch-manipulation place-items-center rounded-full outline-none focus-visible:ring-1 focus-visible:ring-[var(--control-border)] max-sm:h-[76px] max-sm:w-[76px]"
       >
-        <span className="needt-ai-mist needt-ai-mist-cyan" aria-hidden />
-        <span className="needt-ai-mist needt-ai-mist-blue" aria-hidden />
-        <span className="needt-ai-mist needt-ai-mist-violet" aria-hidden />
-        <span className="needt-ai-mist needt-ai-mist-core" aria-hidden />
+        <span className="needt-ai-aura" aria-hidden>
+          <span className="needt-ai-color-layer needt-ai-color-base" />
+          <span className="needt-ai-color-layer needt-ai-color-cyan" />
+          <span className="needt-ai-color-layer needt-ai-color-violet" />
+          <span className="needt-ai-color-layer needt-ai-color-rose" />
+        </span>
 
         <svg
           className="needt-ai-face relative z-10 h-full w-full"
@@ -234,37 +315,23 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
           role="img"
           aria-label="Calm Needt assistant face"
         >
-          <g className="needt-ai-brows">
-            <path
-              className="needt-ai-brow needt-ai-brow-left"
-              d="M25 39 Q33 31 41 38"
-            />
-            <path
-              className="needt-ai-brow needt-ai-brow-right"
-              d="M59 38 Q67 31 75 39"
-            />
+          <g className="needt-ai-face-plane">
+            <g className="needt-ai-brows">
+              <path
+                className="needt-ai-brow needt-ai-brow-left"
+                d="M25 39 Q33 31 41 38"
+              />
+              <path
+                className="needt-ai-brow needt-ai-brow-right"
+                d="M59 38 Q67 31 75 39"
+              />
+            </g>
+            <g className="needt-ai-eyes">
+              <circle cx="34" cy="48" r="2.55" />
+              <circle cx="66" cy="48" r="2.55" />
+            </g>
+            <path className="needt-ai-nose" d="M49 51 L49 64 L58 64" />
           </g>
-          <g className="needt-ai-eyes">
-            <circle cx="34" cy="47" r="2.25" />
-            <circle cx="66" cy="47" r="2.25" />
-          </g>
-          <path className="needt-ai-nose" d="M49 50 L49 61 L57 61" />
-          <path
-            className="needt-ai-mouth needt-ai-mouth-calm"
-            d="M45.5 70 Q50 71.4 54.5 69.8"
-          />
-          <path
-            className="needt-ai-mouth needt-ai-mouth-thinking"
-            d="M45.5 70 Q50 68.5 54.5 70"
-          />
-          <path
-            className="needt-ai-mouth needt-ai-mouth-happy"
-            d="M44.5 68.8 Q50 72.5 55.5 68.7"
-          />
-          <path
-            className="needt-ai-mouth needt-ai-mouth-concerned"
-            d="M45.5 71 Q50 67.8 54.5 71"
-          />
         </svg>
       </button>
     </div>

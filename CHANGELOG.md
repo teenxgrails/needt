@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added a local, privacy-preserving Needt AI companion: a soft cyan/blue/violet aurora character that floats above the app, gently follows the pointer, reacts to planner actions with restrained facial states, occasionally offers route-aware suggestions, opens the existing AI chat, adapts around the mobile dock, and respects reduced motion.
+- Added a local, privacy-preserving Needt AI companion: a round, diffused cyan/blue/violet aurora character whose symmetric geometric face and color field smoothly bend toward the pointer, shift from teal to violet/rose with distance, blink naturally, react to planner actions, occasionally offer route-aware suggestions, open the existing AI chat, adapt around the mobile dock, and respect reduced motion.
 
 - Rebuilt Today around a persistent per-day Agenda document: rich-text notes, `/task` creation and core slash commands share the center canvas with editable task rows, while the desktop right rail is now a full one-day Motion-style timeline. Task titles open the full editor, inline dates and durations save immediately, completed work remains visible in historical days, and the mobile route keeps its existing shell with the same Agenda task language.
 

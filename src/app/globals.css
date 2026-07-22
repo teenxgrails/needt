@@ -687,8 +687,26 @@
 .needt-ai-companion {
   --companion-look-x: 0px;
   --companion-look-y: 0px;
+  --companion-face-x: 0px;
+  --companion-face-y: 0px;
+  --companion-face-rotate: 0deg;
   --companion-head-x: 0px;
   --companion-head-y: 0px;
+  --companion-aura-angle: 0deg;
+  --companion-cyan-x: 0px;
+  --companion-cyan-y: 0px;
+  --companion-cyan-angle: 0deg;
+  --companion-violet-x: 0px;
+  --companion-violet-y: 0px;
+  --companion-violet-angle: 0deg;
+  --companion-rose-x: 0px;
+  --companion-rose-y: 0px;
+  --companion-rose-angle: 0deg;
+  --companion-saturation: 1.084;
+  --companion-distance: 0.52;
+  --companion-cyan-opacity: 0.786;
+  --companion-violet-opacity: 0.618;
+  --companion-rose-opacity: 0.072;
   --companion-face: rgb(255 255 255 / 92%);
   isolation: isolate;
 }
@@ -701,62 +719,124 @@
 
 .needt-ai-companion-orb::before {
   position: absolute;
-  inset: -12%;
+  inset: -18%;
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--primitive-sky-300) 22%, transparent),
-    transparent 70%
+    color-mix(in srgb, var(--primitive-sky-300) 18%, transparent) 0%,
+    transparent 72%
   );
-  filter: blur(14px);
+  filter: blur(12px);
   content: "";
-  opacity: 0.72;
+  opacity: 0.68;
 }
 
-.needt-ai-mist {
+.needt-ai-aura {
+  position: absolute;
+  inset: -18%;
+  overflow: hidden;
+  border-radius: 50%;
+  filter: saturate(var(--companion-saturation));
+  mask-image: radial-gradient(
+    circle,
+    #000 0%,
+    #000 52%,
+    #000a 68%,
+    transparent 82%
+  );
+  -webkit-mask-image: radial-gradient(
+    circle,
+    #000 0%,
+    #000 52%,
+    #000a 68%,
+    transparent 82%
+  );
+  pointer-events: none;
+  transform: rotate(var(--companion-aura-angle));
+  will-change: transform, filter;
+}
+
+.needt-ai-color-layer {
   position: absolute;
   border-radius: 50%;
-  filter: blur(11px);
+  filter: blur(10px);
   mix-blend-mode: screen;
-  pointer-events: none;
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
-.needt-ai-mist-cyan {
-  inset: 14% 43% 39% 7%;
-  background: color-mix(in srgb, var(--primitive-cyan-300) 88%, transparent);
-  opacity: 0.84;
-  animation: needt-companion-mist-a 8.4s ease-in-out infinite alternate;
-}
-
-.needt-ai-mist-blue {
-  inset: 34% 15% 9% 25%;
-  background: color-mix(in srgb, var(--primitive-sky-300) 82%, transparent);
-  opacity: 0.8;
-  animation: needt-companion-mist-b 9.2s ease-in-out infinite alternate;
-}
-
-.needt-ai-mist-violet {
-  inset: 9% 6% 41% 45%;
-  background: color-mix(in srgb, var(--primitive-lilac-300) 78%, transparent);
-  opacity: 0.7;
-  animation: needt-companion-mist-c 10.4s ease-in-out infinite alternate;
-}
-
-.needt-ai-mist-core {
-  inset: 27% 24% 24%;
-  background: color-mix(
-    in srgb,
-    var(--primitive-periwinkle-300) 52%,
-    transparent
+.needt-ai-color-base {
+  inset: 12%;
+  background: radial-gradient(
+    circle at 48% 44%,
+    color-mix(in srgb, var(--primitive-sky-300) 88%, transparent) 0%,
+    color-mix(in srgb, var(--primitive-periwinkle-300) 72%, transparent) 48%,
+    color-mix(in srgb, var(--primitive-lilac-300) 38%, transparent) 67%,
+    transparent 82%
   );
-  filter: blur(15px);
-  opacity: 0.62;
+  filter: blur(12px);
+  opacity: 0.86;
+  animation: needt-companion-color-breathe 6.8s ease-in-out infinite;
+}
+
+.needt-ai-color-cyan {
+  inset: 10% 25% 15% 3%;
+  background: radial-gradient(
+    ellipse at 45% 48%,
+    color-mix(in srgb, var(--primitive-cyan-300) 94%, transparent) 0%,
+    color-mix(in srgb, var(--primitive-teal-400) 54%, transparent) 42%,
+    transparent 74%
+  );
+  opacity: var(--companion-cyan-opacity);
+  transform: translate3d(var(--companion-cyan-x), var(--companion-cyan-y), 0)
+    rotate(var(--companion-cyan-angle));
+}
+
+.needt-ai-color-violet {
+  inset: 7% 3% 13% 29%;
+  background: radial-gradient(
+    ellipse at 52% 50%,
+    color-mix(in srgb, var(--primitive-lilac-300) 90%, transparent) 0%,
+    color-mix(in srgb, var(--primitive-periwinkle-300) 60%, transparent) 43%,
+    transparent 74%
+  );
+  opacity: var(--companion-violet-opacity);
+  transform: translate3d(
+      var(--companion-violet-x),
+      var(--companion-violet-y),
+      0
+    )
+    rotate(var(--companion-violet-angle));
+}
+
+.needt-ai-color-rose {
+  inset: 14% 4% 10% 28%;
+  background: radial-gradient(
+    ellipse at 52% 52%,
+    color-mix(
+        in srgb,
+        var(--primitive-magenta-500) 48%,
+        var(--primitive-lilac-300)
+      )
+      0%,
+    transparent 70%
+  );
+  filter: blur(13px);
+  opacity: var(--companion-rose-opacity);
+  transform: translate3d(var(--companion-rose-x), var(--companion-rose-y), 0)
+    rotate(var(--companion-rose-angle));
 }
 
 .needt-ai-face {
   color: var(--companion-face);
   filter: drop-shadow(0 1px 2px rgb(52 70 120 / 20%));
+}
+
+.needt-ai-face-plane {
+  transform: translate3d(var(--companion-face-x), var(--companion-face-y), 0)
+    rotate(var(--companion-face-rotate));
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 90ms linear;
 }
 
 .needt-ai-brows,
@@ -767,8 +847,7 @@
 }
 
 .needt-ai-brow,
-.needt-ai-nose,
-.needt-ai-mouth {
+.needt-ai-nose {
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
@@ -776,29 +855,19 @@
 }
 
 .needt-ai-brow {
-  stroke-width: 2.6;
+  stroke-width: 3.1;
   transition: transform 220ms var(--motion-ease-standard);
 }
 
 .needt-ai-eyes {
   fill: currentColor;
+  animation: needt-companion-blink 7.2s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .needt-ai-nose {
-  stroke-width: 2.35;
-}
-
-.needt-ai-mouth {
-  display: none;
-  stroke-width: 1.75;
-}
-
-.needt-ai-companion[data-emotion="calm"] .needt-ai-mouth-calm,
-.needt-ai-companion[data-emotion="attentive"] .needt-ai-mouth-calm,
-.needt-ai-companion[data-emotion="thinking"] .needt-ai-mouth-thinking,
-.needt-ai-companion[data-emotion="happy"] .needt-ai-mouth-happy,
-.needt-ai-companion[data-emotion="concerned"] .needt-ai-mouth-concerned {
-  display: block;
+  stroke-width: 2.9;
 }
 
 .needt-ai-companion[data-emotion="attentive"] .needt-ai-brow-left {
@@ -811,10 +880,6 @@
 
 .needt-ai-companion[data-emotion="thinking"] .needt-ai-brow-right {
   transform: translateY(-2px) rotate(-5deg);
-}
-
-.needt-ai-companion[data-emotion="happy"] .needt-ai-eyes {
-  animation: needt-companion-blink 2.8s ease-in-out 1;
 }
 
 .needt-ai-companion-message {
@@ -843,35 +908,30 @@
   }
 }
 
-@keyframes needt-companion-mist-a {
-  to {
-    transform: translate3d(9px, 5px, 0) scale(1.1) rotate(8deg);
+@keyframes needt-companion-color-breathe {
+  0%,
+  100% {
+    transform: scale(0.98);
+    opacity: 0.82;
   }
-}
-
-@keyframes needt-companion-mist-b {
-  to {
-    transform: translate3d(-7px, -5px, 0) scale(1.08) rotate(-10deg);
-  }
-}
-
-@keyframes needt-companion-mist-c {
-  to {
-    transform: translate3d(-5px, 8px, 0) scale(1.12) rotate(6deg);
+  50% {
+    transform: scale(1.035);
+    opacity: 0.9;
   }
 }
 
 @keyframes needt-companion-blink {
   0%,
-  42%,
-  50%,
+  86%,
+  94%,
   100% {
     transform: translate3d(var(--companion-look-x), var(--companion-look-y), 0)
       scaleY(1);
   }
-  46% {
+  89%,
+  91% {
     transform: translate3d(var(--companion-look-x), var(--companion-look-y), 0)
-      scaleY(0.14);
+      scaleY(0.08);
   }
 }
 
@@ -882,14 +942,14 @@
     width: min(260px, calc(100vw - 32px));
   }
 
-  .needt-ai-mist {
-    filter: blur(8px);
+  .needt-ai-color-layer {
+    filter: blur(7px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .needt-ai-companion-orb,
-  .needt-ai-mist,
+  .needt-ai-color-layer,
   .needt-ai-eyes {
     animation: none !important;
     transition: none !important;
