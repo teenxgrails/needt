@@ -48,6 +48,10 @@
     --primitive-violet-500: #8b5cf6;
     --primitive-magenta-500: #e64bd0;
     --primitive-teal-400: #2dd4bf;
+    --primitive-cyan-300: #65e1df;
+    --primitive-sky-300: #82cffa;
+    --primitive-periwinkle-300: #8aa5ff;
+    --primitive-lilac-300: #b09afa;
     --primitive-gold-400: #f5c451;
     --primitive-red-500: #f0565b;
     --primitive-green-500: #3cc487;
@@ -674,6 +678,225 @@
     background-position:
       0 0,
       220% 0;
+  }
+}
+
+/* Needt's assistant is built from diffused aurora mist. The blur belongs to
+   the character material itself; message chrome remains token-based, crisp,
+   and consistent with the rest of the app. */
+.needt-ai-companion {
+  --companion-look-x: 0px;
+  --companion-look-y: 0px;
+  --companion-head-x: 0px;
+  --companion-head-y: 0px;
+  --companion-face: rgb(255 255 255 / 92%);
+  isolation: isolate;
+}
+
+.needt-ai-companion-orb {
+  transform: translate3d(var(--companion-head-x), var(--companion-head-y), 0);
+  animation: needt-companion-float 5.8s ease-in-out infinite;
+  transition: transform 120ms linear;
+}
+
+.needt-ai-companion-orb::before {
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primitive-sky-300) 22%, transparent),
+    transparent 70%
+  );
+  filter: blur(14px);
+  content: "";
+  opacity: 0.72;
+}
+
+.needt-ai-mist {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(11px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.needt-ai-mist-cyan {
+  inset: 14% 43% 39% 7%;
+  background: color-mix(in srgb, var(--primitive-cyan-300) 88%, transparent);
+  opacity: 0.84;
+  animation: needt-companion-mist-a 8.4s ease-in-out infinite alternate;
+}
+
+.needt-ai-mist-blue {
+  inset: 34% 15% 9% 25%;
+  background: color-mix(in srgb, var(--primitive-sky-300) 82%, transparent);
+  opacity: 0.8;
+  animation: needt-companion-mist-b 9.2s ease-in-out infinite alternate;
+}
+
+.needt-ai-mist-violet {
+  inset: 9% 6% 41% 45%;
+  background: color-mix(in srgb, var(--primitive-lilac-300) 78%, transparent);
+  opacity: 0.7;
+  animation: needt-companion-mist-c 10.4s ease-in-out infinite alternate;
+}
+
+.needt-ai-mist-core {
+  inset: 27% 24% 24%;
+  background: color-mix(
+    in srgb,
+    var(--primitive-periwinkle-300) 52%,
+    transparent
+  );
+  filter: blur(15px);
+  opacity: 0.62;
+}
+
+.needt-ai-face {
+  color: var(--companion-face);
+  filter: drop-shadow(0 1px 2px rgb(52 70 120 / 20%));
+}
+
+.needt-ai-brows,
+.needt-ai-eyes {
+  transform: translate3d(var(--companion-look-x), var(--companion-look-y), 0);
+  transform-origin: center;
+  transition: transform 100ms linear;
+}
+
+.needt-ai-brow,
+.needt-ai-nose,
+.needt-ai-mouth {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.needt-ai-brow {
+  stroke-width: 2.6;
+  transition: transform 220ms var(--motion-ease-standard);
+}
+
+.needt-ai-eyes {
+  fill: currentColor;
+}
+
+.needt-ai-nose {
+  stroke-width: 2.35;
+}
+
+.needt-ai-mouth {
+  display: none;
+  stroke-width: 1.75;
+}
+
+.needt-ai-companion[data-emotion="calm"] .needt-ai-mouth-calm,
+.needt-ai-companion[data-emotion="attentive"] .needt-ai-mouth-calm,
+.needt-ai-companion[data-emotion="thinking"] .needt-ai-mouth-thinking,
+.needt-ai-companion[data-emotion="happy"] .needt-ai-mouth-happy,
+.needt-ai-companion[data-emotion="concerned"] .needt-ai-mouth-concerned {
+  display: block;
+}
+
+.needt-ai-companion[data-emotion="attentive"] .needt-ai-brow-left {
+  transform: translateY(-1px) rotate(-2deg);
+}
+
+.needt-ai-companion[data-emotion="attentive"] .needt-ai-brow-right {
+  transform: translateY(-1px) rotate(2deg);
+}
+
+.needt-ai-companion[data-emotion="thinking"] .needt-ai-brow-right {
+  transform: translateY(-2px) rotate(-5deg);
+}
+
+.needt-ai-companion[data-emotion="happy"] .needt-ai-eyes {
+  animation: needt-companion-blink 2.8s ease-in-out 1;
+}
+
+.needt-ai-companion-message {
+  opacity: 0;
+  transform: translate3d(8px, 8px, 0) scale(0.98);
+  transform-origin: bottom right;
+  transition:
+    opacity 180ms var(--motion-ease-standard),
+    transform 220ms var(--motion-ease-standard);
+  visibility: hidden;
+}
+
+.needt-ai-companion-message.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  visibility: visible;
+}
+
+@keyframes needt-companion-float {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -6px;
+  }
+}
+
+@keyframes needt-companion-mist-a {
+  to {
+    transform: translate3d(9px, 5px, 0) scale(1.1) rotate(8deg);
+  }
+}
+
+@keyframes needt-companion-mist-b {
+  to {
+    transform: translate3d(-7px, -5px, 0) scale(1.08) rotate(-10deg);
+  }
+}
+
+@keyframes needt-companion-mist-c {
+  to {
+    transform: translate3d(-5px, 8px, 0) scale(1.12) rotate(6deg);
+  }
+}
+
+@keyframes needt-companion-blink {
+  0%,
+  42%,
+  50%,
+  100% {
+    transform: translate3d(var(--companion-look-x), var(--companion-look-y), 0)
+      scaleY(1);
+  }
+  46% {
+    transform: translate3d(var(--companion-look-x), var(--companion-look-y), 0)
+      scaleY(0.14);
+  }
+}
+
+@media (max-width: 639px) {
+  .needt-ai-companion-message {
+    bottom: calc(100% + 4px);
+    right: 16%;
+    width: min(260px, calc(100vw - 32px));
+  }
+
+  .needt-ai-mist {
+    filter: blur(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .needt-ai-companion-orb,
+  .needt-ai-mist,
+  .needt-ai-eyes {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .needt-ai-companion-message {
+    transition: opacity 120ms linear;
   }
 }
 

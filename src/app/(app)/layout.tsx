@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { AIActionCursor } from "@/components/ai/AIActionCursor";
 import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
+import { AICompanion } from "@/components/ai/AICompanion";
 import { DndProvider } from "@/components/dnd/DndProvider";
 import { AppNav } from "@/components/navigation/AppNav";
 import { MobileTopBar } from "@/components/navigation/MobileTopBar";
@@ -19,9 +20,9 @@ import { ShortcutsModal } from "@/components/ui/shortcuts-modal";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-import { usePageTitle } from "@/hooks/use-page-title";
-
 import { cn } from "@/lib/utils";
+
+import { usePageTitle } from "@/hooks/use-page-title";
 
 import { useShortcutsStore } from "@/store/shortcuts";
 
@@ -93,6 +94,10 @@ export default function RootLayout({
             <AIChatOverlay
               open={chatOverlayOpen}
               onOpenChange={setChatOverlayOpen}
+            />
+            <AICompanion
+              hidden={chatOverlayOpen}
+              onOpenChat={() => setChatOverlayOpen(true)}
             />
             <AIActionCursor />
             <Toaster />
