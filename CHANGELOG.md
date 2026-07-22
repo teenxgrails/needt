@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Kept scheduled task blocks at their stated duration by reserving ADHD estimate inflation as a separate gap, retained completed tasks as dimmed checked calendar items, removed the Chrome install banner, and aligned the mini calendar's week start and light-theme styling with user settings.
 - Made the task editor's auto-schedule state explicit: a disabled switch now says `(Off)` instead of incorrectly looking like a pending scheduling request.
 - Restored the missing `20260711220000_calendar_workspace_upgrade` migration-history marker so existing production databases and the repository agree on migration order before newer Focus, Boards, realtime, Mail, AI, billing, design-token, and Today migrations are applied.
 - Fixed production startup accidentally downloading Prisma 7 through `npx`, which rejected the Prisma 6 datasource schema and skipped migrations. Runtime images now ship and invoke the lockfile-pinned CLI, reuse the client generated at build time, and no longer make a fragile middleware request back into the same container for the root redirect.
 
 ### Added
 
+- Added one persistent secondary Calendar timezone with add, edit, and remove controls, plus Motion-style per-day controls for starting later, stopping early, blocking hours or a whole day, and resetting the day's availability.
 - Added a local, privacy-preserving Needt AI companion: a round, diffused cyan/blue/violet aurora character whose symmetric geometric face and color field smoothly bend toward the pointer, shift from teal to violet/rose with distance, blink naturally, react to planner actions, occasionally offer route-aware suggestions, open the existing AI chat, adapt around the mobile dock, and respect reduced motion.
 
 - Added a shared, reduced-motion-aware Needt motion language across every app route except Today: spring route and Settings transitions, tactile controls, animated tabs, fields, toggles, checkboxes, sliders, cards, lists, menus, popovers, tooltips, dialogs, calendar events, and focused motion passes for Tasks, Boards, and Mail. The system reuses the existing semantic UI tokens and Motion runtime without glow or blur.
@@ -56,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Calendar selection now opens Create Task directly, while Task and Event share a narrower editor language with a creation-only type switch, smooth shared overlay motion, neutral day outlines, and keyboard save shortcuts.
 - Continued the Needt design pass outside Today: Settings now has a native grouped mobile hub with focused detail navigation while retaining the dense desktop rail, Quick Add uses the shared form controls, and the app rail, Mail, profile/download overlays, task rows, and AI action feedback now consume the current semantic UI tokens. Shared text inputs also use the neutral house-format focus border with no accent ring or glow.
 - Reduced Focus to a distraction-free full-canvas timer with one contextual Start/Pause/Continue control. The Magic UI circular gauge now renders clock content and advances every second from the existing server-owned focus session while preserving completion, notification, and task-binding behavior underneath. Replaced the purple AI Chat CTA with a black Needt-adapted Rainbow Button whose animated color is limited to a thin border, and applied the Magic UI circular theme reveal to theme changes from navigation, profile, and Appearance settings.
 - Unified page, sidebar, panel, popover, and dialog backgrounds onto one canvas color per theme with a subtle top-lit gradient limited to the first 40% of the surface. Expanded the Create Task editor and its scheduling sidebar, reorganized Advanced settings into clearly explained time, placement, and label groups, and upgraded the sidebar AI Chat action to a vivid token-based gradient CTA without glow.

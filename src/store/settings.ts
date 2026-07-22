@@ -58,6 +58,7 @@ const defaultSettings: Settings & { accounts: ConnectedAccount[] } = {
     theme: "dark",
     defaultView: "week",
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    secondaryTimeZone: null,
     weekStartDay: "sunday",
     timeFormat: "12h",
   },
@@ -414,6 +415,7 @@ export const useSettingsStore = create<SettingsStore>()(
             theme: userSettings.theme,
             defaultView: userSettings.defaultView,
             timeZone: userSettings.timeZone,
+            secondaryTimeZone: userSettings.secondaryTimeZone ?? null,
             weekStartDay: userSettings.weekStartDay,
             timeFormat: userSettings.timeFormat,
           });

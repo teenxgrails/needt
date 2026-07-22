@@ -1,12 +1,9 @@
 import { memo } from "react";
 
 import type { EventContentArg } from "@fullcalendar/core";
+import { Check } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import {
-  IoCheckmarkCircle,
-  IoCheckmarkCircleOutline,
-  IoRepeat,
-} from "react-icons/io5";
+import { IoRepeat } from "react-icons/io5";
 
 import { getMonthEventDisplay } from "@/lib/calendar-event-display";
 import { springSnappy, springSoft } from "@/lib/motion";
@@ -62,8 +59,7 @@ export const CalendarEventContent = memo(function CalendarEventContent({
       : undefined
   );
   const chunkIndex = eventInfo.event.extendedProps.chunkIndex as
-    | number
-    | undefined;
+    number | undefined;
   const isRecurring = eventInfo.event.extendedProps.isRecurring;
   const status = eventInfo.event.extendedProps.status;
   const priority = eventInfo.event.extendedProps.priority;
@@ -166,13 +162,16 @@ export const CalendarEventContent = memo(function CalendarEventContent({
                 void onTaskComplete?.(taskId);
               }
             }}
-            className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] disabled:cursor-default disabled:text-[var(--text-muted)]"
+            className="group/check mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border border-[var(--text-secondary)] text-transparent transition-[background-color,border-color,color,opacity] duration-150 hover:border-[var(--color-success)] hover:bg-[var(--color-success)] hover:text-[var(--surface-canvas)] disabled:cursor-default disabled:border-[var(--color-success)] disabled:bg-transparent disabled:text-[var(--color-success)] disabled:opacity-55"
           >
-            {status === TaskStatus.COMPLETED ? (
-              <IoCheckmarkCircle className="h-4 w-4" />
-            ) : (
-              <IoCheckmarkCircleOutline className="h-4 w-4" />
-            )}
+            <Check
+              className={cn(
+                "h-3 w-3 transition-opacity duration-150",
+                status === TaskStatus.COMPLETED
+                  ? "opacity-100"
+                  : "opacity-0 group-hover/check:opacity-100"
+              )}
+            />
           </button>
         ) : showTimeChip || isRecurring ? (
           isRecurring ? (

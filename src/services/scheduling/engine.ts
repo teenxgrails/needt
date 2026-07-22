@@ -92,6 +92,7 @@ interface OccupiedBlock {
 interface TaskChunk {
   task: SchedulableTask;
   minutes: number;
+  bufferAfterMinutes: number;
   chunkIndex: number;
   chunkCount: number;
 }
@@ -275,15 +276,14 @@ function splitTaskIntoChunks(
   const contextFactor = task.contextTag
     ? prefs.calibrationFactors?.[task.contextTag.toLowerCase()]
     : undefined;
-  const estimateFactor = contextFactor ?? Math.max(1, prefs.bufferMultiplier);
-  const inflatedEstimate = Math.max(1, Math.ceil(rawEstimate * estimateFactor));
+  const estimateFactor = Math.max(1, contextFactor ?? prefs.bufferMultiplier);
   const minChunk = Math.max(
     1,
     task.minChunkMinutes ?? DEFAULT_MIN_CHUNK_MINUTES
   );
-  const maxChunk = Math.max(minChunk, task.maxChunkMinutes ?? inflatedEstimate);
+  const maxChunk = Math.max(minChunk, task.maxChunkMinutes ?? rawEstimate);
   const chunks: number[] = [];
-  let remaining = inflatedEstimate;
+  let remaining = Math.max(1, rawEstimate);
 
   while (remaining > 0) {
     let chunk = Math.min(maxChunk, remaining);
@@ -300,6 +300,7 @@ function splitTaskIntoChunks(
   return chunks.map((minutes, index) => ({
     task,
     minutes,
+    bufferAfterMinutes: Math.max(0, Math.ceil(minutes * (estimateFactor - 1))),
     chunkIndex: index,
     chunkCount: chunks.length,
   }));
@@ -401,8 +402,10 @@ export function scheduleTasks(input: {
   // 1. Keep frozen task blocks as immutable busy time.
   // 2. Sort remaining tasks by dependency, priority, deadline pressure, age,
   //    and context tag for stable batching.
-  // 3. Inflate estimates with the ADHD buffer multiplier and split tasks into
-  //    bounded chunks.
+  // 3. Keep each visible task block at the user's estimate, split it into
+  //    bounded chunks, and reserve the ADHD multiplier as invisible recovery
+  //    space after the block. A 30-minute task therefore remains 30 minutes on
+  //    the calendar instead of silently becoming 39 minutes.
   // 4. Walk work hours from `now`, skipping calendar/frozen/placed blocks,
   //    buffers, breaks, hard-stop time, and daily deep-work limits.
   // 5. Try energy-matched slots first, then gracefully fall back to any valid
@@ -511,7 +514,7 @@ export function scheduleTasks(input: {
         id: `${task.id}:${chunk.chunkIndex}`,
         title: task.title,
         start: slot.start,
-        end: slot.end,
+        end: addMinutes(slot.end, chunk.bufferAfterMinutes),
       });
 
       if (task.energyRequired === "HIGH") {
@@ -522,9 +525,11 @@ export function scheduleTasks(input: {
         );
       }
 
-      cursor = input.prefs.enableTaskBatching
-        ? addMinutes(slot.end, input.prefs.bufferMinutes)
-        : slot.end;
+      cursor = addMinutes(
+        slot.end,
+        chunk.bufferAfterMinutes +
+          (input.prefs.enableTaskBatching ? input.prefs.bufferMinutes : 0)
+      );
     }
 
     if (failedReason) {

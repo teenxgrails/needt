@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 
+import { CalendarItemTypeSwitch } from "@/components/calendar/CalendarItemTypeSwitch";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -39,6 +40,7 @@ interface EventModalProps {
   event?: Partial<CalendarEvent>;
   defaultDate?: Date;
   defaultEndDate?: Date;
+  onItemTypeChange?: (type: "task" | "event") => void;
 }
 
 // Google Calendar recurrence rules
@@ -129,10 +131,12 @@ export function EventModal({
   event,
   defaultDate,
   defaultEndDate,
+  onItemTypeChange,
 }: EventModalProps) {
   const { feeds, addEvent, updateEvent, removeEvent } = useCalendarStore();
   const { calendar } = useSettingsStore();
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const preserveDraftRef = useRef(false);
   const [showRecurrenceDialog, setShowRecurrenceDialog] = useState(false);
   const [editMode, setEditMode] = useState<"single" | "series">();
   const [title, setTitle] = useState(event?.title || "");
@@ -165,6 +169,10 @@ export function EventModal({
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
+      if (preserveDraftRef.current) {
+        preserveDraftRef.current = false;
+        return;
+      }
       setTitle(event?.title || "");
       setDescription(event?.description || "");
       setLocation(event?.location || "");
@@ -388,23 +396,35 @@ export function EventModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="flex h-[min(748px,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden border-[var(--dialog-border)] bg-[var(--dialog-bg)] p-0 text-[var(--text-primary)] sm:max-w-[680px]">
+        <DialogContent className="needt-overlay-depth !bottom-0 !left-0 !top-auto flex h-[92dvh] max-h-[92dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 overflow-hidden !rounded-b-none !rounded-t-2xl border-[var(--dialog-border)] bg-[var(--dialog-bg)] p-0 text-[var(--text-primary)] sm:!bottom-auto sm:!left-1/2 sm:!top-1/2 sm:h-[min(767px,calc(100dvh-3.875rem))] sm:max-h-[calc(100dvh-3.875rem)] sm:!w-[calc(100vw-3rem)] sm:!max-w-[960px] sm:!-translate-x-1/2 sm:!-translate-y-1/2 sm:!rounded-[var(--dialog-radius)] lg:[&>button.absolute]:-right-8 lg:[&>button.absolute]:top-0">
           {isSubmitting && <LoadingOverlay />}
-          <DialogHeader className="flex-row items-center space-y-0 border-b border-[var(--border-subtle)] px-5 py-3.5 pr-14">
-            <DialogTitle className="flex items-center gap-3 text-base font-medium">
-              <span className="rounded-md border border-[var(--border-control)] bg-[var(--surface-canvas)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]">
-                Event
-              </span>
-              {event?.id ? "Edit event" : ""}
+          <DialogHeader className="flex-row items-center space-y-0 px-6 py-4 pr-14 lg:px-10">
+            <DialogTitle asChild>
+              <div>
+                <CalendarItemTypeSwitch
+                  value="event"
+                  locked={Boolean(event?.id)}
+                  onValueChange={(type) => {
+                    preserveDraftRef.current = true;
+                    onItemTypeChange?.(type);
+                  }}
+                />
+              </div>
             </DialogTitle>
           </DialogHeader>
 
           <form
             onSubmit={handleSubmit}
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.requestSubmit();
+              }
+            }}
             className="flex min-h-0 flex-1 flex-col"
           >
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <div className="space-y-4 px-6 pb-4 pt-5">
+            <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_340px] lg:overflow-hidden">
+              <div className="space-y-4 px-6 pb-6 pt-2 lg:overflow-y-auto lg:px-10">
                 <div className="space-y-2">
                   <Label htmlFor="title" className="sr-only">
                     Event title
@@ -419,6 +439,43 @@ export function EventModal({
                     placeholder="Event title"
                     className="event-title h-11 border-0 bg-transparent px-0 text-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:ring-0"
                     required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="sr-only">
+                    Description
+                  </Label>
+                  <div className="flex items-center gap-1 py-1 text-xs text-[var(--text-secondary)]">
+                    {[
+                      "B",
+                      "I",
+                      "U",
+                      "S",
+                      "H₁",
+                      "H₂",
+                      "•",
+                      "1.",
+                      "</>",
+                      "↗",
+                    ].map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className="rounded px-2 py-1 transition-colors duration-150 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea
+                    id="description"
+                    data-testid="event-description-input"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={10}
+                    placeholder="Description"
+                    className="event-description min-h-[280px] resize-none border-0 bg-transparent px-0 text-[14px] text-[var(--text-primary)] focus-visible:ring-0"
                   />
                 </div>
 
@@ -528,7 +585,7 @@ export function EventModal({
                 {renderRecurrenceOptions()}
               </div>
 
-              <aside className="space-y-4 border-t border-[var(--border-subtle)] px-6 pb-5 pt-4">
+              <aside className="needt-panel-depth space-y-4 border-t border-[var(--border-subtle)] px-5 pb-5 pt-4 lg:overflow-y-auto lg:border-l lg:border-t-0">
                 <p className="text-sm font-medium text-[var(--text-primary)]">
                   Event details
                 </p>
@@ -564,41 +621,6 @@ export function EventModal({
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     className="event-location"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <div className="flex items-center gap-1 py-1 text-xs text-[var(--text-secondary)]">
-                    {[
-                      "B",
-                      "I",
-                      "U",
-                      "S",
-                      "H₁",
-                      "H₂",
-                      "•",
-                      "1.",
-                      "</>",
-                      "↗",
-                    ].map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        className="rounded px-2 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                  <Textarea
-                    id="description"
-                    data-testid="event-description-input"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                    placeholder="Enter message"
-                    className="event-description min-h-[150px] resize-none border-0 bg-[var(--surface-canvas)] text-[var(--text-primary)] focus-visible:ring-0"
                   />
                 </div>
               </aside>

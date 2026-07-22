@@ -4,6 +4,8 @@ import {
   MotionSwitchRow,
 } from "@/components/settings/MotionSettingsControls";
 
+import { COMMON_TIME_ZONES, getTimeZoneDisplayName } from "@/lib/time-zones";
+
 import { useSettingsStore } from "@/store/settings";
 
 import { TimeFormat, WeekStartDay } from "@/types/settings";
@@ -34,87 +36,6 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
     { value: "light", label: "Light" },
     { value: "system", label: "Use system setting" },
   ] as const;
-
-  // Comprehensive list of common timezones
-  const timeZones = [
-    // UTC
-    "UTC",
-    // North America
-    "America/Anchorage",
-    "America/Chicago",
-    "America/Denver",
-    "America/Edmonton",
-    "America/Halifax",
-    "America/Los_Angeles",
-    "America/Mexico_City",
-    "America/Montreal",
-    "America/New_York",
-    "America/Phoenix",
-    "America/Toronto",
-    "America/Vancouver",
-    "America/Winnipeg",
-    // South America
-    "America/Bogota",
-    "America/Buenos_Aires",
-    "America/Caracas",
-    "America/Lima",
-    "America/Santiago",
-    "America/Sao_Paulo",
-    // Europe
-    "Europe/Amsterdam",
-    "Europe/Athens",
-    "Europe/Berlin",
-    "Europe/Brussels",
-    "Europe/Budapest",
-    "Europe/Copenhagen",
-    "Europe/Dublin",
-    "Europe/Helsinki",
-    "Europe/Istanbul",
-    "Europe/Lisbon",
-    "Europe/London",
-    "Europe/Madrid",
-    "Europe/Moscow",
-    "Europe/Oslo",
-    "Europe/Paris",
-    "Europe/Prague",
-    "Europe/Rome",
-    "Europe/Stockholm",
-    "Europe/Vienna",
-    "Europe/Warsaw",
-    "Europe/Zurich",
-    // Asia
-    "Asia/Bangkok",
-    "Asia/Dubai",
-    "Asia/Hong_Kong",
-    "Asia/Jakarta",
-    "Asia/Jerusalem",
-    "Asia/Karachi",
-    "Asia/Kolkata",
-    "Asia/Kuala_Lumpur",
-    "Asia/Manila",
-    "Asia/Riyadh",
-    "Asia/Seoul",
-    "Asia/Shanghai",
-    "Asia/Singapore",
-    "Asia/Taipei",
-    "Asia/Tokyo",
-    // Africa
-    "Africa/Cairo",
-    "Africa/Casablanca",
-    "Africa/Johannesburg",
-    "Africa/Lagos",
-    "Africa/Nairobi",
-    // Oceania
-    "Australia/Adelaide",
-    "Australia/Brisbane",
-    "Australia/Darwin",
-    "Australia/Melbourne",
-    "Australia/Perth",
-    "Australia/Sydney",
-    "Pacific/Auckland",
-    "Pacific/Fiji",
-    "Pacific/Honolulu",
-  ];
 
   return (
     <SettingsSection
@@ -183,10 +104,10 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
             <MotionPicker
               label="Timezone"
               value={user.timeZone}
-              valueLabel={user.timeZone.replace(/_/g, " ")}
-              options={timeZones.map((zone) => ({
+              valueLabel={getTimeZoneDisplayName(user.timeZone)}
+              options={COMMON_TIME_ZONES.map((zone) => ({
                 value: zone,
-                label: zone.replace(/_/g, " "),
+                label: getTimeZoneDisplayName(zone),
               }))}
               onValueChange={(value) => updateUserSettings({ timeZone: value })}
               searchPlaceholder="Search timezones…"

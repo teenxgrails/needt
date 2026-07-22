@@ -1,10 +1,4 @@
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type {
   DatesSetArg,
@@ -15,7 +9,6 @@ import type { DateSelectArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { Clock3 } from "lucide-react";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 
@@ -41,11 +34,9 @@ import { useTaskStore } from "@/store/task";
 import { CalendarEvent, ExtendedEventProps } from "@/types/calendar";
 import { Task, TaskStatus } from "@/types/task";
 
+import { CalendarDayActions } from "./CalendarDayActions";
 import { CalendarEventContent } from "./CalendarEventContent";
-import {
-  CalendarQuickCreate,
-  QuickCreateSelection,
-} from "./CalendarQuickCreate";
+import { CalendarTimeZoneControl } from "./CalendarTimeZoneControl";
 import { EventModal } from "./EventModal";
 import { EventQuickView } from "./EventQuickView";
 import { resolveCalendarItemId } from "./calendar-item-id";
@@ -72,8 +63,6 @@ export function WeekView({ currentDate }: WeekViewProps) {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
-  const [quickCreateSelection, setQuickCreateSelection] =
-    useState<QuickCreateSelection>();
   const [events, setEvents] = useState<
     Array<{
       id: string;
@@ -101,14 +90,6 @@ export function WeekView({ currentDate }: WeekViewProps) {
   );
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
   const handleExternalTaskDrop = useCalendarExternalTaskDrop();
-
-  const cancelQuickCreate = useCallback(() => {
-    calendarRef.current?.getApi().unselect();
-    setQuickCreateSelection(undefined);
-    setSelectedDate(undefined);
-    setSelectedEndDate(undefined);
-    setSelectedEvent(undefined);
-  }, []);
 
   // Motion-style dashed guide line that follows the cursor's time across the
   // whole grid, separate from FullCalendar's live current-time indicator.
@@ -164,39 +145,6 @@ export function WeekView({ currentDate }: WeekViewProps) {
       line?.remove();
     };
   }, [userSettings.timeFormat]);
-
-  // Timezone abbreviation shown in the top-left axis corner (Motion-style).
-  // Intl's "short" token returns "GMT+2" for most zones, so map the long,
-  // descriptive name to a familiar abbreviation (CEST, EST, ...) and fall back
-  // to the GMT offset when it's an uncommon zone.
-  const tzAbbrByLongName: Record<string, string> = {
-    "Central European Standard Time": "CET",
-    "Central European Summer Time": "CEST",
-    "Western European Standard Time": "WET",
-    "Western European Summer Time": "WEST",
-    "Eastern European Standard Time": "EET",
-    "Eastern European Summer Time": "EEST",
-    "Greenwich Mean Time": "GMT",
-    "British Summer Time": "BST",
-    "Coordinated Universal Time": "UTC",
-    "Eastern Standard Time": "EST",
-    "Eastern Daylight Time": "EDT",
-    "Central Standard Time": "CST",
-    "Central Daylight Time": "CDT",
-    "Mountain Standard Time": "MST",
-    "Mountain Daylight Time": "MDT",
-    "Pacific Standard Time": "PST",
-    "Pacific Daylight Time": "PDT",
-  };
-  const tzParts = (token: "long" | "short") =>
-    new Intl.DateTimeFormat("en-US", {
-      timeZoneName: token,
-      timeZone: userSettings.timeZone,
-    })
-      .formatToParts(new Date())
-      .find((part) => part.type === "timeZoneName")?.value ?? "";
-  const tzLongName = tzParts("long");
-  const tzLabel = tzAbbrByLongName[tzLongName] ?? tzParts("short");
 
   // Update events when the calendar view changes
   const handleDatesSet = useCallback(
@@ -325,31 +273,16 @@ export function WeekView({ currentDate }: WeekViewProps) {
     setSelectedDate(start);
     setSelectedEndDate(end);
     setSelectedEvent({ allDay });
-    setQuickCreateSelection({
-      start,
-      end,
-      allDay,
-      point: selectInfo.jsEvent
-        ? { x: selectInfo.jsEvent.clientX, y: selectInfo.jsEvent.clientY }
-        : undefined,
-    });
+    calendarRef.current?.getApi().unselect();
+    setIsNewTaskModalOpen(true);
   };
 
-  const handleSlotClick = (arg: {
-    date: Date;
-    allDay: boolean;
-    jsEvent: MouseEvent;
-  }) => {
+  const handleSlotClick = (arg: { date: Date; allDay: boolean }) => {
     const end = new Date(arg.date.getTime() + 30 * 60 * 1000);
     setSelectedDate(arg.date);
     setSelectedEndDate(end);
     setSelectedEvent({ allDay: arg.allDay });
-    setQuickCreateSelection({
-      start: arg.date,
-      end,
-      allDay: arg.allDay,
-      point: { x: arg.jsEvent.clientX, y: arg.jsEvent.clientY },
-    });
+    setIsNewTaskModalOpen(true);
   };
 
   const handleEventModalClose = () => {
@@ -368,18 +301,6 @@ export function WeekView({ currentDate }: WeekViewProps) {
     setSelectedTask(undefined);
     setSelectedDate(undefined);
     setSelectedEndDate(undefined);
-  };
-
-  const openTaskEditorFromQuickCreate = () => {
-    calendarRef.current?.getApi().unselect();
-    setQuickCreateSelection(undefined);
-    setIsNewTaskModalOpen(true);
-  };
-
-  const openEventEditorFromQuickCreate = () => {
-    calendarRef.current?.getApi().unselect();
-    setQuickCreateSelection(undefined);
-    setIsEventModalOpen(true);
   };
 
   const handleQuickViewClose = () => {
@@ -460,9 +381,9 @@ export function WeekView({ currentDate }: WeekViewProps) {
   return (
     <div
       ref={wrapperRef}
-      className="calendar-week-view fc-tz-corner h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-0.5 [&_.fc-timegrid-slot-label]:!py-0.5 [&_.fc-timegrid-slot]:!h-[32px]"
-      style={{ "--tz-label": JSON.stringify(`${tzLabel}  +`) } as CSSProperties}
+      className={`calendar-week-view fc-tz-corner relative h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-0.5 [&_.fc-timegrid-slot-label]:!py-0.5 [&_.fc-timegrid-slot]:!h-[32px] ${userSettings.secondaryTimeZone ? "fc-has-secondary-timezone" : ""}`}
     >
+      <CalendarTimeZoneControl />
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
@@ -488,9 +409,21 @@ export function WeekView({ currentDate }: WeekViewProps) {
           hour12: userSettings.timeFormat === "12h",
         }}
         slotLabelInterval="01:00:00"
-        slotLabelContent={(arg) =>
-          formatCalendarHour(arg.date, userSettings.timeFormat)
-        }
+        slotLabelContent={(arg) => (
+          <span className="calendar-timezone-labels">
+            <span>{formatCalendarHour(arg.date, userSettings.timeFormat)}</span>
+            {userSettings.secondaryTimeZone && (
+              <span>
+                {new Intl.DateTimeFormat("en-US", {
+                  timeZone: userSettings.secondaryTimeZone,
+                  hour:
+                    userSettings.timeFormat === "12h" ? "numeric" : "2-digit",
+                  hour12: userSettings.timeFormat === "12h",
+                }).format(arg.date)}
+              </span>
+            )}
+          </span>
+        )}
         firstDay={userSettings.weekStartDay === "monday" ? 1 : 0}
         businessHours={getCalendarBusinessHours(calendarSettings.workingHours)}
         dayHeaderContent={(arg) => {
@@ -512,16 +445,13 @@ export function WeekView({ currentDate }: WeekViewProps) {
               <span
                 className={
                   arg.isToday
-                    ? "flex h-[24px] min-w-[24px] items-center justify-center rounded-md bg-[var(--accent)] px-1 text-[13px] font-semibold text-white"
+                    ? "flex h-[24px] min-w-[24px] items-center justify-center rounded-md border border-[var(--text-primary)] bg-transparent px-1 text-[13px] font-semibold text-[var(--text-primary)]"
                     : "text-[14px] font-semibold text-[var(--text-secondary)]"
                 }
               >
                 {day}
               </span>
-              <Clock3
-                aria-hidden="true"
-                className="absolute right-2.5 h-3.5 w-3.5 text-[var(--text-muted)]"
-              />
+              <CalendarDayActions date={arg.date} />
             </div>
           );
         }}
@@ -553,18 +483,25 @@ export function WeekView({ currentDate }: WeekViewProps) {
           isTask={isTask}
         />
       )}
-      <CalendarQuickCreate
-        selection={quickCreateSelection}
-        onClose={cancelQuickCreate}
-        onOpenTaskEditor={openTaskEditorFromQuickCreate}
-        onOpenEventEditor={openEventEditorFromQuickCreate}
-      />
       <EventModal
         isOpen={isEventModalOpen || eventModalStore.isOpen}
         onClose={handleEventModalClose}
         event={selectedEvent}
         defaultDate={selectedDate || eventModalStore.defaultDate}
         defaultEndDate={selectedEndDate || eventModalStore.defaultEndDate}
+        onItemTypeChange={() => {
+          const start =
+            selectedDate || eventModalStore.defaultDate || currentDate;
+          const end =
+            selectedEndDate ||
+            eventModalStore.defaultEndDate ||
+            new Date(start.getTime() + 30 * 60 * 1000);
+          setSelectedDate(start);
+          setSelectedEndDate(end);
+          setIsEventModalOpen(false);
+          eventModalStore.setOpen(false);
+          setIsNewTaskModalOpen(true);
+        }}
       />
 
       {selectedTask && (
@@ -589,6 +526,10 @@ export function WeekView({ currentDate }: WeekViewProps) {
           tags={useTaskStore.getState().tags}
           initialStart={selectedDate}
           initialEnd={selectedEndDate}
+          onItemTypeChange={() => {
+            setIsNewTaskModalOpen(false);
+            setIsEventModalOpen(true);
+          }}
           onSave={async (updates) => {
             await createTask(updates);
             handleTaskModalClose();
