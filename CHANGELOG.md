@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Finished Today as a race-safe per-day document: canonical task references now remain inline after `/task`, task actions use shared pickers and the existing editor, stale day loads cannot flash or overwrite newer text, failed loads/saves retain an explicit retry path, and the desktop document/timeline plus mobile/tablet layouts use Motion-sized typography and controls in both themes.
 - Kept scheduled task blocks at their stated duration by reserving ADHD estimate inflation as a separate gap, retained completed tasks as dimmed checked calendar items, removed the Chrome install banner, and aligned the mini calendar's week start and light-theme styling with user settings.
 - Made the task editor's auto-schedule state explicit: a disabled switch now says `(Off)` instead of incorrectly looking like a pending scheduling request.
 - Restored the missing `20260711220000_calendar_workspace_upgrade` migration-history marker so existing production databases and the repository agree on migration order before newer Focus, Boards, realtime, Mail, AI, billing, design-token, and Today migrations are applied.

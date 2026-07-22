@@ -4,46 +4,53 @@ Updated: 2026-07-22
 
 ## Current outcome
 
-Ship a stable **Needt v0.1 personal beta** on `use.needt.app`. The feature set is
-frozen: work now moves from feature creation to production verification, blocker
-fixes, and release evidence.
+Finish the actual **Needt v0.1 personal product** before calling it a beta. The
+production foundation is stable, but core screens still need functional and visual
+completion. Route availability is not acceptance evidence.
 
 ## Status
 
 - Completed:
-  - Single-user Needt shell, deterministic scheduler, smart-scheduling data,
-    scheduled chunks, optional provider-neutral AI, and connector API.
-  - Calendar, Today daily agenda, Focus timer, Boards, Mail, Settings, command
-    palette, responsive mobile shell, PWA/offline foundation, and realtime worker.
-  - Dark/light design-token foundation and the current cross-screen design pass.
+  - Production infrastructure: Coolify web + worker, managed PostgreSQL + Redis,
+    migration history, health endpoint, and matching deployed SHA.
+  - Core technical foundations exist: canonical tasks, deterministic scheduler,
+    Today agenda storage, Focus session APIs, Board models, Mail APIs/worker,
+    settings persistence, responsive shell, PWA base, and design tokens.
   - Docker startup fix pins the Prisma 6 CLI instead of downloading Prisma 7.
-  - `main`, the Coolify web service, and BullMQ worker are aligned; both runtime
-    services are healthy and production reports all 60 migrations applied.
-  - Production golden-loop smoke passed: create/edit, explicit auto-schedule,
-    Calendar/Today/Workspace persistence, Focus, Boards, cleanup, and schedule restore.
 - Active:
-  - Final engineering/provider release gate (RC3).
-  - Coolify/VPS with managed PostgreSQL and Redis is confirmed as production.
+  - Today implementation is functionally complete; its targeted automated visual
+    run remains pending because the local Playwright browser binary is unavailable.
+  - The product remains pre-RC; deployment stability is not release readiness.
 - Verify:
-  - Live Google, Outlook, Apple/iCloud, Mail, AI, Redis/SSE, and connector behavior.
-  - Installed-PWA/mobile golden loop and final one-time engineering gate.
+  - Today still needs the checked-in Playwright matrix to run in an environment
+    with Chromium before P1 can be closed.
+  - Workspace has buggy/unfinished Space, List, Timeline, and cross-view behavior.
+  - Focus currently exposes only a circular timer and one primary action; the
+    preserved task/session functions are not assembled into a complete experience.
+  - Boards has functional and design defects; secondary views are not proven.
+  - Settings desktop content is incorrectly centered and several sections remain
+    unfinished or unclear.
+  - Mail has not passed a live Gmail/Outlook/IMAP product-flow test.
+  - Whole-app GUI coherence, both themes, mobile/PWA smoothness, and interaction
+    quality have not passed a serious visual/functional audit.
 - Blocked:
-  - Provider-level verification needs production credentials and access owned by
-    the project owner.
+  - Live Mail/provider verification needs the owner to authorize the relevant
+    Gmail/Outlook/iCloud accounts when that phase begins.
 
 ## Next action
 
-**Owner: Codex.** Run RC3 once: targeted provider smoke where credentials exist,
-installed-PWA/mobile smoke, then lint, type-check, tests, app build, worker build,
-and production Docker build.
+**Owner: Codex.** Run the focused Today Playwright matrix when Chromium is
+available, review its dark/light desktop/tablet/mobile screenshots, and close P1
+if no visual regression is found.
 
-Inputs: production provider credentials/sessions and the existing Coolify access.
+Inputs: the existing Today references and requirements already captured in this
+project; use production only for a final targeted smoke after local implementation.
 
-Done condition: available provider paths and the installed PWA are recorded,
-engineering gates are green, unavailable external checks are explicit, and the
-personal beta can be tagged without a known release blocker.
+Done condition: Today passes create/edit/date/duration/complete, `/task`, per-day
+history, reload persistence, desktop timeline, mobile layout, both themes, and has
+no known high/medium visual defect.
 
 ## Open decisions
 
-- None currently blocking RC0. Creem remains implemented but is not a personal-beta
-  gate; the AI companion is included in the release candidate and must pass smoke.
+- The release candidate does not exist yet; do not tag or advertise v0.1 until
+  P1-P7 and the real release gate are complete.

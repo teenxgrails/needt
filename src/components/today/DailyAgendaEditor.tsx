@@ -18,15 +18,26 @@ import {
   Quote,
   SquareCheckBig,
 } from "lucide-react";
+import { toast } from "sonner";
+
+import { TaskReference } from "@/components/today/TaskReference";
+import { collectTaskReferenceIds } from "@/components/today/task-reference-utils";
 
 import { cn } from "@/lib/utils";
 
+import { Task } from "@/types/task";
+
 interface DailyAgendaEditorProps {
   dateKey: string;
-  onCreateTask: (title: string) => Promise<void>;
+  onCreateTask: (title: string) => Promise<Task>;
+  onOpenTask: (task: Task) => void;
+  onCompleteTask: (task: Task) => Promise<void>;
+  onDateChange: (task: Task, date: Date | null) => Promise<void>;
+  onDurationChange: (task: Task, duration: number | null) => Promise<void>;
+  onReferencedTaskIdsChange: (dateKey: string, ids: Set<string>) => void;
 }
 
-type SaveState = "loading" | "saved" | "saving" | "error";
+type SaveState = "loading" | "saved" | "saving" | "error" | "load-error";
 type AgendaCommand =
   | "task"
   | "heading1"
@@ -123,15 +134,28 @@ function removeSlashText(editor: Editor) {
 export function DailyAgendaEditor({
   dateKey,
   onCreateTask,
+  onOpenTask,
+  onCompleteTask,
+  onDateChange,
+  onDurationChange,
+  onReferencedTaskIdsChange,
 }: DailyAgendaEditorProps) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<Editor | null>(null);
   const dateKeyRef = useRef(dateKey);
   const hydratedKeyRef = useRef<string | null>(null);
   const createTaskRef = useRef(onCreateTask);
+  const openTaskRef = useRef(onOpenTask);
+  const completeTaskRef = useRef(onCompleteTask);
+  const dateChangeRef = useRef(onDateChange);
+  const durationChangeRef = useRef(onDurationChange);
+  const referencedIdsChangeRef = useRef(onReferencedTaskIdsChange);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingSaveRef = useRef<{ date: string; content: string } | null>(null);
+  const pendingSavesRef = useRef(new Map<string, string>());
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const scheduleSaveRef = useRef<(content: string) => void>(() => undefined);
   const [saveState, setSaveState] = useState<SaveState>("loading");
+  const [loadVersion, setLoadVersion] = useState(0);
   const [slash, setSlash] = useState<{
     query: string;
     top: number;
@@ -140,30 +164,61 @@ export function DailyAgendaEditor({
 
   dateKeyRef.current = dateKey;
   createTaskRef.current = onCreateTask;
+  openTaskRef.current = onOpenTask;
+  completeTaskRef.current = onCompleteTask;
+  dateChangeRef.current = onDateChange;
+  durationChangeRef.current = onDurationChange;
+  referencedIdsChangeRef.current = onReferencedTaskIdsChange;
 
-  const flushSave = async () => {
-    const pending = pendingSaveRef.current;
-    if (!pending) return;
-    pendingSaveRef.current = null;
-    setSaveState("saving");
+  const flushSave = (targetDate?: string) => {
+    const pending = Array.from(pendingSavesRef.current.entries())
+      .filter(([date]) => !targetDate || date === targetDate)
+      .map(([date, content]) => ({ date, content }));
+    if (pending.length === 0) return saveQueueRef.current;
 
-    try {
-      const response = await fetch("/api/daily-agenda", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(pending),
-      });
-      if (!response.ok) throw new Error("Agenda save failed");
-      if (!pendingSaveRef.current) setSaveState("saved");
-    } catch {
-      setSaveState("error");
+    for (const { date, content } of pending) {
+      if (pendingSavesRef.current.get(date) === content) {
+        pendingSavesRef.current.delete(date);
+      }
     }
+    if (pending.some(({ date }) => dateKeyRef.current === date)) {
+      setSaveState("saving");
+    }
+
+    const request = saveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        for (const entry of pending) {
+          try {
+            const response = await fetch("/api/daily-agenda", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(entry),
+            });
+            if (!response.ok) throw new Error("Agenda save failed");
+            if (
+              !pendingSavesRef.current.has(entry.date) &&
+              dateKeyRef.current === entry.date
+            ) {
+              setSaveState("saved");
+            }
+          } catch {
+            // Never replace a newer local edit with the failed request body.
+            if (!pendingSavesRef.current.has(entry.date)) {
+              pendingSavesRef.current.set(entry.date, entry.content);
+            }
+            if (dateKeyRef.current === entry.date) setSaveState("error");
+          }
+        }
+      });
+    saveQueueRef.current = request;
+    return request;
   };
 
   scheduleSaveRef.current = (content: string) => {
     const hydratedDate = hydratedKeyRef.current;
     if (!hydratedDate || hydratedDate !== dateKeyRef.current) return;
-    pendingSaveRef.current = { date: hydratedDate, content };
+    pendingSavesRef.current.set(hydratedDate, content);
     setSaveState("saving");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => void flushSave(), 550);
@@ -177,12 +232,20 @@ export function DailyAgendaEditor({
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
+      TaskReference.configure({
+        onOpenTask: (task) => openTaskRef.current(task),
+        onComplete: (task) => completeTaskRef.current(task),
+        onDateChange: (task, date) => dateChangeRef.current(task, date),
+        onDurationChange: (task, duration) =>
+          durationChangeRef.current(task, duration),
+      }),
     ],
     content: "<p></p>",
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: "agenda-rich-text min-h-[112px] outline-none",
+        class:
+          "agenda-rich-text min-h-[clamp(220px,30vh,360px)] cursor-text outline-none xl:text-[18px] xl:leading-[1.7]",
         "aria-label": "Daily agenda notes",
       },
       handleKeyDown: (view, event) => {
@@ -197,9 +260,52 @@ export function DailyAgendaEditor({
         const taskMatch = line.match(/^\/task\s+(.+)$/i);
         if (event.key === "Enter" && taskMatch?.[1]?.trim()) {
           event.preventDefault();
+          const insertAt = $from.start();
+          const taskTitle = taskMatch[1].trim();
+          const commandDateKey = dateKeyRef.current;
           view.dispatch(view.state.tr.delete($from.start(), $from.end()));
           setSlash(null);
-          void createTaskRef.current(taskMatch[1].trim());
+          void createTaskRef
+            .current(taskTitle)
+            .then((task) => {
+              const currentEditor = editorRef.current;
+              if (
+                !currentEditor ||
+                currentEditor.isDestroyed ||
+                dateKeyRef.current !== commandDateKey
+              )
+                return;
+              currentEditor
+                .chain()
+                .focus()
+                .insertContentAt(
+                  Math.min(insertAt, currentEditor.state.doc.content.size),
+                  {
+                    type: "taskReference",
+                    attrs: { taskId: task.id },
+                  }
+                )
+                .run();
+              referencedIdsChangeRef.current(
+                commandDateKey,
+                collectTaskReferenceIds(currentEditor)
+              );
+              toast.success("Task created");
+            })
+            .catch(() => {
+              const currentEditor = editorRef.current;
+              if (
+                currentEditor &&
+                !currentEditor.isDestroyed &&
+                dateKeyRef.current === commandDateKey
+              ) {
+                currentEditor.commands.insertContentAt(
+                  Math.min(insertAt, currentEditor.state.doc.content.size),
+                  `<p>/task ${taskTitle}</p>`
+                );
+              }
+              toast.error("Could not create task. Your command was restored.");
+            });
           return true;
         }
 
@@ -208,6 +314,10 @@ export function DailyAgendaEditor({
     },
     onUpdate: ({ editor: currentEditor }) => {
       scheduleSaveRef.current(currentEditor.getHTML());
+      referencedIdsChangeRef.current(
+        dateKeyRef.current,
+        collectTaskReferenceIds(currentEditor)
+      );
       const { $from } = currentEditor.state.selection;
       const line = $from.parent.textContent;
       const match = line.match(/^\/([^\s]*)$/);
@@ -234,6 +344,12 @@ export function DailyAgendaEditor({
       const line = currentEditor.state.selection.$from.parent.textContent;
       if (!/^\/([^\s]*)$/.test(line)) setSlash(null);
     },
+    onCreate: ({ editor: currentEditor }) => {
+      editorRef.current = currentEditor;
+    },
+    onDestroy: () => {
+      editorRef.current = null;
+    },
   });
 
   useEffect(() => {
@@ -241,38 +357,49 @@ export function DailyAgendaEditor({
     const controller = new AbortController();
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    void flushSave();
     hydratedKeyRef.current = null;
+    editor.setEditable(false);
+    editor.commands.setContent("<p></p>", { emitUpdate: false });
+    referencedIdsChangeRef.current(dateKey, new Set());
     setSaveState("loading");
     setSlash(null);
 
-    void fetch(`/api/daily-agenda?date=${encodeURIComponent(dateKey)}`, {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
+    const loadAgenda = async () => {
+      try {
+        await flushSave();
+        if (controller.signal.aborted) return;
+        const response = await fetch(
+          `/api/daily-agenda?date=${encodeURIComponent(dateKey)}`,
+          { signal: controller.signal }
+        );
         if (!response.ok) throw new Error("Agenda load failed");
-        return response.json() as Promise<{ content?: string }>;
-      })
-      .then((agenda) => {
+        const agenda = (await response.json()) as { content?: string };
         if (controller.signal.aborted) return;
         editor.commands.setContent(agenda.content || "<p></p>", {
           emitUpdate: false,
         });
         hydratedKeyRef.current = dateKey;
+        editor.setEditable(true);
+        referencedIdsChangeRef.current(
+          dateKey,
+          collectTaskReferenceIds(editor)
+        );
         setSaveState("saved");
-      })
-      .catch((error: unknown) => {
+      } catch (error: unknown) {
         if (error instanceof DOMException && error.name === "AbortError")
           return;
-        setSaveState("error");
-      });
+        setSaveState("load-error");
+      }
+    };
+
+    void loadAgenda();
 
     return () => {
       controller.abort();
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       void flushSave();
     };
-  }, [dateKey, editor]);
+  }, [dateKey, editor, loadVersion]);
 
   const filteredItems = useMemo(() => {
     if (!slash?.query) return SLASH_ITEMS;
@@ -298,7 +425,13 @@ export function DailyAgendaEditor({
   };
 
   return (
-    <section className="relative" ref={hostRef}>
+    <section
+      className="relative min-h-[clamp(260px,34vh,430px)]"
+      ref={hostRef}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) editor?.commands.focus("end");
+      }}
+    >
       <EditorContent editor={editor} />
 
       {slash && filteredItems.length > 0 && (
@@ -334,20 +467,39 @@ export function DailyAgendaEditor({
         </div>
       )}
 
-      <p
+      <div
         aria-live="polite"
         className={cn(
-          "mt-2 text-[10px] text-[var(--text-muted)] transition-opacity",
+          "mt-2 flex min-h-6 items-center gap-2 text-[10px] text-[var(--text-muted)] transition-opacity",
           saveState === "saved" && "opacity-45",
           saveState === "loading" && "opacity-70",
-          saveState === "error" && "text-[var(--color-danger)] opacity-100"
+          (saveState === "error" || saveState === "load-error") &&
+            "text-[var(--color-danger)] opacity-100"
         )}
       >
-        {saveState === "loading" && "Loading agenda…"}
-        {saveState === "saving" && "Saving…"}
-        {saveState === "saved" && "Saved"}
-        {saveState === "error" && "Could not save this agenda"}
-      </p>
+        <span>
+          {saveState === "loading" && "Loading agenda…"}
+          {saveState === "saving" && "Saving…"}
+          {saveState === "saved" && "Saved"}
+          {saveState === "error" && "Could not save this agenda"}
+          {saveState === "load-error" && "Could not load this agenda"}
+        </span>
+        {(saveState === "error" || saveState === "load-error") && (
+          <button
+            type="button"
+            onClick={() => {
+              if (saveState === "load-error") {
+                setLoadVersion((version) => version + 1);
+                return;
+              }
+              void flushSave(dateKeyRef.current);
+            }}
+            className="rounded-md px-2 py-1 font-medium text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+          >
+            Retry
+          </button>
+        )}
+      </div>
     </section>
   );
 }

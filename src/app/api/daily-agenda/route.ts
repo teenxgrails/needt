@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import DOMPurify from "isomorphic-dompurify";
 import { z } from "zod";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { sanitizeDailyAgendaContent } from "@/lib/daily-agenda-content";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "daily-agenda-route";
@@ -13,39 +13,12 @@ const payloadSchema = z.object({
   content: z.string().max(250_000),
 });
 
-const ALLOWED_TAGS = [
-  "blockquote",
-  "br",
-  "code",
-  "em",
-  "h1",
-  "h2",
-  "h3",
-  "hr",
-  "li",
-  "ol",
-  "p",
-  "pre",
-  "s",
-  "strong",
-  "u",
-  "ul",
-];
-
 function agendaDate(date: string): Date | null {
   const parsed = new Date(`${date}T00:00:00.000Z`);
   return Number.isNaN(parsed.getTime()) ||
     parsed.toISOString().slice(0, 10) !== date
     ? null
     : parsed;
-}
-
-function sanitizeContent(content: string) {
-  return DOMPurify.sanitize(content, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR: ["checked", "data-checked", "data-type"],
-    ALLOW_DATA_ATTR: true,
-  }).trim();
 }
 
 export async function GET(request: NextRequest) {
@@ -80,7 +53,7 @@ export async function PUT(request: NextRequest) {
     return new NextResponse("Invalid agenda payload", { status: 400 });
   }
 
-  const content = sanitizeContent(payload.data.content);
+  const content = sanitizeDailyAgendaContent(payload.data.content);
   const agenda = await prisma.dailyAgenda.upsert({
     where: { userId_date: { userId: auth.userId, date } },
     create: { userId: auth.userId, date, content },
