@@ -562,14 +562,6 @@ export function Calendar({
         onCreateTag={(name, color) =>
           useTaskStore.getState().createTag({ name, color })
         }
-        onItemTypeChange={() => {
-          setIsTaskModalOpen(false);
-          eventModalStore.setDefaultDate(currentDate);
-          eventModalStore.setDefaultEndDate(
-            new Date(currentDate.getTime() + 60 * 60 * 1000)
-          );
-          eventModalStore.setOpen(true);
-        }}
       />
       <BottomSheet
         open={isMobileCreateOpen}

@@ -49,15 +49,13 @@ export function MultiMonthView({
     (state) => state.showTasksOnCalendar
   );
   const { user: userSettings } = useSettingsStore();
-  const { createTask, updateTask, completeTask, deleteTask } =
-    useTaskMutations();
+  const { updateTask, completeTask, deleteTask } = useTaskMutations();
   const [selectedEvent, setSelectedEvent] = useState<Partial<CalendarEvent>>();
   const [selectedTask, setSelectedTask] = useState<Task>();
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedEndDate, setSelectedEndDate] = useState<Date>();
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [events, setEvents] = useState<
     Array<{
       id: string;
@@ -201,7 +199,7 @@ export function MultiMonthView({
     setSelectedEvent({
       allDay,
     });
-    setIsNewTaskModalOpen(true);
+    setIsEventModalOpen(true);
   };
 
   const handleEventModalClose = () => {
@@ -216,7 +214,6 @@ export function MultiMonthView({
 
   const handleTaskModalClose = () => {
     setIsTaskModalOpen(false);
-    setIsNewTaskModalOpen(false);
     setSelectedTask(undefined);
   };
 
@@ -323,19 +320,6 @@ export function MultiMonthView({
         event={selectedEvent}
         defaultDate={selectedDate || eventModalStore.defaultDate}
         defaultEndDate={selectedEndDate || eventModalStore.defaultEndDate}
-        onItemTypeChange={() => {
-          const start =
-            selectedDate || eventModalStore.defaultDate || currentDate;
-          const end =
-            selectedEndDate ||
-            eventModalStore.defaultEndDate ||
-            new Date(start.getTime() + 30 * 60 * 1000);
-          setSelectedDate(start);
-          setSelectedEndDate(end);
-          setIsEventModalOpen(false);
-          eventModalStore.setOpen(false);
-          setIsNewTaskModalOpen(true);
-        }}
       />
 
       {selectedTask && (
@@ -351,27 +335,6 @@ export function MultiMonthView({
           onCreateTag={async (name: string, color?: string) => {
             return useTaskStore.getState().createTag({ name, color });
           }}
-        />
-      )}
-
-      {isNewTaskModalOpen && selectedDate && selectedEndDate && (
-        <TaskModal
-          isOpen={isNewTaskModalOpen}
-          onClose={handleTaskModalClose}
-          tags={useTaskStore.getState().tags}
-          initialStart={selectedDate}
-          initialEnd={selectedEndDate}
-          onItemTypeChange={() => {
-            setIsNewTaskModalOpen(false);
-            setIsEventModalOpen(true);
-          }}
-          onSave={async (updates) => {
-            await createTask(updates);
-            handleTaskModalClose();
-          }}
-          onCreateTag={async (name: string, color?: string) =>
-            useTaskStore.getState().createTag({ name, color })
-          }
         />
       )}
 

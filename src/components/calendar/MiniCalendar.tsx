@@ -25,8 +25,6 @@ import {
 } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
-import { useSettingsStore } from "@/store/settings";
-
 interface MiniCalendarProps {
   currentDate: Date;
   onDateClick?: (date: Date) => void;
@@ -44,12 +42,6 @@ export function MiniCalendar({
   compact = false,
 }: MiniCalendarProps) {
   const [calendarDate, setCalendarDate] = useState(currentDate);
-  const weekStartDay = useSettingsStore((state) => state.user.weekStartDay);
-  const weekStartsOn = weekStartDay === "monday" ? 1 : 0;
-  const weekdays = useMemo(
-    () => (weekStartsOn === 1 ? [...WEEKDAYS.slice(1), WEEKDAYS[0]] : WEEKDAYS),
-    [weekStartsOn]
-  );
 
   useEffect(() => {
     setCalendarDate(currentDate);
@@ -57,10 +49,10 @@ export function MiniCalendar({
 
   const visibleDays = useMemo(() => {
     const monthStart = startOfMonth(calendarDate);
-    const gridStart = startOfWeek(monthStart, { weekStartsOn });
-    const gridEnd = endOfWeek(endOfMonth(calendarDate), { weekStartsOn });
+    const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const gridEnd = endOfWeek(endOfMonth(calendarDate), { weekStartsOn: 0 });
     return eachDayOfInterval({ start: gridStart, end: gridEnd });
-  }, [calendarDate, weekStartsOn]);
+  }, [calendarDate]);
 
   const jumpWeek = (amount: -7 | 7) => {
     const next = amount < 0 ? subDays(currentDate, 7) : addDays(currentDate, 7);
@@ -183,10 +175,10 @@ export function MiniCalendar({
       </div>
 
       <div className="grid grid-cols-7 gap-y-0.5">
-        {weekdays.map((day) => (
+        {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="flex h-6 items-center justify-center text-[11px] font-semibold text-[var(--text-secondary)]"
+            className="flex h-6 items-center justify-center text-[11px] font-semibold text-[#6F757A]"
           >
             {day}
           </div>
@@ -203,9 +195,9 @@ export function MiniCalendar({
                 onClick={() => onDateClick?.(day)}
                 aria-label={`${today ? "TODAY " : ""}${format(day, "d")}`}
                 className={cn(
-                  "relative flex h-6 w-6 items-center justify-center rounded-md border border-transparent bg-transparent text-[12px] transition-[border-color,background-color,color] duration-150 hover:border-[var(--text-secondary)]",
+                  "relative flex h-6 w-6 items-center justify-center rounded border border-transparent text-[12px] transition-[border-color,background-color,color] duration-150 hover:border-[var(--color-accent)]",
                   selected
-                    ? "border-[var(--text-primary)] font-semibold text-[var(--text-primary)]"
+                    ? "bg-[var(--surface-selected)] font-semibold text-[var(--text-inverse)]"
                     : currentMonth
                       ? "text-[var(--text-primary)] hover:bg-[var(--surface-raised)]"
                       : "text-[var(--text-muted)] hover:bg-[var(--surface-panel)]"

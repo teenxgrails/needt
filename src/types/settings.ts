@@ -7,7 +7,6 @@ export interface UserSettings {
   theme: ThemeMode;
   defaultView: CalendarView;
   timeZone: string;
-  secondaryTimeZone: string | null;
   weekStartDay: WeekStartDay;
   timeFormat: TimeFormat;
 }

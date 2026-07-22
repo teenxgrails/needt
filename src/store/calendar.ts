@@ -16,6 +16,7 @@ import {
   CalendarView,
   CalendarViewState,
 } from "@/types/calendar";
+import { TaskStatus } from "@/types/task";
 
 // Separate store for view preferences that will be persisted in localStorage
 interface ViewStore extends CalendarViewState {
@@ -842,6 +843,11 @@ export const useCalendarStore = create<CalendarStore>()((set, get) => ({
 
     const events = tasks
       .filter((task) => {
+        // Skip completed tasks
+        if (task.status === TaskStatus.COMPLETED) {
+          return false;
+        }
+
         const blocks =
           task.scheduledBlocks && task.scheduledBlocks.length > 0
             ? task.scheduledBlocks

@@ -9,6 +9,7 @@ import {
   Box,
   CalendarDays,
   Check,
+  CheckSquare2,
   ChevronDown,
   Circle,
   Copy,
@@ -25,7 +26,6 @@ import {
 import { RRule } from "rrule";
 import { toast } from "sonner";
 
-import { CalendarItemTypeSwitch } from "@/components/calendar/CalendarItemTypeSwitch";
 import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -84,7 +84,6 @@ interface TaskModalProps {
   initialProjectId?: string | null;
   initialStart?: Date;
   initialEnd?: Date;
-  onItemTypeChange?: (type: "task" | "event") => void;
 }
 
 //TODO: move to utils
@@ -165,7 +164,6 @@ export function TaskModal({
   initialProjectId,
   initialStart,
   initialEnd,
-  onItemTypeChange,
 }: TaskModalProps) {
   const { projects } = useProjectStore();
   const [title, setTitle] = useState("");
@@ -220,7 +218,6 @@ export function TaskModal({
   const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
   const [savedTemplates, setSavedTemplates] = useState<TaskTemplate[]>([]);
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const preserveDraftRef = useRef(false);
 
   const resetForm = useCallback(() => {
     const defaults = readTaskDefaults();
@@ -265,7 +262,7 @@ export function TaskModal({
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (!isOpen && !preserveDraftRef.current) {
+    if (!isOpen) {
       resetForm();
     }
   }, [isOpen, resetForm]);
@@ -341,10 +338,6 @@ export function TaskModal({
       setPriority(task.priority || null);
       setPriorityLevel(task.priorityLevel || SchedulingTaskPriority.MEDIUM);
     } else if (!task && isOpen) {
-      if (preserveDraftRef.current) {
-        preserveDraftRef.current = false;
-        return;
-      }
       resetForm();
       if (initialStart) {
         setStartDate(formatToLocalISOString(initialStart).split("T")[0]);
@@ -562,7 +555,7 @@ export function TaskModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && requestClose()}>
       <DialogContent
         data-testid="task-modal"
-        className="needt-overlay-depth !bottom-0 !left-0 !top-auto h-[92dvh] max-h-[92dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 gap-0 overflow-hidden !rounded-b-none !rounded-t-2xl border-[var(--dialog-border)] p-0 text-[var(--text-primary)] shadow-lg sm:!bottom-auto sm:!left-1/2 sm:!top-1/2 sm:h-[min(767px,calc(100dvh-3.875rem))] sm:max-h-[calc(100dvh-3.875rem)] sm:!w-[calc(100vw-3rem)] sm:!max-w-[960px] sm:!-translate-x-1/2 sm:!-translate-y-1/2 sm:!rounded-[var(--dialog-radius)] lg:[&>button.absolute]:-right-8 lg:[&>button.absolute]:top-0"
+        className="needt-overlay-depth !bottom-0 !left-0 !top-auto h-[92dvh] max-h-[92dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 gap-0 overflow-hidden !rounded-b-none !rounded-t-2xl border-[var(--dialog-border)] p-0 text-[var(--text-primary)] shadow-lg sm:!bottom-auto sm:!left-1/2 sm:!top-1/2 sm:h-[min(767px,calc(100dvh-3.875rem))] sm:max-h-[calc(100dvh-3.875rem)] sm:!w-[calc(100vw-3rem)] sm:!max-w-[1120px] sm:!-translate-x-1/2 sm:!-translate-y-1/2 sm:!rounded-[var(--dialog-radius)] lg:[&>button.absolute]:-right-8 lg:[&>button.absolute]:top-0"
       >
         {isSubmitting && <LoadingOverlay />}
         <div
@@ -571,12 +564,6 @@ export function TaskModal({
         />
         <form
           onSubmit={handleSubmit}
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-              event.preventDefault();
-              void save(status);
-            }
-          }}
           onChangeCapture={() => setIsDirty(true)}
           className="flex h-full min-h-0 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(340px,380px)] lg:grid-rows-[95px_minmax(0,1fr)_54px] lg:overflow-hidden lg:[grid-template-areas:'header_aside''main_aside''mainFooter_asideFooter']"
         >
@@ -586,17 +573,9 @@ export function TaskModal({
               timing, priority, and planner settings.
             </DialogDescription>
             <div className="flex min-h-10 items-center justify-between gap-4 sm:h-[25px] sm:min-h-0">
-              <DialogTitle asChild>
-                <div>
-                  <CalendarItemTypeSwitch
-                    value="task"
-                    locked={Boolean(task)}
-                    onValueChange={(type) => {
-                      preserveDraftRef.current = true;
-                      onItemTypeChange?.(type);
-                    }}
-                  />
-                </div>
+              <DialogTitle className="flex items-center gap-2 text-[13px] font-normal text-[var(--text-muted)]">
+                <CheckSquare2 className="h-4 w-4" />
+                Task
               </DialogTitle>
               <div className="mr-4 flex items-center gap-1 text-[13px] text-[var(--text-secondary)] lg:mr-0">
                 {task ? (
@@ -797,8 +776,8 @@ export function TaskModal({
                 {!isAutoScheduled
                   ? "(Off)"
                   : task?.scheduledStart
-                    ? format(newDate(task.scheduledStart), "EEE MMM d, h:mm a")
-                    : "(Pending)"}
+                  ? format(newDate(task.scheduledStart), "EEE MMM d, h:mm a")
+                  : "(Pending)"}
               </span>
             </label>
 

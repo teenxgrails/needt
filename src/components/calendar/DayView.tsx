@@ -35,6 +35,10 @@ import { CalendarEvent, ExtendedEventProps } from "@/types/calendar";
 import { Task, TaskStatus } from "@/types/task";
 
 import { CalendarEventContent } from "./CalendarEventContent";
+import {
+  CalendarQuickCreate,
+  QuickCreateSelection,
+} from "./CalendarQuickCreate";
 import { EventModal } from "./EventModal";
 import { EventQuickView } from "./EventQuickView";
 import { resolveCalendarItemId } from "./calendar-item-id";
@@ -61,6 +65,8 @@ export function DayView({ currentDate }: DayViewProps) {
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  const [quickCreateSelection, setQuickCreateSelection] =
+    useState<QuickCreateSelection>();
   const [events, setEvents] = useState<
     Array<{
       id: string;
@@ -87,6 +93,14 @@ export function DayView({ currentDate }: DayViewProps) {
   );
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
   const handleExternalTaskDrop = useCalendarExternalTaskDrop();
+
+  const cancelQuickCreate = useCallback(() => {
+    calendarRef.current?.getApi().unselect();
+    setQuickCreateSelection(undefined);
+    setSelectedDate(undefined);
+    setSelectedEndDate(undefined);
+    setSelectedEvent(undefined);
+  }, []);
 
   // Update events when the calendar view changes
   const handleDatesSet = useCallback(
@@ -214,16 +228,31 @@ export function DayView({ currentDate }: DayViewProps) {
     setSelectedEvent({
       allDay,
     });
-    calendarRef.current?.getApi().unselect();
-    setIsNewTaskModalOpen(true);
+    setQuickCreateSelection({
+      start,
+      end,
+      allDay,
+      point: selectInfo.jsEvent
+        ? { x: selectInfo.jsEvent.clientX, y: selectInfo.jsEvent.clientY }
+        : undefined,
+    });
   };
 
-  const handleSlotClick = (arg: { date: Date; allDay: boolean }) => {
+  const handleSlotClick = (arg: {
+    date: Date;
+    allDay: boolean;
+    jsEvent: MouseEvent;
+  }) => {
     const end = new Date(arg.date.getTime() + 30 * 60 * 1000);
     setSelectedDate(arg.date);
     setSelectedEndDate(end);
     setSelectedEvent({ allDay: arg.allDay });
-    setIsNewTaskModalOpen(true);
+    setQuickCreateSelection({
+      start: arg.date,
+      end,
+      allDay: arg.allDay,
+      point: { x: arg.jsEvent.clientX, y: arg.jsEvent.clientY },
+    });
   };
 
   const handleEventModalClose = () => {
@@ -242,6 +271,18 @@ export function DayView({ currentDate }: DayViewProps) {
     setSelectedTask(undefined);
     setSelectedDate(undefined);
     setSelectedEndDate(undefined);
+  };
+
+  const openTaskEditorFromQuickCreate = () => {
+    calendarRef.current?.getApi().unselect();
+    setQuickCreateSelection(undefined);
+    setIsNewTaskModalOpen(true);
+  };
+
+  const openEventEditorFromQuickCreate = () => {
+    calendarRef.current?.getApi().unselect();
+    setQuickCreateSelection(undefined);
+    setIsEventModalOpen(true);
   };
 
   const handleQuickViewClose = () => {
@@ -360,7 +401,7 @@ export function DayView({ currentDate }: DayViewProps) {
               <span
                 className={
                   arg.isToday
-                    ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-md border border-[var(--text-primary)] bg-transparent px-1 text-[13px] font-semibold text-[var(--text-primary)]"
+                    ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-md bg-[var(--accent)] px-1 text-[13px] font-semibold text-white"
                     : "text-[14px] font-semibold text-[var(--text-secondary)]"
                 }
               >
@@ -392,19 +433,13 @@ export function DayView({ currentDate }: DayViewProps) {
         event={selectedEvent}
         defaultDate={selectedDate || eventModalStore.defaultDate}
         defaultEndDate={selectedEndDate || eventModalStore.defaultEndDate}
-        onItemTypeChange={() => {
-          const start =
-            selectedDate || eventModalStore.defaultDate || currentDate;
-          const end =
-            selectedEndDate ||
-            eventModalStore.defaultEndDate ||
-            new Date(start.getTime() + 30 * 60 * 1000);
-          setSelectedDate(start);
-          setSelectedEndDate(end);
-          setIsEventModalOpen(false);
-          eventModalStore.setOpen(false);
-          setIsNewTaskModalOpen(true);
-        }}
+      />
+
+      <CalendarQuickCreate
+        selection={quickCreateSelection}
+        onClose={cancelQuickCreate}
+        onOpenTaskEditor={openTaskEditorFromQuickCreate}
+        onOpenEventEditor={openEventEditorFromQuickCreate}
       />
 
       {selectedTask && (
@@ -430,10 +465,6 @@ export function DayView({ currentDate }: DayViewProps) {
           tags={useTaskStore.getState().tags}
           initialStart={selectedDate}
           initialEnd={selectedEndDate}
-          onItemTypeChange={() => {
-            setIsNewTaskModalOpen(false);
-            setIsEventModalOpen(true);
-          }}
           onSave={async (updates) => {
             await createTask(updates);
             handleTaskModalClose();
