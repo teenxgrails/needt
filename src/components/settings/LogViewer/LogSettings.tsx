@@ -116,7 +116,7 @@ export function LogSettings() {
 
   if (loading) {
     return (
-      <div className="flex min-h-32 items-center justify-center border-t border-[#2B2F31] pt-5">
+      <div className="flex min-h-32 items-center justify-center border-t border-[var(--border-subtle)] pt-5">
         <LoadingSpinner size="lg" />
       </div>
     );

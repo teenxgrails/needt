@@ -1870,6 +1870,10 @@ html[data-animations="off"] *::after {
     display: none;
   }
 
+  .settings-mobile-overview {
+    display: none;
+  }
+
   .settings-main {
     margin-left: 230px;
   }

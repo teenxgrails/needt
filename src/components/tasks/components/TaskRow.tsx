@@ -58,9 +58,9 @@ export function TaskRow({
         onEdit(task);
       }}
       className={cn(
-        "cursor-pointer transition-colors hover:bg-[var(--active)]",
+        "cursor-pointer transition-colors hover:bg-[var(--surface-hover)]",
         isDragging ? "opacity-30" : "",
-        isFutureTask ? "text-[var(--text-lo)]" : ""
+        isFutureTask ? "text-[var(--text-secondary)]" : ""
       )}
     >
       <td className="px-3 py-2">

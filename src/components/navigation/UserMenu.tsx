@@ -82,7 +82,7 @@ export function UserMenu() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-72 border-[var(--line-strong)] bg-[var(--raised)] text-[var(--text-hi)]"
+        className="w-72 border-[var(--border-control)] bg-[var(--menu-bg)] text-[var(--text-primary)]"
         align="end"
         forceMount
       >
@@ -115,7 +115,7 @@ export function UserMenu() {
           </a>
         </DropdownMenuItem>
         <div className="px-2 py-2">
-          <div className="mb-2 text-xs font-medium text-[var(--text-lo)]">
+          <div className="mb-2 text-xs font-medium text-[var(--text-secondary)]">
             Theme
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -134,8 +134,8 @@ export function UserMenu() {
                   }
                   className={`flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs ${
                     theme === item.id
-                      ? "border-[var(--accent)] bg-[var(--active)] text-[var(--text-hi)]"
-                      : "border-[var(--line-strong)] bg-[var(--app-bg)] text-[var(--text-lo)] hover:text-[var(--text-hi)]"
+                      ? "border-[var(--color-accent)] bg-[var(--surface-hover)] text-[var(--text-primary)]"
+                      : "border-[var(--border-control)] bg-[var(--surface-canvas)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   }`}
                 >
                   <Icon className="h-4 w-4" />

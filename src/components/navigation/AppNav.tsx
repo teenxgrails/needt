@@ -199,7 +199,7 @@ export const AppNav = memo(function AppNav({
     <aside
       aria-label={`${APP_NAME} navigation`}
       className={cn(
-        "needt-panel-depth motion-sidebar needt-mobile-dock z-40 flex h-screen w-[244px] flex-none flex-col border-r border-[var(--line-strong)] p-2 text-[var(--text-hi)] max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:h-[calc(68px+env(safe-area-inset-bottom))] max-lg:w-full max-lg:flex-row max-lg:border-r-0 max-lg:border-t max-lg:px-1 max-lg:pb-[env(safe-area-inset-bottom)] max-lg:pt-1",
+        "needt-panel-depth motion-sidebar needt-mobile-dock z-40 flex h-screen w-[244px] flex-none flex-col border-r border-[var(--border-subtle)] p-2 text-[var(--text-primary)] max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:h-[calc(68px+env(safe-area-inset-bottom))] max-lg:w-full max-lg:flex-row max-lg:border-r-0 max-lg:border-t max-lg:px-1 max-lg:pb-[env(safe-area-inset-bottom)] max-lg:pt-1",
         isSettings && "lg:hidden",
         className
       )}
@@ -213,12 +213,12 @@ export const AppNav = memo(function AppNav({
       <button
         type="button"
         onClick={openCommandPalette}
-        className="mb-2 flex w-full items-center gap-2 rounded-md border border-[var(--line-strong)] bg-[var(--raised)] px-2.5 py-1.5 text-left text-[13px] text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)] max-lg:hidden"
+        className="mb-2 flex w-full items-center gap-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-2.5 py-1.5 text-left text-[13px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] max-lg:hidden"
         aria-label="Search or open command palette"
       >
         <Search className="h-4 w-4" strokeWidth={1.75} />
         <span className="min-w-0 flex-1 truncate">Search or command</span>
-        <kbd className="rounded bg-[var(--app-bg)] px-1.5 py-0.5 text-[10px] text-[var(--text-lo)]">
+        <kbd className="rounded bg-[var(--surface-canvas)] px-1.5 py-0.5 text-[10px] text-[var(--text-muted)]">
           ⌘K
         </kbd>
       </button>
@@ -237,8 +237,8 @@ export const AppNav = memo(function AppNav({
               className={cn(
                 "flex w-full touch-manipulation items-center gap-2 rounded-md px-2.5 py-1.5 text-left transition-colors [transition-duration:var(--motion-duration-fast)]",
                 isActive
-                  ? "needt-active-nav-item bg-[var(--active)] text-[var(--text-hi)]"
-                  : "text-[var(--text-lo)] hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
+                  ? "needt-active-nav-item bg-[var(--surface-hover)] text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               )}
             >
               <Icon
@@ -247,7 +247,7 @@ export const AppNav = memo(function AppNav({
               />
               <span className="min-w-0 flex-1 truncate">{link.label}</span>
               {"meta" in link && link.meta && (
-                <span className="text-[11px] text-[var(--text-lo)]">
+                <span className="text-[11px] text-[var(--text-muted)]">
                   {link.meta}
                 </span>
               )}
@@ -279,9 +279,9 @@ export const AppNav = memo(function AppNav({
               key={link.href}
               href={link.href}
               className={cn(
-                "flex min-h-14 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1 text-[var(--text-lo)] transition-colors [transition-duration:var(--motion-duration-fast)] active:bg-[var(--active)]",
+                "flex min-h-14 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1 text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] active:bg-[var(--surface-hover)]",
                 isActive &&
-                  "needt-active-nav-item bg-[var(--active)] text-[var(--text-hi)]"
+                  "needt-active-nav-item bg-[var(--surface-hover)] text-[var(--text-primary)]"
               )}
             >
               <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
@@ -292,9 +292,9 @@ export const AppNav = memo(function AppNav({
         <Link
           href="/settings#account"
           className={cn(
-            "flex min-h-14 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1 text-[var(--text-lo)] transition-colors [transition-duration:var(--motion-duration-fast)] active:bg-[var(--active)]",
+            "flex min-h-14 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1 text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] active:bg-[var(--surface-hover)]",
             isSettings &&
-              "needt-active-nav-item bg-[var(--active)] text-[var(--text-hi)]"
+              "needt-active-nav-item bg-[var(--surface-hover)] text-[var(--text-primary)]"
           )}
         >
           <Avatar className="h-5 w-5 border border-[var(--border-control)]">
@@ -390,7 +390,7 @@ export const AppNav = memo(function AppNav({
             </kbd>
           </Link>
         </RainbowButton>
-        <div className="flex items-center justify-between gap-1 border-t border-[var(--line-strong)] pt-2">
+        <div className="flex items-center justify-between gap-1 border-t border-[var(--border-subtle)] pt-2">
           <UserMenu />
           <div className="flex items-center gap-1">
             <Tooltip>
@@ -398,9 +398,9 @@ export const AppNav = memo(function AppNav({
                 <Link
                   href="/settings"
                   className={cn(
-                    "grid h-8 w-8 place-items-center rounded-md text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]",
+                    "grid h-8 w-8 place-items-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]",
                     pathname === "/settings" &&
-                      "bg-[var(--active)] text-[var(--text-hi)]"
+                      "bg-[var(--surface-hover)] text-[var(--text-primary)]"
                   )}
                   aria-label="Settings"
                 >
@@ -414,7 +414,7 @@ export const AppNav = memo(function AppNav({
                 <button
                   type="button"
                   onClick={() => setDownloadOpen(true)}
-                  className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
+                  className="grid h-8 w-8 place-items-center rounded-md text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
                   aria-label="Get the apps"
                 >
                   <Download className="h-4 w-4" strokeWidth={1.75} />
@@ -430,10 +430,10 @@ export const AppNav = memo(function AppNav({
         <Link
           href="/chat"
           aria-label="Open AI Chat"
-          className="fixed right-3 z-30 hidden h-11 items-center gap-2 rounded-full border border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_16%,var(--surface-panel))] px-3 text-xs font-medium text-[var(--text-primary)] shadow-sm active:bg-[color-mix(in_srgb,var(--accent)_24%,var(--surface-panel))] max-lg:flex"
+          className="fixed right-3 z-30 hidden h-11 items-center gap-2 rounded-full border border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_16%,var(--surface-panel))] px-3 text-xs font-medium text-[var(--text-primary)] shadow-sm active:bg-[color-mix(in_srgb,var(--color-accent)_24%,var(--surface-panel))] max-lg:flex"
           style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}
         >
-          <Sparkles className="h-4 w-4 text-[var(--accent)]" />
+          <Sparkles className="h-4 w-4 text-[var(--color-accent)]" />
           AI
         </Link>
       )}

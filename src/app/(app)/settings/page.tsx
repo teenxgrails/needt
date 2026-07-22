@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import Link from "next/link";
+
 import {
   Bell,
   Bot,
@@ -9,6 +11,7 @@ import {
   CalendarRange,
   CheckCircle2,
   ChevronLeft,
+  ChevronRight,
   Clock3,
   Code2,
   CreditCard,
@@ -16,6 +19,7 @@ import {
   Laptop,
   Palette,
   Plug,
+  Settings2,
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
@@ -39,14 +43,6 @@ import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSe
 import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings";
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import { cn } from "@/lib/utils";
 
 import { useSettingsStore } from "@/store/settings";
@@ -95,6 +91,33 @@ const GENERAL_TABS: SettingsNavItem[] = [
 const ACCOUNT_TABS: SettingsNavItem[] = [
   { id: "account", label: "Account settings", icon: UserRound },
   { id: "billing", label: "Billing", icon: CreditCard },
+];
+
+const MOBILE_TAB_GROUPS: Array<{
+  label: string;
+  items: SettingsNavItem[];
+}> = [
+  {
+    label: "Planner",
+    items: GENERAL_TABS.filter(({ id }) =>
+      ["calendars", "auto-scheduling", "task-defaults", "schedules"].includes(
+        id
+      )
+    ),
+  },
+  {
+    label: "Preferences",
+    items: GENERAL_TABS.filter(({ id }) =>
+      ["theme", "timezone", "notifications", "desktop"].includes(id)
+    ),
+  },
+  {
+    label: "Connections",
+    items: GENERAL_TABS.filter(({ id }) =>
+      ["integrations", "api", "privacy", "ai"].includes(id)
+    ),
+  },
+  { label: "Account", items: ACCOUNT_TABS },
 ];
 
 const LEGACY_TAB_MAP: Record<string, SettingsTab> = {
@@ -150,6 +173,7 @@ function SettingsNavGroup({
                   ? "bg-[var(--surface-hover)] text-[var(--text-primary)]"
                   : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               )}
+              aria-current={activeTab === item.id ? "page" : undefined}
             >
               <Icon className="h-4 w-4" strokeWidth={1.7} />
               <span>{item.label}</span>
@@ -164,6 +188,7 @@ function SettingsNavGroup({
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("calendars");
   const [isHydrated, setIsHydrated] = useState(false);
+  const [mobileOverview, setMobileOverview] = useState(true);
   const initializeSettings = useSettingsStore(
     (state) => state.initializeSettings
   );
@@ -183,6 +208,9 @@ export default function SettingsPage() {
       const hash = LEGACY_TAB_MAP[rawHash] ?? rawHash;
       if (ALL_TAB_IDS.includes(hash as SettingsTab)) {
         setActiveTab(hash as SettingsTab);
+        setMobileOverview(false);
+      } else if (!rawHash) {
+        setMobileOverview(true);
       }
     };
     readHash();
@@ -192,14 +220,24 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    if (isHydrated && window.location.hash.slice(1) !== activeTab) {
+    if (
+      isHydrated &&
+      !mobileOverview &&
+      window.location.hash.slice(1) !== activeTab
+    ) {
       window.history.replaceState(null, "", `#${activeTab}`);
     }
-  }, [activeTab, isHydrated]);
+  }, [activeTab, isHydrated, mobileOverview]);
 
   const selectTab = (tab: SettingsTab) => {
     setActiveTab(tab);
+    setMobileOverview(false);
     window.history.replaceState(null, "", `#${tab}`);
+  };
+
+  const showMobileOverview = () => {
+    setMobileOverview(true);
+    window.history.replaceState(null, "", window.location.pathname);
   };
 
   const renderTabContent = () => {
@@ -266,13 +304,13 @@ export default function SettingsPage() {
     <div className="needt-page-depth min-h-screen text-[var(--text-primary)]">
       <div className="flex min-h-screen">
         <aside className="needt-panel-depth settings-desktop-sidebar fixed inset-y-0 left-0 z-20 w-[230px] overflow-y-auto border-r border-[var(--border-subtle)] p-2">
-          <a
+          <Link
             href="/calendar"
             className="mb-3 flex h-[25px] items-center gap-1 rounded-[4px] px-1.5 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Back to Needt
-          </a>
+          </Link>
           <div className="space-y-4">
             <SettingsNavGroup
               label="General"
@@ -290,32 +328,33 @@ export default function SettingsPage() {
         </aside>
 
         <main className="needt-page-depth settings-main min-h-screen min-w-0 flex-1">
-          <div className="needt-panel-depth settings-mobile-header sticky top-0 z-30 min-h-16 items-center gap-3 border-b border-[var(--border-subtle)] px-4">
-            <a
-              href="/calendar"
-              aria-label="Back to Needt"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--control-radius)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </a>
-            <Select
-              value={activeTab}
-              onValueChange={(value) => selectTab(value as SettingsTab)}
-            >
-              <SelectTrigger
-                className="h-11 min-w-0 flex-1 text-[16px]"
-                aria-label="Settings page"
+          <div className="needt-panel-depth settings-mobile-header sticky top-0 z-30 min-h-16 items-center gap-2 border-b border-[var(--border-subtle)] px-3">
+            {mobileOverview ? (
+              <Link
+                href="/calendar"
+                aria-label="Back to Needt"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--control-radius)] text-[var(--text-secondary)] transition-colors active:bg-[var(--surface-hover)] active:text-[var(--text-primary)]"
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[...GENERAL_TABS, ...ACCOUNT_TABS].map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={showMobileOverview}
+                aria-label="Back to Settings"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--control-radius)] text-[var(--text-secondary)] transition-colors active:bg-[var(--surface-hover)] active:text-[var(--text-primary)]"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            <div className="flex min-w-0 items-center gap-2">
+              {mobileOverview && (
+                <Settings2 className="h-5 w-5 text-[var(--text-secondary)]" />
+              )}
+              <h1 className="truncate text-[17px] font-semibold leading-6">
+                {mobileOverview ? "Settings" : activeLabel}
+              </h1>
+            </div>
           </div>
           <header className="needt-panel-depth settings-desktop-header sticky top-0 z-10 h-[57px] items-center border-b border-[var(--border-subtle)] px-12">
             <h1 className="text-[18px] font-semibold leading-7">
@@ -324,13 +363,62 @@ export default function SettingsPage() {
           </header>
           <div
             className={cn(
-              "px-4 py-5 transition-opacity duration-150 sm:px-6 md:px-12 md:py-6",
+              "mx-auto w-full max-w-[1040px] px-4 py-5 pb-24 transition-opacity duration-150 sm:px-6 md:px-12 md:py-7 md:pb-16",
+              mobileOverview && "hidden lg:block",
               !isHydrated && "opacity-0"
             )}
           >
             <SettingsPanelBoundary resetKey={activeTab}>
               {renderTabContent()}
             </SettingsPanelBoundary>
+          </div>
+
+          <div
+            className={cn(
+              "settings-mobile-overview px-4 pb-28 pt-6",
+              !mobileOverview && "hidden",
+              !isHydrated && "opacity-0"
+            )}
+          >
+            <div className="mx-auto max-w-xl space-y-7">
+              {MOBILE_TAB_GROUPS.map((group) => (
+                <section
+                  key={group.label}
+                  aria-labelledby={`mobile-${group.label}`}
+                >
+                  <h2
+                    id={`mobile-${group.label}`}
+                    className="mb-2 px-1 text-[13px] font-semibold text-[var(--text-secondary)]"
+                  >
+                    {group.label}
+                  </h2>
+                  <div className="overflow-hidden rounded-[calc(var(--control-radius)+4px)] border border-[var(--border-subtle)] bg-[var(--surface-canvas)]">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => selectTab(item.id)}
+                          className="flex min-h-14 w-full items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-left text-[15px] text-[var(--text-primary)] transition-colors last:border-b-0 active:bg-[var(--surface-hover)]"
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--control-radius)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                            <Icon
+                              className="h-[18px] w-[18px]"
+                              strokeWidth={1.7}
+                            />
+                          </span>
+                          <span className="min-w-0 flex-1 font-medium">
+                            {item.label}
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
           </div>
         </main>
       </div>

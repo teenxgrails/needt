@@ -42,7 +42,7 @@ export function LogFilters({ filters, onChange, disabled }: LogFiltersProps) {
   };
 
   return (
-    <section className="space-y-4 border-t border-[#2B2F31] pt-5">
+    <section className="space-y-4 border-t border-[var(--border-subtle)] pt-5">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
           <Label htmlFor="level">Log Level</Label>

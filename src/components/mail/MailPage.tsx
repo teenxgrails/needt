@@ -351,7 +351,7 @@ export function MailPage() {
                     "h-2.5 w-2.5 fill-current",
                     account.status === "ERROR"
                       ? "text-[var(--text-muted)]"
-                      : "text-[var(--accent)]"
+                      : "text-[var(--color-accent)]"
                   )}
                 />
                 <span className="min-w-0 flex-1">
@@ -377,7 +377,7 @@ export function MailPage() {
                 </p>
                 <button
                   type="button"
-                  className="mt-2 text-[12px] text-[var(--accent)] hover:underline"
+                  className="mt-2 text-[12px] text-[var(--color-accent)] hover:underline"
                   onClick={() => setConnectOpen(true)}
                 >
                   Connect an account
@@ -443,7 +443,9 @@ export function MailPage() {
                     <span
                       className={cn(
                         "block h-1.5 w-1.5 rounded-full",
-                        message.isRead ? "bg-transparent" : "bg-[var(--accent)]"
+                        message.isRead
+                          ? "bg-transparent"
+                          : "bg-[var(--color-accent)]"
                       )}
                     />
                   </span>
@@ -605,7 +607,7 @@ export function MailPage() {
                   </div>
                 )}
                 <div
-                  className="mail-message-body mt-5 overflow-hidden text-[13px] leading-6 text-[var(--text-primary)] [&_a]:text-[var(--accent)] [&_a]:underline [&_img]:max-w-full [&_table]:max-w-full"
+                  className="mail-message-body mt-5 overflow-hidden text-[13px] leading-6 text-[var(--text-primary)] [&_a]:text-[var(--color-accent)] [&_a]:underline [&_img]:max-w-full [&_table]:max-w-full"
                   dangerouslySetInnerHTML={{ __html: renderedBody }}
                 />
               </article>

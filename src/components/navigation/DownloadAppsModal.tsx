@@ -20,7 +20,7 @@ interface DownloadAppsModalProps {
 
 function ComingSoon() {
   return (
-    <span className="rounded-full bg-[var(--active)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--text-lo)]">
+    <span className="rounded-full bg-[var(--surface-hover)] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
       Coming soon
     </span>
   );
@@ -38,18 +38,18 @@ function PlatformCard({
   steps: string[];
 }) {
   return (
-    <div className="rounded-lg border border-[var(--line-strong)] bg-[var(--app-bg)] p-4">
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-canvas)] p-4">
       <div className="mb-2 flex items-center gap-2">
-        <span className="text-[var(--text-hi)]">{icon}</span>
-        <h3 className="flex-1 text-[13px] font-semibold text-[var(--text-hi)]">
+        <span className="text-[var(--text-primary)]">{icon}</span>
+        <h3 className="flex-1 text-[13px] font-semibold text-[var(--text-primary)]">
           {title}
         </h3>
         {badge}
       </div>
-      <ol className="space-y-1.5 text-[12px] leading-relaxed text-[var(--text-lo)]">
+      <ol className="space-y-1.5 text-[12px] leading-relaxed text-[var(--text-secondary)]">
         {steps.map((step, i) => (
           <li key={i} className="flex gap-2">
-            <span className="text-[var(--text-lo)]">{i + 1}.</span>
+            <span className="text-[var(--text-muted)]">{i + 1}.</span>
             <span>{step}</span>
           </li>
         ))}
@@ -65,7 +65,7 @@ export function DownloadAppsModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] gap-0 overflow-y-auto p-0 sm:max-w-[560px]">
-        <DialogHeader className="border-b border-[var(--line-strong)] px-6 py-5">
+        <DialogHeader className="border-b border-[var(--border-subtle)] px-6 py-5">
           <DialogTitle className="text-base">Get {APP_NAME}</DialogTitle>
           <DialogDescription>
             Install {APP_NAME} as an app. Native apps are on the way — for now

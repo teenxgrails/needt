@@ -40,7 +40,7 @@ export function AIActionCursor() {
   return (
     <motion.div
       key={cursor.id}
-      className="pointer-events-none fixed left-[52%] top-[48%] z-[70] flex items-center gap-2 rounded-md border border-[var(--line-strong)] bg-[var(--raised)] px-3 py-2 text-xs text-[var(--text-hi)]"
+      className="pointer-events-none fixed left-[52%] top-[48%] z-[70] flex items-center gap-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-panel)] px-3 py-2 text-xs text-[var(--text-primary)]"
       initial={{ opacity: 0, x: -80, y: -40, scale: 0.96 }}
       animate={{
         opacity: [0, 1, 1, 0],
@@ -50,10 +50,13 @@ export function AIActionCursor() {
       }}
       transition={{ duration: 1.2, ease: "easeOut" }}
     >
-      <Sparkles className="h-4 w-4 text-[var(--accent)]" strokeWidth={1.75} />
+      <Sparkles
+        className="h-4 w-4 text-[var(--color-accent)]"
+        strokeWidth={1.75}
+      />
       <span>{cursor.label}</span>
       <motion.span
-        className="ml-1 rounded border border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_16%,var(--raised))] px-2 py-0.5 text-[10px] text-[var(--text-hi)]"
+        className="ml-1 rounded border border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_16%,var(--surface-panel))] px-2 py-0.5 text-[10px] text-[var(--text-primary)]"
         initial={{ opacity: 0, x: -8 }}
         animate={{ opacity: [0, 1, 1, 0], x: [-8, 0, 18, 28] }}
         transition={{ duration: 1.1, ease: "easeOut" }}

@@ -33,7 +33,7 @@ export function BoardsSidebarSection() {
       <div className="mb-1 flex items-center justify-between px-2.5">
         <Link
           href="/boards"
-          className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-lo)] hover:text-[var(--text-hi)]"
+          className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         >
           Boards
         </Link>
@@ -41,7 +41,7 @@ export function BoardsSidebarSection() {
           type="button"
           onClick={() => setDialogOpen(true)}
           aria-label="New board"
-          className="grid h-5 w-5 place-items-center rounded text-[var(--text-lo)] hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
+          className="grid h-5 w-5 place-items-center rounded text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
         >
           <Plus className="h-3.5 w-3.5" />
         </button>
@@ -49,7 +49,7 @@ export function BoardsSidebarSection() {
 
       <div className="space-y-0.5">
         {boards.length === 0 && (
-          <p className="px-2.5 py-1 text-[12px] text-[var(--text-lo)]">
+          <p className="px-2.5 py-1 text-[12px] text-[var(--text-muted)]">
             No boards yet.
           </p>
         )}
@@ -63,8 +63,8 @@ export function BoardsSidebarSection() {
               className={cn(
                 "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
                 isActive
-                  ? "bg-[var(--active)] text-[var(--text-hi)]"
-                  : "text-[var(--text-lo)] hover:bg-[var(--active)] hover:text-[var(--text-hi)]"
+                  ? "bg-[var(--surface-hover)] text-[var(--text-primary)]"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               )}
             >
               <span className="flex h-4 w-4 flex-none items-center justify-center">
