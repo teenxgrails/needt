@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { ChevronLeft, ChevronRight, PartyPopper, Plus } from "lucide-react";
+import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, PartyPopper, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
@@ -90,6 +90,8 @@ export function TodayView() {
   const tasks = useTaskStore((state) => state.tasks);
   const tags = useTaskStore((state) => state.tags);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
+  const loading = useTaskStore((state) => state.loading);
+  const taskError = useTaskStore((state) => state.error);
   const fetchTags = useTaskStore((state) => state.fetchTags);
   const updateTask = useTaskStore((state) => state.updateTask);
   const createTask = useTaskStore((state) => state.createTask);
@@ -107,6 +109,9 @@ export function TodayView() {
   const [now] = useState(() => newDate());
   const [selectedDate, setSelectedDate] = useState(() => newDate());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewSelection, setReviewSelection] = useState<Set<string>>(new Set());
   const [referencedTasks, setReferencedTasks] = useState<{
     dateKey: string;
     ids: Set<string>;
@@ -252,6 +257,7 @@ export function TodayView() {
   };
 
   const handleTaskComplete = async (task: Task) => {
+    const previousStatus = task.status;
     try {
       await updateTask(task.id, {
         status:
@@ -259,14 +265,30 @@ export function TodayView() {
             ? TaskStatus.TODO
             : TaskStatus.COMPLETED,
       });
+      if (previousStatus !== TaskStatus.COMPLETED) {
+        toast.success("Task completed", {
+          action: {
+            label: "Undo",
+            onClick: () => void updateTask(task.id, { status: previousStatus }),
+          },
+        });
+      }
     } catch {
       toast.error("Could not update task");
     }
   };
 
   const handleTaskDateChange = async (task: Task, date: Date | null) => {
+    const previousDueDate = task.dueDate;
+    const previousStartDate = task.startDate;
     try {
       await updateTask(task.id, { dueDate: date, startDate: date });
+      toast.success("Task moved", {
+        action: {
+          label: "Undo",
+          onClick: () => void updateTask(task.id, { dueDate: previousDueDate, startDate: previousStartDate }),
+        },
+      });
     } catch {
       toast.error("Could not change date");
     }
@@ -323,9 +345,9 @@ export function TodayView() {
         setSelectedDate((date) => addDays(date, deltaX > 0 ? -1 : 1));
       }}
     >
-      <div className="grid min-h-full w-full grid-cols-1 xl:h-full xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid min-h-full w-full grid-cols-1 xl:h-full xl:grid-cols-[minmax(620px,1fr)_clamp(260px,22vw,340px)]">
         <main className="min-w-0 overflow-y-auto px-5 pb-14 pt-[max(1rem,env(safe-area-inset-top))] sm:px-10 sm:py-10 xl:px-10 xl:py-9 2xl:px-14">
-          <div className="mx-auto w-full max-w-[840px]">
+          <div className="mx-auto w-full max-w-[1040px]">
             <div className="mb-12 flex items-center justify-between sm:hidden">
               <div className="needt-raised-depth flex h-11 items-center gap-2 rounded-full border border-[var(--border-subtle)] px-4 text-[15px] font-semibold tabular-nums text-[var(--text-primary)]">
                 <PartyPopper className="h-4 w-4" strokeWidth={1.8} />
@@ -349,7 +371,16 @@ export function TodayView() {
               onToday={() => setSelectedDate(now)}
             />
 
-            <div className="pb-10">
+            {taskError && tasks.length === 0 ? (
+              <div className="my-16 rounded-[var(--panel-radius)] bg-[var(--surface-raised)] p-8 text-center">
+                <AlertTriangle className="mx-auto mb-3 h-6 w-6 text-[var(--color-danger)]" />
+                <h2 className="text-lg font-semibold">Today could not load</h2>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">Your local draft is safe. Try loading tasks again.</p>
+                <Button className="mt-5" onClick={() => void fetchTasks()}><RotateCcw /> Retry</Button>
+              </div>
+            ) : loading && tasks.length === 0 ? (
+              <div className="space-y-5 py-8" aria-label="Loading today"><div className="h-7 w-40 animate-pulse rounded bg-[var(--surface-raised)]" /><div className="h-12 animate-pulse rounded bg-[var(--surface-raised)]" /><div className="h-12 w-4/5 animate-pulse rounded bg-[var(--surface-raised)]" /></div>
+            ) : <div className="pb-10">
               <DailyAgendaEditor
                 dateKey={dateKey}
                 onCreateTask={handleAgendaCreateTask}
@@ -378,13 +409,17 @@ export function TodayView() {
                 ))}
 
                 {progressTotal === 0 && (
-                  <div className="border-t border-[var(--border-subtle)] pt-8 text-[13px] text-[var(--text-muted)]">
-                    No tasks on this day yet. Type <kbd>/task</kbd>, add a
-                    title, and press Enter.
+                  <div className="rounded-[var(--panel-radius)] bg-[var(--surface-raised)] px-8 py-14 text-center">
+                    <PartyPopper className="mx-auto mb-4 h-7 w-7 text-[var(--text-muted)]" />
+                    <h2 className="text-xl font-semibold">A clear day</h2>
+                    <p className="mx-auto mt-2 max-w-sm text-[13px] text-[var(--text-muted)]">Write anywhere above, type <kbd>/task</kbd>, or add one when you are ready.</p>
+                    <Button className="mt-5" onClick={() => setAddOpen(true)}><Plus /> Add a task</Button>
                   </div>
                 )}
+                {activeCount >= 10 && <div className="rounded-[var(--panel-radius)] border border-[color-mix(in_srgb,var(--color-warning)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-warning)_8%,transparent)] p-4 text-sm"><strong>This day looks overloaded.</strong><span className="ml-2 text-[var(--text-secondary)]">Review priorities before asking the scheduler to move anything.</span></div>}
+                {viewingToday && now.getHours() >= 18 && activeCount > 0 && <div className="flex items-center justify-between rounded-[var(--panel-radius)] bg-[var(--surface-raised)] p-4"><div><strong className="text-sm">Evening review</strong><p className="text-xs text-[var(--text-muted)]">Choose what should move. Nothing changes automatically.</p></div><Button variant="secondary" onClick={() => { setReviewSelection(new Set()); setReviewOpen(true); }}>Review</Button></div>}
               </div>
-            </div>
+            </div>}
           </div>
         </main>
 
@@ -406,6 +441,16 @@ export function TodayView() {
       >
         <Plus className="h-5 w-5" />
       </button>
+
+      <button type="button" onClick={() => setTimelineOpen(true)} className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-5 z-10 grid h-12 w-12 place-items-center rounded-full border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] text-[var(--control-fg)] shadow-[var(--popover-shadow)] xl:hidden" aria-label="Open day calendar"><CalendarDays className="h-5 w-5" /></button>
+
+      <BottomSheet open={timelineOpen} onOpenChange={setTimelineOpen}>
+        <BottomSheetContent className="max-h-[92vh] p-0"><BottomSheetTitle className="sr-only">Day calendar</BottomSheetTitle><BottomSheetDescription className="sr-only">Events for the selected day</BottomSheetDescription><DayTimeline embedded date={selectedDate} items={timelineItems} onPrevious={() => setSelectedDate(addDays(selectedDate, -1))} onNext={() => setSelectedDate(addDays(selectedDate, 1))} onToday={() => setSelectedDate(now)} onOpenTask={(taskId) => { editTask(taskId); setTimelineOpen(false); }} /></BottomSheetContent>
+      </BottomSheet>
+
+      <BottomSheet open={reviewOpen} onOpenChange={setReviewOpen}>
+        <BottomSheetContent className="md:mx-auto md:max-w-lg"><BottomSheetTitle>Evening review</BottomSheetTitle><BottomSheetDescription>Move only the unfinished tasks you select.</BottomSheetDescription><div className="my-4 max-h-64 space-y-1 overflow-y-auto">{tasks.filter((task) => task.status !== TaskStatus.COMPLETED && taskBelongsToDay(task, dayStart)).map((task) => <label key={task.id} className="flex min-h-11 items-center gap-3 rounded-md px-2 hover:bg-[var(--menu-item-hover)]"><input type="checkbox" checked={reviewSelection.has(task.id)} onChange={(event) => setReviewSelection((current) => { const next = new Set(current); if (event.target.checked) next.add(task.id); else next.delete(task.id); return next; })} /> <span className="min-w-0 flex-1 truncate text-sm">{task.title}</span></label>)}</div><div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => setReviewOpen(false)}>Leave as is</Button><Button disabled={reviewSelection.size === 0} onClick={async () => { const tomorrow = addDays(dayStart, 1); await Promise.all([...reviewSelection].map((id) => updateTask(id, { startDate: tomorrow, dueDate: tomorrow }))); setReviewOpen(false); toast.success(`${reviewSelection.size} task${reviewSelection.size === 1 ? "" : "s"} moved to tomorrow`, { action: { label: "Undo", onClick: () => void Promise.all([...reviewSelection].map((id) => updateTask(id, { startDate: dayStart, dueDate: dayStart }))) } }); }}>Move to tomorrow</Button></div></BottomSheetContent>
+      </BottomSheet>
 
       <BottomSheet open={addOpen} onOpenChange={setAddOpen}>
         <BottomSheetContent className="md:mx-auto md:max-w-md">

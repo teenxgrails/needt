@@ -3,6 +3,7 @@ import { ConnectionOptions, Queue } from "bullmq";
 import { getRedisConnection } from "@/lib/queue/connection";
 import {
   CalendarSyncJobData,
+  BugReportSyncJobData,
   MailSyncJobData,
   QUEUE_NAMES,
   RescheduleJobData,
@@ -13,6 +14,7 @@ let calendarSyncQueue: Queue<CalendarSyncJobData> | null = null;
 let rescheduleQueue: Queue<RescheduleJobData> | null = null;
 let webhookRenewQueue: Queue<WebhookRenewJobData> | null = null;
 let mailSyncQueue: Queue<MailSyncJobData> | null = null;
+let bugReportSyncQueue: Queue<BugReportSyncJobData> | null = null;
 
 const defaultJobOptions = {
   attempts: 4,
@@ -60,16 +62,26 @@ export function getMailSyncQueue(): Queue<MailSyncJobData> {
   return mailSyncQueue;
 }
 
+export function getBugReportSyncQueue(): Queue<BugReportSyncJobData> {
+  bugReportSyncQueue ??= new Queue(QUEUE_NAMES.bugReportSync, {
+    connection: getBullConnection(),
+    defaultJobOptions,
+  });
+  return bugReportSyncQueue;
+}
+
 export async function closeQueues(): Promise<void> {
   const queues = [
     calendarSyncQueue,
     rescheduleQueue,
     webhookRenewQueue,
     mailSyncQueue,
+    bugReportSyncQueue,
   ].filter((queue): queue is Queue => queue !== null);
   await Promise.all(queues.map((queue) => queue.close()));
   calendarSyncQueue = null;
   rescheduleQueue = null;
   webhookRenewQueue = null;
   mailSyncQueue = null;
+  bugReportSyncQueue = null;
 }

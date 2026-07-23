@@ -347,7 +347,7 @@ docker compose logs -f
 docker compose down
 
 # Update to the latest version
-docker pull eibrahim/fluid-calendar:latest
+docker pull ghcr.io/teenxgrails/needt:main
 docker compose up -d
 
 # Reset database (caution: deletes all data)

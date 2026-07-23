@@ -9,7 +9,7 @@
  */
 
 /** Canonical GitHub page for the project. */
-export const GITHUB_REPO_URL = "https://github.com/dotnetfactory/fluid-calendar";
+export const GITHUB_REPO_URL = "https://github.com/teenxgrails/needt";
 
 /** Shown when the version is unavailable at runtime, so the UI is never empty. */
 export const FALLBACK_APP_VERSION = "0.0.0";

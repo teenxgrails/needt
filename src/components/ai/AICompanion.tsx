@@ -25,7 +25,7 @@ function suggestionFor(pathname: string): string {
     return "I can sort this list and suggest the next step.";
   if (pathname === "/focus")
     return "Want to start a short focus session together?";
-  if (pathname.startsWith("/boards"))
+  if (pathname.startsWith("/pages"))
     return "I can turn a note into a scheduled task.";
   if (pathname === "/mail")
     return "Want to see which messages should become tasks?";

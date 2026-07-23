@@ -1,6 +1,7 @@
 import { logger } from "@/lib/logger";
 import {
   getCalendarSyncQueue,
+  getBugReportSyncQueue,
   getMailSyncQueue,
   getRescheduleQueue,
   getWebhookRenewQueue,
@@ -84,4 +85,13 @@ export async function removeMailSyncSchedule(accountId: string) {
   return getMailSyncQueue().removeJobScheduler(
     `mail-sync-account-${accountId}`
   );
+}
+
+export async function enqueueBugReportSync(reportId: string) {
+  if (await skipWhenUnconfigured("bug-report-sync")) return null;
+  return getBugReportSyncQueue().add("sync-report", { reportId }, {
+    jobId: `bug-report-sync-${reportId}`,
+    attempts: 6,
+    backoff: { type: "exponential", delay: 30_000 },
+  });
 }

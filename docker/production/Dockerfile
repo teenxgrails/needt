@@ -24,24 +24,23 @@ RUN apk add --no-cache netcat-openbsd jq python3 make g++
 
 WORKDIR /app
 
+# Create the runtime user before copying so ownership is assigned while layers
+# are created instead of recursively rewriting the entire dependency tree.
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+
 # Install production dependencies
-COPY --from=builder /app/package*.json ./
+COPY --chown=nextjs:nodejs --from=builder /app/package*.json ./
 RUN npm ci --only=production --legacy-peer-deps --ignore-scripts
 
 # Copy built application
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+COPY --chown=nextjs:nodejs --from=builder /app/.next/standalone ./
+COPY --chown=nextjs:nodejs --from=builder /app/.next/static ./.next/static
+COPY --chown=nextjs:nodejs --from=builder /app/public ./public
+COPY --chown=nextjs:nodejs --from=builder /app/prisma ./prisma
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --chown=nextjs:nodejs --from=builder /app/entrypoint.sh ./entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Create and switch to non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-# Set ownership of the application files to nextjs user
-RUN chown -R nextjs:nodejs /app
 USER nextjs
 
 # Expose port

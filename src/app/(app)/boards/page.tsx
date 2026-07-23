@@ -1,5 +1,5 @@
-import { BoardsHome } from "@/components/boards/BoardsHome";
+import { redirect } from "next/navigation";
 
-export default function BoardsPage() {
-  return <BoardsHome />;
+export default function LegacyBoardsPage() {
+  redirect("/pages");
 }

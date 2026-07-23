@@ -1,14 +1,5 @@
-import { BoardCanvas } from "@/components/boards/BoardCanvas";
+import { redirect } from "next/navigation";
 
-export default async function BoardPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  return (
-    <div className="h-full">
-      <BoardCanvas boardId={id} />
-    </div>
-  );
+export default function LegacyBoardPage() {
+  redirect("/pages");
 }

@@ -21,12 +21,9 @@ import {
 } from "@/services/ai/types";
 import { recordHostedAiAction } from "@/services/ai/usage";
 import {
-  createBoard,
-  createColumn,
-  getBoard,
-  listBoards,
-  moveCard,
-} from "@/services/boards/boardService";
+  createAiProposal,
+  listAiReadablePages,
+} from "@/services/pages/page-service";
 import {
   finalizeSession,
   getActiveSession,
@@ -298,92 +295,48 @@ async function executeTool(
       };
     }
 
-    case "list_boards": {
-      const boards = await listBoards(userId);
+    case "list_pages": {
+      const pages = await listAiReadablePages(userId);
       return {
-        text: boards.length
-          ? `Boards: ${boards.map((board) => board.name).join(", ")}.`
-          : "No boards yet.",
+        text: pages.length
+          ? `Pages: ${pages.map((page) => page.title).join(", ")}.`
+          : "No AI-readable pages yet.",
         toolName: call.name,
-        toolPayload: jsonValue({ boards }),
+        toolPayload: jsonValue({ pages: pages.map((page) => ({ id: page.id, title: page.title, updatedAt: page.updatedAt })) }),
         requiresConfirm: false,
       };
     }
 
-    case "query_board": {
-      const boardId = stringArg(call.arguments, "boardId");
-      const board = boardId ? await getBoard(userId, boardId) : null;
+    case "search_pages": {
+      const query = stringArg(call.arguments, "query");
+      const pages = query ? await listAiReadablePages(userId, query) : [];
       return {
-        text: board
-          ? `${board.name} has ${board.columns.length} columns and ${board.tasks.length} cards.`
-          : "I could not find that board.",
+        text: pages.length ? `Found ${pages.length} matching page${pages.length === 1 ? "" : "s"}.` : "No matching AI-readable page was found.",
         toolName: call.name,
-        toolPayload: jsonValue({ board }),
+        toolPayload: jsonValue({ pages: pages.map((page) => ({ id: page.id, title: page.title, blocks: page.blocks.map((block) => ({ type: block.type, content: block.content })) })) }),
         requiresConfirm: false,
       };
     }
 
-    case "create_board": {
-      const name = stringArg(call.arguments, "name");
-      const columns = Array.isArray(call.arguments.columns)
-        ? call.arguments.columns.filter(
-            (value): value is string => typeof value === "string"
-          )
-        : undefined;
-      if (!name) {
+    case "propose_page_changes": {
+      const pageId = stringArg(call.arguments, "pageId");
+      const summary = stringArg(call.arguments, "summary");
+      const proposedText = stringArg(call.arguments, "text");
+      if (!pageId || !summary || !proposedText) {
         return {
-          text: "I need a board name.",
+          text: "I need a page, summary and proposed text.",
           toolName: call.name,
           requiresConfirm: false,
         };
       }
-      const board = await createBoard(userId, {
-        name,
-        icon: stringArg(call.arguments, "icon"),
-        columns,
+      const proposal = await createAiProposal(userId, pageId, {
+        summary,
+        operations: [{ type: "append_block", blockType: "PARAGRAPH", content: { text: proposedText } }],
       });
       return {
-        text: `Created board "${board.name}".`,
+        text: `Prepared a page change preview: ${proposal.summary}. Review it before applying.`,
         toolName: call.name,
-        toolPayload: jsonValue({ boardId: board.id, columns: board.columns }),
-        requiresConfirm: false,
-      };
-    }
-
-    case "create_column": {
-      const boardId = stringArg(call.arguments, "boardId");
-      const name = stringArg(call.arguments, "name");
-      const column =
-        boardId && name
-          ? await createColumn(userId, boardId, {
-              name,
-              color: stringArg(call.arguments, "color"),
-            })
-          : null;
-      return {
-        text: column
-          ? `Created column "${column.name}".`
-          : "I could not create that column.",
-        toolName: call.name,
-        toolPayload: jsonValue({ column }),
-        requiresConfirm: false,
-      };
-    }
-
-    case "move_card": {
-      const moved = await moveCard(userId, {
-        taskId: stringArg(call.arguments, "taskId") || "",
-        boardId: stringArg(call.arguments, "boardId") || "",
-        columnId: stringArg(call.arguments, "columnId") || "",
-        toIndex: numberArg(call.arguments, "toIndex") || 0,
-      });
-      if (moved) await publishAgentMutation(userId);
-      return {
-        text: moved
-          ? `Moved card "${moved.title}".`
-          : "I could not move that card.",
-        toolName: call.name,
-        toolPayload: jsonValue({ taskId: moved?.id || null }),
+        toolPayload: jsonValue({ proposalId: proposal.id, pageId: proposal.pageId, summary: proposal.summary, status: proposal.status }),
         requiresConfirm: false,
       };
     }

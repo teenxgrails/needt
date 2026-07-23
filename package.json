@@ -39,7 +39,7 @@
     "db:up": "docker compose up db -d",
     "start:prod": "infisical run --token=\"$INFISICAL_TOKEN\" --projectId=\"$PROJECT_ID\" --env=\"$INFISICAL_SECRET_ENV\" --domain=\"$INFISICAL_API_URL\" -- next start",
     "prisma:update": "infisical run --token=\"$INFISICAL_TOKEN\" --projectId=\"$PROJECT_ID\" --env=\"$INFISICAL_SECRET_ENV\" --domain=\"$INFISICAL_API_URL\" -- npx prisma generate && infisical run --token=\"$INFISICAL_TOKEN\" --projectId=\"$PROJECT_ID\" --env=\"$INFISICAL_SECRET_ENV\" --domain=\"$INFISICAL_API_URL\" -- npx prisma migrate deploy",
-    "docker:publish": "docker build -t fluid-calendar:prod -f docker/production/Dockerfile . && docker tag fluid-calendar:prod eibrahim/fluid-calendar:latest && docker push eibrahim/fluid-calendar:latest",
+    "docker:publish": "docker build -t ghcr.io/teenxgrails/needt:main -f docker/production/Dockerfile . && docker push ghcr.io/teenxgrails/needt:main",
     "prepare": "husky"
   },
   "dependencies": {

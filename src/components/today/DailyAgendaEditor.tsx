@@ -15,6 +15,8 @@ import {
   ListOrdered,
   type LucideIcon,
   Minus,
+  Code2,
+  FilePlus2,
   Quote,
   SquareCheckBig,
 } from "lucide-react";
@@ -47,7 +49,9 @@ type AgendaCommand =
   | "ordered"
   | "checklist"
   | "quote"
-  | "divider";
+  | "divider"
+  | "code"
+  | "page";
 
 interface SlashItem {
   id: AgendaCommand;
@@ -121,6 +125,20 @@ const SLASH_ITEMS: SlashItem[] = [
     icon: Minus,
     keywords: "divider line",
   },
+  {
+    id: "code",
+    label: "Code block",
+    hint: "Monospaced code",
+    icon: Code2,
+    keywords: "code snippet",
+  },
+  {
+    id: "page",
+    label: "New page",
+    hint: "Create a linked Page",
+    icon: FilePlus2,
+    keywords: "page document note",
+  },
 ];
 
 function removeSlashText(editor: Editor) {
@@ -161,6 +179,7 @@ export function DailyAgendaEditor({
     top: number;
     left: number;
   } | null>(null);
+  const [slashIndex, setSlashIndex] = useState(0);
 
   dateKeyRef.current = dateKey;
   createTaskRef.current = onCreateTask;
@@ -200,6 +219,7 @@ export function DailyAgendaEditor({
               !pendingSavesRef.current.has(entry.date) &&
               dateKeyRef.current === entry.date
             ) {
+              localStorage.removeItem(`needt-agenda-draft:${entry.date}`);
               setSaveState("saved");
             }
           } catch {
@@ -219,6 +239,7 @@ export function DailyAgendaEditor({
     const hydratedDate = hydratedKeyRef.current;
     if (!hydratedDate || hydratedDate !== dateKeyRef.current) return;
     pendingSavesRef.current.set(hydratedDate, content);
+    localStorage.setItem(`needt-agenda-draft:${hydratedDate}`, content);
     setSaveState("saving");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => void flushSave(), 550);
@@ -252,6 +273,19 @@ export function DailyAgendaEditor({
         const { $from } = view.state.selection;
         const line = $from.parent.textContent.trim();
 
+        if (slash && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+          event.preventDefault();
+          setSlashIndex((index) => {
+            const count = Math.max(1, filteredItems.length);
+            return event.key === "ArrowDown" ? (index + 1) % count : (index - 1 + count) % count;
+          });
+          return true;
+        }
+        if (slash && event.key === "Enter" && filteredItems[slashIndex]) {
+          event.preventDefault();
+          applyCommand(filteredItems[slashIndex].id);
+          return true;
+        }
         if (event.key === "Escape") {
           setSlash(null);
           return false;
@@ -339,6 +373,7 @@ export function DailyAgendaEditor({
           Math.min(caret.left - bounds.left, bounds.width - 292)
         ),
       });
+      setSlashIndex(0);
     },
     onSelectionUpdate: ({ editor: currentEditor }) => {
       const line = currentEditor.state.selection.$from.parent.textContent;
@@ -375,7 +410,8 @@ export function DailyAgendaEditor({
         if (!response.ok) throw new Error("Agenda load failed");
         const agenda = (await response.json()) as { content?: string };
         if (controller.signal.aborted) return;
-        editor.commands.setContent(agenda.content || "<p></p>", {
+        const localDraft = localStorage.getItem(`needt-agenda-draft:${dateKey}`);
+        editor.commands.setContent(localDraft || agenda.content || "<p></p>", {
           emitUpdate: false,
         });
         hydratedKeyRef.current = dateKey;
@@ -384,7 +420,7 @@ export function DailyAgendaEditor({
           dateKey,
           collectTaskReferenceIds(editor)
         );
-        setSaveState("saved");
+        setSaveState(localDraft ? "error" : "saved");
       } catch (error: unknown) {
         if (error instanceof DOMException && error.name === "AbortError")
           return;
@@ -421,6 +457,20 @@ export function DailyAgendaEditor({
     if (command === "checklist") chain.toggleTaskList().run();
     if (command === "quote") chain.toggleBlockquote().run();
     if (command === "divider") chain.setHorizontalRule().run();
+    if (command === "code") chain.toggleCodeBlock().run();
+    if (command === "page") {
+      chain.insertContent("Creating page…").run();
+      void fetch("/api/pages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Untitled" }),
+      }).then(async (response) => {
+        if (!response.ok) throw new Error("Page creation failed");
+        const { page } = (await response.json()) as { page: { id: string } };
+        window.dispatchEvent(new Event("pages-changed"));
+        toast.success("Page created", { action: { label: "Open", onClick: () => { window.location.href = `/pages/${page.id}`; } } });
+      }).catch(() => toast.error("Could not create page"));
+    }
     setSlash(null);
   };
 
@@ -441,7 +491,7 @@ export function DailyAgendaEditor({
           className="needt-overlay-depth absolute z-30 w-[292px] overflow-hidden rounded-xl border border-[var(--popover-border)] p-1.5 shadow-lg"
           style={{ top: slash.top, left: slash.left }}
         >
-          {filteredItems.map((item) => {
+          {filteredItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <button
@@ -450,7 +500,7 @@ export function DailyAgendaEditor({
                 role="menuitem"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => applyCommand(item.id)}
-                className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-[var(--menu-item-hover)]"
+                className={cn("flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-[var(--menu-item-hover)]", index === slashIndex && "bg-[var(--menu-item-hover)]")}
               >
                 <Icon className="h-4 w-4 flex-none text-[var(--text-muted)]" />
                 <span className="min-w-0 flex-1">

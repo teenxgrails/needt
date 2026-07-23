@@ -18,7 +18,7 @@ import {
   Sun,
 } from "lucide-react";
 
-import { BoardsSidebarSection } from "@/components/boards/BoardsSidebarSection";
+import { PagesSidebarSection } from "@/components/pages/PagesSidebarSection";
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
 import { useAppSession } from "@/components/providers/app-session-context";
@@ -93,7 +93,7 @@ export const AppNav = memo(function AppNav({
       "/calendar",
       "/tasks",
       "/focus",
-      "/boards",
+      "/pages",
       "/mail",
       "/settings",
       "/chat",
@@ -183,7 +183,7 @@ export const AppNav = memo(function AppNav({
     { href: "/focus", label: "Focus", icon: Focus },
   ];
   const phoneLinks = [
-    { href: "/tasks", label: "To-do", icon: CheckSquare },
+    { href: "/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/today", label: "Today", icon: CalendarDays },
     { href: "/focus", label: "Focus", icon: CircleDashed },
   ];
@@ -358,7 +358,7 @@ export const AppNav = memo(function AppNav({
       </nav>
 
       <div className="min-h-0 flex-1 overflow-y-auto max-lg:hidden">
-        <BoardsSidebarSection />
+        <PagesSidebarSection />
       </div>
 
       <div className="mt-auto max-lg:hidden">

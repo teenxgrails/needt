@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Palette, Save } from "lucide-react";
+import { Palette } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  MotionPicker,
+  NeedtPicker,
   MotionSwitchRow,
 } from "@/components/settings/MotionSettingsControls";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -56,7 +55,9 @@ const ACCENT_COLORS = [
 
 export function CustomizationSettings() {
   const [settings, setSettings] = useState<CustomizationState>(DEFAULTS);
-  const [isSaving, setIsSaving] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const hydrated = useRef(false);
+  const lastSaved = useRef<CustomizationState>(DEFAULTS);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,7 +65,7 @@ export function CustomizationSettings() {
       .then((response) => response.json())
       .then((data) => {
         if (!cancelled) {
-          setSettings({
+          const loaded = {
             ...DEFAULTS,
             ...data,
             accentColor:
@@ -72,7 +73,10 @@ export function CustomizationSettings() {
               data.accentColor.toUpperCase() === "#555B5F"
                 ? DEFAULTS.accentColor
                 : data.accentColor,
-          });
+          } as CustomizationState;
+          setSettings(loaded);
+          lastSaved.current = loaded;
+          queueMicrotask(() => { hydrated.current = true; });
         }
       })
       .catch(() => {
@@ -117,27 +121,25 @@ export function CustomizationSettings() {
     value: CustomizationState[Key]
   ) => setSettings((current) => ({ ...current, [key]: value }));
 
-  async function save() {
-    try {
-      setIsSaving(true);
-      const response = await fetch("/api/customization", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      if (!response.ok) throw new Error("Failed to save customization");
-      const data = await response.json();
-      setSettings({ ...DEFAULTS, ...data });
-      toast.success("Customization saved");
-    } catch (error) {
-      toast.error("Could not save customization", {
-        description:
-          error instanceof Error ? error.message : "Try again later.",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  }
+  useEffect(() => {
+    if (!hydrated.current) return;
+    const snapshot = settings;
+    setSaveState("saving");
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/customization", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(snapshot) });
+        if (!response.ok) throw new Error("Failed to save customization");
+        const saved = { ...DEFAULTS, ...(await response.json()) } as CustomizationState;
+        lastSaved.current = saved;
+        setSaveState("saved");
+      } catch {
+        setSettings(lastSaved.current);
+        setSaveState("failed");
+        toast.error("Could not save appearance. Your last saved settings were restored.");
+      }
+    }, 550);
+    return () => clearTimeout(timer);
+  }, [settings]);
 
   return (
     <SettingsSection
@@ -190,7 +192,7 @@ export function CustomizationSettings() {
         description="Density, sizing, background, and calendar event style."
       >
         <div className="space-y-0.5">
-          <MotionPicker
+          <NeedtPicker
             label="Density"
             value={settings.density}
             valueLabel={
@@ -205,7 +207,7 @@ export function CustomizationSettings() {
               update("density", value as CustomizationState["density"])
             }
           />
-          <MotionPicker
+          <NeedtPicker
             label="Event cards"
             value={settings.eventChipStyle}
             valueLabel={
@@ -270,11 +272,10 @@ export function CustomizationSettings() {
         </SettingsCard>
       </SettingsAdvanced>
 
-      <div className="mt-5 flex justify-end">
-        <Button type="button" onClick={save} disabled={isSaving}>
-          <Save className="h-4 w-4" />
-          {isSaving ? "Saving…" : "Save appearance"}
-        </Button>
+      <div aria-live="polite" className="mt-4 text-right text-[11px] text-[var(--text-muted)]">
+        {saveState === "saving" && "Saving…"}
+        {saveState === "saved" && "Saved"}
+        {saveState === "failed" && <span className="text-[var(--color-danger)]">Failed · restored</span>}
       </div>
     </SettingsSection>
   );

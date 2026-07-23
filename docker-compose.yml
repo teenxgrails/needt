@@ -1,6 +1,6 @@
 services:
   app:
-    image: eibrahim/fluid-calendar:latest
+    image: ghcr.io/teenxgrails/needt:main
     ports:
       - "3000:3000"
     env_file:

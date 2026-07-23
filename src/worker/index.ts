@@ -1,4 +1,5 @@
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { syncBugReportToGithub } from "@/services/bug-reports/bug-report-service";
 import { ConnectionOptions, Job, Worker } from "bullmq";
 
 import { CalDAVCalendarService } from "@/lib/caldav-calendar";
@@ -27,9 +28,10 @@ import {
   enqueueWebhookRenew,
   ensureMailSyncSchedule,
 } from "@/lib/queue/enqueue";
-import { closeQueues, getWebhookRenewQueue } from "@/lib/queue/queues";
+import { closeQueues, getBugReportSyncQueue, getWebhookRenewQueue } from "@/lib/queue/queues";
 import {
   CalendarSyncJobData,
+  BugReportSyncJobData,
   MailSyncJobData,
   QUEUE_NAMES,
   RescheduleJobData,
@@ -108,6 +110,10 @@ async function processMailSync(job: Job<MailSyncJobData>) {
   await ensureImapIdleWatcher(job.data.accountId);
 }
 
+async function processBugReportSync(job: Job<BugReportSyncJobData>) {
+  await syncBugReportToGithub(job.data.reportId);
+}
+
 // See src/lib/queue/queues.ts: pnpm may keep two compatible ioredis patch
 // versions, so bridge their nominal types at this BullMQ boundary.
 const connection = getRedisConnection() as unknown as ConnectionOptions;
@@ -129,6 +135,10 @@ const workers = [
   new Worker<MailSyncJobData>(QUEUE_NAMES.mailSync, processMailSync, {
     connection,
     concurrency: 3,
+  }),
+  new Worker<BugReportSyncJobData>(QUEUE_NAMES.bugReportSync, processBugReportSync, {
+    connection,
+    concurrency: 1,
   }),
 ];
 
@@ -153,6 +163,11 @@ async function start(): Promise<void> {
     { name: "renew-webhooks", data: {} }
   );
   await enqueueWebhookRenew();
+  await getBugReportSyncQueue().upsertJobScheduler(
+    "bug-report-retry",
+    { every: 30 * 60 * 1_000 },
+    { name: "retry-unsynced-reports", data: {} }
+  );
   const mailAccountIds = await listActiveMailAccountIds();
   await Promise.all(
     mailAccountIds.map((accountId) => ensureMailSyncSchedule(accountId))

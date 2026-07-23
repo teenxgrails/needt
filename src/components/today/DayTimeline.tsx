@@ -38,6 +38,7 @@ export function DayTimeline({
   onNext,
   onToday,
   onOpenTask,
+  embedded = false,
 }: {
   date: Date;
   items: TimelineItem[];
@@ -45,6 +46,7 @@ export function DayTimeline({
   onNext: () => void;
   onToday: () => void;
   onOpenTask: (taskId?: string) => void;
+  embedded?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isToday = isSameDay(date, newDate());
@@ -57,7 +59,12 @@ export function DayTimeline({
   const currentMinutes = current.getHours() * 60 + current.getMinutes();
 
   return (
-    <aside className="hidden min-h-0 border-l border-[var(--border-subtle)] xl:flex xl:flex-col">
+    <aside
+      className={cn(
+        "min-h-0 border-l border-[var(--border-subtle)]",
+        embedded ? "flex h-[72vh] flex-col border-l-0" : "hidden xl:flex xl:flex-col"
+      )}
+    >
       <header className="flex h-[92px] flex-none items-center border-b border-[var(--border-subtle)] px-5 2xl:px-6">
         <button
           type="button"

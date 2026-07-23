@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/utils";
 
-export interface MotionPickerOption {
+export interface NeedtPickerOption {
   value: string;
   label: string;
   description?: string;
@@ -22,7 +22,7 @@ export interface MotionPickerOption {
   trailing?: React.ReactNode;
 }
 
-export function MotionPicker({
+export function NeedtPicker({
   label,
   value,
   valueLabel,
@@ -37,7 +37,7 @@ export function MotionPicker({
   label: string;
   value: string;
   valueLabel?: string;
-  options: MotionPickerOption[];
+  options: NeedtPickerOption[];
   onValueChange: (value: string) => void;
   icon?: React.ReactNode;
   indented?: boolean;
@@ -143,6 +143,11 @@ export function MotionPicker({
     </div>
   );
 }
+
+/** @deprecated Import NeedtPicker for all product pickers. */
+export const MotionPicker = NeedtPicker;
+/** @deprecated Use NeedtPickerOption. */
+export type MotionPickerOption = NeedtPickerOption;
 
 export function MotionSwitchRow({
   label,

@@ -3,6 +3,7 @@ export const QUEUE_NAMES = {
   reschedule: "reschedule",
   webhookRenew: "webhook-renew",
   mailSync: "mail-sync",
+  bugReportSync: "bug-report-sync",
 } as const;
 
 export type CalendarWebhookProvider = "GOOGLE" | "OUTLOOK";
@@ -22,4 +23,8 @@ export interface WebhookRenewJobData {
 
 export interface MailSyncJobData {
   accountId: string;
+}
+
+export interface BugReportSyncJobData {
+  reportId?: string;
 }

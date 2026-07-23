@@ -1,6 +1,6 @@
 import { useTheme } from "@/components/providers/ThemeProvider";
 import {
-  MotionPicker,
+  NeedtPicker,
   MotionSwitchRow,
 } from "@/components/settings/MotionSettingsControls";
 
@@ -55,7 +55,7 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
       <div className="space-y-0.5">
         {page !== "timezone" && (
           <>
-            <MotionPicker
+            <NeedtPicker
               label="Theme"
               value={user.theme}
               valueLabel={
@@ -64,7 +64,7 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
               options={themes.map((theme) => ({ ...theme }))}
               onValueChange={(value) => setTheme(value as typeof user.theme)}
             />
-            <MotionPicker
+            <NeedtPicker
               label="Start week on"
               value={user.weekStartDay}
               valueLabel={
@@ -89,7 +89,7 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
 
         {page !== "theme" && (
           <>
-            <MotionPicker
+            <NeedtPicker
               label="Time format"
               value={user.timeFormat}
               valueLabel={
@@ -101,7 +101,7 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
                 updateUserSettings({ timeFormat: value as TimeFormat })
               }
             />
-            <MotionPicker
+            <NeedtPicker
               label="Timezone"
               value={user.timeZone}
               valueLabel={getTimeZoneDisplayName(user.timeZone)}

@@ -90,7 +90,7 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
     await expect(page.getByText("July 16th, 2026")).toBeVisible();
   } else {
     await expect(
-      page.getByRole("heading", { name: /Thu.*Jul 16/, level: 1 })
+      page.getByRole("heading", { name: "Thursday", level: 1 })
     ).toBeVisible();
   }
   await expect(
@@ -98,6 +98,28 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   ).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("today.png");
+
+  const pageList = await page.request.get("/api/pages");
+  expect(pageList.ok()).toBeTruthy();
+  const pagePayload = (await pageList.json()) as {
+    pages: Array<{ id: string; title: string }>;
+  };
+  let visualPage = pagePayload.pages.find(
+    (entry) => entry.title === "Visual design notes"
+  );
+  if (!visualPage) {
+    const createResponse = await page.request.post("/api/pages", {
+      data: { title: "Visual design notes", icon: "🎨" },
+    });
+    expect(createResponse.ok()).toBeTruthy();
+    visualPage = ((await createResponse.json()) as {
+      page: { id: string; title: string };
+    }).page;
+  }
+  await page.goto(`/pages/${visualPage.id}`, { waitUntil: "networkidle" });
+  await expect(page.getByLabel("Page document")).toBeVisible();
+  await settleVisualSurface(page);
+  await expect(page).toHaveScreenshot("page-document.png");
 
   await page.goto("/tasks", { waitUntil: "domcontentloaded" });
   if ((page.viewportSize()?.width ?? 0) < 640) {
@@ -166,7 +188,7 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
     await expect(page.getByText("July 16th, 2026")).toBeVisible();
   } else {
     await expect(
-      page.getByRole("heading", { name: /Thu.*Jul 16/, level: 1 })
+      page.getByRole("heading", { name: "Thursday", level: 1 })
     ).toBeVisible();
   }
   await settleVisualSurface(page);

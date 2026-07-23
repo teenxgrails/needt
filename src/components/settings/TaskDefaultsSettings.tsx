@@ -18,7 +18,7 @@ import {
 
 import { useAppSession } from "@/components/providers/app-session-context";
 import {
-  MotionPicker,
+  NeedtPicker,
   MotionSwitchRow,
 } from "@/components/settings/MotionSettingsControls";
 import { SettingsSection } from "@/components/settings/SettingsSection";
@@ -112,7 +112,7 @@ export function TaskDefaultsSettings() {
     <SettingsSection description="These defaults will be used when creating a task.">
       <div className="space-y-8">
         <div className="space-y-0.5">
-          <MotionPicker
+          <NeedtPicker
             label="Workspace"
             value="personal"
             valueLabel="My Workspace"
@@ -130,7 +130,7 @@ export function TaskDefaultsSettings() {
               <Layers3 className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
             }
           />
-          <MotionPicker
+          <NeedtPicker
             label="Project"
             value={defaults.projectId}
             valueLabel={selectedProject}
@@ -139,7 +139,7 @@ export function TaskDefaultsSettings() {
             icon={<Box className="h-3.5 w-3.5 text-[var(--text-secondary)]" />}
             searchPlaceholder="Choose project…"
           />
-          <MotionPicker
+          <NeedtPicker
             label="Assignee"
             value="me"
             valueLabel={session?.user?.name || session?.user?.email || "Me"}
@@ -157,7 +157,7 @@ export function TaskDefaultsSettings() {
               <UserRound className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
             }
           />
-          <MotionPicker
+          <NeedtPicker
             label="Status"
             value={defaults.status}
             valueLabel={
@@ -179,7 +179,7 @@ export function TaskDefaultsSettings() {
               <Circle className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
             }
           />
-          <MotionPicker
+          <NeedtPicker
             label="Priority"
             value={defaults.priority}
             valueLabel={
@@ -198,7 +198,7 @@ export function TaskDefaultsSettings() {
             }
             icon={<Flag className="h-3.5 w-3.5 text-amber-400" />}
           />
-          <MotionPicker
+          <NeedtPicker
             label="Labels"
             value="none"
             valueLabel="None"
@@ -225,7 +225,7 @@ export function TaskDefaultsSettings() {
               <CalendarClock className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
             }
           />
-          <MotionPicker
+          <NeedtPicker
             label="Duration"
             value={String(defaults.durationMinutes)}
             valueLabel={
@@ -241,7 +241,7 @@ export function TaskDefaultsSettings() {
               <Clock3 className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
             }
           />
-          <MotionPicker
+          <NeedtPicker
             label="Min chunk duration"
             value={String(defaults.minChunkMinutes)}
             valueLabel={
@@ -260,7 +260,7 @@ export function TaskDefaultsSettings() {
             }
             indented
           />
-          <MotionPicker
+          <NeedtPicker
             label="Start date"
             value={defaults.startPreset}
             valueLabel={
@@ -282,7 +282,7 @@ export function TaskDefaultsSettings() {
               <CalendarDays className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
             }
           />
-          <MotionPicker
+          <NeedtPicker
             label="Deadline"
             value={defaults.deadlinePreset}
             valueLabel={deadlineLabel}
@@ -312,7 +312,7 @@ export function TaskDefaultsSettings() {
             icon={<Bell className="h-3.5 w-3.5 text-[var(--text-secondary)]" />}
             indented
           />
-          <MotionPicker
+          <NeedtPicker
             label="Schedule"
             value={defaults.scheduleName}
             valueLabel={defaults.scheduleName}

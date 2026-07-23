@@ -2578,6 +2578,36 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   pointer-events: none;
 }
 
+.needt-page-editor {
+  color: var(--text-primary);
+  caret-color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.needt-page-editor > * + * {
+  margin-top: 0.55em;
+}
+
+.needt-page-editor h1,
+.needt-page-editor h2,
+.needt-page-editor h3 {
+  margin-top: 1.25em;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.needt-page-editor h1 { font-size: 1.8rem; }
+.needt-page-editor h2 { font-size: 1.45rem; }
+.needt-page-editor h3 { font-size: 1.15rem; }
+.needt-page-editor ul { list-style: disc; padding-left: 1.5rem; }
+.needt-page-editor ol { list-style: decimal; padding-left: 1.5rem; }
+.needt-page-editor blockquote { border-left: 2px solid var(--border-control); padding-left: 0.9rem; color: var(--text-secondary); }
+.needt-page-editor pre { overflow-x: auto; border-radius: var(--control-radius); background: var(--surface-raised); padding: 0.75rem 0.9rem; font-family: var(--font-mono); font-size: 0.875rem; }
+.needt-page-editor hr { margin: 1.4rem 0; border: 0; border-top: 1px solid var(--border-subtle); }
+.needt-page-editor p.is-editor-empty:first-child::before { float: left; height: 0; color: var(--text-muted); content: attr(data-placeholder); pointer-events: none; }
+
 .settings-desktop-sidebar,
 .settings-desktop-header {
   display: none;

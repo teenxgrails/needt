@@ -126,18 +126,11 @@ export const CalendarEventContent = memo(function CalendarEventContent({
       onPointerDown={() => setSelectedEventId(calendarItemId)}
       style={{
         backgroundColor: "var(--calendar-task-bg)",
-        borderColor: isOverdue
-          ? "var(--color-danger)"
-          : isSelected
-            ? "var(--text-secondary)"
-            : "var(--calendar-task-border)",
       }}
       className={cn(
-        "group relative flex h-full min-h-0 flex-col justify-start overflow-hidden rounded-[4px] border p-0 text-[var(--text-primary)] transition-[border-color] duration-150",
-        !isTask && "border-dashed",
-        isSelected &&
-          "z-[2] border-[var(--text-secondary)] ring-1 ring-inset ring-[var(--text-secondary)]",
-        isOverdue && "border-[var(--color-danger)] text-[var(--color-danger)]",
+        "group relative flex h-full min-h-0 flex-col justify-start overflow-hidden rounded-[4px] p-0 text-[var(--text-primary)] transition-[background-color] duration-150",
+        isSelected && "z-[2] bg-[var(--surface-hover)]",
+        isOverdue && "text-[var(--color-danger)]",
         status === TaskStatus.COMPLETED && "opacity-55"
       )}
     >
@@ -148,7 +141,7 @@ export const CalendarEventContent = memo(function CalendarEventContent({
       />
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[var(--calendar-item-accent)] opacity-0 transition-opacity duration-150 group-hover:opacity-[0.15]"
+        className={cn("pointer-events-none absolute inset-0 bg-[var(--calendar-item-accent)] opacity-0 transition-opacity duration-150 group-hover:opacity-[0.11]", isSelected && "opacity-[0.09]")}
         style={{ "--calendar-item-accent": chipColor } as CSSProperties}
       />
       <div className="relative z-[2] grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-[3px] overflow-hidden py-px pl-[5px] pr-1 text-[12px] leading-4">

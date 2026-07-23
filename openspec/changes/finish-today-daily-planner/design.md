@@ -1,6 +1,6 @@
 ## Outcome
 
-Today becomes a coherent Motion-style daily workspace: a writable Notes-like document on the left and a slightly wider one-day timeline on the right, with canonical tasks embedded in the document and complete desktop/mobile behavior.
+Today becomes a coherent daily workspace: a wide writable document on the left and a narrow supporting one-day timeline on the right, with canonical tasks embedded in the document and complete desktop/mobile behavior.
 
 ## Repository Reality
 
@@ -32,7 +32,7 @@ Today becomes a coherent Motion-style daily workspace: a writable Notes-like doc
 
 ## Requirements
 
-- **REQ-001 — Desktop composition:** At viewport widths of 1280px and above, Today MUST use an approximately 48/52 document/timeline split after the app sidebar, with the right timeline slightly wider and no fixed `600px` cap.
+- **REQ-001 — Desktop composition:** At viewport widths of 1280px and above, Today MUST use `minmax(620px, 1fr) / clamp(260px, 22vw, 340px)` after the app sidebar, keeping the document primary and the timeline narrow.
 - **REQ-002 — Daily canvas:** The document side MUST behave as one borderless, full-height editable canvas. Clicking unused document space MUST place the caret, and normal prose/heading/list/checklist/divider blocks MUST save per selected date.
 - **REQ-003 — Canonical task blocks:** Task blocks embedded in the document MUST reference a canonical `Task` by ID. Completion, title, date, duration, and Edit Task state MUST always render from the task store/API rather than copied agenda HTML.
 - **REQ-004 — Task interactions:** Clicking a task title MUST open the existing Edit Task modal; clicking the date or duration MUST open the shared house-format picker; clicking the completion ring MUST complete/reopen the task without opening the modal.
@@ -50,7 +50,7 @@ Today becomes a coherent Motion-style daily workspace: a writable Notes-like doc
 ### Wide desktop (>=1280px)
 
 - Preserve the app sidebar.
-- The remaining width uses `0.96fr / 1.04fr`; the timeline is visibly but only slightly wider.
+- The remaining width uses a flexible document and a 260–340px timeline.
 - The document has a centered readable measure with responsive horizontal padding, but its click target extends through the full pane.
 - The day header is centered and compact enough that useful content begins above the fold.
 - Prose and task-reference blocks share one vertical flow. Task rows are flat typography, not cards.
@@ -144,4 +144,4 @@ Keep prose in the small editor and render all tasks in fixed React sections belo
 
 ## Open Decisions
 
-None. The requested Motion/Notes behavior is treated as approval for inline task-reference blocks and the 48/52 desktop split.
+None. The requested Motion/Notes behavior is treated as approval for inline task-reference blocks and the document-first desktop split.

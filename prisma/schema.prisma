@@ -117,6 +117,11 @@ model User {
   boards                Board[]
   savedViews            SavedView[]
   dailyAgendas          DailyAgenda[]
+  pages                 Page[]
+  pageRevisions         PageRevision[]
+  aiPageProposals       AiPageChangeProposal[]
+  bugReports            BugReport[]
+  externalIntegrations  ExternalIntegration[]
 }
 
 model VerificationToken {
@@ -560,6 +565,211 @@ model SavedView {
 
   @@index([userId])
   @@index([boardId])
+}
+
+/// A personal, block-based document. Pages are deliberately independent from
+/// Task so notebooks and databases never become a parallel scheduling system.
+model Page {
+  id          String                 @id @default(cuid())
+  userId      String
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Page?                  @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Page[]                 @relation("PageTree")
+  title       String                 @default("Untitled")
+  icon        String?
+  coverUrl    String?
+  isPrivate   Boolean                @default(false)
+  isFavorite  Boolean                @default(false)
+  createdBy   PageAuthor             @default(HUMAN)
+  trashedAt   DateTime?
+  position    Float                  @default(0)
+  blocks      PageBlock[]
+  database    PageDatabase?
+  record      DatabaseRecord?
+  revisions   PageRevision[]
+  aiProposals AiPageChangeProposal[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([userId, parentId, position])
+  @@index([userId, isFavorite])
+  @@index([userId, trashedAt])
+}
+
+model PageBlock {
+  id            String        @id @default(cuid())
+  pageId        String
+  page          Page          @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  parentBlockId String?
+  parentBlock   PageBlock?    @relation("PageBlockTree", fields: [parentBlockId], references: [id], onDelete: Cascade)
+  children      PageBlock[]   @relation("PageBlockTree")
+  type          PageBlockType
+  content       Json
+  position      Float         @default(0)
+  createdBy     PageAuthor    @default(HUMAN)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([pageId, parentBlockId, position])
+}
+
+model PageDatabase {
+  id         String             @id @default(cuid())
+  pageId     String             @unique
+  page       Page               @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  properties DatabaseProperty[]
+  records    DatabaseRecord[]
+  views      DatabaseView[]
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+}
+
+model DatabaseProperty {
+  id         String               @id @default(cuid())
+  databaseId String
+  database   PageDatabase         @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String
+  type       DatabasePropertyType
+  config     Json?
+  position   Float                @default(0)
+  values     DatabaseValue[]
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  @@index([databaseId, position])
+}
+
+model DatabaseRecord {
+  id         String          @id @default(cuid())
+  databaseId String
+  database   PageDatabase    @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  pageId     String          @unique
+  page       Page            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  position   Float           @default(0)
+  values     DatabaseValue[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([databaseId, position])
+}
+
+model DatabaseValue {
+  id         String           @id @default(cuid())
+  recordId   String
+  record     DatabaseRecord   @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   DatabaseProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  value      Json
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@unique([recordId, propertyId])
+  @@index([propertyId])
+}
+
+model DatabaseView {
+  id         String           @id @default(cuid())
+  databaseId String
+  database   PageDatabase     @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  name       String
+  type       DatabaseViewType
+  filters    Json?
+  sort       Json?
+  group      Json?
+  config     Json?
+  position   Float            @default(0)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([databaseId, position])
+}
+
+model PageRevision {
+  id        String     @id @default(cuid())
+  pageId    String
+  page      Page       @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  snapshot  Json
+  createdBy PageAuthor @default(HUMAN)
+  createdAt DateTime   @default(now())
+
+  @@index([pageId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model AiPageChangeProposal {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pageId     String
+  page       Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  summary    String
+  operations Json
+  status     AiProposalStatus @default(PENDING)
+  appliedAt  DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([userId, status, createdAt])
+  @@index([pageId, createdAt])
+}
+
+model BugReport {
+  id                String                @id @default(cuid())
+  userId            String
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  description       String
+  reproductionSteps String?
+  expectedBehavior  String?
+  actualBehavior    String?
+  severity          BugReportSeverity     @default(MEDIUM)
+  status            BugReportStatus       @default(OPEN)
+  route             String?
+  appVersion        String?
+  viewport          String?
+  theme             String?
+  browser           String?
+  githubIssueUrl    String?
+  githubSyncError   String?
+  attachments       BugReportAttachment[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model BugReportAttachment {
+  id          String    @id @default(cuid())
+  bugReportId String
+  bugReport   BugReport @relation(fields: [bugReportId], references: [id], onDelete: Cascade)
+  fileName    String
+  mimeType    String
+  size        Int
+  data        Bytes
+  createdAt   DateTime  @default(now())
+
+  @@index([bugReportId])
+}
+
+model ExternalIntegration {
+  id                   String                    @id @default(cuid())
+  userId               String
+  user                 User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider             String
+  toolkit              String
+  externalConnectionId String
+  status               ExternalIntegrationStatus @default(CONNECTED)
+  permissions          Json?
+  scopes               Json?
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  @@unique([userId, provider, toolkit, externalConnectionId])
+  @@index([userId, provider, status])
 }
 
 model EnergyProfileWindow {
@@ -1130,6 +1340,89 @@ enum SchedulingTaskPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum PageAuthor {
+  HUMAN
+  AI
+}
+
+enum PageBlockType {
+  PARAGRAPH
+  HEADING_1
+  HEADING_2
+  HEADING_3
+  BULLETED_LIST
+  NUMBERED_LIST
+  CHECKLIST
+  TOGGLE
+  QUOTE
+  CALLOUT
+  CODE
+  DIVIDER
+  LINK
+  BOOKMARK
+  IMAGE
+  FILE
+  TABLE
+  COLUMNS
+  PAGE_MENTION
+  DATE_MENTION
+  INLINE_DATABASE
+  FORM
+}
+
+enum DatabasePropertyType {
+  TITLE
+  TEXT
+  NUMBER
+  SELECT
+  MULTI_SELECT
+  CHECKBOX
+  DATE
+  URL
+  EMAIL
+  PHONE
+  FILES
+  FORMULA
+  RELATION
+  ROLLUP
+}
+
+enum DatabaseViewType {
+  TABLE
+  BOARD
+  LIST
+  TIMELINE
+  CALENDAR
+  GALLERY
+}
+
+enum AiProposalStatus {
+  PENDING
+  APPLIED
+  REJECTED
+}
+
+enum BugReportSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BugReportStatus {
+  OPEN
+  TRIAGED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ExternalIntegrationStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
 }
 
 enum TimeEntrySource {

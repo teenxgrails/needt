@@ -29,8 +29,8 @@
   - Completion: title opens Edit Task; date/duration update inline; completion does not trigger another action; keyboard and touch targets pass.
 
 - [x] **T-006 — Recompose desktop document and timeline** (REQ-001, REQ-007, REQ-008)
-  - Replace the capped timeline grid with the 48/52 split, compact the desktop day header, align pane headers/divider, and keep independent stable scrolling.
-  - Completion: at 1440px and 2048px the timeline is slightly wider, neither pane clips, and useful document content is visible above the fold.
+  - Use a flexible document with a 260–340px timeline, compact the desktop day header, align pane headers/divider, and keep independent stable scrolling.
+  - Completion: at 1440px and 2048px the document remains primary, neither pane clips, and useful document content is visible above the fold.
 
 - [x] **T-007 — Finish tablet/mobile and all UI states** (REQ-009, REQ-010, REQ-011)
   - Keep a single-column document below desktop, safe-area spacing, reduced motion, and explicit loading/empty/error/offline/partial-task states in both themes.

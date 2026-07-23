@@ -23,7 +23,6 @@ import {
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
 import { AccountManager } from "@/components/settings/AccountManager";
@@ -38,13 +37,13 @@ import { DesktopSettings } from "@/components/settings/DesktopSettings";
 import { ImportExportSettings } from "@/components/settings/ImportExportSettings";
 import { IntegrationSettings } from "@/components/settings/IntegrationSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
+import { ReportBugDialog } from "@/components/settings/ReportBugDialog";
 import { ScheduleSettings } from "@/components/settings/ScheduleSettings";
 import { SettingsPanelBoundary } from "@/components/settings/SettingsPanelBoundary";
 import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSettings";
 import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings";
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
-import { quickEase, springSnappy } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import { useSettingsStore } from "@/store/settings";
@@ -177,13 +176,7 @@ function SettingsNavGroup({
               )}
               aria-current={activeTab === item.id ? "page" : undefined}
             >
-              {activeTab === item.id && (
-                <motion.span
-                  layoutId="settings-active-tab"
-                  className="absolute inset-0 z-0 rounded-[4px] bg-[var(--surface-hover)]"
-                  transition={springSnappy}
-                />
-              )}
+              {activeTab === item.id && <span className="absolute inset-0 z-0 rounded-[4px] bg-[var(--surface-hover)]" />}
               <Icon className="relative z-10 h-4 w-4" strokeWidth={1.7} />
               <span className="relative z-10">{item.label}</span>
             </a>
@@ -198,7 +191,6 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("calendars");
   const [isHydrated, setIsHydrated] = useState(false);
   const [mobileOverview, setMobileOverview] = useState(true);
-  const prefersReducedMotion = useReducedMotion();
   const initializeSettings = useSettingsStore(
     (state) => state.initializeSettings
   );
@@ -313,7 +305,7 @@ export default function SettingsPage() {
   return (
     <div className="needt-page-depth min-h-screen text-[var(--text-primary)]">
       <div className="flex min-h-screen">
-        <aside className="needt-panel-depth settings-desktop-sidebar fixed inset-y-0 left-0 z-20 w-[230px] overflow-y-auto border-r border-[var(--border-subtle)] p-2">
+        <aside className="needt-panel-depth settings-desktop-sidebar fixed inset-y-0 left-0 z-20 flex w-[230px] flex-col overflow-y-auto border-r border-[var(--border-subtle)] p-2">
           <Link
             href="/calendar"
             className="mb-3 flex h-[25px] items-center gap-1 rounded-[4px] px-1.5 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
@@ -321,7 +313,7 @@ export default function SettingsPage() {
             <ChevronLeft className="h-3.5 w-3.5" />
             Back to Needt
           </Link>
-          <div className="space-y-4">
+          <div className="flex-1 space-y-4">
             <SettingsNavGroup
               label="General"
               items={GENERAL_TABS}
@@ -335,6 +327,7 @@ export default function SettingsPage() {
               onSelect={selectTab}
             />
           </div>
+          <ReportBugDialog />
         </aside>
 
         <main className="needt-page-depth settings-main min-h-screen min-w-0 flex-1">
@@ -378,27 +371,9 @@ export default function SettingsPage() {
               !isHydrated && "opacity-0"
             )}
           >
-            <AnimatePresence initial={false} mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={
-                  prefersReducedMotion
-                    ? false
-                    : { opacity: 0, y: 10, scale: 0.995 }
-                }
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={
-                  prefersReducedMotion
-                    ? { opacity: 1 }
-                    : { opacity: 0, y: -5, scale: 0.998 }
-                }
-                transition={prefersReducedMotion ? { duration: 0 } : quickEase}
-              >
-                <SettingsPanelBoundary resetKey={activeTab}>
-                  {renderTabContent()}
-                </SettingsPanelBoundary>
-              </motion.div>
-            </AnimatePresence>
+            <SettingsPanelBoundary resetKey={activeTab}>
+              {renderTabContent()}
+            </SettingsPanelBoundary>
           </div>
 
           <div
@@ -446,6 +421,7 @@ export default function SettingsPage() {
                   </div>
                 </section>
               ))}
+              <ReportBugDialog mobile />
             </div>
           </div>
         </main>

@@ -140,79 +140,38 @@ export const AGENT_TOOL_CATALOG: Record<string, ToolEntry> = {
       parameters: jsonObject({ reason: { type: "string" } }),
     },
   },
-  list_boards: {
+  list_pages: {
     schema: object({}),
     definition: {
-      name: "list_boards",
-      description: "List boards and columns.",
+      name: "list_pages",
+      description: "List non-private Pages. Private pages are excluded on the server.",
       parameters: jsonObject({}),
     },
   },
-  query_board: {
-    schema: object({ boardId: z.string().min(1) }),
+  search_pages: {
+    schema: object({ query: z.string().min(1).max(200) }),
     definition: {
-      name: "query_board",
-      description: "Read a board and its cards.",
-      parameters: jsonObject({ boardId: { type: "string" } }, ["boardId"]),
+      name: "search_pages",
+      description: "Search and read non-private Pages. Private pages and descendants are never returned.",
+      parameters: jsonObject({ query: { type: "string" } }, ["query"]),
     },
   },
-  create_board: {
+  propose_page_changes: {
     schema: object({
-      name: z.string().min(1).max(120),
-      icon: z.string().optional(),
-      columns: z.array(z.string()).max(20).optional(),
+      pageId: z.string().min(1),
+      summary: z.string().min(1).max(500),
+      text: z.string().min(1).max(20_000),
     }),
     definition: {
-      name: "create_board",
-      description: "Create a board.",
+      name: "propose_page_changes",
+      description: "Create a preview-only proposal to append AI-written text to a non-private page. Nothing is applied until the user approves the diff.",
       parameters: jsonObject(
         {
-          name: { type: "string" },
-          icon: { type: "string" },
-          columns: { type: "array", items: { type: "string" } },
+          pageId: { type: "string" },
+          summary: { type: "string" },
+          text: { type: "string" },
         },
-        ["name"]
-      ),
-    },
-  },
-  create_column: {
-    schema: object({
-      boardId: z.string().min(1),
-      name: z.string().min(1).max(120),
-      color: z.string().optional(),
-    }),
-    definition: {
-      name: "create_column",
-      description: "Create a board column.",
-      parameters: jsonObject(
-        {
-          boardId: { type: "string" },
-          name: { type: "string" },
-          color: { type: "string" },
-        },
-        ["boardId", "name"]
-      ),
-    },
-  },
-  move_card: {
-    dangerous: true,
-    schema: object({
-      taskId: z.string(),
-      boardId: z.string(),
-      columnId: z.string(),
-      toIndex: z.number().int().min(0),
-    }),
-    definition: {
-      name: "move_card",
-      description: "Move a task card to a board column. Requires confirmation.",
-      parameters: jsonObject(
-        {
-          taskId: { type: "string" },
-          boardId: { type: "string" },
-          columnId: { type: "string" },
-          toIndex: { type: "number" },
-        },
-        ["taskId", "boardId", "columnId", "toIndex"]
+        ["pageId", "summary", "text"]
       ),
     },
   },

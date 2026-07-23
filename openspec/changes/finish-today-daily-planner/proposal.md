@@ -5,7 +5,7 @@ Today has the right building blocks but does not yet feel like one daily planner
 ## What Changes
 
 - Keep the app's existing left navigation unchanged and rebuild only the Today surface.
-- Make the desktop Today document and one-day timeline an approximately 48/52 split, with the timeline slightly wider.
+- Make the desktop Today document primary with a narrow 260–340px one-day timeline.
 - Turn the central area into one full-height, borderless daily document where prose and canonical task references can live in the same flow.
 - Keep tasks in the existing `Task` model; agenda content stores only prose/formatting and task IDs, never duplicated task data.
 - Match Motion's desktop density: a compact day header, larger readable task rows, correctly sized completion controls, inline date/duration metadata, and deliberate section rhythm.
