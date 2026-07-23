@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added a Notion-like Page canvas with a borderless title, icon and cover controls, full-canvas focus, searchable keyboard slash commands, canonical text/list/checklist/quote/code/divider blocks, and extensible callout, toggle, link, bookmark, media, layout and mention blocks.
+- Added private Page assets, resolvable comments, reusable templates, authenticated forms, explicit AI proposal diffs, and functional Table, Board, List, Calendar, Timeline, and Gallery database views over shared editable records.
 - Added named work schedules with saved timezones, multiple daily intervals, default selection, task and recurring-task assignment, selected-day copy, precise time fields, and 15-minute create/move/resize editing. Existing work hours migrate additively into the first `Work Hours` schedule and the deterministic scheduler resolves each task against its selected schedule.
 - Added personal Pages as the product replacement for task Boards while preserving legacy board data. Pages include hierarchical/private documents, revision-backed blocks, six database views over shared records, typed properties, safe formulas, AI provenance, strict private-tree exclusion, and preview/approve/reject AI change proposals.
 - Added a searchable responsive integration catalog with native calendar connections and an isolated, optional Composio adapter; added database-backed bug reports with safe diagnostics, private attachments, admin review, and BullMQ-backed GitHub Issue retry.

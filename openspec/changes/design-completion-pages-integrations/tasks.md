@@ -47,11 +47,11 @@
 
 - [x] Reconcile versioned PageBlocks by stable ID and revision snapshot instead of replacing one HTML paragraph.
 - [x] Add borderless title, icon, cover, click-to-focus and searchable slash-menu editing.
-- [ ] Support text, H1–H3, lists, checklist, quote, callout, toggle, code, divider, links, bookmarks, files/images, tables, columns and page/date mentions.
-- [ ] Add private PageAsset uploads, resolvable comments, saved templates and authenticated forms.
-- [ ] Complete Table, Board, List, Calendar, Timeline and Gallery database views with record/property CRUD, filters, sort and grouping.
-- [ ] Expose AI page-change diffs and explicit accept/reject using the existing proposal model.
-- [ ] Add regression/E2E coverage for blocks, assets, comments, templates, forms, database views and AI review.
+- [x] Support text, H1–H3, lists, checklist, quote, callout, toggle, code, divider, links, bookmarks, files/images, tables, columns and page/date mentions.
+- [x] Add private PageAsset uploads, resolvable comments, saved templates and authenticated forms.
+- [x] Complete Table, Board, List, Calendar, Timeline and Gallery database views with record/property CRUD, filters, sort and grouping.
+- [x] Expose AI page-change diffs and explicit accept/reject using the existing proposal model.
+- [x] Add regression/E2E coverage for blocks, assets, comments, templates, forms, database views and AI review.
 
 ## Second pass — P0/P1 Today and Calendar
 

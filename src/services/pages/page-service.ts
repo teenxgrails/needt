@@ -477,6 +477,8 @@ export async function applyAiProposal(userId: string, proposalId: string) {
       page.id,
       [
         ...page.blocks.map((block) => ({
+          id: block.id,
+          parentBlockId: block.parentBlockId,
           type: block.type,
           content: JSON.parse(JSON.stringify(block.content)),
           position: block.position,

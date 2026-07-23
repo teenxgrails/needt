@@ -122,6 +122,10 @@ model User {
   pages                  Page[]
   pageRevisions          PageRevision[]
   aiPageProposals        AiPageChangeProposal[]
+  pageAssets             PageAsset[]
+  pageComments           PageComment[]
+  pageTemplates          PageTemplate[]
+  pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
   externalIntegrations   ExternalIntegration[]
 }
@@ -594,6 +598,9 @@ model Page {
   record      DatabaseRecord?
   revisions   PageRevision[]
   aiProposals AiPageChangeProposal[]
+  assets      PageAsset[]
+  comments    PageComment[]
+  forms       PageForm[]
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @updatedAt
 
@@ -609,6 +616,7 @@ model PageBlock {
   parentBlockId String?
   parentBlock   PageBlock?    @relation("PageBlockTree", fields: [parentBlockId], references: [id], onDelete: Cascade)
   children      PageBlock[]   @relation("PageBlockTree")
+  comments      PageComment[]
   type          PageBlockType
   content       Json
   position      Float         @default(0)
@@ -617,6 +625,81 @@ model PageBlock {
   updatedAt     DateTime      @updatedAt
 
   @@index([pageId, parentBlockId, position])
+}
+
+model PageAsset {
+  id           String   @id @default(cuid())
+  pageId       String
+  page         Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalName String
+  mimeType     String
+  size         Int
+  bytes        Bytes
+  createdAt    DateTime @default(now())
+
+  @@index([pageId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model PageComment {
+  id         String     @id @default(cuid())
+  pageId     String
+  page       Page       @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  blockId    String?
+  block      PageBlock? @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body       String
+  resolvedAt DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([pageId, resolvedAt, createdAt])
+  @@index([blockId])
+  @@index([userId])
+}
+
+model PageTemplate {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  snapshot    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, updatedAt])
+}
+
+model PageForm {
+  id          String               @id @default(cuid())
+  pageId      String
+  page        Page                 @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title       String
+  schema      Json
+  isActive    Boolean              @default(true)
+  submissions PageFormSubmission[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([pageId, createdAt])
+}
+
+model PageFormSubmission {
+  id          String   @id @default(cuid())
+  formId      String
+  form        PageForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  values      Json
+  submittedAt DateTime @default(now())
+
+  @@index([formId, submittedAt])
+  @@index([userId, submittedAt])
 }
 
 model PageDatabase {

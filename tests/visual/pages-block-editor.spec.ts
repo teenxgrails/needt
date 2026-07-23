@@ -143,6 +143,127 @@ test("Page blocks reconcile by stable ID and slash commands create canonical blo
     "stable-intro"
   );
 
+  const assetUpload = await page.request.post(`/api/pages/${pageId}/assets`, {
+    multipart: {
+      file: {
+        name: "private-note.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from("private page asset"),
+      },
+    },
+  });
+  expect(assetUpload.ok()).toBeTruthy();
+  const assetBody = (await assetUpload.json()) as {
+    asset: { id: string };
+    url: string;
+  };
+  const assetDownload = await page.request.get(assetBody.url);
+  expect(await assetDownload.text()).toBe("private page asset");
+
+  const commentResponse = await page.request.post(
+    `/api/pages/${pageId}/comments`,
+    { data: { body: "Resolve this comment" } }
+  );
+  expect(commentResponse.ok()).toBeTruthy();
+  const commentBody = (await commentResponse.json()) as {
+    comment: { id: string };
+  };
+  const resolved = await page.request.patch(
+    `/api/page-comments/${commentBody.comment.id}`,
+    { data: { resolved: true } }
+  );
+  expect(resolved.ok()).toBeTruthy();
+  expect((await resolved.json()).comment.resolvedAt).toBeTruthy();
+
+  const templateName = `Template ${crypto.randomUUID().slice(0, 8)}`;
+  const templateResponse = await page.request.post("/api/page-templates", {
+    data: { pageId, name: templateName },
+  });
+  expect(templateResponse.ok()).toBeTruthy();
+  const templateBody = (await templateResponse.json()) as {
+    template: { id: string };
+  };
+  const instantiated = await page.request.post(
+    `/api/page-templates/${templateBody.template.id}/instantiate`,
+    { data: { title: "Instantiated regression page", isPrivate: true } }
+  );
+  expect(instantiated.ok()).toBeTruthy();
+  const instantiatedBody = (await instantiated.json()) as {
+    page: { id: string; blocks: Array<{ type: string }> };
+  };
+  expect(instantiatedBody.page.blocks.length).toBeGreaterThan(0);
+
+  const formResponse = await page.request.post(`/api/pages/${pageId}/forms`, {
+    data: {
+      title: "Authenticated feedback",
+      schema: {
+        fields: [
+          {
+            id: "feedback",
+            label: "Feedback",
+            type: "textarea",
+            required: true,
+          },
+        ],
+      },
+    },
+  });
+  expect(formResponse.ok()).toBeTruthy();
+  const formBody = (await formResponse.json()) as { form: { id: string } };
+  const invalidSubmission = await page.request.post(
+    `/api/page-forms/${formBody.form.id}/submissions`,
+    { data: { values: {} } }
+  );
+  expect(invalidSubmission.status()).toBe(400);
+  const submission = await page.request.post(
+    `/api/page-forms/${formBody.form.id}/submissions`,
+    { data: { values: { feedback: "Authenticated response" } } }
+  );
+  expect(submission.ok()).toBeTruthy();
+
+  await page.request.patch(`/api/pages/${pageId}`, {
+    data: { isPrivate: false },
+  });
+  const proposalResponse = await page.request.post("/api/ai/page-proposals", {
+    data: {
+      pageId,
+      summary: "Append an AI-reviewed note",
+      operations: [
+        {
+          type: "append_block",
+          blockType: "PARAGRAPH",
+          content: { text: "AI-reviewed note" },
+        },
+      ],
+    },
+  });
+  expect(proposalResponse.ok()).toBeTruthy();
+  const proposalBody = (await proposalResponse.json()) as {
+    proposal: { id: string };
+  };
+  const preview = await page.request.get(
+    `/api/ai/page-proposals/${proposalBody.proposal.id}/preview`
+  );
+  expect((await preview.json()).proposal.status).toBe("PENDING");
+  const approved = await page.request.post(
+    `/api/ai/page-proposals/${proposalBody.proposal.id}/approve`
+  );
+  expect(approved.ok()).toBeTruthy();
+  const afterAi = await page.request.get(`/api/pages/${pageId}`);
+  const afterAiBody = (await afterAi.json()) as {
+    page: { blocks: Array<{ id: string; createdBy: string }> };
+  };
+  expect(afterAiBody.page.blocks.map((block) => block.id)).toContain(
+    "stable-intro"
+  );
+  expect(
+    afterAiBody.page.blocks.some((block) => block.createdBy === "AI")
+  ).toBeTruthy();
+
+  await page.request.delete(assetBody.url);
+  await page.request.delete(`/api/page-templates/${templateBody.template.id}`);
+  await page.request.delete(`/api/page-forms/${formBody.form.id}`);
+  await page.request.delete(`/api/pages/${instantiatedBody.page.id}`);
   await page.request.patch(`/api/pages/${pageId}`, {
     data: { trashed: true },
   });

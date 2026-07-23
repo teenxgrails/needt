@@ -2712,6 +2712,33 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   font-size: 0.82rem;
   color: var(--text-primary);
 }
+.needt-page-special-block-link {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-accent);
+  text-decoration: none;
+}
+.needt-page-special-block-link:hover {
+  text-decoration: underline;
+}
+.needt-page-special-block--image {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+}
+.needt-page-special-block--image img {
+  display: block;
+  width: 100%;
+  max-height: 560px;
+  object-fit: contain;
+  background: var(--surface-control);
+}
+.needt-page-special-block--image figcaption {
+  display: block;
+  padding: 0.5rem 0.7rem;
+}
 .needt-page-special-block--callout {
   border-left: 3px solid var(--color-accent);
 }

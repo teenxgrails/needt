@@ -25,10 +25,12 @@ import {
   Heading2,
   Heading3,
   Image,
+  LayoutTemplate,
   Link2,
   List,
   ListOrdered,
   LockKeyhole,
+  MessageSquare,
   MessageSquareQuote,
   Minus,
   MoreHorizontal,
@@ -42,6 +44,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { DatabaseWorkspace } from "@/components/pages/DatabaseWorkspace";
 import { PageBlockNode } from "@/components/pages/PageBlockNode";
 import {
   documentFromPageBlocks,
@@ -60,7 +63,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/utils";
 
@@ -86,8 +95,26 @@ type SpecialKind =
   | "TABLE"
   | "COLUMNS"
   | "PAGE_MENTION"
-  | "DATE_MENTION";
+  | "DATE_MENTION"
+  | "FORM";
 type PageCommand = BasicCommand | SpecialKind;
+type PageComment = {
+  id: string;
+  body: string;
+  resolvedAt: string | null;
+  createdAt: string;
+};
+type PageTemplate = {
+  id: string;
+  name: string;
+  description: string | null;
+};
+type PageProposal = {
+  id: string;
+  summary: string;
+  operations: unknown;
+  status: "PENDING" | "APPLIED" | "REJECTED";
+};
 
 const BlockIdentity = Extension.create({
   name: "blockIdentity",
@@ -267,6 +294,13 @@ const COMMANDS: Array<{
     keywords: "calendar date",
     icon: CalendarDays,
   },
+  {
+    id: "FORM",
+    label: "Form",
+    hint: "Collect an authenticated response",
+    keywords: "fields response submission",
+    icon: FileText,
+  },
 ];
 
 const SPECIAL_LABELS: Record<SpecialKind, string> = {
@@ -280,6 +314,7 @@ const SPECIAL_LABELS: Record<SpecialKind, string> = {
   COLUMNS: "Columns label",
   PAGE_MENTION: "Page title",
   DATE_MENTION: "Date",
+  FORM: "Form title",
 };
 
 function ensureBlockIds(editor: Editor) {
@@ -322,8 +357,19 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
   const [slashIndex, setSlashIndex] = useState(0);
   const [pendingInsert, setPendingInsert] = useState<SpecialKind | null>(null);
   const [pendingValue, setPendingValue] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [coverOpen, setCoverOpen] = useState(false);
   const [coverUrl, setCoverUrl] = useState("");
+  const [toolOpen, setToolOpen] = useState<
+    "comments" | "templates" | "ai" | null
+  >(null);
+  const [comments, setComments] = useState<PageComment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [templates, setTemplates] = useState<PageTemplate[]>([]);
+  const [templateName, setTemplateName] = useState("");
+  const [proposals, setProposals] = useState<PageProposal[]>([]);
+  const [aiPrompt, setAiPrompt] = useState("");
 
   const saveBlocks = useCallback(
     async (document: JSONContent, requestRevision: number) => {
@@ -502,10 +548,167 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     window.dispatchEvent(new Event("pages-changed"));
   };
 
-  const insertSpecial = (kind: SpecialKind, value: string) => {
+  const openTool = async (tool: "comments" | "templates" | "ai") => {
+    setToolOpen(tool);
+    if (tool === "comments") {
+      const response = await fetch(`/api/pages/${pageId}/comments`);
+      if (response.ok) {
+        const data = (await response.json()) as { comments: PageComment[] };
+        setComments(data.comments);
+      }
+    }
+    if (tool === "templates") {
+      const response = await fetch("/api/page-templates");
+      if (response.ok) {
+        const data = (await response.json()) as { templates: PageTemplate[] };
+        setTemplates(data.templates);
+      }
+    }
+    if (tool === "ai") {
+      const response = await fetch(
+        `/api/ai/page-proposals?pageId=${encodeURIComponent(pageId)}`
+      );
+      if (response.ok) {
+        const data = (await response.json()) as { proposals: PageProposal[] };
+        setProposals(data.proposals);
+      }
+    }
+  };
+
+  const addComment = async () => {
+    if (!commentText.trim()) return;
+    const response = await fetch(`/api/pages/${pageId}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ body: commentText }),
+    });
+    if (!response.ok) {
+      toast.error("Could not add comment");
+      return;
+    }
+    const data = (await response.json()) as { comment: PageComment };
+    setComments((current) => [data.comment, ...current]);
+    setCommentText("");
+  };
+
+  const resolveComment = async (comment: PageComment) => {
+    const response = await fetch(`/api/page-comments/${comment.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resolved: !comment.resolvedAt }),
+    });
+    if (!response.ok) return;
+    const data = (await response.json()) as { comment: PageComment };
+    setComments((current) =>
+      current.map((item) => (item.id === data.comment.id ? data.comment : item))
+    );
+  };
+
+  const saveTemplate = async () => {
+    if (!templateName.trim()) return;
+    const response = await fetch("/api/page-templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageId, name: templateName }),
+    });
+    if (!response.ok) {
+      toast.error("Could not save template");
+      return;
+    }
+    const data = (await response.json()) as { template: PageTemplate };
+    setTemplates((current) => [
+      data.template,
+      ...current.filter((item) => item.id !== data.template.id),
+    ]);
+    setTemplateName("");
+    toast.success("Template saved");
+  };
+
+  const instantiateTemplate = async (template: PageTemplate) => {
+    const response = await fetch(
+      `/api/page-templates/${template.id}/instantiate`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isPrivate: true }),
+      }
+    );
+    if (!response.ok) {
+      toast.error("Could not create page from template");
+      return;
+    }
+    const data = (await response.json()) as { page: { id: string } };
+    window.dispatchEvent(new Event("pages-changed"));
+    router.push(`/pages/${data.page.id}`);
+  };
+
+  const createProposal = async () => {
+    if (!aiPrompt.trim()) return;
+    const response = await fetch("/api/ai/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `Use propose_page_changes for pageId "${pageId}". ${aiPrompt}`,
+      }),
+    });
+    if (!response.ok) {
+      const error = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      toast.error(
+        page?.isPrivate
+          ? "AI review is disabled for private Pages"
+          : error.error || "Could not create AI proposal"
+      );
+      return;
+    }
+    await response.text();
+    const proposalsResponse = await fetch(
+      `/api/ai/page-proposals?pageId=${encodeURIComponent(pageId)}`
+    );
+    if (proposalsResponse.ok) {
+      const data = (await proposalsResponse.json()) as {
+        proposals: PageProposal[];
+      };
+      setProposals(data.proposals);
+    }
+    setAiPrompt("");
+  };
+
+  const reviewProposal = async (
+    proposal: PageProposal,
+    decision: "approve" | "reject"
+  ) => {
+    const response = await fetch(
+      `/api/ai/page-proposals/${proposal.id}/${decision}`,
+      { method: "POST" }
+    );
+    if (!response.ok) {
+      toast.error("Could not update proposal");
+      return;
+    }
+    setProposals((current) =>
+      current.map((item) =>
+        item.id === proposal.id
+          ? {
+              ...item,
+              status: decision === "approve" ? "APPLIED" : "REJECTED",
+            }
+          : item
+      )
+    );
+    if (decision === "approve") window.location.reload();
+  };
+
+  const insertSpecial = (
+    kind: SpecialKind,
+    value: string,
+    extraData?: Record<string, unknown>
+  ) => {
     if (!editor) return;
-    const data =
-      kind === "DATE_MENTION"
+    const data = extraData
+      ? extraData
+      : kind === "DATE_MENTION"
         ? { date: value }
         : kind === "PAGE_MENTION" || kind === "TABLE" || kind === "COLUMNS"
           ? { title: value }
@@ -530,7 +733,78 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
     pendingRange.current = null;
     setPendingInsert(null);
     setPendingValue("");
+    setPendingFile(null);
     setSlash(null);
+  };
+
+  const submitSpecial = async () => {
+    if (!pendingInsert) return;
+    if (pendingInsert === "IMAGE" || pendingInsert === "FILE") {
+      if (!pendingFile) return;
+      setIsUploading(true);
+      try {
+        const form = new FormData();
+        form.set("file", pendingFile);
+        const response = await fetch(`/api/pages/${pageId}/assets`, {
+          method: "POST",
+          body: form,
+        });
+        const data = (await response.json()) as {
+          asset?: { id: string; originalName: string; mimeType: string };
+          url?: string;
+          error?: string;
+        };
+        if (!response.ok || !data.asset || !data.url) {
+          throw new Error(data.error || "Upload failed");
+        }
+        insertSpecial(pendingInsert, data.url, {
+          url: data.url,
+          assetId: data.asset.id,
+          name: data.asset.originalName,
+          mimeType: data.asset.mimeType,
+        });
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Could not upload asset"
+        );
+      } finally {
+        setIsUploading(false);
+      }
+      return;
+    }
+    if (pendingInsert === "FORM") {
+      const response = await fetch(`/api/pages/${pageId}/forms`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: pendingValue,
+          schema: {
+            fields: [
+              {
+                id: "response",
+                label: "Response",
+                type: "textarea",
+                required: true,
+              },
+            ],
+          },
+        }),
+      });
+      const data = (await response.json()) as {
+        form?: { id: string; title: string };
+        error?: string;
+      };
+      if (!response.ok || !data.form) {
+        toast.error(data.error || "Could not create form");
+        return;
+      }
+      insertSpecial("FORM", data.form.title, {
+        formId: data.form.id,
+        title: data.form.title,
+      });
+      return;
+    }
+    insertSpecial(pendingInsert, pendingValue);
   };
 
   const applyCommand = (command: PageCommand) => {
@@ -545,7 +819,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       command === "TABLE" ||
       command === "COLUMNS" ||
       command === "PAGE_MENTION" ||
-      command === "DATE_MENTION"
+      command === "DATE_MENTION" ||
+      command === "FORM"
     ) {
       if (editor.isActive("blockquote")) {
         editor.chain().focus().lift("blockquote").run();
@@ -559,6 +834,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       const { $from } = editor.state.selection;
       pendingRange.current = { from: $from.start(), to: $from.end() };
       setPendingInsert(command);
+      setPendingFile(null);
       setPendingValue(
         command === "DATE_MENTION"
           ? new Date().toISOString().slice(0, 10)
@@ -654,9 +930,39 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
             }
           />
         </label>
-        <Button variant="ghost" size="icon" aria-label="Page options">
-          <MoreHorizontal />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Page options">
+              <MoreHorizontal />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-52 p-1.5">
+            <button
+              type="button"
+              onClick={() => void openTool("comments")}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <MessageSquare className="h-4 w-4 text-[var(--text-muted)]" />
+              Comments
+            </button>
+            <button
+              type="button"
+              onClick={() => void openTool("templates")}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <LayoutTemplate className="h-4 w-4 text-[var(--text-muted)]" />
+              Templates
+            </button>
+            <button
+              type="button"
+              onClick={() => void openTool("ai")}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <Sparkles className="h-4 w-4 text-[var(--text-muted)]" />
+              Ask AI
+            </button>
+          </PopoverContent>
+        </Popover>
       </header>
 
       {page.coverUrl && (
@@ -782,29 +1088,49 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               This value stays in the private page document.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="page-block-value">
-              {pendingInsert ? SPECIAL_LABELS[pendingInsert] : "Value"}
-            </Label>
-            <Input
-              id="page-block-value"
-              type={pendingInsert === "DATE_MENTION" ? "date" : "text"}
-              value={pendingValue}
-              onChange={(event) => setPendingValue(event.target.value)}
-              autoFocus
-            />
-          </div>
+          {pendingInsert === "IMAGE" || pendingInsert === "FILE" ? (
+            <div className="space-y-2">
+              <Label htmlFor="page-block-file">Private file</Label>
+              <Input
+                id="page-block-file"
+                type="file"
+                accept={pendingInsert === "IMAGE" ? "image/*" : undefined}
+                onChange={(event) =>
+                  setPendingFile(event.target.files?.[0] || null)
+                }
+              />
+              <p className="text-[11px] text-[var(--text-muted)]">
+                Stored privately with this Page · 10 MB maximum.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="page-block-value">
+                {pendingInsert ? SPECIAL_LABELS[pendingInsert] : "Value"}
+              </Label>
+              <Input
+                id="page-block-value"
+                type={pendingInsert === "DATE_MENTION" ? "date" : "text"}
+                value={pendingValue}
+                onChange={(event) => setPendingValue(event.target.value)}
+                autoFocus
+              />
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingInsert(null)}>
               Cancel
             </Button>
             <Button
-              onClick={() =>
-                pendingInsert && insertSpecial(pendingInsert, pendingValue)
+              onClick={() => void submitSpecial()}
+              disabled={
+                isUploading ||
+                (pendingInsert === "IMAGE" || pendingInsert === "FILE"
+                  ? !pendingFile
+                  : !pendingValue.trim())
               }
-              disabled={!pendingValue.trim()}
             >
-              Add block
+              {isUploading ? "Uploading…" : "Add block"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -851,71 +1177,217 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
 
-function DatabaseWorkspace({
-  page,
-  onPatch,
-}: {
-  page: PageDetail;
-  onPatch: (values: Record<string, unknown>) => Promise<void>;
-}) {
-  const [view, setView] = useState("TABLE");
-  const [title, setTitle] = useState(page.title);
-  const database = page.database as unknown as {
-    records?: Array<{ id: string; page: { title: string } }>;
-  };
-  const views = ["TABLE", "BOARD", "LIST", "TIMELINE", "CALENDAR", "GALLERY"];
-  return (
-    <div className="min-h-dvh bg-[var(--app-bg)] p-6 text-[var(--text-primary)] lg:p-10">
-      <input
-        value={title}
-        onChange={(event) => setTitle(event.target.value)}
-        onBlur={() => {
-          if (title !== page.title) void onPatch({ title });
-        }}
-        className="mb-7 w-full bg-transparent text-3xl font-semibold outline-none"
-      />
-      <div className="mb-5 flex flex-wrap items-center gap-1 border-b border-[var(--border-subtle)] pb-2">
-        {views.map((item) => (
-          <Button
-            key={item}
-            variant={view === item ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setView(item)}
-          >
-            {item[0]}
-            {item.slice(1).toLowerCase()}
-          </Button>
-        ))}
-      </div>
-      {view === "TABLE" ? (
-        <div className="overflow-hidden rounded-[var(--panel-radius)] border border-[var(--border-subtle)]">
-          <div className="grid grid-cols-[2fr_1fr_1fr] bg-[var(--surface-raised)] text-xs text-[var(--text-muted)]">
-            <div className="p-2.5">Name</div>
-            <div className="p-2.5">Status</div>
-            <div className="p-2.5">Date</div>
-          </div>
-          {(database.records || []).map((record) => (
-            <div
-              key={record.id}
-              className="grid grid-cols-[2fr_1fr_1fr] border-t border-[var(--border-subtle)] text-sm"
-            >
-              <div className="p-2.5">{record.page.title}</div>
-              <div className="p-2.5 text-[var(--text-muted)]">—</div>
-              <div className="p-2.5 text-[var(--text-muted)]">—</div>
+      <Dialog
+        open={toolOpen === "comments"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Page comments</DialogTitle>
+            <DialogDescription>
+              Private notes for this Page. Resolve a thread when it is handled.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Textarea
+              aria-label="New page comment"
+              value={commentText}
+              onChange={(event) => setCommentText(event.target.value)}
+              placeholder="Add a comment…"
+              rows={3}
+            />
+            <div className="flex justify-end">
+              <Button
+                onClick={() => void addComment()}
+                disabled={!commentText.trim()}
+              >
+                Comment
+              </Button>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="min-h-[420px] rounded-[var(--panel-radius)] bg-[var(--surface-raised)] p-8 text-sm text-[var(--text-muted)]">
-          {view[0]}
-          {view.slice(1).toLowerCase()} view uses this database’s same records.
-          Configure its grouping, dates and visible properties here.
-        </div>
-      )}
+          </div>
+          <div className="max-h-[360px] space-y-2 overflow-y-auto">
+            {comments.length === 0 && (
+              <div className="rounded-[var(--control-radius)] bg-[var(--surface-raised)] px-3 py-5 text-center text-[12px] text-[var(--text-muted)]">
+                No comments yet.
+              </div>
+            )}
+            {comments.map((comment) => (
+              <div
+                key={comment.id}
+                className={cn(
+                  "rounded-[var(--control-radius)] border border-[var(--border-subtle)] p-3",
+                  comment.resolvedAt && "opacity-55"
+                )}
+              >
+                <p className="whitespace-pre-wrap text-[13px]">
+                  {comment.body}
+                </p>
+                <div className="mt-2 flex items-center justify-between text-[10px] text-[var(--text-muted)]">
+                  <span>
+                    {comment.resolvedAt ? "Resolved" : "Open"} ·{" "}
+                    {new Date(comment.createdAt).toLocaleDateString()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void resolveComment(comment)}
+                    className="rounded px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                  >
+                    {comment.resolvedAt ? "Reopen" : "Resolve"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={toolOpen === "templates"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Page templates</DialogTitle>
+            <DialogDescription>
+              Save this Page structure or create a private Page from a saved
+              template.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Input
+              aria-label="Template name"
+              value={templateName}
+              onChange={(event) => setTemplateName(event.target.value)}
+              placeholder="Template name"
+            />
+            <Button
+              onClick={() => void saveTemplate()}
+              disabled={!templateName.trim()}
+            >
+              Save current
+            </Button>
+          </div>
+          <div className="max-h-[360px] space-y-1 overflow-y-auto">
+            {templates.length === 0 && (
+              <div className="py-6 text-center text-[12px] text-[var(--text-muted)]">
+                No saved templates.
+              </div>
+            )}
+            {templates.map((template) => (
+              <div
+                key={template.id}
+                className="flex min-h-11 items-center gap-3 rounded-[var(--control-radius)] px-2.5 hover:bg-[var(--surface-hover)]"
+              >
+                <LayoutTemplate className="h-4 w-4 text-[var(--text-muted)]" />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[13px] font-medium">
+                    {template.name}
+                  </div>
+                  {template.description && (
+                    <div className="truncate text-[11px] text-[var(--text-muted)]">
+                      {template.description}
+                    </div>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void instantiateTemplate(template)}
+                >
+                  Use
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={toolOpen === "ai"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Ask AI</DialogTitle>
+            <DialogDescription>
+              AI changes are proposals only. Review the operation diff before
+              applying it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Textarea
+              aria-label="AI page request"
+              value={aiPrompt}
+              onChange={(event) => setAiPrompt(event.target.value)}
+              placeholder="Describe what should be added or rewritten…"
+              rows={3}
+              disabled={page.isPrivate}
+            />
+            {page.isPrivate && (
+              <p className="text-[11px] text-[var(--text-muted)]">
+                Turn off Private before sending Page content to an AI provider.
+              </p>
+            )}
+            <div className="flex justify-end">
+              <Button
+                onClick={() => void createProposal()}
+                disabled={page.isPrivate || !aiPrompt.trim()}
+              >
+                Create proposal
+              </Button>
+            </div>
+          </div>
+          <div className="max-h-[360px] space-y-2 overflow-y-auto">
+            {proposals.length === 0 && (
+              <div className="py-6 text-center text-[12px] text-[var(--text-muted)]">
+                No AI proposals for this Page.
+              </div>
+            )}
+            {proposals.map((proposal) => (
+              <div
+                key={proposal.id}
+                className="rounded-[var(--control-radius)] border border-[var(--border-subtle)] p-3"
+              >
+                <div className="flex items-start gap-2">
+                  <Sparkles className="mt-0.5 h-4 w-4 text-[var(--color-accent)]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-medium">
+                      {proposal.summary}
+                    </div>
+                    <pre className="mt-2 max-h-28 overflow-auto rounded bg-[var(--surface-raised)] p-2 text-[10px] text-[var(--text-secondary)]">
+                      {JSON.stringify(proposal.operations, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-end gap-2">
+                  {proposal.status === "PENDING" ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void reviewProposal(proposal, "reject")}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => void reviewProposal(proposal, "approve")}
+                      >
+                        Apply
+                      </Button>
+                    </>
+                  ) : (
+                    <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                      {proposal.status}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
