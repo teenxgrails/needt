@@ -129,7 +129,7 @@ function BoardTableView({ board, onOpenTask }: BoardViewsProps) {
                 key={task.id}
                 type="button"
                 onClick={() => onOpenTask(task)}
-                className="needt-motion-list-item grid w-full grid-cols-[minmax(260px,1.8fr)_minmax(150px,1fr)_140px_120px_100px] border-t border-[var(--border-subtle)] text-left text-[13px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                className="grid w-full grid-cols-[minmax(260px,1.8fr)_minmax(150px,1fr)_140px_120px_100px] border-t border-[var(--border-subtle)] text-left text-[13px] text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
               >
                 <span className="truncate border-r border-[var(--border-subtle)] px-3 py-2.5 font-medium text-[var(--text-primary)]">
                   {task.title}
@@ -178,7 +178,7 @@ function BoardListView({ board, onOpenTask }: BoardViewsProps) {
                   key={task.id}
                   type="button"
                   onClick={() => onOpenTask(task)}
-                  className="needt-motion-list-item group flex min-h-11 w-full items-center gap-3 border-b border-[var(--border-subtle)] px-2 text-left transition-colors hover:bg-[var(--surface-hover)]"
+                  className="group flex min-h-11 w-full items-center gap-3 border-b border-[var(--border-subtle)] px-2 text-left transition-colors hover:bg-[var(--surface-hover)]"
                 >
                   <span
                     className={cn(
@@ -222,7 +222,7 @@ function BoardGalleryView({ board, onOpenTask }: BoardViewsProps) {
                 key={task.id}
                 type="button"
                 onClick={() => onOpenTask(task)}
-                className="needt-panel-depth needt-motion-surface group min-h-44 rounded-lg border border-[var(--border-subtle)] p-4 text-left transition-[border-color,background-color,transform] duration-150 hover:-translate-y-0.5 hover:border-[var(--border-control)] hover:bg-[var(--surface-control)] hover:bg-none"
+                className="needt-panel-depth group min-h-44 rounded-lg border border-[var(--border-subtle)] p-4 text-left transition-[border-color,background-color,transform] duration-150 hover:-translate-y-0.5 hover:border-[var(--border-control)] hover:bg-[var(--surface-control)] hover:bg-none"
               >
                 <div className="flex items-start justify-between gap-3">
                   <StageLabel column={column} />
@@ -707,7 +707,7 @@ function SortableCard({
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "needt-panel-depth needt-motion-surface group relative min-h-12 rounded-lg border border-[var(--border-subtle)] text-left text-[13px] text-[var(--text-primary)] transition-[border-color,background-color,opacity] duration-150 hover:border-[var(--border-control)] hover:bg-[var(--surface-control)] hover:bg-none",
+        "needt-panel-depth group relative min-h-12 rounded-lg border border-[var(--border-subtle)] text-left text-[13px] text-[var(--text-primary)] transition-[border-color,background-color,opacity] duration-150 hover:border-[var(--border-control)] hover:bg-[var(--surface-control)] hover:bg-none",
         isDragging && "opacity-25"
       )}
     >

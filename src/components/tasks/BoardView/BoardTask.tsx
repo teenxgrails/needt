@@ -85,7 +85,7 @@ export function BoardTask({ task, onEdit, onDelete }: BoardTaskProps) {
       <div
         {...draggableProps}
         className={cn(
-          "needt-motion-surface cursor-grab rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2.5 transition-[opacity,background-color,border-color] duration-150 hover:border-[var(--control-border)] hover:bg-[var(--surface-hover)] active:cursor-grabbing",
+          "cursor-grab rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2.5 transition-[opacity,background-color,border-color] duration-150 hover:border-[var(--control-border)] hover:bg-[var(--surface-hover)] active:cursor-grabbing",
           isDragging && "opacity-30"
         )}
       >

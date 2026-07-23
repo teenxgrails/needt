@@ -191,33 +191,7 @@
     --motion-duration-fast: 150ms;
     --motion-duration-base: 200ms;
     --motion-duration-slow: 250ms;
-    --motion-duration-enter: 320ms;
-    --motion-duration-exit: 140ms;
     --motion-ease-standard: cubic-bezier(0.2, 0, 0, 1);
-    --motion-ease-spring: linear(
-      0,
-      0.009,
-      0.036,
-      0.084,
-      0.157,
-      0.255,
-      0.378,
-      0.522,
-      0.679,
-      0.832,
-      0.954,
-      1.029,
-      1.052,
-      1.038,
-      1.011,
-      0.99,
-      0.984,
-      0.991,
-      1.001,
-      1.005,
-      1
-    );
-    --motion-ease-pop: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* Space canvas: intentionally dark in every app theme. Keeping its
        palette semantic makes future custom themes a token swap instead of a
@@ -1618,6 +1592,13 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   to {
     opacity: 0;
     transform: translateY(18px) scale(0.99);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog-overlay-anim[data-state],
+  .dialog-content-anim[data-state] {
+    animation-duration: 0.01ms;
   }
 }
 

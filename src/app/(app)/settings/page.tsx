@@ -44,7 +44,6 @@ import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSe
 import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings";
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
-
 import { quickEase, springSnappy } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -171,7 +170,7 @@ function SettingsNavGroup({
                 onSelect(item.id);
               }}
               className={cn(
-                "needt-motion-list-item relative isolate flex h-[31px] items-center gap-2 overflow-hidden rounded-[4px] px-2 text-[13px] font-medium transition-colors duration-150",
+                "relative flex h-[31px] items-center gap-2 rounded-[4px] px-2 text-[13px] font-medium transition-colors duration-150",
                 activeTab === item.id
                   ? "text-[var(--text-primary)]"
                   : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
@@ -409,7 +408,7 @@ export default function SettingsPage() {
               !isHydrated && "opacity-0"
             )}
           >
-            <div className="needt-motion-stagger mx-auto max-w-xl space-y-7">
+            <div className="mx-auto max-w-xl space-y-7">
               {MOBILE_TAB_GROUPS.map((group) => (
                 <section
                   key={group.label}
@@ -429,7 +428,7 @@ export default function SettingsPage() {
                           key={item.id}
                           type="button"
                           onClick={() => selectTab(item.id)}
-                          className="needt-motion-list-item flex min-h-14 w-full items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-left text-[15px] text-[var(--text-primary)] transition-colors last:border-b-0 active:bg-[var(--surface-hover)]"
+                          className="flex min-h-14 w-full items-center gap-3 border-b border-[var(--border-subtle)] px-3 text-left text-[15px] text-[var(--text-primary)] transition-colors last:border-b-0 active:bg-[var(--surface-hover)]"
                         >
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[var(--control-radius)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
                             <Icon

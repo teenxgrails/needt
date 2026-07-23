@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { AIActionCursor } from "@/components/ai/AIActionCursor";
 import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
@@ -22,7 +21,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/utils";
-import { quickEase, springFluid } from "@/lib/motion";
 
 import { usePageTitle } from "@/hooks/use-page-title";
 
@@ -36,8 +34,6 @@ export default function RootLayout({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
   const pathname = usePathname();
-  const prefersReducedMotion = useReducedMotion();
-  const motionEnabled = pathname !== "/today";
   const { isOpen: shortcutsOpen, setOpen: setShortcutsOpen } =
     useShortcutsStore();
 
@@ -62,13 +58,6 @@ export default function RootLayout({
     return () => document.removeEventListener("keydown", down);
   }, [setShortcutsOpen]);
 
-  useEffect(() => {
-    document.documentElement.dataset.needtMotion = motionEnabled ? "on" : "off";
-    return () => {
-      delete document.documentElement.dataset.needtMotion;
-    };
-  }, [motionEnabled]);
-
   return (
     <div className="needt-page-depth relative flex min-h-dvh">
       <PrivacyProvider>
@@ -88,38 +77,18 @@ export default function RootLayout({
             <MobileTopBar />
             <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
             <main
-              data-needt-motion={motionEnabled ? "on" : "off"}
               className={cn(
-                "relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-lg:pt-[calc(56px+env(safe-area-inset-top))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
-                motionEnabled && "needt-route-content",
+                "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-lg:pt-[calc(56px+env(safe-area-inset-top))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
                 pathname === "/today" && "max-sm:pt-0"
               )}
             >
               <NotificationProvider>
-                <AnimatePresence initial={false} mode="popLayout">
-                  <motion.div
-                    key={pathname}
-                    className="needt-mobile-route-fallback min-h-full"
-                    initial={
-                      !motionEnabled || prefersReducedMotion
-                        ? false
-                        : { opacity: 0, x: 12, scale: 0.996 }
-                    }
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={
-                      !motionEnabled || prefersReducedMotion
-                        ? { opacity: 1 }
-                        : { opacity: 0, x: -7, scale: 0.998 }
-                    }
-                    transition={
-                      !motionEnabled || prefersReducedMotion
-                        ? { duration: 0 }
-                        : { ...springFluid, opacity: quickEase }
-                    }
-                  >
-                    {children}
-                  </motion.div>
-                </AnimatePresence>
+                <div
+                  key={pathname}
+                  className="needt-mobile-route-fallback min-h-full"
+                >
+                  {children}
+                </div>
               </NotificationProvider>
             </main>
             <AIChatOverlay
