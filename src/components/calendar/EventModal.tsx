@@ -5,11 +5,20 @@ import { useEffect, useRef, useState } from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 
 import { CalendarItemTypeSwitch } from "@/components/calendar/CalendarItemTypeSwitch";
+import {
+  CALENDAR_EDITOR_ASIDE_FOOTER_CLASS,
+  CALENDAR_EDITOR_CONTENT_CLASS,
+  CALENDAR_EDITOR_FORM_CLASS,
+  CALENDAR_EDITOR_MAIN_FOOTER_CLASS,
+} from "@/components/calendar/calendar-editor-shell";
+import { TaskDescriptionEditor } from "@/components/tasks/TaskDescriptionEditor";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -23,11 +32,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 
 import { APP_NAME } from "@/lib/app-config";
-import { formatToLocalISOString, newDate } from "@/lib/date-utils";
-import { cn } from "@/lib/utils";
+import { newDate } from "@/lib/date-utils";
 
 import { useCalendarStore } from "@/store/calendar";
 import { useSettingsStore } from "@/store/settings";
@@ -116,13 +124,10 @@ function buildRecurrenceRule(freq: string, interval: number, byDay: string[]) {
   // Add BYDAY for weekly recurrence
   if (freq === FREQUENCIES.WEEKLY && byDay.length > 0) {
     // byDay should already be in RRule format (MO, TU, etc.)
-    console.log("Building RRule with weekdays:", byDay);
     parts.push(`BYDAY=${byDay.join(",")}`);
   }
 
-  const rule = parts.join(";");
-  console.log("Built RRule:", rule);
-  return rule;
+  return parts.join(";");
 }
 
 export function EventModal({
@@ -396,22 +401,15 @@ export function EventModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="needt-overlay-depth !bottom-0 !left-0 !top-auto flex h-[92dvh] max-h-[92dvh] !w-full !max-w-none !translate-x-0 !translate-y-0 flex-col gap-0 overflow-hidden !rounded-b-none !rounded-t-2xl border-[var(--dialog-border)] bg-[var(--dialog-bg)] p-0 text-[var(--text-primary)] sm:!bottom-auto sm:!left-1/2 sm:!top-1/2 sm:h-[min(767px,calc(100dvh-3.875rem))] sm:max-h-[calc(100dvh-3.875rem)] sm:!w-[calc(100vw-3rem)] sm:!max-w-[960px] sm:!-translate-x-1/2 sm:!-translate-y-1/2 sm:!rounded-[var(--dialog-radius)] lg:[&>button.absolute]:-right-8 lg:[&>button.absolute]:top-0">
+        <DialogContent
+          data-testid="event-modal"
+          className={CALENDAR_EDITOR_CONTENT_CLASS}
+        >
           {isSubmitting && <LoadingOverlay />}
-          <DialogHeader className="flex-row items-center space-y-0 px-6 py-4 pr-14 lg:px-10">
-            <DialogTitle asChild>
-              <div>
-                <CalendarItemTypeSwitch
-                  value="event"
-                  locked={Boolean(event?.id)}
-                  onValueChange={(type) => {
-                    preserveDraftRef.current = true;
-                    onItemTypeChange?.(type);
-                  }}
-                />
-              </div>
-            </DialogTitle>
-          </DialogHeader>
+          <div
+            aria-hidden="true"
+            className="absolute left-1/2 top-2 z-10 h-1 w-9 -translate-x-1/2 rounded-full bg-[var(--border-control)] sm:hidden"
+          />
 
           <form
             onSubmit={handleSubmit}
@@ -421,183 +419,70 @@ export function EventModal({
                 event.currentTarget.requestSubmit();
               }
             }}
-            className="flex min-h-0 flex-1 flex-col"
+            className={CALENDAR_EDITOR_FORM_CLASS}
           >
-            <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_340px] lg:overflow-hidden">
-              <div className="space-y-4 px-6 pb-6 pt-2 lg:overflow-y-auto lg:px-10">
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="sr-only">
-                    Event title
-                  </Label>
-                  <Input
-                    type="text"
-                    id="title"
-                    ref={titleInputRef}
-                    data-testid="event-title-input"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Event title"
-                    className="event-title h-11 border-0 bg-transparent px-0 text-xl text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus-visible:ring-0"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description" className="sr-only">
-                    Description
-                  </Label>
-                  <div className="flex items-center gap-1 py-1 text-xs text-[var(--text-secondary)]">
-                    {[
-                      "B",
-                      "I",
-                      "U",
-                      "S",
-                      "H₁",
-                      "H₂",
-                      "•",
-                      "1.",
-                      "</>",
-                      "↗",
-                    ].map((item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        className="rounded px-2 py-1 transition-colors duration-150 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                  <Textarea
-                    id="description"
-                    data-testid="event-description-input"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={10}
-                    placeholder="Description"
-                    className="event-description min-h-[280px] resize-none border-0 bg-transparent px-0 text-[14px] text-[var(--text-primary)] focus-visible:ring-0"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start">Start</Label>
-                    <Input
-                      type={isAllDay ? "date" : "datetime-local"}
-                      id="start"
-                      data-testid="event-start-date"
-                      value={
-                        isAllDay
-                          ? formatToLocalISOString(startDate).split("T")[0]
-                          : formatToLocalISOString(startDate)
-                      }
-                      onChange={(e) => setStartDate(newDate(e.target.value))}
-                      className={cn(
-                        "cursor-pointer px-3 py-2",
-                        "[&::-webkit-calendar-picker-indicator]:ml-auto",
-                        "[&::-webkit-calendar-picker-indicator]:mr-1",
-                        "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-                        "[&::-webkit-calendar-picker-indicator]:rounded-md",
-                        "[&::-webkit-calendar-picker-indicator]:hover:bg-accent",
-                        "[&::-webkit-calendar-picker-indicator]:dark:invert",
-                        "[&::-webkit-datetime-edit]:text-foreground",
-                        "[&::-webkit-datetime-edit-fields-wrapper]:p-0"
-                      )}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="end">End</Label>
-                    <Input
-                      type={isAllDay ? "date" : "datetime-local"}
-                      id="end"
-                      data-testid="event-end-date"
-                      value={
-                        isAllDay
-                          ? formatToLocalISOString(endDate).split("T")[0]
-                          : formatToLocalISOString(endDate)
-                      }
-                      onChange={(e) => setEndDate(newDate(e.target.value))}
-                      className={cn(
-                        "cursor-pointer px-3 py-2",
-                        "[&::-webkit-calendar-picker-indicator]:ml-auto",
-                        "[&::-webkit-calendar-picker-indicator]:mr-1",
-                        "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-                        "[&::-webkit-calendar-picker-indicator]:rounded-md",
-                        "[&::-webkit-calendar-picker-indicator]:hover:bg-accent",
-                        "[&::-webkit-calendar-picker-indicator]:dark:invert",
-                        "[&::-webkit-datetime-edit]:text-foreground",
-                        "[&::-webkit-datetime-edit-fields-wrapper]:p-0"
-                      )}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-5">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="all-day"
-                      checked={isAllDay}
-                      onCheckedChange={(checked) =>
-                        setIsAllDay(checked as boolean)
-                      }
-                    />
-                    <Label htmlFor="all-day" className="text-sm">
-                      All day
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="recurring"
-                      checked={isRecurring}
-                      onCheckedChange={(checked) => {
-                        const isChecked = checked as boolean;
-                        setIsRecurring(isChecked);
-                        if (
-                          isChecked &&
-                          (recurrenceFreq === FREQUENCIES.NONE ||
-                            !recurrenceFreq)
-                        ) {
-                          setRecurrenceFreq(FREQUENCIES.WEEKLY);
-                          const weekdayNum = startDate.getDay();
-                          const weekdays = [
-                            "SU",
-                            "MO",
-                            "TU",
-                            "WE",
-                            "TH",
-                            "FR",
-                            "SA",
-                          ];
-                          setRecurrenceByDay([weekdays[weekdayNum]]);
-                        }
+            <DialogHeader className="space-y-0 px-6 py-4 lg:[grid-area:header] lg:px-10 lg:pt-4">
+              <DialogDescription className="sr-only">
+                Create or edit a fixed calendar event, its description, timing,
+                recurrence, location, and calendar.
+              </DialogDescription>
+              <div className="flex min-h-10 items-center justify-between sm:h-[25px] sm:min-h-0">
+                <DialogTitle asChild>
+                  <div>
+                    <CalendarItemTypeSwitch
+                      value="event"
+                      locked={Boolean(event?.id)}
+                      onValueChange={(type) => {
+                        preserveDraftRef.current = true;
+                        onItemTypeChange?.(type);
                       }}
-                      data-testid="recurring-event-checkbox"
                     />
-                    <Label htmlFor="recurring" className="text-sm font-normal">
-                      Does not repeat
-                    </Label>
                   </div>
-                </div>
-
-                {renderRecurrenceOptions()}
+                </DialogTitle>
               </div>
+              <Label htmlFor="title" className="sr-only">
+                Event title
+              </Label>
+              <Input
+                type="text"
+                id="title"
+                ref={titleInputRef}
+                data-testid="event-title-input"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Event name"
+                className="mt-1 h-[42px] border-0 bg-transparent px-0 text-[22px] font-semibold text-[var(--text-primary)] shadow-none placeholder:text-[var(--text-muted)] focus-visible:border-0 focus-visible:ring-0"
+                required
+              />
+            </DialogHeader>
 
-              <aside className="needt-panel-depth space-y-4 border-t border-[var(--border-subtle)] px-5 pb-5 pt-4 lg:overflow-y-auto lg:border-l lg:border-t-0">
-                <p className="text-sm font-medium text-[var(--text-primary)]">
-                  Event details
-                </p>
+            <main className="flex min-h-[280px] flex-none flex-col px-6 pb-3 lg:min-h-0 lg:[grid-area:main] lg:px-10 lg:pb-6">
+              <TaskDescriptionEditor
+                value={description}
+                onChange={setDescription}
+              />
+              <p className="mt-auto flex h-[50px] flex-none items-center text-[12px] text-[var(--text-muted)]">
+                Fixed events reserve this time and are never moved by
+                auto-scheduling.
+              </p>
+            </main>
 
-                <div className="space-y-2">
-                  <Label htmlFor="calendar">Calendar</Label>
+            <aside className="needt-panel-depth flex-none border-t border-[var(--border-subtle)] lg:min-h-0 lg:overflow-y-auto lg:[grid-area:aside] lg:border-l lg:border-t-0">
+              <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-4 text-[13px]">
+                <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
+                  <span className="w-[76px] text-[var(--text-secondary)]">
+                    Calendar:
+                  </span>
                   <Select
                     value={selectedFeedId}
                     onValueChange={(value) => setSelectedFeedId(value)}
                     disabled={!!event?.id}
                   >
-                    <SelectTrigger id="calendar" data-testid="calendar-select">
+                    <SelectTrigger
+                      id="calendar"
+                      data-testid="calendar-select"
+                      className="h-11 min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none sm:h-[28px]"
+                    >
                       <SelectValue placeholder="Select a calendar" />
                     </SelectTrigger>
                     <SelectContent>
@@ -613,20 +498,87 @@ export function EventModal({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
+                  <Label
+                    htmlFor="location"
+                    className="w-[76px] text-[var(--text-secondary)]"
+                  >
+                    Location:
+                  </Label>
                   <Input
                     type="text"
                     id="location"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    className="event-location"
+                    placeholder="Add location"
+                    className="h-11 min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0 sm:h-[28px]"
                   />
                 </div>
-              </aside>
-            </div>
+              </div>
 
-            <div className="needt-panel-depth flex items-center justify-between border-t border-[var(--border-subtle)] px-5 py-3">
+              <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
+                <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
+                  <span className="w-[76px] text-[var(--text-secondary)]">
+                    Start:
+                  </span>
+                  <DatePicker
+                    value={startDate}
+                    onChange={(date) => date && setStartDate(date)}
+                    includeTime={!isAllDay}
+                    showIcon={false}
+                    ariaLabel="Choose event start"
+                    className="min-h-11 min-w-0 flex-1 px-0 sm:h-[28px] sm:min-h-0"
+                  />
+                </div>
+                <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
+                  <span className="w-[76px] text-[var(--text-secondary)]">
+                    End:
+                  </span>
+                  <DatePicker
+                    value={endDate}
+                    onChange={(date) => date && setEndDate(date)}
+                    includeTime={!isAllDay}
+                    showIcon={false}
+                    ariaLabel="Choose event end"
+                    className="min-h-11 min-w-0 flex-1 px-0 sm:h-[28px] sm:min-h-0"
+                  />
+                </div>
+                <label className="flex min-h-11 items-center justify-between gap-3 sm:h-[30px] sm:min-h-0">
+                  <span className="text-[var(--text-secondary)]">All day</span>
+                  <Switch checked={isAllDay} onCheckedChange={setIsAllDay} />
+                </label>
+                <label className="flex min-h-11 items-center justify-between gap-3 sm:h-[30px] sm:min-h-0">
+                  <span className="text-[var(--text-secondary)]">
+                    Recurring
+                  </span>
+                  <Switch
+                    checked={isRecurring}
+                    onCheckedChange={(checked) => {
+                      setIsRecurring(checked);
+                      if (
+                        checked &&
+                        (recurrenceFreq === FREQUENCIES.NONE || !recurrenceFreq)
+                      ) {
+                        setRecurrenceFreq(FREQUENCIES.WEEKLY);
+                        setRecurrenceByDay([
+                          ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][
+                            startDate.getDay()
+                          ],
+                        ]);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+
+              {isRecurring && (
+                <div className="border-b border-[var(--border-subtle)] px-5 py-4 text-[13px]">
+                  {renderRecurrenceOptions()}
+                </div>
+              )}
+            </aside>
+
+            <footer className={CALENDAR_EDITOR_MAIN_FOOTER_CLASS}>
               {event?.id ? (
                 <Button
                   type="button"
@@ -637,20 +589,32 @@ export function EventModal({
                   Delete
                 </Button>
               ) : (
-                <div />
+                <span className="text-[11px] text-[var(--text-muted)]">
+                  Event details
+                </span>
               )}
-              <div className="flex gap-3">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={!title.trim() || isSubmitting}
-                  data-testid="save-event-button"
-                >
-                  {event?.id ? "Update" : "Create"}
-                </Button>
-              </div>
+            </footer>
+            <div className={CALENDAR_EDITOR_ASIDE_FOOTER_CLASS}>
+              <span className="mr-auto text-[11px] text-[var(--text-muted)]">
+                {isSubmitting ? "Saving…" : "All changes saved"}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-11 px-2 text-[13px] text-[var(--text-secondary)] sm:h-[30px]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!title.trim() || isSubmitting}
+                data-testid="save-event-button"
+                className="h-11 px-3 text-[13px] sm:h-[34px]"
+              >
+                {event?.id ? "Save changes" : "Save event"}
+              </Button>
             </div>
           </form>
         </DialogContent>

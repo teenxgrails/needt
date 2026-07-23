@@ -60,10 +60,10 @@
 - [x] Make center document and right timeline independently scrollable without desktop page scrolling.
 - [x] Add 15-minute task drag/resize in Today using calendar-drag semantics and pin manual placements.
 - [x] Preserve mobile sheet, drafts, save status and explicit evening review.
-- [ ] Span the current-day pill across weekday/date and show day actions only on hover/focus.
-- [ ] Open Create Task directly from calendar `+` and select Event within the shared editor.
-- [ ] Align Task editor grid/dividers and rebuild Event mode with the same shell, rich editor, pickers and footer.
-- [ ] Add regression/E2E coverage for Today drag/resize and scroll, calendar texture, direct Task creation and Task/Event parity.
+- [x] Span the current-day pill across weekday/date and show day actions only on hover/focus.
+- [x] Open Create Task directly from calendar `+` and select Event within the shared editor.
+- [x] Align Task editor grid/dividers and rebuild Event mode with the same shell, rich editor, pickers and footer.
+- [x] Add regression/E2E coverage for Today drag/resize and scroll, calendar texture, direct Task creation and Task/Event parity.
 
 ## Second pass — P1/P2 Integrations and verification
 

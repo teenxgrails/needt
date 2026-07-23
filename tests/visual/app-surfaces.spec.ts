@@ -61,11 +61,15 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   await page.keyboard.press("Escape");
 
   if ((page.viewportSize()?.width ?? 0) < 640) {
-    await page.getByRole("button", { name: "Create task or event" }).click();
-    await expect(page.getByRole("heading", { name: "Create" })).toBeVisible();
+    await page.getByRole("button", { name: "Create task" }).click();
+    await expect(page.getByTestId("task-modal")).toBeVisible();
     await settleVisualSurface(page);
-    await expect(page).toHaveScreenshot("calendar-create-sheet.png");
-    await page.keyboard.press("Escape");
+    await expect(page).toHaveScreenshot("calendar-create-task.png");
+    await page
+      .getByTestId("task-modal")
+      .getByRole("button", { name: /Cancel/ })
+      .click();
+    await expect(page.getByTestId("task-modal")).toBeHidden();
 
     await page.getByRole("button", { name: "More calendar actions" }).click();
     await expect(
@@ -112,9 +116,11 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
       data: { title: "Visual design notes", icon: "🎨" },
     });
     expect(createResponse.ok()).toBeTruthy();
-    visualPage = ((await createResponse.json()) as {
-      page: { id: string; title: string };
-    }).page;
+    visualPage = (
+      (await createResponse.json()) as {
+        page: { id: string; title: string };
+      }
+    ).page;
   }
   await page.goto(`/pages/${visualPage.id}`, { waitUntil: "networkidle" });
   await expect(page.getByLabel("Page document")).toBeVisible();

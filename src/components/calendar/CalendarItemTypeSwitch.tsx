@@ -47,7 +47,7 @@ export function CalendarItemTypeSwitch({
             className={cn(
               "flex h-7 items-center gap-1.5 rounded px-2.5 text-[12px] font-medium transition-[background-color,color] duration-150",
               selected
-                ? "bg-[var(--surface-selected)] text-[var(--text-primary)]"
+                ? "bg-[var(--surface-selected)] text-[var(--control-selected-fg)]"
                 : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             )}
           >

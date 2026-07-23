@@ -34,6 +34,7 @@ import { useTaskStore } from "@/store/task";
 import { CalendarEvent, ExtendedEventProps } from "@/types/calendar";
 import { Task, TaskStatus } from "@/types/task";
 
+import { CalendarDayActions } from "./CalendarDayActions";
 import { CalendarEventContent } from "./CalendarEventContent";
 import { EventModal } from "./EventModal";
 import { EventQuickView } from "./EventQuickView";
@@ -43,6 +44,22 @@ import { useCalendarExternalTaskDrop } from "./useCalendarExternalTaskDrop";
 
 interface DayViewProps {
   currentDate: Date;
+}
+
+interface FlexibleHoursOverrideResponse {
+  id: string;
+  date: string;
+  kind: "START_LATER" | "STOP_EARLY" | "BLOCK_HOURS" | "BLOCK_WHOLE_DAY";
+  startTime: string | null;
+  endTime: string | null;
+}
+
+function localDateKey(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 export function DayView({ currentDate }: DayViewProps) {
@@ -75,6 +92,17 @@ export function DayView({ currentDate }: DayViewProps) {
       startEditable: boolean;
       durationEditable: boolean;
       extendedProps?: ExtendedEventProps;
+    }>
+  >([]);
+  const [flexibleHourBackgrounds, setFlexibleHourBackgrounds] = useState<
+    Array<{
+      id: string;
+      title: string;
+      start: Date;
+      end: Date;
+      display: "background";
+      allDay: boolean;
+      classNames: string[];
     }>
   >([]);
   const calendarRef = useRef<FullCalendar>(null);
@@ -127,9 +155,66 @@ export function DayView({ currentDate }: DayViewProps) {
         }));
 
       setEvents(formattedItems);
+
+      try {
+        const inclusiveEnd = newDate(arg.end);
+        inclusiveEnd.setDate(inclusiveEnd.getDate() - 1);
+        const response = await fetch(
+          `/api/flexible-hours?from=${localDateKey(arg.start)}&to=${localDateKey(inclusiveEnd)}`
+        );
+        if (!response.ok) throw new Error("Failed to load flexible hours");
+        const data = (await response.json()) as {
+          overrides: FlexibleHoursOverrideResponse[];
+        };
+        setFlexibleHourBackgrounds(
+          data.overrides.map((override) => {
+            const date = override.date.slice(0, 10);
+            const startTime =
+              override.kind === "START_LATER"
+                ? "00:00"
+                : override.kind === "STOP_EARLY"
+                  ? override.endTime || "00:00"
+                  : override.kind === "BLOCK_WHOLE_DAY"
+                    ? "00:00"
+                    : override.startTime || "00:00";
+            const endTime =
+              override.kind === "START_LATER"
+                ? override.startTime || "00:00"
+                : override.kind === "STOP_EARLY" ||
+                    override.kind === "BLOCK_WHOLE_DAY"
+                  ? "23:59"
+                  : override.endTime || "23:59";
+            return {
+              id: `flexible-hours:${override.id}`,
+              title: "",
+              start: newDate(`${date}T${startTime}:00`),
+              end: newDate(`${date}T${endTime}:00`),
+              display: "background" as const,
+              allDay: false,
+              classNames: ["needt-flexible-hours-texture"],
+            };
+          })
+        );
+      } catch {
+        setFlexibleHourBackgrounds([]);
+      }
     },
     [feeds, getAllCalendarItems, showTasksOnCalendar]
   );
+
+  useEffect(() => {
+    const refresh = () => {
+      const calendar = calendarRef.current?.getApi();
+      if (!calendar) return;
+      void handleDatesSet({
+        start: calendar.view.activeStart,
+        end: calendar.view.activeEnd,
+      } as DatesSetArg);
+    };
+    window.addEventListener("needt:flexible-hours-changed", refresh);
+    return () =>
+      window.removeEventListener("needt:flexible-hours-changed", refresh);
+  }, [handleDatesSet]);
 
   // Initial data load
   useEffect(() => {
@@ -323,7 +408,7 @@ export function DayView({ currentDate }: DayViewProps) {
         initialView="timeGridDay"
         headerToolbar={false}
         initialDate={currentDate}
-        events={events}
+        events={[...events, ...flexibleHourBackgrounds]}
         nowIndicator={true}
         allDaySlot={true}
         slotMinTime="00:00:00"
@@ -353,19 +438,24 @@ export function DayView({ currentDate }: DayViewProps) {
           }).format(arg.date);
           const day = arg.date.getDate();
           return (
-            <div className="flex items-center justify-center gap-1.5">
-              <span className="text-[13px] font-medium text-[var(--text-secondary)]">
-                {weekday}
-              </span>
+            <div className="group/day relative flex w-full items-center justify-center">
               <span
                 className={
                   arg.isToday
-                    ? "flex h-[22px] min-w-[22px] items-center justify-center rounded-md border border-[var(--text-primary)] bg-transparent px-1 text-[13px] font-semibold text-[var(--text-primary)]"
-                    : "text-[14px] font-semibold text-[var(--text-secondary)]"
+                    ? "inline-flex h-[28px] items-center justify-center gap-1.5 rounded-md border border-[var(--text-primary)] bg-transparent px-2 text-[13px] font-semibold text-[var(--text-primary)]"
+                    : "inline-flex items-center gap-1.5 text-[var(--text-secondary)]"
                 }
               >
-                {day}
+                <span className={arg.isToday ? "" : "text-[13px] font-medium"}>
+                  {weekday}
+                </span>
+                <span
+                  className={arg.isToday ? "" : "text-[14px] font-semibold"}
+                >
+                  {day}
+                </span>
               </span>
+              <CalendarDayActions date={arg.date} />
             </div>
           );
         }}

@@ -26,7 +26,7 @@ async function settleTaskEditor(page: import("@playwright/test").Page) {
   await page.waitForTimeout(250);
 }
 
-async function useVisualTheme(
+async function setVisualTheme(
   page: import("@playwright/test").Page,
   theme: "dark" | "light"
 ) {
@@ -74,7 +74,7 @@ test("task editor stays usable at every breakpoint", async ({ page }) => {
   const task = await findVisualTask(page);
 
   for (const theme of ["dark", "light"] as const) {
-    await useVisualTheme(page, theme);
+    await setVisualTheme(page, theme);
     await page.goto(`/tasks?task=${task.id}`, {
       waitUntil: "domcontentloaded",
     });
@@ -95,4 +95,48 @@ test("task editor stays usable at every breakpoint", async ({ page }) => {
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
   }
+});
+
+test("calendar plus opens Task directly and switches into the shared Event editor", async ({
+  page,
+}) => {
+  await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
+  await signInVisualUser(page);
+  await page.goto("/calendar", { waitUntil: "domcontentloaded" });
+
+  const todayHeader = page.locator(".fc-col-header-cell.fc-day-today");
+  await expect(todayHeader).toContainText("Thu");
+  await expect(todayHeader).toContainText("16");
+  const dayAction = todayHeader.getByRole("button", {
+    name: "Adjust task hours",
+  });
+  await expect(dayAction).toHaveCSS("opacity", "0");
+  await todayHeader.hover();
+  await expect(dayAction).toHaveCSS("opacity", "1");
+
+  await page.getByRole("button", { name: "Create task" }).click();
+  const taskModal = page.getByTestId("task-modal");
+  await expect(taskModal).toBeVisible();
+  await expect(taskModal.getByRole("tab", { name: "Task" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await taskModal.getByRole("tab", { name: "Event" }).click();
+
+  const eventModal = page.getByTestId("event-modal");
+  await expect(eventModal).toBeVisible();
+  await expect(eventModal.getByRole("tab", { name: "Event" })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await expect(eventModal.getByTestId("task-description-editor")).toBeVisible();
+  await expect(
+    eventModal.getByRole("button", { name: "Choose event start" })
+  ).toBeVisible();
+  await expect(
+    eventModal.getByRole("button", { name: "Choose event end" })
+  ).toBeVisible();
+  await expect(eventModal.getByText("All changes saved")).toBeVisible();
+  await settleTaskEditor(page);
+  await expect(page).toHaveScreenshot("event-editor-shared.png");
 });

@@ -93,6 +93,15 @@ test("named schedules copy selected days and flexible hours stay background-only
   await page.goto("/calendar", { waitUntil: "networkidle" });
   await expect(page.locator(".needt-flexible-hours-texture")).toHaveCount(1);
   await expect(page.getByText("Unavailable", { exact: true })).toHaveCount(0);
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "calendar-view-store",
+      JSON.stringify({ state: { view: "day" }, version: 2 })
+    );
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.locator(".calendar-day-view")).toBeVisible();
+  await expect(page.locator(".needt-flexible-hours-texture")).toHaveCount(1);
 
   const reset = await page.request.delete(
     "/api/flexible-hours?date=2026-07-16"

@@ -5,10 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import {
-  CheckSquare2,
   ChevronLeft,
   ChevronRight,
-  Clock3,
   MoreHorizontal,
   Settings,
 } from "lucide-react";
@@ -115,7 +113,6 @@ export function Calendar({
   const isPhone = useIsMobile(640);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isRefreshingTasks, setIsRefreshingTasks] = useState(false);
-  const [isMobileCreateOpen, setIsMobileCreateOpen] = useState(false);
   const [isMobileOptionsOpen, setIsMobileOptionsOpen] = useState(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
@@ -201,15 +198,6 @@ export function Calendar({
         : undefined,
   }).format(currentDate);
 
-  const handleNewEvent = () => {
-    const start = newDate();
-    eventModalStore.setDefaultDate(start);
-    eventModalStore.setDefaultEndDate(
-      new Date(start.getTime() + 30 * 60 * 1000)
-    );
-    eventModalStore.setOpen(true);
-  };
-
   const handleNewTask = () => {
     setIsTaskModalOpen(true);
   };
@@ -289,12 +277,12 @@ export function Calendar({
 
                 <button
                   type="button"
-                  onClick={() => setIsMobileCreateOpen(true)}
+                  onClick={handleNewTask}
                   className={cn(
                     APP_TOOLBAR_ICON_BUTTON_CLASS,
                     "h-10 w-10 border-transparent bg-transparent"
                   )}
-                  aria-label="Create task or event"
+                  aria-label="Create task"
                 >
                   <IoAddOutline className="h-5 w-5" />
                 </button>
@@ -435,37 +423,15 @@ export function Calendar({
                   <span className="hidden xl:inline">Refresh all tasks</span>
                 </button>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      className={APP_TOOLBAR_ICON_BUTTON_CLASS}
-                      title="Create"
-                      aria-label="Create task or event"
-                    >
-                      <IoAddOutline className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    sideOffset={6}
-                    className="w-[210px] origin-[var(--radix-dropdown-menu-content-transform-origin)] p-1 shadow-none data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-1"
-                  >
-                    <DropdownMenuItem
-                      onClick={handleNewTask}
-                      className="group flex h-9 cursor-pointer items-center gap-2 rounded px-2 text-[13px]"
-                    >
-                      <CheckSquare2 className="h-4 w-4 text-[var(--text-secondary)] transition-colors group-data-[highlighted]:text-[var(--text-primary)]" />
-                      <span className="font-medium">Create task</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleNewEvent}
-                      className="group flex h-9 cursor-pointer items-center gap-2 rounded border-t border-[var(--border-subtle)] px-2 text-[13px]"
-                    >
-                      <Clock3 className="h-4 w-4 text-[var(--text-secondary)] transition-colors group-data-[highlighted]:text-[var(--text-primary)]" />
-                      <span className="font-medium">Create event</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <button
+                  type="button"
+                  onClick={handleNewTask}
+                  className={APP_TOOLBAR_ICON_BUTTON_CLASS}
+                  title="Create task"
+                  aria-label="Create task"
+                >
+                  <IoAddOutline className="h-4 w-4" />
+                </button>
 
                 {/* View switcher */}
                 <DropdownMenu>
@@ -571,42 +537,6 @@ export function Calendar({
           eventModalStore.setOpen(true);
         }}
       />
-      <BottomSheet
-        open={isMobileCreateOpen}
-        onOpenChange={setIsMobileCreateOpen}
-      >
-        <BottomSheetContent aria-describedby={undefined}>
-          <BottomSheetTitle>Create</BottomSheetTitle>
-          <BottomSheetDescription className="mb-3">
-            Add something to your plan.
-          </BottomSheetDescription>
-          <div className="grid gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsMobileCreateOpen(false);
-                handleNewTask();
-              }}
-              className="flex min-h-12 touch-manipulation items-center gap-3 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-3 text-left text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-control-hover)]"
-            >
-              <CheckSquare2 className="h-4 w-4 text-[var(--text-secondary)]" />
-              Create task
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsMobileCreateOpen(false);
-                handleNewEvent();
-              }}
-              className="flex min-h-12 touch-manipulation items-center gap-3 rounded-md px-3 text-left text-sm font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)]"
-            >
-              <Clock3 className="h-4 w-4 text-[var(--text-secondary)]" />
-              Create event
-            </button>
-          </div>
-        </BottomSheetContent>
-      </BottomSheet>
-
       <BottomSheet
         open={isMobileOptionsOpen}
         onOpenChange={setIsMobileOptionsOpen}

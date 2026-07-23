@@ -72,6 +72,7 @@
     --text-secondary: #5d6478;
     --text-muted: #737a80;
     --text-inverse: var(--primitive-white);
+    --control-selected-fg: var(--text-primary);
     --color-accent: var(--primitive-indigo-500);
     --color-accent-contrast: var(--primitive-white);
     --color-danger: var(--primitive-red-500);
@@ -342,6 +343,7 @@
     --text-secondary: #9aa0a6;
     --text-muted: #6e6e75;
     --text-inverse: #0e0e10;
+    --control-selected-fg: var(--text-inverse);
     --color-accent: var(--primitive-indigo-500);
     --color-accent-contrast: var(--primitive-white);
     --color-danger: var(--primitive-red-500);
