@@ -328,7 +328,7 @@
   .dark {
     color-scheme: dark;
     /* Semantic layer: the finished Calendar is the dark-theme reference. */
-    --surface-canvas: var(--custom-background-tint, #1a1d1e);
+    --surface-canvas: #1a1d1e;
     --surface-panel: var(--surface-canvas);
     --surface-raised: var(--surface-canvas);
     --surface-control: #262627;
@@ -421,6 +421,19 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+  }
+
+  /* True Dark is intentionally deeper than the graphite Gray palette above.
+     Both modes keep the same semantic/component contract. */
+  .dark.theme-dark {
+    --surface-canvas: var(--primitive-neutral-900);
+    --surface-control: #1b1b1e;
+    --surface-control-hover: #232327;
+    --surface-hover: #202024;
+    --border-subtle: #242428;
+    --border-control: #303036;
+    --calendar-task-bg: #242428;
+    --calendar-task-border: #3a3a40;
   }
 }
 

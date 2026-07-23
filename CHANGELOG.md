@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Grouped desktop Settings into the same Planner, Preferences, Connections, and Account sections as mobile, pinned Report a bug below the scrolling navigation, and converted ordinary settings rows to the compact label-to-control rhythm.
+- Split the former graphite dark palette into an explicit Gray theme and a true Dark theme based on `#0E0E10`; existing Dark users and System dark now resolve to true Dark, while the retained legacy background-tint value no longer overrides global theme tokens.
+
 - Completed authenticated responsive regression coverage for the Pages, Today, Settings, integrations, and private bug-report states; stabilized their visual fixtures and replaced the bug report severity native select with the shared house-format picker.
 
 - Completed the design-system hardening pass: Calendar tasks use priority rails and soft selected tints without a black ring; Today uses a wide editable document with a narrow synchronized day timeline, mobile calendar sheet, offline drafts, undo, overload/empty/error states, and explicit evening rollover review; Settings navigation is immediate and Appearance autosaves with rollback.

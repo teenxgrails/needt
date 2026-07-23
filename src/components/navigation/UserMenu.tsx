@@ -5,7 +5,15 @@ import { useState } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 
-import { HelpCircle, LogOut, Monitor, Moon, Settings, Sun } from "lucide-react";
+import {
+  CircleDot,
+  HelpCircle,
+  LogOut,
+  Monitor,
+  Moon,
+  Settings,
+  Sun,
+} from "lucide-react";
 
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAppSession } from "@/components/providers/app-session-context";
@@ -118,9 +126,10 @@ export function UserMenu() {
           <div className="mb-2 text-xs font-medium text-[var(--text-secondary)]">
             Theme
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-1.5">
             {[
               { id: "light", label: "Light", icon: Sun },
+              { id: "gray", label: "Gray", icon: CircleDot },
               { id: "dark", label: "Dark", icon: Moon },
               { id: "system", label: "System", icon: Monitor },
             ].map((item) => {
@@ -129,9 +138,7 @@ export function UserMenu() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() =>
-                    setTheme(item.id as "light" | "dark" | "system")
-                  }
+                  onClick={() => setTheme(item.id as typeof theme)}
                   className={`flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs ${
                     theme === item.id
                       ? "border-[var(--color-accent)] bg-[var(--surface-hover)] text-[var(--text-primary)]"

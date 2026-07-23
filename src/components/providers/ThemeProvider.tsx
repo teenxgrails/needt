@@ -9,6 +9,8 @@ import React, {
 
 import { animateThemeTransition } from "@/components/ui/animated-theme-toggler";
 
+import { getThemeClassNames, resolveThemeMode } from "@/lib/theme";
+
 import { useSettingsStore } from "@/store/settings";
 
 import { ThemeMode } from "@/types/settings";
@@ -51,40 +53,24 @@ export function ThemeProvider({
     (theme: ThemeMode) => {
       const root = window.document.documentElement;
 
-      // Remove both themes first from class
-      root.classList.remove("light", "dark");
+      root.classList.remove("light", "dark", "theme-gray", "theme-dark");
 
-      // For data attributes other than class
       if (attribute !== "class") {
         root.removeAttribute(attribute);
       }
 
-      // Handle system preference if enabled
-      if (theme === "system" && enableSystem) {
-        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-          .matches
-          ? "dark"
-          : "light";
+      const resolvedTheme = resolveThemeMode(
+        theme,
+        enableSystem &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+      );
 
-        // Always add the class for Tailwind
-        if (systemTheme === "dark") {
-          root.classList.add("dark");
-        }
+      // Gray and Dark both use Tailwind's dark variants. Semantic classes
+      // select the palette without duplicating component styles.
+      root.classList.add(...getThemeClassNames(resolvedTheme));
 
-        // Also set the attribute if different from class
-        if (attribute !== "class") {
-          root.setAttribute(attribute, systemTheme);
-        }
-      } else {
-        // Apply the theme directly
-        if (theme === "dark") {
-          root.classList.add("dark");
-        }
-
-        // Also set the attribute if different from class
-        if (attribute !== "class") {
-          root.setAttribute(attribute, theme);
-        }
+      if (attribute !== "class") {
+        root.setAttribute(attribute, resolvedTheme);
       }
     },
     [attribute, enableSystem]

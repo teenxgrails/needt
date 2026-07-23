@@ -1,26 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { Palette } from "lucide-react";
 import { toast } from "sonner";
 
 import {
-  NeedtPicker,
   MotionSwitchRow,
+  NeedtPicker,
 } from "@/components/settings/MotionSettingsControls";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { APP_NAME } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
 
-import {
-  SettingRow,
-  SettingsAdvanced,
-  SettingsCard,
-  SettingsSection,
-} from "./SettingsSection";
+import { SettingsAdvanced, SettingsSection } from "./SettingsSection";
 
 interface CustomizationState {
   accentColor: string;
@@ -55,7 +48,9 @@ const ACCENT_COLORS = [
 
 export function CustomizationSettings() {
   const [settings, setSettings] = useState<CustomizationState>(DEFAULTS);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "failed"
+  >("idle");
   const hydrated = useRef(false);
   const lastSaved = useRef<CustomizationState>(DEFAULTS);
 
@@ -76,7 +71,9 @@ export function CustomizationSettings() {
           } as CustomizationState;
           setSettings(loaded);
           lastSaved.current = loaded;
-          queueMicrotask(() => { hydrated.current = true; });
+          queueMicrotask(() => {
+            hydrated.current = true;
+          });
         }
       })
       .catch(() => {
@@ -94,10 +91,9 @@ export function CustomizationSettings() {
     root.style.removeProperty("--accent");
     root.style.removeProperty("--app-bg");
     root.style.setProperty("--color-accent", settings.accentColor);
-    // A custom tint belongs to dark mode only. Storing it in a dedicated
-    // token keeps light mode on its semantic canvas instead of pinning the
-    // whole application to a dark inline background.
-    root.style.setProperty("--custom-background-tint", settings.backgroundTint);
+    // backgroundTint remains in the persisted payload for backwards
+    // compatibility, but themes now own the canvas color.
+    root.style.removeProperty("--custom-background-tint");
     root.style.setProperty("--radius", `${settings.radius}px`);
     root.style.setProperty(
       "--flowday-sidebar-width",
@@ -106,15 +102,6 @@ export function CustomizationSettings() {
     root.dataset.density = settings.density;
     root.dataset.animations = settings.animationsEnabled ? "on" : "off";
   }, [settings]);
-
-  const previewStyle = useMemo(
-    () => ({
-      borderRadius: settings.radius,
-      backgroundColor: settings.backgroundTint,
-      borderColor: "var(--border-control)",
-    }),
-    [settings]
-  );
 
   const update = <Key extends keyof CustomizationState>(
     key: Key,
@@ -127,15 +114,24 @@ export function CustomizationSettings() {
     setSaveState("saving");
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch("/api/customization", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(snapshot) });
+        const response = await fetch("/api/customization", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(snapshot),
+        });
         if (!response.ok) throw new Error("Failed to save customization");
-        const saved = { ...DEFAULTS, ...(await response.json()) } as CustomizationState;
+        const saved = {
+          ...DEFAULTS,
+          ...(await response.json()),
+        } as CustomizationState;
         lastSaved.current = saved;
         setSaveState("saved");
       } catch {
         setSettings(lastSaved.current);
         setSaveState("failed");
-        toast.error("Could not save appearance. Your last saved settings were restored.");
+        toast.error(
+          "Could not save appearance. Your last saved settings were restored."
+        );
       }
     }, 550);
     return () => clearTimeout(timer);
@@ -146,10 +142,10 @@ export function CustomizationSettings() {
       title="Personalization"
       description="Choose the accent and motion behavior used across Needt."
     >
-      <SettingRow
-        label="Accent color"
-        description="Used for selected controls, links, and important actions."
-      >
+      <div className="flex min-h-[38px] flex-wrap items-center gap-3">
+        <span className="text-[14px] text-[var(--text-secondary)]">
+          Accent color:
+        </span>
         <div className="flex flex-wrap items-center gap-2">
           {ACCENT_COLORS.map((color) => (
             <button
@@ -174,22 +170,17 @@ export function CustomizationSettings() {
             aria-label="Custom accent color"
           />
         </div>
-      </SettingRow>
+      </div>
 
-      <SettingRow
-        label="Motion"
-        description={`Reduce visual movement throughout ${APP_NAME}.`}
-      >
-        <MotionSwitchRow
-          label="Animations"
-          checked={settings.animationsEnabled}
-          onCheckedChange={(checked) => update("animationsEnabled", checked)}
-        />
-      </SettingRow>
+      <MotionSwitchRow
+        label="Animations"
+        checked={settings.animationsEnabled}
+        onCheckedChange={(checked) => update("animationsEnabled", checked)}
+      />
 
       <SettingsAdvanced
         title="Advanced appearance"
-        description="Density, sizing, background, and calendar event style."
+        description="Density, sizing, and calendar event style."
       >
         <div className="space-y-0.5">
           <NeedtPicker
@@ -227,7 +218,7 @@ export function CustomizationSettings() {
             }
           />
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="appearance-sidebar-width">Sidebar width</Label>
             <Input
@@ -252,30 +243,18 @@ export function CustomizationSettings() {
               onChange={(event) => update("radius", Number(event.target.value))}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="appearance-background">Background</Label>
-            <Input
-              id="appearance-background"
-              value={settings.backgroundTint}
-              onChange={(event) => update("backgroundTint", event.target.value)}
-            />
-          </div>
         </div>
-        <SettingsCard className="mt-4 p-3">
-          <div
-            className="flex items-center gap-2 text-[13px]"
-            style={previewStyle}
-          >
-            <Palette className="h-4 w-4 text-[var(--text-secondary)]" />
-            Live {APP_NAME} preview
-          </div>
-        </SettingsCard>
       </SettingsAdvanced>
 
-      <div aria-live="polite" className="mt-4 text-right text-[11px] text-[var(--text-muted)]">
+      <div
+        aria-live="polite"
+        className="mt-4 text-right text-[11px] text-[var(--text-muted)]"
+      >
         {saveState === "saving" && "Saving…"}
         {saveState === "saved" && "Saved"}
-        {saveState === "failed" && <span className="text-[var(--color-danger)]">Failed · restored</span>}
+        {saveState === "failed" && (
+          <span className="text-[var(--color-danger)]">Failed · restored</span>
+        )}
       </div>
     </SettingsSection>
   );

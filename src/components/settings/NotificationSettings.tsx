@@ -1,11 +1,9 @@
-import { BellRing, CalendarClock, Mail, Monitor } from "lucide-react";
 import { toast } from "sonner";
-
-import { Switch } from "@/components/ui/switch";
 
 import { useSettingsStore } from "@/store/settings";
 
-import { SettingsCard, SettingsSection } from "./SettingsSection";
+import { MotionSwitchRow } from "./MotionSettingsControls";
+import { SettingsSection } from "./SettingsSection";
 
 export function NotificationSettings() {
   const { notifications, updateNotificationSettings } = useSettingsStore();
@@ -64,22 +62,18 @@ export function NotificationSettings() {
     {
       key: "eventInvites" as const,
       label: "New invitations",
-      description: "When an event invitation arrives.",
     },
     {
       key: "eventUpdates" as const,
       label: "Event changes",
-      description: "When the time or details of an event change.",
     },
     {
       key: "eventCancellations" as const,
       label: "Cancellations",
-      description: "When an event is cancelled.",
     },
     {
       key: "eventReminders" as const,
       label: "Upcoming events",
-      description: "Before a scheduled event begins.",
     },
   ];
 
@@ -89,88 +83,44 @@ export function NotificationSettings() {
         title="Delivery"
         description="Choose where Needt can reach you. Browser notifications always require your permission."
       >
-        <SettingsCard>
-          <div className="flex min-h-[58px] items-center gap-3 px-4">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-control)]">
-              <Mail className="h-4 w-4 text-[var(--text-secondary)]" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-medium">
-                Daily plan email
-              </span>
-              <span className="block text-[12px] text-[var(--text-secondary)]">
-                A concise overview of meetings and tasks.
-              </span>
-            </span>
-            <Switch
-              checked={notifications.dailyEmailEnabled}
-              onCheckedChange={(enabled) =>
-                updateNotificationSettings({ dailyEmailEnabled: enabled })
-              }
-              aria-label="Daily plan email"
-            />
-          </div>
-          <div className="flex min-h-[58px] items-center gap-3 border-t border-[var(--border-subtle)] px-4">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-control)]">
-              <Monitor className="h-4 w-4 text-[var(--text-secondary)]" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-medium">
-                Browser notifications
-              </span>
-              <span className="block text-[12px] text-[var(--text-secondary)]">
-                Focus endings and upcoming task reminders.
-              </span>
-            </span>
-            <Switch
-              checked={notifications.webPushEnabled}
-              onCheckedChange={enablePush}
-              aria-label="Browser notifications"
-            />
-          </div>
-        </SettingsCard>
+        <div className="space-y-0.5">
+          <MotionSwitchRow
+            label="Daily plan email"
+            checked={notifications.dailyEmailEnabled}
+            onCheckedChange={(enabled) =>
+              updateNotificationSettings({ dailyEmailEnabled: enabled })
+            }
+          />
+          <MotionSwitchRow
+            label="Browser notifications"
+            checked={notifications.webPushEnabled}
+            onCheckedChange={enablePush}
+          />
+        </div>
       </SettingsSection>
 
       <SettingsSection
         title="Calendar alerts"
         description="Select which calendar changes should produce a notification."
       >
-        <SettingsCard>
-          {notificationRows.map((row, index) => (
-            <div
+        <div className="space-y-0.5">
+          {notificationRows.map((row) => (
+            <MotionSwitchRow
               key={row.key}
-              className="flex min-h-[58px] items-center gap-3 border-t border-[var(--border-subtle)] px-4 first:border-t-0"
-            >
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--surface-control)]">
-                {index === 3 ? (
-                  <CalendarClock className="h-4 w-4 text-[var(--text-secondary)]" />
-                ) : (
-                  <BellRing className="h-4 w-4 text-[var(--text-secondary)]" />
-                )}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[14px] font-medium">
-                  {row.label}
-                </span>
-                <span className="block text-[12px] text-[var(--text-secondary)]">
-                  {row.description}
-                </span>
-              </span>
-              <Switch
-                checked={notifications.notifyFor[row.key]}
-                onCheckedChange={(checked) =>
-                  updateNotificationSettings({
-                    notifyFor: {
-                      ...notifications.notifyFor,
-                      [row.key]: checked,
-                    },
-                  })
-                }
-                aria-label={row.label}
-              />
-            </div>
+              label={row.label}
+              checked={notifications.notifyFor[row.key]}
+              onCheckedChange={(checked) =>
+                updateNotificationSettings({
+                  notifyFor: {
+                    ...notifications.notifyFor,
+                    [row.key]: checked,
+                  },
+                })
+              }
+              indented
+            />
           ))}
-        </SettingsCard>
+        </div>
       </SettingsSection>
     </div>
   );

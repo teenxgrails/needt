@@ -24,3 +24,50 @@
 - [x] Apply the full migration history to a clean PostgreSQL container.
 - [x] Run/update authenticated Playwright and visual baselines for all states.
 - [x] Run Docker multi-stage build locally.
+
+## Second pass — P0 Settings and themes
+
+- [x] Group desktop Settings navigation into Planner, Preferences, Connections and Account and pin Report a bug in a fixed footer.
+- [ ] Normalize Notifications, API, Privacy, AI Assistant, Account and Billing into compact shared-control rows.
+- [x] Add Gray for the existing graphite palette and make Dark/System dark use the `#0E0E10` palette.
+- [x] Stop applying `backgroundTint` as a global theme override while retaining the stored compatibility field.
+- [ ] Add focused settings/theme regression coverage and update Light, Gray and Dark visual baselines.
+
+## Second pass — P0 Schedules and flexible hours
+
+- [ ] Add additive WorkSchedule, schedule-window, task/recurring assignment and FlexibleHoursOverride persistence.
+- [ ] Materialize existing work hours as the default `Work Hours` schedule without rewriting migration history.
+- [ ] Resolve each task's selected/default schedule in the deterministic scheduler while preserving all other scheduling rules.
+- [ ] Build create/edit/delete/default schedule flows with multiple intervals, 15-minute move/resize, precise time input and selected-day copy.
+- [ ] Replace Task/Event day blocking with flexible-hours overrides and migrate/hide legacy `[NEEDT_DAY_BLOCK]` events.
+- [ ] Render one-off overrides as diagonal calendar availability texture.
+- [ ] Add unit and E2E coverage for schedule selection, recurring tasks, overrides, copy/resize and legacy migration.
+
+## Second pass — P0/P1 Pages
+
+- [ ] Reconcile versioned PageBlocks by stable ID and revision snapshot instead of replacing one HTML paragraph.
+- [ ] Add borderless title, icon, cover, click-to-focus and searchable slash-menu editing.
+- [ ] Support text, H1–H3, lists, checklist, quote, callout, toggle, code, divider, links, bookmarks, files/images, tables, columns and page/date mentions.
+- [ ] Add private PageAsset uploads, resolvable comments, saved templates and authenticated forms.
+- [ ] Complete Table, Board, List, Calendar, Timeline and Gallery database views with record/property CRUD, filters, sort and grouping.
+- [ ] Expose AI page-change diffs and explicit accept/reject using the existing proposal model.
+- [ ] Add regression/E2E coverage for blocks, assets, comments, templates, forms, database views and AI review.
+
+## Second pass — P0/P1 Today and Calendar
+
+- [ ] Share the Pages document contract with Today-specific task and task-group nodes.
+- [ ] Allow document blocks between dynamic task groups and match Motion Agenda density.
+- [ ] Make center document and right timeline independently scrollable without desktop page scrolling.
+- [ ] Add 15-minute task drag/resize in Today using calendar-drag semantics and pin manual placements.
+- [ ] Preserve mobile sheet, drafts, save status and explicit evening review.
+- [ ] Span the current-day pill across weekday/date and show day actions only on hover/focus.
+- [ ] Open Create Task directly from calendar `+` and select Event within the shared editor.
+- [ ] Align Task editor grid/dividers and rebuild Event mode with the same shell, rich editor, pickers and footer.
+- [ ] Add regression/E2E coverage for Today drag/resize and scroll, calendar texture, direct Task creation and Task/Event parity.
+
+## Second pass — P1/P2 Integrations and verification
+
+- [ ] Add open-source icons for Google Calendar, Outlook, Apple/iCloud, Needt API and Composio.
+- [ ] Audit Settings and editor overlays, selects, comboboxes, date/time pickers and dialogs against house conventions.
+- [ ] Update CHANGELOG and desktop/tablet/mobile visual baselines for Light, Gray and Dark.
+- [ ] Pass lint, type-check, unit, worker build, app build, clean ephemeral migration history, Playwright/visual and Docker checks.

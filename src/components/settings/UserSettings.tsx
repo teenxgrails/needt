@@ -1,7 +1,7 @@
 import { useTheme } from "@/components/providers/ThemeProvider";
 import {
-  NeedtPicker,
   MotionSwitchRow,
+  NeedtPicker,
 } from "@/components/settings/MotionSettingsControls";
 
 import { COMMON_TIME_ZONES, getTimeZoneDisplayName } from "@/lib/time-zones";
@@ -32,8 +32,9 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
   ];
 
   const themes = [
-    { value: "dark", label: "Dark" },
     { value: "light", label: "Light" },
+    { value: "gray", label: "Gray" },
+    { value: "dark", label: "Dark" },
     { value: "system", label: "Use system setting" },
   ] as const;
 

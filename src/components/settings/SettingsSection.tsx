@@ -9,7 +9,7 @@ interface SettingsSectionProps {
 
 interface SettingRowProps {
   label: string;
-  description: React.ReactNode;
+  description?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -59,14 +59,15 @@ export function SettingRow({ label, description, children }: SettingRowProps) {
   return (
     <div
       data-setting-row
-      className="grid gap-3 py-4 first:pt-0 md:grid-cols-[minmax(220px,1fr)_minmax(300px,1.2fr)] md:gap-8"
+      className="grid min-h-[38px] gap-1 py-1.5 md:grid-cols-[220px_minmax(0,1fr)] md:items-start md:gap-3"
     >
-      <div className="space-y-1">
-        <div className="text-[14px] font-medium leading-5">{label}</div>
-        <div className="max-w-[360px] text-[13px] leading-5 text-[var(--text-secondary)]">
-          {description}
-        </div>
+      <div
+        className="pt-1 text-[14px] leading-5 text-[var(--text-secondary)]"
+        title={typeof description === "string" ? description : undefined}
+      >
+        {label}:
       </div>
+      {description && <div className="sr-only">{description}</div>}
       <div className="min-w-0">{children}</div>
     </div>
   );

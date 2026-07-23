@@ -1,6 +1,6 @@
 export type TimeFormat = "12h" | "24h";
 export type WeekStartDay = "monday" | "sunday";
-export type ThemeMode = "light" | "dark" | "system";
+export type ThemeMode = "light" | "gray" | "dark" | "system";
 export type CalendarView = "day" | "week" | "month" | "agenda";
 
 export interface UserSettings {

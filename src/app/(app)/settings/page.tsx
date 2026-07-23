@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 
@@ -44,6 +44,7 @@ import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSe
 import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings";
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
+
 import { cn } from "@/lib/utils";
 
 import { useSettingsStore } from "@/store/settings";
@@ -176,7 +177,9 @@ function SettingsNavGroup({
               )}
               aria-current={activeTab === item.id ? "page" : undefined}
             >
-              {activeTab === item.id && <span className="absolute inset-0 z-0 rounded-[4px] bg-[var(--surface-hover)]" />}
+              {activeTab === item.id && (
+                <span className="absolute inset-0 z-0 rounded-[4px] bg-[var(--surface-hover)]" />
+              )}
               <Icon className="relative z-10 h-4 w-4" strokeWidth={1.7} />
               <span className="relative z-10">{item.label}</span>
             </a>
@@ -195,7 +198,7 @@ export default function SettingsPage() {
     (state) => state.initializeSettings
   );
 
-  const accountTabs = useMemo(() => ACCOUNT_TABS, []);
+  const desktopTabGroups = useMemo(() => MOBILE_TAB_GROUPS, []);
   const activeLabel =
     [...GENERAL_TABS, ...ACCOUNT_TABS].find((tab) => tab.id === activeTab)
       ?.label ?? "Settings";
@@ -204,7 +207,7 @@ export default function SettingsPage() {
     initializeSettings();
   }, [initializeSettings]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const readHash = () => {
       const rawHash = window.location.hash.slice(1);
       const hash = LEGACY_TAB_MAP[rawHash] ?? rawHash;
@@ -305,29 +308,28 @@ export default function SettingsPage() {
   return (
     <div className="needt-page-depth min-h-screen text-[var(--text-primary)]">
       <div className="flex min-h-screen">
-        <aside className="needt-panel-depth settings-desktop-sidebar fixed inset-y-0 left-0 z-20 flex w-[230px] flex-col overflow-y-auto border-r border-[var(--border-subtle)] p-2">
+        <aside className="needt-panel-depth settings-desktop-sidebar fixed inset-y-0 left-0 z-20 flex w-[230px] flex-col overflow-hidden border-r border-[var(--border-subtle)]">
           <Link
             href="/calendar"
-            className="mb-3 flex h-[25px] items-center gap-1 rounded-[4px] px-1.5 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+            className="mx-2 mb-2 mt-2 flex h-[25px] shrink-0 items-center gap-1 rounded-[4px] px-1.5 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
             Back to Needt
           </Link>
-          <div className="flex-1 space-y-4">
-            <SettingsNavGroup
-              label="General"
-              items={GENERAL_TABS}
-              activeTab={activeTab}
-              onSelect={selectTab}
-            />
-            <SettingsNavGroup
-              label="Account"
-              items={accountTabs}
-              activeTab={activeTab}
-              onSelect={selectTab}
-            />
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-2 pb-3">
+            {desktopTabGroups.map((group) => (
+              <SettingsNavGroup
+                key={group.label}
+                label={group.label}
+                items={group.items}
+                activeTab={activeTab}
+                onSelect={selectTab}
+              />
+            ))}
           </div>
-          <ReportBugDialog />
+          <div className="shrink-0 border-t border-[var(--border-subtle)] p-2">
+            <ReportBugDialog />
+          </div>
         </aside>
 
         <main className="needt-page-depth settings-main min-h-screen min-w-0 flex-1">
