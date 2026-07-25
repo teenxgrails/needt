@@ -39,6 +39,18 @@ export function newDate(date?: Date | string | number): Date {
 export function newDateFromYMD(year: number, month: number, day: number): Date {
   return new Date(year, month, day);
 }
+
+/**
+ * Formats a date as a local YYYY-MM-DD key, for grouping/lookup by calendar
+ * day without any UTC/timezone shifting.
+ */
+export function toLocalDateKey(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
 export function formatDate(date: Date): string {
   // Ensure we have a valid date object
   const validDate =

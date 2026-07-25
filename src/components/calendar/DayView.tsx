@@ -10,19 +10,23 @@ import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
+import { toast } from "sonner";
+
 import { TaskModal } from "@/components/tasks/TaskModal";
 
-import {
-  formatCalendarHour,
-  getCalendarBusinessHours,
-} from "@/lib/calendar-display";
+import { formatCalendarHour } from "@/lib/calendar-display";
 import { getEventEditability } from "@/lib/calendar-drag";
 import {
   getSelectionRange,
   isExplicitCalendarSelection,
 } from "@/lib/calendar-selection";
 import { useEventModalStore } from "@/lib/commands/groups/calendar";
-import { newDate } from "@/lib/date-utils";
+import { newDate, toLocalDateKey } from "@/lib/date-utils";
+import {
+  isDateWholeDayBlocked,
+  isRangeBlocked,
+  type BlockingOverride,
+} from "@/lib/flexible-hours-guard";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
@@ -32,15 +36,15 @@ import { useSettingsStore } from "@/store/settings";
 import { useTaskStore } from "@/store/task";
 
 import { CalendarEvent, ExtendedEventProps } from "@/types/calendar";
-import { Task, TaskStatus } from "@/types/task";
+import { Task } from "@/types/task";
 
-import { CalendarDayActions } from "./CalendarDayActions";
 import { CalendarEventContent } from "./CalendarEventContent";
 import { EventModal } from "./EventModal";
-import { EventQuickView } from "./EventQuickView";
 import { resolveCalendarItemId } from "./calendar-item-id";
+import { renderDayHeaderChip } from "./renderDayHeaderChip";
 import { useCalendarDragHandlers } from "./useCalendarDragHandlers";
 import { useCalendarExternalTaskDrop } from "./useCalendarExternalTaskDrop";
+import { useDefaultScheduleBusinessHours } from "./useDefaultScheduleBusinessHours";
 
 interface DayViewProps {
   currentDate: Date;
@@ -54,23 +58,13 @@ interface FlexibleHoursOverrideResponse {
   endTime: string | null;
 }
 
-function localDateKey(date: Date) {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
-}
-
 export function DayView({ currentDate }: DayViewProps) {
-  const { feeds, getAllCalendarItems, isLoading, removeEvent } =
-    useCalendarStore();
+  const { feeds, getAllCalendarItems, isLoading } = useCalendarStore();
   const showTasksOnCalendar = useCalendarVisibilityStore(
     (state) => state.showTasksOnCalendar
   );
   const { user: userSettings, calendar: calendarSettings } = useSettingsStore();
-  const { createTask, updateTask, completeTask, deleteTask } =
-    useTaskMutations();
+  const { createTask, updateTask, completeTask } = useTaskMutations();
   const [selectedEvent, setSelectedEvent] = useState<Partial<CalendarEvent>>();
   const [selectedTask, setSelectedTask] = useState<Task>();
   const [selectedDate, setSelectedDate] = useState<Date>();
@@ -103,18 +97,22 @@ export function DayView({ currentDate }: DayViewProps) {
       display: "background";
       allDay: boolean;
       classNames: string[];
+      backgroundColor: string;
     }>
   >([]);
+  const [flexibleHourOverrides, setFlexibleHourOverrides] = useState<
+    BlockingOverride[]
+  >([]);
+  const scheduleBusinessHours = useDefaultScheduleBusinessHours();
   const calendarRef = useRef<FullCalendar>(null);
   const tasks = useTaskStore((state) => state.tasks);
-  const [quickViewItem, setQuickViewItem] = useState<CalendarEvent | Task>();
-  const [isTask, setIsTask] = useState(false);
   const eventModalStore = useEventModalStore();
-  const [clickedElement, setClickedElement] = useState<HTMLElement | null>(
-    null
+  const { handleEventDrop, handleEventResize } = useCalendarDragHandlers(
+    flexibleHourOverrides
   );
-  const { handleEventDrop, handleEventResize } = useCalendarDragHandlers();
-  const handleExternalTaskDrop = useCalendarExternalTaskDrop();
+  const handleExternalTaskDrop = useCalendarExternalTaskDrop(
+    flexibleHourOverrides
+  );
 
   // Update events when the calendar view changes
   const handleDatesSet = useCallback(
@@ -160,14 +158,22 @@ export function DayView({ currentDate }: DayViewProps) {
         const inclusiveEnd = newDate(arg.end);
         inclusiveEnd.setDate(inclusiveEnd.getDate() - 1);
         const response = await fetch(
-          `/api/flexible-hours?from=${localDateKey(arg.start)}&to=${localDateKey(inclusiveEnd)}`
+          `/api/flexible-hours?from=${toLocalDateKey(arg.start)}&to=${toLocalDateKey(inclusiveEnd)}`
         );
         if (!response.ok) throw new Error("Failed to load flexible hours");
         const data = (await response.json()) as {
           overrides: FlexibleHoursOverrideResponse[];
         };
+        setFlexibleHourOverrides(
+          data.overrides.map((override) => ({
+            date: override.date.slice(0, 10),
+            kind: override.kind,
+            startTime: override.startTime,
+            endTime: override.endTime,
+          }))
+        );
         setFlexibleHourBackgrounds(
-          data.overrides.map((override) => {
+          data.overrides.flatMap((override) => {
             const date = override.date.slice(0, 10);
             const startTime =
               override.kind === "START_LATER"
@@ -184,7 +190,7 @@ export function DayView({ currentDate }: DayViewProps) {
                     override.kind === "BLOCK_WHOLE_DAY"
                   ? "23:59"
                   : override.endTime || "23:59";
-            return {
+            const timed = {
               id: `flexible-hours:${override.id}`,
               title: "",
               start: newDate(`${date}T${startTime}:00`),
@@ -192,11 +198,27 @@ export function DayView({ currentDate }: DayViewProps) {
               display: "background" as const,
               allDay: false,
               classNames: ["needt-flexible-hours-texture"],
+              backgroundColor: "transparent",
             };
+            if (override.kind !== "BLOCK_WHOLE_DAY") return [timed];
+            return [
+              timed,
+              {
+                id: `flexible-hours:${override.id}:all-day`,
+                title: "",
+                start: newDate(`${date}T00:00:00`),
+                end: newDate(`${date}T23:59:00`),
+                display: "background" as const,
+                allDay: true,
+                classNames: ["needt-flexible-hours-texture"],
+                backgroundColor: "transparent",
+              },
+            ];
           })
         );
       } catch {
         setFlexibleHourBackgrounds([]);
+        setFlexibleHourOverrides([]);
       }
     },
     [feeds, getAllCalendarItems, showTasksOnCalendar]
@@ -266,24 +288,24 @@ export function DayView({ currentDate }: DayViewProps) {
     if (!task) return;
     setSelectedTask(task);
     setIsTaskModalOpen(true);
-    setQuickViewItem(undefined);
   }, []);
 
   const handleEventClick = (info: EventClickArg) => {
     const item = info.event.extendedProps;
     const itemId = resolveCalendarItemId(item, info.event.id);
-    const isTask = item.isTask;
 
-    if (isTask) {
+    if (item.isTask) {
       openTaskEditor(itemId);
-    } else {
-      setClickedElement(info.el);
-      const event = useCalendarStore
-        .getState()
-        .events.find((e) => e.id === itemId);
-      setQuickViewItem(event as CalendarEvent);
-      setIsTask(false);
+      return;
     }
+    // Match the task path: open the full editor directly instead of an
+    // intermediate quick-view popover.
+    const event = useCalendarStore
+      .getState()
+      .events.find((e) => e.id === itemId);
+    if (!event) return;
+    setSelectedEvent(event);
+    setIsEventModalOpen(true);
   };
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
@@ -293,6 +315,15 @@ export function DayView({ currentDate }: DayViewProps) {
     }
 
     const { start, end, allDay } = getSelectionRange(selectInfo);
+
+    const blocked = allDay
+      ? isDateWholeDayBlocked(start, flexibleHourOverrides)
+      : isRangeBlocked(start, end, flexibleHourOverrides);
+    if (blocked) {
+      calendarRef.current?.getApi().unselect();
+      toast.error("This time is blocked out");
+      return;
+    }
 
     setSelectedDate(start);
     setSelectedEndDate(end);
@@ -305,6 +336,13 @@ export function DayView({ currentDate }: DayViewProps) {
 
   const handleSlotClick = (arg: { date: Date; allDay: boolean }) => {
     const end = new Date(arg.date.getTime() + 30 * 60 * 1000);
+    const blocked = arg.allDay
+      ? isDateWholeDayBlocked(arg.date, flexibleHourOverrides)
+      : isRangeBlocked(arg.date, end, flexibleHourOverrides);
+    if (blocked) {
+      toast.error("This time is blocked out");
+      return;
+    }
     setSelectedDate(arg.date);
     setSelectedEndDate(end);
     setSelectedEvent({ allDay: arg.allDay });
@@ -329,79 +367,25 @@ export function DayView({ currentDate }: DayViewProps) {
     setSelectedEndDate(undefined);
   };
 
-  const handleQuickViewClose = () => {
-    setQuickViewItem(undefined);
-    setClickedElement(null);
-  };
-
-  const handleQuickViewEdit = () => {
-    if (!quickViewItem) return;
-
-    if (isTask) {
-      setSelectedTask(quickViewItem as Task);
-      setIsTaskModalOpen(true);
-    } else {
-      setSelectedEvent(quickViewItem as CalendarEvent);
-      setIsEventModalOpen(true);
-    }
-    handleQuickViewClose();
-  };
-
-  const handleQuickViewDelete = async () => {
-    if (!quickViewItem) return;
-
-    if (isTask) {
-      if (confirm("Are you sure you want to delete this task?")) {
-        await deleteTask(quickViewItem.id);
-        handleQuickViewClose();
-      }
-    } else {
-      if (confirm("Are you sure you want to delete this event?")) {
-        await removeEvent(
-          quickViewItem.id,
-          quickViewItem.isRecurring ? "series" : "single"
-        );
-        handleQuickViewClose();
-      }
-    }
-  };
-
-  const handleQuickViewStatusChange = async (
-    taskId: string,
-    status: TaskStatus
-  ) => {
-    if (!quickViewItem) return;
-
-    if (status === TaskStatus.COMPLETED) {
-      await completeTask(taskId, status);
-    } else {
-      await updateTask(taskId, { status });
-    }
-
-    // Update the quick view item to reflect the new status
-    if (isTask) {
-      const updatedTask = useTaskStore
-        .getState()
-        .tasks.find((t) => t.id === taskId);
-      if (updatedTask) {
-        setQuickViewItem(updatedTask);
-      }
-    }
-  };
-
   const renderEventContent = useCallback(
-    (arg: EventContentArg) => (
-      <CalendarEventContent
-        eventInfo={arg}
-        onTaskComplete={completeTask}
-        onTaskOpen={openTaskEditor}
-      />
-    ),
+    (arg: EventContentArg) => {
+      // Background events (e.g. the blocked-hours texture) render their own
+      // CSS background — skip the task/event card so it doesn't paint an
+      // opaque surface over the texture.
+      if (arg.event.display === "background") return null;
+      return (
+        <CalendarEventContent
+          eventInfo={arg}
+          onTaskComplete={completeTask}
+          onTaskOpen={openTaskEditor}
+        />
+      );
+    },
     [completeTask, openTaskEditor]
   );
 
   return (
-    <div className="calendar-day-view h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-1 [&_.fc-timegrid-slot-label]:!py-1 [&_.fc-timegrid-slot]:!h-[35px]">
+    <div className="calendar-day-view fc-tz-corner h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-1 [&_.fc-timegrid-slot-label]:!py-1 [&_.fc-timegrid-slot]:!h-[35px]">
       <FullCalendar
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
@@ -431,34 +415,10 @@ export function DayView({ currentDate }: DayViewProps) {
           formatCalendarHour(arg.date, userSettings.timeFormat)
         }
         firstDay={userSettings.weekStartDay === "monday" ? 1 : 0}
-        businessHours={getCalendarBusinessHours(calendarSettings.workingHours)}
-        dayHeaderContent={(arg) => {
-          const weekday = new Intl.DateTimeFormat("en-US", {
-            weekday: "short",
-          }).format(arg.date);
-          const day = arg.date.getDate();
-          return (
-            <div className="group/day relative flex w-full items-center justify-center">
-              <span
-                className={
-                  arg.isToday
-                    ? "inline-flex h-[28px] items-center justify-center gap-1.5 rounded-md border border-[var(--text-primary)] bg-transparent px-2 text-[13px] font-semibold text-[var(--text-primary)]"
-                    : "inline-flex items-center gap-1.5 text-[var(--text-secondary)]"
-                }
-              >
-                <span className={arg.isToday ? "" : "text-[13px] font-medium"}>
-                  {weekday}
-                </span>
-                <span
-                  className={arg.isToday ? "" : "text-[14px] font-semibold"}
-                >
-                  {day}
-                </span>
-              </span>
-              <CalendarDayActions date={arg.date} />
-            </div>
-          );
-        }}
+        businessHours={
+          calendarSettings.workingHours.enabled ? scheduleBusinessHours : false
+        }
+        dayHeaderContent={renderDayHeaderChip}
         height="100%"
         dateClick={handleSlotClick}
         eventClick={handleEventClick}
@@ -531,19 +491,6 @@ export function DayView({ currentDate }: DayViewProps) {
           onCreateTag={async (name: string, color?: string) => {
             return useTaskStore.getState().createTag({ name, color });
           }}
-        />
-      )}
-
-      {quickViewItem && (
-        <EventQuickView
-          isOpen={!!quickViewItem}
-          onClose={handleQuickViewClose}
-          item={quickViewItem}
-          onEdit={handleQuickViewEdit}
-          onDelete={handleQuickViewDelete}
-          onStatusChange={handleQuickViewStatusChange}
-          referenceElement={clickedElement}
-          isTask={isTask}
         />
       )}
     </div>

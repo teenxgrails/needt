@@ -83,6 +83,7 @@ export function StartTaskModal({
         isAutoScheduled: true,
         scheduleLocked: true,
         status: TaskStatus.IN_PROGRESS,
+        bypassBlockedHours: true,
       });
 
       // Learn the chosen duration for future similar tasks.

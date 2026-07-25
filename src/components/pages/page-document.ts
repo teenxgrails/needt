@@ -1,5 +1,7 @@
 import type { JSONContent } from "@tiptap/react";
 
+import { randomId } from "@/lib/uuid";
+
 import type { PageBlock } from "./page-types";
 
 const NODE_TO_BLOCK: Record<string, string> = {
@@ -80,7 +82,7 @@ export function pageBlocksFromDocument(document: JSONContent) {
     id:
       typeof node.attrs?.blockId === "string"
         ? node.attrs.blockId
-        : crypto.randomUUID(),
+        : randomId(),
     parentBlockId: null,
     type: blockTypeForNode(node),
     content: { json: node },

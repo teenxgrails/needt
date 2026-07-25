@@ -1,5 +1,5 @@
-import { MailPage } from "@/components/mail/MailPage";
+import { redirect } from "next/navigation";
 
 export default function MailRoute() {
-  return <MailPage />;
+  redirect("/tasks?view=mail");
 }

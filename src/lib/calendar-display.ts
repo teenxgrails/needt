@@ -31,3 +31,22 @@ export function getCalendarBusinessHours(
     endTime: workingHours.end,
   };
 }
+
+export interface WorkScheduleWindowLike {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+// FullCalendar's businessHours accepts an array of {daysOfWeek, startTime,
+// endTime} entries, so a schedule's arbitrary per-day windows map 1:1 without
+// collapsing them into a single global range.
+export function getBusinessHoursFromWindows(
+  windows: WorkScheduleWindowLike[]
+) {
+  return windows.map((window) => ({
+    daysOfWeek: [window.dayOfWeek],
+    startTime: window.startTime,
+    endTime: window.endTime,
+  }));
+}

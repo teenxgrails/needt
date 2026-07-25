@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Moved Mail into Workspace as an "Email" tab (`/tasks?view=mail`) instead of a separate sidebar item; the old `/mail` URL redirects there.
+- The sidebar's account menu trigger now shows the signed-in user's name next to their avatar, not just the avatar.
+
 ### Fixed
 
+- Fixed the root `not-found.tsx` rendering its own `<html>`/`<body>` nested inside the app's root layout, crashing the React tree on any genuinely missing route (could leave client-side navigation, including `/style`, stuck broken until a hard reload).
+- Reduced the blocked-hours diagonal texture's opacity and tightened its stripe spacing so it reads as the same pattern in the short all-day row as in the full-height timed grid, instead of smearing into a solid block there.
+- "Start task now" now bypasses blocked-hours overrides, since it's an explicit immediate action; all other manual scheduling continues to respect them.
+- Calendar events keep the neutral task-card background with a colored accent rail and dot (dropped an intermediate full-color-tint treatment that didn't read well).
+- Clicking an existing Calendar event in Week/Day/Month/multi-month view now opens the full editor directly, matching tasks, instead of an intermediate quick-view popover.
+- Blocked whole-day overrides now also texture and block the Calendar's all-day row, not just the timed grid.
+- Removed weekend-only shading from the all-day row, which doesn't represent hours.
+- Fixed a client/server hydration mismatch on the mini calendar's today/selected-day highlighting.
+- Fixed the blocked-hours placement guard resolving "today" from the server's local timezone instead of the signed-in user's, which could mis-apply near a day boundary.
+- Fixed dragging to create a new work-schedule window resetting the editor's scroll position back to its default on every drag update.
+- Replaced unguarded `crypto.randomUUID()` calls (which throw outside secure/HTTPS contexts) with a fallback, fixing crashes on Today, Pages, and the schedule editor when accessed over plain HTTP/LAN.
+- Added an inline pre-hydration script that applies the saved theme before first paint, removing a brief flash on load.
+- Made the Calendar all-day row a visible, clickable target for creating all-day tasks/events (fixed a Day-view border gap, added a hover cue and a quiet "All day" label).
+- "Shade non-working hours" now reads from the user's real default Schedule (per-day windows) instead of a stale, disconnected flat setting, so weekday and weekend shading are consistent.
+- Replaced the bordered box around today's date chip in Week/Day view with a small accent dot.
+- Fixed "Block out hours" rendering as a flat shade instead of its diagonal texture (background events were incorrectly rendering the normal task/event card on top, and a global `.fc-event` reset was stripping the texture's background-image); manually creating, dragging, resizing, or dropping a task/event into blocked hours is now rejected client- and server-side with a toast/400.
+- The "Edit schedule" grid now spans the full 24 hours (previously hard-capped to 6am–10pm) and opens scrolled to 6am by default.
 - Added recognizable open-source icons across Integrations, including native Google, Outlook, Apple/iCloud and Needt API marks plus Composio provider badges.
 - Made the Calendar `+` open Create Task directly on desktop and mobile, with Event selected inside the shared type switch. Task and Event now use one responsive grid shell with continuous dividers, the same rich-text editor, shared date/time pickers and controls, and a matching save footer; current-day headers span weekday/date, reveal flexible-hours actions only on hover/focus, and render override texture in both Week and Day.
 - Reconciled Today through the same stable-ID, versioned document contract as Pages, placing live task groups inside the editable document so notes can sit between them. Today now uses denser Agenda proportions, independently scrolling desktop panes, and 15-minute timeline move/resize interactions that pin manual task placements while retaining drafts, save state, mobile sheet, and explicit evening review.

@@ -132,6 +132,10 @@ export interface UpdateTask extends Partial<
   Omit<Task, "id" | "createdAt" | "updatedAt" | "tags" | "project">
 > {
   tagIds?: string[];
+  /** "Start task now" is an explicit, immediate action — let it through even
+   * if the target time falls inside a blocked-hours override. Not for any
+   * other manual-placement flow (drag, resize, external drop, create). */
+  bypassBlockedHours?: boolean;
 }
 
 export type NewTag = Omit<Tag, "id">;

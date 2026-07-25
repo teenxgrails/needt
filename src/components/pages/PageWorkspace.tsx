@@ -76,6 +76,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 import { cn } from "@/lib/utils";
+import { randomId } from "@/lib/uuid";
 
 type SaveState = "saved" | "saving" | "failed";
 type BasicCommand =
@@ -678,7 +679,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
       {
         type: "needtPageBlock",
         attrs: {
-          blockId: crypto.randomUUID(),
+          blockId: randomId(),
           kind,
           data: JSON.stringify(data),
         },

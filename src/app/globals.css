@@ -438,15 +438,21 @@
 }
 
 .fc .fc-bg-event.needt-flexible-hours-texture {
-  background-color: transparent;
+  /* .fc-event (also present on background events) resets `background: none
+     !important`, so this needs !important too to win the texture back. A
+     tight 4px/8px cycle (rather than 7px/14px) keeps the diagonal readable
+     even in the ~21px-tall all-day row, instead of smearing into a solid
+     block there while showing clear stripes in the timed grid. */
+  background-color: transparent !important;
   background-image: repeating-linear-gradient(
     -45deg,
-    color-mix(in srgb, var(--text-secondary) 12%, transparent) 0,
-    color-mix(in srgb, var(--text-secondary) 12%, transparent) 7px,
-    transparent 7px,
-    transparent 14px
-  );
+    color-mix(in srgb, var(--text-secondary) 7%, transparent) 0,
+    color-mix(in srgb, var(--text-secondary) 7%, transparent) 4px,
+    transparent 4px,
+    transparent 8px
+  ) !important;
   opacity: 1;
+  z-index: 2;
 }
 
 @layer base {
@@ -1988,6 +1994,41 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   .fc-timegrid-axis
   + .fc-daygrid-day {
   border-left: 0 !important;
+}
+
+/* All-day row is a real click target (create an all-day task/event) — give it
+   a quiet hover cue and a minimal label, since FullCalendar's own "all day"
+   text is hidden globally above. */
+.fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-daygrid-day:hover {
+  background: var(--surface-hover) !important;
+}
+
+/* The all-day row represents whole days, not hours — business-hours shading
+   (correctly used to mark non-working hours in the timed grid) doesn't apply
+   here, so exclude it on every day including weekends. */
+.fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-non-business {
+  background: transparent !important;
+}
+
+/* Unlike the timed grid (where FullCalendar treats .fc-bg-event as "not a
+   real event" for click hit-testing), the daygrid all-day row's own
+   background layers (.fc-non-business, our block-hours texture) intercept
+   clicks before dateClick/select fire. Let clicks pass through to the cell
+   so the click-to-create and blocked-hours guard actually run. */
+.fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-non-business,
+.fc-tz-corner
+  .fc-scrollgrid-section-body:first-of-type
+  .fc-bg-event.needt-flexible-hours-texture,
+.fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-daygrid-bg-harness {
+  pointer-events: none;
+}
+
+.fc-tz-corner
+  .fc-scrollgrid-section-body:first-of-type
+  .fc-timegrid-axis-cushion::before {
+  content: "All day";
+  font-size: 10px;
+  color: var(--text-muted);
 }
 
 .fc .fc-timegrid-divider {

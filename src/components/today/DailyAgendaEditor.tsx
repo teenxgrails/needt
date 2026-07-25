@@ -36,6 +36,7 @@ import { TaskReference } from "@/components/today/TaskReference";
 import { collectTaskReferenceIds } from "@/components/today/task-reference-utils";
 
 import { cn } from "@/lib/utils";
+import { randomId } from "@/lib/uuid";
 
 import { Task } from "@/types/task";
 
@@ -176,11 +177,11 @@ function ensureAgendaGroups(editor: Editor) {
     ...missing.flatMap((groupId) => [
       {
         type: "taskGroupReference",
-        attrs: { groupId, blockId: crypto.randomUUID() },
+        attrs: { groupId, blockId: randomId() },
       },
       {
         type: "paragraph",
-        attrs: { blockId: crypto.randomUUID() },
+        attrs: { blockId: randomId() },
       },
     ]),
   ]);

@@ -1,7 +1,13 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type ViewMode = "space" | "list" | "board" | "deadlines" | "timeline";
+export type ViewMode =
+  | "space"
+  | "list"
+  | "board"
+  | "deadlines"
+  | "timeline"
+  | "mail";
 
 interface TaskPageSettings {
   // View settings

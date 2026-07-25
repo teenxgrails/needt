@@ -7,6 +7,7 @@ import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import {
@@ -100,7 +101,8 @@ export async function PUT(
     const json = await request.json();
     logger.info(`Update payload for task ${id}`, { payload: json }, LOG_SOURCE);
 
-    const { tagIds, projectId, scheduleId, ...updates } = json;
+    const { tagIds, projectId, scheduleId, bypassBlockedHours, ...updates } =
+      json;
     delete updates.project;
     delete updates.userId;
     if (scheduleId) {
@@ -115,6 +117,21 @@ export async function PUT(
     if ("description" in updates) {
       updates.description =
         sanitizeTaskDescriptionForStorage(updates.description) ?? null;
+    }
+
+    if (
+      !bypassBlockedHours &&
+      updates.scheduledStart &&
+      updates.scheduledEnd
+    ) {
+      const blocked = await isTaskPlacementBlocked(
+        userId,
+        newDate(updates.scheduledStart),
+        newDate(updates.scheduledEnd)
+      );
+      if (blocked) {
+        return new NextResponse("This time is blocked out", { status: 400 });
+      }
     }
 
     // Set completedAt when task is marked as completed

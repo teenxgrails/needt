@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Kanban,
   ListTodo,
+  Mail,
   MoreHorizontal,
   Plus,
   RotateCw,
@@ -16,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
+import { MailPage } from "@/components/mail/MailPage";
 import { ProjectModal } from "@/components/projects/ProjectModal";
 import { BoardView } from "@/components/tasks/BoardView/BoardView";
 import { SpaceView } from "@/components/tasks/SpaceView";
@@ -40,6 +42,7 @@ import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
+import { useUnreadMailCount } from "@/hooks/useUnreadMailCount";
 
 import { useProjectStore } from "@/store/project";
 import { useTaskStore } from "@/store/task";
@@ -60,6 +63,7 @@ const PRIMARY_VIEWS: Array<{
   { id: "space", label: "Space", icon: Sparkles },
   { id: "list", label: "Task List", icon: ListTodo },
   { id: "timeline", label: "Timeline", icon: CalendarRange },
+  { id: "mail", label: "Email", icon: Mail },
 ];
 
 export default function TasksPage() {
@@ -71,6 +75,7 @@ export default function TasksPage() {
   const { viewMode, setViewMode } = useTaskPageSettings();
   const { isOpen, setOpen } = useTaskModalStore();
   const prefersReducedMotion = useReducedMotion();
+  const unreadMailCount = useUnreadMailCount();
 
   const [selectedTask, setSelectedTask] = useState<Task | undefined>();
   const [initialProjectId, setInitialProjectId] = useState<
@@ -108,6 +113,11 @@ export default function TasksPage() {
     setOpen(true);
     setOpenedTaskParam(taskId);
   }, [openedTaskParam, setOpen, tasks]);
+
+  useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    if (view === "mail") setViewMode("mail");
+  }, [setViewMode]);
 
   const deadlineTasks = useMemo(
     () => tasks.filter((task) => task.deadline || task.dueDate),
@@ -362,6 +372,11 @@ export default function TasksPage() {
               >
                 <Icon className="h-3.5 w-3.5" />
                 {view.label}
+                {view.id === "mail" && unreadMailCount > 0 && (
+                  <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-red-200">
+                    {unreadMailCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -520,6 +535,8 @@ export default function TasksPage() {
                 onStatusChange={handleStatusChange}
                 onCreateTask={openCreateTask}
               />
+            ) : viewMode === "mail" ? (
+              <MailPage />
             ) : viewMode === "timeline" ? (
               <TimelineView
                 tasks={tasks}

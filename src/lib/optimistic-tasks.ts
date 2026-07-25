@@ -1,4 +1,5 @@
 import { newDate } from "@/lib/date-utils";
+import { randomId } from "@/lib/uuid";
 
 import { NewTask, Tag, Task, UpdateTask } from "@/types/task";
 
@@ -9,10 +10,7 @@ const mutationQueues = new Map<string, Promise<unknown>>();
 let nextMutationVersion = 0;
 
 export function createOptimisticTaskId() {
-  const id =
-    globalThis.crypto?.randomUUID?.() ??
-    `${newDate().getTime()}-${Math.random().toString(36).slice(2)}`;
-  return `${OPTIMISTIC_ID_PREFIX}${id}`;
+  return `${OPTIMISTIC_ID_PREFIX}${randomId()}`;
 }
 
 export function isOptimisticTaskId(id: string) {

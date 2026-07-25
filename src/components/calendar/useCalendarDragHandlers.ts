@@ -5,6 +5,7 @@ import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import { toast } from "sonner";
 
 import { computeDropUpdate } from "@/lib/calendar-drag";
+import type { BlockingOverride } from "@/lib/flexible-hours-guard";
 import { logger } from "@/lib/logger";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
@@ -17,7 +18,9 @@ const LOG_SOURCE = "useCalendarDragHandlers";
 
 // Shared eventDrop/eventResize handlers for the calendar views. The views
 // spread the original store item into extendedProps, so it is recovered here.
-export function useCalendarDragHandlers() {
+export function useCalendarDragHandlers(
+  overrides: BlockingOverride[] = []
+) {
   const feeds = useCalendarStore((s) => s.feeds);
   const updateEvent = useCalendarStore((s) => s.updateEvent);
   const { moveTask } = useTaskMutations();
@@ -41,7 +44,8 @@ export function useCalendarDragHandlers() {
           newAllDay: info.event.allDay,
           isResize,
         },
-        feeds
+        feeds,
+        overrides
       );
 
       if (update.kind === "blocked") {
@@ -78,7 +82,7 @@ export function useCalendarDragHandlers() {
         }
       }
     },
-    [feeds, moveTask, updateEvent]
+    [feeds, moveTask, updateEvent, overrides]
   );
 
   const handleEventDrop = useCallback(

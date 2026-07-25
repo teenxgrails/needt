@@ -76,17 +76,20 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-8 w-8 rounded-full p-0"
+          className="h-8 min-w-0 flex-1 justify-start gap-2 rounded-md px-1.5"
           aria-label="Open profile menu"
           title="Profile"
         >
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-6 w-6 flex-none">
             <AvatarImage
               src={session.user?.image || ""}
               alt={session.user?.name || "User"}
             />
             <AvatarFallback>{getInitials()}</AvatarFallback>
           </Avatar>
+          <span className="min-w-0 flex-1 truncate text-left text-[13px] text-[var(--text-primary)]">
+            {session.user?.name}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

@@ -11,7 +11,6 @@ import {
   CircleDashed,
   Download,
   Focus,
-  Mail,
   Search,
   Settings,
   Sparkles,
@@ -68,7 +67,6 @@ export const AppNav = memo(function AppNav({
   const pathname = usePathname();
   const { data: session } = useAppSession();
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [unreadMailCount, setUnreadMailCount] = useState(0);
   const [isOverloaded, setIsOverloaded] = useState(false);
   const [todayLabel, setTodayLabel] = useState<string | null>(null);
   const [todayDay, setTodayDay] = useState<string | null>(null);
@@ -94,39 +92,10 @@ export const AppNav = memo(function AppNav({
       "/tasks",
       "/focus",
       "/pages",
-      "/mail",
       "/settings",
       "/chat",
     ].forEach((route) => router.prefetch(route));
   }, [router]);
-
-  useEffect(() => {
-    const refreshUnread = async () => {
-      try {
-        const response = await fetch("/api/mail/accounts");
-        if (!response.ok) return;
-        const accounts = (await response.json()) as Array<{
-          _count: { messages: number };
-        }>;
-        setUnreadMailCount(
-          accounts.reduce(
-            (total, account) => total + account._count.messages,
-            0
-          )
-        );
-      } catch (error) {
-        void logger.debug(
-          "Unread mail badge is unavailable",
-          { error: error instanceof Error ? error.message : String(error) },
-          LOG_SOURCE
-        );
-      }
-    };
-    void refreshUnread();
-    window.addEventListener("mail-unread-changed", refreshUnread);
-    return () =>
-      window.removeEventListener("mail-unread-changed", refreshUnread);
-  }, []);
 
   useEffect(() => {
     fetch("/api/ai/briefing-status")
@@ -174,7 +143,6 @@ export const AppNav = memo(function AppNav({
       badge: overdueCount,
     },
     { href: "/focus", label: "Focus", icon: Focus },
-    { href: "/mail", label: "Mail", icon: Mail, badge: unreadMailCount },
   ];
   const tabletLinks = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays },

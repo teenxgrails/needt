@@ -44,6 +44,13 @@ export function MiniCalendar({
   compact = false,
 }: MiniCalendarProps) {
   const [calendarDate, setCalendarDate] = useState(currentDate);
+  // isToday() calls `new Date()` at render time, resolved in whichever
+  // timezone the process is running in — the Next.js server and the user's
+  // browser can disagree on what day it currently is (different system
+  // timezones, not just render timing), producing a hydration mismatch on
+  // the today-styled day cell. Only trust it once mounted on the client.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const weekStartDay = useSettingsStore((state) => state.user.weekStartDay);
   const weekStartsOn = weekStartDay === "monday" ? 1 : 0;
   const weekdays = useMemo(
@@ -193,8 +200,12 @@ export function MiniCalendar({
         ))}
 
         {visibleDays.map((day) => {
-          const selected = isSameDay(day, currentDate);
-          const today = isToday(day);
+          // currentDate ultimately traces back to `newDate()` evaluated once
+          // at useViewStore's module init — separately on the server and
+          // again when the client bundle loads, so it carries the same
+          // server/client timezone skew as isToday() below.
+          const selected = mounted && isSameDay(day, currentDate);
+          const today = mounted && isToday(day);
           const currentMonth = isSameMonth(day, calendarDate);
           return (
             <div key={day.toISOString()} className="flex justify-center">

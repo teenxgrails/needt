@@ -1,3 +1,5 @@
+import { isRangeBlocked, type BlockingOverride } from "@/lib/flexible-hours-guard";
+
 import { CalendarEvent, CalendarFeed } from "@/types/calendar";
 import { UpdateTask } from "@/types/task";
 
@@ -77,7 +79,8 @@ export function getEventEditability(
 
 export function computeDropUpdate(
   change: DragChange,
-  feeds: CalendarFeed[]
+  feeds: CalendarFeed[],
+  overrides: BlockingOverride[] = []
 ): DropUpdate {
   const { item, newStart, oldStart, oldEnd, oldAllDay, newAllDay, isResize } =
     change;
@@ -95,6 +98,10 @@ export function computeDropUpdate(
   const oldDurationMs =
     oldStart && oldEnd ? oldEnd.getTime() - oldStart.getTime() : 0;
   const newEnd = change.newEnd ?? new Date(newStart.getTime() + oldDurationMs);
+
+  if (!newAllDay && isRangeBlocked(newStart, newEnd, overrides)) {
+    return { kind: "blocked", reason: "This time is blocked out" };
+  }
 
   const props = item.extendedProps as TaskDragProps | undefined;
   if (props?.isTask) {

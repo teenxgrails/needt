@@ -4,6 +4,7 @@ import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { schedulePushTaskBlock } from "@/lib/task-block-push";
@@ -115,6 +116,17 @@ export async function POST(request: NextRequest) {
       });
       if (!schedule) {
         return new NextResponse("Invalid work schedule", { status: 400 });
+      }
+    }
+
+    if (taskData.scheduledStart && taskData.scheduledEnd) {
+      const blocked = await isTaskPlacementBlocked(
+        userId,
+        newDate(taskData.scheduledStart),
+        newDate(taskData.scheduledEnd)
+      );
+      if (blocked) {
+        return new NextResponse("This time is blocked out", { status: 400 });
       }
     }
 

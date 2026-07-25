@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 import { cn } from "@/lib/utils";
+import { randomId } from "@/lib/uuid";
 import {
   adjustScheduleWindow,
   copyScheduleDayWindows,
@@ -27,8 +28,8 @@ import { useSettingsStore } from "@/store/settings";
 
 import { SettingsSection } from "./SettingsSection";
 
-const GRID_START_HOUR = 6;
-const GRID_END_HOUR = 22;
+const GRID_START_HOUR = 0;
+const GRID_END_HOUR = 24;
 const SLOT_MINUTES = 15;
 const SLOT_HEIGHT = 11;
 const SLOT_COUNT = ((GRID_END_HOUR - GRID_START_HOUR) * 60) / SLOT_MINUTES;
@@ -117,7 +118,7 @@ function formatRange(window: Pick<DraftWindow, "startTime" | "endTime">) {
 }
 
 function createWindowId() {
-  return `draft-${crypto.randomUUID()}`;
+  return `draft-${randomId()}`;
 }
 
 function defaultWindows(): DraftWindow[] {
@@ -153,6 +154,13 @@ export function ScheduleSettings() {
   const [drag, setDrag] = useState<DragState | null>(null);
   const copyInteraction = useRef(false);
   const dayColumns = useRef(new Map<number, HTMLDivElement>());
+  // Scroll the grid to its default 6am starting position exactly once per
+  // dialog open. An inline ref callback would re-run on every re-render
+  // (including every setDraft() while dragging to create/resize a window),
+  // snapping the scroll position back mid-interaction — this flag makes it
+  // apply only the first time the scroll container mounts, and gets reset
+  // when the dialog closes so it re-applies next time it opens.
+  const hasScrolledToDefault = useRef(false);
   const [draft, setDraft] = useState<ScheduleDraft>({
     id: null,
     name: "Work Hours",
@@ -371,6 +379,7 @@ export function ScheduleSettings() {
       if (!response.ok)
         throw new Error(data.error || "Failed to save schedule");
       await loadSchedules();
+      window.dispatchEvent(new Event("needt:work-schedule-changed"));
       setEditorOpen(false);
       toast.success(draft.id ? "Schedule saved" : "Schedule created");
     } catch (error) {
@@ -393,6 +402,7 @@ export function ScheduleSettings() {
       return;
     }
     await loadSchedules();
+    window.dispatchEvent(new Event("needt:work-schedule-changed"));
     setEditorOpen(false);
     toast.success("Schedule deleted");
   };
@@ -450,6 +460,7 @@ export function ScheduleSettings() {
         open={editorOpen}
         onOpenChange={(open) => {
           if (open || !copyInteraction.current) setEditorOpen(open);
+          if (!open) hasScrolledToDefault.current = false;
         }}
       >
         <DialogContent className="flex h-[min(820px,calc(100dvh-32px))] w-[calc(100vw-32px)] max-w-none grid-cols-none flex-col gap-0 overflow-hidden p-0 sm:max-w-[calc(100vw-32px)]">
@@ -583,7 +594,15 @@ export function ScheduleSettings() {
                 ))}
               </div>
 
-              <div className="min-h-0 flex-1 overflow-auto">
+              <div
+                className="min-h-0 flex-1 overflow-auto"
+                ref={(node) => {
+                  if (node && !hasScrolledToDefault.current) {
+                    node.scrollTop = (6 - GRID_START_HOUR) * 4 * SLOT_HEIGHT;
+                    hasScrolledToDefault.current = true;
+                  }
+                }}
+              >
                 <div
                   className="grid min-w-[820px] grid-cols-[54px_repeat(7,minmax(100px,1fr))]"
                   style={{ height: SLOT_COUNT * SLOT_HEIGHT }}
@@ -591,17 +610,20 @@ export function ScheduleSettings() {
                   <div className="relative">
                     {Array.from(
                       { length: GRID_END_HOUR - GRID_START_HOUR + 1 },
-                      (_, index) => (
-                        <span
-                          key={index}
-                          className="absolute right-2 -translate-y-1/2 text-[10px] text-[var(--text-muted)]"
-                          style={{ top: index * SLOT_HEIGHT * 4 }}
-                        >
-                          {formatTime(
-                            minutesToTime((GRID_START_HOUR + index) * 60)
-                          )}
-                        </span>
-                      )
+                      (_, index) => {
+                        const hour = GRID_START_HOUR + index;
+                        return (
+                          <span
+                            key={index}
+                            className="absolute right-2 -translate-y-1/2 text-[10px] text-[var(--text-muted)]"
+                            style={{ top: index * SLOT_HEIGHT * 4 }}
+                          >
+                            {hour === 24
+                              ? "12 AM"
+                              : formatTime(minutesToTime(hour * 60))}
+                          </span>
+                        );
+                      }
                     )}
                   </div>
 

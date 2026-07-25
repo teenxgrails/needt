@@ -1,5 +1,7 @@
 import { type Editor, Extension } from "@tiptap/core";
 
+import { randomId } from "@/lib/uuid";
+
 const IDENTITY_BLOCKS = [
   "paragraph",
   "heading",
@@ -42,7 +44,7 @@ export function ensureBlockIds(editor: Editor) {
     if (!node.type.spec.attrs?.blockId || node.attrs.blockId) return;
     transaction.setNodeMarkup(offset, undefined, {
       ...node.attrs,
-      blockId: crypto.randomUUID(),
+      blockId: randomId(),
     });
     changed = true;
   });
