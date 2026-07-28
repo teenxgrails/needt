@@ -20,7 +20,7 @@ import {
   Quote,
   SquareCheckBig,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import {
   BlockIdentity,
@@ -384,7 +384,7 @@ export function DailyAgendaEditor({
                 commandDateKey,
                 collectTaskReferenceIds(currentEditor)
               );
-              toast.success("Task created");
+              notify.success("Task created");
             })
             .catch(() => {
               const currentEditor = editorRef.current;
@@ -398,7 +398,7 @@ export function DailyAgendaEditor({
                   `<p>/task ${taskTitle}</p>`
                 );
               }
-              toast.error("Could not create task. Your command was restored.");
+              notify.error("Could not create task. Your command was restored.");
             });
           return true;
         }
@@ -534,7 +534,7 @@ export function DailyAgendaEditor({
           if (!response.ok) throw new Error("Page creation failed");
           const { page } = (await response.json()) as { page: { id: string } };
           window.dispatchEvent(new Event("pages-changed"));
-          toast.success("Page created", {
+          notify.success("Page created", {
             action: {
               label: "Open",
               onClick: () => {
@@ -543,7 +543,7 @@ export function DailyAgendaEditor({
             },
           });
         })
-        .catch(() => toast.error("Could not create page"));
+        .catch(() => notify.error("Could not create page"));
     }
     setSlash(null);
   };

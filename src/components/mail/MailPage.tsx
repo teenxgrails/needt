@@ -19,7 +19,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -175,7 +175,7 @@ export function MailPage() {
         { error: error instanceof Error ? error.message : String(error) },
         LOG_SOURCE
       );
-      toast.error("Could not load Mail");
+      notify.error("Could not load Mail");
     });
   }, [loadAccounts, loadMessages]);
 
@@ -196,7 +196,7 @@ export function MailPage() {
     setMobilePane("message");
     const response = await fetch(`/api/mail/messages/${message.id}`);
     if (!response.ok) {
-      toast.error("Could not open this message");
+      notify.error("Could not open this message");
       return;
     }
     const detail = (await response.json()) as OpenMailMessage;
@@ -217,7 +217,7 @@ export function MailPage() {
       body: JSON.stringify(action),
     });
     if (!response.ok) {
-      if (announce) toast.error("Could not update this message");
+      if (announce) notify.error("Could not update this message");
       return;
     }
     setMessages((current) =>
@@ -247,7 +247,7 @@ export function MailPage() {
       setSelectedId(null);
       setOpenMessage(null);
       setMobilePane("messages");
-      if (announce) toast.success("Message archived");
+      if (announce) notify.success("Message archived");
     }
   };
 
@@ -260,9 +260,9 @@ export function MailPage() {
     });
     setSyncing(false);
     if (response.ok) {
-      toast.success("Mail sync queued");
+      notify.success("Mail sync queued");
     } else {
-      toast.error("Could not queue mail sync");
+      notify.error("Could not queue mail sync");
     }
   };
 
@@ -277,11 +277,11 @@ export function MailPage() {
       }),
     });
     if (!response.ok) {
-      toast.error("Could not create task");
+      notify.error("Could not create task");
       return;
     }
     const task = (await response.json()) as { id: string };
-    toast.success("Task created from email");
+    notify.success("Task created from email");
     router.push(`/tasks?task=${task.id}`);
   };
 
@@ -673,10 +673,10 @@ function ConnectMailDialog({
     setSubmitting(false);
     if (!response.ok) {
       const data = (await response.json()) as { error?: string };
-      toast.error(data.error || "Could not connect IMAP");
+      notify.error(data.error || "Could not connect IMAP");
       return;
     }
-    toast.success("IMAP account connected");
+    notify.success("IMAP account connected");
     await onConnected();
   };
 

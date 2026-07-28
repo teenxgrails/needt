@@ -2,13 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { toast } from "sonner";
+import { RotateCcw } from "lucide-react";
 
 import { MotionSwitchRow } from "@/components/settings/MotionSettingsControls";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NeedtPicker } from "@/components/ui/needt-picker";
 
+import { ASSISTANT_POSITION_RESET_EVENT } from "@/lib/assistant-position";
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 import { SettingsAdvanced, SettingsSection } from "./SettingsSection";
@@ -75,7 +78,7 @@ export function CustomizationSettings() {
         }
       })
       .catch(() => {
-        toast.error("Could not load customization settings");
+        notify.error("Could not load customization settings");
       });
     return () => {
       cancelled = true;
@@ -127,7 +130,7 @@ export function CustomizationSettings() {
       } catch {
         setSettings(lastSaved.current);
         setSaveState("failed");
-        toast.error(
+        notify.error(
           "Could not save appearance. Your last saved settings were restored."
         );
       }
@@ -175,6 +178,29 @@ export function CustomizationSettings() {
         checked={settings.animationsEnabled}
         onCheckedChange={(checked) => update("animationsEnabled", checked)}
       />
+
+      <div className="flex min-h-11 items-center justify-between gap-4 border-t border-[var(--border-subtle)] pt-3">
+        <div>
+          <p className="text-[14px] text-[var(--text-primary)]">
+            Assistant position
+          </p>
+          <p className="text-[12px] text-[var(--text-muted)]">
+            Move the companion back to its default safe position.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 shrink-0 gap-2"
+          onClick={() => {
+            window.dispatchEvent(new Event(ASSISTANT_POSITION_RESET_EVENT));
+            notify.success("Assistant position reset");
+          }}
+        >
+          <RotateCcw className="h-4 w-4" />
+          Reset
+        </Button>
+      </div>
 
       <SettingsAdvanced
         title="Advanced appearance"

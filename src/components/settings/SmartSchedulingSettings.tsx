@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Plus, Save, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +105,7 @@ export function SmartSchedulingSettings() {
         setPreferences(data.preferences);
         setEnergyProfile(data.energyProfile);
       } catch (error) {
-        toast.error("Could not load smart scheduling settings", {
+        notify.error("Could not load smart scheduling settings", {
           description:
             error instanceof Error ? error.message : "Please try again later.",
         });
@@ -192,9 +192,9 @@ export function SmartSchedulingSettings() {
       const data = (await response.json()) as SmartSchedulingResponse;
       setPreferences(data.preferences);
       setEnergyProfile(data.energyProfile);
-      toast.success("Smart scheduling settings saved");
+      notify.success("Smart scheduling settings saved");
     } catch (error) {
-      toast.error("Could not save smart scheduling settings", {
+      notify.error("Could not save smart scheduling settings", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });

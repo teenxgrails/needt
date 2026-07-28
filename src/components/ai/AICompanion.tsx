@@ -8,6 +8,17 @@ import { ArrowUpRight, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
+  ASSISTANT_POSITION_KEY,
+  ASSISTANT_POSITION_RESET_EVENT,
+  clampPoint,
+  companionBounds,
+  fromNormalized,
+  isNormalizedAssistantPosition,
+  toNormalized,
+  type Point,
+  type PositionBounds,
+} from "@/lib/assistant-position";
+import {
   LEGACY_AI_ACTION_EVENT,
   NEEDT_AI_ACTION_EVENT,
 } from "@/lib/needt-events";
@@ -20,6 +31,29 @@ interface AICompanionProps {
 }
 
 const INTRO_SEEN_KEY = "needt-ai-companion-intro-seen";
+const DEFAULT_POSITION = { x: 1, y: 0.82 };
+const DRAG_THRESHOLD = 6;
+
+type CompanionDrag = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  origin: Point;
+  dragging: boolean;
+};
+
+function readSafeAreaInset(edge: "top" | "bottom"): number {
+  const probe = document.createElement("div");
+  probe.style.cssText = `position:fixed;visibility:hidden;pointer-events:none;padding-${edge}:env(safe-area-inset-${edge});`;
+  document.body.appendChild(probe);
+  const value = Number.parseFloat(
+    edge === "top"
+      ? window.getComputedStyle(probe).paddingTop
+      : window.getComputedStyle(probe).paddingBottom
+  );
+  probe.remove();
+  return Number.isFinite(value) ? value : 0;
+}
 
 function suggestionFor(pathname: string): string {
   if (pathname === "/today") return "Want help choosing today's main priority?";
@@ -41,8 +75,16 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const orbRef = useRef<HTMLButtonElement>(null);
   const hideTimerRef = useRef<number | null>(null);
+  const positionFrameRef = useRef<number | null>(null);
+  const positionRef = useRef<Point>({ x: 0, y: 0 });
+  const boundsRef = useRef<PositionBounds | null>(null);
+  const dragRef = useRef<CompanionDrag | null>(null);
+  const suppressClickRef = useRef(false);
+  const bubbleSideRef = useRef<"left" | "right">("left");
   const [message, setMessage] = useState<string | null>(null);
   const [emotion, setEmotion] = useState<CompanionEmotion>("calm");
+  const [positioned, setPositioned] = useState(false);
+  const [bubbleSide, setBubbleSide] = useState<"left" | "right">("left");
 
   const hideMessage = useCallback(() => {
     if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
@@ -64,6 +106,129 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
     },
     [hideMessage]
   );
+
+  const measureBounds = useCallback(() => {
+    const sidebarWidth =
+      Number.parseFloat(
+        window
+          .getComputedStyle(document.documentElement)
+          .getPropertyValue("--needt-sidebar-width")
+      ) || 244;
+    const size = window.innerWidth < 640 ? 64 : 88;
+    return companionBounds({
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      size,
+      sidebarWidth,
+      mobileDockHeight: 68,
+      safeTop: readSafeAreaInset("top"),
+      safeBottom: readSafeAreaInset("bottom"),
+    });
+  }, []);
+
+  const placeCompanion = useCallback((point: Point) => {
+    const root = rootRef.current;
+    const bounds = boundsRef.current;
+    if (!root || !bounds) return point;
+
+    const size = window.innerWidth < 640 ? 64 : 88;
+    let next = clampPoint(point, bounds);
+    const avoid = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-assistant-avoid]")
+    )
+      .filter((element) => element.offsetParent !== null)
+      .map((element) => element.getBoundingClientRect());
+
+    for (const rect of avoid) {
+      const padding = 10;
+      const overlaps =
+        next.x < rect.right + padding &&
+        next.x + size > rect.left - padding &&
+        next.y < rect.bottom + padding &&
+        next.y + size > rect.top - padding;
+      if (!overlaps) continue;
+
+      const candidates = [
+        { x: rect.left - size - padding, y: next.y },
+        { x: rect.right + padding, y: next.y },
+        { x: next.x, y: rect.top - size - padding },
+        { x: next.x, y: rect.bottom + padding },
+      ].map((candidate) => clampPoint(candidate, bounds));
+      next =
+        candidates.sort(
+          (a, b) =>
+            Math.hypot(a.x - next.x, a.y - next.y) -
+            Math.hypot(b.x - next.x, b.y - next.y)
+        )[0] ?? next;
+    }
+
+    positionRef.current = next;
+    root.style.transform = `translate3d(${next.x}px, ${next.y}px, 0)`;
+    const nextSide =
+      next.x + size / 2 > window.innerWidth / 2 ? "left" : "right";
+    if (nextSide !== bubbleSideRef.current) {
+      bubbleSideRef.current = nextSide;
+      setBubbleSide(nextSide);
+    }
+    return next;
+  }, []);
+
+  const persistPosition = useCallback((point: Point) => {
+    const bounds = boundsRef.current;
+    if (!bounds) return;
+    try {
+      window.localStorage.setItem(
+        ASSISTANT_POSITION_KEY,
+        JSON.stringify(toNormalized(point, bounds))
+      );
+    } catch {
+      // A strict privacy mode may disable localStorage. Dragging still works
+      // for the current session.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (hidden) return;
+    boundsRef.current = measureBounds();
+    let stored = DEFAULT_POSITION;
+    try {
+      const parsed = JSON.parse(
+        window.localStorage.getItem(ASSISTANT_POSITION_KEY) || "null"
+      );
+      if (isNormalizedAssistantPosition(parsed)) stored = parsed;
+    } catch {
+      // Use the safe default when persisted data is unavailable or malformed.
+    }
+    placeCompanion(fromNormalized(stored, boundsRef.current));
+    setPositioned(true);
+
+    const onResize = () => {
+      const previous = boundsRef.current;
+      const normalized = previous
+        ? toNormalized(positionRef.current, previous)
+        : DEFAULT_POSITION;
+      boundsRef.current = measureBounds();
+      placeCompanion(fromNormalized(normalized, boundsRef.current));
+    };
+    const onReset = () => {
+      try {
+        window.localStorage.removeItem(ASSISTANT_POSITION_KEY);
+      } catch {
+        // Reset still applies in-memory.
+      }
+      boundsRef.current = measureBounds();
+      placeCompanion(fromNormalized(DEFAULT_POSITION, boundsRef.current));
+    };
+
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    window.addEventListener(ASSISTANT_POSITION_RESET_EVENT, onReset);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      window.removeEventListener(ASSISTANT_POSITION_RESET_EVENT, onReset);
+    };
+  }, [hidden, measureBounds, placeCompanion]);
 
   useEffect(() => {
     if (hidden) return;
@@ -240,6 +405,9 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
   useEffect(
     () => () => {
       if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current);
+      if (positionFrameRef.current)
+        window.cancelAnimationFrame(positionFrameRef.current);
+      document.documentElement.style.removeProperty("user-select");
     },
     []
   );
@@ -256,12 +424,20 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
   return (
     <div
       ref={rootRef}
+      data-testid="needt-ai-companion"
       data-emotion={emotion}
-      className="needt-ai-companion fixed bottom-6 right-6 z-30 max-lg:bottom-[calc(86px+env(safe-area-inset-bottom))] max-lg:right-4"
+      data-bubble-side={bubbleSide}
+      className={cn(
+        "needt-ai-companion fixed left-0 top-0 z-30 transition-opacity duration-150",
+        positioned ? "opacity-100" : "pointer-events-none opacity-0"
+      )}
     >
       <div
         className={cn(
-          "needt-ai-companion-message needt-overlay-depth absolute bottom-[calc(100%-8px)] right-[70%] w-[268px] rounded-2xl rounded-br-md border border-[var(--popover-border)] p-3 text-left shadow-lg",
+          "needt-ai-companion-message needt-overlay-depth absolute bottom-[calc(100%-8px)] w-[268px] rounded-2xl border border-[var(--popover-border)] p-3 text-left shadow-lg",
+          bubbleSide === "left"
+            ? "right-[70%] rounded-br-md"
+            : "left-[70%] rounded-bl-md",
           message ? "is-visible" : "pointer-events-none"
         )}
         role="status"
@@ -294,11 +470,91 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
       <button
         ref={orbRef}
         type="button"
-        aria-label="Open Needt assistant"
+        aria-label="Open or move Needt assistant"
         aria-expanded={Boolean(message)}
-        onClick={() => {
+        onClick={(event) => {
+          if (suppressClickRef.current) {
+            event.preventDefault();
+            return;
+          }
           if (message) hideMessage();
           else revealMessage(suggestionFor(pathname), "attentive", 10000);
+        }}
+        onPointerDown={(event) => {
+          if (event.button !== 0) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          dragRef.current = {
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            origin: positionRef.current,
+            dragging: false,
+          };
+        }}
+        onPointerMove={(event) => {
+          const drag = dragRef.current;
+          if (!drag || drag.pointerId !== event.pointerId) return;
+          const deltaX = event.clientX - drag.startX;
+          const deltaY = event.clientY - drag.startY;
+          if (
+            !drag.dragging &&
+            Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD
+          ) {
+            return;
+          }
+          if (!drag.dragging) {
+            drag.dragging = true;
+            setEmotion("attentive");
+            hideMessage();
+            document.documentElement.style.userSelect = "none";
+          }
+          const next = {
+            x: drag.origin.x + deltaX,
+            y: drag.origin.y + deltaY,
+          };
+          if (positionFrameRef.current)
+            window.cancelAnimationFrame(positionFrameRef.current);
+          positionFrameRef.current = window.requestAnimationFrame(() => {
+            placeCompanion(next);
+            positionFrameRef.current = null;
+          });
+        }}
+        onPointerUp={(event) => {
+          const drag = dragRef.current;
+          if (!drag || drag.pointerId !== event.pointerId) return;
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+            event.currentTarget.releasePointerCapture(event.pointerId);
+          }
+          if (drag.dragging) {
+            suppressClickRef.current = true;
+            persistPosition(positionRef.current);
+            window.setTimeout(() => {
+              suppressClickRef.current = false;
+            }, 0);
+          }
+          dragRef.current = null;
+          document.documentElement.style.removeProperty("user-select");
+        }}
+        onPointerCancel={() => {
+          dragRef.current = null;
+          document.documentElement.style.removeProperty("user-select");
+        }}
+        onKeyDown={(event) => {
+          const directions: Record<string, Point> = {
+            ArrowLeft: { x: -1, y: 0 },
+            ArrowRight: { x: 1, y: 0 },
+            ArrowUp: { x: 0, y: -1 },
+            ArrowDown: { x: 0, y: 1 },
+          };
+          const direction = directions[event.key];
+          if (!direction) return;
+          event.preventDefault();
+          const step = event.shiftKey ? 24 : 8;
+          const next = placeCompanion({
+            x: positionRef.current.x + direction.x * step,
+            y: positionRef.current.y + direction.y * step,
+          });
+          persistPosition(next);
         }}
         onPointerEnter={() =>
           setEmotion((current) => (current === "calm" ? "attentive" : current))
@@ -306,7 +562,7 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
         onPointerLeave={() => {
           if (!message) setEmotion("calm");
         }}
-        className="needt-ai-companion-orb group relative grid h-[116px] w-[116px] touch-manipulation place-items-center rounded-full outline-none focus-visible:ring-1 focus-visible:ring-[var(--control-border)] max-sm:h-[76px] max-sm:w-[76px]"
+        className="needt-ai-companion-orb group relative grid h-[88px] w-[88px] touch-none cursor-grab place-items-center rounded-full outline-none active:cursor-grabbing focus-visible:ring-1 focus-visible:ring-[var(--control-border)] max-sm:h-16 max-sm:w-16"
       >
         <span className="needt-ai-aura" aria-hidden>
           <span className="needt-ai-color-layer needt-ai-color-base" />

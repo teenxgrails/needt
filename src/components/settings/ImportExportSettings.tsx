@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRef } from "react";
 
 import { Download, FileJson2, Loader2, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,10 +52,10 @@ export function ImportExportSettings() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      toast.success("Tasks exported successfully");
+      notify.success("Tasks exported successfully");
     } catch (error) {
       console.error("Export error:", error);
-      toast.error("Failed to export tasks");
+      notify.error("Failed to export tasks");
     } finally {
       setIsExporting(false);
     }
@@ -97,10 +97,10 @@ export function ImportExportSettings() {
           }
 
           const result = await response.json();
-          toast.success(`Import successful: ${result.imported} tasks imported`);
+          notify.success(`Import successful: ${result.imported} tasks imported`);
         } catch (error) {
           console.error("Import processing error:", error);
-          toast.error(
+          notify.error(
             `Import failed: ${
               error instanceof Error ? error.message : "Unknown error"
             }`
@@ -115,14 +115,14 @@ export function ImportExportSettings() {
       };
 
       reader.onerror = () => {
-        toast.error("Failed to read the file");
+        notify.error("Failed to read the file");
         setIsImporting(false);
       };
 
       reader.readAsText(file);
     } catch (error) {
       console.error("Import error:", error);
-      toast.error("Failed to import tasks");
+      notify.error("Failed to import tasks");
       setIsImporting(false);
     }
   };

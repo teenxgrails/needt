@@ -6,7 +6,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,7 +44,7 @@ export function SignInForm() {
   }, []);
 
   const finishSignIn = () => {
-    toast.success("Signed in successfully");
+    notify.success("Signed in successfully");
     window.location.href = "/calendar";
   };
 
@@ -60,7 +60,7 @@ export function SignInForm() {
       });
 
       if (result?.error) {
-        toast.error("Authentication failed", {
+        notify.error("Authentication failed", {
           description: "Please check your email and password and try again.",
         });
       } else {
@@ -72,7 +72,7 @@ export function SignInForm() {
         { error: error instanceof Error ? error.message : "Unknown error" },
         LOG_SOURCE
       );
-      toast.error("Sign in failed", { description: "Please try again." });
+      notify.error("Sign in failed", { description: "Please try again." });
     } finally {
       setIsLoading(false);
     }
@@ -81,7 +81,7 @@ export function SignInForm() {
   const handleSignUp = async (event: React.FormEvent) => {
     event.preventDefault();
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+      notify.error("Passwords do not match");
       return;
     }
 
@@ -99,7 +99,7 @@ export function SignInForm() {
       const data = (await response.json()) as { error?: string };
 
       if (!response.ok) {
-        toast.error("Registration failed", {
+        notify.error("Registration failed", {
           description: data.error || "Please try again.",
         });
         return;
@@ -111,14 +111,14 @@ export function SignInForm() {
         redirect: false,
       });
       if (result?.error) {
-        toast.success("Account created", {
+        notify.success("Account created", {
           description: "Sign in with your new credentials.",
         });
         setMode("signin");
         return;
       }
 
-      toast.success("Account created successfully");
+      notify.success("Account created successfully");
       finishSignIn();
     } catch (error) {
       logger.error(
@@ -126,7 +126,7 @@ export function SignInForm() {
         { error: error instanceof Error ? error.message : "Unknown error" },
         LOG_SOURCE
       );
-      toast.error("Registration failed", {
+      notify.error("Registration failed", {
         description: "Please try again.",
       });
     } finally {

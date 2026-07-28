@@ -42,7 +42,7 @@ import {
   Table2,
   Undo2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import {
   BlockIdentity,
@@ -509,7 +509,7 @@ export function PageWorkspace({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
-    if (!response.ok) toast.error("Could not update page");
+    if (!response.ok) notify.error("Could not update page");
     window.dispatchEvent(new Event("pages-changed"));
   };
 
@@ -548,7 +548,7 @@ export function PageWorkspace({
       body: JSON.stringify({ body: commentText }),
     });
     if (!response.ok) {
-      toast.error("Could not add comment");
+      notify.error("Could not add comment");
       return;
     }
     const data = (await response.json()) as { comment: PageComment };
@@ -577,7 +577,7 @@ export function PageWorkspace({
       body: JSON.stringify({ pageId, name: templateName }),
     });
     if (!response.ok) {
-      toast.error("Could not save template");
+      notify.error("Could not save template");
       return;
     }
     const data = (await response.json()) as { template: PageTemplate };
@@ -586,7 +586,7 @@ export function PageWorkspace({
       ...current.filter((item) => item.id !== data.template.id),
     ]);
     setTemplateName("");
-    toast.success("Template saved");
+    notify.success("Template saved");
   };
 
   const instantiateTemplate = async (template: PageTemplate) => {
@@ -599,7 +599,7 @@ export function PageWorkspace({
       }
     );
     if (!response.ok) {
-      toast.error("Could not create page from template");
+      notify.error("Could not create page from template");
       return;
     }
     const data = (await response.json()) as { page: { id: string } };
@@ -620,7 +620,7 @@ export function PageWorkspace({
       const error = (await response.json().catch(() => ({}))) as {
         error?: string;
       };
-      toast.error(
+      notify.error(
         page?.isPrivate
           ? "AI review is disabled for private Pages"
           : error.error || "Could not create AI proposal"
@@ -649,7 +649,7 @@ export function PageWorkspace({
       { method: "POST" }
     );
     if (!response.ok) {
-      toast.error("Could not update proposal");
+      notify.error("Could not update proposal");
       return;
     }
     setProposals((current) =>
@@ -729,7 +729,7 @@ export function PageWorkspace({
           mimeType: data.asset.mimeType,
         });
       } catch (error) {
-        toast.error(
+        notify.error(
           error instanceof Error ? error.message : "Could not upload asset"
         );
       } finally {
@@ -760,7 +760,7 @@ export function PageWorkspace({
         error?: string;
       };
       if (!response.ok || !data.form) {
-        toast.error(data.error || "Could not create form");
+        notify.error(data.error || "Could not create form");
         return;
       }
       insertSpecial("FORM", data.form.title, {

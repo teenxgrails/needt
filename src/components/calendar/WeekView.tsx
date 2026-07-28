@@ -10,7 +10,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import CalendarEngine from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 
@@ -417,7 +417,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
       : isRangeBlocked(start, end, flexibleHourOverrides);
     if (blocked) {
       calendarRef.current?.getApi().unselect();
-      toast.error("This time is blocked out");
+      notify.error("This time is blocked out");
       return;
     }
 
@@ -434,7 +434,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
       ? isDateWholeDayBlocked(arg.date, flexibleHourOverrides)
       : isRangeBlocked(arg.date, end, flexibleHourOverrides);
     if (blocked) {
-      toast.error("This time is blocked out");
+      notify.error("This time is blocked out");
       return;
     }
     setSelectedDate(arg.date);

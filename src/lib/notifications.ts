@@ -1,13 +1,10 @@
-import { toast } from "sonner";
+import { toast, type ExternalToast } from "sonner";
 
-type NotificationOptions = {
-  description?: string;
-  action?: { label: string; onClick: () => void };
-};
+type NotificationOptions = ExternalToast;
 
 export const notify = {
-  loading(message: string) {
-    return toast.loading(message);
+  loading(message: string, options?: NotificationOptions) {
+    return toast.loading(message, options);
   },
   success(message: string, options?: NotificationOptions) {
     return toast.success(message, options);

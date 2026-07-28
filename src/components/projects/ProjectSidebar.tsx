@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import NumberFlow from "@number-flow/react";
 import { BsArrowRepeat } from "react-icons/bs";
 import { HiFolderOpen, HiPencil, HiPlus } from "react-icons/hi";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -114,13 +114,13 @@ export function ProjectSidebar() {
         if (response.ok) {
           const { fetchTasks } = useTaskStore.getState();
           await fetchTasks();
-          toast.success("Sync Completed");
+          notify.success("Sync Completed");
         } else {
-          toast.error("Failed to sync tasks for project");
+          notify.error("Failed to sync tasks for project");
         }
       } catch (error) {
         console.error("Failed to sync project tasks:", error);
-        toast.error("Failed to sync tasks for project");
+        notify.error("Failed to sync tasks for project");
       } finally {
         setSyncingProjects((prev) => {
           const next = new Set(prev);

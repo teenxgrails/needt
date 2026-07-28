@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { StartTaskModal } from "@/components/tasks/StartTaskModal";
 import {
@@ -122,7 +122,7 @@ export function CalendarTaskActionsMenu({
     await navigator.clipboard.writeText(
       `${window.location.origin}/tasks?task=${task.id}`
     );
-    toast.success("Task link copied");
+    notify.success("Task link copied");
   };
 
   const cancelTask = () =>
@@ -170,7 +170,7 @@ export function CalendarTaskActionsMenu({
       color: "#555B5F",
     });
     await updateTask(task.id, { projectId: project.id });
-    toast.success("Project created from task");
+    notify.success("Project created from task");
   };
 
   const saveTemplate = async () => {
@@ -193,7 +193,7 @@ export function CalendarTaskActionsMenu({
         },
       ])
     );
-    toast.success("Task saved as template");
+    notify.success("Task saved as template");
   };
 
   const unschedule = () =>

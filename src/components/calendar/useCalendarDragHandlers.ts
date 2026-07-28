@@ -2,7 +2,7 @@ import { useCallback } from "react";
 
 import type { EventDropArg } from "@fullcalendar/core";
 import type { EventResizeDoneArg } from "@fullcalendar/interaction";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { computeDropUpdate } from "@/lib/calendar-drag";
 import type { BlockingOverride } from "@/lib/flexible-hours-guard";
@@ -50,7 +50,7 @@ export function useCalendarDragHandlers(
 
       if (update.kind === "blocked") {
         info.revert();
-        toast.error(update.reason);
+        notify.error(update.reason);
         return;
       }
 
@@ -76,7 +76,7 @@ export function useCalendarDragHandlers(
         );
         info.revert();
         if (update.kind !== "task") {
-          toast.error(
+          notify.error(
             isResize ? "Failed to resize item" : "Failed to move item"
           );
         }

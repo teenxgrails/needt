@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -110,10 +110,10 @@ export function StartTaskModal({
         LOG_SOURCE
       );
       onOpenChange(false);
-      toast.success(startFocus ? "Focus session started." : "Task started.");
+      notify.success(startFocus ? "Focus session started." : "Task started.");
       if (startFocus) router.push("/focus");
     } catch (error) {
-      toast.error(
+      notify.error(
         error instanceof Error ? error.message : "Could not start task."
       );
       logger.error(

@@ -8,7 +8,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -235,7 +235,7 @@ export function TaskSyncSettings() {
   const createProvider = async () => {
     if (!newProviderName || !selectedAccount) {
       // Show error toast for missing fields
-      toast.error("Please enter a name and select an account");
+      notify.error("Please enter a name and select an account");
       return;
     }
 
@@ -285,7 +285,7 @@ export function TaskSyncSettings() {
       setSelectedAccount("");
 
       // Show success toast
-      toast.success("Task provider created successfully");
+      notify.success("Task provider created successfully");
 
       // Close the dialog
       setIsDialogOpen(false);
@@ -296,7 +296,7 @@ export function TaskSyncSettings() {
         { error: error instanceof Error ? error.message : "Unknown error" },
         LOG_SOURCE
       );
-      toast.error("Failed to create task provider");
+      notify.error("Failed to create task provider");
     } finally {
       setIsCreating(false);
     }
@@ -322,13 +322,13 @@ export function TaskSyncSettings() {
         throw new Error("Failed to delete task provider");
       }
 
-      toast.success("Task provider deleted successfully");
+      notify.success("Task provider deleted successfully");
 
       // Refresh providers
       await fetchProviders();
       setSelectedProvider(null);
     } catch (error) {
-      toast.error("Failed to delete task provider");
+      notify.error("Failed to delete task provider");
       logger.error(
         "Failed to delete task provider",
         {
@@ -393,13 +393,13 @@ export function TaskSyncSettings() {
         throw new Error("Failed to create task list mapping");
       }
 
-      toast.success("Task list mapped successfully");
+      notify.success("Task list mapped successfully");
 
       // Refresh lists and mappings
       await fetchTaskLists(selectedProvider.id);
       await fetchMappings(selectedProvider.id);
     } catch (error) {
-      toast.error("Failed to create task list mapping");
+      notify.error("Failed to create task list mapping");
       logger.error(
         "Failed to create task list mapping",
         { error: error instanceof Error ? error.message : "Unknown error" },
@@ -428,13 +428,13 @@ export function TaskSyncSettings() {
         throw new Error("Failed to delete task list mapping");
       }
 
-      toast.success("Task list mapping removed successfully");
+      notify.success("Task list mapping removed successfully");
 
       // Refresh lists and mappings
       await fetchTaskLists(selectedProvider.id);
       await fetchMappings(selectedProvider.id);
     } catch (error) {
-      toast.error("Failed to remove task list mapping");
+      notify.error("Failed to remove task list mapping");
       logger.error(
         "Failed to remove task list mapping",
         {
@@ -470,16 +470,16 @@ export function TaskSyncSettings() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to trigger provider sync:", errorData);
-        toast.error("Failed to trigger sync");
+        notify.error("Failed to trigger sync");
         return;
       }
 
       const data = await response.json();
-      toast.success("Sync job scheduled");
+      notify.success("Sync job scheduled");
       console.log("Sync job:", data);
     } catch (error) {
       console.error("Error triggering sync:", error);
-      toast.error("Failed to trigger sync");
+      notify.error("Failed to trigger sync");
     } finally {
       setIsLoading(false);
     }
@@ -514,16 +514,16 @@ export function TaskSyncSettings() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Failed to trigger mapping sync:", errorData);
-        toast.error("Failed to trigger sync");
+        notify.error("Failed to trigger sync");
         return;
       }
 
       const data = await response.json();
-      toast.success("Sync job scheduled");
+      notify.success("Sync job scheduled");
       console.log("Sync job:", data);
     } catch (error) {
       console.error("Error triggering sync:", error);
-      toast.error("Failed to trigger sync");
+      notify.error("Failed to trigger sync");
     } finally {
       setIsLoading(false);
     }

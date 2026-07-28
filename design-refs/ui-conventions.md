@@ -65,6 +65,12 @@ Sonner notifications are top-center and must go through the typed
 `src/lib/notifications.ts` facade. Actionable nudges include one concise deep
 link action.
 
+The AI companion is a movable 88px desktop / 64px phone affordance. Position
+updates use a transform in `requestAnimationFrame`, persist normalized viewport
+coordinates, and stay clear of the desktop sidebar, mobile dock, safe areas,
+and controls marked with `data-assistant-avoid`. Arrow keys move it by 8px;
+Shift+Arrow uses 24px. It remains below dialogs, sheets, and notifications.
+
 ## Picker / dropdown
 
 Use `@/components/ui/needt-picker` for plain, searchable, and creatable product

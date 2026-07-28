@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +32,7 @@ export default function PublicSignupSettings() {
         }
       } catch (error) {
         console.error("Failed to fetch system settings:", error);
-        toast.error("Failed to load settings");
+        notify.error("Failed to load settings");
       } finally {
         setIsLoading(false);
       }
@@ -55,13 +55,13 @@ export default function PublicSignupSettings() {
       });
 
       if (response.ok) {
-        toast.success("Settings saved successfully");
+        notify.success("Settings saved successfully");
       } else {
-        toast.error("Failed to save settings");
+        notify.error("Failed to save settings");
       }
     } catch (error) {
       console.error("Failed to save system settings:", error);
-      toast.error("Failed to save settings");
+      notify.error("Failed to save settings");
     } finally {
       setIsSaving(false);
     }

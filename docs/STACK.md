@@ -63,6 +63,12 @@ Focus is rendered as a single flat, state-stable canvas in
 for session phase and elapsed time; the client keeps timer feedback, duration
 scrubbing, and the throttled live countdown in one consistent geometry.
 
+The AI companion stores normalized coordinates through
+`src/lib/assistant-position.ts`, so resize and orientation changes preserve the
+relative position while reapplying sidebar, mobile-dock, and safe-area bounds.
+All product notifications call `src/lib/notifications.ts`; direct Sonner calls
+are restricted to that facade and the shared Toaster implementation.
+
 ## Multi-user isolation
 
 Scheduling runs, idempotency records, focus data, dependencies, reminders,

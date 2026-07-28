@@ -12,7 +12,7 @@ import {
   Table2,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import type { PageDetail } from "@/components/pages/page-types";
 import { Button } from "@/components/ui/button";
@@ -152,7 +152,7 @@ export function DatabaseWorkspace({
       body: JSON.stringify({ title: "Untitled" }),
     });
     if (!response.ok) {
-      toast.error("Could not add record");
+      notify.error("Could not add record");
       return;
     }
     const data = (await response.json()) as { record: DatabaseRecord };
@@ -169,7 +169,7 @@ export function DatabaseWorkspace({
       body: JSON.stringify(input),
     });
     if (!response.ok) {
-      toast.error("Could not update record");
+      notify.error("Could not update record");
       return;
     }
     const data = (await response.json()) as { record: DatabaseRecord };
@@ -183,7 +183,7 @@ export function DatabaseWorkspace({
       method: "DELETE",
     });
     if (!response.ok) {
-      toast.error("Could not delete record");
+      notify.error("Could not delete record");
       return;
     }
     setRecords((current) => current.filter((item) => item.id !== record.id));
@@ -197,7 +197,7 @@ export function DatabaseWorkspace({
       body: JSON.stringify({ name: propertyName, type: propertyType }),
     });
     if (!response.ok) {
-      toast.error("Could not add property");
+      notify.error("Could not add property");
       return;
     }
     const data = (await response.json()) as {

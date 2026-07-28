@@ -378,7 +378,7 @@ export default function SettingsPage() {
           </header>
           <div
             className={cn(
-              "w-full max-w-[1040px] px-4 py-5 pb-24 transition-opacity duration-150 sm:px-6 md:px-12 md:py-7 md:pb-16",
+              "w-full max-w-[840px] px-4 py-5 pb-24 transition-opacity duration-150 sm:px-6 md:px-10 md:py-7 md:pb-16",
               mobileOverview && "hidden lg:block",
               !isHydrated && "opacity-0"
             )}

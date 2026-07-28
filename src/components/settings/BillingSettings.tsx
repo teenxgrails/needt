@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Check, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -133,7 +133,7 @@ export function BillingSettings() {
       }
       window.location.assign(result.url);
     } catch (error) {
-      toast.error(
+      notify.error(
         error instanceof Error ? error.message : "Could not start checkout"
       );
       setPendingAction(null);
@@ -153,7 +153,7 @@ export function BillingSettings() {
       }
       window.location.assign(result.url);
     } catch (error) {
-      toast.error(
+      notify.error(
         error instanceof Error ? error.message : "Could not open billing portal"
       );
       setPendingAction(null);

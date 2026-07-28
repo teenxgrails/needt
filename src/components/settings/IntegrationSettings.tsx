@@ -25,7 +25,7 @@ import {
   SiTodoist,
   SiTrello,
 } from "react-icons/si";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,7 +182,7 @@ export function IntegrationSettings() {
         body: JSON.stringify({ id: connection.id }),
       });
       if (response.ok) {
-        toast.success(`${item.name} disconnected`);
+        notify.success(`${item.name} disconnected`);
         await load();
       }
       return;
@@ -202,7 +202,7 @@ export function IntegrationSettings() {
         throw new Error(result.error || "Connection failed");
       window.location.assign(result.redirectUrl);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not connect");
+      notify.error(error instanceof Error ? error.message : "Could not connect");
     } finally {
       setConnecting(null);
     }

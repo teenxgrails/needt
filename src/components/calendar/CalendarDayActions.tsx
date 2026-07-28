@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { Ban, Clock3, RotateCcw, Sunrise, Sunset } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -94,9 +94,9 @@ export function CalendarDayActions({ date }: { date: Date }) {
             : { kind: "BLOCK_HOURS", startTime, endTime }
       );
       setMode(null);
-      toast.success("Today's task hours updated");
+      notify.success("Today's task hours updated");
     } catch (error) {
-      toast.error(
+      notify.error(
         error instanceof Error ? error.message : "Could not update hours"
       );
     } finally {
@@ -109,9 +109,9 @@ export function CalendarDayActions({ date }: { date: Date }) {
     setSubmitting(true);
     try {
       await createOverride({ kind: "BLOCK_WHOLE_DAY" });
-      toast.success("Whole day blocked");
+      notify.success("Whole day blocked");
     } catch (error) {
-      toast.error(
+      notify.error(
         error instanceof Error ? error.message : "Could not block day"
       );
     } finally {
@@ -130,9 +130,9 @@ export function CalendarDayActions({ date }: { date: Date }) {
       if (!response.ok) throw new Error("Could not reset hours");
       await useTaskStore.getState().triggerScheduleAllTasks();
       window.dispatchEvent(new Event("needt:flexible-hours-changed"));
-      toast.success("Task hours reset");
+      notify.success("Task hours reset");
     } catch {
-      toast.error("Could not reset task hours");
+      notify.error("Could not reset task hours");
     } finally {
       setSubmitting(false);
     }

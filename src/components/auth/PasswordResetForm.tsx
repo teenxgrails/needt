@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -89,7 +89,7 @@ export function PasswordResetForm() {
         throw new Error(result.error || "Failed to request password reset");
       }
 
-      toast.success("Password reset email sent", {
+      notify.success("Password reset email sent", {
         description: "Please check your email for further instructions.",
       });
 
@@ -103,7 +103,7 @@ export function PasswordResetForm() {
         { error: error instanceof Error ? error.message : "Unknown error" },
         LOG_SOURCE
       );
-      toast.error("Failed to request password reset", {
+      notify.error("Failed to request password reset", {
         description: "Please try again later.",
       });
     } finally {
@@ -133,7 +133,7 @@ export function PasswordResetForm() {
         throw new Error(result.error || "Failed to reset password");
       }
 
-      toast.success("Password reset successful", {
+      notify.success("Password reset successful", {
         description: "You can now sign in with your new password.",
       });
 
@@ -145,7 +145,7 @@ export function PasswordResetForm() {
         { error: error instanceof Error ? error.message : "Unknown error" },
         LOG_SOURCE
       );
-      toast.error("Failed to reset password", {
+      notify.error("Failed to reset password", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });

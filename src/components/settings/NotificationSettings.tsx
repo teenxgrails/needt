@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { useSettingsStore } from "@/store/settings";
 
@@ -52,13 +52,13 @@ export function NotificationSettings() {
           "On iPhone and iPad, install Needt to the Home Screen to receive Web Push. Email reminders remain active."
         );
         updateNotificationSettings({ webPushEnabled: false });
-        toast.info("Install the PWA for iOS push notifications");
+        notify.info("Install the PWA for iOS push notifications");
         return;
       }
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         updateNotificationSettings({ webPushEnabled: false });
-        toast.info("Browser notifications remain off");
+        notify.info("Browser notifications remain off");
         return;
       }
 
@@ -93,10 +93,10 @@ export function NotificationSettings() {
       setPushNote(
         "Web Push works while the browser is closed. Email remains the fallback when a subscription expires."
       );
-      toast.success("Browser notifications enabled");
+      notify.success("Browser notifications enabled");
     } catch {
       updateNotificationSettings({ webPushEnabled: false });
-      toast.error("Could not enable browser notifications");
+      notify.error("Could not enable browser notifications");
     }
   };
 

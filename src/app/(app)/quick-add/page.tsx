@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { CornerDownLeft, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +54,7 @@ export default function QuickAddPage() {
       const data = (await response.json()) as { tasks: ParsedTask[] };
 
       if (!data.tasks.length) {
-        toast.error("Nothing to add");
+        notify.error("Nothing to add");
         return;
       }
 
@@ -75,7 +75,7 @@ export default function QuickAddPage() {
       }
 
       setText("");
-      toast.success(
+      notify.success(
         `Added ${data.tasks.length} ${data.tasks.length === 1 ? "task" : "tasks"}`
       );
     } catch (error) {
@@ -84,7 +84,7 @@ export default function QuickAddPage() {
         { error: error instanceof Error ? error.message : String(error) },
         LOG_SOURCE
       );
-      toast.error("Could not add tasks");
+      notify.error("Could not add tasks");
     } finally {
       setBusy(false);
     }

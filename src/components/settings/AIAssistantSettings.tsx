@@ -11,7 +11,7 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -156,7 +156,7 @@ export function AIAssistantSettings() {
           setMemories(memoryData.memories);
         }
       } catch (error) {
-        toast.error("Could not load AI settings", {
+        notify.error("Could not load AI settings", {
           description:
             error instanceof Error ? error.message : "Please try again later.",
         });
@@ -173,9 +173,9 @@ export function AIAssistantSettings() {
   useEffect(() => {
     const result = new URLSearchParams(window.location.search).get("ai-oauth");
     if (result === "connected") {
-      toast.success("Custom AI OAuth connected");
+      notify.success("Custom AI OAuth connected");
     } else if (result === "failed") {
-      toast.error("Could not connect Custom AI OAuth");
+      notify.error("Could not connect Custom AI OAuth");
     } else {
       return;
     }
@@ -209,9 +209,9 @@ export function AIAssistantSettings() {
     try {
       setIsSaving(true);
       await persistSettings();
-      toast.success("AI assistant settings saved");
+      notify.success("AI assistant settings saved");
     } catch (error) {
-      toast.error("Could not save AI settings", {
+      notify.error("Could not save AI settings", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });
@@ -232,7 +232,7 @@ export function AIAssistantSettings() {
       const data = (await response.json()) as { tasks: ParsedTaskPreview[] };
       setParsedTasks(data.tasks);
     } catch (error) {
-      toast.error("Could not parse the brain dump", {
+      notify.error("Could not parse the brain dump", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });
@@ -253,9 +253,9 @@ export function AIAssistantSettings() {
         ...current,
         oauth: { ...current.oauth, connected: false, expiresAt: null },
       }));
-      toast.success("Custom AI OAuth disconnected");
+      notify.success("Custom AI OAuth disconnected");
     } catch (error) {
-      toast.error("Could not disconnect Custom AI OAuth", {
+      notify.error("Could not disconnect Custom AI OAuth", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });
@@ -266,7 +266,7 @@ export function AIAssistantSettings() {
 
   const connectCustomOAuth = async () => {
     if (!settings.customUrl?.trim()) {
-      toast.error("Add your Custom AI endpoint before connecting");
+      notify.error("Add your Custom AI endpoint before connecting");
       return;
     }
 
@@ -275,7 +275,7 @@ export function AIAssistantSettings() {
       await persistSettings();
       window.location.assign("/api/ai/oauth/custom/authorize");
     } catch (error) {
-      toast.error("Could not start Custom AI connection", {
+      notify.error("Could not start Custom AI connection", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });
@@ -290,7 +290,7 @@ export function AIAssistantSettings() {
       body: JSON.stringify({ memoryId }),
     });
     if (!response.ok) {
-      toast.error("Could not delete memory");
+      notify.error("Could not delete memory");
       return;
     }
     setMemories((current) =>
@@ -308,9 +308,9 @@ export function AIAssistantSettings() {
       });
       if (!response.ok) throw new Error("Failed to clear memories");
       setMemories([]);
-      toast.success("AI memory cleared");
+      notify.success("AI memory cleared");
     } catch (error) {
-      toast.error("Could not clear AI memory", {
+      notify.error("Could not clear AI memory", {
         description: error instanceof Error ? error.message : undefined,
       });
     } finally {

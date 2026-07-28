@@ -74,6 +74,9 @@ server-controlled through `src/lib/feature-flags.ts`.
 - **Admin-only**: API routes use `requireAdmin` middleware from `@/lib/auth/api-auth` (do not call `getServerSession` and check role by hand); UI uses the `useAdmin` hook or `<AdminOnly>` wrapper with `<AccessDeniedMessage>`.
 - **shadcn/ui**: add components with `npx shadcn@latest add`. Icons via `react-icons`.
 - **UI "house format"**: popups/options panels, toggles, and modals follow the fixed format in `design-refs/ui-conventions.md`. `NeedtPicker` is the only product picker and covers plain/searchable/creatable modes plus the mobile sheet. Use token-based colors, no glows, and no backdrop blur.
+- **Focus UI**: keep one flat, state-stable canvas separated by hairlines; do not reintroduce dashboard cards or metric tiles.
+- **Notifications**: product code calls the typed `notify` facade in `src/lib/notifications.ts`; only the facade and shared Toaster import Sonner.
+- **AI companion**: position math belongs in `src/lib/assistant-position.ts`; persist normalized coordinates and mark fixed controls that it must avoid with `data-assistant-avoid`.
 - **JSX text**: escape quotes/apostrophes as `&apos;` / `&quot;`.
 - Keep changes minimal and scoped; don't refactor unrelated code. Don't remove `//todo` comments; add them for deferred work.
 - Update `CHANGELOG.md` under `[unreleased]` as you make user-facing changes.

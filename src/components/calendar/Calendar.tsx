@@ -22,7 +22,7 @@ import {
   IoOptionsOutline,
   IoRefreshOutline,
 } from "react-icons/io5";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
@@ -142,19 +142,19 @@ export function Calendar({
     setIsRefreshingTasks(true);
     // Inverse-themed "Recalculating tasks..." toast (white on dark, dark on
     // light), matching the Motion reference.
-    const toastId = toast.loading("Recalculating tasks...", {
+    const toastId = notify.loading("Recalculating tasks...", {
       className: "recalc-toast",
       closeButton: true,
     });
     try {
       const scheduledCount = await scheduleAllTasks();
-      toast.success(
+      notify.success(
         scheduledCount > 0
           ? `${scheduledCount} tasks refreshed on your calendar.`
           : "All tasks are already up to date."
       );
     } catch (error) {
-      toast.error("Couldn't refresh tasks. Please try again.");
+      notify.error("Couldn't refresh tasks. Please try again.");
       void logger.error(
         "Calendar task refresh failed",
         {
@@ -163,7 +163,7 @@ export function Calendar({
         LOG_SOURCE
       );
     } finally {
-      toast.dismiss(toastId);
+      notify.dismiss(toastId);
       setIsRefreshingTasks(false);
     }
   };

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { FaApple, FaMicrosoft } from "react-icons/fa";
 import { SiGooglecalendar } from "react-icons/si";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import {
   Dialog,
@@ -104,7 +104,7 @@ export function AccountManager() {
         ? integrationStatus.google.configured
         : integrationStatus.outlook.configured;
     if (!configured) {
-      toast.info(
+      notify.info(
         `${provider === "GOOGLE" ? "Google" : "Outlook"} Calendar is not configured yet`
       );
       return;

@@ -898,6 +898,7 @@
   --companion-rose-opacity: 0.072;
   --companion-face: rgb(255 255 255 / 92%);
   isolation: isolate;
+  will-change: transform;
 }
 
 .needt-ai-companion-orb {
@@ -1127,7 +1128,6 @@
 @media (max-width: 639px) {
   .needt-ai-companion-message {
     bottom: calc(100% + 4px);
-    right: 16%;
     width: min(260px, calc(100vw - 32px));
   }
 

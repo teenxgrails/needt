@@ -30,7 +30,7 @@ export function SettingsSection({
   children,
 }: SettingsSectionProps) {
   return (
-    <section className="max-w-[896px] text-[var(--text-primary)]">
+    <section className="max-w-[840px] text-[var(--text-primary)]">
       {(title || (description && showDescription)) && (
         <header className="mb-5">
           {title && (

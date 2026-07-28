@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { Copy, KeyRound, Save } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +50,7 @@ export function ConnectorSettings() {
         const data = (await response.json()) as ConnectorSettingsResponse;
         if (!cancelled) setSettings(data);
       } catch (error) {
-        toast.error("Could not load connector settings", {
+        notify.error("Could not load connector settings", {
           description:
             error instanceof Error ? error.message : "Please try again later.",
         });
@@ -67,13 +67,13 @@ export function ConnectorSettings() {
   const generateToken = async () => {
     const response = await fetch("/api/connector-settings", { method: "POST" });
     if (!response.ok) {
-      toast.error("Could not generate connector token");
+      notify.error("Could not generate connector token");
       return;
     }
     const data = (await response.json()) as ConnectorSettingsResponse;
     setSettings(data);
     setNewToken(data.token || null);
-    toast.success("Connector token generated");
+    notify.success("Connector token generated");
   };
 
   const saveSettings = async () => {
@@ -87,9 +87,9 @@ export function ConnectorSettings() {
       if (!response.ok) throw new Error("Failed to save connector settings");
       const data = (await response.json()) as ConnectorSettingsResponse;
       setSettings(data);
-      toast.success("Connector settings saved");
+      notify.success("Connector settings saved");
     } catch (error) {
-      toast.error("Could not save connector settings", {
+      notify.error("Could not save connector settings", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });
@@ -158,9 +158,9 @@ export function ConnectorSettings() {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(newToken);
-                      toast.success("Token copied");
+                      notify.success("Token copied");
                     } catch {
-                      toast.error("Could not copy token");
+                      notify.error("Could not copy token");
                     }
                   }}
                   aria-label="Copy connector token"

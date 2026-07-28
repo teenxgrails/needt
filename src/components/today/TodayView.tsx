@@ -17,7 +17,7 @@ import {
   Plus,
   RotateCcw,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 import type { AgendaGroup } from "@/components/today/AgendaTaskSection";
@@ -313,7 +313,7 @@ export function TodayView({
             : TaskStatus.COMPLETED,
       });
       if (previousStatus !== TaskStatus.COMPLETED) {
-        toast.success("Task completed", {
+        notify.success("Task completed", {
           action: {
             label: "Undo",
             onClick: () => void updateTask(task.id, { status: previousStatus }),
@@ -321,7 +321,7 @@ export function TodayView({
         });
       }
     } catch {
-      toast.error("Could not update task");
+      notify.error("Could not update task");
     }
   };
 
@@ -330,7 +330,7 @@ export function TodayView({
     const previousStartDate = task.startDate;
     try {
       await updateTask(task.id, { dueDate: date, startDate: date });
-      toast.success("Task moved", {
+      notify.success("Task moved", {
         action: {
           label: "Undo",
           onClick: () =>
@@ -341,7 +341,7 @@ export function TodayView({
         },
       });
     } catch {
-      toast.error("Could not change date");
+      notify.error("Could not change date");
     }
   };
 
@@ -352,7 +352,7 @@ export function TodayView({
     try {
       await updateTask(task.id, { duration, estimatedMinutes: duration });
     } catch {
-      toast.error("Could not change duration");
+      notify.error("Could not change duration");
     }
   };
 
@@ -372,9 +372,9 @@ export function TodayView({
         taskId,
         computeTaskPlacementUpdate(start, end, isResize)
       );
-      toast.success(isResize ? "Task duration updated" : "Task pinned");
+      notify.success(isResize ? "Task duration updated" : "Task pinned");
     } catch {
-      toast.error("Could not move task");
+      notify.error("Could not move task");
     }
   };
 
@@ -385,9 +385,9 @@ export function TodayView({
       await createDefaultTask(title);
       setTitle("");
       setAddOpen(false);
-      toast.success("Task added");
+      notify.success("Task added");
     } catch {
-      toast.error("Could not add task");
+      notify.error("Could not add task");
     } finally {
       setSaving(false);
     }
@@ -538,6 +538,7 @@ export function TodayView({
       <button
         type="button"
         onClick={() => setAddOpen(true)}
+        data-assistant-avoid
         aria-label="Quick add task"
         className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-5 z-10 hidden h-12 w-12 touch-manipulation place-items-center rounded-full border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)] shadow-[var(--button-primary-shadow)] transition-[transform,background-color] duration-150 active:scale-95 motion-reduce:transition-none sm:grid lg:bottom-6 xl:hidden"
       >
@@ -547,6 +548,7 @@ export function TodayView({
       <button
         type="button"
         onClick={() => setTimelineOpen(true)}
+        data-assistant-avoid
         className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-5 z-10 grid h-12 w-12 place-items-center rounded-full border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] text-[var(--control-fg)] shadow-[var(--popover-shadow)] xl:hidden"
         aria-label="Open day calendar"
       >
@@ -625,7 +627,7 @@ export function TodayView({
                   )
                 );
                 setReviewOpen(false);
-                toast.success(
+                notify.success(
                   `${reviewSelection.size} task${reviewSelection.size === 1 ? "" : "s"} moved to tomorrow`,
                   {
                     action: {

@@ -36,6 +36,7 @@ export function CommandPaletteFab() {
   return (
     <button
       onClick={openCommandPalette}
+      data-assistant-avoid
       className={cn(
         "fixed bottom-4 right-4 z-40 rounded-full bg-primary p-3 text-primary-foreground shadow-lg",
         "hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",

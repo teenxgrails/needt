@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -156,7 +156,7 @@ export function SmartPlanningPanel() {
       const data = (await response.json()) as { tasks: ParsedTask[] };
       setParsedTasks(data.tasks);
     } catch (error) {
-      toast.error("Brain dump parse failed", {
+      notify.error("Brain dump parse failed", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });
@@ -183,16 +183,16 @@ export function SmartPlanningPanel() {
     }
     setBrainDump("");
     setParsedTasks([]);
-    toast.success("Tasks added from brain dump");
+    notify.success("Tasks added from brain dump");
   };
 
   const runSchedule = async () => {
     try {
       setIsScheduling(true);
       await scheduleAllTasks();
-      toast.success("Schedule refreshed");
+      notify.success("Schedule refreshed");
     } catch (error) {
-      toast.error("Could not reschedule", {
+      notify.error("Could not reschedule", {
         description:
           error instanceof Error ? error.message : "Please try again later.",
       });
@@ -220,7 +220,7 @@ export function SmartPlanningPanel() {
       }
     }
     await scheduleAllTasks();
-    toast.success("Unfinished work rolled forward");
+    notify.success("Unfinished work rolled forward");
   };
 
   return (

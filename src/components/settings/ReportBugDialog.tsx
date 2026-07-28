@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 
 import { Bug } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -49,10 +49,10 @@ export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
         body: form,
       });
       if (!response.ok) throw new Error("Report failed");
-      toast.success("Bug report sent. Thank you.");
+      notify.success("Bug report sent. Thank you.");
       closeRef.current?.click();
     } catch {
-      toast.error("Could not send the report. Please try again.");
+      notify.error("Could not send the report. Please try again.");
     } finally {
       setSubmitting(false);
     }

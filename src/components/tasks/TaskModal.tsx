@@ -23,7 +23,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { RRule } from "rrule";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { CalendarItemTypeSwitch } from "@/components/calendar/CalendarItemTypeSwitch";
 import {
@@ -302,7 +302,7 @@ export function TaskModal({
         }
       })
       .catch(() => {
-        if (!cancelled) toast.error("Could not load work schedules");
+        if (!cancelled) notify.error("Could not load work schedules");
       });
     return () => {
       cancelled = true;
@@ -514,7 +514,7 @@ export function TaskModal({
         { error: error instanceof Error ? error.message : String(error) },
         LOG_SOURCE
       );
-      toast.error(
+      notify.error(
         task ? "Couldn't save the task." : "Couldn't create the task."
       );
     } finally {
@@ -596,14 +596,14 @@ export function TaskModal({
           .filter(Boolean)
           .join("\n\n")
       );
-      toast.success("Task copied");
+      notify.success("Task copied");
     } catch (error) {
       void logger.warn(
         "Could not copy task",
         { error: error instanceof Error ? error.message : String(error) },
         LOG_SOURCE
       );
-      toast.error("Could not copy the task");
+      notify.error("Could not copy the task");
     }
   };
 

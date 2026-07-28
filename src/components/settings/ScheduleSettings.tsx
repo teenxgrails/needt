@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Check, Copy, Pencil, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -177,7 +177,7 @@ export function ScheduleSettings() {
       const data = (await response.json()) as { schedules: WorkSchedule[] };
       setSchedules(data.schedules);
     } catch {
-      toast.error("Could not load work schedules");
+      notify.error("Could not load work schedules");
     } finally {
       setIsLoading(false);
     }
@@ -319,7 +319,7 @@ export function ScheduleSettings() {
 
   const openCopy = (day: number) => {
     if (!draft.windows.some((window) => window.dayOfWeek === day)) {
-      toast.error("Add hours to this day first");
+      notify.error("Add hours to this day first");
       return;
     }
     copyInteraction.current = true;
@@ -347,7 +347,7 @@ export function ScheduleSettings() {
       ),
     }));
     closeCopy();
-    toast.success(
+    notify.success(
       `Copied ${DAYS[copySourceDay].label} to ${copyTargetDays
         .map((day) => DAYS[day].label)
         .join(", ")}`
@@ -381,9 +381,9 @@ export function ScheduleSettings() {
       await loadSchedules();
       window.dispatchEvent(new Event("needt:work-schedule-changed"));
       setEditorOpen(false);
-      toast.success(draft.id ? "Schedule saved" : "Schedule created");
+      notify.success(draft.id ? "Schedule saved" : "Schedule created");
     } catch (error) {
-      toast.error(
+      notify.error(
         error instanceof Error ? error.message : "Could not save schedule"
       );
     } finally {
@@ -398,13 +398,13 @@ export function ScheduleSettings() {
     });
     const data = (await response.json()) as { error?: string };
     if (!response.ok) {
-      toast.error(data.error || "Could not delete schedule");
+      notify.error(data.error || "Could not delete schedule");
       return;
     }
     await loadSchedules();
     window.dispatchEvent(new Event("needt:work-schedule-changed"));
     setEditorOpen(false);
-    toast.success("Schedule deleted");
+    notify.success("Schedule deleted");
   };
 
   return (

@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 import type { DropArg } from "@fullcalendar/interaction";
-import { toast } from "sonner";
+import { notify } from "@/lib/notifications";
 
 import { newDate } from "@/lib/date-utils";
 import { isRangeBlocked, type BlockingOverride } from "@/lib/flexible-hours-guard";
@@ -48,7 +48,7 @@ export function useCalendarExternalTaskDrop(
       // so the ordinary range check applies here too — it already treats
       // BLOCK_WHOLE_DAY as blocking the whole day regardless of time.
       if (isRangeBlocked(start, end, overrides)) {
-        toast.error("This time is blocked out");
+        notify.error("This time is blocked out");
         return;
       }
 
