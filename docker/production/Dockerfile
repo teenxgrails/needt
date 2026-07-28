@@ -21,6 +21,7 @@ RUN npm run build:worker
 
 # Production stage
 FROM node:22-alpine3.19 AS runner
+ARG NEEDT_BUILD_SHA=local
 # Install netcat and jq for JSON manipulation
 RUN apk add --no-cache netcat-openbsd jq python3 make g++
 
@@ -52,6 +53,7 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEEDT_BUILD_SHA=$NEEDT_BUILD_SHA
 
 # Start the application
 ENTRYPOINT ["/app/entrypoint.sh"]

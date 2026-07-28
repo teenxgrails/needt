@@ -440,7 +440,7 @@
     --chart-5: 340 75% 55%;
   }
 
-  /* True Dark is intentionally deeper than the graphite Gray palette above.
+  /* True Dark is intentionally deeper than the Graphite palette above.
      Both modes keep the same semantic/component contract. */
   .dark.theme-dark {
     --surface-canvas: var(--primitive-neutral-900);

@@ -11,6 +11,7 @@ concurrency:
 env:
   CI: "true"
   DATABASE_URL: postgresql://needt:needt@localhost:5432/needt_test
+  DIRECT_URL: postgresql://needt:needt@localhost:5432/needt_test
   SHADOW_DATABASE_URL: postgresql://needt:needt@localhost:5432/needt_shadow
   REDIS_URL: redis://localhost:6379
   NEXTAUTH_URL: http://127.0.0.1:3000
@@ -77,6 +78,7 @@ jobs:
       - run: npm run type-check
       - run: npm run lint
       - run: npm run check:branding
+      - run: npm run check:ui-contracts
       - run: npm run test:unit -- --runInBand
 
   schema-drift:
@@ -193,12 +195,30 @@ jobs:
         run: npx playwright install --with-deps
       - if: needs.changes.outputs.ui == 'true'
         run: npx prisma generate && npx prisma migrate deploy
-      - if: needs.changes.outputs.ui == 'true'
+      - name: Run visual and style suites
+        id: visual
+        if: needs.changes.outputs.ui == 'true'
+        continue-on-error: true
         run: npm run test:visual && npm run test:style
-      - if: failure()
+      - name: Generate Linux baseline candidates
+        id: baseline-candidates
+        if: needs.changes.outputs.ui == 'true' && steps.visual.outcome == 'failure'
+        continue-on-error: true
+        run: npm run test:visual:update
+      - name: Upload visual failure report
+        if: always() && steps.visual.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-visual-report
           path: |
             playwright-report
             test-results
+      - name: Upload Linux baseline candidates
+        if: always() && steps.visual.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baseline-candidates
+          path: tests/visual/*-snapshots
+      - name: Enforce visual gate
+        if: always() && steps.visual.outcome == 'failure'
+        run: exit 1

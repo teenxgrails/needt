@@ -44,9 +44,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // The product dev command stays on webpack for Sentry compatibility with
-    // Next 15.3; this isolated runner can use Turbopack for fast rebuilds.
-    command: "npm run dev -- --turbopack",
+    // Keep visual CI on webpack: Next 15.3 Turbopack can terminate the dev
+    // server when BullMQ/ioredis are resolved through serverExternalPackages.
+    command: "npm run dev",
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

@@ -10,6 +10,7 @@ export async function GET() {
       ok: true,
       db: "ok",
       buildSha:
+        process.env.NEEDT_BUILD_SHA ||
         process.env.VERCEL_GIT_COMMIT_SHA ||
         process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
         "local",
@@ -22,6 +23,7 @@ export async function GET() {
         db: "error",
         error: error instanceof Error ? error.message : String(error),
         buildSha:
+          process.env.NEEDT_BUILD_SHA ||
           process.env.VERCEL_GIT_COMMIT_SHA ||
           process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
           "local",

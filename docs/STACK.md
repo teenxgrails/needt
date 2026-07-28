@@ -39,6 +39,10 @@ triggered only by a successful CI run on `main`.
 use Needt only; legal attribution and `@fullcalendar/*` package IDs are the
 explicit exceptions.
 
+`npm run check:ui-contracts` protects the release-level UI invariants: one
+picker, flat Focus, isolated Today scrollers, draggable assistant affordances,
+the notification facade, Graphite migration, and the stable GHCR image name.
+
 ## Shared UI contracts
 
 `src/components/ui/needt-picker.tsx` is the only product picker. It covers

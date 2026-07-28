@@ -250,7 +250,10 @@ async function start(): Promise<void> {
   );
   await logger.info(
     "Needt background worker started",
-    { queues: workers.map((worker) => worker.name) },
+    {
+      buildSha: process.env.NEEDT_BUILD_SHA || "local",
+      queues: workers.map((worker) => worker.name),
+    },
     LOG_SOURCE
   );
 }

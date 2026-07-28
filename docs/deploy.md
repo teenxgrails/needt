@@ -135,6 +135,10 @@ Expected result:
 { "ok": true, "db": "ok", "buildSha": "..." }
 ```
 
+The production image bakes the non-secret Git commit into
+`NEEDT_BUILD_SHA`. The health response and the worker startup log must report
+the same SHA before a release is accepted.
+
 ## 8. Notes
 
 - The app is multi-user. Every user-owned query, worker job, scheduling run,
