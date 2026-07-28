@@ -1,0 +1,13 @@
+Needt
+Copyright 2026 Needt contributors
+
+The Needt document editor adapts interaction and architecture patterns from
+Novel, an open-source Notion-style editor by Steven Tey and contributors:
+https://github.com/steven-tey/novel
+
+Novel is licensed under the Apache License, Version 2.0.
+Copyright Novel contributors.
+
+This notice does not replace the upstream Apache-2.0 license terms. Needt's
+own source remains licensed as stated in the repository LICENSE, and upstream
+FluidCalendar attribution remains preserved.

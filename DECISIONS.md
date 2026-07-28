@@ -74,3 +74,18 @@
 - 2026-07-22: Production had an applied `20260711220000_calendar_workspace_upgrade` entry whose source file was no longer in Git. A no-op history marker with the same name is restored before applying later additive migrations; production already contains that migration's schema effects, and Prisma now sees one ordered history instead of divergent branches.
 - 2026-07-22: The production smoke proved deployment, persistence, scheduling, and route availability only; it did not establish product or design completeness. Needt remains pre-RC until Today, Workspace, Focus, Boards, Settings, Mail, and the cross-app GUI each pass explicit functional and visual acceptance checks.
 - 2026-07-23: The human explicitly reopened public registration, overriding the original single-user signup restriction. Signup is enabled by default, remains admin-disableable through `SystemSettings.publicSignup`, and creates ordinary `user` accounts through the existing credentials provider without adding teams, organizations, or roles.
+- 2026-07-28: npm is the sole package manager; `pnpm-lock.yaml` and the
+  package-level pnpm override were removed, while `.npmrc` carries
+  `legacy-peer-deps=true` for deterministic local/CI/Docker installs.
+- 2026-07-28: Needt is multi-user. Scheduling runs, rate limits, Focus,
+  reminders, dependencies, nudges, and bookings are isolated by user/owner and
+  paid behavior is enforced in APIs through `src/lib/entitlements.ts`.
+- 2026-07-28: Web and BullMQ worker ship from one image/SHA using additive
+  expand/contract migrations; stale scheduling/reminder claims have reapers
+  and finished scheduling runs retain 30 days.
+- 2026-07-28: The Today/Pages document format is server-feature-flagged with
+  deterministic rollout and per-user overrides. Version 1 remains an instant
+  fallback while version 2 repairs block identity and migrates lazily on save.
+- 2026-07-28: Booking links are in `v0.1.0`; Gantt remains deferred to `v0.2.0`.
+  Team round-robin, collective availability, and native site/app blocking are
+  explicitly out of the current milestone.

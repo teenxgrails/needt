@@ -1,3 +1,5 @@
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -12,6 +14,7 @@ const nextConfig = {
 
   // Disable all development indicators
   devIndicators: false,
+  allowedDevOrigins: ["127.0.0.1"],
 
   // Lint and type-check are enforced pre-commit (husky/lint-staged) and in CI
   // via `npm run lint` / `npm run type-check`. Running them again inside
@@ -35,4 +38,14 @@ const nextConfig = {
   serverExternalPackages: ["isomorphic-dompurify", "jsdom"],
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});

@@ -3,6 +3,7 @@ import {
   getCalendarSyncQueue,
   getBugReportSyncQueue,
   getMailSyncQueue,
+  getReminderQueue,
   getRescheduleQueue,
   getWebhookRenewQueue,
 } from "@/lib/queue/queues";
@@ -37,12 +38,12 @@ export async function enqueueCalendarSync(feedId: string) {
   );
 }
 
-export async function enqueueReschedule(userId: string) {
+export async function enqueueReschedule(userId: string, runId?: string) {
   if (await skipWhenUnconfigured("reschedule")) return null;
   return getRescheduleQueue().add(
     "reschedule-user",
-    { userId },
-    { jobId: `reschedule-${userId}` }
+    { userId, runId },
+    { jobId: runId ? `reschedule-run-${runId}` : `reschedule-${userId}` }
   );
 }
 
@@ -94,4 +95,17 @@ export async function enqueueBugReportSync(reportId: string) {
     attempts: 6,
     backoff: { type: "exponential", delay: 30_000 },
   });
+}
+
+export async function enqueueReminderDelivery(reminderId: string) {
+  if (await skipWhenUnconfigured("reminder-delivery")) return null;
+  return getReminderQueue().add(
+    "deliver-reminder",
+    { kind: "deliver", reminderId },
+    {
+      jobId: `reminder-${reminderId}`,
+      attempts: 6,
+      backoff: { type: "exponential", delay: 30_000 },
+    }
+  );
 }

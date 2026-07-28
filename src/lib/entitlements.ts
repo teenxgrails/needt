@@ -15,6 +15,10 @@ export const PLAN_LIMITS = {
     mailboxes: 0,
     aiAgent: false,
     focusStats: false,
+    advancedFocusModes: false,
+    remindersPerTask: 1,
+    bookingPages: 1,
+    advancedNudges: false,
   },
   PRO: {
     calendars: null,
@@ -23,6 +27,10 @@ export const PLAN_LIMITS = {
     mailboxes: 3,
     aiAgent: true,
     focusStats: true,
+    advancedFocusModes: true,
+    remindersPerTask: null,
+    bookingPages: null,
+    advancedNudges: true,
   },
   LIFETIME: {
     calendars: null,
@@ -31,6 +39,10 @@ export const PLAN_LIMITS = {
     mailboxes: 3,
     aiAgent: true,
     focusStats: true,
+    advancedFocusModes: true,
+    remindersPerTask: null,
+    bookingPages: null,
+    advancedNudges: true,
   },
 } as const satisfies Record<
   SubscriptionPlan,
@@ -41,6 +53,10 @@ export const PLAN_LIMITS = {
     mailboxes: number | null;
     aiAgent: boolean;
     focusStats: boolean;
+    advancedFocusModes: boolean;
+    remindersPerTask: number | null;
+    bookingPages: number | null;
+    advancedNudges: boolean;
   }
 >;
 
@@ -184,4 +200,38 @@ export async function canViewFocusStats(userId: string) {
     upgradeRequired: !PLAN_LIMITS[plan].focusStats,
     plan,
   };
+}
+
+export async function canUseAdvancedFocusModes(userId: string) {
+  const plan = await getPlan(userId);
+  return {
+    allowed: PLAN_LIMITS[plan].advancedFocusModes,
+    plan,
+  };
+}
+
+export async function canAddTaskReminder(
+  userId: string,
+  taskId: string
+): Promise<LimitStatus> {
+  const [plan, used] = await Promise.all([
+    getPlan(userId),
+    prisma.taskReminder.count({ where: { userId, taskId, canceledAt: null } }),
+  ]);
+  return limitStatus(plan, PLAN_LIMITS[plan].remindersPerTask, used);
+}
+
+export async function canCreateBookingPage(
+  userId: string
+): Promise<LimitStatus> {
+  const [plan, used] = await Promise.all([
+    getPlan(userId),
+    prisma.bookingPage.count({ where: { userId, isActive: true } }),
+  ]);
+  return limitStatus(plan, PLAN_LIMITS[plan].bookingPages, used);
+}
+
+export async function canUseAdvancedNudges(userId: string) {
+  const plan = await getPlan(userId);
+  return { allowed: PLAN_LIMITS[plan].advancedNudges, plan };
 }

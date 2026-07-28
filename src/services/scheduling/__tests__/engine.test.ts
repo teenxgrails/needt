@@ -121,6 +121,56 @@ describe("scheduleTasks", () => {
     expect(blocker!.end <= dependent!.start).toBe(true);
   });
 
+  it("requires every blocker in a multi-task dependency chain", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "dependent",
+          title: "Dependent",
+          priority: "URGENT",
+          dependencyIds: ["blocker-a", "blocker-b"],
+        }),
+        task({ id: "blocker-a", title: "Blocker A", priority: "LOW" }),
+        task({ id: "blocker-b", title: "Blocker B", priority: "LOW" }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+    const dependent = result.blocks.find(
+      (block) => block.taskId === "dependent"
+    )!;
+    const blockers = result.blocks.filter((block) =>
+      ["blocker-a", "blocker-b"].includes(block.taskId)
+    );
+    expect(blockers).toHaveLength(2);
+    expect(blockers.every((block) => block.end <= dependent.start)).toBe(true);
+  });
+
+  it("reports DEPENDENCY_BLOCKED when an unfinished blocker is unavailable", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "dependent",
+          title: "Dependent",
+          dependencyIds: ["external-blocker"],
+        }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+    expect(result.blocks).toHaveLength(0);
+    expect(result.unscheduled).toEqual([
+      expect.objectContaining({
+        taskId: "dependent",
+        reason: "DEPENDENCY_BLOCKED",
+      }),
+    ]);
+  });
+
   it("prefers high-energy windows for high-focus tasks", () => {
     const result = scheduleTasks({
       tasks: [

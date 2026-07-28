@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { sendConnectorWebhook } from "@/services/connectors/webhooks";
-import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { SchedulingRunSource } from "@prisma/client";
+
+import {
+  createSchedulingRun,
+  executeSchedulingRun,
+} from "@/services/scheduling/runs";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
-import { repushDirtyBlocks } from "@/lib/task-block-push";
+import {
+  enqueueReschedule,
+  isQueueConfigured,
+} from "@/lib/queue/enqueue";
 
 const LOG_SOURCE = "task-schedule-route";
 
@@ -16,21 +23,33 @@ export async function POST(request: NextRequest) {
       return auth.response;
     }
 
-    const userId = auth.userId;
-
-    // Use the common function to schedule all tasks
-    // If settings are provided, use them, otherwise use the overloaded function
-    const tasksWithRelations = await scheduleAllTasksForUser(userId);
-
-    // Repush dirty blocks and newly scheduled tasks to calendar
-    await repushDirtyBlocks(userId);
-    await sendConnectorWebhook({
-      userId,
-      event: "schedule.changed",
-      payload: { taskCount: tasksWithRelations.length },
+    const dedupeKey =
+      request.headers.get("Idempotency-Key") ||
+      `manual:${Math.floor(Date.now() / 10_000)}`;
+    const run = await createSchedulingRun({
+      userId: auth.userId,
+      source: SchedulingRunSource.MANUAL,
+      dedupeKey,
     });
 
-    return NextResponse.json(tasksWithRelations);
+    if (isQueueConfigured()) {
+      await enqueueReschedule(auth.userId, run.id);
+      return NextResponse.json(
+        { runId: run.id, status: run.status },
+        { status: 202 }
+      );
+    }
+
+    const completed = await executeSchedulingRun(run.id);
+    if (!completed) {
+      throw new Error("Scheduling run disappeared before execution.");
+    }
+    return NextResponse.json({
+      runId: completed.id,
+      status: completed.status,
+      changedTaskCount: completed.changedTaskCount,
+      unscheduled: completed.unscheduled,
+    });
   } catch (error) {
     logger.error(
       "Error scheduling tasks:",

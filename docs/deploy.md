@@ -137,7 +137,8 @@ Expected result:
 
 ## 8. Notes
 
-- The app remains single-user in product behavior, but tables keep `userId` seams so future SaaS conversion does not require a database rewrite.
+- The app is multi-user. Every user-owned query, worker job, scheduling run,
+  reminder, booking page, and entitlement decision must be scoped by `userId`.
 - Prisma is configured with `directUrl`; production uses the standard PostgreSQL
   client path against the Coolify internal database endpoint.
 - Neon adapter support remains available for development or a future database

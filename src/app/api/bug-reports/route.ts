@@ -3,6 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import {
+  accountRule,
+  enforceByteBudget,
+  enforceRateLimits,
+  ipRule,
+  requestIp,
+} from "@/lib/security/rate-limit";
 import { createBugReport } from "@/services/bug-reports/bug-report-service";
 
 const LOG_SOURCE = "BugReportsAPI";
@@ -11,6 +18,14 @@ const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 export async function POST(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
+  const limited = await enforceRateLimits(
+    [
+      ipRule(request, "bug-report:ip", 20, 60 * 60),
+      accountRule(auth.userId, "bug-report:account", 5, 60 * 60),
+    ],
+    { route: request.nextUrl.pathname, userId: auth.userId }
+  );
+  if (limited) return limited;
   try {
     const form = await request.formData();
     const title = form.get("title");
@@ -25,6 +40,28 @@ export async function POST(request: NextRequest) {
     const file = form.get("attachment");
     if (file instanceof File && file.size > MAX_ATTACHMENT_BYTES) {
       return NextResponse.json({ error: "Attachment must be 5 MB or smaller" }, { status: 413 });
+    }
+    if (file instanceof File && file.size > 0) {
+      const byteLimited =
+        (await enforceByteBudget({
+          namespace: "bug-report:attachment:ip",
+          identifier: requestIp(request),
+          bytes: file.size,
+          limitBytes: 20 * 1024 * 1024,
+          windowSeconds: 60 * 60,
+          route: request.nextUrl.pathname,
+          userId: auth.userId,
+        })) ??
+        (await enforceByteBudget({
+          namespace: "bug-report:attachment:account",
+          identifier: auth.userId,
+          bytes: file.size,
+          limitBytes: 10 * 1024 * 1024,
+          windowSeconds: 60 * 60,
+          route: request.nextUrl.pathname,
+          userId: auth.userId,
+        }));
+      if (byteLimited) return byteLimited;
     }
     const report = await createBugReport(auth.userId, {
       title,

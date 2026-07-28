@@ -126,7 +126,9 @@ describe("production migration tooling", () => {
   it("ships the pinned Prisma CLI in the production dependency layer", () => {
     expect(packageJson.dependencies?.prisma).toBe("^6.3.1");
     expect(packageJson.devDependencies?.prisma).toBeUndefined();
-    expect(dockerfile).toContain("npm ci --only=production");
+    expect(dockerfile).toContain("npm ci --omit=dev --ignore-scripts");
+    expect(dockerfile).toContain("RUN npm run build:worker");
+    expect(dockerfile).toContain("/app/dist ./dist");
     expect(entrypoint).toContain('"$PRISMA_BIN" migrate deploy');
   });
 

@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Needt is a single intelligent planner product built from the FluidCalendar fork. It has one unified Next.js application and one production build.
+Needt is a multi-user intelligent planner product built from the FluidCalendar
+fork. It has one unified Next.js application plus a BullMQ worker built from
+the same image and SHA.
 
 ## Commands
 
@@ -12,7 +14,7 @@ Needt is a single intelligent planner product built from the FluidCalendar fork.
 npm run dev               # Dev server (Next.js + Turbopack) on :3000
 npm run build             # Production build
 npm run type-check        # tsc --noEmit
-npm run lint              # next lint (CI requires --max-warnings=0; lint-staged enforces this)
+npm run lint              # eslint . --max-warnings=0
 npm run format            # prettier --write
 
 npm run test:unit         # Jest unit tests (Node env, src/**/__tests__/**/*.test.ts)
@@ -26,7 +28,8 @@ npm run db:up             # Start the Postgres container (docker compose)
 
 ```
 
-- **Install with `npm install --legacy-peer-deps`** (React 19 peer-dep conflicts otherwise).
+- **npm is the only package manager.** Install with
+  `npm install --legacy-peer-deps`; Docker/CI use `npm ci` and `.npmrc`.
 - Node version is pinned in `.nvmrc` (22.x).
 - Husky pre-commit runs `lint-staged`: eslint (zero warnings) + prettier + `type-check` on staged files.
 
@@ -42,7 +45,15 @@ Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · Next
 
 **Task sync** (`src/lib/task-sync/`): one-way sync from external task providers (Outlook, Google Tasks) into FluidCalendar using **selective field sync** - external-owned fields (title, status, due date, recurrence) are overwritten on each sync; local-owned fields (start date, duration, priority, energy level) are preserved. See `src/lib/task-sync/README.md`.
 
-**Background work** uses the BullMQ worker in `src/worker/` for provider calendar sync, deterministic rescheduling, and webhook renewal. The existing `src/app/api/cron/` route handlers remain periodic safety nets.
+**Background work** uses the BullMQ worker in `src/worker/` for provider
+calendar sync, deterministic rescheduling, reminders, proactive nudges,
+diagnostics, and webhook renewal. The existing `src/app/api/cron/` handlers
+remain periodic safety nets.
+
+**Release safety:** `next build` deliberately does not type-check or lint.
+Every scoped change must run the independent gates listed in `docs/STACK.md`.
+Schema changes use additive expand/contract migrations. Feature flags are
+server-controlled through `src/lib/feature-flags.ts`.
 
 **State**: Zustand stores in `src/store/` (small, focused, one concern each - `calendar.ts`, `task.ts`, `settings.ts`, etc.). Server state via TanStack Query. Command palette (cmdk) commands live in `src/lib/commands/`.
 

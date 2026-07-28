@@ -55,6 +55,15 @@ type DbTaskWithRelations = {
   contextTag: string | null;
   isFrozen: boolean;
   dependsOnId: string | null;
+  dependsOn?: {
+    status: string;
+  } | null;
+  blockedByDependencies?: {
+    blockerTaskId: string;
+    blocker: {
+      status: string;
+    };
+  }[];
   autoScheduled: boolean;
   scheduledBlocks?: {
     id: string;
@@ -180,6 +189,21 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
     contextTag: task.contextTag,
     isFrozen: task.isFrozen || task.scheduleLocked,
     dependsOnId: task.dependsOnId,
+    dependencyIds: task.blockedByDependencies?.map(
+      (dependency) => dependency.blockerTaskId
+    ),
+    completedDependencyIds: [
+      ...(task.blockedByDependencies
+        ?.filter(
+          (dependency) => dependency.blocker.status === TaskStatus.COMPLETED
+        )
+        .map((dependency) => dependency.blockerTaskId) ?? []),
+      ...(
+        task.dependsOnId && task.dependsOn?.status === TaskStatus.COMPLETED
+          ? [task.dependsOnId]
+          : []
+      ),
+    ],
     autoScheduled: task.autoScheduled || task.isAutoScheduled,
     scheduledStart: task.scheduledStart,
     scheduledEnd: task.scheduledEnd,
@@ -366,6 +390,12 @@ export async function scheduleAllTasksForUser(
         project: true,
         tags: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
+        dependsOn: { select: { status: true } },
+        blockedByDependencies: {
+          include: {
+            blocker: { select: { status: true } },
+          },
+        },
       },
       orderBy: { createdAt: "asc" },
     })) as DbTaskWithRelations[];

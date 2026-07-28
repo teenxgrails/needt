@@ -83,6 +83,10 @@ async function verifyEventDeletion(
 }
 
 test.describe("Google Calendar Integration", () => {
+  test.skip(
+    process.env.GOOGLE_CALENDAR_E2E !== "true",
+    "Requires an explicitly provisioned external Google test calendar."
+  );
   test("should create and delete an event in Google Calendar", async ({
     page,
   }) => {

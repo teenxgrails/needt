@@ -1,0 +1,55 @@
+# Needt stack and release contract
+
+Needt is a multi-user Next.js 15 application with a separate BullMQ worker
+built from the same commit and production image.
+
+## Runtime
+
+- Node.js 22, npm only (`package-lock.json` is authoritative).
+- Next.js App Router, React 19, TypeScript.
+- PostgreSQL 16 through Prisma.
+- Redis 7 for BullMQ, rate limits, lockouts, alert throttling, and realtime
+  coordination.
+- NextAuth credentials, Google, and Microsoft OAuth.
+- Sentry in the Next.js client/server/edge runtimes and the worker.
+- Web Push through VAPID with email fallback through Resend.
+
+Install locally with `npm install --legacy-peer-deps`. Docker and CI run
+`npm ci`; `.npmrc` carries the peer-dependency compatibility setting.
+
+## Required quality gates
+
+`next build` intentionally does not run TypeScript or ESLint validation. Every
+change must independently pass:
+
+1. `npm run type-check`
+2. `npm run lint`
+3. `npm run test:unit`
+4. `npm run test:e2e`
+5. visual/style suites when UI, CSS, tokens, or shared components change
+6. `npm run build`
+7. `npm run build:worker`
+8. the production Docker build
+
+GitHub Actions exposes required `quality-gates`, `schema-drift`, `e2e`, and
+conditionally executed `visual-style` statuses. Production publishing is
+triggered only by a successful CI run on `main`.
+
+## Multi-user isolation
+
+Scheduling runs, idempotency records, focus data, dependencies, reminders,
+push subscriptions, nudges, booking pages, and bookings are keyed by `userId`
+or owner ID. All authenticated APIs validate ownership server-side.
+FREE/PRO/LIFETIME restrictions are server-enforced in `src/lib/entitlements.ts`;
+hidden UI is never the security boundary.
+
+## Deployment order
+
+Web and worker use expand/contract deployment:
+
+1. take/verify a database backup;
+2. deploy additive migrations;
+3. deploy worker and web from the same SHA;
+4. run the release gate and inspect `/admin/operations`;
+5. enable feature flags only after the smoke test;
+6. contract/remove old fields only after at least one fallback release.

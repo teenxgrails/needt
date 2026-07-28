@@ -7,6 +7,11 @@ import { z } from "zod";
 import { isPublicSignupEnabled } from "@/lib/auth/public-signup";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import {
+  accountRule,
+  enforceRateLimits,
+  ipRule,
+} from "@/lib/security/rate-limit";
 
 const LOG_SOURCE = "RegisterAPI";
 
@@ -52,6 +57,15 @@ export async function POST(request: NextRequest) {
     }
 
     const email = parsed.data.email.toLowerCase();
+    const limited = await enforceRateLimits(
+      [
+        ipRule(request, "register:ip", 5, 60 * 60),
+        accountRule(email, "register:account", 3, 60 * 60),
+      ],
+      { route: request.nextUrl.pathname }
+    );
+    if (limited) return limited;
+
     const passwordHash = await hash(parsed.data.password, 12);
 
     const user = await prisma.user.create({
@@ -88,8 +102,8 @@ export async function POST(request: NextRequest) {
       error.code === "P2002"
     ) {
       return NextResponse.json(
-        { error: "An account with this email already exists" },
-        { status: 409 }
+        { success: true },
+        { status: 201 }
       );
     }
 

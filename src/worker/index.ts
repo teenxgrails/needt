@@ -1,6 +1,14 @@
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { executeSchedulingRun } from "@/services/scheduling/runs";
 import { syncBugReportToGithub } from "@/services/bug-reports/bug-report-service";
+import {
+  deliverTaskReminder,
+  findDueReminderIds,
+} from "@/services/reminders/reminder-delivery";
+import { generateProactiveNudges } from "@/services/nudges/proactive-assist";
+import { collectOperationsHealth } from "@/services/operations/health";
 import { ConnectionOptions, Job, Worker } from "bullmq";
+import * as Sentry from "@sentry/node";
 
 import { CalDAVCalendarService } from "@/lib/caldav-calendar";
 import {
@@ -27,12 +35,21 @@ import {
   enqueueReschedule,
   enqueueWebhookRenew,
   ensureMailSyncSchedule,
+  enqueueReminderDelivery,
 } from "@/lib/queue/enqueue";
-import { closeQueues, getBugReportSyncQueue, getWebhookRenewQueue } from "@/lib/queue/queues";
+import {
+  closeQueues,
+  getBugReportSyncQueue,
+  getReminderQueue,
+  getNudgeQueue,
+  getWebhookRenewQueue,
+} from "@/lib/queue/queues";
 import {
   CalendarSyncJobData,
   BugReportSyncJobData,
   MailSyncJobData,
+  ReminderJobData,
+  NudgeJobData,
   QUEUE_NAMES,
   RescheduleJobData,
   WebhookRenewJobData,
@@ -41,6 +58,15 @@ import { publishRealtimeEvent } from "@/lib/realtime/publish";
 
 const LOG_SOURCE = "NeedtWorker";
 const WEBHOOK_RENEW_INTERVAL_MS = 6 * 60 * 60 * 1_000;
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.SENTRY_ENVIRONMENT,
+    tracesSampleRate: 0.02,
+    sendDefaultPii: false,
+  });
+}
 
 async function processCalendarSync(job: Job<CalendarSyncJobData>) {
   const feed = await getCalendarFeedForSync(job.data.feedId);
@@ -97,7 +123,11 @@ async function processCalendarSync(job: Job<CalendarSyncJobData>) {
 }
 
 async function processReschedule(job: Job<RescheduleJobData>) {
-  await scheduleAllTasksForUser(job.data.userId);
+  if (job.data.runId) {
+    await executeSchedulingRun(job.data.runId);
+  } else {
+    await scheduleAllTasksForUser(job.data.userId);
+  }
   await publishRealtimeEvent(job.data.userId, "tasks-updated");
 }
 
@@ -114,8 +144,23 @@ async function processBugReportSync(job: Job<BugReportSyncJobData>) {
   await syncBugReportToGithub(job.data.reportId);
 }
 
-// See src/lib/queue/queues.ts: pnpm may keep two compatible ioredis patch
-// versions, so bridge their nominal types at this BullMQ boundary.
+async function processReminder(job: Job<ReminderJobData>) {
+  if (job.data.kind === "deliver") {
+    await deliverTaskReminder(job.data.reminderId);
+    return;
+  }
+  const reminderIds = await findDueReminderIds();
+  await Promise.all(
+    reminderIds.map((reminderId) => enqueueReminderDelivery(reminderId))
+  );
+}
+
+async function processNudges() {
+  await generateProactiveNudges();
+}
+
+// BullMQ and the app can resolve distinct compatible ioredis patch versions,
+// so bridge their nominal types at this boundary.
 const connection = getRedisConnection() as unknown as ConnectionOptions;
 const workers = [
   new Worker<CalendarSyncJobData>(
@@ -140,7 +185,25 @@ const workers = [
     connection,
     concurrency: 1,
   }),
+  new Worker<ReminderJobData>(QUEUE_NAMES.reminders, processReminder, {
+    connection,
+    concurrency: 5,
+  }),
+  new Worker<NudgeJobData>(QUEUE_NAMES.nudges, processNudges, {
+    connection,
+    concurrency: 1,
+  }),
 ];
+
+for (const worker of workers) {
+  worker.on("failed", (job, error) => {
+    Sentry.withScope((scope) => {
+      scope.setTag("queue", worker.name);
+      if (job?.id) scope.setTag("jobId", job.id);
+      Sentry.captureException(error);
+    });
+  });
+}
 
 for (const worker of workers) {
   worker.on("failed", (job, error) => {
@@ -168,6 +231,16 @@ async function start(): Promise<void> {
     { every: 30 * 60 * 1_000 },
     { name: "retry-unsynced-reports", data: {} }
   );
+  await getReminderQueue().upsertJobScheduler(
+    "task-reminder-sweep",
+    { every: 60_000 },
+    { name: "sweep-reminders", data: { kind: "sweep" } }
+  );
+  await getNudgeQueue().upsertJobScheduler(
+    "proactive-nudge-sweep",
+    { every: 15 * 60_000 },
+    { name: "sweep-nudges", data: { kind: "sweep" } }
+  );
   const mailAccountIds = await listActiveMailAccountIds();
   await Promise.all(
     mailAccountIds.map((accountId) => ensureMailSyncSchedule(accountId))
@@ -183,9 +256,15 @@ async function start(): Promise<void> {
 }
 
 let shuttingDown = false;
+const healthInterval = setInterval(() => {
+  void collectOperationsHealth({ alert: true }).catch((error) => {
+    Sentry.captureException(error);
+  });
+}, 60_000);
 async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
+  clearInterval(healthInterval);
   await logger.info("Needt background worker stopping", { signal }, LOG_SOURCE);
   await closeImapIdleWatchers();
   await Promise.all(workers.map((worker) => worker.close()));

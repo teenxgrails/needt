@@ -128,6 +128,16 @@ model User {
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
   externalIntegrations   ExternalIntegration[]
+  schedulingRuns         SchedulingRun[]
+  idempotencyRecords     IdempotencyRecord[]
+  taskDependenciesOwned  TaskDependency[]        @relation("TaskDependencyOwner")
+  focusPreferences       FocusPreferences?
+  taskReminders          TaskReminder[]
+  proactiveNudges        ProactiveNudge[]
+  pushSubscriptions      PushSubscription[]
+  bookingPages           BookingPage[]
+  bookings               Booking[]               @relation("BookingOwner")
+  featureFlagOverrides   FeatureFlagOverride[]
 }
 
 model VerificationToken {
@@ -299,13 +309,14 @@ model Project {
 /// A persistent, editable work journal for one local calendar day. Tasks stay
 /// in Task; the agenda stores only the user's rich-text notes for that date.
 model DailyAgenda {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date      DateTime @db.Date
-  content   String   @default("")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date                  DateTime @db.Date
+  content               String   @default("")
+  documentFormatVersion Int      @default(1)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@unique([userId, date])
   @@index([userId, date])
@@ -326,27 +337,31 @@ model Task {
   preferredTime String? // enum: 'morning', 'afternoon', 'evening'
 
   // Smart scheduling fields
-  energyRequired       SchedulingEnergyLevel  @default(MEDIUM)
-  estimatedMinutes     Int?
-  estOptimistic        Int?
-  estLikely            Int?
-  estPessimistic       Int?
-  actualMinutes        Int?
-  actualFocusedMinutes Int                    @default(0)
-  estimateDelta        Int?
-  optimisticDelta      Int?
-  likelyDelta          Int?
-  pessimisticDelta     Int?
-  minChunkMinutes      Int?
-  maxChunkMinutes      Int?
-  deadline             DateTime?
-  priorityLevel        SchedulingTaskPriority @default(MEDIUM)
-  contextTag           String?
-  isFrozen             Boolean                @default(false)
-  dependsOnId          String?
-  dependsOn            Task?                  @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
-  dependents           Task[]                 @relation("TaskDependencies")
-  autoScheduled        Boolean                @default(false)
+  energyRequired        SchedulingEnergyLevel  @default(MEDIUM)
+  estimatedMinutes      Int?
+  estOptimistic         Int?
+  estLikely             Int?
+  estPessimistic        Int?
+  actualMinutes         Int?
+  actualFocusedMinutes  Int                    @default(0)
+  estimateDelta         Int?
+  optimisticDelta       Int?
+  likelyDelta           Int?
+  pessimisticDelta      Int?
+  minChunkMinutes       Int?
+  maxChunkMinutes       Int?
+  deadline              DateTime?
+  priorityLevel         SchedulingTaskPriority @default(MEDIUM)
+  contextTag            String?
+  isFrozen              Boolean                @default(false)
+  dependsOnId           String?
+  dependsOn             Task?                  @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  dependents            Task[]                 @relation("TaskDependencies")
+  blockingDependencies  TaskDependency[]       @relation("TaskDependencyBlocker")
+  blockedByDependencies TaskDependency[]       @relation("TaskDependencyBlocked")
+  reminders             TaskReminder[]
+  proactiveNudges       ProactiveNudge[]
+  autoScheduled         Boolean                @default(false)
 
   // Auto-scheduling
   isAutoScheduled Boolean       @default(false)
@@ -482,25 +497,30 @@ model ScheduledBlock {
 }
 
 model FocusSession {
-  id                 String           @id @default(cuid())
+  id                 String              @id @default(cuid())
   userId             String
-  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   taskId             String?
-  task               Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  task               Task?               @relation(fields: [taskId], references: [id], onDelete: SetNull)
   mode               FocusSessionMode
   plannedMinutes     Int?
-  elapsedMinutes     Int              @default(0)
-  completed          Boolean          @default(false)
-  abandoned          Boolean          @default(false)
+  elapsedMinutes     Int                 @default(0)
+  completed          Boolean             @default(false)
+  abandoned          Boolean             @default(false)
   // Server-truth timing. An active session has endedAt = null. pausedTotalSeconds
   // accumulates completed pause spans; pausedAt is set while currently paused.
   startedAt          DateTime
   endedAt            DateTime?
   pausedAt           DateTime?
-  pausedTotalSeconds Int              @default(0)
-  source             String           @default("web")
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  pausedTotalSeconds Int                 @default(0)
+  source             String              @default("web")
+  phase              FocusSessionPhase   @default(FOCUS)
+  strictness         FocusStrictnessMode @default(NORMAL)
+  intention          String?
+  stopRequestedAt    DateTime?
+  exitAttemptCount   Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([userId, startedAt])
   @@index([userId, endedAt])
@@ -520,6 +540,213 @@ model FocusStats {
   lastFocusDate   DateTime?
   updatedAt       DateTime  @updatedAt
   createdAt       DateTime  @default(now())
+}
+
+model FocusPreferences {
+  id                      String   @id @default(cuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultMinutes          Int      @default(25)
+  dailyGoalMinutes        Int      @default(25)
+  shortBreakMinutes       Int      @default(5)
+  longBreakMinutes        Int      @default(15)
+  sessionsBeforeLongBreak Int      @default(4)
+  browserNotifications    Boolean  @default(false)
+  quietHoursStart         String?
+  quietHoursEnd           String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model SchedulingRun {
+  id                 String              @id @default(cuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  source             SchedulingRunSource
+  status             SchedulingRunStatus @default(QUEUED)
+  dedupeKey          String
+  changedTaskCount   Int                 @default(0)
+  placedBlockCount   Int                 @default(0)
+  unchangedTaskCount Int                 @default(0)
+  unscheduled        Json?
+  errorCode          String?
+  errorMessage       String?
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, status, createdAt])
+  @@index([source, status, createdAt])
+}
+
+model CronState {
+  id              String    @id
+  pendingCursor   String?
+  completedCursor String?
+  pendingUserIds  Json?
+  lastStartedAt   DateTime?
+  lastSucceededAt DateTime?
+  lastError       String?
+  updatedAt       DateTime  @updatedAt
+}
+
+model IdempotencyRecord {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  operation String
+  key       String
+  status    IdempotencyStatus @default(IN_PROGRESS)
+  result    Json?
+  expiresAt DateTime
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([userId, operation, key])
+  @@index([expiresAt])
+}
+
+model TaskDependency {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
+  blockerTaskId String
+  blocker       Task     @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
+  blockedTaskId String
+  blocked       Task     @relation("TaskDependencyBlocked", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([blockerTaskId, blockedTaskId])
+  @@index([userId, blockedTaskId])
+  @@index([userId, blockerTaskId])
+}
+
+model TaskReminder {
+  id             String                 @id @default(cuid())
+  userId         String
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId         String
+  task           Task                   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kind           TaskReminderKind
+  offsetMinutes  Int
+  channels       Json
+  deliveryStatus ReminderDeliveryStatus @default(PENDING)
+  lastAttemptAt  DateTime?
+  attemptCount   Int                    @default(0)
+  lastError      String?
+  deliveredAt    DateTime?
+  canceledAt     DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@unique([taskId, kind, offsetMinutes])
+  @@index([userId, deliveryStatus, deliveredAt])
+}
+
+model PushSubscription {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String    @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model ProactiveNudge {
+  id          String             @id @default(cuid())
+  userId      String
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId      String?
+  task        Task?              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type        ProactiveNudgeType
+  timeWindow  String
+  dedupeKey   String
+  title       String
+  body        String
+  deepLink    String
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime           @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, deliveredAt, readAt])
+  @@index([taskId, type])
+}
+
+model FeatureFlag {
+  key               String                @id
+  enabled           Boolean               @default(false)
+  rolloutPercentage Int                   @default(0)
+  description       String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  overrides         FeatureFlagOverride[]
+}
+
+model FeatureFlagOverride {
+  id        String      @id @default(cuid())
+  flagKey   String
+  flag      FeatureFlag @relation(fields: [flagKey], references: [key], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled   Boolean
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([flagKey, userId])
+  @@index([userId])
+}
+
+model BookingPage {
+  id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug               String    @unique
+  title              String
+  description        String?
+  durationMinutes    Int       @default(30)
+  bufferBefore       Int       @default(0)
+  bufferAfter        Int       @default(10)
+  minimumNotice      Int       @default(120)
+  bookingHorizonDays Int       @default(60)
+  cancellationHours  Int       @default(24)
+  timeZone           String    @default("UTC")
+  availability       Json
+  isActive           Boolean   @default(true)
+  bookings           Booking[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([userId, isActive])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  bookingPageId   String
+  bookingPage     BookingPage   @relation(fields: [bookingPageId], references: [id], onDelete: Cascade)
+  ownerId         String
+  owner           User          @relation("BookingOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  guestName       String
+  guestEmail      String
+  start           DateTime
+  end             DateTime
+  timeZone        String
+  status          BookingStatus @default(CONFIRMED)
+  calendarEventId String?
+  cancelTokenHash String?       @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([ownerId, start])
+  @@index([bookingPageId, start])
 }
 
 model Board {
@@ -579,30 +806,31 @@ model SavedView {
 /// A personal, block-based document. Pages are deliberately independent from
 /// Task so notebooks and databases never become a parallel scheduling system.
 model Page {
-  id          String                 @id @default(cuid())
-  userId      String
-  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parentId    String?
-  parent      Page?                  @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children    Page[]                 @relation("PageTree")
-  title       String                 @default("Untitled")
-  icon        String?
-  coverUrl    String?
-  isPrivate   Boolean                @default(false)
-  isFavorite  Boolean                @default(false)
-  createdBy   PageAuthor             @default(HUMAN)
-  trashedAt   DateTime?
-  position    Float                  @default(0)
-  blocks      PageBlock[]
-  database    PageDatabase?
-  record      DatabaseRecord?
-  revisions   PageRevision[]
-  aiProposals AiPageChangeProposal[]
-  assets      PageAsset[]
-  comments    PageComment[]
-  forms       PageForm[]
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
+  id                    String                 @id @default(cuid())
+  userId                String
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentId              String?
+  parent                Page?                  @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Page[]                 @relation("PageTree")
+  title                 String                 @default("Untitled")
+  icon                  String?
+  coverUrl              String?
+  isPrivate             Boolean                @default(false)
+  isFavorite            Boolean                @default(false)
+  createdBy             PageAuthor             @default(HUMAN)
+  trashedAt             DateTime?
+  position              Float                  @default(0)
+  documentFormatVersion Int                    @default(1)
+  blocks                PageBlock[]
+  database              PageDatabase?
+  record                DatabaseRecord?
+  revisions             PageRevision[]
+  aiProposals           AiPageChangeProposal[]
+  assets                PageAsset[]
+  comments              PageComment[]
+  forms                 PageForm[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 
   @@index([userId, parentId, position])
   @@index([userId, isFavorite])
@@ -856,7 +1084,7 @@ model ExternalIntegration {
   createdAt            DateTime                  @default(now())
   updatedAt            DateTime                  @updatedAt
 
-  @@unique([userId, provider, toolkit, externalConnectionId])
+  @@unique([userId, provider, toolkit, externalConnectionId], map: "ExternalIntegration_userId_provider_toolkit_externalConnectionI")
   @@index([userId, provider, status])
 }
 
@@ -897,7 +1125,7 @@ model SchedulingPreferences {
 }
 
 model WorkSchedule {
-  id        String               @id @default(cuid())
+  id        String               @id @default(dbgenerated("gen_random_uuid()"))
   userId    String
   user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
@@ -913,7 +1141,7 @@ model WorkSchedule {
 }
 
 model WorkScheduleWindow {
-  id         String       @id @default(cuid())
+  id         String       @id @default(dbgenerated("gen_random_uuid()"))
   scheduleId String
   schedule   WorkSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   dayOfWeek  Int
@@ -935,7 +1163,7 @@ enum FlexibleHoursOverrideKind {
 }
 
 model FlexibleHoursOverride {
-  id                  String                    @id @default(cuid())
+  id                  String                    @id @default(dbgenerated("gen_random_uuid()"))
   userId              String
   user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   date                DateTime                  @db.Date
@@ -950,7 +1178,7 @@ model FlexibleHoursOverride {
 }
 
 model AISettings {
-  id                    String     @id @default(cuid())
+  id                    String     @id @default(dbgenerated("gen_random_uuid()"))
   userId                String     @unique
   user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider              AIProvider @default(NONE)
@@ -1006,7 +1234,7 @@ model AiUsage {
 // can remain intact when a user connects or disconnects an OAuth-capable custom
 // provider. Tokens are encrypted application-side before being written here.
 model AIOAuthConnection {
-  id                    String     @id @default(cuid())
+  id                    String     @id @default(dbgenerated("gen_random_uuid()"))
   userId                String
   user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider              AIProvider
@@ -1026,7 +1254,7 @@ model AIOAuthConnection {
 // a hash while the PKCE verifier is encrypted because it must be sent to the
 // token endpoint after the browser returns.
 model AIOAuthState {
-  id                    String     @id @default(cuid())
+  id                    String     @id @default(dbgenerated("gen_random_uuid()"))
   userId                String
   user                  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider              AIProvider
@@ -1041,7 +1269,7 @@ model AIOAuthState {
 }
 
 model AiConversation {
-  id        String      @id @default(cuid())
+  id        String      @id @default(dbgenerated("gen_random_uuid()"))
   userId    String
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String      @default("New chat")
@@ -1053,7 +1281,7 @@ model AiConversation {
 }
 
 model AiMessage {
-  id              String         @id @default(cuid())
+  id              String         @id @default(dbgenerated("gen_random_uuid()"))
   conversationId  String
   conversation    AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   userId          String
@@ -1070,7 +1298,7 @@ model AiMessage {
 }
 
 model ConnectorSettings {
-  id                  String   @id @default(cuid())
+  id                  String   @id @default(dbgenerated("gen_random_uuid()"))
   userId              String   @unique
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tokenHash           String?  @unique
@@ -1576,6 +1804,63 @@ enum FocusSessionMode {
   POMODORO
   FLOW
   DEEP_FOCUS
+}
+
+enum FocusSessionPhase {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+}
+
+enum FocusStrictnessMode {
+  NORMAL
+  TIMEOUT
+  DEEP_FOCUS
+}
+
+enum SchedulingRunSource {
+  MANUAL
+  TASK_MUTATION
+  CALENDAR_SYNC
+  CRON
+  CONNECTOR
+}
+
+enum SchedulingRunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  SUCCEEDED
+  FAILED
+}
+
+enum TaskReminderKind {
+  BEFORE_START
+  BEFORE_DEADLINE
+}
+
+enum ReminderDeliveryStatus {
+  PENDING
+  DELIVERING
+  DELIVERED
+  FAILED
+}
+
+enum ProactiveNudgeType {
+  OVERDUE_TASK
+  OVERBOOKED_DAY
+  MISSED_FOCUS
+  DEADLINE_UNREACHABLE
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELED
 }
 
 enum AIProvider {

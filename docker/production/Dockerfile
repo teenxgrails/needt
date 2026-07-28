@@ -4,11 +4,11 @@ FROM node:22-alpine3.19 AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY package*.json ./
+COPY package*.json .npmrc ./
 COPY prisma ./prisma/
 
 # Install dependencies and generate Prisma client
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 RUN npx prisma generate
 
 # Copy source
@@ -17,6 +17,7 @@ COPY . .
 # Build application
 ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build
+RUN npm run build:worker
 
 # Production stage
 FROM node:22-alpine3.19 AS runner
@@ -28,21 +29,22 @@ WORKDIR /app
 # Create the runtime user before copying so ownership is assigned while layers
 # are created instead of recursively rewriting the entire dependency tree.
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+RUN chown nextjs:nodejs /app
 
 # Install production dependencies
-COPY --chown=nextjs:nodejs --from=builder /app/package*.json ./
-RUN npm ci --only=production --legacy-peer-deps --ignore-scripts
+COPY --chown=nextjs:nodejs --from=builder /app/package*.json /app/.npmrc ./
+USER nextjs
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copy built application
 COPY --chown=nextjs:nodejs --from=builder /app/.next/standalone ./
 COPY --chown=nextjs:nodejs --from=builder /app/.next/static ./.next/static
 COPY --chown=nextjs:nodejs --from=builder /app/public ./public
+COPY --chown=nextjs:nodejs --from=builder /app/dist ./dist
 COPY --chown=nextjs:nodejs --from=builder /app/prisma ./prisma
 COPY --chown=nextjs:nodejs --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --chown=nextjs:nodejs --from=builder /app/entrypoint.sh ./entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
-
-USER nextjs
 
 # Expose port
 EXPOSE 3000

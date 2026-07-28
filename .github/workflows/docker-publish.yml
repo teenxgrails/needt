@@ -1,9 +1,9 @@
 name: Build and publish Needt
 
 on:
-  push:
-    branches: [main]
-    tags: ["v*.*.*"]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
   workflow_dispatch:
 
 concurrency:
@@ -16,16 +16,22 @@ env:
 
 jobs:
   gates:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npx prisma generate
       - run: npm run lint -- --max-warnings=0
       - run: npm run type-check
@@ -43,6 +49,8 @@ jobs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
@@ -58,7 +66,6 @@ jobs:
           tags: |
             type=sha,format=long
             type=raw,value=main,enable={{is_default_branch}}
-            type=semver,pattern={{version}}
       - id: build
         uses: docker/build-push-action@v6
         with:
@@ -81,16 +88,17 @@ jobs:
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
       ROLLBACK_HOOK: ${{ secrets.COOLIFY_ROLLBACK_WEBHOOK_URL }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Trigger migration job
         if: ${{ env.MIGRATION_HOOK != '' }}
-        run: curl --fail --silent --show-error --retry 3 -X POST "$MIGRATION_HOOK?sha=${{ github.sha }}"
+        run: curl --fail --silent --show-error --retry 3 -X POST "$MIGRATION_HOOK?sha=$DEPLOY_SHA"
       - name: Trigger worker redeploy
         if: ${{ env.WORKER_HOOK != '' }}
-        run: curl --fail --silent --show-error --retry 3 -X POST "$WORKER_HOOK?sha=${{ github.sha }}"
+        run: curl --fail --silent --show-error --retry 3 -X POST "$WORKER_HOOK?sha=$DEPLOY_SHA"
       - name: Trigger web redeploy
         if: ${{ env.WEB_HOOK != '' }}
-        run: curl --fail --silent --show-error --retry 3 -X POST "$WEB_HOOK?sha=${{ github.sha }}"
+        run: curl --fail --silent --show-error --retry 3 -X POST "$WEB_HOOK?sha=$DEPLOY_SHA"
       - name: Verify production health
         if: ${{ env.HEALTH_URL != '' }}
         run: curl --fail --silent --show-error --retry 12 --retry-delay 10 "$HEALTH_URL"

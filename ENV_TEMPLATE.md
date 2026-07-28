@@ -13,7 +13,10 @@ NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 NEXTAUTH_SECRET="replace-with-a-random-32-plus-character-secret"
 CRON_SECRET="replace-with-random-cron-secret"
 REDIS_URL="redis://localhost:6379"
+RATE_LIMIT_HASH_SECRET="replace-with-a-separate-random-secret"
 WEBHOOK_BASE_URL="http://localhost:3000"
+SENTRY_DSN=""
+SENTRY_ENVIRONMENT="development"
 ```
 
 Notes:
@@ -124,4 +127,8 @@ VAPID_PRIVATE_KEY=""
 VAPID_SUBJECT="mailto:you@example.com"
 ```
 
-Web push is optional and disabled by default in Settings. `NEXT_PUBLIC_VAPID_PUBLIC_KEY` lets the browser create a push subscription; the private key is for a future server-side push sender.
+Web push is optional and disabled by default in Settings. All three values are
+runtime secrets/configuration on both web and worker. The server exposes the
+public key to authenticated clients; the private key never reaches the
+browser. Expired (`404`/`410`) subscriptions are pruned and email is used as a
+fallback. On iOS, Web Push requires Needt to be installed to the Home Screen.

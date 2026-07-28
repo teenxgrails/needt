@@ -5,6 +5,11 @@ import { z } from "zod";
 
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import {
+  accountRule,
+  enforceRateLimits,
+  ipRule,
+} from "@/lib/security/rate-limit";
 
 const LOG_SOURCE = "ResetPasswordAPI";
 
@@ -47,6 +52,14 @@ export async function POST(request: NextRequest) {
     }
 
     const { token, password } = result.data;
+    const limited = await enforceRateLimits(
+      [
+        ipRule(request, "password-reset:ip", 10, 60 * 60),
+        accountRule(token, "password-reset:token", 5, 60 * 60),
+      ],
+      { route: request.nextUrl.pathname }
+    );
+    if (limited) return limited;
 
     // Find the reset token
     const resetRequest = await prisma.passwordReset.findFirst({
@@ -75,7 +88,11 @@ export async function POST(request: NextRequest) {
       !resetRequest.user ||
       !resetRequest.user.accounts?.[0]
     ) {
-      logger.warn("Invalid or expired reset token used", { token }, LOG_SOURCE);
+      logger.warn(
+        "Invalid or expired reset token used",
+        { tokenHash: accountRule(token, "log", 1, 1).identifier },
+        LOG_SOURCE
+      );
       return NextResponse.json(
         { error: "Invalid or expired reset token" },
         { status: 400 }

@@ -1,12 +1,21 @@
-# Architecture
+# Needt architecture
 
-This document captures the Phase 0 baseline for the FluidCalendar fork before the Mina Calendar planner changes.
+Needt is a multi-user Next.js planner derived from FluidCalendar. Public
+registration and NextAuth are enabled; all tasks, schedules, Focus data,
+documents, reminders, booking pages, quotas, operational runs, and rate-limit
+identities are isolated by `userId`. Product entitlements are enforced for
+`FREE`, `PRO`, and `LIFETIME` users in both UI and server commands.
 
-## Current Fork Additions
+The application name is configured through `src/lib/app-config.ts`. Upstream
+MIT attribution and the Apache-2.0 NOTICE for the Novel-derived editor patterns
+remain in the repository.
 
-The fork now presents the app as `Mina` through `src/lib/app-config.ts`, while preserving upstream attribution and license text.
+## Current product architecture
 
-Single-user mode is enforced by disabling public signup/registration and SaaS surfaces. Auth remains NextAuth-backed, with first-run setup as the local account creation path.
+Web and BullMQ worker services are built from the same image and deployed from
+the same SHA. PostgreSQL is the source of truth; Redis provides queues,
+rate-limiting counters, and transient coordination. Schema changes follow an
+expand/contract deployment order.
 
 The scheduling stack has two layers:
 

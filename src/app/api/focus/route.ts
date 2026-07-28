@@ -26,16 +26,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const entitlement = await canViewFocusStats(auth.userId);
-    if (!entitlement.allowed) {
-      return NextResponse.json({
-        stats: null,
-        weeklyReport: null,
-        upgradeRequired: entitlement.upgradeRequired,
-      });
-    }
     const stats = await recomputeFocusStats(auth.userId);
     const weeklyReport = await getWeeklyFocusReport(auth.userId);
-    return NextResponse.json({ stats, weeklyReport, upgradeRequired: false });
+    return NextResponse.json({
+      stats: entitlement.allowed ? stats : { ...stats, focusScore: 0 },
+      weeklyReport: entitlement.allowed
+        ? weeklyReport
+        : { ...weeklyReport, estimateAccuracyPercent: null },
+      upgradeRequired: entitlement.upgradeRequired,
+    });
   } catch (error) {
     return routeErrorResponse(
       error,

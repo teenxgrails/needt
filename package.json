@@ -3,26 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "prisma",
-      "esbuild",
-      "sharp"
-    ]
-  },
   "engines": {
-    "node": ">=22.11.0"
+    "node": ">=22.11.0 <23"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
-    "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/worker/index.js --external:@prisma/client --external:.prisma",
+    "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/worker/index.js --external:@prisma/client --external:.prisma --external:@block65/webcrypto-web-push",
     "vercel-build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "start:worker": "node dist/worker/index.js",
-    "lint": "next lint",
+    "lint": "eslint . --max-warnings=0",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,md}\"",
     "type-check": "tsc --noEmit",
@@ -46,6 +37,7 @@
     "@auth/core": "^0.34.2",
     "@auth/prisma-adapter": "^2.7.4",
     "@azure/msal-node": "^3.2.2",
+    "@block65/webcrypto-web-push": "^1.0.2",
     "@creem_io/nextjs": "^0.5.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -79,6 +71,8 @@
     "@radix-ui/react-switch": "^1.1.3",
     "@radix-ui/react-tabs": "^1.1.3",
     "@radix-ui/react-tooltip": "^1.1.8",
+    "@sentry/nextjs": "^10.68.0",
+    "@sentry/node": "^10.68.0",
     "@tailwindcss/forms": "^0.5.10",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-query-devtools": "^5.74.6",

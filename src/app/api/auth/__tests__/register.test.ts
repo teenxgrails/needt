@@ -9,6 +9,11 @@ import { prisma } from "@/lib/prisma";
 jest.mock("@/lib/auth/public-signup", () => ({
   isPublicSignupEnabled: jest.fn(),
 }));
+jest.mock("@/lib/security/rate-limit", () => ({
+  accountRule: jest.fn(() => ({ identifier: "account" })),
+  ipRule: jest.fn(() => ({ identifier: "ip" })),
+  enforceRateLimits: jest.fn().mockResolvedValue(null),
+}));
 jest.mock("@/lib/prisma", () => ({
   prisma: { user: { create: jest.fn() } },
 }));

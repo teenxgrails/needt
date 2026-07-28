@@ -5,6 +5,11 @@ import crypto from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email/password-reset";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import {
+  accountRule,
+  enforceRateLimits,
+  ipRule,
+} from "@/lib/security/rate-limit";
 
 const LOG_SOURCE = "ResetPasswordRequestAPI";
 
@@ -21,9 +26,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const limited = await enforceRateLimits(
+      [
+        ipRule(request, "password-reset-request:ip", 10, 60 * 60),
+        accountRule(
+          normalizedEmail,
+          "password-reset-request:account",
+          3,
+          60 * 60
+        ),
+      ],
+      { route: request.nextUrl.pathname }
+    );
+    if (limited) return limited;
+
     // Find the user
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: {
         accounts: {
           where: {
@@ -37,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (!user || !user.accounts || user.accounts.length === 0) {
       logger.info(
         "Password reset requested for non-existent user",
-        { email },
+        { accountHash: accountRule(normalizedEmail, "log", 1, 1).identifier },
         LOG_SOURCE
       );
       return NextResponse.json({

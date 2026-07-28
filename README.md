@@ -25,11 +25,13 @@ FluidCalendar is built for people who want full control over their scheduling wo
 
 ## Needt Fork
 
-This repository is being shaped into **Needt**, a single-user Motion-style planner.
+This repository is being shaped into **Needt**, a multi-user Motion-style
+planner with per-user scheduling, analytics, reminders, and entitlements.
 
 What this fork adds:
 
-- Single-user mode with public signup, team, and billing surfaces disabled.
+- Public signup with server-enforced FREE/PRO/LIFETIME entitlements and
+  per-user isolation.
 - Apple / iCloud Calendar through the existing CalDAV integration using `https://caldav.icloud.com` and an app-specific password.
 - Smart scheduling data for energy requirements, priorities, deadlines, chunking, frozen blocks, dependencies, energy profiles, and ADHD-friendly scheduling preferences.
 - A pure deterministic scheduler in `src/services/scheduling/engine.ts` that respects dependencies, busy blocks, energy windows, chunks, buffers, hard stops, and overcommitment.
@@ -48,7 +50,7 @@ Key docs:
 Local run:
 
 ```bash
-npm install
+npm install --legacy-peer-deps
 cp .env.example .env.local
 npm run prisma:generate
 npm run dev

@@ -1,6 +1,15 @@
 import NextAuth from "next-auth";
+import { NextRequest } from "next/server";
 
 import { getAuthOptions } from "@/lib/auth/auth-options";
+import {
+  accountRule,
+  clearCredentialFailures,
+  enforceCredentialLock,
+  enforceRateLimits,
+  ipRule,
+  recordCredentialFailure,
+} from "@/lib/security/rate-limit";
 
 declare module "next-auth" {
   interface Session {
@@ -29,5 +38,45 @@ declare module "next-auth/jwt" {
 // Create a NextAuth handler with the auth options
 const handler = NextAuth(await getAuthOptions());
 
-// Export the handler for both GET and POST requests
-export { handler as GET, handler as POST };
+export { handler as GET };
+
+interface AuthRouteContext {
+  params: Promise<{
+    nextauth: string[];
+  }>;
+}
+
+export async function POST(request: NextRequest, context: AuthRouteContext) {
+  if (request.nextUrl.pathname.endsWith("/callback/credentials")) {
+    const form = await request.clone().formData();
+    const email = String(form.get("email") ?? "").trim().toLowerCase();
+    const locked = await enforceCredentialLock(email);
+    if (locked) return locked;
+    const limited = await enforceRateLimits(
+      [
+        ipRule(request, "credentials:ip", 20, 15 * 60),
+        accountRule(email || "missing", "credentials:account", 5, 15 * 60),
+      ],
+      { route: request.nextUrl.pathname }
+    );
+    if (limited) return limited;
+    const response = await handler(request, context);
+    const location = response.headers.get("location") ?? "";
+    const body = response.headers
+      .get("content-type")
+      ?.includes("application/json")
+      ? await response.clone().text()
+      : "";
+    const failed =
+      response.status >= 400 ||
+      /[?&]error=|CredentialsSignin/i.test(location) ||
+      /[?&]error=|CredentialsSignin/i.test(body);
+    if (failed) {
+      await recordCredentialFailure(email);
+    } else {
+      await clearCredentialFailures(email);
+    }
+    return response;
+  }
+  return handler(request, context);
+}

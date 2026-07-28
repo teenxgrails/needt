@@ -11,6 +11,7 @@ const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const payloadSchema = z.object({
   date: dateKeySchema,
   content: z.string().max(250_000),
+  documentFormatVersion: z.union([z.literal(1), z.literal(2)]).default(1),
 });
 
 function agendaDate(date: string): Date | null {
@@ -33,13 +34,14 @@ export async function GET(request: NextRequest) {
 
   const agenda = await prisma.dailyAgenda.findUnique({
     where: { userId_date: { userId: auth.userId, date } },
-    select: { content: true, updatedAt: true },
+    select: { content: true, updatedAt: true, documentFormatVersion: true },
   });
 
   return NextResponse.json({
     date: parsedKey.data,
     content: agenda?.content ?? "",
     updatedAt: agenda?.updatedAt ?? null,
+    documentFormatVersion: agenda?.documentFormatVersion ?? 1,
   });
 }
 
@@ -56,14 +58,23 @@ export async function PUT(request: NextRequest) {
   const content = sanitizeDailyAgendaContent(payload.data.content);
   const agenda = await prisma.dailyAgenda.upsert({
     where: { userId_date: { userId: auth.userId, date } },
-    create: { userId: auth.userId, date, content },
-    update: { content },
-    select: { content: true, updatedAt: true },
+    create: {
+      userId: auth.userId,
+      date,
+      content,
+      documentFormatVersion: payload.data.documentFormatVersion,
+    },
+    update: {
+      content,
+      documentFormatVersion: payload.data.documentFormatVersion,
+    },
+    select: { content: true, updatedAt: true, documentFormatVersion: true },
   });
 
   return NextResponse.json({
     date: payload.data.date,
     content: agenda.content,
     updatedAt: agenda.updatedAt,
+    documentFormatVersion: agenda.documentFormatVersion,
   });
 }

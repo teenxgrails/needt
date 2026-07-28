@@ -1,0 +1,2 @@
+ALTER TABLE "BookingPage"
+  ADD COLUMN "cancellationHours" INTEGER NOT NULL DEFAULT 24;

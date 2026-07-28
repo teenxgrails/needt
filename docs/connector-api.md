@@ -1,6 +1,7 @@
 # Connector API
 
-Needt exposes a local, single-user API for scripts, bots, n8n, and private tools. Generate a token in Settings -> Connectors.
+Needt exposes a private per-user API for scripts, bots, n8n, and personal tools.
+Each user generates their own token in Settings -> Connectors.
 
 Use:
 
@@ -105,4 +106,5 @@ Payload:
 }
 ```
 
-This API is local-first and single-user. It is not a public multi-tenant platform.
+This API is private and user-scoped. A token can access only its owner's data;
+it is not an unauthenticated public integration platform.

@@ -1,0 +1,203 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: needt-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: "true"
+  DATABASE_URL: postgresql://needt:needt@localhost:5432/needt_test
+  SHADOW_DATABASE_URL: postgresql://needt:needt@localhost:5432/needt_shadow
+  REDIS_URL: redis://localhost:6379
+  NEXTAUTH_URL: http://127.0.0.1:3000
+  NEXTAUTH_SECRET: needt-ci-only-secret-not-valid-outside-github-actions
+  RATE_LIMIT_HASH_SECRET: needt-ci-rate-limit-hash-secret
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      ui: ${{ steps.filter.outputs.ui }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ui:
+              - "src/app/**/*.tsx"
+              - "src/app/**/*.css"
+              - "src/components/**"
+              - "design-refs/**"
+              - "tailwind.config.*"
+              - "tests/visual/**"
+
+  quality-gates:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: needt
+          POSTGRES_PASSWORD: needt
+          POSTGRES_DB: needt_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U needt -d needt_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npx tsx prisma/ci-seed.ts
+      - run: npm run type-check
+      - run: npm run lint
+      - run: npm run test:unit -- --runInBand
+
+  schema-drift:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: needt
+          POSTGRES_PASSWORD: needt
+          POSTGRES_DB: needt_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U needt -d needt_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Create shadow database
+        run: PGPASSWORD=needt psql -h localhost -U needt -d needt_test -c 'CREATE DATABASE needt_shadow'
+      - name: Check migration/schema drift
+        run: >-
+          npx prisma migrate diff
+          --from-migrations prisma/migrations
+          --to-schema-datamodel prisma/schema.prisma
+          --shadow-database-url "$SHADOW_DATABASE_URL"
+          --exit-code
+
+  e2e:
+    needs: [quality-gates, schema-drift]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: needt
+          POSTGRES_PASSWORD: needt
+          POSTGRES_DB: needt_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U needt -d needt_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npx tsx prisma/ci-seed.ts
+      - run: npx playwright install --with-deps
+      - run: npm run test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-e2e-report
+          path: |
+            playwright-report
+            test-results
+
+  visual-style:
+    needs: [changes, quality-gates]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: needt
+          POSTGRES_PASSWORD: needt
+          POSTGRES_DB: needt_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U needt -d needt_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - if: needs.changes.outputs.ui == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: needs.changes.outputs.ui == 'true'
+        run: npm ci
+      - if: needs.changes.outputs.ui == 'true'
+        run: npx playwright install --with-deps
+      - if: needs.changes.outputs.ui == 'true'
+        run: npx prisma generate && npx prisma migrate deploy
+      - if: needs.changes.outputs.ui == 'true'
+        run: npm run test:visual && npm run test:style
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-visual-report
+          path: |
+            playwright-report
+            test-results

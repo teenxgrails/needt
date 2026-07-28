@@ -5,6 +5,7 @@ const config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
+  setupFiles: ["<rootDir>/jest.setup.cjs"],
   testMatch: ["<rootDir>/src/**/__tests__/**/*.test.ts"],
   transform: {
     // isolatedModules keeps jest memory bounded: type-checking is covered by

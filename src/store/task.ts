@@ -32,6 +32,40 @@ import {
 } from "@/types/task";
 
 const LOG_SOURCE = "TaskStore";
+const SCHEDULE_RUN_POLL_MS = 500;
+const SCHEDULE_RUN_TIMEOUT_MS = 60_000;
+
+interface SchedulingRunResponse {
+  runId?: string;
+  id?: string;
+  status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
+  changedTaskCount?: number;
+  errorMessage?: string | null;
+}
+
+async function waitForSchedulingRun(
+  initial: SchedulingRunResponse
+): Promise<SchedulingRunResponse> {
+  if (initial.status === "SUCCEEDED" || initial.status === "FAILED") {
+    return initial;
+  }
+  const runId = initial.runId ?? initial.id;
+  if (!runId) throw new Error("Scheduling run did not return an ID.");
+  const deadline = Date.now() + SCHEDULE_RUN_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, SCHEDULE_RUN_POLL_MS));
+    const response = await fetch(`/api/tasks/schedule-runs/${runId}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error("Could not read scheduling progress.");
+    const run = (await response.json()) as SchedulingRunResponse;
+    if (run.status === "SUCCEEDED") return run;
+    if (run.status === "FAILED") {
+      throw new Error(run.errorMessage || "Scheduling failed.");
+    }
+  }
+  throw new Error("Scheduling is still running. Check Operations for status.");
+}
 
 interface TaskState {
   tasks: Task[];
@@ -403,13 +437,17 @@ export const useTaskStore = create<TaskState>()(
         try {
           const response = await fetch("/api/tasks/schedule-all", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "Idempotency-Key": crypto.randomUUID(),
+            },
           });
           if (!response.ok) throw new Error("Failed to schedule tasks");
-          const scheduledTasks = await response.json();
+          const initial = (await response.json()) as SchedulingRunResponse;
+          const completed = await waitForSchedulingRun(initial);
           await get().fetchTasks();
           get().notifyScheduleAnimation();
-          return Array.isArray(scheduledTasks) ? scheduledTasks.length : 0;
+          return completed.changedTaskCount ?? 0;
         } catch (error) {
           set({ error: error as Error });
           throw error;

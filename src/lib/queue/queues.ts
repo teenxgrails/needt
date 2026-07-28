@@ -5,6 +5,8 @@ import {
   CalendarSyncJobData,
   BugReportSyncJobData,
   MailSyncJobData,
+  ReminderJobData,
+  NudgeJobData,
   QUEUE_NAMES,
   RescheduleJobData,
   WebhookRenewJobData,
@@ -15,6 +17,8 @@ let rescheduleQueue: Queue<RescheduleJobData> | null = null;
 let webhookRenewQueue: Queue<WebhookRenewJobData> | null = null;
 let mailSyncQueue: Queue<MailSyncJobData> | null = null;
 let bugReportSyncQueue: Queue<BugReportSyncJobData> | null = null;
+let reminderQueue: Queue<ReminderJobData> | null = null;
+let nudgeQueue: Queue<NudgeJobData> | null = null;
 
 const defaultJobOptions = {
   attempts: 4,
@@ -24,9 +28,8 @@ const defaultJobOptions = {
 };
 
 function getBullConnection(): ConnectionOptions {
-  // pnpm can retain BullMQ's compatible ioredis patch beside the app's newer
-  // patch, making their nominal class types differ even though the runtime
-  // connection contract is identical.
+  // BullMQ and the app can resolve distinct compatible ioredis patch versions,
+  // making their nominal class types differ despite the same runtime contract.
   return getRedisConnection() as unknown as ConnectionOptions;
 }
 
@@ -70,6 +73,22 @@ export function getBugReportSyncQueue(): Queue<BugReportSyncJobData> {
   return bugReportSyncQueue;
 }
 
+export function getReminderQueue(): Queue<ReminderJobData> {
+  reminderQueue ??= new Queue(QUEUE_NAMES.reminders, {
+    connection: getBullConnection(),
+    defaultJobOptions,
+  });
+  return reminderQueue;
+}
+
+export function getNudgeQueue(): Queue<NudgeJobData> {
+  nudgeQueue ??= new Queue(QUEUE_NAMES.nudges, {
+    connection: getBullConnection(),
+    defaultJobOptions,
+  });
+  return nudgeQueue;
+}
+
 export async function closeQueues(): Promise<void> {
   const queues = [
     calendarSyncQueue,
@@ -77,6 +96,8 @@ export async function closeQueues(): Promise<void> {
     webhookRenewQueue,
     mailSyncQueue,
     bugReportSyncQueue,
+    reminderQueue,
+    nudgeQueue,
   ].filter((queue): queue is Queue => queue !== null);
   await Promise.all(queues.map((queue) => queue.close()));
   calendarSyncQueue = null;
@@ -84,4 +105,6 @@ export async function closeQueues(): Promise<void> {
   webhookRenewQueue = null;
   mailSyncQueue = null;
   bugReportSyncQueue = null;
+  reminderQueue = null;
+  nudgeQueue = null;
 }

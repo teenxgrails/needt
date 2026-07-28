@@ -4,6 +4,7 @@ import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { newDate } from "@/lib/date-utils";
+import { getPlan } from "@/lib/entitlements";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -184,6 +185,26 @@ export async function POST(request: NextRequest) {
         project: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
       },
+    });
+
+    const plan = await getPlan(userId);
+    const defaultReminders =
+      plan === "FREE"
+        ? task.deadline || task.dueDate
+          ? [{ kind: "BEFORE_DEADLINE" as const, offsetMinutes: 60 }]
+          : [{ kind: "BEFORE_START" as const, offsetMinutes: 10 }]
+        : [
+            { kind: "BEFORE_START" as const, offsetMinutes: 10 },
+            { kind: "BEFORE_DEADLINE" as const, offsetMinutes: 60 },
+          ];
+    await prisma.taskReminder.createMany({
+      data: defaultReminders.map((reminder) => ({
+        userId,
+        taskId: task.id,
+        ...reminder,
+        channels: ["push", "email"],
+      })),
+      skipDuplicates: true,
     });
 
     // Track the creation for sync purposes if the task is in a mapped project

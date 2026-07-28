@@ -16,6 +16,8 @@ export interface SchedulableTask {
   contextTag?: string | null;
   isFrozen?: boolean;
   dependsOnId?: string | null;
+  dependencyIds?: string[];
+  completedDependencyIds?: string[];
   autoScheduled?: boolean;
   scheduledStart?: Date | null;
   scheduledEnd?: Date | null;
@@ -354,10 +356,7 @@ function priorityScore(task: SchedulableTask, now: Date): number {
 }
 
 function sortTasks(tasks: SchedulableTask[], now: Date): SchedulableTask[] {
-  return [...tasks].sort((a, b) => {
-    if (a.dependsOnId === b.id) return 1;
-    if (b.dependsOnId === a.id) return -1;
-
+  const sortedByPriority = [...tasks].sort((a, b) => {
     const scoreDelta = priorityScore(b, now) - priorityScore(a, now);
     if (scoreDelta !== 0) return scoreDelta;
 
@@ -367,6 +366,32 @@ function sortTasks(tasks: SchedulableTask[], now: Date): SchedulableTask[] {
 
     return a.title.localeCompare(b.title);
   });
+  const taskById = new Map(sortedByPriority.map((task) => [task.id, task]));
+  const visited = new Set<string>();
+  const visiting = new Set<string>();
+  const result: SchedulableTask[] = [];
+
+  const visit = (task: SchedulableTask) => {
+    if (visited.has(task.id)) return;
+    // Cycles are rejected when dependencies are written. This guard keeps the
+    // pure engine deterministic if corrupt legacy data is encountered.
+    if (visiting.has(task.id)) return;
+    visiting.add(task.id);
+    const dependencyIds = [
+      ...(task.dependsOnId ? [task.dependsOnId] : []),
+      ...(task.dependencyIds ?? []),
+    ];
+    for (const dependencyId of new Set(dependencyIds)) {
+      const dependency = taskById.get(dependencyId);
+      if (dependency) visit(dependency);
+    }
+    visiting.delete(task.id);
+    visited.add(task.id);
+    result.push(task);
+  };
+
+  for (const task of sortedByPriority) visit(task);
+  return result;
 }
 
 function splitTaskIntoChunks(
@@ -414,15 +439,25 @@ function findDependencyReadyAt(
   unscheduledTaskIds: Set<string>,
   now: Date
 ): Date | null {
-  if (!task.dependsOnId) {
+  const dependencies = new Set([
+    ...(task.dependsOnId ? [task.dependsOnId] : []),
+    ...(task.dependencyIds ?? []),
+  ]);
+  if (dependencies.size === 0) {
     return now;
   }
 
-  if (unscheduledTaskIds.has(task.dependsOnId)) {
-    return null;
+  const completed = new Set(task.completedDependencyIds ?? []);
+  let readyAt = now;
+  for (const dependencyId of dependencies) {
+    if (completed.has(dependencyId)) continue;
+    if (unscheduledTaskIds.has(dependencyId)) return null;
+    const end = placedTaskEnds.get(dependencyId);
+    if (!end) return null;
+    if (end > readyAt) readyAt = end;
   }
 
-  return placedTaskEnds.get(task.dependsOnId) ?? now;
+  return readyAt;
 }
 
 function findSlot(
@@ -559,7 +594,7 @@ export function scheduleTasks(input: {
       unscheduled.push({
         taskId: task.id,
         title: task.title,
-        reason: "Dependency could not be scheduled",
+        reason: "DEPENDENCY_BLOCKED",
       });
       unscheduledTaskIds.add(task.id);
       continue;
