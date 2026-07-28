@@ -1,8 +1,9 @@
 import { expect } from "@playwright/test";
+import { encode } from "next-auth/jwt";
 
 import { prisma } from "@/lib/prisma";
 
-import { VISUAL_TEST_EMAIL, VISUAL_TEST_PASSWORD } from "./fixtures";
+import { VISUAL_TEST_EMAIL } from "./fixtures";
 import { resetVisualTaskData } from "./global-setup";
 
 export async function signInVisualUser(page: import("@playwright/test").Page) {
@@ -17,20 +18,28 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
   ]);
   await resetVisualTaskData(user!.id);
 
-  const csrfResponse = await page.request.get("/api/auth/csrf");
-  expect(csrfResponse.ok()).toBeTruthy();
-  const { csrfToken } = (await csrfResponse.json()) as { csrfToken: string };
-  const response = await page.request.post(
-    "/api/auth/callback/credentials?json=true",
+  // Visual specs authenticate a fixed test fixture directly. Repeatedly
+  // exercising the credentials endpoint here would correctly trigger the
+  // production account limiter and make screenshot coverage order-dependent;
+  // credentials/rate-limit behavior is covered by the API E2E suite.
+  const token = await encode({
+    secret:
+      process.env.NEXTAUTH_SECRET ?? "needt-visual-regression-secret",
+    maxAge: 60 * 60,
+    token: {
+      sub: user!.id,
+      email: VISUAL_TEST_EMAIL,
+      name: "Visual QA",
+      role: "admin",
+    },
+  });
+  await page.context().addCookies([
     {
-      form: {
-        csrfToken,
-        email: VISUAL_TEST_EMAIL,
-        password: VISUAL_TEST_PASSWORD,
-        callbackUrl: "/calendar",
-        json: "true",
-      },
-    }
-  );
-  expect(response.ok()).toBeTruthy();
+      name: "next-auth.session-token",
+      value: token,
+      url: process.env.TEST_BASE_URL ?? "http://127.0.0.1:3000",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+  ]);
 }

@@ -91,7 +91,7 @@ test("Page database views share editable records, filters, sorting and grouping"
     "Alpha launch",
   ]);
 
-  await page.goto(`/pages/${pageId}`, { waitUntil: "networkidle" });
+  await page.goto(`/pages/${pageId}`, { waitUntil: "domcontentloaded" });
   const workspace = page.getByTestId("database-view");
   await expect(page.getByRole("button", { name: "Table" })).toBeVisible();
   const recordNames = page.getByLabel("Record name");

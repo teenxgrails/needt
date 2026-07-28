@@ -33,6 +33,7 @@ import {
   CALENDAR_EDITOR_MAIN_FOOTER_CLASS,
 } from "@/components/calendar/calendar-editor-shell";
 import { TaskTimer } from "@/components/tasks/TaskTimer";
+import { TaskDependenciesSection } from "@/components/tasks/TaskDependenciesSection";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ComboboxPicker } from "@/components/ui/combobox-picker";
@@ -1069,6 +1070,7 @@ export function TaskModal({
                     likelyDelta={task.likelyDelta}
                   />
                 )}
+                {task && <TaskDependenciesSection taskId={task.id} />}
                 <section className="space-y-3 rounded-lg border border-[var(--border-subtle)] p-3">
                   <div>
                     <h3 className="font-medium text-[var(--text-primary)]">

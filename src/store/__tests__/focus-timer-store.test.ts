@@ -25,6 +25,9 @@ describe("focus timer store", () => {
       pausedAt: null,
       startedAt: "2026-07-18T10:00:00.000Z",
       endedAt: null,
+      phase: "FOCUS" as const,
+      strictness: "NORMAL" as const,
+      intention: null,
     };
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

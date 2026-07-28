@@ -17,13 +17,15 @@ test("Light, Gray and Dark keep their palettes at every breakpoint", async ({
     data: { theme: "light" },
   });
   expect(resetResponse.ok()).toBeTruthy();
-  await page.goto("/settings#theme", { waitUntil: "networkidle" });
+  await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Monday", { exact: true })).toBeVisible();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
 
   for (const theme of THEMES) {
     const themeRow = page.getByText("Theme:", { exact: true }).locator("..");
     await themeRow.getByRole("button").click();
     await page
-      .getByRole("button", {
+      .getByRole("option", {
         name: theme === "gray" ? "Gray" : theme === "dark" ? "Dark" : "Light",
         exact: true,
       })

@@ -8,6 +8,7 @@ import {
   Bell,
   Bot,
   CalendarDays,
+  CalendarCheck2,
   CalendarRange,
   CheckCircle2,
   ChevronLeft,
@@ -29,6 +30,7 @@ import { AccountManager } from "@/components/settings/AccountManager";
 import { AccountSettings } from "@/components/settings/AccountSettings";
 import { AutoScheduleSettings } from "@/components/settings/AutoScheduleSettings";
 import { BillingSettings } from "@/components/settings/BillingSettings";
+import { BookingSettings } from "@/components/settings/BookingSettings";
 import { CalendarSettings } from "@/components/settings/CalendarSettings";
 import { ConnectorSettings } from "@/components/settings/ConnectorSettings";
 import { CustomizationSettings } from "@/components/settings/CustomizationSettings";
@@ -63,7 +65,8 @@ type SettingsTab =
   | "privacy"
   | "ai"
   | "account"
-  | "billing";
+  | "billing"
+  | "bookings";
 
 interface SettingsNavItem {
   id: SettingsTab;
@@ -83,6 +86,7 @@ const GENERAL_TABS: SettingsNavItem[] = [
   { id: "timezone", label: "Timezone", icon: Clock3 },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "schedules", label: "Schedules", icon: CalendarRange },
+  { id: "bookings", label: "Booking links", icon: CalendarCheck2 },
   { id: "desktop", label: "Desktop app", icon: Laptop },
   { id: "integrations", label: "Integrations", icon: Plug },
   { id: "api", label: "API", icon: Code2 },
@@ -102,9 +106,13 @@ const MOBILE_TAB_GROUPS: Array<{
   {
     label: "Planner",
     items: GENERAL_TABS.filter(({ id }) =>
-      ["calendars", "auto-scheduling", "task-defaults", "schedules"].includes(
-        id
-      )
+      [
+        "calendars",
+        "auto-scheduling",
+        "task-defaults",
+        "schedules",
+        "bookings",
+      ].includes(id)
     ),
   },
   {
@@ -281,6 +289,8 @@ export default function SettingsPage() {
         return <NotificationSettings />;
       case "schedules":
         return <ScheduleSettings />;
+      case "bookings":
+        return <BookingSettings />;
       case "desktop":
         return <DesktopSettings />;
       case "integrations":

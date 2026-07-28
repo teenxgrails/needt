@@ -78,14 +78,20 @@ export function legacyPageHtml(blocks: PageBlock[]) {
 }
 
 export function pageBlocksFromDocument(document: JSONContent) {
-  return (document.content || []).map((node, index) => ({
-    id:
-      typeof node.attrs?.blockId === "string"
-        ? node.attrs.blockId
-        : randomId(),
-    parentBlockId: null,
-    type: blockTypeForNode(node),
-    content: { json: node },
-    position: (index + 1) * 1024,
-  }));
+  const seen = new Set<string>();
+  return (document.content || []).map((node, index) => {
+    const candidate =
+      typeof node.attrs?.blockId === "string" ? node.attrs.blockId : "";
+    const id = candidate && !seen.has(candidate) ? candidate : randomId();
+    seen.add(id);
+    const normalizedNode = structuredClone(node);
+    normalizedNode.attrs = { ...(normalizedNode.attrs || {}), blockId: id };
+    return {
+      id,
+      parentBlockId: null,
+      type: blockTypeForNode(normalizedNode),
+      content: { json: normalizedNode },
+      position: (index + 1) * 1024,
+    };
+  });
 }

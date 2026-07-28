@@ -174,7 +174,8 @@ export function ComboboxPicker({
             className={cn(
               "needt-motion-menu-item relative flex cursor-pointer select-none items-center gap-2 rounded-[6px] px-3 text-[14px] leading-[18px] text-[var(--text-primary)] outline-none aria-selected:bg-[var(--menu-item-hover)] [&>svg]:h-4 [&>svg]:w-4 [&>svg]:flex-none",
               isMobile ? "min-h-12" : "h-8 min-w-[180px]",
-              option.value === value && "bg-[var(--menu-item-hover)]"
+              option.value === value &&
+                "bg-[var(--text-primary)] text-[var(--surface-canvas)] aria-selected:bg-[var(--text-primary)]"
             )}
           >
             {option.icon}

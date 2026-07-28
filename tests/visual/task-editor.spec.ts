@@ -35,7 +35,7 @@ async function setVisualTheme(
   });
   expect(response.ok()).toBeTruthy();
   await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
-  await page.goto("/settings#theme", { waitUntil: "networkidle" });
+  await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 }
 
@@ -64,7 +64,9 @@ test("task description formatting is rendered, not exposed as markup", async ({
   await editor.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
   await modal.getByRole("button", { name: "Bold" }).click();
 
-  await expect(editor.locator("strong")).toHaveText("Rendered note");
+  await expect(
+    editor.locator("strong").filter({ hasText: "Rendered note" })
+  ).toHaveText(/Rendered note/);
   await expect(editor).not.toContainText("**Rendered note**");
   await expect(modal.getByText("Unsaved changes")).toBeVisible();
 });

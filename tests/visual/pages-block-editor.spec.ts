@@ -105,7 +105,7 @@ test("Page blocks reconcile by stable ID and slash commands create canonical blo
     ],
   });
 
-  await page.goto(`/pages/${pageId}`, { waitUntil: "networkidle" });
+  await page.goto(`/pages/${pageId}`, { waitUntil: "domcontentloaded" });
   const document = page.getByLabel("Page document");
   await expect(document).toContainText("Updated intro");
   await expect(document).toContainText("New quote");

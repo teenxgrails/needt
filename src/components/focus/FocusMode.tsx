@@ -14,7 +14,7 @@ export function FocusMode() {
   );
 
   return (
-    <main className="needt-page-depth flex h-full min-h-0 items-center justify-center overflow-y-auto px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-8 sm:px-8 sm:pb-8">
+    <main className="needt-page-depth h-full min-h-0 overflow-y-auto px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-8 sm:pt-6">
       <FocusTimerPanel task={currentTask} />
     </main>
   );

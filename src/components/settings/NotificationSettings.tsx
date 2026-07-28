@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { toast } from "sonner";
 
 import { useSettingsStore } from "@/store/settings";
@@ -7,13 +9,25 @@ import { SettingsSection } from "./SettingsSection";
 
 export function NotificationSettings() {
   const { notifications, updateNotificationSettings } = useSettingsStore();
+  const [pushNote, setPushNote] = useState<string | null>(null);
 
   const enablePush = async (enabled: boolean) => {
     if (!enabled) {
+      const registration = await navigator.serviceWorker?.ready;
+      const subscription =
+        await registration?.pushManager.getSubscription().catch(() => null);
+      if (subscription) {
+        await fetch(
+          `/api/push-subscriptions?endpoint=${encodeURIComponent(subscription.endpoint)}`,
+          { method: "DELETE" }
+        );
+        await subscription.unsubscribe();
+      }
       updateNotificationSettings({
         webPushEnabled: false,
         webPushSubscription: null,
       });
+      setPushNote(null);
       return;
     }
 
@@ -28,6 +42,19 @@ export function NotificationSettings() {
     }
 
     try {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        ("standalone" in navigator &&
+          Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+      if (isIos && !isStandalone) {
+        setPushNote(
+          "On iPhone and iPad, install Needt to the Home Screen to receive Web Push. Email reminders remain active."
+        );
+        updateNotificationSettings({ webPushEnabled: false });
+        toast.info("Install the PWA for iOS push notifications");
+        return;
+      }
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         updateNotificationSettings({ webPushEnabled: false });
@@ -36,7 +63,11 @@ export function NotificationSettings() {
       }
 
       const registration = await navigator.serviceWorker.ready;
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      const configResponse = await fetch("/api/push-subscriptions");
+      const config = (await configResponse.json()) as {
+        publicKey?: string | null;
+      };
+      const vapidKey = config.publicKey;
       let subscription: PushSubscriptionJSON | null = null;
 
       if (vapidKey) {
@@ -45,12 +76,23 @@ export function NotificationSettings() {
           applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
         subscription = pushSubscription.toJSON();
+        const persisted = await fetch("/api/push-subscriptions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(subscription),
+        });
+        if (!persisted.ok) throw new Error("Could not save subscription");
+      } else {
+        throw new Error("Web Push is not configured");
       }
 
       updateNotificationSettings({
         webPushEnabled: true,
         webPushSubscription: subscription,
       });
+      setPushNote(
+        "Web Push works while the browser is closed. Email remains the fallback when a subscription expires."
+      );
       toast.success("Browser notifications enabled");
     } catch {
       updateNotificationSettings({ webPushEnabled: false });
@@ -91,6 +133,11 @@ export function NotificationSettings() {
               updateNotificationSettings({ dailyEmailEnabled: enabled })
             }
           />
+          {pushNote && (
+            <p className="px-3 pb-2 text-xs leading-5 text-[var(--text-muted)]">
+              {pushNote}
+            </p>
+          )}
           <MotionSwitchRow
             label="Browser notifications"
             checked={notifications.webPushEnabled}

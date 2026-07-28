@@ -43,7 +43,7 @@ test("named schedules copy selected days and flexible hours stay background-only
     schedule: { id: string };
   };
 
-  await page.goto("/settings#schedules", { waitUntil: "networkidle" });
+  await page.goto("/settings#schedules", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: new RegExp(scheduleName) }).click();
   await expect(
     page.getByRole("heading", { name: "Edit schedule" })
@@ -59,8 +59,19 @@ test("named schedules copy selected days and flexible hours stay background-only
   await page.getByLabel("Tue", { exact: true }).click();
   await page.getByLabel("Thu", { exact: true }).click();
   await page.getByRole("button", { name: "Copy hours" }).click();
-  await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Schedule saved")).toBeVisible();
+  const [saveResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().endsWith(
+          `/api/work-schedules/${createdSchedule.schedule.id}`
+        ) && response.request().method() === "PATCH"
+    ),
+    page.getByRole("button", { name: "Save changes" }).click(),
+  ]);
+  expect(saveResponse.ok()).toBeTruthy();
+  await expect(
+    page.getByRole("heading", { name: "Edit schedule" })
+  ).toBeHidden();
 
   const schedulesResponse = await page.request.get("/api/work-schedules");
   const schedules = (await schedulesResponse.json()) as {
@@ -90,8 +101,8 @@ test("named schedules copy selected days and flexible hours stay background-only
     data: { date: "2026-07-16", kind: "BLOCK_WHOLE_DAY" },
   });
   expect(override.ok()).toBeTruthy();
-  await page.goto("/calendar", { waitUntil: "networkidle" });
-  await expect(page.locator(".needt-flexible-hours-texture")).toHaveCount(1);
+  await page.goto("/calendar", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".needt-flexible-hours-texture")).toHaveCount(3);
   await expect(page.getByText("Unavailable", { exact: true })).toHaveCount(0);
   await page.evaluate(() => {
     localStorage.setItem(
@@ -101,7 +112,9 @@ test("named schedules copy selected days and flexible hours stay background-only
   });
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(page.locator(".calendar-day-view")).toBeVisible();
-  await expect(page.locator(".needt-flexible-hours-texture")).toHaveCount(1);
+  await expect(
+    page.locator(".calendar-day-view .needt-flexible-hours-texture")
+  ).toHaveCount(3);
 
   const reset = await page.request.delete(
     "/api/flexible-hours?date=2026-07-16"

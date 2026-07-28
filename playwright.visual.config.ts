@@ -44,7 +44,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    // The product dev command stays on webpack for Sentry compatibility with
+    // Next 15.3; this isolated runner can use Turbopack for fast rebuilds.
+    command: "npm run dev -- --turbopack",
     url: baseURL,
     reuseExistingServer: false,
     timeout: 120_000,

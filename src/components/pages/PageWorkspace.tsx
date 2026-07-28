@@ -299,7 +299,13 @@ function removeSlashText(editor: Editor) {
     .deleteRange({ from: $from.start(), to: $from.end() });
 }
 
-export function PageWorkspace({ pageId }: { pageId: string }) {
+export function PageWorkspace({
+  pageId,
+  documentFormatVersion = 1,
+}: {
+  pageId: string;
+  documentFormatVersion?: 1 | 2;
+}) {
   const router = useRouter();
   const hostRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -338,7 +344,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         const response = await fetch(`/api/pages/${pageId}/blocks`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blocks }),
+          body: JSON.stringify({ blocks, documentFormatVersion }),
         });
         if (!response.ok) throw new Error("Save failed");
         if (revision.current === requestRevision) setSaveState("saved");
@@ -352,7 +358,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         if (revision.current === requestRevision) setSaveState("failed");
       }
     },
-    [pageId]
+    [documentFormatVersion, pageId]
   );
 
   const editor = useEditor({

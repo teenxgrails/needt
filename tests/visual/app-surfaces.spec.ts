@@ -23,8 +23,10 @@ async function useVisualTheme(
   });
   expect(response.ok()).toBeTruthy();
   await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
-  await page.goto("/settings#theme", { waitUntil: "networkidle" });
+  await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+  await expect(page.getByText("Monday", { exact: true })).toBeVisible();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
 }
 
 test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
@@ -122,7 +124,7 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
       }
     ).page;
   }
-  await page.goto(`/pages/${visualPage.id}`, { waitUntil: "networkidle" });
+  await page.goto(`/pages/${visualPage.id}`, { waitUntil: "domcontentloaded" });
   await expect(page.getByLabel("Page document")).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("page-document.png");
@@ -169,7 +171,7 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("settings-appearance-light.png");
 
-  await page.goto("/calendar", { waitUntil: "networkidle" });
+  await page.goto("/calendar", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".fc-timegrid")).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("calendar-light.png");
@@ -186,7 +188,7 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
   await expect(page).toHaveScreenshot("command-palette-light.png");
   await page.keyboard.press("Escape");
 
-  await page.goto("/today", { waitUntil: "networkidle" });
+  await page.goto("/today", { waitUntil: "domcontentloaded" });
   if ((page.viewportSize()?.width ?? 0) < 640) {
     await expect(
       page.getByRole("heading", { name: "Thursday", level: 1 })
@@ -200,7 +202,7 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("today-light.png");
 
-  await page.goto("/tasks", { waitUntil: "networkidle" });
+  await page.goto("/tasks", { waitUntil: "domcontentloaded" });
   if ((page.viewportSize()?.width ?? 0) < 640) {
     await expect(page.getByText("Space is best on desktop")).toBeVisible();
   } else {

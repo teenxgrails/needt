@@ -22,7 +22,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("component laboratory stays coherent in dark mode", async ({ page }) => {
-  await page.goto("/style", { waitUntil: "networkidle" });
+  await page.goto("/style", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Calm, dense, and deliberate." })
   ).toBeVisible();
@@ -34,7 +34,11 @@ test("component laboratory stays coherent in dark mode", async ({ page }) => {
 });
 
 test("component laboratory stays coherent in light mode", async ({ page }) => {
-  await page.goto("/style", { waitUntil: "networkidle" });
+  await page.goto("/style", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByRole("heading", { name: "Calm, dense, and deliberate." })
+  ).toBeVisible();
+  await page.waitForTimeout(250);
   await page.getByRole("button", { name: "Light" }).click();
   await expect(page.getByRole("button", { name: "Light" })).toHaveAttribute(
     "aria-pressed",
@@ -48,7 +52,7 @@ test("component laboratory stays coherent in light mode", async ({ page }) => {
 });
 
 test("date and priority pickers keep their overlay depth", async ({ page }) => {
-  await page.goto("/style#forms", { waitUntil: "networkidle" });
+  await page.goto("/style#forms", { waitUntil: "domcontentloaded" });
 
   await page
     .getByRole("button", { name: "Preview the shared date picker" })
@@ -59,7 +63,7 @@ test("date and priority pickers keep their overlay depth", async ({ page }) => {
 
   // A mobile date picker is a modal bottom sheet. Reload the isolated lab
   // surface so its exit animation/focus trap cannot intercept the next picker.
-  await page.goto("/style#forms", { waitUntil: "networkidle" });
+  await page.goto("/style#forms", { waitUntil: "domcontentloaded" });
 
   await page.getByRole("button", { name: "Priority", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "Search" })).toBeVisible();

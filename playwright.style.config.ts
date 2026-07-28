@@ -43,7 +43,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    // The isolated screenshot runner benefits from Turbopack's rebuild speed.
+    command: "npm run dev -- --turbopack",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

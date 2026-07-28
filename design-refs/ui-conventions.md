@@ -51,6 +51,20 @@ text-[var(--text-secondary)] hover:bg-[var(--menu-item-hover)] hover:text-[var(-
 Reference implementation: the Calendar options panel in
 `src/components/calendar/Calendar.tsx`.
 
+`NeedtPicker`/`ResponsivePicker` is the canonical settings/task picker:
+
+- desktop width `300–340px`, opaque surface, hairline border, inset top
+  highlight, neutral shadow;
+- sticky search/header, `36–40px` option rows;
+- selected option uses full monochrome inversion;
+- category icons may retain semantic color;
+- mobile uses a bottom sheet, safe-area padding, and at least `44px` targets;
+- no backdrop blur or colored glow.
+
+Sonner notifications are top-center and must go through the typed
+`src/lib/notifications.ts` facade. Actionable nudges include one concise deep
+link action.
+
 ## Picker / dropdown (Select — screen 4)
 
 Always use the shared `@/components/ui/select`. It is already styled: dark

@@ -846,6 +846,16 @@
   }
 }
 
+.focus-duration-slider [data-slot="slider-thumb"] {
+  border-color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+
+.focus-duration-slider [data-slot="slider-thumb"]:focus-visible {
+  outline: 2px solid var(--text-primary) !important;
+  outline-offset: 2px !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .needt-rainbow-button {
     animation: none;

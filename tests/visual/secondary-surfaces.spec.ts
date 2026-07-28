@@ -27,7 +27,7 @@ async function applyTheme(page: import("@playwright/test").Page, theme: Theme) {
   });
   // The Settings route hydrates the persisted settings store from the API;
   // this mirrors the actual Appearance control before visiting app surfaces.
-  await page.goto("/settings#theme", { waitUntil: "networkidle" });
+  await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 }
 
@@ -45,7 +45,7 @@ test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
   for (const theme of ["dark", "light"] as const) {
     await applyTheme(page, theme);
 
-    await page.goto("/pages", { waitUntil: "networkidle" });
+    await page.goto("/pages", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Pages" })).toBeVisible();
     const visualDesignPage = page
       .getByRole("link", { name: /Visual design notes/ })
@@ -58,14 +58,17 @@ test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
       await expect(page.getByLabel("Page document")).toBeVisible();
     }
 
-    await page.goto("/focus", { waitUntil: "networkidle" });
+    await page.goto("/focus", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("progressbar", { name: "Start focus: 25:00" })
+      page.getByRole("slider", { name: "Focus duration in minutes" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Start timer" })
     ).toBeVisible();
     await settleSurface(page);
     await expect(page).toHaveScreenshot(`focus-${theme}.png`);
 
-    await page.goto("/mail", { waitUntil: "networkidle" });
+    await page.goto("/mail", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("Launch review notes")).toBeVisible();
     await settleSurface(page);
     await expect(page).toHaveScreenshot(`mail-list-${theme}.png`);
@@ -76,7 +79,7 @@ test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
     await settleSurface(page);
     await expect(page).toHaveScreenshot(`mail-message-${theme}.png`);
 
-    await page.goto("/chat", { waitUntil: "networkidle" });
+    await page.goto("/chat", { waitUntil: "domcontentloaded" });
     if (testInfo.project.name === "desktop") {
       const seededConversation = page.getByRole("button", {
         name: "Today’s priorities",

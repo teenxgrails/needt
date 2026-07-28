@@ -1,7 +1,12 @@
 import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
 import { FocusSessionMode, TimeEntrySource } from "@prisma/client";
 
-import { addDays, newDate, startOfDay } from "@/lib/date-utils";
+import {
+  addDays,
+  formatInTimeZone,
+  newDate,
+  startOfDay,
+} from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
 export interface WeeklyFocusReport {
@@ -18,24 +23,40 @@ export interface WeeklyFocusReport {
   };
 }
 
-function daysBetween(a: Date, b: Date): number {
+function localDayKey(date: Date, timeZone: string) {
+  return formatInTimeZone(date, timeZone, "yyyy-MM-dd");
+}
+
+function daysBetweenKeys(a: string, b: string): number {
   return Math.round(
-    (startOfDay(a).getTime() - startOfDay(b).getTime()) / 86_400_000
+    (Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) /
+      86_400_000
   );
 }
 
-function scoreFrom(
+function scoreFrom(input: {
+  focusGoalRatio: number;
   completed: number,
   abandoned: number,
-  accuracy: number
-): number {
+  accuracy: number;
+  currentStreak: number;
+}): number {
   const completionScore =
-    completed + abandoned === 0
+    input.completed + input.abandoned === 0
       ? 0
-      : (completed / (completed + abandoned)) * 70;
+      : input.completed / (input.completed + input.abandoned);
+  const streakScore = Math.min(1, input.currentStreak / 7);
   return Math.max(
     0,
-    Math.min(100, Math.round(completionScore + accuracy * 30))
+    Math.min(
+      100,
+      Math.round(
+        Math.min(1, input.focusGoalRatio) * 35 +
+          completionScore * 30 +
+          input.accuracy * 20 +
+          streakScore * 15
+      )
+    )
   );
 }
 
@@ -106,13 +127,19 @@ export async function recordFocusSession(input: {
 }
 
 export async function recomputeFocusStats(userId: string) {
-  const [sessions, accuracy] = await Promise.all([
+  const [sessions, accuracy, preferences, settings] = await Promise.all([
     prisma.focusSession.findMany({
       where: { userId },
       orderBy: { startedAt: "asc" },
     }),
     estimateAccuracy(userId),
+    prisma.focusPreferences.findUnique({ where: { userId } }),
+    prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    }),
   ]);
+  const timeZone = settings?.timeZone || "UTC";
 
   const completed = sessions.filter((session) => session.completed);
   const abandoned = sessions.filter((session) => session.abandoned).length;
@@ -122,37 +149,52 @@ export async function recomputeFocusStats(userId: string) {
   );
 
   const uniqueDays = Array.from(
-    new Set(completed.map((session) => startOfDay(session.startedAt).getTime()))
-  ).sort((a, b) => a - b);
+    new Set(completed.map((session) => localDayKey(session.startedAt, timeZone)))
+  ).sort();
 
   let longestStreak = 0;
   let run = 0;
-  let previous: Date | null = null;
-  for (const dayMs of uniqueDays) {
-    const day = newDate(dayMs);
-    run = previous && daysBetween(day, previous) === 1 ? run + 1 : 1;
+  let previous: string | null = null;
+  for (const day of uniqueDays) {
+    run = previous && daysBetweenKeys(day, previous) === 1 ? run + 1 : 1;
     longestStreak = Math.max(longestStreak, run);
     previous = day;
   }
 
   const lastFocusDate = uniqueDays.length
-    ? newDate(uniqueDays[uniqueDays.length - 1])
+    ? newDate(`${uniqueDays[uniqueDays.length - 1]}T12:00:00Z`)
     : null;
   const currentStreak =
-    lastFocusDate && daysBetween(newDate(), lastFocusDate) <= 1 ? run : 0;
+    uniqueDays.length &&
+    daysBetweenKeys(localDayKey(newDate(), timeZone), uniqueDays.at(-1)!) <= 1
+      ? run
+      : 0;
+  const sevenDayCutoff = addDays(newDate(), -7);
+  const recentMinutes = completed
+    .filter((session) => session.startedAt >= sevenDayCutoff)
+    .reduce((total, session) => total + session.elapsedMinutes, 0);
+  const focusGoalRatio =
+    recentMinutes / Math.max(1, (preferences?.dailyGoalMinutes ?? 25) * 7);
+  const focusScore = scoreFrom({
+    focusGoalRatio,
+    completed: completed.length,
+    abandoned,
+    accuracy,
+    currentStreak,
+  });
 
   return prisma.focusStats.upsert({
     where: { userId },
     create: {
       userId,
-      focusScore: scoreFrom(completed.length, abandoned, accuracy),
+      focusScore,
       currentStreak,
       longestStreak,
       lifetimeMinutes,
       lastFocusDate,
     },
     update: {
-      focusScore: scoreFrom(completed.length, abandoned, accuracy),
+      focusScore,
       currentStreak,
       longestStreak,
       lifetimeMinutes,
@@ -166,21 +208,24 @@ export async function getWeeklyFocusReport(
 ): Promise<WeeklyFocusReport> {
   const since = startOfDay(addDays(newDate(), -7));
 
-  const [sessions, stats, accuracy] = await Promise.all([
+  const [sessions, stats, accuracy, settings] = await Promise.all([
     prisma.focusSession.findMany({
       where: { userId, startedAt: { gte: since } },
       orderBy: { startedAt: "asc" },
     }),
     prisma.focusStats.findUnique({ where: { userId } }),
     estimateAccuracy(userId),
+    prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    }),
   ]);
+  const timeZone = settings?.timeZone || "UTC";
 
   const completed = sessions.filter((session) => session.completed);
   const minutesByDay = new Map<string, number>();
   for (const session of completed) {
-    const key = session.startedAt.toLocaleDateString("en-US", {
-      weekday: "short",
-    });
+    const key = formatInTimeZone(session.startedAt, timeZone, "EEE");
     minutesByDay.set(
       key,
       (minutesByDay.get(key) ?? 0) + session.elapsedMinutes
@@ -195,9 +240,9 @@ export async function getWeeklyFocusReport(
   // including days with no focus.
   const dailyMinutes: { label: string; minutes: number }[] = [];
   const today = startOfDay(newDate());
-  const minutesByDayKey = new Map<number, number>();
+  const minutesByDayKey = new Map<string, number>();
   for (const session of completed) {
-    const key = startOfDay(session.startedAt).getTime();
+    const key = localDayKey(session.startedAt, timeZone);
     minutesByDayKey.set(
       key,
       (minutesByDayKey.get(key) ?? 0) + session.elapsedMinutes
@@ -205,9 +250,10 @@ export async function getWeeklyFocusReport(
   }
   for (let offset = 6; offset >= 0; offset -= 1) {
     const day = addDays(today, -offset);
+    const key = localDayKey(day, timeZone);
     dailyMinutes.push({
-      label: day.toLocaleDateString("en-US", { weekday: "narrow" }),
-      minutes: minutesByDayKey.get(day.getTime()) ?? 0,
+      label: formatInTimeZone(day, timeZone, "EEEEE"),
+      minutes: minutesByDayKey.get(key) ?? 0,
     });
   }
 
@@ -224,7 +270,10 @@ export async function getWeeklyFocusReport(
       current: stats?.currentStreak ?? 0,
       longest: stats?.longestStreak ?? 0,
       atRisk: lastFocusDate
-        ? daysBetween(newDate(), lastFocusDate) === 1
+        ? daysBetweenKeys(
+            localDayKey(newDate(), timeZone),
+            localDayKey(lastFocusDate, timeZone)
+          ) === 1
         : false,
     },
   };

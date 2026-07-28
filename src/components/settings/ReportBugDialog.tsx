@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Bug } from "lucide-react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -26,7 +27,7 @@ import {
 import { getAppVersion } from "@/lib/version";
 
 export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
-  const [open, setOpen] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
   const [submitting, setSubmitting] = useState(false);
   const [severity, setSeverity] = useState("MEDIUM");
 
@@ -49,7 +50,7 @@ export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
       });
       if (!response.ok) throw new Error("Report failed");
       toast.success("Bug report sent. Thank you.");
-      setOpen(false);
+      closeRef.current?.click();
     } catch {
       toast.error("Could not send the report. Please try again.");
     } finally {
@@ -58,16 +59,20 @@ export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>
         <Button
+          type="button"
           variant="destructive"
           className={mobile ? "h-12 w-full" : "mt-4 w-full justify-start"}
         >
           <Bug /> Report a bug
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        aria-label="Report a bug"
+        className="max-h-[90vh] overflow-y-auto sm:max-w-xl"
+      >
         <DialogHeader>
           <DialogTitle>Report a bug</DialogTitle>
           <DialogDescription>
@@ -75,6 +80,7 @@ export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
             automatically.
           </DialogDescription>
         </DialogHeader>
+        <DialogClose ref={closeRef} className="hidden" aria-hidden="true" />
         <form onSubmit={submit} className="space-y-3">
           <Input
             name="title"
@@ -125,13 +131,11 @@ export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
             browser and timestamp.
           </p>
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost">
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={submitting}>
               {submitting ? "Sending…" : "Send report"}
             </Button>

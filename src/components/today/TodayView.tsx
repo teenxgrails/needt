@@ -86,7 +86,11 @@ function taskDisplayDate(task: Task) {
   return value ? newDate(value) : null;
 }
 
-export function TodayView() {
+export function TodayView({
+  documentFormatVersion = 1,
+}: {
+  documentFormatVersion?: 1 | 2;
+}) {
   const tasks = useTaskStore((state) => state.tasks);
   const tags = useTaskStore((state) => state.tags);
   const fetchTasks = useTaskStore((state) => state.fetchTasks);
@@ -429,6 +433,7 @@ export function TodayView() {
             ) : (
               <div className="pb-10">
                 <DailyAgendaEditor
+                  documentFormatVersion={documentFormatVersion}
                   dateKey={dateKey}
                   groups={agendaGroups}
                   onCreateTask={handleAgendaCreateTask}

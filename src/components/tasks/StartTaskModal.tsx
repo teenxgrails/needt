@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,15 +22,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 
-import { useTaskMutations } from "@/hooks/useTaskMutations";
-
 import { useDurationMemoryStore } from "@/store/durationMemory";
-import { useFocusModeStore } from "@/store/focusMode";
+import { useTaskStore } from "@/store/task";
 
-import { Task, TaskStatus } from "@/types/task";
+import { Task } from "@/types/task";
 
 const LOG_SOURCE = "StartTaskModal";
 
@@ -45,14 +44,16 @@ export function StartTaskModal({
   open,
   onOpenChange,
 }: StartTaskModalProps) {
-  const { moveTask } = useTaskMutations();
+  const router = useRouter();
+  const fetchTasks = useTaskStore((state) => state.fetchTasks);
   const remember = useDurationMemoryStore((state) => state.remember);
   const recall = useDurationMemoryStore((state) => state.recall);
-  const switchToTask = useFocusModeStore((state) => state.switchToTask);
 
   const [duration, setDuration] = useState(30);
   const [startFocus, setStartFocus] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+  const [confirmOutsideWorkHours, setConfirmOutsideWorkHours] = useState(false);
+  const commandKey = useRef(crypto.randomUUID());
 
   // Prefer a learned duration for similar tasks, then the task's own duration.
   const defaultDuration = useMemo(() => {
@@ -64,6 +65,8 @@ export function StartTaskModal({
     if (open) {
       setDuration(defaultDuration);
       setStartFocus(true);
+      setConfirmOutsideWorkHours(false);
+      commandKey.current = crypto.randomUUID();
     }
   }, [open, defaultDuration]);
 
@@ -71,27 +74,35 @@ export function StartTaskModal({
     if (!task) return;
     setIsStarting(true);
     try {
-      const now = newDate();
-      const end = newDate(now.getTime() + duration * 60 * 1000);
-
-      // Allocate this block now and let the existing scheduling engine move
-      // other tasks around the locked block (updateTask triggers a reschedule).
-      await moveTask(task.id, {
-        duration,
-        scheduledStart: now,
-        scheduledEnd: end,
-        isAutoScheduled: true,
-        scheduleLocked: true,
-        status: TaskStatus.IN_PROGRESS,
-        bypassBlockedHours: true,
+      const response = await fetch(`/api/tasks/${task.id}/start-now`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": commandKey.current,
+        },
+        body: JSON.stringify({
+          durationMinutes: duration,
+          startFocus,
+          confirmOutsideWorkHours,
+        }),
       });
+      const result = (await response.json()) as {
+        error?: string;
+        requiresConfirmation?: boolean;
+      };
+      if (
+        response.status === 409 &&
+        result.error === "OUTSIDE_WORK_HOURS" &&
+        result.requiresConfirmation
+      ) {
+        setConfirmOutsideWorkHours(true);
+        return;
+      }
+      if (!response.ok) throw new Error(result.error || "Could not start task.");
 
       // Learn the chosen duration for future similar tasks.
       remember(task.title, duration);
-
-      if (startFocus) {
-        switchToTask(task.id);
-      }
+      await fetchTasks();
 
       logger.info(
         "Started task now",
@@ -99,7 +110,12 @@ export function StartTaskModal({
         LOG_SOURCE
       );
       onOpenChange(false);
+      toast.success(startFocus ? "Focus session started." : "Task started.");
+      if (startFocus) router.push("/focus");
     } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not start task."
+      );
       logger.error(
         "Failed to start task",
         { error: error instanceof Error ? error.message : "Unknown error" },
@@ -151,7 +167,9 @@ export function StartTaskModal({
           </label>
 
           <p className="text-[12px] text-[var(--text-muted)]">
-            We&apos;ll move current task(s) to a different time.
+            {confirmOutsideWorkHours
+              ? "This is outside your Work Hours. Confirm to create a locked block anyway."
+              : "We’ll move current task(s) to a different time."}
           </p>
         </div>
 
@@ -170,7 +188,11 @@ export function StartTaskModal({
             onClick={handleStart}
             disabled={isStarting || !task}
           >
-            {isStarting ? "Starting…" : "Start"}
+            {isStarting
+              ? "Starting…"
+              : confirmOutsideWorkHours
+                ? "Start anyway"
+                : "Start"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -19,6 +19,9 @@ export interface FocusSessionSnapshot {
   pausedAt: string | null;
   startedAt: string;
   endedAt: string | null;
+  phase: "FOCUS" | "SHORT_BREAK" | "LONG_BREAK";
+  strictness: "NORMAL" | "TIMEOUT" | "DEEP_FOCUS";
+  intention: string | null;
 }
 
 interface StartOptions {
@@ -26,6 +29,9 @@ interface StartOptions {
   mode: FocusMode;
   plannedMinutes: number | null;
   source?: string;
+  phase?: FocusSessionSnapshot["phase"];
+  strictness?: FocusSessionSnapshot["strictness"];
+  intention?: string | null;
 }
 
 interface FocusTimerStore {
@@ -101,6 +107,9 @@ export const useFocusTimerStore = create<FocusTimerStore>()(
           mode: options.mode,
           plannedMinutes: options.plannedMinutes,
           source: options.source ?? "web",
+          phase: options.phase ?? "FOCUS",
+          strictness: options.strictness ?? "NORMAL",
+          intention: options.intention ?? null,
         });
         set({ session, pendingCompletion: null });
       },

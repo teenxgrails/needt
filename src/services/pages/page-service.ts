@@ -178,7 +178,8 @@ export async function replacePageBlocks(
   userId: string,
   pageId: string,
   blocks: PageBlockInput[],
-  createdBy: PageAuthor = PageAuthor.HUMAN
+  createdBy: PageAuthor = PageAuthor.HUMAN,
+  documentFormatVersion: 1 | 2 = 1
 ) {
   const page = await getPage(userId, pageId);
   if (!page) return null;
@@ -196,6 +197,12 @@ export async function replacePageBlocks(
   }));
 
   return prisma.$transaction(async (tx) => {
+    if (page.documentFormatVersion !== documentFormatVersion) {
+      await tx.page.update({
+        where: { id: pageId },
+        data: { documentFormatVersion },
+      });
+    }
     await tx.pageRevision.create({
       data: {
         pageId,
@@ -220,7 +227,7 @@ export async function replacePageBlocks(
       .map((block) => block.id)
       .filter((id): id is string => Boolean(id));
     if (new Set(requestedIds).size !== requestedIds.length) {
-      throw new Error("Page block IDs must be unique");
+      throw new PageBlockIdentityError("Page block IDs must be unique");
     }
     const foreignBlocks = requestedIds.length
       ? await tx.pageBlock.count({
@@ -306,6 +313,10 @@ export async function replacePageBlocks(
       include: pageDetailInclude,
     });
   });
+}
+
+export class PageBlockIdentityError extends Error {
+  readonly code = "DUPLICATE_BLOCK_ID";
 }
 
 export async function createDatabase(

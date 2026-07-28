@@ -41,6 +41,7 @@ import { randomId } from "@/lib/uuid";
 import { Task } from "@/types/task";
 
 interface DailyAgendaEditorProps {
+  documentFormatVersion?: 1 | 2;
   dateKey: string;
   groups: AgendaGroup[];
   onCreateTask: (title: string) => Promise<Task>;
@@ -188,6 +189,7 @@ function ensureAgendaGroups(editor: Editor) {
 }
 
 export function DailyAgendaEditor({
+  documentFormatVersion = 1,
   dateKey,
   groups,
   onCreateTask,
@@ -200,6 +202,7 @@ export function DailyAgendaEditor({
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const dateKeyRef = useRef(dateKey);
+  const documentFormatVersionRef = useRef(documentFormatVersion);
   const hydratedKeyRef = useRef<string | null>(null);
   const createTaskRef = useRef(onCreateTask);
   const openTaskRef = useRef(onOpenTask);
@@ -222,6 +225,7 @@ export function DailyAgendaEditor({
   const [slashIndex, setSlashIndex] = useState(0);
 
   dateKeyRef.current = dateKey;
+  documentFormatVersionRef.current = documentFormatVersion;
   createTaskRef.current = onCreateTask;
   openTaskRef.current = onOpenTask;
   completeTaskRef.current = onCompleteTask;
@@ -253,7 +257,10 @@ export function DailyAgendaEditor({
             const response = await fetch("/api/daily-agenda", {
               method: "PUT",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(entry),
+              body: JSON.stringify({
+                ...entry,
+                documentFormatVersion: documentFormatVersionRef.current,
+              }),
             });
             if (!response.ok) throw new Error("Agenda save failed");
             if (

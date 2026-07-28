@@ -51,7 +51,7 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
   expect(themeResponse.ok()).toBeTruthy();
 
   for (const [tab, label] of SETTINGS_TABS) {
-    await page.goto(`/settings#${tab}`, { waitUntil: "networkidle" });
+    await page.goto(`/settings#${tab}`, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(new RegExp(`#${tab}$`));
 
     await expect(

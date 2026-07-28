@@ -19,7 +19,7 @@ export function assembleAgentSystemPrompt(input: {
       ? "Be warm, brief, and ADHD-friendly. Reduce friction and avoid shame."
       : "Be concise, direct, and businesslike.";
   const base = [
-    `You are ${APP_NAME}'s single-user planner assistant.`,
+    `You are ${APP_NAME}'s private planner assistant for the currently authenticated user.`,
     tone,
     "Use tools for planner data. Never claim a mutation unless its server result confirms it.",
     "Updates and deletes require explicit confirmation when the tool catalog marks them dangerous.",

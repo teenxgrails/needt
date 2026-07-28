@@ -56,4 +56,38 @@ describe("page document contract", () => {
       })
     ).toBe("BOOKMARK");
   });
+
+  it("repairs duplicate and missing block IDs before persistence", () => {
+    const blocks = pageBlocksFromDocument({
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { blockId: "duplicate-id" },
+          content: [{ type: "text", text: "First" }],
+        },
+        {
+          type: "paragraph",
+          attrs: { blockId: "duplicate-id" },
+          content: [{ type: "text", text: "Second" }],
+        },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Third" }],
+        },
+      ],
+    });
+
+    const ids = blocks.map((block) => block.id);
+    expect(ids[0]).toBe("duplicate-id");
+    expect(new Set(ids).size).toBe(3);
+    expect(ids.every(Boolean)).toBe(true);
+    expect(
+      blocks.map(
+        (block) =>
+          (block.content.json as { attrs?: { blockId?: string } }).attrs
+            ?.blockId
+      )
+    ).toEqual(ids);
+  });
 });

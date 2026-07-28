@@ -40,7 +40,7 @@ test("Today exposes the responsive timeline and explicit evening review", async 
   });
   expect(agendaResponse.ok()).toBeTruthy();
 
-  await page.goto("/today", { waitUntil: "networkidle" });
+  await page.goto("/today", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Thursday", level: 1 })
   ).toBeVisible();
@@ -83,7 +83,7 @@ test("Integrations empty search and private bug report dialog stay usable", asyn
   page,
 }) => {
   await prepareAuthenticatedPage(page);
-  await page.goto("/settings#integrations", { waitUntil: "networkidle" });
+  await page.goto("/settings#integrations", { waitUntil: "domcontentloaded" });
   await expect(
     page.getByRole("heading", { name: "Integrations", level: 1 })
   ).toBeVisible();
@@ -94,8 +94,14 @@ test("Integrations empty search and private bug report dialog stay usable", asyn
   await settle(page);
   await expect(page).toHaveScreenshot("settings-integrations-empty.png");
 
-  await page.goto("/settings", { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: "Report a bug" }).click();
+  const backToSettings = page.getByRole("button", {
+    name: "Back to Settings",
+  });
+  if (await backToSettings.isVisible()) {
+    await backToSettings.click();
+  }
+  const reportTrigger = page.getByRole("button", { name: "Report a bug" });
+  await reportTrigger.click();
   const report = page.getByRole("dialog", { name: "Report a bug" });
   await expect(report).toBeVisible();
   await expect(

@@ -12,7 +12,7 @@ async function useTheme(
   });
   expect(response.ok()).toBeTruthy();
   await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
-  await page.goto("/settings#theme", { waitUntil: "networkidle" });
+  await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 }
 
