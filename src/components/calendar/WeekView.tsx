@@ -16,6 +16,7 @@ import { TaskModal } from "@/components/tasks/TaskModal";
 
 import { formatCalendarHour } from "@/lib/calendar-display";
 import { getEventEditability } from "@/lib/calendar-drag";
+import { CalendarScrollPolicy } from "@/lib/calendar-scroll-policy";
 import {
   getSelectionRange,
   isExplicitCalendarSelection,
@@ -111,6 +112,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
   const scheduleBusinessHours = useDefaultScheduleBusinessHours();
   const calendarRef = useRef<CalendarEngine>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const cancelScrollPolicyRef = useRef<(() => void) | null>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const eventModalStore = useEventModalStore();
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers(
@@ -307,6 +309,29 @@ export function WeekView({ currentDate }: WeekViewProps) {
     [feeds, getAllCalendarItems, showTasksOnCalendar]
   );
 
+  const handleRangeSet = useCallback(
+    (arg: DatesSetArg) => {
+      void handleDatesSet(arg);
+      const root = wrapperRef.current;
+      const calendar = calendarRef.current?.getApi();
+      if (!root || !calendar) return;
+      cancelScrollPolicyRef.current?.();
+      cancelScrollPolicyRef.current = CalendarScrollPolicy.schedule(
+        root,
+        calendar,
+        calendarSettings.workingHours.start
+      );
+    },
+    [calendarSettings.workingHours.start, handleDatesSet]
+  );
+
+  useEffect(
+    () => () => {
+      cancelScrollPolicyRef.current?.();
+    },
+    []
+  );
+
   // Update items when loading state changes, feeds change, or tasks change
   useEffect(() => {
     if (!isLoading && calendarRef.current) {
@@ -471,6 +496,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
         slotMinTime="00:00:00"
         slotMaxTime="24:00:00"
         scrollTime={calendarSettings.workingHours.start}
+        scrollTimeReset={false}
         expandRows={true}
         slotEventOverlap={true}
         stickyHeaderDates={true}
@@ -510,7 +536,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
         select={handleDateSelect}
         selectable={true}
         selectMirror={true}
-        datesSet={handleDatesSet}
+        datesSet={handleRangeSet}
         eventContent={renderEventContent}
         eventDrop={handleEventDrop}
         droppable={true}

@@ -47,6 +47,11 @@ anchored desktop popover to a mobile bottom sheet. Theme IDs are `light`,
 `graphite`, `dark`, and `system`; persisted `gray` is normalized to `graphite`
 when read.
 
+Calendar positioning is centralized in
+`src/lib/calendar-scroll-policy.ts`; period arithmetic and interaction guards
+live in `src/lib/calendar-navigation.ts`. Data refreshes must not invoke the
+scroll policy or reset a user's manual vertical position.
+
 ## Multi-user isolation
 
 Scheduling runs, idempotency records, focus data, dependencies, reminders,

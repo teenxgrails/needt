@@ -65,8 +65,10 @@ import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
 import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useCalendarHorizontalNavigation } from "@/hooks/useCalendarHorizontalNavigation";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
+import { moveCalendarDate } from "@/lib/calendar-navigation";
 import { useCalendarStore, useViewStore } from "@/store/calendar";
 import { useSettingsStore } from "@/store/settings";
 import { useTaskStore } from "@/store/task";
@@ -174,19 +176,15 @@ export function Calendar({
   const visibleViews = isPhone
     ? VIEW_ORDER.filter((item) => item === "day" || item === "month")
     : VIEW_ORDER;
+  const horizontalNavigation = useCalendarHorizontalNavigation({
+    currentDate,
+    view: effectiveView,
+    enabled: !isPhone,
+    onNavigate: setDate,
+  });
 
   const moveDate = (direction: -1 | 1) => {
-    const next = new Date(currentDate);
-    if (effectiveView === "day") {
-      next.setDate(next.getDate() + direction);
-    } else if (effectiveView === "week") {
-      next.setDate(next.getDate() + direction * 7);
-    } else if (effectiveView === "month") {
-      next.setMonth(next.getMonth() + direction);
-    } else {
-      next.setFullYear(next.getFullYear() + direction);
-    }
-    setDate(next);
+    setDate(moveCalendarDate(currentDate, effectiveView, direction));
   };
 
   const dateLabel = new Intl.DateTimeFormat(undefined, {
@@ -462,8 +460,17 @@ export function Calendar({
 
         {/* Calendar Grid */}
         <div
-          className="flex-1 touch-pan-y overflow-hidden"
+          ref={horizontalNavigation.rootRef}
+          className={cn(
+            "relative flex-1 touch-pan-y overflow-hidden",
+            horizontalNavigation.isGrabReady && "cursor-grab select-none",
+            horizontalNavigation.isDragging && "cursor-grabbing select-none"
+          )}
           data-schedule-revision={scheduleAnimationRevision}
+          data-horizontal-navigation={
+            horizontalNavigation.isDragging ? "dragging" : "idle"
+          }
+          {...horizontalNavigation.pointerHandlers}
           onTouchStart={(event) => {
             if (!isPhone || effectiveView !== "day") return;
             const touch = event.touches[0];
@@ -481,6 +488,27 @@ export function Calendar({
             moveDate(deltaX > 0 ? -1 : 1);
           }}
         >
+          <AnimatePresence>
+            {horizontalNavigation.feedback && (
+              <motion.div
+                className={cn(
+                  "pointer-events-none absolute top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-[var(--border-control)] bg-[var(--surface-panel)] text-[var(--text-primary)] needt-overlay-shadow",
+                  horizontalNavigation.feedback < 0 ? "left-5" : "right-5"
+                )}
+                initial={{ opacity: 0, x: horizontalNavigation.feedback * 8 }}
+                animate={{ opacity: 0.9, x: 0 }}
+                exit={{ opacity: 0, x: horizontalNavigation.feedback * 8 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
+                aria-hidden="true"
+              >
+                {horizontalNavigation.feedback < 0 ? (
+                  <ChevronLeft className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
           <LayoutGroup id="calendar-schedule">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div

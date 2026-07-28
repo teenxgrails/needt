@@ -86,6 +86,13 @@ card shadow or hover lift. External calendar events use a dashed hairline;
 tasks use a solid hairline. Hover adds only a 15% color wash and selection uses
 an inset neutral outline.
 
+Desktop calendar period navigation supports horizontal trackpad gestures,
+`Shift + wheel`, `Alt + Left/Right`, and `Space + left drag` on empty grid
+space. Right-button drag is intentionally unsupported. Day/Week ranges
+containing today position the current-time line at 30% of the vertical
+viewport; other ranges open at the Work Schedule start. Manual vertical scroll
+is retained until the visible date range changes.
+
 ## Toggle (Switch)
 
 Shared `@/components/ui/switch`. Flat white thumb (`shadow-sm`, **no glow**),

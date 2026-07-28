@@ -16,6 +16,7 @@ import { TaskModal } from "@/components/tasks/TaskModal";
 
 import { formatCalendarHour } from "@/lib/calendar-display";
 import { getEventEditability } from "@/lib/calendar-drag";
+import { CalendarScrollPolicy } from "@/lib/calendar-scroll-policy";
 import {
   getSelectionRange,
   isExplicitCalendarSelection,
@@ -105,6 +106,8 @@ export function DayView({ currentDate }: DayViewProps) {
   >([]);
   const scheduleBusinessHours = useDefaultScheduleBusinessHours();
   const calendarRef = useRef<CalendarEngine>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const cancelScrollPolicyRef = useRef<(() => void) | null>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const eventModalStore = useEventModalStore();
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers(
@@ -222,6 +225,29 @@ export function DayView({ currentDate }: DayViewProps) {
       }
     },
     [feeds, getAllCalendarItems, showTasksOnCalendar]
+  );
+
+  const handleRangeSet = useCallback(
+    (arg: DatesSetArg) => {
+      void handleDatesSet(arg);
+      const root = wrapperRef.current;
+      const calendar = calendarRef.current?.getApi();
+      if (!root || !calendar) return;
+      cancelScrollPolicyRef.current?.();
+      cancelScrollPolicyRef.current = CalendarScrollPolicy.schedule(
+        root,
+        calendar,
+        calendarSettings.workingHours.start
+      );
+    },
+    [calendarSettings.workingHours.start, handleDatesSet]
+  );
+
+  useEffect(
+    () => () => {
+      cancelScrollPolicyRef.current?.();
+    },
+    []
   );
 
   useEffect(() => {
@@ -385,7 +411,10 @@ export function DayView({ currentDate }: DayViewProps) {
   );
 
   return (
-    <div className="calendar-day-view fc-tz-corner h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-1 [&_.fc-timegrid-slot-label]:!py-1 [&_.fc-timegrid-slot]:!h-[35px]">
+    <div
+      ref={wrapperRef}
+      className="calendar-day-view fc-tz-corner h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-1 [&_.fc-timegrid-slot-label]:!py-1 [&_.fc-timegrid-slot]:!h-[35px]"
+    >
       <CalendarEngine
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
@@ -398,6 +427,7 @@ export function DayView({ currentDate }: DayViewProps) {
         slotMinTime="00:00:00"
         slotMaxTime="24:00:00"
         scrollTime={calendarSettings.workingHours.start}
+        scrollTimeReset={false}
         expandRows={true}
         slotEventOverlap={true}
         stickyHeaderDates={true}
@@ -425,7 +455,7 @@ export function DayView({ currentDate }: DayViewProps) {
         select={handleDateSelect}
         selectable={true}
         selectMirror={true}
-        datesSet={handleDatesSet}
+        datesSet={handleRangeSet}
         eventContent={renderEventContent}
         eventDrop={handleEventDrop}
         droppable={true}
