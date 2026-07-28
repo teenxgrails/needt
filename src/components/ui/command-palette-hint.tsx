@@ -16,8 +16,8 @@ import { Button } from "@/components/ui/button";
 
 const TIP_DELAY_MS = 4_000;
 const TIP_INTERVAL_MS = 3 * 24 * 60 * 60 * 1_000;
-const LAST_SHOWN_KEY = "mina:quick-tip:last-shown-at";
-const NEXT_TIP_KEY = "mina:quick-tip:next-index";
+const LAST_SHOWN_KEY = "needt:quick-tip:last-shown-at";
+const NEXT_TIP_KEY = "needt:quick-tip:next-index";
 
 type TipAction =
   | "command"

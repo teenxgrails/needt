@@ -1,8 +1,6 @@
 const CACHE_NAME = "needt-shell-v4";
 const API_CACHE_NAME = "needt-api-v2";
-// Keep the existing IndexedDB name so queued offline mutations survive the
-// service-worker upgrade.
-const DB_NAME = "flowday-offline-v1";
+const DB_NAME = "needt-offline-v1";
 const STORE_QUEUE = "mutationQueue";
 const STORE_SNAPSHOTS = "snapshots";
 const SHELL_URLS = [
@@ -83,13 +81,13 @@ self.addEventListener("fetch", (event) => {
 });
 
 self.addEventListener("sync", (event) => {
-  if (event.tag === "flowday-sync-queue") {
+  if (event.tag === "needt-sync-queue") {
     event.waitUntil(flushQueue());
   }
 });
 
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "FLOWDAY_SYNC_NOW") {
+  if (event.data?.type === "NEEDT_SYNC_NOW") {
     event.waitUntil(flushQueue());
   }
 });
@@ -167,7 +165,7 @@ async function snapshotFirst(request) {
       return new Response(snapshot.body, {
         headers: {
           "content-type": snapshot.contentType,
-          "x-flowday-offline": "true",
+          "x-needt-offline": "true",
         },
       });
     }
@@ -191,7 +189,7 @@ async function queueWhenOffline(request) {
       body,
       createdAt: Date.now(),
     });
-    await self.registration.sync?.register("flowday-sync-queue");
+    await self.registration.sync?.register("needt-sync-queue");
     return new Response(JSON.stringify({ queued: true, offline: true }), {
       status: 202,
       headers: { "content-type": "application/json" },

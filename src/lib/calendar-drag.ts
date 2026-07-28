@@ -93,7 +93,7 @@ export function computeDropUpdate(
     };
   }
 
-  // FullCalendar reports end as null for zero-duration events; preserve the
+  // calendar engine reports end as null for zero-duration events; preserve the
   // previous duration in that case
   const oldDurationMs =
     oldStart && oldEnd ? oldEnd.getTime() - oldStart.getTime() : 0;

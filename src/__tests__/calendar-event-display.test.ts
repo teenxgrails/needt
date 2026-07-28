@@ -112,7 +112,7 @@ describe("getMonthEventDisplay", () => {
   });
 
   it("keeps the calendar identity but drops the time on a continuation segment", () => {
-    // FullCalendar splits a multi-day event into one segment per day. Only the
+    // calendar engine splits a multi-day event into one segment per day. Only the
     // first segment is the start, so later segments must not repeat the start
     // time, but they remain colored and so still need the accessible calendar
     // label exposed (isDayGridTimed stays true).
@@ -168,7 +168,7 @@ describe("getMonthEventDisplay", () => {
 
   it("formats the time chip in the calendar's configured time zone", () => {
     // The chip must show whatever time the calendar itself renders, so it
-    // formats in the time zone FullCalendar is configured with rather than the
+    // formats in the time zone calendar engine is configured with rather than the
     // browser's local zone.
     const display = getMonthEventDisplay({
       ...base,

@@ -5,6 +5,11 @@ import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
+import {
+  LEGACY_AI_ACTION_EVENT,
+  NEEDT_AI_ACTION_EVENT,
+} from "@/lib/needt-events";
+
 interface CursorState {
   id: number;
   label: string;
@@ -23,9 +28,11 @@ export function AIActionCursor() {
       });
     }
 
-    window.addEventListener("flowday:ai-action", onAction);
+    window.addEventListener(NEEDT_AI_ACTION_EVENT, onAction);
+    window.addEventListener(LEGACY_AI_ACTION_EVENT, onAction);
     return () => {
-      window.removeEventListener("flowday:ai-action", onAction);
+      window.removeEventListener(NEEDT_AI_ACTION_EVENT, onAction);
+      window.removeEventListener(LEGACY_AI_ACTION_EVENT, onAction);
     };
   }, []);
 

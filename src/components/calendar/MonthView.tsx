@@ -8,7 +8,7 @@ import type {
 import type { DateSelectArg } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import FullCalendar from "@fullcalendar/react";
+import CalendarEngine from "@fullcalendar/react";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 
@@ -70,7 +70,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
       extendedProps?: ExtendedEventProps;
     }>
   >([]);
-  const calendarRef = useRef<FullCalendar>(null);
+  const calendarRef = useRef<CalendarEngine>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const eventModalStore = useEventModalStore();
   const { handleEventDrop } = useCalendarDragHandlers();
@@ -230,7 +230,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
 
   return (
     <div className="h-full">
-      <FullCalendar
+      <CalendarEngine
         ref={calendarRef}
         plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"

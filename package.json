@@ -1,5 +1,5 @@
 {
-  "name": "fluid-calendar",
+  "name": "needt",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -23,7 +23,8 @@
     "test:visual:update": "playwright test --config=playwright.visual.config.ts --update-snapshots",
     "test:style": "playwright test --config=playwright.style.config.ts",
     "test:style:update": "playwright test --config=playwright.style.config.ts --update-snapshots=all",
-    "mcp:flowday": "node mcp/flowday-mcp-server.mjs",
+    "mcp:needt": "node mcp/needt-mcp-server.mjs",
+    "check:branding": "node scripts/check-branding.mjs",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "clean": "rm -rf .next node_modules",

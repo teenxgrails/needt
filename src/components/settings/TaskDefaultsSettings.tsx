@@ -17,11 +17,9 @@ import {
 } from "lucide-react";
 
 import { useAppSession } from "@/components/providers/app-session-context";
-import {
-  MotionSwitchRow,
-  NeedtPicker,
-} from "@/components/settings/MotionSettingsControls";
+import { MotionSwitchRow } from "@/components/settings/MotionSettingsControls";
 import { SettingsSection } from "@/components/settings/SettingsSection";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import {
   DEFAULT_TASK_DEFAULTS,

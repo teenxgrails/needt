@@ -6,7 +6,7 @@ Each user generates their own token in Settings -> Connectors.
 Use:
 
 ```http
-Authorization: Bearer flowday_...
+Authorization: Bearer needt_...
 Content-Type: application/json
 ```
 
@@ -14,7 +14,7 @@ Content-Type: application/json
 
 ```bash
 curl -X POST http://localhost:3000/api/connect/tasks \
-  -H "Authorization: Bearer flowday_REPLACE_ME" \
+  -H "Authorization: Bearer needt_REPLACE_ME" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Process resale photos",
@@ -34,7 +34,7 @@ The response includes the task plus `scheduledBlocks` when the task is split int
 
 ```bash
 curl http://localhost:3000/api/connect/schedule \
-  -H "Authorization: Bearer flowday_REPLACE_ME"
+  -H "Authorization: Bearer needt_REPLACE_ME"
 ```
 
 Response:
@@ -68,7 +68,7 @@ Response:
 
 ```bash
 curl http://localhost:3000/api/connect/tasks \
-  -H "Authorization: Bearer flowday_REPLACE_ME"
+  -H "Authorization: Bearer needt_REPLACE_ME"
 ```
 
 Response:
@@ -84,7 +84,7 @@ Response:
 
 ```bash
 curl -X POST http://localhost:3000/api/connect/reschedule \
-  -H "Authorization: Bearer flowday_REPLACE_ME"
+  -H "Authorization: Bearer needt_REPLACE_ME"
 ```
 
 ## Webhooks

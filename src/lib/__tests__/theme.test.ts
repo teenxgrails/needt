@@ -1,9 +1,20 @@
-import { getThemeClassNames, resolveThemeMode } from "@/lib/theme";
+import {
+  getThemeClassNames,
+  normalizeThemeMode,
+  resolveThemeMode,
+} from "@/lib/theme";
 
 describe("theme modes", () => {
-  it("keeps Gray on the graphite dark-variant palette", () => {
-    expect(resolveThemeMode("gray", false)).toBe("gray");
-    expect(getThemeClassNames("gray")).toEqual(["dark", "theme-gray"]);
+  it("migrates the legacy gray value to graphite", () => {
+    expect(normalizeThemeMode("gray")).toBe("graphite");
+  });
+
+  it("keeps Graphite on the graphite dark-variant palette", () => {
+    expect(resolveThemeMode("graphite", false)).toBe("graphite");
+    expect(getThemeClassNames("graphite")).toEqual([
+      "dark",
+      "theme-graphite",
+    ]);
   });
 
   it("resolves stored Dark and System dark to true Dark", () => {

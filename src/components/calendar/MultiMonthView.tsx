@@ -8,7 +8,7 @@ import type {
 import type { DateSelectArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
 import multiMonthPlugin from "@fullcalendar/multimonth";
-import FullCalendar from "@fullcalendar/react";
+import CalendarEngine from "@fullcalendar/react";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 
@@ -69,7 +69,7 @@ export function MultiMonthView({
       extendedProps?: ExtendedEventProps;
     }>
   >([]);
-  const calendarRef = useRef<FullCalendar>(null);
+  const calendarRef = useRef<CalendarEngine>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const eventModalStore = useEventModalStore();
 
@@ -225,7 +225,7 @@ export function MultiMonthView({
 
   return (
     <div className="h-full">
-      <FullCalendar
+      <CalendarEngine
         ref={calendarRef}
         plugins={[multiMonthPlugin, interactionPlugin]}
         initialView="multiMonthYear"

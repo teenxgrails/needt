@@ -1,6 +1,6 @@
-# FluidCalendar Self-Hosting Setup Checklist
+# Needt Self-Hosting Setup Checklist
 
-Use this checklist before opening an issue or buying a setup review. It focuses on the failure points that most often block a working FluidCalendar install.
+Use this checklist before opening an issue or buying a setup review. It focuses on the failure points that most often block a working Needt install.
 
 ## 1. Base App
 
@@ -22,7 +22,7 @@ Use this checklist before opening an issue or buying a setup review. It focuses 
 ## 3. Outlook Calendar
 
 - Azure app registration supports the account type you expect to use (include personal Microsoft accounts if you connect outlook.com / hotmail.com / Microsoft 365 Personal/Family).
-- Redirect URI matches `/api/calendar/outlook` on the deployed domain (this is the exact callback path FluidCalendar uses; no trailing slash, and not a NextAuth `azure-ad` callback path).
+- Redirect URI matches `/api/calendar/outlook` on the deployed domain (this is the exact callback path Needt uses; no trailing slash, and not a NextAuth `azure-ad` callback path).
 - Microsoft Graph delegated permissions include calendar, task, profile, and offline access permissions.
 - The client secret value, not the secret ID, is copied into the app config.
 - Tenant ID is set only when you want to restrict login to one tenant.

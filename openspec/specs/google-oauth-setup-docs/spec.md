@@ -5,7 +5,7 @@ TBD - created by archiving change issue-76-google-oauth-docs. Update Purpose aft
 ## Requirements
 ### Requirement: Both Google OAuth redirect URIs are documented
 
-The Google Calendar setup instructions SHALL document both redirect URIs that a working FluidCalendar install requires in Google Cloud: the calendar-connect callback path `/api/calendar/google` and the Google sign-in callback path `/api/auth/callback/google`. This SHALL be true in both the README and the in-app System Settings instructions, so the two sources agree.
+The Google Calendar setup instructions SHALL document both redirect URIs that a working Needt install requires in Google Cloud: the calendar-connect callback path `/api/calendar/google` and the Google sign-in callback path `/api/auth/callback/google`. This SHALL be true in both the README and the in-app System Settings instructions, so the two sources agree.
 
 #### Scenario: README lists both redirect URIs
 

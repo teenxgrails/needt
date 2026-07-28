@@ -6,7 +6,7 @@ import { ExternalTask } from "@/lib/task-sync/providers/task-provider.interface"
 
 /**
  * Unit tests for the CalDAV field mapper (GitHub issue #144). It translates
- * VTODO status/priority enums into FluidCalendar's TaskStatus/Priority while
+ * VTODO status/priority enums into Needt's TaskStatus/Priority while
  * carrying dates and recurrence through.
  */
 function externalTask(overrides: Partial<ExternalTask>): ExternalTask {

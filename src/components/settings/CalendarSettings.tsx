@@ -28,9 +28,12 @@ import { useSettingsStore } from "@/store/settings";
 import { SettingsSection } from "./SettingsSection";
 
 type PickerMode = "my-calendars" | "conflicts" | null;
+const LEGACY_LOCAL_CALENDAR_NAME = "flowday";
 
 function displayCalendarName(name: string, type: string) {
-  return type === "LOCAL" || name.toLowerCase() === "flowday" ? APP_NAME : name;
+  return type === "LOCAL" || name.toLowerCase() === LEGACY_LOCAL_CALENDAR_NAME
+    ? APP_NAME
+    : name;
 }
 
 export function CalendarSettings() {

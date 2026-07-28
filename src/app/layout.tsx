@@ -24,12 +24,13 @@ const THEME_INIT_SCRIPT = `(function () {
     if (!raw) return;
     var theme = JSON.parse(raw)?.state?.user?.theme;
     if (!theme) return;
+    if (theme === "gray") theme = "graphite";
     var resolved = theme === "system"
       ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       : theme;
     var root = document.documentElement;
-    root.classList.remove("light", "dark", "theme-gray", "theme-dark");
-    if (resolved === "gray") root.classList.add("dark", "theme-gray");
+    root.classList.remove("light", "dark", "theme-gray", "theme-graphite", "theme-dark");
+    if (resolved === "graphite") root.classList.add("dark", "theme-graphite");
     else if (resolved === "dark") root.classList.add("dark", "theme-dark");
   } catch (e) {}
 })();`;

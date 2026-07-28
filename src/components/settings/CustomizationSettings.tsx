@@ -4,12 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { toast } from "sonner";
 
-import {
-  MotionSwitchRow,
-  NeedtPicker,
-} from "@/components/settings/MotionSettingsControls";
+import { MotionSwitchRow } from "@/components/settings/MotionSettingsControls";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { cn } from "@/lib/utils";
 
@@ -96,7 +94,7 @@ export function CustomizationSettings() {
     root.style.removeProperty("--custom-background-tint");
     root.style.setProperty("--radius", `${settings.radius}px`);
     root.style.setProperty(
-      "--flowday-sidebar-width",
+      "--needt-sidebar-width",
       `${settings.sidebarWidth}px`
     );
     root.dataset.density = settings.density;

@@ -21,7 +21,7 @@ describe("isExplicitCalendarSelection", () => {
 
 describe("getSelectionRange", () => {
   it("keeps the full range for a multi-day all-day drag (exclusive end, not collapsed)", () => {
-    // FullCalendar reports an all-day Wed-Fri (10th-12th) drag with an
+    // calendar engine reports an all-day Wed-Fri (10th-12th) drag with an
     // EXCLUSIVE end of the 13th at midnight. The store/providers/render layers
     // all use this exclusive convention, so it must pass through unchanged.
     const start = new Date(2026, 5, 10, 0, 0, 0); // Wed Jun 10 2026 local

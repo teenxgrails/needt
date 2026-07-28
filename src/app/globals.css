@@ -622,7 +622,7 @@
     letter-spacing: 0;
   }
 
-  .flowday-orb {
+  .needt-orb {
     border-radius: 6px;
     background: var(--raised);
     box-shadow: none;
@@ -1904,7 +1904,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   }
 }
 
-/* FullCalendar Customization */
+/* calendar engine Customization */
 .fc {
   @apply h-full;
   --fc-page-bg-color: transparent;
@@ -1960,7 +1960,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   overflow: hidden;
 }
 
-/* FullCalendar owns the outer event anchor while CalendarEventContent owns
+/* calendar engine owns the outer event anchor while CalendarEventContent owns
    the card inside it. Keep task blocks calm and neutral at both layers so the
    generated task color can never flash as a bright calendar event. */
 .fc .fc-event.calendar-task {
@@ -1999,7 +1999,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   @apply text-xs opacity-90;
 }
 
-/* Current-time marker: FullCalendar keeps its position in sync with the
+/* Current-time marker: calendar engine keeps its position in sync with the
    clock. Motion's version is a calm white rule with a circular lead-in rather
    than the library's default accent line and triangle. */
 .fc .fc-timegrid-now-indicator-line {
@@ -2087,7 +2087,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   border-top: 1px solid var(--calendar-grid-line) !important;
 }
 
-/* Keep hourly rules above FullCalendar's business-hours overlays so they
+/* Keep hourly rules above calendar engine's business-hours overlays so they
    remain visible in every working and non-working block. */
 .fc .fc-timegrid-slots {
   position: relative;
@@ -2155,7 +2155,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 }
 
 /* All-day row is a real click target (create an all-day task/event) — give it
-   a quiet hover cue and a minimal label, since FullCalendar's own "all day"
+   a quiet hover cue and a minimal label, since calendar engine's own "all day"
    text is hidden globally above. */
 .fc-tz-corner .fc-scrollgrid-section-body:first-of-type .fc-daygrid-day:hover {
   background: var(--surface-hover) !important;
@@ -2168,7 +2168,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   background: transparent !important;
 }
 
-/* Unlike the timed grid (where FullCalendar treats .fc-bg-event as "not a
+/* Unlike the timed grid (where calendar engine treats .fc-bg-event as "not a
    real event" for click hit-testing), the daygrid all-day row's own
    background layers (.fc-non-business, our block-hours texture) intercept
    clicks before dateClick/select fire. Let clicks pass through to the cell
@@ -2248,7 +2248,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   width: 104px;
 }
 
-/* FullCalendar centers labels inside the first half-hour slot. Motion places
+/* calendar engine centers labels inside the first half-hour slot. Motion places
    each hour label directly on the matching horizontal rule instead. */
 .calendar-week-view {
   --calendar-slot-label-offset: var(--calendar-week-slot-label-offset);
@@ -2270,7 +2270,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   border-top-style: none !important;
 }
 
-/* FullCalendar's timegrid is built from <table> rows, so the app-wide
+/* calendar engine's timegrid is built from <table> rows, so the app-wide
    `table tbody tr:hover` highlight bled through as a wide band across the
    whole hovered hour. Suppress it inside the calendar - the dashed cursor
    guide is the only hover affordance we want here. */
@@ -2342,7 +2342,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   background: transparent;
 }
 
-/* Dark mode styles for FullCalendar */
+/* Dark mode styles for calendar engine */
 .dark .fc {
   --fc-small-font-size: 0.85em;
   --fc-page-bg-color: transparent;
@@ -2982,7 +2982,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   }
 }
 
-/* FullCalendar owns the drag mirror, so keep its lift aligned with the shared
+/* calendar engine owns the drag mirror, so keep its lift aligned with the shared
    task drag overlay without adding glow to control chrome. */
 .fc .fc-event.fc-event-dragging,
 .fc .fc-event.fc-event-mirror {

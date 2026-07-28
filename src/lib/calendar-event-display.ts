@@ -3,7 +3,7 @@ import { toZonedTime } from "date-fns-tz";
 import { TimeFormat } from "@/types/settings";
 
 /**
- * FullCalendar's sentinel for "render in the browser's local time zone". When
+ * calendar engine's sentinel for "render in the browser's local time zone". When
  * the calendar is configured with this (its current setting), the browser zone
  * already governs the displayed time, so no conversion is needed.
  */
@@ -24,9 +24,9 @@ export function isDayGridView(viewType: string): boolean {
  * the user's 12h/24h preference. Implemented locally (rather than via date-fns
  * locale formatting) so the output is deterministic regardless of locale.
  *
- * `timeZone` is the zone FullCalendar is configured to render with (its `local`
+ * `timeZone` is the zone calendar engine is configured to render with (its `local`
  * sentinel by default). The chip is derived from the same `event.start` instant
- * FullCalendar uses, so formatting in that same zone keeps the chip's time in
+ * calendar engine uses, so formatting in that same zone keeps the chip's time in
  * lockstep with what the calendar actually renders, even if the browser's local
  * zone differs from the configured one.
  */
@@ -77,7 +77,7 @@ export interface MonthEventDisplay {
  * a calendar-colored dot plus their start time. All-day events, tasks, and
  * time-grid views keep their existing treatment.
  *
- * `isStart` is FullCalendar's per-segment flag: a multi-day event is rendered
+ * `isStart` is calendar engine's per-segment flag: a multi-day event is rendered
  * as one segment per day, and only the first segment carries the real start
  * time. Later segments must not repeat it, so the chip is shown only on the
  * starting segment.
@@ -90,7 +90,7 @@ export function getMonthEventDisplay(params: {
   isStart: boolean;
   timeFormat: TimeFormat;
   /**
-   * The time zone FullCalendar is configured to render with. Defaults to its
+   * The time zone calendar engine is configured to render with. Defaults to its
    * `local` sentinel so the chip tracks the calendar's own rendering.
    */
   timeZone?: string;

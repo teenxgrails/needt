@@ -5,7 +5,7 @@ TBD - created by archiving change issue-144-caldav-task-import. Update Purpose a
 ## Requirements
 ### Requirement: Discover CalDAV task collections
 
-FluidCalendar SHALL list a connected CalDAV account's task collections by querying the account's calendar collections and keeping only those whose advertised component set includes `VTODO`. Each task collection SHALL be presented as a task list whose identifier is the collection's CalDAV URL and whose name is the collection's display name.
+Needt SHALL list a connected CalDAV account's task collections by querying the account's calendar collections and keeping only those whose advertised component set includes `VTODO`. Each task collection SHALL be presented as a task list whose identifier is the collection's CalDAV URL and whose name is the collection's display name.
 
 #### Scenario: Only VTODO-capable collections are listed
 
@@ -16,7 +16,7 @@ FluidCalendar SHALL list a connected CalDAV account's task collections by queryi
 
 ### Requirement: Import VTODO items as tasks
 
-FluidCalendar SHALL read the `VTODO` components from a chosen CalDAV task collection and expose each as an external task. A `VTODO` without a `UID` SHALL be skipped (a stable identifier is required for linking), and a `VTODO` that fails to parse SHALL be skipped without aborting the import of the rest.
+Needt SHALL read the `VTODO` components from a chosen CalDAV task collection and expose each as an external task. A `VTODO` without a `UID` SHALL be skipped (a stable identifier is required for linking), and a `VTODO` that fails to parse SHALL be skipped without aborting the import of the rest.
 
 #### Scenario: VTODO items are read from a collection
 
@@ -29,9 +29,9 @@ FluidCalendar SHALL read the `VTODO` components from a chosen CalDAV task collec
 - **WHEN** the provider reads a collection containing one `VTODO` with a `UID` and one `VTODO` with no `UID`
 - **THEN** only the `VTODO` with a `UID` is returned
 
-### Requirement: Map VTODO fields to FluidCalendar task fields
+### Requirement: Map VTODO fields to Needt task fields
 
-When converting a `VTODO` to a task, FluidCalendar SHALL map: `SUMMARY` to title (defaulting to a non-empty placeholder when absent), `DESCRIPTION` to description, `DUE` to due date, `DTSTART` to start date, `COMPLETED` to completed date, `STATUS` to the task status (`COMPLETED` to completed; any other or absent status to an open/todo status), and a present `RRULE` to a recurrence rule with the task marked recurring.
+When converting a `VTODO` to a task, Needt SHALL map: `SUMMARY` to title (defaulting to a non-empty placeholder when absent), `DESCRIPTION` to description, `DUE` to due date, `DTSTART` to start date, `COMPLETED` to completed date, `STATUS` to the task status (`COMPLETED` to completed; any other or absent status to an open/todo status), and a present `RRULE` to a recurrence rule with the task marked recurring.
 
 #### Scenario: A completed dated VTODO maps correctly
 
@@ -69,7 +69,7 @@ The CalDAV task provider SHALL support reading task lists and tasks for incoming
 
 ### Requirement: CalDAV credentials are only used for the owning user
 
-Before FluidCalendar uses a CalDAV account's stored URL and password to list or import tasks, it SHALL verify that the linked account is owned by the requesting/provider user and is a CalDAV account. A task provider linked to an account the user does not own SHALL NOT have that account's CalDAV credentials used.
+Before Needt uses a CalDAV account's stored URL and password to list or import tasks, it SHALL verify that the linked account is owned by the requesting/provider user and is a CalDAV account. A task provider linked to an account the user does not own SHALL NOT have that account's CalDAV credentials used.
 
 #### Scenario: A provider linked to another user's account is rejected
 

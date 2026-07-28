@@ -34,6 +34,7 @@ jobs:
       - run: npm ci
       - run: npx prisma generate
       - run: npm run lint -- --max-warnings=0
+      - run: npm run check:branding
       - run: npm run type-check
       - run: npm run test:unit -- --runInBand
       - run: npm run build

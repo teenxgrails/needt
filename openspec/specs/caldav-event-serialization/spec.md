@@ -5,7 +5,7 @@ TBD - created by archiving change issue-100-caldav-allday-vparam. Update Purpose
 ## Requirements
 ### Requirement: All-day events serialize with a single VALUE=DATE parameter
 
-When FluidCalendar serializes a local calendar event into iCalendar for a CalDAV PUT, an all-day event's `DTSTART` and `DTEND` properties SHALL each carry exactly one `VALUE=DATE` parameter and a date-only value (`YYYYMMDD`), producing RFC 5545-valid output that CalDAV servers (including Baikal and Nextcloud) accept.
+When Needt serializes a local calendar event into iCalendar for a CalDAV PUT, an all-day event's `DTSTART` and `DTEND` properties SHALL each carry exactly one `VALUE=DATE` parameter and a date-only value (`YYYYMMDD`), producing RFC 5545-valid output that CalDAV servers (including Baikal and Nextcloud) accept.
 
 The serializer SHALL NOT emit a duplicated `VALUE` parameter (e.g. `VALUE=date;VALUE=DATE`).
 

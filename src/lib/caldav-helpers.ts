@@ -35,12 +35,12 @@ function readVTodoDate(
 
 /**
  * Converts a VTODO component into the external-task shape used by the task-sync
- * framework so CalDAV tasks can be imported into FluidCalendar (GitHub issue
+ * framework so CalDAV tasks can be imported into Needt (GitHub issue
  * #144). Returns null when the VTODO has no UID, since a stable identifier is
  * required to link the external task to a local one across syncs.
  *
  * The raw VTODO `STATUS` string is carried through untranslated; the CalDAV
- * field mapper maps it to the FluidCalendar `TaskStatus` enum. The same applies
+ * field mapper maps it to the Needt `TaskStatus` enum. The same applies
  * to `PRIORITY` (0-9), which the mapper buckets into high/medium/low.
  *
  * @param vtodo VTODO component parsed from a CalDAV calendar object

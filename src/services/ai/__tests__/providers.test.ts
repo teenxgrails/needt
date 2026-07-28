@@ -151,7 +151,7 @@ describe("AI provider chat adapters", () => {
     });
     const provider = new CustomProvider({
       provider: "CUSTOM",
-      customUrl: "https://flowday-ai.example/",
+      customUrl: "https://needt-ai.example/",
       apiKey: "custom-key",
     });
 
@@ -161,7 +161,7 @@ describe("AI provider chat adapters", () => {
     });
 
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "https://flowday-ai.example/chat/tool"
+      "https://needt-ai.example/chat/tool"
     );
     expect(fetchMock.mock.calls[0][1]?.headers).toMatchObject({
       Authorization: "Bearer custom-key",

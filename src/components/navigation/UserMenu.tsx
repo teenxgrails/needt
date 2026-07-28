@@ -132,7 +132,7 @@ export function UserMenu() {
           <div className="grid grid-cols-4 gap-1.5">
             {[
               { id: "light", label: "Light", icon: Sun },
-              { id: "gray", label: "Gray", icon: CircleDot },
+              { id: "graphite", label: "Graphite", icon: CircleDot },
               { id: "dark", label: "Dark", icon: Moon },
               { id: "system", label: "System", icon: Monitor },
             ].map((item) => {
@@ -144,7 +144,7 @@ export function UserMenu() {
                   onClick={() => setTheme(item.id as typeof theme)}
                   className={`flex flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs ${
                     theme === item.id
-                      ? "border-[var(--color-accent)] bg-[var(--surface-hover)] text-[var(--text-primary)]"
+                      ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)]"
                       : "border-[var(--border-control)] bg-[var(--surface-canvas)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                   }`}
                 >

@@ -7,7 +7,7 @@ import type {
 } from "@fullcalendar/core";
 import type { DateSelectArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
-import FullCalendar from "@fullcalendar/react";
+import CalendarEngine from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
 import { toast } from "sonner";
@@ -104,7 +104,7 @@ export function DayView({ currentDate }: DayViewProps) {
     BlockingOverride[]
   >([]);
   const scheduleBusinessHours = useDefaultScheduleBusinessHours();
-  const calendarRef = useRef<FullCalendar>(null);
+  const calendarRef = useRef<CalendarEngine>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const eventModalStore = useEventModalStore();
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers(
@@ -386,7 +386,7 @@ export function DayView({ currentDate }: DayViewProps) {
 
   return (
     <div className="calendar-day-view fc-tz-corner h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-1 [&_.fc-timegrid-slot-label]:!py-1 [&_.fc-timegrid-slot]:!h-[35px]">
-      <FullCalendar
+      <CalendarEngine
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
         initialView="timeGridDay"

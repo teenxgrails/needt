@@ -76,6 +76,7 @@ jobs:
       - run: npx tsx prisma/ci-seed.ts
       - run: npm run type-check
       - run: npm run lint
+      - run: npm run check:branding
       - run: npm run test:unit -- --runInBand
 
   schema-drift:

@@ -44,7 +44,7 @@ export function PWARegister() {
       setIsOffline(offline);
       if (!offline && navigator.serviceWorker) {
         navigator.serviceWorker.controller?.postMessage({
-          type: "FLOWDAY_SYNC_NOW",
+          type: "NEEDT_SYNC_NOW",
         });
       }
     };

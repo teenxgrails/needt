@@ -4,8 +4,8 @@ export interface CalendarItemClickProps {
 }
 
 /**
- * Calendar task blocks use `taskId:chunkIndex` as their FullCalendar id.
- * Resolve the canonical task id regardless of whether FullCalendar has
+ * Calendar task blocks use `taskId:chunkIndex` as their calendar engine id.
+ * Resolve the canonical task id regardless of whether calendar engine has
  * flattened or retained the original extended props.
  */
 export function resolveCalendarItemId(

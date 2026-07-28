@@ -7,7 +7,7 @@ import type {
 } from "@fullcalendar/core";
 import type { DateSelectArg } from "@fullcalendar/core";
 import interactionPlugin from "@fullcalendar/interaction";
-import FullCalendar from "@fullcalendar/react";
+import CalendarEngine from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
 import { toast } from "sonner";
@@ -109,7 +109,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
     BlockingOverride[]
   >([]);
   const scheduleBusinessHours = useDefaultScheduleBusinessHours();
-  const calendarRef = useRef<FullCalendar>(null);
+  const calendarRef = useRef<CalendarEngine>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const eventModalStore = useEventModalStore();
@@ -121,7 +121,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
   );
 
   // Motion-style dashed guide line that follows the cursor's time across the
-  // whole grid, separate from FullCalendar's live current-time indicator.
+  // whole grid, separate from calendar engine's live current-time indicator.
   useEffect(() => {
     const root = wrapperRef.current;
     if (!root) return;
@@ -459,7 +459,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
       className={`calendar-week-view fc-tz-corner relative h-full [&_.fc-daygrid-day-events]:!min-h-0 [&_.fc-daygrid-day-frame]:!min-h-0 [&_.fc-timegrid-axis-cushion]:!py-0.5 [&_.fc-timegrid-slot-label]:!py-0.5 [&_.fc-timegrid-slot]:!h-[32px] ${userSettings.secondaryTimeZone ? "fc-has-secondary-timezone" : ""}`}
     >
       <CalendarTimeZoneControl />
-      <FullCalendar
+      <CalendarEngine
         ref={calendarRef}
         plugins={[timeGridPlugin, interactionPlugin]}
         initialView="timeGridWeek"

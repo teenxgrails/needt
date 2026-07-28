@@ -51,7 +51,7 @@ text-[var(--text-secondary)] hover:bg-[var(--menu-item-hover)] hover:text-[var(-
 Reference implementation: the Calendar options panel in
 `src/components/calendar/Calendar.tsx`.
 
-`NeedtPicker`/`ResponsivePicker` is the canonical settings/task picker:
+`NeedtPicker` is the canonical settings/task picker:
 
 - desktop width `300–340px`, opaque surface, hairline border, inset top
   highlight, neutral shadow;
@@ -65,20 +65,14 @@ Sonner notifications are top-center and must go through the typed
 `src/lib/notifications.ts` facade. Actionable nudges include one concise deep
 link action.
 
-## Picker / dropdown (Select — screen 4)
+## Picker / dropdown
 
-Always use the shared `@/components/ui/select`. It is already styled: dark
-rounded trigger on `--input-bg` with a neutral border and a secondary chevron
-(no accent glow), a rounded `--menu-bg` popover with `shadow-lg`, and items
-that round-highlight with `--menu-item-hover` on hover (no checkmark).
-
-- Trigger: `<SelectTrigger className="h-8 w-[120px]">` (size as needed).
-- Do **not** build ad-hoc `<select>` elements or custom dropdowns — reuse this.
-
-Searchable fields use `@/components/ui/combobox-picker`; date fields use
-`@/components/ui/date-picker`. On desktop, compact picker menus use an `8px`
-panel radius, `1px` hairline border, `32px` option rows, `14px/18px` labels,
-and `6px` row radii. The date picker is a `443×317px` two-column panel
+Use `@/components/ui/needt-picker` for plain, searchable, and creatable product
+choices. Do not introduce another picker, ad-hoc `<select>`, or direct
+DropdownMenu implementation. Date fields use `@/components/ui/date-picker`.
+On desktop, picker menus use an `8px` panel radius, `1px` hairline border,
+`36–40px` option rows, `14px/18px` labels, and `7px` row radii. The date picker
+is a `443×317px` two-column panel
 (`261px` calendar + `180px` shortcuts) with a fixed six-week grid.
 
 Every floating menu, date picker, popover, dialog, and bottom sheet must apply

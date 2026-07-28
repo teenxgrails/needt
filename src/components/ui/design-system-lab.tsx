@@ -40,7 +40,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ComboboxPicker } from "@/components/ui/combobox-picker";
 import {
   Dialog,
   DialogContent,
@@ -62,7 +61,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { OptionPicker } from "@/components/ui/option-picker";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import {
   Popover,
   PopoverContent,
@@ -611,7 +610,8 @@ export function DesignSystemLab() {
                 >
                   <div className="space-y-4">
                     <Field label="Calendar view">
-                      <OptionPicker
+                      <NeedtPicker
+                        mode="plain"
                         ariaLabel="Calendar view"
                         defaultValue="week"
                         options={[
@@ -622,7 +622,8 @@ export function DesignSystemLab() {
                       />
                     </Field>
                     <Field label="Priority">
-                      <ComboboxPicker
+                      <NeedtPicker
+                        mode="searchable"
                         ariaLabel="Priority"
                         value="high"
                         searchPlaceholder="Search"
@@ -1103,10 +1104,11 @@ function Field({
 function SearchPickerPreview() {
   const [project, setProject] = React.useState("none");
   return (
-    <ComboboxPicker
+    <NeedtPicker
+      mode="searchable"
       ariaLabel="Project"
       value={project}
-      onChange={setProject}
+      onValueChange={setProject}
       searchPlaceholder="Choose project…"
       options={[
         {
@@ -1127,11 +1129,11 @@ function SearchPickerPreview() {
 function CreatablePickerPreview() {
   const [duration, setDuration] = React.useState("30 min");
   return (
-    <ComboboxPicker
+    <NeedtPicker
+      mode="creatable"
       ariaLabel="Duration"
       value={duration}
-      onChange={setDuration}
-      creatable
+      onValueChange={setDuration}
       searchPlaceholder="Choose or type a duration…"
       createLabel={(input) => `Use "${input}"`}
       options={[

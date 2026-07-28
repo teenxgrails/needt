@@ -35,6 +35,18 @@ GitHub Actions exposes required `quality-gates`, `schema-drift`, `e2e`, and
 conditionally executed `visual-style` statuses. Production publishing is
 triggered only by a successful CI run on `main`.
 
+`npm run check:branding` is part of CI. Product copy and internal event names
+use Needt only; legal attribution and `@fullcalendar/*` package IDs are the
+explicit exceptions.
+
+## Shared UI contracts
+
+`src/components/ui/needt-picker.tsx` is the only product picker. It covers
+plain, searchable, and creatable single-select flows and switches from an
+anchored desktop popover to a mobile bottom sheet. Theme IDs are `light`,
+`graphite`, `dark`, and `system`; persisted `gray` is normalized to `graphite`
+when read.
+
 ## Multi-user isolation
 
 Scheduling runs, idempotency records, focus data, dependencies, reminders,

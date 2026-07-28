@@ -2,17 +2,17 @@ import crypto from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
+const LEGACY_AI_FALLBACK_SECRET = "flowday-local-ai-secret";
 
 function getKey(): Buffer {
   // DO NOT rename this literal. It is the key-derivation fallback for
   // AES-256-GCM: deployments without AI_ENCRYPTION_KEY/NEXTAUTH_SECRET have
   // their stored AI keys encrypted under a key derived from this exact string.
-  // Changing it makes those secrets permanently undecryptable. The "flowday"
-  // spelling is intentional and must survive any Needt rebrand pass.
+  // Changing the legacy fallback makes existing secrets undecryptable.
   const secret =
     process.env.AI_ENCRYPTION_KEY ||
     process.env.NEXTAUTH_SECRET ||
-    "flowday-local-ai-secret";
+    LEGACY_AI_FALLBACK_SECRET;
 
   return crypto.createHash("sha256").update(secret).digest();
 }

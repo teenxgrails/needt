@@ -4,7 +4,7 @@ import { FieldMapper } from "../field-mapper";
 import { FieldMapping } from "../types";
 
 /**
- * Maps a VTODO `STATUS` string to a FluidCalendar `TaskStatus`. `COMPLETED`
+ * Maps a VTODO `STATUS` string to a Needt `TaskStatus`. `COMPLETED`
  * maps to completed, `IN-PROCESS` to in-progress, everything else
  * (`NEEDS-ACTION`, `CANCELLED`, absent) to todo.
  */
@@ -21,7 +21,7 @@ function vtodoStatusToInternal(value: unknown): TaskStatus {
 
 /**
  * Maps a VTODO `PRIORITY` (0-9, where 1 is highest and 0 means "undefined" per
- * RFC 5545) into FluidCalendar's high/medium/low buckets.
+ * RFC 5545) into Needt's high/medium/low buckets.
  */
 function vtodoPriorityToInternal(value: unknown): Priority {
   if (value === null || value === undefined) return Priority.NONE;

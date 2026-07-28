@@ -17,6 +17,10 @@ import {
 
 import { APP_NAME } from "@/lib/app-config";
 import { newDate } from "@/lib/date-utils";
+import {
+  NEEDT_AI_ACTION_EVENT,
+  NEEDT_SCHEDULE_CHANGED_EVENT,
+} from "@/lib/needt-events";
 import { cn } from "@/lib/utils";
 
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -239,7 +243,7 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
           }
           if (event.toolName && event.toolName !== "confirmation_required") {
             window.dispatchEvent(
-              new CustomEvent("flowday:ai-action", {
+              new CustomEvent(NEEDT_AI_ACTION_EVENT, {
                 detail: { label: event.toolName.replace(/_/g, " ") },
               })
             );
@@ -282,7 +286,7 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
     const data = (await response.json()) as { undoToken: string };
     setUndoToken(data.undoToken);
     setPreview(null);
-    window.dispatchEvent(new CustomEvent("flowday:schedule-changed"));
+    window.dispatchEvent(new CustomEvent(NEEDT_SCHEDULE_CHANGED_EVENT));
   }
 
   async function undoPreview() {
@@ -294,7 +298,7 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
     });
     if (!response.ok) return;
     setUndoToken(null);
-    window.dispatchEvent(new CustomEvent("flowday:schedule-changed"));
+    window.dispatchEvent(new CustomEvent(NEEDT_SCHEDULE_CHANGED_EVENT));
   }
 
   function runDailyBriefing() {

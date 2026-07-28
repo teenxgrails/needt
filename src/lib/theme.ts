@@ -2,6 +2,19 @@ import { ThemeMode } from "@/types/settings";
 
 export type ResolvedThemeMode = Exclude<ThemeMode, "system">;
 
+export function normalizeThemeMode(theme: unknown): ThemeMode {
+  if (theme === "gray") return "graphite";
+  if (
+    theme === "light" ||
+    theme === "graphite" ||
+    theme === "dark" ||
+    theme === "system"
+  ) {
+    return theme;
+  }
+  return "dark";
+}
+
 export function resolveThemeMode(
   theme: ThemeMode,
   systemPrefersDark: boolean
@@ -11,7 +24,7 @@ export function resolveThemeMode(
 }
 
 export function getThemeClassNames(theme: ResolvedThemeMode): string[] {
-  if (theme === "gray") return ["dark", "theme-gray"];
+  if (theme === "graphite") return ["dark", "theme-graphite"];
   if (theme === "dark") return ["dark", "theme-dark"];
   return [];
 }

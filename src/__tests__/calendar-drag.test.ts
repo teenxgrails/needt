@@ -150,7 +150,7 @@ describe("computeDropUpdate", () => {
     expect(result.kind).toBe("blocked");
   });
 
-  it("preserves the previous duration when FullCalendar reports a null end", () => {
+  it("preserves the previous duration when calendar engine reports a null end", () => {
     const result = computeDropUpdate(
       makeChange(makeEvent(), { newEnd: null }),
       feeds

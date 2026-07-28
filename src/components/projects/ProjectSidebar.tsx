@@ -237,7 +237,7 @@ export function ProjectSidebar() {
 
               {projects.length === 0 && (
                 <div className="glass--subtle py-5 text-center text-sm text-muted-foreground">
-                  <div className="flowday-orb mx-auto mb-3 h-10 w-10 opacity-75" />
+                  <div className="needt-orb mx-auto mb-3 h-10 w-10 opacity-75" />
                   No projects yet
                 </div>
               )}

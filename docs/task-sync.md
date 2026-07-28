@@ -1,6 +1,6 @@
 # Task Synchronization Implementation Plan
 
-This document outlines the implementation plan for enhancing task synchronization in FluidCalendar. The goal is to transform our current one-way Outlook Tasks import system into a comprehensive two-way sync infrastructure that can support multiple task services (Outlook, Asana, CalDAV, etc.) while maintaining a consistent user experience.
+This document outlines the implementation plan for enhancing task synchronization in Needt. The goal is to transform our current one-way Outlook Tasks import system into a comprehensive two-way sync infrastructure that can support multiple task services (Outlook, Asana, CalDAV, etc.) while maintaining a consistent user experience.
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ The current system implements a one-way import of Outlook Tasks with these key c
 
 Limitations:
 
-- One-way sync only (changes in FluidCalendar aren't synced back to Outlook)
+- One-way sync only (changes in Needt aren't synced back to Outlook)
 - No change tracking or conflict resolution
 - No support for periodic syncing
 - No support for other task sources
@@ -227,11 +227,11 @@ Different task providers have their own concept of organizing tasks, which we ne
 
 ### Project Mapping Strategy: 1-to-1 vs 1-to-Many
 
-We have two potential approaches for mapping external task lists to FluidCalendar projects:
+We have two potential approaches for mapping external task lists to Needt projects:
 
 #### Option 1: One-to-One Mapping (Recommended)
 
-Each external task list/project maps to exactly one FluidCalendar project.
+Each external task list/project maps to exactly one Needt project.
 
 **Advantages:**
 
@@ -247,7 +247,7 @@ Each external task list/project maps to exactly one FluidCalendar project.
 
 #### Option 2: Many-to-One Mapping
 
-Multiple external task lists could map to a single FluidCalendar project.
+Multiple external task lists could map to a single Needt project.
 
 **Advantages:**
 
@@ -268,7 +268,7 @@ Multiple external task lists could map to a single FluidCalendar project.
 
 1. **One-to-One Mapping**:
 
-   - Each external task list/project maps to exactly one FluidCalendar project
+   - Each external task list/project maps to exactly one Needt project
    - The `TaskListMapping` table maintains this relationship
    - Projects can have tasks from multiple providers through separate 1:1 mappings
    - Example: A project "Work" could be mapped to an Outlook task list AND a separate Asana project, but not multiple Outlook lists
@@ -282,17 +282,17 @@ Multiple external task lists could map to a single FluidCalendar project.
 3. **Project Creation Flows**:
 
    - When mapping a new external task list, users can:
-     - Map to an existing FluidCalendar project (as long as it doesn't already have a mapping to the same provider)
+     - Map to an existing Needt project (as long as it doesn't already have a mapping to the same provider)
      - Create a new project with the same name as the external list
      - Optionally sync project metadata
 
 4. **Project Deletion Handling**:
-   - If a project is deleted in FluidCalendar:
+   - If a project is deleted in Needt:
      - Option 1: Delete the mapping but preserve the external task list
      - Option 2: Delete both the mapping and the external task list (if supported)
    - If an external task list is deleted:
-     - Option 1: Preserve the FluidCalendar project but mark tasks as disconnected
-     - Option 2: Delete the FluidCalendar project (user configurable)
+     - Option 1: Preserve the Needt project but mark tasks as disconnected
+     - Option 2: Delete the Needt project (user configurable)
 
 ### Project-aware Task Operations
 
@@ -303,7 +303,7 @@ Multiple external task lists could map to a single FluidCalendar project.
 
 2. **Task Moving**:
 
-   - When a task is moved to a different project in FluidCalendar:
+   - When a task is moved to a different project in Needt:
      - If target project is mapped to the same provider: move task in external system
      - If target project is mapped to a different provider: remove from original external list, create in new provider if that project is mapped
      - If target project is not mapped: disconnect task from external system
@@ -504,7 +504,7 @@ export function TaskConflictResolver({ taskId }) {
 1. Create database schema changes ✅
 2. Implement core interfaces and base classes ✅
 3. Port existing Outlook Tasks code to new architecture ✅
-4. Implement one-way sync from Outlook to FluidCalendar (maintain current functionality) ✅
+4. Implement one-way sync from Outlook to Needt (maintain current functionality) ✅
 5. Create basic provider management UI ✅
 
 ### Phase 2: Two-Way Sync for Outlook (2-3 weeks) [IN PROGRESS]
@@ -522,7 +522,7 @@ export function TaskConflictResolver({ taskId }) {
    - Add support for manual conflict resolution
    - Store conflict information in task data
 
-3. Implement task change propagation from FluidCalendar to Outlook [IN PROGRESS]
+3. Implement task change propagation from Needt to Outlook [IN PROGRESS]
 
    - ✅ Add task create/update/delete operations to OutlookProvider
    - ✅ Respect TaskListMapping direction setting during sync

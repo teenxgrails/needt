@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-import getGoogleEvent from "@/lib/google-calendar";
 import { prisma } from "@/lib/prisma";
 
 // Helper function to get Test Calendar information
@@ -39,6 +38,7 @@ async function verifyEventDeletion(
   eventId: string,
   maxAttempts = 3
 ) {
+  const { default: getGoogleEvent } = await import("@/lib/google-calendar");
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     console.log(
       `Attempt ${attempt}/${maxAttempts} to verify event deletion...`
@@ -90,6 +90,7 @@ test.describe("Google Calendar Integration", () => {
   test("should create and delete an event in Google Calendar", async ({
     page,
   }) => {
+    const { default: getGoogleEvent } = await import("@/lib/google-calendar");
     // Get Test Calendar information
     const testCalendar = await getTestCalendarInfo();
     console.log("Using Test Calendar:", testCalendar);
@@ -237,6 +238,7 @@ test.describe("Google Calendar Integration", () => {
   test("should create and delete a recurring event series in Google Calendar", async ({
     page,
   }) => {
+    const { default: getGoogleEvent } = await import("@/lib/google-calendar");
     // Get Test Calendar information
     const testCalendar = await getTestCalendarInfo();
     console.log("Using Test Calendar:", testCalendar);

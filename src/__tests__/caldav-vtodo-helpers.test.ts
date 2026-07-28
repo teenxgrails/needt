@@ -66,7 +66,7 @@ describe("convertVTodoToTask (issue #144)", () => {
     expect(task!.dueDate).toBeInstanceOf(Date);
     expect(task!.dueDate!.toISOString()).toBe("2025-07-01T12:00:00.000Z");
     // Raw VTODO status string is carried through; the field mapper maps it to
-    // the FluidCalendar TaskStatus enum.
+    // the Needt TaskStatus enum.
     expect(task!.status).toBe("COMPLETED");
     expect(task!.completedDate).toBeInstanceOf(Date);
   });

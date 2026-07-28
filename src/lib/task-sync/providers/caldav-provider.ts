@@ -32,7 +32,7 @@ const WRITE_NOT_SUPPORTED =
  * CalDAV servers expose tasks as iCalendar `VTODO` components inside calendar
  * collections that advertise `VTODO` in their supported component set. This
  * provider reads those collections and their `VTODO` items for one-way import
- * into FluidCalendar, reusing the same `tsdav` client and `ical.js` parsing the
+ * into Needt, reusing the same `tsdav` client and `ical.js` parsing the
  * calendar-event sync uses.
  *
  * Write-back (creating/updating/deleting `VTODO` on the server) is intentionally
@@ -276,7 +276,7 @@ export class CalDAVTaskProvider implements TaskProviderInterface {
   }
 
   /**
-   * Maps a VTODO `STATUS` to a FluidCalendar `TaskStatus`. `COMPLETED` maps to
+   * Maps a VTODO `STATUS` to a Needt `TaskStatus`. `COMPLETED` maps to
    * completed; `IN-PROCESS` to in-progress; everything else (`NEEDS-ACTION`,
    * `CANCELLED`, absent) to todo.
    */
@@ -293,7 +293,7 @@ export class CalDAVTaskProvider implements TaskProviderInterface {
 
   /**
    * Maps a VTODO `PRIORITY` (0-9, where 1 is highest and 0 is undefined per RFC
-   * 5545) into FluidCalendar's high/medium/low buckets.
+   * 5545) into Needt's high/medium/low buckets.
    */
   private mapPriorityFromVTodo(priority?: string): Priority {
     if (priority === undefined) return Priority.NONE;

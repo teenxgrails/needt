@@ -5,7 +5,7 @@ TBD - created by archiving change issue-97-outlook-personal-profile. Update Purp
 ## Requirements
 ### Requirement: Outlook connect resolves the account email from mail or userPrincipalName
 
-When connecting a Microsoft (Outlook) account, FluidCalendar SHALL determine the account's email address from the Microsoft Graph `/me` profile by using the `mail` field when present and falling back to `userPrincipalName` when `mail` is absent. The connection SHALL be treated as a profile failure only when neither field yields an email.
+When connecting a Microsoft (Outlook) account, Needt SHALL determine the account's email address from the Microsoft Graph `/me` profile by using the `mail` field when present and falling back to `userPrincipalName` when `mail` is absent. The connection SHALL be treated as a profile failure only when neither field yields an email.
 
 #### Scenario: Work or school account with mail set
 
@@ -27,7 +27,7 @@ When connecting a Microsoft (Outlook) account, FluidCalendar SHALL determine the
 
 ### Requirement: Outlook is considered configured without a tenant ID
 
-FluidCalendar SHALL treat Outlook integration as configured when an Outlook client ID and client secret are present, regardless of whether a tenant ID is set. The tenant ID is optional (the OAuth flow defaults to the `common` tenant), so requiring it would disable the in-app "Connect Outlook" action for the documented personal-account setup.
+Needt SHALL treat Outlook integration as configured when an Outlook client ID and client secret are present, regardless of whether a tenant ID is set. The tenant ID is optional (the OAuth flow defaults to the `common` tenant), so requiring it would disable the in-app "Connect Outlook" action for the documented personal-account setup.
 
 The configured status SHALL be computed from the same merged credential source the OAuth routes use (system settings OR the documented `AZURE_AD_*` environment-variable fallback), so the status reflects whether the connect flow can actually run.
 

@@ -36,7 +36,6 @@ import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { TaskDependenciesSection } from "@/components/tasks/TaskDependenciesSection";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ComboboxPicker } from "@/components/ui/combobox-picker";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
@@ -48,7 +47,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
-import { OptionPicker } from "@/components/ui/option-picker";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import {
   Popover,
   PopoverContent,
@@ -807,11 +806,12 @@ export function TaskModal({
               </div>
               <div className="flex min-h-11 items-center gap-2 px-1 sm:h-[28px] sm:min-h-0">
                 <Box className="h-4 w-4 flex-none text-[var(--text-muted)]" />
-                <ComboboxPicker
+                <NeedtPicker
+                  mode="searchable"
                   ariaLabel="Choose project"
                   searchPlaceholder="Search"
                   value={projectId || "none"}
-                  onChange={(value) =>
+                  onValueChange={(value) =>
                     setProjectId(value === "none" ? null : value)
                   }
                   showChevron={false}
@@ -868,11 +868,12 @@ export function TaskModal({
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Status:
                 </span>
-                <ComboboxPicker
+                <NeedtPicker
+                  mode="searchable"
                   ariaLabel="Choose status"
                   searchPlaceholder="Search"
                   value={status}
-                  onChange={(value) => setStatus(value as TaskStatus)}
+                  onValueChange={(value) => setStatus(value as TaskStatus)}
                   showChevron={false}
                   className="h-11 flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none sm:h-[28px]"
                   options={Object.values(TaskStatus).map((value) => ({
@@ -886,11 +887,12 @@ export function TaskModal({
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Priority:
                 </span>
-                <ComboboxPicker
+                <NeedtPicker
+                  mode="searchable"
                   ariaLabel="Choose priority"
                   searchPlaceholder="Search"
                   value={priority || Priority.NONE}
-                  onChange={(value) => setPriority(value as Priority)}
+                  onValueChange={(value) => setPriority(value as Priority)}
                   showChevron={false}
                   className="h-11 flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none sm:h-[28px]"
                   options={Object.values(Priority).map((value) => ({
@@ -987,14 +989,15 @@ export function TaskModal({
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Schedule:
                 </span>
-                <OptionPicker
+                <NeedtPicker
+                  mode="plain"
                   ariaLabel="Choose schedule"
                   value={
                     scheduleId ||
                     workSchedules.find((schedule) => schedule.isDefault)?.id ||
                     "default"
                   }
-                  onChange={(value) =>
+                  onValueChange={(value) =>
                     setScheduleId(value === "default" ? null : value)
                   }
                   className="h-11 flex-1 border-0 bg-transparent px-0 text-[13px] shadow-none sm:h-[28px]"

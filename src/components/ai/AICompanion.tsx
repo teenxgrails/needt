@@ -7,6 +7,10 @@ import { usePathname } from "next/navigation";
 import { ArrowUpRight, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import {
+  LEGACY_AI_ACTION_EVENT,
+  NEEDT_AI_ACTION_EVENT,
+} from "@/lib/needt-events";
 
 type CompanionEmotion = "calm" | "attentive" | "thinking" | "happy";
 
@@ -224,10 +228,12 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
       );
     };
 
-    window.addEventListener("flowday:ai-action", onAIAction);
+    window.addEventListener(NEEDT_AI_ACTION_EVENT, onAIAction);
+    window.addEventListener(LEGACY_AI_ACTION_EVENT, onAIAction);
     return () => {
       if (completionTimer) window.clearTimeout(completionTimer);
-      window.removeEventListener("flowday:ai-action", onAIAction);
+      window.removeEventListener(NEEDT_AI_ACTION_EVENT, onAIAction);
+      window.removeEventListener(LEGACY_AI_ACTION_EVENT, onAIAction);
     };
   }, [hidden, revealMessage]);
 

@@ -53,7 +53,13 @@ export function ThemeProvider({
     (theme: ThemeMode) => {
       const root = window.document.documentElement;
 
-      root.classList.remove("light", "dark", "theme-gray", "theme-dark");
+      root.classList.remove(
+        "light",
+        "dark",
+        "theme-gray",
+        "theme-graphite",
+        "theme-dark"
+      );
 
       if (attribute !== "class") {
         root.removeAttribute(attribute);
@@ -65,7 +71,7 @@ export function ThemeProvider({
           window.matchMedia("(prefers-color-scheme: dark)").matches
       );
 
-      // Gray and Dark both use Tailwind's dark variants. Semantic classes
+      // Graphite and Dark both use Tailwind's dark variants. Semantic classes
       // select the palette without duplicating component styles.
       root.classList.add(...getThemeClassNames(resolvedTheme));
 

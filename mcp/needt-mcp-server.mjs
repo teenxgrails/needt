@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
 const PROTOCOL_VERSION = "2024-11-05";
-const SERVER_NAME = "flowday";
+const SERVER_NAME = "needt";
 const SERVER_VERSION = "0.4.0";
 
-const baseUrl = (process.env.FLOWDAY_BASE_URL || "http://localhost:3000").replace(
+const baseUrl = (process.env.NEEDT_BASE_URL || "http://localhost:3000").replace(
   /\/$/,
   ""
 );
-const connectToken = process.env.FLOWDAY_CONNECT_TOKEN;
+const connectToken = process.env.NEEDT_CONNECT_TOKEN;
 
 const tools = [
   {
-    name: "flowday_create_task",
+    name: "needt_create_task",
     description:
       "Create an auto-scheduled task in Needt via the connector API.",
     inputSchema: {
@@ -39,7 +39,7 @@ const tools = [
     },
   },
   {
-    name: "flowday_list_tasks",
+    name: "needt_list_tasks",
     description: "List tasks from Needt through GET /api/connect/tasks.",
     inputSchema: {
       type: "object",
@@ -47,7 +47,7 @@ const tools = [
     },
   },
   {
-    name: "flowday_schedule",
+    name: "needt_schedule",
     description:
       "Run Needt scheduling and return the current schedule through POST /api/connect/schedule.",
     inputSchema: {
@@ -56,7 +56,7 @@ const tools = [
     },
   },
   {
-    name: "flowday_reschedule",
+    name: "needt_reschedule",
     description:
       "Run Needt rescheduling through POST /api/connect/reschedule.",
     inputSchema: {
@@ -65,7 +65,7 @@ const tools = [
     },
   },
   {
-    name: "flowday_control",
+    name: "needt_control",
     description:
       "Control Needt projects, tasks, local calendars, and events. Use action: overview to inspect the app. Deletes require confirm: true.",
     inputSchema: {
@@ -165,7 +165,7 @@ async function callTool(params = {}) {
   const args = params.arguments || {};
 
   if (!connectToken) {
-    throw new Error("FLOWDAY_CONNECT_TOKEN is required");
+    throw new Error("NEEDT_CONNECT_TOKEN is required");
   }
 
   const endpoint = toolEndpoint(name);
@@ -213,15 +213,15 @@ async function callTool(params = {}) {
 
 function toolEndpoint(name) {
   switch (name) {
-    case "flowday_create_task":
+    case "needt_create_task":
       return { method: "POST", path: "/api/connect/tasks" };
-    case "flowday_list_tasks":
+    case "needt_list_tasks":
       return { method: "GET", path: "/api/connect/tasks" };
-    case "flowday_schedule":
+    case "needt_schedule":
       return { method: "POST", path: "/api/connect/schedule" };
-    case "flowday_reschedule":
+    case "needt_reschedule":
       return { method: "POST", path: "/api/connect/reschedule" };
-    case "flowday_control":
+    case "needt_control":
       return { method: "POST", path: "/api/connect/control" };
     default:
       return null;

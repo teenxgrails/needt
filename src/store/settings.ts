@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { logger } from "@/lib/logger";
+import { normalizeThemeMode } from "@/lib/theme";
 
 import { Settings } from "@/types/settings";
 
@@ -412,7 +413,7 @@ export const useSettingsStore = create<SettingsStore>()(
 
           // Update all settings
           get().updateUserSettings({
-            theme: userSettings.theme,
+            theme: normalizeThemeMode(userSettings.theme),
             defaultView: userSettings.defaultView,
             timeZone: userSettings.timeZone,
             secondaryTimeZone: userSettings.secondaryTimeZone ?? null,
@@ -507,6 +508,19 @@ export const useSettingsStore = create<SettingsStore>()(
     }),
     {
       name: "calendar-settings",
+      version: 2,
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<SettingsStore>;
+        return {
+          ...currentState,
+          ...persisted,
+          user: {
+            ...currentState.user,
+            ...persisted.user,
+            theme: normalizeThemeMode(persisted.user?.theme),
+          },
+        };
+      },
       partialize: (state) => ({
         ...state,
         system: {

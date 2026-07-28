@@ -76,7 +76,7 @@ export const CalendarEventContent = memo(function CalendarEventContent({
   // Issue #95: surface the start time and calendar color for timed events in
   // month/multi-month views so they read as clearly as the colored all-day
   // events. Time-grid (day/week) views are unaffected.
-  // Format the chip in the same time zone FullCalendar renders with (its
+  // Format the chip in the same time zone calendar engine renders with (its
   // `local` sentinel today) so the chip time always matches the calendar's own
   // display, even if the browser's local zone differs from the configured one.
   const calendarTimeZone =

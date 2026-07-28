@@ -2,13 +2,13 @@
 
 ## Purpose
 
-Needt is a single intelligent planner product built from the FluidCalendar fork. It ships
-from one source tree as one Next.js application and one production build.
+Needt is a multi-user intelligent planner. The Next.js web app and BullMQ worker
+ship from one source tree and the same production image.
 
 ## Tech Stack
 
 Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) ·
-Zustand · TanStack Query · FullCalendar · Tailwind + shadcn/ui (Radix) · Zod.
+Zustand · TanStack Query · calendar engine · Tailwind + shadcn/ui (Radix) · Zod.
 
 ## Project Conventions
 

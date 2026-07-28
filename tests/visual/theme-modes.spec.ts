@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test";
 import { VISUAL_TEST_NOW } from "./fixtures";
 import { signInVisualUser } from "./helpers";
 
-const THEMES = ["light", "gray", "dark"] as const;
+const THEMES = ["light", "graphite", "dark"] as const;
 
-test("Light, Gray and Dark keep their palettes at every breakpoint", async ({
+test("Light, Graphite and Dark keep their palettes at every breakpoint", async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -26,7 +26,12 @@ test("Light, Gray and Dark keep their palettes at every breakpoint", async ({
     await themeRow.getByRole("button").click();
     await page
       .getByRole("option", {
-        name: theme === "gray" ? "Gray" : theme === "dark" ? "Dark" : "Light",
+        name:
+          theme === "graphite"
+            ? "Graphite"
+            : theme === "dark"
+              ? "Dark"
+              : "Light",
         exact: true,
       })
       .last()
