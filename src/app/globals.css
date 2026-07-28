@@ -159,17 +159,27 @@
        shadow-lg. Dark mode increases only the alpha, never the blur radius. */
     --menu-shadow:
       0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    /* Ambient aurora veil (top of the app shell). Kept intentionally faint:
+       it must never compete with dense task/calendar UI. */
+    --aurora-height: 420px;
+    --aurora-veil: color-mix(in srgb, var(--text-primary) 14%, transparent);
+    --aurora-glow-a: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --aurora-glow-b: color-mix(in srgb, var(--text-primary) 7%, transparent);
+    --aurora-glow-c: color-mix(in srgb, var(--color-accent) 9%, transparent);
     --switch-off-bg: color-mix(in srgb, var(--text-primary) 6%, transparent);
     --switch-on-bg: var(--color-accent);
     --switch-thumb-bg: var(--primitive-white);
-    --calendar-canvas-bg: var(--surface-canvas);
+    /* Transparent so the shell canvas (and the ambient aurora above it) shows
+       through the grid. The app shell already paints the same colour, so the
+       calendar looks identical minus the opaque overlay. */
+    --calendar-canvas-bg: transparent;
     /* Motion keeps calendar structure visible without boxing every slot:
        its measured light grid is roughly a 6% foreground wash over the
        canvas. Keep this translucent so it adapts to both app themes and a
        custom dark background tint. */
     --calendar-grid-line: color-mix(
       in srgb,
-      var(--text-primary) 6%,
+      var(--text-primary) 3%,
       transparent
     );
     --calendar-toolbar-bg: var(--surface-control);
@@ -355,6 +365,13 @@
        against Needt's dark canvas. */
     --menu-shadow:
       0 10px 15px -3px rgba(0, 0, 0, 0.48), 0 4px 6px -4px rgba(0, 0, 0, 0.38);
+    /* On the dark canvas the veil must read as *light* — a soft premium bloom
+       lifting the top of the shell, tinted with the accent rather than a dark
+       wash. Whites carry the glow; the accent only colours it. */
+    --aurora-veil: color-mix(in srgb, var(--primitive-white) 7%, transparent);
+    --aurora-glow-a: color-mix(in srgb, var(--primitive-white) 15%, transparent);
+    --aurora-glow-b: color-mix(in srgb, var(--primitive-white) 11%, transparent);
+    --aurora-glow-c: color-mix(in srgb, var(--color-accent) 7%, transparent);
     --surface-ambient-top: color-mix(
       in srgb,
       var(--surface-canvas) 93%,
@@ -490,8 +507,9 @@
     color: var(--text-hi);
   }
 
+  /* No background fill: the app shell already paints the light canvas, and a
+     solid sidebar would cut the ambient veil off at the content edge. */
   html:not(.dark) .motion-sidebar {
-    background-color: var(--app-bg) !important;
     color: var(--text-hi);
   }
 
@@ -678,6 +696,23 @@
     background-image: var(--page-background);
   }
 
+  /* Screens re-apply `needt-page-depth` on their own root even though the app
+     shell already paints it. Nested copies would sit on top of the ambient
+     aurora and hide it, so they stay transparent — the identical canvas colour
+     still comes from the shell underneath. */
+  .needt-page-depth .needt-page-depth {
+    background-color: transparent;
+    background-image: none;
+  }
+
+  /* The sidebar paints the same canvas colour as the shell, which would cut the
+     ambient veil off at the content edge. Let the shell show through so the
+     whole window reads as one surface; its right border keeps the separation. */
+  .needt-page-depth .motion-sidebar {
+    background-color: transparent;
+    background-image: none;
+  }
+
   .needt-panel-depth {
     background-color: var(--surface-panel);
     background-image: var(--panel-background);
@@ -695,6 +730,89 @@
   .needt-raised-depth {
     background-color: var(--surface-raised);
     background-image: var(--raised-surface-background);
+  }
+
+  /* Ambient aurora veil: soft drifting colour at the top of the app shell.
+     Performance contract — only `transform` is ever animated (compositor-only,
+     no layout/paint), softness comes from the radial gradient stops rather than
+     `filter: blur()`, and the layer is isolated with `contain: paint`. Safe to
+     keep mounted behind dense calendar/task UI. */
+  .needt-aurora {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: var(--aurora-height);
+    overflow: hidden;
+    pointer-events: none;
+    contain: paint;
+    z-index: 0;
+    /* Faded in per route (the calendar hides it), so the transition lives on
+       the veil itself. Opacity is compositor-only, so this stays free. */
+    opacity: 1;
+    transition: opacity 520ms cubic-bezier(0.16, 1, 0.3, 1);
+    /* Even haze along the top edge — this is what carries the effect on light
+       surfaces. The drifting blobs only add life on top of it. */
+    background: linear-gradient(
+      to bottom,
+      var(--aurora-veil) 0%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  }
+
+  /* The calendar grid needs a perfectly neutral canvas to read hour lines and
+     event colours, so the veil fades out there. */
+  .needt-aurora--hidden {
+    opacity: 0;
+  }
+
+  /* Overlay variant: the veil floats above page content instead of behind it.
+     Blend modes keep it readable — `multiply` deepens on light surfaces,
+     `screen` lifts on dark — and portalled overlays (dialogs, menus) live
+     outside `main`, so they stay untouched. */
+  .needt-aurora--overlay {
+    z-index: 40;
+    mix-blend-mode: multiply;
+  }
+
+  .dark .needt-aurora--overlay {
+    mix-blend-mode: screen;
+  }
+
+  .needt-aurora-blob {
+    position: absolute;
+    top: -40%;
+    width: 62%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    will-change: transform;
+  }
+
+  .needt-aurora-blob:nth-child(1) {
+    left: -8%;
+    background: radial-gradient(
+      circle,
+      var(--aurora-glow-a) 0%,
+      transparent 68%
+    );
+  }
+
+  .needt-aurora-blob:nth-child(2) {
+    left: 28%;
+    background: radial-gradient(
+      circle,
+      var(--aurora-glow-b) 0%,
+      transparent 68%
+    );
+  }
+
+  .needt-aurora-blob:nth-child(3) {
+    right: -6%;
+    background: radial-gradient(
+      circle,
+      var(--aurora-glow-c) 0%,
+      transparent 68%
+    );
   }
 
   .needt-scrim {
@@ -1457,6 +1575,36 @@ html[data-needt-motion="on"] .fc .fc-event {
   from {
     opacity: 0;
     translate: 8px 0;
+  }
+}
+
+/* Aurora drift. Very long, offset cycles so the motion reads as ambient rather
+   than as an animation. On by default (the app shell does not currently set
+   `data-needt-motion`); setting the flag to "off" freezes it. */
+.needt-aurora-blob {
+  animation: needt-aurora-drift 52s ease-in-out infinite alternate;
+}
+
+.needt-aurora-blob:nth-child(2) {
+  animation-duration: 67s;
+  animation-delay: -14s;
+}
+
+.needt-aurora-blob:nth-child(3) {
+  animation-duration: 74s;
+  animation-delay: -33s;
+}
+
+html[data-needt-motion="off"] .needt-aurora-blob {
+  animation: none;
+}
+
+@keyframes needt-aurora-drift {
+  from {
+    transform: translate3d(-9%, -5%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(11%, 7%, 0) scale(1.18);
   }
 }
 

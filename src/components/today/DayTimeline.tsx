@@ -255,7 +255,7 @@ export function DayTimeline({
               className="grid grid-cols-[64px_1fr]"
               style={{ height: HOUR_HEIGHT }}
             >
-              <span className="-translate-y-2 bg-[var(--surface-canvas)] pr-3 text-right text-[12px] tabular-nums text-[var(--text-muted)]">
+              <span className="-translate-y-2 pr-3 text-right text-[12px] tabular-nums text-[var(--text-muted)]">
                 {new Intl.DateTimeFormat([], {
                   hour: "numeric",
                   hour12: true,

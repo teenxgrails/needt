@@ -37,6 +37,13 @@ export default function RootLayout({
   const { isOpen: shortcutsOpen, setOpen: setShortcutsOpen } =
     useShortcutsStore();
 
+  // The calendar keeps a neutral canvas so the grid and event colours stay
+  // readable, and settings renders its own full-height shell that the veil
+  // would cut across. Every other route gets the ambient veil.
+  const hideAurora = ["/calendar", "/settings"].some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+
   // Use the page title hook
   usePageTitle();
 
@@ -60,6 +67,18 @@ export default function RootLayout({
 
   return (
     <div className="needt-page-depth relative flex min-h-dvh">
+      {/* Ambient aurora veil, spanning the whole shell (sidebar included) so the
+          window reads as one surface. Sits behind everything: screen and
+          sidebar backgrounds are transparent inside the shell. Decorative only —
+          pointer-events-none, and animated purely via `transform`. */}
+      <div
+        className={cn("needt-aurora", hideAurora && "needt-aurora--hidden")}
+        aria-hidden="true"
+      >
+        <span className="needt-aurora-blob" />
+        <span className="needt-aurora-blob" />
+        <span className="needt-aurora-blob" />
+      </div>
       <PrivacyProvider>
         <DndProvider>
           <TooltipProvider delayDuration={400}>
@@ -85,7 +104,7 @@ export default function RootLayout({
               <NotificationProvider>
                 <div
                   key={pathname}
-                  className="needt-mobile-route-fallback min-h-full"
+                  className="needt-mobile-route-fallback relative z-[1] min-h-full"
                 >
                   {children}
                 </div>
