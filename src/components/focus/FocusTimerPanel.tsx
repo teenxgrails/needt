@@ -7,11 +7,7 @@ import {
   Flame,
   Pause,
   Play,
-  RotateCcw,
-  Sparkles,
   Square,
-  Target,
-  TimerReset,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -250,24 +246,47 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
     }));
   const maxBar = Math.max(25, ...bars.map((bar) => bar.minutes));
   const streak = report?.stats?.currentStreak ?? 0;
+  const hasAnalytics = Boolean(report?.stats && report.weeklyReport);
+  const nextTask = tasks.find(
+    (candidate) =>
+      candidate.id !== boundTask?.id && candidate.status !== TaskStatus.COMPLETED
+  );
+  const modeLabel =
+    strictness === "DEEP_FOCUS"
+      ? "Deep Focus"
+      : strictness === "TIMEOUT"
+        ? "Timeout"
+        : "Normal";
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-      <section className="needt-panel-depth relative overflow-hidden rounded-[22px] border border-[var(--border-subtle)] p-5 sm:p-8">
-        <div className="pointer-events-none absolute inset-x-[12%] top-0 h-40 rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--text-primary)_8%,transparent),transparent_70%)]" />
+    <div
+      data-testid="focus-flat-canvas"
+      className="mx-auto w-full max-w-5xl px-1 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-5 sm:pb-10"
+    >
+      <section className="relative border-b border-[var(--border-subtle)] pb-8">
         <div className="relative">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                {timer.session?.phase === "SHORT_BREAK" ? "Recovery" : "Focus"}
+                {timer.session?.phase === "SHORT_BREAK" ||
+                timer.session?.phase === "LONG_BREAK"
+                  ? "Recovery"
+                  : timer.isPaused
+                    ? "Paused"
+                    : "Focus"}
               </p>
               <h1 className="mt-2 line-clamp-1 text-xl font-semibold sm:text-2xl">
                 {boundTask?.title || intention || "Make this block count"}
               </h1>
+              <p className="mt-1 line-clamp-1 text-xs text-[var(--text-muted)]">
+                {nextTask ? `Next: ${nextTask.title}` : "Your queue is clear"}
+              </p>
             </div>
-            <div className="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] px-3 py-1.5 text-xs">
+            <div className="flex items-center gap-2 py-1.5 text-xs text-[var(--text-secondary)]">
+              <span>{modeLabel}</span>
+              <span aria-hidden="true">·</span>
               <Flame className="h-4 w-4 text-amber-500" />
-              {streak} day streak
+              {streak} day{streak === 1 ? "" : "s"}
             </div>
           </div>
 
@@ -279,7 +298,9 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
               {formatClock(displaySeconds)}
             </time>
             <div className="sr-only" aria-live="polite" aria-atomic="true">
-              {Math.ceil(displaySeconds / 60)} minutes remaining
+              {exitSeconds != null && exitSeconds > 0
+                ? `Early exit available in ${exitSeconds} seconds`
+                : `${Math.ceil(displaySeconds / 60)} minutes remaining`}
             </div>
             {timer.isPaused && (
               <span className="mt-4 text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -288,87 +309,98 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
             )}
 
             <div className="mt-10 w-full max-w-xl">
+              <div className="mb-3 flex items-center justify-between text-sm">
+                <span className="text-[var(--text-secondary)]">
+                  {timer.isActive ? "Progress" : "Duration"}
+                </span>
+                <span className="font-medium tabular-nums">
+                  {timer.isActive
+                    ? `${Math.floor(timer.elapsedSeconds / 60)}m / ${plannedMinutes}m`
+                    : `${duration} min`}
+                </span>
+              </div>
+              <div
+                className="mb-6 grid grid-cols-3 border border-[var(--border-subtle)]"
+                aria-label="Focus mode"
+              >
+                {(
+                  [
+                    ["NORMAL", "Normal"],
+                    ["TIMEOUT", "Timeout"],
+                    ["DEEP_FOCUS", "Deep Focus"],
+                  ] as const
+                ).map(([value, label], index) => {
+                  const gated =
+                    value !== "NORMAL" && Boolean(report?.upgradeRequired);
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled={gated || timer.isActive}
+                      onClick={() => setStrictness(value)}
+                      className={`min-h-11 px-2 text-xs transition-colors ${
+                        index > 0
+                          ? "border-l border-[var(--border-subtle)]"
+                          : ""
+                      } ${
+                        strictness === value
+                          ? "bg-[var(--text-primary)] text-[var(--surface-canvas)]"
+                          : "text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                      } disabled:cursor-not-allowed disabled:opacity-40`}
+                      title={
+                        gated ? "Available on Pro and Lifetime" : undefined
+                      }
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
               {!timer.isActive ? (
-                <>
-                  <div className="mb-3 flex items-center justify-between text-sm">
-                    <span className="text-[var(--text-secondary)]">Duration</span>
-                    <span className="font-medium tabular-nums">{duration} min</span>
-                  </div>
-                  <div
-                    className="mb-6 grid grid-cols-3 gap-2"
-                    aria-label="Focus mode"
-                  >
-                    {(
-                      [
-                        ["NORMAL", "Normal"],
-                        ["TIMEOUT", "Timeout"],
-                        ["DEEP_FOCUS", "Deep Focus"],
-                      ] as const
-                    ).map(([value, label]) => {
-                      const gated =
-                        value !== "NORMAL" && Boolean(report?.upgradeRequired);
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          disabled={gated}
-                          onClick={() => setStrictness(value)}
-                          className={`min-h-11 rounded-lg border px-2 text-xs transition ${
-                            strictness === value
-                              ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)] shadow-sm"
-                              : "border-[var(--border-subtle)] text-[var(--text-secondary)]"
-                          } disabled:cursor-not-allowed disabled:opacity-40`}
-                          title={
-                            gated ? "Available on Pro and Lifetime" : undefined
-                          }
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <Slider
-                    value={[duration]}
-                    min={5}
-                    max={180}
-                    step={5}
-                    aria-label="Focus duration in minutes"
-                    onValueChange={([value]) => setDuration(value)}
-                    className="focus-duration-slider [&>span:first-child]:bg-[var(--surface-active)] [&>span:first-child>span]:bg-[var(--text-primary)]"
-                    thumbStyle={
-                      {
-                        borderColor: "var(--text-primary)",
-                        outlineColor: "var(--text-primary)",
-                        boxShadow: "none",
-                        "--tw-ring-color": "var(--text-primary)",
-                      } as CSSProperties
-                    }
-                  />
-                  <div className="mt-2 flex justify-between text-[10px] text-[var(--text-muted)]">
-                    {Array.from({ length: 12 }, (_, index) => (
-                      <span key={index} className="h-2 w-px bg-current" />
-                    ))}
-                  </div>
-                  <Input
-                    value={intention}
-                    onChange={(event) => setIntention(event.target.value)}
-                    placeholder="What will be true when this block is done?"
-                    className="mt-6 h-11 text-center"
-                  />
-                </>
+                <Slider
+                  value={[duration]}
+                  min={5}
+                  max={180}
+                  step={5}
+                  aria-label="Focus duration in minutes"
+                  onValueChange={([value]) => setDuration(value)}
+                  className="focus-duration-slider [&>span:first-child]:bg-[var(--surface-active)] [&>span:first-child>span]:bg-[var(--text-primary)]"
+                  thumbStyle={
+                    {
+                      borderColor: "var(--text-primary)",
+                      outlineColor: "var(--text-primary)",
+                      boxShadow: "none",
+                      "--tw-ring-color": "var(--text-primary)",
+                    } as CSSProperties
+                  }
+                />
               ) : (
-                <>
-                  <div className="h-2 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--text-primary)_9%,transparent)]">
-                    <div
-                      className="h-full rounded-full bg-[var(--text-primary)] transition-[width] duration-1000"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <div className="mt-3 flex justify-between text-xs text-[var(--text-muted)]">
-                    <span>{Math.floor(timer.elapsedSeconds / 60)}m focused</span>
-                    <span>{plannedMinutes}m block</span>
-                  </div>
-                </>
+                <div
+                  className="h-2 overflow-hidden bg-[color-mix(in_srgb,var(--text-primary)_9%,transparent)]"
+                  aria-label={`${Math.round(progress)} percent complete`}
+                >
+                  <div
+                    className="h-full bg-[var(--text-primary)] transition-[width] duration-1000"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              )}
+              <div className="mt-2 flex justify-between text-[10px] text-[var(--text-muted)]">
+                {Array.from({ length: 12 }, (_, index) => (
+                  <span key={index} className="h-2 w-px bg-current" />
+                ))}
+              </div>
+              {!timer.isActive ? (
+                <Input
+                  value={intention}
+                  onChange={(event) => setIntention(event.target.value)}
+                  placeholder="What will be true when this block is done?"
+                  className="mt-6 h-11 border-x-0 border-t-0 bg-transparent text-center"
+                />
+              ) : (
+                <div className="mt-6 flex h-11 items-center justify-center border-b border-[var(--border-subtle)] text-center text-sm text-[var(--text-secondary)]">
+                  {intention || "No intention set"}
+                </div>
               )}
             </div>
 
@@ -377,7 +409,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
                 size="lg"
                 onClick={() => void handlePrimaryAction()}
                 disabled={!timer.hydrated || isChangingState}
-                className="h-12 min-w-[180px] rounded-full border border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--surface-canvas)_18%,transparent),0_8px_24px_color-mix(in_srgb,var(--shadow-color)_20%,transparent)] hover:bg-[var(--text-secondary)]"
+                className="h-12 min-w-[180px] border border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)] shadow-none hover:bg-[var(--text-secondary)]"
               >
                 {timer.isActive && timer.isRunning ? (
                   <Pause className="h-4 w-4" />
@@ -396,7 +428,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-12 rounded-full"
+                  className="h-12"
                   onClick={() => void addFiveMinutes()}
                 >
                   +5 min
@@ -406,7 +438,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
                 <Button
                   variant="ghost"
                   size="lg"
-                  className="h-12 rounded-full"
+                  className="h-12"
                   onClick={() => void endSession()}
                   disabled={exitSeconds != null && exitSeconds > 0}
                 >
@@ -423,37 +455,59 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
         </div>
       </section>
 
-      <aside className="space-y-4">
-        <section className="needt-panel-depth rounded-[18px] border border-[var(--border-subtle)] p-5">
+      <aside>
+        <section className="border-b border-[var(--border-subtle)] py-8">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Daily insight</p>
               <h2 className="mt-1 font-semibold">Your focus activity</h2>
             </div>
-            <Sparkles className="h-5 w-5 text-cyan-400" />
+            {hasAnalytics && (
+              <span className="text-xl font-semibold tabular-nums">
+                {report?.stats?.focusScore}%
+              </span>
+            )}
           </div>
-          <div className="mt-6 flex h-32 items-end gap-2" aria-label="Focused minutes over the last seven days">
-            {bars.map((bar, index) => (
-              <div key={`${bar.label}-${index}`} className="flex h-full flex-1 flex-col justify-end gap-2">
+          {hasAnalytics && (
+            <div
+              className="mt-6 flex h-32 items-end gap-2"
+              aria-label="Focused minutes over the last seven days"
+            >
+              {bars.map((bar, index) => (
                 <div
-                  className="min-h-1 rounded-full bg-gradient-to-t from-emerald-300 via-cyan-300 to-violet-300"
-                  style={{ height: `${Math.max(4, (bar.minutes / maxBar) * 100)}%` }}
-                  title={`${bar.minutes} focused minutes`}
-                />
-                <span className="text-center text-[10px] text-[var(--text-muted)]">{bar.label}</span>
-              </div>
-            ))}
-          </div>
+                  key={`${bar.label}-${index}`}
+                  className="flex h-full flex-1 flex-col justify-end gap-2"
+                >
+                  <div
+                    className="min-h-1 bg-gradient-to-t from-emerald-300 via-cyan-300 to-violet-300"
+                    style={{
+                      height: `${Math.max(4, (bar.minutes / maxBar) * 100)}%`,
+                    }}
+                    title={`${bar.minutes} focused minutes`}
+                  />
+                  <span className="text-center text-[10px] text-[var(--text-muted)]">
+                    {bar.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Insight icon={<Target />} label="Focus score" value={report?.stats ? `${report.stats.focusScore}%` : "—"} />
-          <Insight icon={<TimerReset />} label="This week" value={`${report?.weeklyReport?.focusMinutes ?? 0}m`} />
-          <Insight icon={<Check />} label="Sessions" value={String(report?.weeklyReport?.sessionsCompleted ?? 0)} />
-          <Insight icon={<RotateCcw />} label="Accuracy" value={report?.weeklyReport?.estimateAccuracyPercent ? `${report.weeklyReport.estimateAccuracyPercent}%` : "—"} />
-        </div>
+        {hasAnalytics ? (
+          <div className="grid grid-cols-2 border-b border-[var(--border-subtle)] sm:grid-cols-4">
+            <Insight label="Focus score" value={`${report?.stats?.focusScore}%`} />
+            <Insight label="This week" value={`${report?.weeklyReport?.focusMinutes ?? 0}m`} />
+            <Insight label="Sessions" value={String(report?.weeklyReport?.sessionsCompleted ?? 0)} />
+            <Insight label="Accuracy" value={report?.weeklyReport?.estimateAccuracyPercent ? `${report.weeklyReport.estimateAccuracyPercent}%` : "—"} />
+          </div>
+        ) : (
+          <p className="border-b border-[var(--border-subtle)] py-5 text-sm text-[var(--text-muted)]">
+            Complete a few focus blocks to unlock weekly analytics.
+          </p>
+        )}
 
-        <section className="needt-panel-depth rounded-[18px] border border-[var(--border-subtle)] p-5">
+        <section className="border-b border-[var(--border-subtle)] py-7">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Daily streak</h2>
             <span className="text-sm text-[var(--text-secondary)]">Best {report?.stats?.longestStreak ?? 0}</span>
@@ -462,7 +516,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
             {bars.map((bar, index) => (
               <div key={`${bar.label}-streak-${index}`} className="flex flex-col items-center gap-2">
                 <span className="text-[10px] text-[var(--text-muted)]">{bar.label}</span>
-                <span className={`grid h-8 w-8 place-items-center rounded-full border text-xs ${bar.minutes >= 25 ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)]" : "border-[var(--border-subtle)] text-[var(--text-muted)]"}`}>
+                <span className={`grid h-8 w-8 place-items-center border text-xs ${bar.minutes >= 25 ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)]" : "border-[var(--border-subtle)] text-[var(--text-muted)]"}`}>
                   {bar.minutes >= 25 ? <Check className="h-4 w-4" /> : "·"}
                 </span>
               </div>
@@ -500,18 +554,15 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
 }
 
 function Insight({
-  icon,
   label,
   value,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string;
 }) {
   return (
-    <div className="needt-panel-depth rounded-[16px] border border-[var(--border-subtle)] p-4">
-      <span className="block h-4 w-4 text-[var(--text-secondary)] [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
-      <p className="mt-4 text-xl font-semibold tabular-nums">{value}</p>
+    <div className="border-l border-[var(--border-subtle)] py-5 text-center first:border-l-0">
+      <p className="text-xl font-semibold tabular-nums">{value}</p>
       <p className="mt-1 text-xs text-[var(--text-muted)]">{label}</p>
     </div>
   );

@@ -58,6 +58,11 @@ current-time marker and other dates at their first event or Work Schedule
 start. Mobile keeps normal document page scroll and moves the timeline into a
 bottom sheet.
 
+Focus is rendered as a single flat, state-stable canvas in
+`src/components/focus/FocusTimerPanel.tsx`. The server remains authoritative
+for session phase and elapsed time; the client keeps timer feedback, duration
+scrubbing, and the throttled live countdown in one consistent geometry.
+
 ## Multi-user isolation
 
 Scheduling runs, idempotency records, focus data, dependencies, reminders,
