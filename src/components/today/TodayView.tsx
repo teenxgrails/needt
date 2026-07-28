@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   AlertTriangle,
@@ -122,6 +128,9 @@ export function TodayView({
     ids: Set<string>;
   }>({ dateKey: "", ids: new Set() });
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const documentScrollRef = useRef<HTMLElement>(null);
+  const documentScrollByDate = useRef(new Map<string, number>());
+  const previousDocumentDateKey = useRef("");
 
   useEffect(() => {
     void fetchTasks();
@@ -133,6 +142,28 @@ export function TodayView({
   const dayEnd = endOfDay(selectedDate);
   const viewingToday = isSameDay(selectedDate, now);
   const dateKey = localDateKey(selectedDate);
+
+  useLayoutEffect(() => {
+    const pane = documentScrollRef.current;
+    if (!pane) return;
+    const previousKey = previousDocumentDateKey.current;
+    if (previousKey && previousKey !== dateKey) {
+      documentScrollByDate.current.set(previousKey, pane.scrollTop);
+    }
+    if (previousKey !== dateKey) {
+      pane.scrollTop = documentScrollByDate.current.get(dateKey) ?? 0;
+      previousDocumentDateKey.current = dateKey;
+    }
+  }, [dateKey]);
+
+  useEffect(
+    () => () => {
+      const pane = documentScrollRef.current;
+      const key = previousDocumentDateKey.current;
+      if (pane && key) documentScrollByDate.current.set(key, pane.scrollTop);
+    },
+    []
+  );
 
   const timelineItems = useMemo<TimelineItem[]>(() => {
     void events.length;
@@ -370,7 +401,8 @@ export function TodayView({
 
   return (
     <div
-      className="needt-page-depth needt-native-scroll relative h-full min-h-0 overflow-y-auto pb-24 xl:overflow-hidden xl:pb-0"
+      data-testid="today-route-scroll"
+      className="needt-page-depth needt-native-scroll relative h-full min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain pb-24 xl:overflow-hidden xl:pb-0"
       onTouchStart={(event) => {
         const touch = event.touches[0];
         swipeStart.current = { x: touch.clientX, y: touch.clientY };
@@ -388,7 +420,11 @@ export function TodayView({
       }}
     >
       <div className="grid min-h-full w-full grid-cols-1 xl:h-full xl:min-h-0 xl:grid-cols-[minmax(620px,1fr)_clamp(260px,22vw,340px)]">
-        <main className="needt-native-scroll min-h-0 min-w-0 overflow-y-auto px-5 pb-14 pt-[max(1rem,env(safe-area-inset-top))] sm:px-10 sm:py-8 xl:px-10 xl:py-7 2xl:px-14">
+        <main
+          ref={documentScrollRef}
+          data-testid="today-document-scroll"
+          className="needt-native-scroll min-h-0 min-w-0 overflow-y-auto overflow-x-hidden overscroll-contain px-5 pb-14 pt-[max(1rem,env(safe-area-inset-top))] sm:px-10 sm:py-8 xl:px-10 xl:py-7 2xl:px-14"
+        >
           <div className="mx-auto w-full max-w-[920px]">
             <div className="mb-8 flex items-center justify-between sm:hidden">
               <div className="needt-raised-depth flex h-11 items-center gap-2 rounded-full border border-[var(--border-subtle)] px-4 text-[15px] font-semibold tabular-nums text-[var(--text-primary)]">

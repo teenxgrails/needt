@@ -11,7 +11,7 @@ export default async function TodayPage() {
     ? await isFeatureEnabled("editor_v2", session.user.id)
     : false;
   return (
-    <div className="h-full">
+    <div className="h-full min-h-0 xl:overflow-hidden">
       <TodayView documentFormatVersion={editorV2 ? 2 : 1} />
     </div>
   );

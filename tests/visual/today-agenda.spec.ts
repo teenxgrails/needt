@@ -121,11 +121,51 @@ test("Today keeps both panes scrollable and pins 15-minute timeline edits", asyn
   expect(update.ok()).toBeTruthy();
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
-  const documentPane = page.locator("main.needt-native-scroll");
+  const outerRoute = page.getByTestId("today-route-scroll");
+  const documentPane = page.getByTestId("today-document-scroll");
+  const timelinePane = page.getByTestId("today-timeline-scroll");
   const timeline = page.getByLabel("One day timeline");
   await expect(timeline).toBeVisible();
   await expect(documentPane).toHaveCSS("overflow-y", "auto");
-  await expect(timeline.locator("xpath=..")).toHaveCSS("overflow-y", "auto");
+  await expect(timelinePane).toHaveCSS("overflow-y", "auto");
+  await expect(outerRoute).toHaveCSS("overflow-y", "hidden");
+
+  await documentPane.evaluate((element) => {
+    const content = element.firstElementChild as HTMLElement | null;
+    if (content) content.style.minHeight = `${element.clientHeight + 800}px`;
+    element.scrollTop = 180;
+  });
+  await timelinePane.evaluate((element) => {
+    element.scrollTop = 420;
+  });
+  const independentScroll = await page.evaluate(() => ({
+    outer: document.querySelector<HTMLElement>(
+      '[data-testid="today-route-scroll"]'
+    )?.scrollTop,
+    document: document.querySelector<HTMLElement>(
+      '[data-testid="today-document-scroll"]'
+    )?.scrollTop,
+    timeline: document.querySelector<HTMLElement>(
+      '[data-testid="today-timeline-scroll"]'
+    )?.scrollTop,
+  }));
+  expect(independentScroll.outer).toBe(0);
+  expect(independentScroll.document).toBe(180);
+  expect(independentScroll.timeline).toBe(420);
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  const marker = page.getByTestId("today-current-time-marker");
+  await expect(marker).toBeVisible();
+  const markerBox = await marker.boundingBox();
+  const timelineBox = await page
+    .getByTestId("today-timeline-scroll")
+    .boundingBox();
+  expect(markerBox).not.toBeNull();
+  expect(timelineBox).not.toBeNull();
+  const markerRatio =
+    (markerBox!.y - timelineBox!.y) / timelineBox!.height;
+  expect(markerRatio).toBeGreaterThanOrEqual(0.25);
+  expect(markerRatio).toBeLessThanOrEqual(0.35);
 
   const task = timeline.locator('[title^="Timeline drag target"]');
   await expect(task).toBeVisible();

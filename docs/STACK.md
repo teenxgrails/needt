@@ -52,6 +52,12 @@ Calendar positioning is centralized in
 live in `src/lib/calendar-navigation.ts`. Data refreshes must not invoke the
 scroll policy or reset a user's manual vertical position.
 
+The Today desktop route locks to the app viewport. `TodayView` owns independent
+document and timeline scrollers, while `DayTimeline` positions today at the
+current-time marker and other dates at their first event or Work Schedule
+start. Mobile keeps normal document page scroll and moves the timeline into a
+bottom sheet.
+
 ## Multi-user isolation
 
 Scheduling runs, idempotency records, focus data, dependencies, reminders,

@@ -93,6 +93,12 @@ containing today position the current-time line at 30% of the vertical
 viewport; other ranges open at the Work Schedule start. Manual vertical scroll
 is retained until the visible date range changes.
 
+On desktop, Today is a fixed-height split view: the document and day timeline
+are sibling scroll containers with `min-height: 0`, contained overscroll, and a
+non-scrolling route root. The timeline header stays fixed. On tablet and phone
+the document returns to normal page scrolling and the timeline lives in a
+bottom sheet whose 24-hour grid is the only scrolling child.
+
 ## Toggle (Switch)
 
 Shared `@/components/ui/switch`. Flat white thumb (`shadow-sm`, **no glow**),

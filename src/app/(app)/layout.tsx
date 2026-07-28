@@ -66,7 +66,12 @@ export default function RootLayout({
   }, [setShortcutsOpen]);
 
   return (
-    <div className="needt-page-depth relative flex min-h-dvh">
+    <div
+      className={cn(
+        "needt-page-depth relative flex min-h-dvh",
+        pathname === "/today" && "xl:h-dvh xl:overflow-hidden"
+      )}
+    >
       {/* Ambient aurora veil, spanning the whole shell (sidebar included) so the
           window reads as one surface. Sits behind everything: screen and
           sidebar backgrounds are transparent inside the shell. Decorative only —
@@ -98,13 +103,18 @@ export default function RootLayout({
             <main
               className={cn(
                 "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-lg:pt-[calc(56px+env(safe-area-inset-top))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
-                pathname === "/today" && "max-sm:pt-0"
+                pathname === "/today" &&
+                  "max-sm:pt-0 xl:h-dvh xl:min-h-0 xl:overflow-hidden"
               )}
             >
               <NotificationProvider>
                 <div
                   key={pathname}
-                  className="needt-mobile-route-fallback relative z-[1] min-h-full"
+                  className={cn(
+                    "needt-mobile-route-fallback relative z-[1] min-h-full",
+                    pathname === "/today" &&
+                      "xl:h-full xl:min-h-0 xl:overflow-hidden"
+                  )}
                 >
                   {children}
                 </div>

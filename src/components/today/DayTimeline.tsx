@@ -17,6 +17,8 @@ import {
 } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
 
+import { useSettingsStore } from "@/store/settings";
+
 export interface TimelineItem {
   id: string;
   title: string;
@@ -76,14 +78,87 @@ export function DayTimeline({
   const scrollRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<TimelineInteraction | null>(null);
   const movedRef = useRef(false);
+  const positionRef = useRef<{
+    dateKey: string;
+    anchor: "current-time" | "event" | "workday-start";
+    workdayStart: string;
+  } | null>(null);
   const [interaction, setInteraction] = useState<TimelineInteraction | null>(
     null
   );
   const isToday = isSameDay(date, newDate());
+  const workdayStart = useSettingsStore(
+    (state) => state.calendar.workingHours.start
+  );
+  const dateKey = [
+    date.getFullYear(),
+    date.getMonth() + 1,
+    date.getDate(),
+  ].join("-");
+  const firstItem = items[0];
+  const firstItemKey = firstItem
+    ? `${firstItem.id}:${firstItem.start.getTime()}`
+    : "";
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = HOUR_HEIGHT * 5.5;
-  }, [date]);
+    const previous = positionRef.current;
+    const dateChanged = previous?.dateKey !== dateKey;
+    const shouldUpgradeFallback =
+      !dateChanged &&
+      previous?.anchor === "workday-start" &&
+      Boolean(firstItem);
+    const workdayChanged =
+      !dateChanged &&
+      previous?.anchor === "workday-start" &&
+      previous.workdayStart !== workdayStart;
+    if (!dateChanged && !shouldUpgradeFallback && !workdayChanged) return;
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const scroller = scrollRef.current;
+        if (!scroller) return;
+        const current = newDate();
+        let anchorMinutes: number;
+        let viewportRatio: number;
+        let anchor: "current-time" | "event" | "workday-start";
+
+        if (isToday) {
+          anchorMinutes = current.getHours() * 60 + current.getMinutes();
+          viewportRatio = 0.3;
+          anchor = "current-time";
+        } else if (firstItem) {
+          anchorMinutes =
+            firstItem.start.getHours() * 60 + firstItem.start.getMinutes() - 60;
+          viewportRatio = 0;
+          anchor = "event";
+        } else {
+          const [hours = 9, minutes = 0] = workdayStart
+            .split(":")
+            .map(Number);
+          anchorMinutes = hours * 60 + minutes;
+          viewportRatio = 0;
+          anchor = "workday-start";
+        }
+
+        const requestedTop =
+          (Math.max(0, anchorMinutes) / 60) * HOUR_HEIGHT -
+          scroller.clientHeight * viewportRatio;
+        scroller.scrollTop = Math.min(
+          Math.max(0, requestedTop),
+          Math.max(0, scroller.scrollHeight - scroller.clientHeight)
+        );
+        scroller.dataset.needtScrollAnchor = anchor;
+        positionRef.current = { dateKey, anchor, workdayStart };
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      window.cancelAnimationFrame(secondFrame);
+    };
+  }, [dateKey, firstItem, firstItemKey, isToday, workdayStart]);
 
   const current = newDate();
   const currentMinutes = current.getHours() * 60 + current.getMinutes();
@@ -242,7 +317,8 @@ export function DayTimeline({
 
       <div
         ref={scrollRef}
-        className="needt-native-scroll min-h-0 flex-1 overflow-y-auto"
+        data-testid="today-timeline-scroll"
+        className="needt-native-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
       >
         <div
           className="relative"
@@ -269,6 +345,7 @@ export function DayTimeline({
 
           {isToday && (
             <div
+              data-testid="today-current-time-marker"
               className="pointer-events-none absolute left-[60px] right-0 z-20 border-t border-[var(--text-secondary)]"
               style={{ top: (currentMinutes / 60) * HOUR_HEIGHT }}
             >
