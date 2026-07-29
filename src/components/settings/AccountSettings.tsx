@@ -1,16 +1,26 @@
 "use client";
 
-import Image from "next/image";
+import { useState } from "react";
 
-import { UserRound } from "lucide-react";
+import Image from "next/image";
+import { signOut } from "next-auth/react";
+
+import { LogOut, UserRound } from "lucide-react";
 
 import { useAppSession } from "@/components/providers/app-session-context";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { SettingRow, SettingsCard, SettingsSection } from "./SettingsSection";
 
 export function AccountSettings() {
   const { data: session, status } = useAppSession();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await signOut({ callbackUrl: "/auth/signin" });
+  };
 
   return (
     <SettingsSection
@@ -57,6 +67,22 @@ export function AccountSettings() {
             </div>
           </SettingsCard>
         )}
+      </SettingRow>
+      <SettingRow
+        label="Session"
+        description="Sign out of Needt on this device."
+      >
+        <Button
+          type="button"
+          variant="destructive"
+          size="lg"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="min-h-11 w-full justify-center sm:w-auto"
+        >
+          <LogOut className="h-4 w-4" />
+          {isLoggingOut ? "Logging out..." : "Log out"}
+        </Button>
       </SettingRow>
     </SettingsSection>
   );

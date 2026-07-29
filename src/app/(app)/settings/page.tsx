@@ -316,8 +316,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="needt-page-depth min-h-screen text-[var(--text-primary)]">
-      <div className="flex min-h-screen">
+    <div className="needt-page-depth h-dvh overflow-hidden text-[var(--text-primary)]">
+      <div className="flex h-full min-h-0">
         <aside className="needt-panel-depth settings-desktop-sidebar fixed inset-y-0 left-0 z-20 flex w-[230px] flex-col overflow-hidden border-r border-[var(--border-subtle)]">
           <Link
             href="/calendar"
@@ -342,7 +342,7 @@ export default function SettingsPage() {
           </div>
         </aside>
 
-        <main className="needt-page-depth settings-main min-h-screen min-w-0 flex-1">
+        <main className="needt-page-depth settings-main h-full min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-none">
           <div className="needt-panel-depth settings-mobile-header sticky top-0 z-30 min-h-16 items-center gap-2 border-b border-[var(--border-subtle)] px-3">
             {mobileOverview ? (
               <Link

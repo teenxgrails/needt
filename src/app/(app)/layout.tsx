@@ -9,7 +9,6 @@ import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
 import { AICompanion } from "@/components/ai/AICompanion";
 import { DndProvider } from "@/components/dnd/DndProvider";
 import { AppNav } from "@/components/navigation/AppNav";
-import { MobileTopBar } from "@/components/navigation/MobileTopBar";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { PrivacyProvider } from "@/components/providers/PrivacyProvider";
 import { SetupCheck } from "@/components/setup/SetupCheck";
@@ -98,13 +97,14 @@ export default function RootLayout({
               isOpen={shortcutsOpen}
               onClose={() => setShortcutsOpen(false)}
             />
-            <MobileTopBar />
             <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
             <main
               className={cn(
-                "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-lg:pt-[calc(56px+env(safe-area-inset-top))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
+                "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
+                pathname.startsWith("/settings") &&
+                  "max-lg:h-dvh max-lg:overflow-hidden max-lg:pb-0",
                 pathname === "/today" &&
-                  "max-sm:pt-0 xl:h-dvh xl:min-h-0 xl:overflow-hidden"
+                  "xl:h-dvh xl:min-h-0 xl:overflow-hidden"
               )}
             >
               <NotificationProvider>

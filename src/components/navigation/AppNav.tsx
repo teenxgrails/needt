@@ -10,6 +10,7 @@ import {
   CheckSquare,
   CircleDashed,
   Download,
+  FileText,
   Focus,
   Search,
   Settings,
@@ -20,9 +21,7 @@ import {
 import { PagesSidebarSection } from "@/components/pages/PagesSidebarSection";
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
-import { useAppSession } from "@/components/providers/app-session-context";
 import { TodaysTasksPanel } from "@/components/tasks/TodaysTasksPanel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import {
   Tooltip,
@@ -65,7 +64,6 @@ export const AppNav = memo(function AppNav({
   onOpenChatOverlay,
 }: AppNavProps) {
   const pathname = usePathname();
-  const { data: session } = useAppSession();
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [isOverloaded, setIsOverloaded] = useState(false);
   const [todayLabel, setTodayLabel] = useState<string | null>(null);
@@ -155,14 +153,6 @@ export const AppNav = memo(function AppNav({
     { href: "/today", label: "Today", icon: CalendarDays },
     { href: "/focus", label: "Focus", icon: CircleDashed },
   ];
-  const profileInitials =
-    session?.user?.name
-      ?.split(" ")
-      .map((part) => part[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "ME";
-
   return (
     <aside
       aria-label={`${APP_NAME} navigation`}
@@ -258,23 +248,15 @@ export const AppNav = memo(function AppNav({
           );
         })}
         <Link
-          href="/settings#account"
+          href="/pages"
           className={cn(
             "flex min-h-14 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-md px-1 py-1 text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] active:bg-[var(--surface-hover)]",
-            isSettings &&
+            (pathname === "/pages" || pathname.startsWith("/pages/")) &&
               "needt-active-nav-item bg-[var(--surface-hover)] text-[var(--text-primary)]"
           )}
         >
-          <Avatar className="h-5 w-5 border border-[var(--border-control)]">
-            <AvatarImage
-              src={session?.user?.image || ""}
-              alt={session?.user?.name || "Profile"}
-            />
-            <AvatarFallback className="text-[8px] font-semibold">
-              {profileInitials}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-[10px] leading-3">Me</span>
+          <FileText className="h-[18px] w-[18px]" strokeWidth={1.75} />
+          <span className="text-[10px] leading-3">Pages</span>
         </Link>
       </nav>
 
@@ -305,23 +287,17 @@ export const AppNav = memo(function AppNav({
           );
         })}
         <Link
-          href="/settings#account"
+          href="/pages"
           className={cn(
             "needt-phone-tab flex min-w-0 flex-1 touch-manipulation flex-col items-center justify-center text-[var(--text-muted)]",
-            isSettings &&
+            (pathname === "/pages" || pathname.startsWith("/pages/")) &&
               "needt-active-nav-item needt-phone-tab-active text-[var(--text-primary)]"
           )}
         >
-          <Avatar className="h-6 w-6 border border-[var(--border-control)]">
-            <AvatarImage
-              src={session?.user?.image || ""}
-              alt={session?.user?.name || "Profile"}
-            />
-            <AvatarFallback className="text-[8px] font-semibold">
-              {profileInitials}
-            </AvatarFallback>
-          </Avatar>
-          <span className="mt-0.5 text-[11px] font-medium leading-3">Me</span>
+          <FileText className="h-6 w-6" strokeWidth={1.85} />
+          <span className="mt-0.5 text-[11px] font-medium leading-3">
+            Pages
+          </span>
         </Link>
       </nav>
 
