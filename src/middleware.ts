@@ -1,6 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { publicAppUrl, publicRequestUrl } from "@/lib/public-url";
 
 // List of public routes that don't require authentication
 const publicRoutes = [
@@ -55,7 +56,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect /login to /auth/signin to prevent redirect loops
   if (pathname === "/login") {
-    return NextResponse.redirect(new URL("/auth/signin", request.url));
+    return NextResponse.redirect(publicAppUrl("/auth/signin", request));
   }
 
   // Special handling for the setup page to prevent loops with auth
@@ -102,8 +103,8 @@ export async function middleware(request: NextRequest) {
 
   // If there's no token, redirect to the sign-in page
   if (!token) {
-    const url = new URL("/auth/signin", request.url);
-    url.searchParams.set("callbackUrl", encodeURI(request.url));
+    const url = publicAppUrl("/auth/signin", request);
+    url.searchParams.set("callbackUrl", publicRequestUrl(request).toString());
     return NextResponse.redirect(url);
   }
 
@@ -111,7 +112,7 @@ export async function middleware(request: NextRequest) {
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
     // If the user is not an admin, redirect to the home page
     if (token.role !== "admin") {
-      return NextResponse.redirect(new URL("/", request.url));
+      return NextResponse.redirect(publicAppUrl("/", request));
     }
   }
 
