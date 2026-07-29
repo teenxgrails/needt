@@ -65,12 +65,12 @@ test("Today is a persistent daily document with a balanced timeline", async ({
   const taskTitle = `Inline agenda task ${testInfo.project.name}`;
   await editable.type(taskTitle);
   await editable.press("Enter");
-  await expect(editor.getByText(taskTitle)).toBeVisible();
+  await expect(editor.getByText(taskTitle).first()).toBeVisible();
   await expect(page.getByText("Saved")).toBeVisible();
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(
-    page.getByLabel("Daily agenda notes").getByText(taskTitle)
+    page.getByLabel("Daily agenda notes").getByText(taskTitle).first()
   ).toBeVisible();
   await expect(page).toHaveScreenshot("today-daily-document.png", {
     animations: "disabled",
@@ -79,7 +79,7 @@ test("Today is a persistent daily document with a balanced timeline", async ({
   await useTheme(page, "light");
   await page.goto("/today", { waitUntil: "domcontentloaded" });
   await expect(
-    page.getByLabel("Daily agenda notes").getByText(taskTitle)
+    page.getByLabel("Daily agenda notes").getByText(taskTitle).first()
   ).toBeVisible();
   await expect(page).toHaveScreenshot("today-daily-document-light.png", {
     animations: "disabled",

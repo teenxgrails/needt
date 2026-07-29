@@ -113,50 +113,65 @@ export function DayTimeline({
       previous.workdayStart !== workdayStart;
     if (!dateChanged && !shouldUpgradeFallback && !workdayChanged) return;
 
-    let firstFrame = 0;
-    let secondFrame = 0;
-    firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
+    let frame = 0;
+    let disconnectTimer = 0;
+    let resizeObserver: ResizeObserver | null = null;
+    frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(() => {
         const scroller = scrollRef.current;
         if (!scroller) return;
-        const current = newDate();
-        let anchorMinutes: number;
-        let viewportRatio: number;
-        let anchor: "current-time" | "event" | "workday-start";
 
-        if (isToday) {
-          anchorMinutes = current.getHours() * 60 + current.getMinutes();
-          viewportRatio = 0.3;
-          anchor = "current-time";
-        } else if (firstItem) {
-          anchorMinutes =
-            firstItem.start.getHours() * 60 + firstItem.start.getMinutes() - 60;
-          viewportRatio = 0;
-          anchor = "event";
-        } else {
-          const [hours = 9, minutes = 0] = workdayStart
-            .split(":")
-            .map(Number);
-          anchorMinutes = hours * 60 + minutes;
-          viewportRatio = 0;
-          anchor = "workday-start";
-        }
+        const positionTimeline = () => {
+          const current = newDate();
+          let anchorMinutes: number;
+          let viewportRatio: number;
+          let anchor: "current-time" | "event" | "workday-start";
 
-        const requestedTop =
-          (Math.max(0, anchorMinutes) / 60) * HOUR_HEIGHT -
-          scroller.clientHeight * viewportRatio;
-        scroller.scrollTop = Math.min(
-          Math.max(0, requestedTop),
-          Math.max(0, scroller.scrollHeight - scroller.clientHeight)
-        );
-        scroller.dataset.needtScrollAnchor = anchor;
-        positionRef.current = { dateKey, anchor, workdayStart };
+          if (isToday) {
+            anchorMinutes = current.getHours() * 60 + current.getMinutes();
+            viewportRatio = 0.3;
+            anchor = "current-time";
+          } else if (firstItem) {
+            anchorMinutes =
+              firstItem.start.getHours() * 60 +
+              firstItem.start.getMinutes() -
+              60;
+            viewportRatio = 0;
+            anchor = "event";
+          } else {
+            const [hours = 9, minutes = 0] = workdayStart
+              .split(":")
+              .map(Number);
+            anchorMinutes = hours * 60 + minutes;
+            viewportRatio = 0;
+            anchor = "workday-start";
+          }
+
+          const requestedTop =
+            (Math.max(0, anchorMinutes) / 60) * HOUR_HEIGHT -
+            scroller.clientHeight * viewportRatio;
+          scroller.scrollTop = Math.min(
+            Math.max(0, requestedTop),
+            Math.max(0, scroller.scrollHeight - scroller.clientHeight)
+          );
+          scroller.dataset.needtScrollAnchor = anchor;
+          positionRef.current = { dateKey, anchor, workdayStart };
+        };
+
+        positionTimeline();
+        resizeObserver = new ResizeObserver(positionTimeline);
+        resizeObserver.observe(scroller);
+        disconnectTimer = window.setTimeout(() => {
+          resizeObserver?.disconnect();
+          resizeObserver = null;
+        }, 1_000);
       });
     });
 
     return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(disconnectTimer);
+      resizeObserver?.disconnect();
     };
   }, [dateKey, firstItem, firstItemKey, isToday, workdayStart]);
 
