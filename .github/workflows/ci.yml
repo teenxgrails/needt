@@ -195,16 +195,23 @@ jobs:
         run: npx playwright install --with-deps
       - if: needs.changes.outputs.ui == 'true'
         run: npx prisma generate && npx prisma migrate deploy
+      - name: Build visual test application
+        if: needs.changes.outputs.ui == 'true'
+        run: npm run build
       - name: Run visual and style suites
         id: visual
         if: needs.changes.outputs.ui == 'true'
         continue-on-error: true
+        env:
+          NEEDT_VISUAL_PRODUCTION_SERVER: "1"
         run: npm run test:visual && npm run test:style
       - name: Generate Linux baseline candidates
         id: baseline-candidates
         if: needs.changes.outputs.ui == 'true' && steps.visual.outcome == 'failure'
         continue-on-error: true
-        run: npm run test:visual:update
+        env:
+          NEEDT_VISUAL_PRODUCTION_SERVER: "1"
+        run: npm run test:visual:update -- --last-failed
       - name: Upload visual failure report
         if: always() && steps.visual.outcome == 'failure'
         uses: actions/upload-artifact@v4

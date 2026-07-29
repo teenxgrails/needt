@@ -1,6 +1,11 @@
 import { defineConfig } from "@playwright/test";
 
 const baseURL = process.env.TEST_BASE_URL || "http://127.0.0.1:3000";
+const useProductionServer =
+  process.env.NEEDT_VISUAL_PRODUCTION_SERVER === "1";
+const productionServerCommand = `${JSON.stringify(
+  process.execPath
+)} ./node_modules/next/dist/bin/next start`;
 
 export default defineConfig({
   testDir: "./tests/visual",
@@ -44,12 +49,13 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Keep visual CI on webpack: Next 15.3 Turbopack can terminate the dev
-    // server when BullMQ/ioredis are resolved through serverExternalPackages.
-    command: "npm run dev",
+    // CI exercises the already-built production server. Long screenshot
+    // matrices repeatedly compile most app routes and can exhaust the dev
+    // server even with a single Playwright worker.
+    command: useProductionServer ? productionServerCommand : "npm run dev",
     url: baseURL,
     reuseExistingServer: false,
-    timeout: 120_000,
+    timeout: useProductionServer ? 60_000 : 120_000,
     env: {
       ...process.env,
       NEXTAUTH_URL: baseURL,

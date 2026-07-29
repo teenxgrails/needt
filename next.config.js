@@ -32,10 +32,17 @@ const nextConfig = {
   // Needt has one unified build with the standard Next.js extensions.
   pageExtensions: ["ts", "tsx", "js", "jsx"],
 
-  // isomorphic-dompurify uses jsdom on the server. Keep both packages outside
-  // the route bundle so jsdom can resolve its runtime assets normally while
-  // Next standalone output still traces them into the image.
-  serverExternalPackages: ["isomorphic-dompurify", "jsdom"],
+  // Keep runtime-oriented CommonJS packages outside route bundles. jsdom needs
+  // its runtime assets, while googleapis pulls in a constant-time comparison
+  // helper that patches Node's SlowBuffer prototype and cannot run against
+  // webpack's browser Buffer shim during route page-data collection.
+  // Standalone output still traces these dependencies into the image.
+  serverExternalPackages: [
+    "isomorphic-dompurify",
+    "jsdom",
+    "googleapis",
+    "gaxios",
+  ],
 };
 
 module.exports = withSentryConfig(nextConfig, {

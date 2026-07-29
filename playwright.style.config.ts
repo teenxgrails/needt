@@ -1,6 +1,11 @@
 import { defineConfig } from "@playwright/test";
 
 const baseURL = process.env.TEST_BASE_URL || "http://127.0.0.1:3000";
+const useProductionServer =
+  process.env.NEEDT_VISUAL_PRODUCTION_SERVER === "1";
+const productionServerCommand = `${JSON.stringify(
+  process.execPath
+)} ./node_modules/next/dist/bin/next start`;
 
 export default defineConfig({
   testDir: "./tests/visual",
@@ -43,12 +48,12 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // Match the stable visual and E2E server path. Next 15.3 Turbopack is not
-    // reliable with the worker-side BullMQ/ioredis dependency graph.
-    command: "npm run dev",
+    // Match the visual matrix: CI runs against the prebuilt production server
+    // while local snapshot work keeps the fast development workflow.
+    command: useProductionServer ? productionServerCommand : "npm run dev",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: useProductionServer ? 60_000 : 120_000,
     env: {
       ...process.env,
       NEXTAUTH_URL: baseURL,
