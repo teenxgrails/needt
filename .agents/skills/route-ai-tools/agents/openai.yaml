@@ -1,0 +1,7 @@
+interface:
+  display_name: "Route Needt AI Tools"
+  short_description: "Автовыбор Context7, Playwright и ralphex"
+  default_prompt: "Use $route-ai-tools to select and apply the right Needt AI tooling for this task."
+
+policy:
+  allow_implicit_invocation: true

@@ -75,6 +75,21 @@ reminders, dependencies, push subscriptions, bookings — everything is keyed by
   `CHANGELOG.md` under `[unreleased]` for user-facing changes.
 - **Leave `//todo` comments in place**; add new ones for deferred work.
 
+### Automatic tool routing
+
+- **Context7:** before planning or editing anything whose correctness depends
+  on a third-party framework, library, API, or CLI, query its current docs for
+  the version installed here. Use repository search for Needt's own code.
+- **Playwright MCP:** for user-visible UI, CSS, layout, responsive, or
+  interaction changes, inspect the relevant route before and after the edit.
+  Use device-pixel screenshots for dense UI and relevant mobile widths. This
+  never replaces `npm run test:visual` or `npm run test:style`.
+- **ralphex:** use only for a human-reviewed multi-step plan whose tasks have
+  validation commands. Recommend the invocation in
+  `docs/AI-TOOLING-SETUP.md` for a suitable task wave; never start an unattended
+  run on an unreviewed plan, and handle small fixes directly in Codex.
+- Apply the decision workflow in `.agents/skills/route-ai-tools/SKILL.md`.
+
 ---
 
 ## Conventions that are easy to get wrong
