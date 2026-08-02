@@ -166,9 +166,11 @@ Local run:
 semgrep --config=auto --error
 ```
 
-Add it to CI as a separate job next to `quality-gates`. Relevant here because
-the app has public signup, a fresh rate limiter, password reset, and public
-booking endpoints — all reachable without authentication.
+Add it to CI as a separate job next to `quality-gates`. Use
+`--baseline-commit` there until the existing findings are triaged, so new
+findings fail CI without blocking the initial rollout. Relevant here because the
+app has public signup, a fresh rate limiter, password reset, and public booking
+endpoints — all reachable without authentication.
 
 ---
 
