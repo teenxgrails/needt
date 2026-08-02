@@ -1,0 +1,29 @@
+# Project-scoped Codex configuration.
+#
+# Codex merges configuration from three levels, each overriding the one above:
+#   /etc/codex/config.toml   (system)
+#   ~/.codex/config.toml     (user, or $CODEX_HOME/config.toml)
+#   .codex/config.toml       (this file — project)
+#
+# Project-level config is only read for TRUSTED projects. Each person must mark
+# this repo as trusted once in their own user config — see docs/AI-TOOLING-SETUP.md.
+#
+# Everything here is shared through git, so any teammate (or guest profile via
+# CODEX_HOME) gets the same tools without repeating the setup.
+
+# Context7 — pulls current, version-accurate library documentation on demand.
+# Rationale: the model's training data lags the repo. It has already produced
+# code against Next 15.3 while this project runs 15.5, and against an older
+# Prisma API. Context7 removes that class of error.
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+
+# Playwright MCP — lets the agent drive a real browser: navigate, click, and
+# take screenshots as structured tool calls.
+# Rationale: this project's remaining work is visual (pickers, ambient layer,
+# Focus canvas, mobile breakpoints). Without this the agent edits CSS blind and
+# can only rely on the visual-regression suite after the fact.
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
