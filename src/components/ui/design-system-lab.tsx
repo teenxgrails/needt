@@ -96,16 +96,17 @@ import {
 } from "@/components/ui/tooltip";
 
 import { APP_NAME } from "@/lib/app-config";
+import { ResolvedThemeMode, getThemeClassNames } from "@/lib/theme";
 import { cn } from "@/lib/utils";
-
-type ThemeMode = "dark" | "light";
 
 type ThemeDraft = {
   name: string;
-  mode: ThemeMode;
+  mode: ResolvedThemeMode;
   canvas: string;
   control: string;
+  controlHover: string;
   hover: string;
+  borderSubtle: string;
   border: string;
   text: string;
   textSecondary: string;
@@ -115,25 +116,14 @@ type ThemeDraft = {
 };
 
 const PRESETS: Record<string, ThemeDraft> = {
-  needt: {
-    name: "Needt dark",
-    mode: "dark",
-    canvas: "#1a1d1e",
-    control: "#262627",
-    hover: "#2b2f31",
-    border: "#323234",
-    text: "#ececee",
-    textSecondary: "#9aa0a6",
-    muted: "#6e6e75",
-    accent: "#6366f1",
-    radius: 6,
-  },
-  daylight: {
+  light: {
     name: "Needt light",
     mode: "light",
     canvas: "#f6f7fb",
     control: "#eef1f8",
-    hover: "#e4e8f1",
+    controlHover: "#e4e8f1",
+    hover: "#e9edf7",
+    borderSubtle: "#d9dde7",
     border: "#cbd2df",
     text: "#11131c",
     textSecondary: "#5d6478",
@@ -142,17 +132,34 @@ const PRESETS: Record<string, ThemeDraft> = {
     radius: 6,
   },
   graphite: {
-    name: "Graphite study",
+    name: "Needt graphite",
+    mode: "graphite",
+    canvas: "#1a1d1e",
+    control: "#262627",
+    controlHover: "#2b2f31",
+    hover: "#2b2f31",
+    borderSubtle: "#2a2a2c",
+    border: "#323234",
+    text: "#ececee",
+    textSecondary: "#9aa0a6",
+    muted: "#6e6e75",
+    accent: "#6366f1",
+    radius: 6,
+  },
+  dark: {
+    name: "Needt dark",
     mode: "dark",
-    canvas: "#181a1b",
-    control: "#242729",
-    hover: "#2c3032",
-    border: "#373c3f",
-    text: "#f0f1f1",
-    textSecondary: "#a1a7aa",
-    muted: "#71787c",
-    accent: "#4d8f7b",
-    radius: 10,
+    canvas: "#0e0e10",
+    control: "#1b1b1e",
+    controlHover: "#232327",
+    hover: "#202024",
+    borderSubtle: "#242428",
+    border: "#303036",
+    text: "#ececee",
+    textSecondary: "#9aa0a6",
+    muted: "#6e6e75",
+    accent: "#6366f1",
+    radius: 6,
   },
 };
 
@@ -190,11 +197,57 @@ const THEME_VARIABLES = [
 ] as const;
 
 const DRAFT_STORAGE_KEY = "needt:style-lab:draft";
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+const THEME_CLASS_NAMES = [
+  "light",
+  "dark",
+  "theme-gray",
+  "theme-graphite",
+  "theme-dark",
+];
+
+function parseThemeDraft(value: string): ThemeDraft | null {
+  try {
+    const draft = JSON.parse(value) as Partial<ThemeDraft>;
+    const colors = [
+      draft.canvas,
+      draft.control,
+      draft.controlHover,
+      draft.hover,
+      draft.borderSubtle,
+      draft.border,
+      draft.text,
+      draft.textSecondary,
+      draft.muted,
+      draft.accent,
+    ];
+    if (
+      typeof draft.name !== "string" ||
+      draft.name.trim().length === 0 ||
+      draft.name.length > 80 ||
+      !["light", "graphite", "dark"].includes(draft.mode ?? "") ||
+      !colors.every(
+        (color): color is string =>
+          typeof color === "string" && HEX_COLOR.test(color)
+      ) ||
+      typeof draft.radius !== "number" ||
+      !Number.isFinite(draft.radius) ||
+      draft.radius < 2 ||
+      draft.radius > 18
+    ) {
+      return null;
+    }
+    return draft as ThemeDraft;
+  } catch {
+    return null;
+  }
+}
 
 export function DesignSystemLab() {
-  const [preset, setPreset] = React.useState("needt");
-  const [draft, setDraft] = React.useState<ThemeDraft>(PRESETS.needt);
+  const [preset, setPreset] = React.useState("dark");
+  const [draft, setDraft] = React.useState<ThemeDraft>(PRESETS.dark);
   const [copyState, setCopyState] = React.useState("Copy theme CSS");
+  const [editorStatus, setEditorStatus] = React.useState("");
   const originalRootRef = React.useRef<{
     className: string;
     dataTheme: string | null;
@@ -242,7 +295,8 @@ export function DesignSystemLab() {
 
   React.useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("dark", draft.mode === "dark");
+    root.classList.remove(...THEME_CLASS_NAMES);
+    root.classList.add(...getThemeClassNames(draft.mode));
     root.setAttribute("data-theme", draft.mode);
 
     const values: Record<(typeof THEME_VARIABLES)[number], string> = {
@@ -250,10 +304,10 @@ export function DesignSystemLab() {
       "--surface-panel": draft.canvas,
       "--surface-raised": draft.canvas,
       "--surface-control": draft.control,
-      "--surface-control-hover": draft.hover,
+      "--surface-control-hover": draft.controlHover,
       "--surface-input": draft.canvas,
       "--surface-hover": draft.hover,
-      "--border-subtle": draft.border,
+      "--border-subtle": draft.borderSubtle,
       "--border-control": draft.border,
       "--text-primary": draft.text,
       "--text-secondary": draft.textSecondary,
@@ -288,23 +342,40 @@ export function DesignSystemLab() {
   };
 
   const saveDraft = () => {
-    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-    setCopyState("Draft saved locally");
-    window.setTimeout(() => setCopyState("Copy theme CSS"), 1800);
+    try {
+      window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+      setEditorStatus("Draft saved locally");
+    } catch {
+      setEditorStatus("Could not save this draft");
+    }
   };
 
   const loadDraft = () => {
-    const stored = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!stored) return;
-    const parsed = JSON.parse(stored) as ThemeDraft;
-    setPreset("custom");
-    setDraft(parsed);
+    try {
+      const stored = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      const parsed = stored ? parseThemeDraft(stored) : null;
+      if (!parsed) {
+        setEditorStatus(stored ? "Saved draft is invalid" : "No saved draft");
+        return;
+      }
+      setPreset("custom");
+      setDraft(parsed);
+      setEditorStatus("Draft loaded");
+    } catch {
+      setEditorStatus("Could not load this draft");
+    }
   };
 
   const copyThemeCss = async () => {
-    await navigator.clipboard.writeText(toThemeCss(draft));
-    setCopyState("Copied");
-    window.setTimeout(() => setCopyState("Copy theme CSS"), 1800);
+    try {
+      await navigator.clipboard.writeText(toThemeCss(draft));
+      setCopyState("Copied");
+      setEditorStatus("Theme CSS copied");
+      window.setTimeout(() => setCopyState("Copy theme CSS"), 1800);
+    } catch {
+      setCopyState("Copy failed");
+      setEditorStatus("Could not copy theme CSS");
+    }
   };
 
   return (
@@ -344,22 +415,22 @@ export function DesignSystemLab() {
                 role="group"
               >
                 <QuickThemeButton
-                  active={preset === "needt"}
-                  icon={Moon}
-                  label="Dark"
-                  onClick={() => choosePreset("needt")}
-                />
-                <QuickThemeButton
-                  active={preset === "daylight"}
+                  active={preset === "light"}
                   icon={Sun}
                   label="Light"
-                  onClick={() => choosePreset("daylight")}
+                  onClick={() => choosePreset("light")}
                 />
                 <QuickThemeButton
                   active={preset === "graphite"}
                   icon={Palette}
                   label="Graphite"
                   onClick={() => choosePreset("graphite")}
+                />
+                <QuickThemeButton
+                  active={preset === "dark"}
+                  icon={Moon}
+                  label="Dark"
+                  onClick={() => choosePreset("dark")}
                 />
               </div>
             </div>
@@ -393,8 +464,10 @@ export function DesignSystemLab() {
                     {[
                       ["Canvas", "canvas", draft.canvas],
                       ["Control", "control", draft.control],
-                      ["Hover", "hover", draft.hover],
-                      ["Border", "border", draft.border],
+                      ["Control hover", "control-hover", draft.controlHover],
+                      ["Surface hover", "hover", draft.hover],
+                      ["Divider", "border-subtle", draft.borderSubtle],
+                      ["Control border", "border", draft.border],
                       ["Text", "text", draft.text],
                       ["Accent", "accent", draft.accent],
                     ].map(([label, token, value]) => (
@@ -444,11 +517,11 @@ export function DesignSystemLab() {
                           <SelectValue placeholder="Custom draft" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="needt">Needt dark</SelectItem>
-                          <SelectItem value="daylight">Needt light</SelectItem>
+                          <SelectItem value="light">Needt light</SelectItem>
                           <SelectItem value="graphite">
-                            Graphite study
+                            Needt graphite
                           </SelectItem>
+                          <SelectItem value="dark">Needt dark</SelectItem>
                           {preset === "custom" ? (
                             <SelectItem value="custom" disabled>
                               Custom draft
@@ -469,12 +542,22 @@ export function DesignSystemLab() {
                         onChange={(value) => updateDraft("control", value)}
                       />
                       <ColorField
-                        label="Hover"
+                        label="Control hover"
+                        value={draft.controlHover}
+                        onChange={(value) => updateDraft("controlHover", value)}
+                      />
+                      <ColorField
+                        label="Surface hover"
                         value={draft.hover}
                         onChange={(value) => updateDraft("hover", value)}
                       />
                       <ColorField
-                        label="Border"
+                        label="Divider"
+                        value={draft.borderSubtle}
+                        onChange={(value) => updateDraft("borderSubtle", value)}
+                      />
+                      <ColorField
+                        label="Control border"
                         value={draft.border}
                         onChange={(value) => updateDraft("border", value)}
                       />
@@ -524,6 +607,12 @@ export function DesignSystemLab() {
                     <Button className="w-full" size="sm" onClick={copyThemeCss}>
                       <Copy /> {copyState}
                     </Button>
+                    <p
+                      aria-live="polite"
+                      className="min-h-4 text-[11px] text-[var(--text-muted)]"
+                    >
+                      {editorStatus}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -645,9 +734,7 @@ export function DesignSystemLab() {
                           {
                             value: "low",
                             label: "Low",
-                            icon: (
-                              <Flag className="text-[var(--text-muted)]" />
-                            ),
+                            icon: <Flag className="text-[var(--text-muted)]" />,
                           },
                           { value: "none", label: "No priority" },
                         ]}
@@ -1351,5 +1438,5 @@ function toThemeCss(theme: ThemeDraft) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
-  return `[data-app-theme="${slug}"] {\n  --surface-canvas: ${theme.canvas};\n  --surface-panel: var(--surface-canvas);\n  --surface-control: ${theme.control};\n  --surface-control-hover: ${theme.hover};\n  --surface-hover: ${theme.hover};\n  --border-subtle: ${theme.border};\n  --border-control: ${theme.border};\n  --text-primary: ${theme.text};\n  --text-secondary: ${theme.textSecondary};\n  --text-muted: ${theme.muted};\n  --color-accent: ${theme.accent};\n  --control-radius: ${theme.radius}px;\n}`;
+  return `[data-app-theme="${slug}"] {\n  --surface-canvas: ${theme.canvas};\n  --surface-panel: var(--surface-canvas);\n  --surface-raised: var(--surface-canvas);\n  --surface-control: ${theme.control};\n  --surface-control-hover: ${theme.controlHover};\n  --surface-input: var(--surface-canvas);\n  --surface-hover: ${theme.hover};\n  --border-subtle: ${theme.borderSubtle};\n  --border-control: ${theme.border};\n  --text-primary: ${theme.text};\n  --text-secondary: ${theme.textSecondary};\n  --text-muted: ${theme.muted};\n  --color-accent: ${theme.accent};\n  --control-radius: ${theme.radius}px;\n}`;
 }

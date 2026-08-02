@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 import {
   AlertCircle,
   Archive,
@@ -23,8 +25,6 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { notify } from "@/lib/notifications";
 
 import { StartTaskModal } from "@/components/tasks/StartTaskModal";
 import {
@@ -37,6 +37,7 @@ import {
 
 import { addDays, newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
@@ -239,7 +240,7 @@ export function CalendarTaskActionsMenu({
             className={MENU_ITEM_CLASS}
             onSelect={() => run("Complete task", () => completeTask(task.id))}
           >
-            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[var(--color-success)] text-white">
+            <span className="grid h-[18px] w-[18px] place-items-center rounded-full bg-[var(--color-success)] text-[var(--color-success-contrast)]">
               <Check className="h-3 w-3" />
             </span>
             Complete task

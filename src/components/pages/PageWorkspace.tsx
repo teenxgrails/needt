@@ -42,7 +42,6 @@ import {
   Table2,
   Undo2,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import {
   BlockIdentity,
@@ -75,6 +74,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { randomId } from "@/lib/uuid";
 
@@ -838,8 +838,8 @@ export function PageWorkspace({
     return <DatabaseWorkspace page={page} onPatch={patchPage} />;
 
   return (
-    <div className="min-h-dvh bg-[var(--app-bg)] text-[var(--text-primary)]">
-      <header className="sticky top-0 z-20 flex h-11 items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--app-bg)] px-3">
+    <div className="min-h-dvh bg-[var(--surface-canvas)] text-[var(--text-primary)]">
+      <header className="sticky top-0 z-20 flex h-11 items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-3">
         <Button
           variant="ghost"
           size="icon"

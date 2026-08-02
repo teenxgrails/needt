@@ -4,13 +4,7 @@ import AccessDeniedMessage from "@/components/auth/AccessDeniedMessage";
 import AdminOnly from "@/components/auth/AdminOnly";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { clearResendInstance } from "@/lib/email/resend";
 import { logger } from "@/lib/logger";
@@ -121,14 +115,13 @@ export function SystemSettings() {
                     </ul>
                     <span className="mt-1 block text-xs">
                       These use the URL shown in your browser. The server sends
-                      Google back to the host in{" "}
-                      <code>NEXTAUTH_URL</code>, so make sure{" "}
-                      <code>NEXTAUTH_URL</code> matches this address (otherwise
-                      Google returns <code>redirect_uri_mismatch</code>). Google
-                      also rejects bare private IPs (e.g.{" "}
-                      <code>192.168.x.x</code>) and <code>.local</code>{" "}
-                      hostnames - use <code>localhost</code> for local
-                      development or a public domain.
+                      Google back to the host in <code>NEXTAUTH_URL</code>, so
+                      make sure <code>NEXTAUTH_URL</code> matches this address
+                      (otherwise Google returns{" "}
+                      <code>redirect_uri_mismatch</code>). Google also rejects
+                      bare private IPs (e.g. <code>192.168.x.x</code>) and{" "}
+                      <code>.local</code> hostnames - use <code>localhost</code>{" "}
+                      for local development or a public domain.
                     </span>
                   </li>
                   <li>Copy the Client ID and Client Secret</li>
@@ -247,20 +240,17 @@ export function SystemSettings() {
         <SettingRow label="Homepage" description="Configure homepage behavior">
           <div className="space-y-2">
             <Label>Disable Homepage</Label>
-            <Select
+            <NeedtPicker
+              ariaLabel="Disable homepage"
               value={system.disableHomepage ? "true" : "false"}
               onValueChange={(value) =>
                 handleUpdate({ disableHomepage: value === "true" })
               }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="false">Show Homepage</SelectItem>
-                <SelectItem value="true">Redirect to Login/Calendar</SelectItem>
-              </SelectContent>
-            </Select>
+              options={[
+                { value: "false", label: "Show Homepage" },
+                { value: "true", label: "Redirect to Login/Calendar" },
+              ]}
+            />
             <p className="text-sm text-muted-foreground">
               When enabled, the homepage (/) will redirect to the login page for
               unauthenticated users or to the calendar for authenticated users.

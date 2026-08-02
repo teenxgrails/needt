@@ -3,7 +3,7 @@ export function LoadingOverlay() {
     <div className="needt-scrim absolute inset-0 z-50 flex items-center justify-center">
       <div className="needt-overlay-depth grid h-16 w-16 place-items-center rounded-lg border border-[var(--dialog-border)]">
         <svg
-          className="h-8 w-8 animate-spin text-[var(--acc-blue)]"
+          className="h-8 w-8 animate-spin text-[var(--color-accent)]"
           viewBox="0 0 24 24"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"

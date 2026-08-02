@@ -189,7 +189,7 @@ export function SetupForm() {
           </Button>
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center text-sm text-gray-500">
+      <CardFooter className="flex justify-center text-sm text-[var(--text-muted)]">
         This will set up your local planner user and migrate existing data.
       </CardFooter>
     </Card>

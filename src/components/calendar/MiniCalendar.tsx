@@ -223,7 +223,7 @@ export function MiniCalendar({
                 )}
               >
                 {today && (
-                  <span className="absolute left-1/2 top-px -translate-x-1/2 text-[4px] font-bold leading-none text-[#FF5C64]">
+                  <span className="absolute left-1/2 top-px -translate-x-1/2 text-[4px] font-bold leading-none text-[var(--color-danger)]">
                     TODAY
                   </span>
                 )}

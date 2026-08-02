@@ -23,7 +23,7 @@ test("Light, Graphite and Dark keep their palettes at every breakpoint", async (
 
   for (const theme of THEMES) {
     const themeRow = page.getByText("Theme:", { exact: true }).locator("..");
-    await themeRow.getByRole("button").click();
+    await themeRow.getByRole("combobox").click();
     await page
       .getByRole("option", {
         name:

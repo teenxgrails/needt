@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { useRouter } from "next/navigation";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,15 +14,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 
 import { useDurationMemoryStore } from "@/store/durationMemory";
 import { useTaskStore } from "@/store/task";
@@ -98,7 +93,8 @@ export function StartTaskModal({
         setConfirmOutsideWorkHours(true);
         return;
       }
-      if (!response.ok) throw new Error(result.error || "Could not start task.");
+      if (!response.ok)
+        throw new Error(result.error || "Could not start task.");
 
       // Learn the chosen duration for future similar tasks.
       remember(task.title, duration);
@@ -141,21 +137,16 @@ export function StartTaskModal({
             <label className="text-[13px] font-medium text-[var(--text-primary)]">
               How long are you going to work on this task now?
             </label>
-            <Select
+            <NeedtPicker
+              ariaLabel="Focus duration"
+              className="h-[var(--control-height-sm)]"
               value={String(duration)}
               onValueChange={(value) => setDuration(Number(value))}
-            >
-              <SelectTrigger className="h-[var(--control-height-sm)]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DURATION_OPTIONS.map((minutes) => (
-                  <SelectItem key={minutes} value={String(minutes)}>
-                    {minutes} min
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={DURATION_OPTIONS.map((minutes) => ({
+                value: String(minutes),
+                label: `${minutes} min`,
+              }))}
+            />
           </div>
 
           <label className="flex cursor-pointer items-center gap-2.5 text-[13px] text-[var(--text-primary)]">

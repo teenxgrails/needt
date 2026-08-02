@@ -4,13 +4,7 @@ import { useEffect } from "react";
 
 import { MotionRadioOption } from "@/components/settings/MotionSettingsControls";
 import { SettingsSection } from "@/components/settings/SettingsSection";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import { Switch } from "@/components/ui/switch";
 
 import { useCalendarStore } from "@/store/calendar";
@@ -118,23 +112,19 @@ export function AutoScheduleSettings() {
               <span className="text-[13px] text-[var(--text-secondary)]">
                 Calendar
               </span>
-              <Select
+              <NeedtPicker
+                ariaLabel="External tasks calendar"
+                className="h-8 w-[260px]"
                 value={autoSchedule.pushTasksFeedId || ""}
                 onValueChange={(pushTasksFeedId) =>
                   updateAutoScheduleSettings({ pushTasksFeedId })
                 }
-              >
-                <SelectTrigger className="h-8 w-[260px]">
-                  <SelectValue placeholder="Choose Google calendar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {googleFeeds.map((feed) => (
-                    <SelectItem key={feed.id} value={feed.id}>
-                      {feed.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Choose Google calendar"
+                options={googleFeeds.map((feed) => ({
+                  value: feed.id,
+                  label: feed.name,
+                }))}
+              />
             </div>
           )}
         </div>
@@ -150,7 +140,9 @@ export function AutoScheduleSettings() {
               className="h-[18px] w-[32px] [&>span]:h-3.5 [&>span]:w-3.5 [&>span]:data-[state=checked]:translate-x-3.5"
             />
             <span>Schedule a</span>
-            <Select
+            <NeedtPicker
+              ariaLabel="Break duration"
+              className="h-8 w-[72px]"
               value={String(autoSchedule.bufferMinutes)}
               onValueChange={(bufferMinutes) =>
                 updateAutoScheduleSettings({
@@ -158,35 +150,23 @@ export function AutoScheduleSettings() {
                 })
               }
               disabled={!breaksEnabled}
-            >
-              <SelectTrigger className="h-8 w-[72px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[5, 10, 15, 20, 30, 45, 60].map((minutes) => (
-                  <SelectItem key={minutes} value={String(minutes)}>
-                    {minutes}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={[5, 10, 15, 20, 30, 45, 60].map((minutes) => ({
+                value: String(minutes),
+                label: String(minutes),
+              }))}
+            />
             <span>min break every</span>
-            <Select
+            <NeedtPicker
+              ariaLabel="Break frequency"
+              className="h-8 w-[64px]"
               value={String(breakEveryHours)}
               onValueChange={(hours) => setBreakEveryHours(Number(hours))}
               disabled={!breaksEnabled}
-            >
-              <SelectTrigger className="h-8 w-[64px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4].map((hours) => (
-                  <SelectItem key={hours} value={String(hours)}>
-                    {hours}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              options={[1, 2, 3, 4].map((hours) => ({
+                value: String(hours),
+                label: String(hours),
+              }))}
+            />
             <span>hour(s)</span>
           </div>
         </div>

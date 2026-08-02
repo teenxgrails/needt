@@ -38,7 +38,7 @@ export function PagesHome() {
   };
 
   return (
-    <div className="min-h-dvh bg-[var(--app-bg)] px-6 py-10 text-[var(--text-primary)] lg:px-12">
+    <div className="min-h-dvh bg-[var(--surface-canvas)] px-6 py-10 text-[var(--text-primary)] lg:px-12">
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 flex items-end justify-between gap-4">
           <div>

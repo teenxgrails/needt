@@ -12,13 +12,13 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 import { APP_NAME } from "@/lib/app-config";
 import { newDate } from "@/lib/date-utils";
+import { notify } from "@/lib/notifications";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
@@ -226,7 +226,7 @@ export function SmartPlanningPanel() {
   return (
     <div className="space-y-4 p-4 text-sm">
       {overflowMinutes > 0 && (
-        <div className="rounded-md border border-[#323234] bg-[#262627] p-3 text-amber-100">
+        <div className="rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] p-3 text-[var(--color-warning)]">
           <div className="flex items-center gap-2 font-medium">
             <AlertTriangle className="h-4 w-4" />
             Overcommitted by{" "}
@@ -249,7 +249,7 @@ export function SmartPlanningPanel() {
         </div>
       )}
 
-      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
+      <section className="space-y-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] p-3">
         <div className="flex items-center gap-2 font-medium">
           <Brain className="h-4 w-4" />
           Brain Dump
@@ -284,7 +284,7 @@ export function SmartPlanningPanel() {
             {parsedTasks.map((task, index) => (
               <div key={`${task.title}-${index}`}>
                 <div className="font-medium">{task.title}</div>
-                <div className="text-xs text-[#9AA0A6]">
+                <div className="text-xs text-[var(--text-secondary)]">
                   {[
                     task.estimatedMinutes && `${task.estimatedMinutes}m`,
                     task.priority,
@@ -300,7 +300,7 @@ export function SmartPlanningPanel() {
         )}
       </section>
 
-      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
+      <section className="space-y-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] p-3">
         <div className="flex items-center gap-2 font-medium">
           <Zap className="h-4 w-4" />
           Energy Today
@@ -319,14 +319,14 @@ export function SmartPlanningPanel() {
               </div>
             ))
           ) : (
-            <div className="text-xs text-[#9AA0A6]">
+            <div className="text-xs text-[var(--text-secondary)]">
               No energy windows set for today.
             </div>
           )}
         </div>
       </section>
 
-      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
+      <section className="space-y-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] p-3">
         <div className="flex items-center gap-2 font-medium">
           <Clock className="h-4 w-4" />
           Time-Blindness Buffer
@@ -338,7 +338,7 @@ export function SmartPlanningPanel() {
         {nextTask && (
           <div className="needt-panel-depth rounded-md border border-[var(--border-control)] p-2">
             <div className="font-medium">Next: {nextTask.title}</div>
-            <div className="text-xs text-[#9AA0A6]">
+            <div className="text-xs text-[var(--text-secondary)]">
               Raw{" "}
               {minutesLabel(
                 nextTask.estimatedMinutes || nextTask.duration || 30
@@ -355,7 +355,7 @@ export function SmartPlanningPanel() {
         )}
       </section>
 
-      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
+      <section className="space-y-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] p-3">
         <div className="flex items-center gap-2 font-medium">
           <TrendingUp className="h-4 w-4" />
           Calibration
@@ -372,11 +372,11 @@ export function SmartPlanningPanel() {
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium">{context.contextTag}</span>
-              <span className="text-xs text-[#9AA0A6]">
+              <span className="text-xs text-[var(--text-secondary)]">
                 {context.factor.toFixed(1)}x
               </span>
             </div>
-            <div className="mt-1 text-xs text-[#9AA0A6]">
+            <div className="mt-1 text-xs text-[var(--text-secondary)]">
               {context.completedCount} tasks ·{" "}
               {context.overUnderPercent >= 0 ? "+" : ""}
               {context.overUnderPercent}% vs likely · {context.trend}
@@ -385,7 +385,7 @@ export function SmartPlanningPanel() {
         ))}
       </section>
 
-      <section className="space-y-2 rounded-md border border-[#323234] bg-[#262627] p-3">
+      <section className="space-y-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] p-3">
         <Button
           type="button"
           className="w-full"
@@ -403,7 +403,7 @@ export function SmartPlanningPanel() {
           <Moon className="mr-2 h-4 w-4" />
           Shutdown Ritual
         </Button>
-        <div className="flex items-center gap-2 text-xs text-[#9AA0A6]">
+        <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
           <CheckCircle2 className="h-3 w-3" />
           Review done, roll unfinished work, then reschedule.
         </div>

@@ -25,7 +25,7 @@ export default async function SignInPage() {
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h1 className="text-3xl font-bold">Sign in to {APP_NAME}</h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
             Manage your calendar and tasks efficiently
           </p>
         </div>

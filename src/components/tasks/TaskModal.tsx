@@ -23,7 +23,6 @@ import {
   UserRound,
 } from "lucide-react";
 import { RRule } from "rrule";
-import { notify } from "@/lib/notifications";
 
 import { CalendarItemTypeSwitch } from "@/components/calendar/CalendarItemTypeSwitch";
 import {
@@ -32,8 +31,8 @@ import {
   CALENDAR_EDITOR_FORM_CLASS,
   CALENDAR_EDITOR_MAIN_FOOTER_CLASS,
 } from "@/components/calendar/calendar-editor-shell";
-import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { TaskDependenciesSection } from "@/components/tasks/TaskDependenciesSection";
+import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -53,17 +52,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
 import { format, formatToLocalISOString, newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 import { readTaskDefaults, resolveTaskDefaultDate } from "@/lib/task-defaults";
 import { taskDescriptionToPlainText } from "@/lib/task-description-format";
 import { cn } from "@/lib/utils";
@@ -1183,7 +1176,7 @@ export function TaskModal({
                     <button
                       type="button"
                       onClick={() => setEstLikely(String(suggestedLikely))}
-                      className="text-left text-[var(--accent)] hover:underline"
+                      className="text-left text-[var(--color-accent)] hover:underline"
                     >
                       Use {suggestedLikely} min from similar tasks
                     </button>
@@ -1212,69 +1205,58 @@ export function TaskModal({
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label>Scheduling priority</Label>
-                      <Select
+                      <NeedtPicker
+                        ariaLabel="Scheduling priority"
+                        className="mt-1"
                         value={priorityLevel}
                         onValueChange={(value) =>
                           setPriorityLevel(value as SchedulingTaskPriority)
                         }
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(SchedulingTaskPriority).map(
-                            (value) => (
-                              <SelectItem key={value} value={value}>
-                                {formatEnumValue(value)}
-                              </SelectItem>
-                            )
-                          )}
-                        </SelectContent>
-                      </Select>
+                        options={Object.values(SchedulingTaskPriority).map(
+                          (value) => ({
+                            value,
+                            label: formatEnumValue(value),
+                          })
+                        )}
+                      />
                     </div>
                     <div>
                       <Label>Focus required</Label>
-                      <Select
+                      <NeedtPicker
+                        ariaLabel="Focus required"
+                        className="mt-1"
                         value={energyRequired}
                         onValueChange={(value) =>
                           setEnergyRequired(value as SchedulingEnergyLevel)
                         }
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(SchedulingEnergyLevel).map((value) => (
-                            <SelectItem key={value} value={value}>
-                              {formatEnumValue(value)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={Object.values(SchedulingEnergyLevel).map(
+                          (value) => ({
+                            value,
+                            label: formatEnumValue(value),
+                          })
+                        )}
+                      />
                     </div>
                   </div>
                   <div>
                     <Label>Best personal energy</Label>
-                    <Select
+                    <NeedtPicker
+                      ariaLabel="Best personal energy"
+                      className="mt-1"
                       value={energyLevel || "none"}
                       onValueChange={(value) =>
                         setEnergyLevel(
                           value === "none" ? "" : (value as EnergyLevel)
                         )
                       }
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Any energy window</SelectItem>
-                        {Object.values(EnergyLevel).map((value) => (
-                          <SelectItem key={value} value={value}>
-                            {formatEnumValue(value)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: "none", label: "Any energy window" },
+                        ...Object.values(EnergyLevel).map((value) => ({
+                          value,
+                          label: formatEnumValue(value),
+                        })),
+                      ]}
+                    />
                   </div>
                   <label className="flex items-center justify-between gap-3 rounded-md bg-[var(--surface-control)] px-3 py-2.5">
                     <span>

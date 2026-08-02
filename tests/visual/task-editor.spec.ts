@@ -137,6 +137,9 @@ test("calendar plus opens Task directly and switches into the shared Event edito
     "true"
   );
   await expect(eventModal.getByTestId("task-description-editor")).toBeVisible();
+  await expect(eventModal.getByTestId("calendar-select")).toContainText(
+    "Select a calendar"
+  );
   await expect(
     eventModal.getByRole("button", { name: "Choose event start" })
   ).toBeVisible();

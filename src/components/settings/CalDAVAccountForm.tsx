@@ -221,7 +221,7 @@ export function CalDAVAccountForm({
     if (!testResults) return null;
 
     return (
-      <div className="mt-4 rounded-md border bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+      <div className="mt-4 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-control)] p-4">
         <h3 className="mb-2 font-medium">Connection Test Results</h3>
 
         {testResults.steps &&
@@ -245,7 +245,7 @@ export function CalDAVAccountForm({
                 </span>
                 <span className="font-medium">{step.step}</span>
                 {step.status === "success" && step.calendars !== undefined && (
-                  <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                  <span className="ml-2 text-sm text-[var(--text-secondary)]">
                     ({step.calendars} calendars found)
                   </span>
                 )}
@@ -258,7 +258,7 @@ export function CalDAVAccountForm({
               )}
 
               {step.calendarNames && step.calendarNames.length > 0 && (
-                <div className="ml-6 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                <div className="ml-6 mt-1 text-sm text-[var(--text-secondary)]">
                   Calendars: {step.calendarNames.join(", ")}
                 </div>
               )}

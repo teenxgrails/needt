@@ -776,7 +776,7 @@ function GroupRows({
                   className={cn(
                     "grid h-4 w-4 flex-none place-items-center rounded-full border transition-colors",
                     task.status === TaskStatus.COMPLETED
-                      ? "border-[var(--color-success)] bg-[var(--color-success)] text-white"
+                      ? "border-[var(--color-success)] bg-[var(--color-success)] text-[var(--color-success-contrast)]"
                       : "border-[var(--text-muted)] hover:border-[var(--text-primary)]"
                   )}
                 >

@@ -37,7 +37,7 @@ interface QuickTip {
 
 function TipKey({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="mx-0.5 inline-flex rounded border border-[var(--line-strong)] bg-[var(--app-bg)] px-1.5 py-0.5 text-[11px] font-medium leading-none text-[var(--text-hi)]">
+    <kbd className="mx-0.5 inline-flex rounded border border-[var(--border-control)] bg-[var(--surface-canvas)] px-1.5 py-0.5 text-[11px] font-medium leading-none text-[var(--text-primary)]">
       {children}
     </kbd>
   );
@@ -201,12 +201,12 @@ export function CommandPaletteHint() {
       aria-label={tip.title}
       className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-50 w-[min(22rem,calc(100vw-2rem))] animate-in fade-in slide-in-from-bottom-2 duration-200 motion-reduce:animate-none lg:bottom-5 lg:right-5"
     >
-      <div className="overflow-hidden rounded-lg border border-[var(--line-strong)] bg-[var(--raised)] text-[var(--text-hi)] shadow-lg">
-        <div className="h-0.5 bg-[var(--accent)]" />
+      <div className="overflow-hidden rounded-lg border border-[var(--border-control)] bg-[var(--surface-raised)] text-[var(--text-primary)] shadow-lg">
+        <div className="h-0.5 bg-[var(--color-accent)]" />
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2 text-[13px] font-semibold">
-              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--active)] text-[var(--accent)]">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--surface-hover)] text-[var(--color-accent)]">
                 <Icon className="h-4 w-4" strokeWidth={1.8} />
               </span>
               {tip.title}
@@ -214,14 +214,14 @@ export function CommandPaletteHint() {
             <button
               type="button"
               onClick={dismissHint}
-              className="-mr-1 -mt-1 rounded-md p-1 text-[var(--text-lo)] transition-colors hover:bg-[var(--active)] hover:text-[var(--text-hi)] focus:outline-none"
+              className="-mr-1 -mt-1 rounded-md p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus:outline-none"
               aria-label="Dismiss quick tip"
             >
               <X className="h-4 w-4" strokeWidth={1.8} />
             </button>
           </div>
 
-          <p className="mt-3 text-[13px] leading-5 text-[var(--text-lo)]">
+          <p className="mt-3 text-[13px] leading-5 text-[var(--text-secondary)]">
             {tip.body}
           </p>
 

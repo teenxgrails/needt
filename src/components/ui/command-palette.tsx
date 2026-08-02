@@ -36,7 +36,7 @@ function FuzzyHighlight({ text, query }: { text: string; query: string }) {
         matchedIndexes.has(index) ? (
           <mark
             key={`${character}-${index}`}
-            className="bg-transparent font-semibold text-white"
+            className="bg-transparent font-semibold text-[var(--color-accent-contrast)]"
           >
             {character}
           </mark>
@@ -169,20 +169,20 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <Command
                 shouldFilter={false}
                 className={cn(
-                  "command-palette-root needt-overlay-depth overflow-hidden rounded-lg border border-[var(--line-strong)] text-[var(--text-hi)] shadow-lg"
+                  "command-palette-root needt-overlay-depth overflow-hidden rounded-lg border border-[var(--border-control)] text-[var(--text-primary)] shadow-lg"
                 )}
               >
-                <div className="flex items-center border-b border-[var(--line-strong)] px-3">
-                  <HiOutlineSearch className="h-5 w-5 text-[var(--text-lo)]" />
+                <div className="flex items-center border-b border-[var(--border-control)] px-3">
+                  <HiOutlineSearch className="h-5 w-5 text-[var(--text-secondary)]" />
                   <Command.Input
                     placeholder="Type a command or search..."
-                    className="h-12 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-[var(--text-lo)]"
+                    className="h-12 flex-1 bg-transparent px-3 text-base outline-none placeholder:text-[var(--text-muted)]"
                     value={search}
                     onValueChange={setSearch}
                   />
                   {search && (
                     <button
-                      className="text-[var(--text-lo)] hover:text-[var(--text-hi)]"
+                      className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                       onClick={() => setSearch("")}
                       aria-label="Clear search"
                     >
@@ -190,13 +190,13 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     </button>
                   )}
                   {!search && (
-                    <kbd className="hidden items-center gap-1 rounded bg-[var(--app-bg)] px-2 py-0.5 text-xs text-[var(--text-lo)] sm:flex">
+                    <kbd className="hidden items-center gap-1 rounded bg-[var(--surface-canvas)] px-2 py-0.5 text-xs text-[var(--text-secondary)] sm:flex">
                       <span className="text-xs">⌘</span>
                       <span>K</span>
                     </kbd>
                   )}
                   <Dialog.Close
-                    className="ml-2 p-2 text-[var(--text-lo)] hover:text-[var(--text-hi)]"
+                    className="ml-2 p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     aria-label="Close command menu"
                   >
                     <HiX className="h-5 w-5" />
@@ -205,60 +205,60 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
                 <Command.List className="max-h-[300px] overflow-y-auto p-2">
                   {!search && !showAllCommands && (
-                    <div className="px-2 py-3 text-sm text-[var(--text-lo)]">
+                    <div className="px-2 py-3 text-sm text-[var(--text-secondary)]">
                       <p className="mb-2">
                         Start typing to search commands or try these:
                       </p>
                       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                         <div
-                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--active)]"
+                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--surface-hover)]"
                           onClick={() => {
                             executeCommand("navigation.calendar");
                             onOpenChange(false);
                           }}
                         >
-                          <HiOutlineCalendar className="h-4 w-4 text-[var(--text-lo)]" />
+                          <HiOutlineCalendar className="h-4 w-4 text-[var(--text-secondary)]" />
                           <span className="text-sm">Go to Calendar</span>
-                          <kbd className="ml-auto rounded bg-[var(--app-bg)] px-1.5 py-0.5 text-xs">
+                          <kbd className="ml-auto rounded bg-[var(--surface-canvas)] px-1.5 py-0.5 text-xs">
                             gc
                           </kbd>
                         </div>
                         <div
-                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--active)]"
+                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--surface-hover)]"
                           onClick={() => {
                             executeCommand("navigation.tasks");
                             onOpenChange(false);
                           }}
                         >
-                          <HiOutlineClipboardList className="h-4 w-4 text-[var(--text-lo)]" />
+                          <HiOutlineClipboardList className="h-4 w-4 text-[var(--text-secondary)]" />
                           <span className="text-sm">Go to Tasks</span>
-                          <kbd className="ml-auto rounded bg-[var(--app-bg)] px-1.5 py-0.5 text-xs">
+                          <kbd className="ml-auto rounded bg-[var(--surface-canvas)] px-1.5 py-0.5 text-xs">
                             gt
                           </kbd>
                         </div>
                         <div
-                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--active)]"
+                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--surface-hover)]"
                           onClick={() => {
                             executeCommand("navigation.focus");
                             onOpenChange(false);
                           }}
                         >
-                          <HiOutlineLightningBolt className="h-4 w-4 text-[var(--text-lo)]" />
+                          <HiOutlineLightningBolt className="h-4 w-4 text-[var(--text-secondary)]" />
                           <span className="text-sm">Go to Focus</span>
-                          <kbd className="ml-auto rounded bg-[var(--app-bg)] px-1.5 py-0.5 text-xs">
+                          <kbd className="ml-auto rounded bg-[var(--surface-canvas)] px-1.5 py-0.5 text-xs">
                             gf
                           </kbd>
                         </div>
                         <div
-                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--active)]"
+                          className="flex cursor-pointer items-center gap-2 rounded-md p-2 hover:bg-[var(--surface-hover)]"
                           onClick={() => {
                             executeCommand("navigation.settings");
                             onOpenChange(false);
                           }}
                         >
-                          <HiOutlineCog className="h-4 w-4 text-[var(--text-lo)]" />
+                          <HiOutlineCog className="h-4 w-4 text-[var(--text-secondary)]" />
                           <span className="text-sm">Go to Settings</span>
-                          <kbd className="ml-auto rounded bg-[var(--app-bg)] px-1.5 py-0.5 text-xs">
+                          <kbd className="ml-auto rounded bg-[var(--surface-canvas)] px-1.5 py-0.5 text-xs">
                             gs
                           </kbd>
                         </div>
@@ -267,7 +267,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                       <div className="mt-4 flex justify-center">
                         <button
                           onClick={() => setShowAllCommands(true)}
-                          className="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--active)]"
+                          className="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--surface-hover)]"
                         >
                           <HiOutlineCollection className="h-4 w-4" />
                           Show all commands
@@ -276,7 +276,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     </div>
                   )}
 
-                  <Command.Empty className="py-6 text-center text-sm text-[var(--text-lo)]">
+                  <Command.Empty className="py-6 text-center text-sm text-[var(--text-secondary)]">
                     No results found. Try a different search term.
                   </Command.Empty>
 
@@ -297,7 +297,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                                 index={commandIndex}
                               >
                                 <Command.Item
-                                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[var(--active)] aria-selected:text-[var(--text-hi)]"
+                                  className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm aria-selected:bg-[var(--surface-hover)] aria-selected:text-[var(--text-primary)]"
                                   onSelect={() => {
                                     executeCommand(command.id);
                                     onOpenChange(false);
@@ -311,7 +311,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                                     />
                                   </span>
                                   {command.shortcut && (
-                                    <kbd className="ml-auto text-xs text-[var(--text-lo)]">
+                                    <kbd className="ml-auto text-xs text-[var(--text-secondary)]">
                                       {formatShortcut(command.shortcut)}
                                     </kbd>
                                   )}
@@ -336,7 +336,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                               onOpenChange(false);
                             }}
                           >
-                            <span className="w-14 text-xs text-[#9AA0A6]">
+                            <span className="w-14 text-xs text-[var(--text-secondary)]">
                               {result.type}
                             </span>
                             <span>

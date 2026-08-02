@@ -111,16 +111,18 @@ export function DndProvider({ children }: DndProviderProps) {
       >
         {activeTask ? (
           <motion.div
-            initial={prefersReducedMotion ? false : { opacity: 0.8, scale: 0.98 }}
+            initial={
+              prefersReducedMotion ? false : { opacity: 0.8, scale: 0.98 }
+            }
             animate={{ opacity: 0.98, scale: prefersReducedMotion ? 1 : 1.03 }}
             transition={prefersReducedMotion ? quickEase : springSnappy}
-            className="flex min-w-56 max-w-80 items-center gap-2 rounded-md border border-[#4A4F52] bg-[#303335] px-3 py-2 text-[#F4F5F6] shadow-[0_12px_30px_rgba(0,0,0,0.32)]"
+            className="needt-overlay-shadow flex min-w-56 max-w-80 items-center gap-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-3 py-2 text-[var(--text-primary)]"
           >
-            <HiCheckCircle className="h-4 w-4 shrink-0 text-[#A9B0B5]" />
+            <HiCheckCircle className="h-4 w-4 shrink-0 text-[var(--text-secondary)]" />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
               {activeTask.title}
             </span>
-            <span className="flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-[#A1A7AC]">
+            <span className="flex shrink-0 items-center gap-1 text-[11px] tabular-nums text-[var(--text-secondary)]">
               <HiClock className="h-3.5 w-3.5" />
               {activeTask.duration ?? activeTask.estimatedMinutes ?? 30}m
             </span>

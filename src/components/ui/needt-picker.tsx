@@ -18,8 +18,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { useIsMobile } from "@/hooks/use-is-mobile";
 import { cn } from "@/lib/utils";
+
+import { useIsMobile } from "@/hooks/use-is-mobile";
 
 export type NeedtPickerMode = "plain" | "searchable" | "creatable";
 
@@ -40,6 +41,8 @@ export interface NeedtPickerProps {
   defaultValue?: string;
   valueLabel?: string;
   onValueChange?: (value: string) => void;
+  onOpenChange?: (open: boolean) => void;
+  onTriggerClick?: React.MouseEventHandler<HTMLButtonElement>;
   onCreate?: (value: string) => void;
   createLabel?: (input: string) => string;
   label?: string;
@@ -51,6 +54,8 @@ export interface NeedtPickerProps {
   header?: React.ReactNode;
   footer?: React.ReactNode;
   ariaLabel?: string;
+  triggerId?: string;
+  testId?: string;
   disabled?: boolean;
   className?: string;
   contentClassName?: string;
@@ -71,6 +76,8 @@ export function NeedtPicker({
   defaultValue,
   valueLabel,
   onValueChange,
+  onOpenChange,
+  onTriggerClick,
   onCreate,
   createLabel,
   label,
@@ -82,6 +89,8 @@ export function NeedtPicker({
   header,
   footer,
   ariaLabel,
+  triggerId,
+  testId,
   disabled,
   className,
   contentClassName,
@@ -94,6 +103,7 @@ export function NeedtPicker({
   const [uncontrolledValue, setUncontrolledValue] = React.useState(
     defaultValue ?? ""
   );
+  const listboxId = React.useId();
   const isMobile = useIsMobile(640);
   const currentValue = value ?? uncontrolledValue;
   const mode =
@@ -105,6 +115,10 @@ export function NeedtPicker({
         : "plain");
   const variant = triggerVariant ?? (label ? "inline" : "field");
   const selected = options.find((option) => option.value === currentValue);
+  const displayValue =
+    valueLabel !== undefined
+      ? valueLabel
+      : (selected?.label ?? (currentValue || placeholder));
   const normalizedQuery = query.trim().toLowerCase();
   const visibleOptions =
     mode === "plain" || !normalizedQuery
@@ -126,7 +140,13 @@ export function NeedtPicker({
   const close = React.useCallback(() => {
     setOpen(false);
     setQuery("");
-  }, []);
+    onOpenChange?.(false);
+  }, [onOpenChange]);
+
+  const openPicker = () => {
+    setOpen(true);
+    onOpenChange?.(true);
+  };
 
   const commit = (nextValue: string) => {
     if (value === undefined) setUncontrolledValue(nextValue);
@@ -212,11 +232,16 @@ export function NeedtPicker({
 
   const trigger = (
     <button
+      id={triggerId}
+      data-testid={testId}
       type="button"
+      role="combobox"
       aria-label={ariaLabel ?? label}
       aria-haspopup="listbox"
       aria-expanded={open}
+      aria-controls={listboxId}
       disabled={disabled}
+      onClick={onTriggerClick}
       className={cn(
         "needt-motion-control inline-flex items-center gap-2 text-left text-[var(--text-primary)] outline-none transition-colors focus-visible:border-[var(--border-control)] disabled:cursor-not-allowed disabled:opacity-50",
         variant === "inline"
@@ -227,9 +252,7 @@ export function NeedtPicker({
     >
       <span className="flex min-w-0 items-center gap-2">
         {icon ?? selected?.icon}
-        <span className="truncate">
-          {valueLabel ?? selected?.label ?? currentValue ?? placeholder}
-        </span>
+        <span className="truncate">{displayValue}</span>
       </span>
       {(showChevron ?? variant === "field") && (
         <ChevronDown className="h-4 w-4 flex-none text-[var(--text-secondary)]" />
@@ -238,27 +261,35 @@ export function NeedtPicker({
   );
 
   const picker = isMobile ? (
-    <BottomSheet open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
+    <BottomSheet
+      open={open}
+      onOpenChange={(next) => (next ? openPicker() : close())}
+    >
       <BottomSheetTrigger asChild>{trigger}</BottomSheetTrigger>
       <BottomSheetContent className="overflow-hidden p-0">
         <div className="px-4 pb-3">
-          <BottomSheetTitle>{label ?? ariaLabel ?? placeholder}</BottomSheetTitle>
+          <BottomSheetTitle>
+            {label ?? ariaLabel ?? placeholder}
+          </BottomSheetTitle>
           <BottomSheetDescription>
             Choose a value from the available options.
           </BottomSheetDescription>
         </div>
-        <div role="listbox">{optionList}</div>
+        <div id={listboxId} role="listbox">
+          {optionList}
+        </div>
       </BottomSheetContent>
     </BottomSheet>
   ) : (
     <Popover
       open={open}
-      onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : close())}
+      onOpenChange={(nextOpen) => (nextOpen ? openPicker() : close())}
     >
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         align={align}
         sideOffset={8}
+        id={listboxId}
         role="listbox"
         className={cn(
           "w-[320px] overflow-hidden border-[var(--popover-border)] bg-[var(--popover-bg)] p-0 text-[var(--text-primary)] needt-overlay-shadow",

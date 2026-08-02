@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link2, Loader2, Plus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { notify } from "@/lib/notifications";
 
@@ -94,19 +95,18 @@ export function TaskDependenciesSection({ taskId }: { taskId: string }) {
       ) : (
         <>
           <div className="flex gap-2">
-            <select
+            <NeedtPicker
+              mode="searchable"
               value={selected}
-              onChange={(event) => setSelected(event.target.value)}
+              onValueChange={setSelected}
               className="min-h-11 min-w-0 flex-1 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 text-[13px]"
-              aria-label="Choose a blocking task"
-            >
-              <option value="">Choose blocker…</option>
-              {choices.map((task) => (
-                <option key={task.id} value={task.id}>
-                  {task.title}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Choose a blocking task"
+              placeholder="Choose blocker…"
+              options={choices.map((task) => ({
+                value: task.id,
+                label: task.title,
+              }))}
+            />
             <Button
               type="button"
               size="icon"

@@ -12,15 +12,14 @@ export default function NotFound() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
+    <div className="needt-page-depth flex min-h-screen flex-col items-center justify-center p-4 text-center text-[var(--text-primary)]">
       <h1 className="mb-4 text-4xl font-bold">404 - Page Not Found</h1>
       <p className="mb-6">
-        The page you&apos;re looking for doesn&apos;t exist or has been
-        moved.
+        The page you&apos;re looking for doesn&apos;t exist or has been moved.
       </p>
       <Link
         href="/"
-        className="rounded bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+        className="rounded-[var(--control-radius)] border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-4 py-2 text-[var(--button-primary-fg)] transition-colors hover:bg-[var(--button-primary-bg-hover)]"
       >
         Return Home
       </Link>
@@ -29,7 +28,7 @@ export default function NotFound() {
         target="_blank"
         rel="noopener noreferrer"
         title="View this version on GitHub"
-        className="mt-8 text-xs text-gray-500 transition-colors hover:text-gray-700 hover:underline"
+        className="mt-8 text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] hover:underline"
       >
         v{getAppVersion()}
       </a>

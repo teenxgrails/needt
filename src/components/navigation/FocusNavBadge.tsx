@@ -31,7 +31,7 @@ export function FocusNavBadge({ collapsed = false }: { collapsed?: boolean }) {
 
 function cnBadge(paused: boolean): string {
   return [
-    "rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-white max-lg:hidden",
+    "rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-[var(--color-success-contrast)] max-lg:hidden",
     paused
       ? "bg-[var(--surface-control)] text-[var(--text-secondary)]"
       : "bg-[var(--color-accent)]",

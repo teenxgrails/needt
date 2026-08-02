@@ -55,7 +55,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
       </head>
-      <body className="flex h-full flex-col bg-[var(--bg-0)] antialiased">
+      <body className="flex h-full flex-col bg-[var(--surface-canvas)] antialiased">
         <MotionRuntime />
         <AmbientBackdrop />
         <div className="relative z-10 flex min-h-full flex-col">

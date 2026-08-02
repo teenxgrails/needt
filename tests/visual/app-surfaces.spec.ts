@@ -32,7 +32,7 @@ async function useVisualTheme(
 test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await page.addInitScript(() => {
-    localStorage.setItem("mina:quick-tip:last-shown-at", String(Date.now()));
+    localStorage.setItem("needt:quick-tip:last-shown-at", String(Date.now()));
     localStorage.setItem("needt-visit-count", "0");
   });
   await signInVisualUser(page);
@@ -163,7 +163,7 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
 test("primary app surfaces stay coherent in light mode", async ({ page }) => {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await page.addInitScript(() => {
-    localStorage.setItem("mina:quick-tip:last-shown-at", "9999999999999");
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
     localStorage.setItem("needt-visit-count", "0");
   });
   await signInVisualUser(page);

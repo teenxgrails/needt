@@ -10,12 +10,7 @@ import {
 } from "react-icons/hi";
 
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { format, newDate } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
@@ -74,7 +69,8 @@ export function TaskRow({
       </td>
       <td className="whitespace-nowrap px-3 py-2">
         <div className="flex items-center gap-2">
-          <Select
+          <NeedtPicker
+            ariaLabel="Task status"
             value={task.status}
             onValueChange={(value) => {
               onStatusChange(task.id, value as TaskStatus);
@@ -90,11 +86,10 @@ export function TaskRow({
                 }, 100);
               }
             }}
-          >
-            <SelectTrigger
-              className="h-8 border-none bg-transparent p-0 shadow-none hover:bg-transparent focus:ring-0"
-              onClick={(e) => e.stopPropagation()}
-            >
+            onTriggerClick={(event) => event.stopPropagation()}
+            className="h-8 border-none bg-transparent p-0 shadow-none hover:bg-transparent"
+            valueLabel=""
+            icon={
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-xs font-medium",
@@ -103,22 +98,13 @@ export function TaskRow({
               >
                 {formatEnumValue(task.status)}
               </span>
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(TaskStatus).map((status) => (
-                <SelectItem key={status} value={status}>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-medium",
-                      statusColors[status]
-                    )}
-                  >
-                    {formatEnumValue(status)}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            }
+            options={Object.values(TaskStatus).map((status) => ({
+              value: status,
+              label: formatEnumValue(status),
+            }))}
+            showChevron={false}
+          />
           <Button
             size="sm"
             variant="ghost"
@@ -157,7 +143,7 @@ export function TaskRow({
           />
 
           {isFutureTask && (
-            <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-xs text-muted-foreground">
+            <span className="rounded-full bg-[var(--surface-control)] px-1.5 py-0.5 text-xs text-[var(--text-muted)]">
               Upcoming
             </span>
           )}

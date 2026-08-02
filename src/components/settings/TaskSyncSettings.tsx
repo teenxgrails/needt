@@ -8,7 +8,6 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -24,18 +23,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { APP_NAME } from "@/lib/app-config";
 import { format } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 
 import { useProjectStore } from "@/store/project";
 import { useSettingsStore } from "@/store/settings";
@@ -547,24 +541,19 @@ export function TaskSyncSettings() {
           ) : (
             <>
               {providers.length > 0 ? (
-                <Select
+                <NeedtPicker
+                  ariaLabel="Task provider"
                   value={selectedProvider?.id || ""}
                   onValueChange={(value) => {
                     const provider = providers.find((p) => p.id === value);
                     setSelectedProvider(provider || null);
                   }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map((provider) => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.name} ({provider.accountEmail})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select a provider"
+                  options={providers.map((provider) => ({
+                    value: provider.id,
+                    label: `${provider.name} (${provider.accountEmail})`,
+                  }))}
+                />
               ) : (
                 <Alert>
                   <AlertTitle>No Task Providers</AlertTitle>
@@ -599,21 +588,17 @@ export function TaskSyncSettings() {
                         </div>
                         <div className="grid gap-2">
                           <Label htmlFor="account">Account</Label>
-                          <Select
+                          <NeedtPicker
+                            triggerId="account"
+                            ariaLabel="Task provider account"
                             value={selectedAccount}
                             onValueChange={setSelectedAccount}
-                          >
-                            <SelectTrigger id="account">
-                              <SelectValue placeholder="Select an account" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {unusedAccounts.map((account) => (
-                                <SelectItem key={account.id} value={account.id}>
-                                  {account.email} ({account.provider})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            placeholder="Select an account"
+                            options={unusedAccounts.map((account) => ({
+                              value: account.id,
+                              label: `${account.email} (${account.provider})`,
+                            }))}
+                          />
                         </div>
                       </div>
                       <DialogFooter>
@@ -822,34 +807,22 @@ export function TaskSyncSettings() {
                             Not mapped to any project
                           </div>
                           <div className="flex flex-col space-y-2">
-                            <Select
+                            <NeedtPicker
+                              ariaLabel="Map task list to project"
+                              className="w-[180px]"
                               disabled={
                                 isLoading || projectOptions.length === 0
                               }
                               onValueChange={(projectId) =>
                                 createMapping(list.id, projectId)
                               }
-                            >
-                              <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Map to existing project" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {projectOptions.length === 0 ? (
-                                  <SelectItem value="none" disabled>
-                                    No projects available
-                                  </SelectItem>
-                                ) : (
-                                  projectOptions.map((project) => (
-                                    <SelectItem
-                                      key={project.value}
-                                      value={project.value}
-                                    >
-                                      {project.label}
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
+                              placeholder={
+                                projectOptions.length === 0
+                                  ? "No projects available"
+                                  : "Map to existing project"
+                              }
+                              options={projectOptions}
+                            />
                             <Button
                               variant="outline"
                               size="sm"

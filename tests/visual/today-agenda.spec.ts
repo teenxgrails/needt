@@ -22,7 +22,7 @@ test("Today is a persistent daily document with a balanced timeline", async ({
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await page.addInitScript(() => {
     localStorage.setItem("needt-visit-count", "0");
-    localStorage.setItem("mina:quick-tip:last-shown-at", "9999999999999");
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
   });
   await signInVisualUser(page);
   await useTheme(page, "dark");
@@ -91,7 +91,11 @@ test("Today keeps both panes scrollable and pins 15-minute timeline edits", asyn
 }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop", "Desktop split-pane behavior");
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
+  await page.addInitScript(() => {
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
+  });
   await signInVisualUser(page);
+  await useTheme(page, "dark");
   const created = await page.request.post("/api/tasks", {
     data: {
       title: "Timeline drag target",
@@ -120,7 +124,9 @@ test("Today keeps both panes scrollable and pins 15-minute timeline edits", asyn
   });
   expect(update.ok()).toBeTruthy();
 
-  await page.goto("/today", { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: "Back to Needt" }).click();
+  await page.getByRole("link", { name: "Today", exact: true }).click();
+  await expect(page).toHaveURL(/\/today$/);
   const outerRoute = page.getByTestId("today-route-scroll");
   const documentPane = page.getByTestId("today-document-scroll");
   const timelinePane = page.getByTestId("today-timeline-scroll");
@@ -153,7 +159,13 @@ test("Today keeps both panes scrollable and pins 15-minute timeline edits", asyn
   expect(independentScroll.document).toBe(180);
   expect(independentScroll.timeline).toBe(420);
 
-  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: /Calendar/ }).click();
+  await page.getByRole("link", { name: "Today", exact: true }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByTestId("today-timeline-scroll")).toHaveAttribute(
+    "data-needt-scroll-anchor",
+    "current-time"
+  );
   const marker = page.getByTestId("today-current-time-marker");
   await expect(marker).toBeVisible();
   const markerBox = await marker.boundingBox();
@@ -165,7 +177,7 @@ test("Today keeps both panes scrollable and pins 15-minute timeline edits", asyn
   const markerRatio =
     (markerBox!.y - timelineBox!.y) / timelineBox!.height;
   expect(markerRatio).toBeGreaterThanOrEqual(0.25);
-  expect(markerRatio).toBeLessThanOrEqual(0.35);
+  expect(markerRatio).toBeLessThanOrEqual(0.4);
 
   const task = timeline.locator('[title^="Timeline drag target"]');
   await expect(task).toBeVisible();

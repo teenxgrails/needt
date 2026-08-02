@@ -3,7 +3,7 @@ import { encode } from "next-auth/jwt";
 
 import { prisma } from "@/lib/prisma";
 
-import { VISUAL_TEST_EMAIL } from "./fixtures";
+import { VISUAL_TEST_EMAIL, VISUAL_TEST_PAGE_ID } from "./fixtures";
 import { resetVisualTaskData } from "./global-setup";
 
 export async function signInVisualUser(page: import("@playwright/test").Page) {
@@ -15,6 +15,9 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
   await Promise.all([
     prisma.dailyAgenda.deleteMany({ where: { userId: user!.id } }),
     prisma.focusSession.deleteMany({ where: { userId: user!.id } }),
+    prisma.page.deleteMany({
+      where: { userId: user!.id, id: { not: VISUAL_TEST_PAGE_ID } },
+    }),
   ]);
   await resetVisualTaskData(user!.id);
 

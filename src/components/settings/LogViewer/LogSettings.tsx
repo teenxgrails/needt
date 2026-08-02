@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { logger } from "@/lib/logger";
 import { LogSettings as LogSettingsType } from "@/lib/logger/types";
@@ -145,8 +139,9 @@ export function LogSettings() {
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="logLevel">Log Level</Label>
-            <Select
+            <Label>Log Level</Label>
+            <NeedtPicker
+              ariaLabel="Log level"
               value={settings.logLevel}
               onValueChange={(value) =>
                 setSettings({
@@ -154,23 +149,20 @@ export function LogSettings() {
                   logLevel: value as LogSettingsType["logLevel"],
                 })
               }
-            >
-              <SelectTrigger id="logLevel">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
-                <SelectItem value="warn">Warning</SelectItem>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="debug">Debug</SelectItem>
-              </SelectContent>
-            </Select>
+              options={[
+                { value: "none", label: "None" },
+                { value: "error", label: "Error" },
+                { value: "warn", label: "Warning" },
+                { value: "info", label: "Info" },
+                { value: "debug", label: "Debug" },
+              ]}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="logDestination">Log Destination</Label>
-            <Select
+            <Label>Log Destination</Label>
+            <NeedtPicker
+              ariaLabel="Log destination"
               value={settings.logDestination}
               onValueChange={(value) =>
                 setSettings({
@@ -178,16 +170,12 @@ export function LogSettings() {
                   logDestination: value as LogSettingsType["logDestination"],
                 })
               }
-            >
-              <SelectTrigger id="logDestination">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="db">Database Only</SelectItem>
-                <SelectItem value="file">File Only</SelectItem>
-                <SelectItem value="both">Both Database and File</SelectItem>
-              </SelectContent>
-            </Select>
+              options={[
+                { value: "db", label: "Database Only" },
+                { value: "file", label: "File Only" },
+                { value: "both", label: "Both Database and File" },
+              ]}
+            />
           </div>
         </div>
       </SettingRow>

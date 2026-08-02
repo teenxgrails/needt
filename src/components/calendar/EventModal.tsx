@@ -25,13 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoadingOverlay } from "@/components/ui/loading-overlay";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import { Switch } from "@/components/ui/switch";
 
 import { APP_NAME } from "@/lib/app-config";
@@ -328,22 +322,21 @@ export function EventModal({
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="recurrence-freq">Repeats</Label>
-          <Select
+          <NeedtPicker
+            triggerId="recurrence-freq"
+            testId="recurrence-freq"
+            ariaLabel="Recurrence frequency"
             value={recurrenceFreq || FREQUENCIES.WEEKLY}
             onValueChange={(value) =>
               setRecurrenceFreq(value === FREQUENCIES.NONE ? "" : value)
             }
-          >
-            <SelectTrigger id="recurrence-freq" data-testid="recurrence-freq">
-              <SelectValue placeholder="Select frequency" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={FREQUENCIES.DAILY}>Daily</SelectItem>
-              <SelectItem value={FREQUENCIES.WEEKLY}>Weekly</SelectItem>
-              <SelectItem value={FREQUENCIES.MONTHLY}>Monthly</SelectItem>
-              <SelectItem value={FREQUENCIES.YEARLY}>Yearly</SelectItem>
-            </SelectContent>
-          </Select>
+            options={[
+              { value: FREQUENCIES.DAILY, label: "Daily" },
+              { value: FREQUENCIES.WEEKLY, label: "Weekly" },
+              { value: FREQUENCIES.MONTHLY, label: "Monthly" },
+              { value: FREQUENCIES.YEARLY, label: "Yearly" },
+            ]}
+          />
         </div>
 
         {recurrenceFreq && recurrenceFreq !== FREQUENCIES.NONE && (
@@ -473,29 +466,22 @@ export function EventModal({
                   <span className="w-[76px] text-[var(--text-secondary)]">
                     Calendar:
                   </span>
-                  <Select
+                  <NeedtPicker
+                    triggerId="calendar"
+                    testId="calendar-select"
+                    ariaLabel="Calendar"
+                    className="h-11 min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none sm:h-[28px]"
                     value={selectedFeedId}
                     onValueChange={(value) => setSelectedFeedId(value)}
                     disabled={!!event?.id}
-                  >
-                    <SelectTrigger
-                      id="calendar"
-                      data-testid="calendar-select"
-                      className="h-11 min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none sm:h-[28px]"
-                    >
-                      <SelectValue placeholder="Select a calendar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {feeds
-                        .filter((feed) => feed.enabled)
-                        .map((feed) => (
-                          <SelectItem key={feed.id} value={feed.id}>
-                            {feed.name}{" "}
-                            {feed.type === "GOOGLE" ? "(Google)" : ""}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="Select a calendar"
+                    options={feeds
+                      .filter((feed) => feed.enabled)
+                      .map((feed) => ({
+                        value: feed.id,
+                        label: `${feed.name}${feed.type === "GOOGLE" ? " (Google)" : ""}`,
+                      }))}
+                  />
                 </div>
 
                 <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">

@@ -12,7 +12,6 @@ import {
   Table2,
   Trash2,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import type { PageDetail } from "@/components/pages/page-types";
 import { Button } from "@/components/ui/button";
@@ -26,14 +25,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 type ViewType =
@@ -218,7 +212,7 @@ export function DatabaseWorkspace({
     });
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--app-bg)] text-[var(--text-primary)]">
+    <div className="flex min-h-dvh flex-col bg-[var(--surface-canvas)] text-[var(--text-primary)]">
       <header className="border-b border-[var(--border-subtle)] px-6 pb-0 pt-7 lg:px-10">
         <input
           value={title}
@@ -269,19 +263,20 @@ export function DatabaseWorkspace({
           Name {sortDirection === "asc" ? "↑" : "↓"}
         </Button>
         {(view === "BOARD" || view === "GALLERY") && (
-          <Select value={groupPropertyId} onValueChange={setGroupPropertyId}>
-            <SelectTrigger className="h-8 w-44">
-              <SelectValue placeholder="Group by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">No grouping</SelectItem>
-              {properties.map((property) => (
-                <SelectItem key={property.id} value={property.id}>
-                  Group by {property.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <NeedtPicker
+            ariaLabel="Group database records"
+            className="h-8 w-44"
+            value={groupPropertyId}
+            onValueChange={setGroupPropertyId}
+            placeholder="Group by"
+            options={[
+              { value: "none", label: "No grouping" },
+              ...properties.map((property) => ({
+                value: property.id,
+                label: `Group by ${property.name}`,
+              })),
+            ]}
+          />
         )}
         <div className="ml-auto flex gap-2">
           <Button
@@ -359,26 +354,24 @@ export function DatabaseWorkspace({
             </div>
             <div className="space-y-1.5">
               <Label>Type</Label>
-              <Select
+              <NeedtPicker
+                ariaLabel="Property type"
                 value={propertyType}
                 onValueChange={(value) =>
                   setPropertyType(value as PropertyType)
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["TEXT", "NUMBER", "SELECT", "CHECKBOX", "DATE", "URL"].map(
-                    (type) => (
-                      <SelectItem key={type} value={type}>
-                        {type[0]}
-                        {type.slice(1).toLowerCase()}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
+                options={[
+                  "TEXT",
+                  "NUMBER",
+                  "SELECT",
+                  "CHECKBOX",
+                  "DATE",
+                  "URL",
+                ].map((type) => ({
+                  value: type,
+                  label: `${type[0]}${type.slice(1).toLowerCase()}`,
+                }))}
+              />
             </div>
           </div>
           <DialogFooter>

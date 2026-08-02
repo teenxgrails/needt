@@ -73,8 +73,8 @@ code against Next 15.3 while the project runs 15.5.22, and against older Prisma
 APIs. Context7 fetches the real docs for the installed version instead.
 
 **How to use it:** ask for the library by name in the prompt, e.g.
-*"use Context7 to check the current FullCalendar `scrollTimeReset` semantics
-before changing DayView"*.
+*"use Context7 to check the current calendar library `scrollTimeReset`
+semantics before changing DayView"*.
 
 ---
 

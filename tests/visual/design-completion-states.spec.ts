@@ -7,7 +7,7 @@ const EVENING_NOW = "2026-07-16T19:30:00+02:00";
 async function prepareAuthenticatedPage(page: import("@playwright/test").Page) {
   await page.clock.setFixedTime(new Date(EVENING_NOW));
   await page.addInitScript(() => {
-    localStorage.setItem("mina:quick-tip:last-shown-at", "9999999999999");
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
     localStorage.setItem("needt-visit-count", "0");
   });
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });

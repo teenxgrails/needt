@@ -32,6 +32,34 @@ function forbidText(path, text, contents) {
   }
 }
 
+function forbidPattern(path, pattern, description, contents) {
+  if (pattern.test(contents)) {
+    failures.push(`${path}: contains retired ${description}`);
+  }
+}
+
+const LEGACY_TOKEN_NAMES = [
+  "app-bg",
+  "raised",
+  "raised-2",
+  "active",
+  "line",
+  "line-strong",
+  "text-hi",
+  "text-lo",
+  "accent",
+  "accent-contrast",
+  "accent-foreground",
+  "bg-0",
+  "bg-1",
+  "bg-2",
+  "acc-blue",
+  "acc-violet",
+  "acc-magenta",
+  "acc-teal",
+  "acc-gold",
+];
+
 for (const retired of [
   "src/components/ui/option-picker.tsx",
   "src/components/ui/combobox-picker.tsx",
@@ -64,6 +92,40 @@ for (const file of productSources) {
     name !== "src/components/ui/sonner.tsx"
   ) {
     failures.push(`${name}: product surface bypasses notification facade`);
+  }
+
+  for (const legacyToken of LEGACY_TOKEN_NAMES) {
+    const escaped = legacyToken.replaceAll("-", "\\-");
+    forbidPattern(
+      name,
+      new RegExp(`var\\(--${escaped}\\)`),
+      `var(--${legacyToken})`,
+      contents
+    );
+  }
+
+  if (name !== "src/components/ui/design-system-lab.tsx") {
+    forbidText(name, 'from "@/components/ui/select"', contents);
+    forbidText(name, "<select", contents);
+    forbidPattern(
+      name,
+      /(?:border|bg|text)-\[#(?:323234|262627|9aa0a6)\]|hover:bg-\[#2b2f31\]/i,
+      "hard-coded legacy UI palette",
+      contents
+    );
+  }
+}
+
+for (const integrationPath of ["src/app/globals.css", "tailwind.config.ts"]) {
+  const contents = await source(integrationPath);
+  for (const legacyToken of LEGACY_TOKEN_NAMES) {
+    const escaped = legacyToken.replaceAll("-", "\\-");
+    forbidPattern(
+      integrationPath,
+      new RegExp(`(?:var\\(--${escaped}\\)|--${escaped}\\s*:)`),
+      `legacy token --${legacyToken}`,
+      contents
+    );
   }
 }
 

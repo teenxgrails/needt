@@ -11,23 +11,17 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
 import { APP_NAME } from "@/lib/app-config";
+import { notify } from "@/lib/notifications";
 
 import { SettingRow, SettingsCard, SettingsSection } from "./SettingsSection";
 
@@ -346,24 +340,21 @@ export function AIAssistantSettings() {
         description={`Use hosted AI within the monthly allowance, or bring your own key for unlimited actions. Keys are encrypted before storage.`}
       >
         <div className="space-y-4">
-          <Select
+          <NeedtPicker
+            ariaLabel="AI provider"
             value={settings.provider}
             onValueChange={(value) =>
               updateSetting("provider", value as AIProvider)
             }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="NONE">Needt hosted</SelectItem>
-              <SelectItem value="ANTHROPIC">Anthropic</SelectItem>
-              <SelectItem value="OPENAI">OpenAI</SelectItem>
-              <SelectItem value="GROK">Grok (xAI)</SelectItem>
-              <SelectItem value="GLM">GLM (z.ai)</SelectItem>
-              <SelectItem value="CUSTOM">Custom</SelectItem>
-            </SelectContent>
-          </Select>
+            options={[
+              { value: "NONE", label: "Needt hosted" },
+              { value: "ANTHROPIC", label: "Anthropic" },
+              { value: "OPENAI", label: "OpenAI" },
+              { value: "GROK", label: "Grok (xAI)" },
+              { value: "GLM", label: "GLM (z.ai)" },
+              { value: "CUSTOM", label: "Custom" },
+            ]}
+          />
           <div
             className="grid gap-2 sm:grid-cols-2"
             role="radiogroup"

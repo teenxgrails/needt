@@ -40,7 +40,7 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
   await page.addInitScript(() => {
     // Keep the delayed command-palette hint out of long screenshot matrices.
     // A far-future value remains valid across Playwright's fixed clock setup.
-    localStorage.setItem("mina:quick-tip:last-shown-at", "9999999999999");
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
     localStorage.setItem("needt-visit-count", "0");
   });
   await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });

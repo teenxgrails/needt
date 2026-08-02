@@ -18,9 +18,9 @@ import {
   Sun,
 } from "lucide-react";
 
-import { PagesSidebarSection } from "@/components/pages/PagesSidebarSection";
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
+import { PagesSidebarSection } from "@/components/pages/PagesSidebarSection";
 import { TodaysTasksPanel } from "@/components/tasks/TodaysTasksPanel";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import {
@@ -329,7 +329,7 @@ export const AppNav = memo(function AppNav({
                 aria-label="Today's workload exceeds your work hours"
               />
             )}
-            <kbd className="ml-auto rounded-md border border-white/10 bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-white/70">
+            <kbd className="ml-auto rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
               ⌘/
             </kbd>
           </Link>

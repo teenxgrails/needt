@@ -71,7 +71,7 @@ export function DeleteProjectDialog({
               Cancel
             </button>
             <button
-              className="inline-flex h-[35px] items-center justify-center rounded-[4px] bg-red-600 px-[15px] text-[15px] leading-none text-white outline-none hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-50"
+              className="inline-flex h-[35px] items-center justify-center rounded-[var(--control-radius)] border border-[var(--button-danger-border)] bg-[var(--button-danger-bg)] px-[15px] text-[15px] leading-none text-[var(--color-danger)] outline-none hover:bg-[var(--button-danger-bg-hover)] disabled:opacity-50"
               onClick={handleDelete}
               disabled={isDeleting}
             >

@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 
 import { Bug } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,14 +15,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
+import { notify } from "@/lib/notifications";
 import { getAppVersion } from "@/lib/version";
 
 export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
@@ -113,17 +107,17 @@ export function ReportBugDialog({ mobile = false }: { mobile?: boolean }) {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <input type="hidden" name="severity" value={severity} />
-            <Select value={severity} onValueChange={setSeverity}>
-              <SelectTrigger aria-label="Severity">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="LOW">Low</SelectItem>
-                <SelectItem value="MEDIUM">Medium</SelectItem>
-                <SelectItem value="HIGH">High</SelectItem>
-                <SelectItem value="CRITICAL">Critical</SelectItem>
-              </SelectContent>
-            </Select>
+            <NeedtPicker
+              ariaLabel="Severity"
+              value={severity}
+              onValueChange={setSeverity}
+              options={[
+                { value: "LOW", label: "Low" },
+                { value: "MEDIUM", label: "Medium" },
+                { value: "HIGH", label: "High" },
+                { value: "CRITICAL", label: "Critical" },
+              ]}
+            />
             <Input name="attachment" type="file" accept="image/*,.txt,.log" />
           </div>
           <p className="text-[11px] text-[var(--text-muted)]">

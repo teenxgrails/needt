@@ -41,7 +41,7 @@ export function GlowRing({
   return (
     <div
       className={cn(
-        "grid place-items-center rounded-full border border-white/10 bg-white/[0.04] p-2",
+        "grid place-items-center rounded-full border border-[var(--border-subtle)] bg-[var(--surface-control)] p-2",
         `glow-${tone}`,
         className
       )}
@@ -64,14 +64,16 @@ export function StatBlock({
 }) {
   return (
     <GlassCard tone="subtle" className={cn("liquid-press", `glow-${tone}`)}>
-      <div className="text-xs uppercase tracking-[0.16em] text-[var(--text-lo)]">
+      <div className="text-xs uppercase tracking-[0.16em] text-[var(--text-secondary)]">
         {label}
       </div>
-      <div className="stat-numeral mt-2 text-4xl text-[var(--text-hi)]">
+      <div className="stat-numeral mt-2 text-4xl text-[var(--text-primary)]">
         {value}
       </div>
       {detail && (
-        <div className="mt-2 text-sm text-[var(--text-lo)]">{detail}</div>
+        <div className="mt-2 text-sm text-[var(--text-secondary)]">
+          {detail}
+        </div>
       )}
     </GlassCard>
   );
@@ -84,7 +86,7 @@ export function PrimaryButton({
   return (
     <button
       className={cn(
-        "liquid-press liquid-shimmer inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white px-5 text-sm font-semibold text-black shadow-sm disabled:pointer-events-none disabled:opacity-50",
+        "liquid-press liquid-shimmer inline-flex h-10 items-center justify-center gap-2 rounded-[var(--control-radius)] border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-5 text-sm font-semibold text-[var(--button-primary-fg)] disabled:pointer-events-none disabled:opacity-50",
         className
       )}
       {...props}

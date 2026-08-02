@@ -2,13 +2,7 @@ import { Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { useLogViewStore } from "@/store/logview";
 
@@ -45,44 +39,37 @@ export function LogFilters({ filters, onChange, disabled }: LogFiltersProps) {
     <section className="space-y-4 border-t border-[var(--border-subtle)] pt-5">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-2">
-          <Label htmlFor="level">Log Level</Label>
-          <Select
+          <Label>Log Level</Label>
+          <NeedtPicker
+            ariaLabel="Log level"
             value={filters.level || "all"}
             onValueChange={(value) => handleChange("level", value)}
             disabled={disabled}
-          >
-            <SelectTrigger id="level">
-              <SelectValue placeholder="All Levels" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Levels</SelectItem>
-              <SelectItem value="error">Error</SelectItem>
-              <SelectItem value="warn">Warning</SelectItem>
-              <SelectItem value="info">Info</SelectItem>
-              <SelectItem value="debug">Debug</SelectItem>
-            </SelectContent>
-          </Select>
+            options={[
+              { value: "all", label: "All Levels" },
+              { value: "error", label: "Error" },
+              { value: "warn", label: "Warning" },
+              { value: "info", label: "Info" },
+              { value: "debug", label: "Debug" },
+            ]}
+          />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="source">Source</Label>
-          <Select
+          <Label>Source</Label>
+          <NeedtPicker
+            ariaLabel="Log source"
+            mode="searchable"
             value={filters.source || "all"}
             onValueChange={(value) => handleChange("source", value)}
             disabled={disabled}
-          >
-            <SelectTrigger id="source">
-              <SelectValue placeholder="All Sources" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Sources</SelectItem>
-              {sources.sort().map((source) => (
-                <SelectItem key={source} value={source}>
-                  {source}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            options={[
+              { value: "all", label: "All Sources" },
+              ...sources
+                .sort()
+                .map((source) => ({ value: source, label: source })),
+            ]}
+          />
         </div>
 
         <div className="space-y-2">

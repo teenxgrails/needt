@@ -22,7 +22,6 @@ import {
   IoOptionsOutline,
   IoRefreshOutline,
 } from "react-icons/io5";
-import { notify } from "@/lib/notifications";
 
 import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
@@ -45,30 +44,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
+import { moveCalendarDate } from "@/lib/calendar-navigation";
 import { useEventModalStore } from "@/lib/commands/groups/calendar";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useCalendarHorizontalNavigation } from "@/hooks/useCalendarHorizontalNavigation";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
-import { moveCalendarDate } from "@/lib/calendar-navigation";
 import { useCalendarStore, useViewStore } from "@/store/calendar";
 import { useSettingsStore } from "@/store/settings";
 import { useTaskStore } from "@/store/task";
@@ -322,32 +316,20 @@ export function Calendar({
                         <span className="text-[14px] text-[var(--text-secondary)]">
                           Start week on
                         </span>
-                        <Select
+                        <NeedtPicker
+                          ariaLabel="Start week on"
+                          className="h-[var(--calendar-options-control-height)] w-[104px] px-3 text-[14px]"
                           value={userSettings.weekStartDay}
                           onValueChange={(value) =>
                             updateUserSettings({
                               weekStartDay: value as "monday" | "sunday",
                             })
                           }
-                        >
-                          <SelectTrigger className="h-[var(--calendar-options-control-height)] w-[104px] px-3 text-[14px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem
-                              value="monday"
-                              className="h-[var(--calendar-options-control-height)] rounded text-[14px]"
-                            >
-                              Monday
-                            </SelectItem>
-                            <SelectItem
-                              value="sunday"
-                              className="h-[var(--calendar-options-control-height)] rounded text-[14px]"
-                            >
-                              Sunday
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                          options={[
+                            { value: "monday", label: "Monday" },
+                            { value: "sunday", label: "Sunday" },
+                          ]}
+                        />
                       </div>
 
                       <div className="flex h-[30px] items-center justify-between gap-3">
@@ -579,26 +561,20 @@ export function Calendar({
               <span className="text-sm text-[var(--text-secondary)]">
                 Start week on
               </span>
-              <Select
+              <NeedtPicker
+                ariaLabel="Start week on"
+                className="h-10 w-[120px]"
                 value={userSettings.weekStartDay}
                 onValueChange={(value) =>
                   updateUserSettings({
                     weekStartDay: value as "monday" | "sunday",
                   })
                 }
-              >
-                <SelectTrigger className="h-10 w-[120px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monday" className="min-h-11">
-                    Monday
-                  </SelectItem>
-                  <SelectItem value="sunday" className="min-h-11">
-                    Sunday
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                options={[
+                  { value: "monday", label: "Monday" },
+                  { value: "sunday", label: "Sunday" },
+                ]}
+              />
             </div>
             <div className="flex min-h-12 items-center justify-between gap-3">
               <span className="text-sm text-[var(--text-secondary)]">

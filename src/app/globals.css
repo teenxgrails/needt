@@ -10,8 +10,7 @@
      * Needt design tokens
      * primitive -> semantic -> component
      *
-     * New screens must consume semantic/component tokens. The legacy aliases
-     * below keep older screens compatible while they are migrated.
+     * Product UI consumes semantic/component tokens; raw values stay here.
      */
 
     /* Primitive palette: raw values are defined in this layer only. */
@@ -76,7 +75,9 @@
     --color-accent: var(--primitive-indigo-500);
     --color-accent-contrast: var(--primitive-white);
     --color-danger: var(--primitive-red-500);
+    --color-danger-contrast: var(--primitive-white);
     --color-success: var(--primitive-green-500);
+    --color-success-contrast: var(--primitive-white);
     --color-warning: var(--primitive-gold-400);
 
     /* One continuous canvas with a shared top-lit first 40%. Surfaces stay
@@ -273,25 +274,6 @@
     --space-cluster-gold: var(--primitive-gold-400);
     --space-cluster-green: var(--primitive-green-500);
 
-    /* Backwards-compatible aliases. */
-    --app-bg: var(--surface-canvas);
-    --raised: var(--surface-raised);
-    --raised-2: var(--surface-panel);
-    --active: var(--surface-hover);
-    --line: var(--border-subtle);
-    --line-strong: var(--border-control);
-    --text-hi: var(--text-primary);
-    --text-lo: var(--text-secondary);
-    --accent: var(--color-accent);
-    --accent-contrast: var(--color-accent-contrast);
-    --bg-0: var(--surface-canvas);
-    --bg-1: var(--surface-raised);
-    --bg-2: var(--surface-panel);
-    --acc-blue: #4a7bff;
-    --acc-violet: #8b5cf6;
-    --acc-magenta: #e64bd0;
-    --acc-teal: #2dd4bf;
-    --acc-gold: #f5c451;
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
 
@@ -309,8 +291,6 @@
 
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-
-    --accent-foreground: 0 0% 9%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -369,8 +349,16 @@
        lifting the top of the shell, tinted with the accent rather than a dark
        wash. Whites carry the glow; the accent only colours it. */
     --aurora-veil: color-mix(in srgb, var(--primitive-white) 7%, transparent);
-    --aurora-glow-a: color-mix(in srgb, var(--primitive-white) 15%, transparent);
-    --aurora-glow-b: color-mix(in srgb, var(--primitive-white) 11%, transparent);
+    --aurora-glow-a: color-mix(
+      in srgb,
+      var(--primitive-white) 15%,
+      transparent
+    );
+    --aurora-glow-b: color-mix(
+      in srgb,
+      var(--primitive-white) 11%,
+      transparent
+    );
     --aurora-glow-c: color-mix(in srgb, var(--color-accent) 7%, transparent);
     --surface-ambient-top: color-mix(
       in srgb,
@@ -399,11 +387,6 @@
     --calendar-task-bg: var(--primitive-neutral-705);
     --calendar-task-border: var(--primitive-neutral-590);
     --calendar-now-indicator: var(--text-primary);
-    --acc-blue: #4a7bff;
-    --acc-violet: #8b5cf6;
-    --acc-magenta: #e64bd0;
-    --acc-teal: #2dd4bf;
-    --acc-gold: #f5c451;
     --background: 224 12% 7%;
     --foreground: 210 17% 96%;
 
@@ -421,8 +404,6 @@
 
     --muted: 224 10% 14%;
     --muted-foreground: 215 12% 68%;
-
-    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
@@ -478,9 +459,9 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-color: var(--app-bg);
+    background-color: var(--surface-canvas);
     background-image: var(--page-background);
-    color: var(--text-hi);
+    color: var(--text-primary);
     font-size: 14px;
     font-family:
       -apple-system, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
@@ -502,35 +483,22 @@
   }
 
   html:not(.dark) body {
-    background-color: var(--app-bg);
+    background-color: var(--surface-canvas);
     background-image: var(--page-background);
-    color: var(--text-hi);
+    color: var(--text-primary);
   }
 
   /* No background fill: the app shell already paints the light canvas, and a
      solid sidebar would cut the ambient veil off at the content edge. */
   html:not(.dark) .motion-sidebar {
-    color: var(--text-hi);
+    color: var(--text-primary);
   }
 
-  html:not(.dark) .bg-\[\#262627\],
   html:not(.dark) .glass,
   html:not(.dark) .glass--strong,
   html:not(.dark) .glass--subtle {
-    background-color: var(--raised) !important;
-    border-color: var(--line) !important;
-  }
-
-  html:not(.dark) .bg-\[\#2B2F31\] {
-    background-color: var(--active) !important;
-  }
-
-  html:not(.dark) .border-\[\#323234\] {
-    border-color: var(--line) !important;
-  }
-
-  html:not(.dark) .text-\[\#9AA0A6\] {
-    color: var(--text-lo) !important;
+    background-color: var(--surface-raised) !important;
+    border-color: var(--border-subtle) !important;
   }
 }
 
@@ -548,9 +516,9 @@
   .glass--subtle {
     position: relative;
     overflow: hidden;
-    border: 1px solid var(--line-strong);
+    border: 1px solid var(--border-control);
     border-radius: 8px;
-    background-color: var(--raised);
+    background-color: var(--surface-raised);
     background-image: var(--raised-surface-background);
     box-shadow: none;
   }
@@ -569,14 +537,14 @@
   }
 
   .glass--strong {
-    border-color: var(--line-strong);
-    background-color: var(--raised);
+    border-color: var(--border-control);
+    background-color: var(--surface-raised);
     background-image: var(--raised-surface-background);
   }
 
   .glass--subtle {
     border-radius: 6px;
-    background-color: var(--raised);
+    background-color: var(--surface-raised);
     background-image: var(--raised-surface-background);
   }
 
@@ -624,7 +592,7 @@
 
   .needt-orb {
     border-radius: 6px;
-    background: var(--raised);
+    background: var(--surface-raised);
     box-shadow: none;
   }
 
@@ -632,14 +600,14 @@
     position: relative;
     overflow: hidden;
     border-radius: 6px;
-    background: #262627;
+    background: var(--surface-control);
   }
 
   .glass-skeleton::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: var(--active);
+    background: var(--surface-hover);
   }
 
   .session-complete-bloom {
@@ -647,32 +615,32 @@
     position: absolute;
     inset: -20%;
     border-radius: inherit;
-    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 22%, transparent);
     animation: session-complete-bloom 900ms ease-out forwards;
   }
 
   .motion-shell {
-    border-color: var(--line-strong);
-    background-color: var(--raised);
+    border-color: var(--border-control);
+    background-color: var(--surface-raised);
     background-image: var(--panel-background);
     box-shadow: none;
   }
 
   .motion-panel {
-    border-color: var(--line-strong);
-    background-color: var(--raised);
+    border-color: var(--border-control);
+    background-color: var(--surface-raised);
     background-image: var(--panel-background);
     box-shadow: none;
   }
 
   .motion-button {
     @apply rounded-md px-2.5 py-1.5 text-sm font-medium text-foreground;
-    border: 1px solid var(--line-strong);
-    background: var(--raised);
+    border: 1px solid var(--border-control);
+    background: var(--surface-raised);
   }
 
   .motion-button:hover {
-    background: var(--active);
+    background: var(--surface-hover);
   }
 
   .table-glass tbody tr,
@@ -685,7 +653,7 @@
 
   .table-glass tbody tr:hover,
   table tbody tr:hover {
-    background: var(--active);
+    background: var(--surface-hover);
     box-shadow: none;
   }
 }
@@ -1664,7 +1632,7 @@ html[data-needt-motion="off"] .needt-aurora-blob {
   .glass,
   .glass--strong,
   .glass--subtle {
-    background: var(--bg-2);
+    background: var(--surface-panel);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
@@ -1853,8 +1821,8 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 /* "Recalculating tasks..." toast: inverse of the theme (white pill on the dark
    theme, dark pill on the light theme), matching the Motion reference. */
 .recalc-toast {
-  background: var(--text-hi) !important;
-  color: var(--app-bg) !important;
+  background: var(--text-primary) !important;
+  color: var(--surface-canvas) !important;
   border: none !important;
   overflow: hidden !important;
   position: relative !important;
@@ -1862,7 +1830,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 
 .recalc-toast [data-close-button],
 .recalc-toast [data-icon] {
-  color: var(--app-bg) !important;
+  color: var(--surface-canvas) !important;
 }
 
 .recalc-toast [data-icon] {
@@ -1871,7 +1839,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 
 .recalc-toast::after {
   animation: recalc-toast-progress 1.4s ease-in-out infinite;
-  background: var(--accent);
+  background: var(--color-accent);
   bottom: 0;
   content: "";
   height: 2px;
@@ -1908,10 +1876,10 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 .fc {
   @apply h-full;
   --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: var(--raised);
-  --fc-neutral-text-color: var(--text-lo);
+  --fc-neutral-bg-color: var(--surface-raised);
+  --fc-neutral-text-color: var(--text-secondary);
   --fc-border-color: var(--calendar-grid-line);
-  --fc-today-bg-color: var(--active);
+  --fc-today-bg-color: var(--surface-hover);
   --fc-now-indicator-color: var(--color-accent);
   color: var(--text-primary);
 }
@@ -1922,19 +1890,19 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 
 .fc .fc-toolbar-title {
   @apply text-base font-medium;
-  color: var(--text-hi);
+  color: var(--text-primary);
 }
 
 .fc .fc-button {
-  border: 1px solid var(--line-strong) !important;
+  border: 1px solid var(--border-control) !important;
   border-radius: 6px !important;
-  background: var(--raised) !important;
-  color: var(--text-hi) !important;
+  background: var(--surface-raised) !important;
+  color: var(--text-primary) !important;
   box-shadow: none !important;
 }
 
 .fc .fc-button-primary {
-  background: var(--accent) !important;
+  background: var(--color-accent) !important;
   color: white !important;
 }
 
@@ -2068,7 +2036,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 
 .fc .fc-day-header {
   @apply border-b py-2;
-  border-color: var(--line-strong);
+  border-color: var(--border-control);
 }
 
 /* Reset every internal cell border, then draw back only Motion's quiet hourly
@@ -2204,7 +2172,7 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
   padding: 10px 6px !important;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-hi);
+  color: var(--text-primary);
   letter-spacing: 0.01em;
 }
 
@@ -2346,20 +2314,20 @@ html[data-needt-motion="on"] .dialog-content-anim[data-state="closed"] {
 .dark .fc {
   --fc-small-font-size: 0.85em;
   --fc-page-bg-color: transparent;
-  --fc-neutral-bg-color: var(--raised);
-  --fc-neutral-text-color: var(--text-lo);
+  --fc-neutral-bg-color: var(--surface-raised);
+  --fc-neutral-text-color: var(--text-secondary);
   --fc-border-color: var(--calendar-grid-line);
 
   --fc-button-text-color: #ffffff;
-  --fc-button-bg-color: var(--raised);
-  --fc-button-border-color: var(--line-strong);
-  --fc-button-hover-bg-color: var(--active);
-  --fc-button-hover-border-color: var(--line-strong);
-  --fc-button-active-bg-color: var(--accent);
-  --fc-button-active-border-color: var(--accent);
+  --fc-button-bg-color: var(--surface-raised);
+  --fc-button-border-color: var(--border-control);
+  --fc-button-hover-bg-color: var(--surface-hover);
+  --fc-button-hover-border-color: var(--border-control);
+  --fc-button-active-bg-color: var(--color-accent);
+  --fc-button-active-border-color: var(--color-accent);
 
-  --fc-event-bg-color: var(--raised);
-  --fc-event-border-color: var(--line-strong);
+  --fc-event-bg-color: var(--surface-raised);
+  --fc-event-border-color: var(--border-control);
   --fc-event-text-color: #ffffff;
   --fc-event-selected-overlay-color: rgba(0, 0, 0, 0.25);
 

@@ -36,7 +36,7 @@ test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
 }, testInfo) => {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await page.addInitScript(() => {
-    localStorage.setItem("mina:quick-tip:last-shown-at", "9999999999999");
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
     localStorage.setItem("lastBriefingAt", "2026-07-16");
     localStorage.setItem("needt-visit-count", "0");
   });

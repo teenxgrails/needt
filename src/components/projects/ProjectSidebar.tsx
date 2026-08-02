@@ -5,11 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import NumberFlow from "@number-flow/react";
 import { BsArrowRepeat } from "react-icons/bs";
 import { HiFolderOpen, HiPencil, HiPlus } from "react-icons/hi";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+import { notify } from "@/lib/notifications";
 import { getOverdueSummary } from "@/lib/overdue";
 import { cn } from "@/lib/utils";
 
@@ -152,7 +152,7 @@ export function ProjectSidebar() {
   return (
     <>
       <div className="glass hidden h-full w-64 flex-col md:flex">
-        <div className="border-b border-white/10 p-4">
+        <div className="border-b border-[var(--border-subtle)] p-4">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Projects</h2>
             <Button
@@ -249,7 +249,7 @@ export function ProjectSidebar() {
                   "mt-4 rounded-2xl border border-dashed p-4 text-center",
                   isOverRemove
                     ? "border-destructive bg-destructive/10"
-                    : "border-white/10 bg-white/[0.025] hover:border-white/20"
+                    : "border-[var(--border-subtle)] bg-[var(--surface-canvas)] hover:border-[var(--border-control)]"
                 )}
               >
                 <p className="text-sm text-muted-foreground">
@@ -312,8 +312,8 @@ function ProjectItem({
       className={cn(
         "group flex w-full cursor-pointer items-center space-x-2 rounded-xl px-3 py-2 transition-all",
         isActive
-          ? "bg-white/10 text-secondary-foreground"
-          : "hover:bg-white/[0.06]",
+          ? "bg-[var(--surface-hover)] text-[var(--text-primary)]"
+          : "hover:bg-[var(--surface-hover)]",
         isOver && "ring-2 ring-ring"
       )}
       onClick={() => setActiveProject(project)}
@@ -322,9 +322,9 @@ function ProjectItem({
         className="grid h-5 w-5 flex-shrink-0 place-items-center rounded-md text-[11px] font-semibold"
         style={{
           backgroundColor: project.color
-            ? `color-mix(in srgb, ${project.color} 22%, var(--raised))`
-            : "var(--active)",
-          color: project.color || "var(--text-lo)",
+            ? `color-mix(in srgb, ${project.color} 22%, var(--surface-raised))`
+            : "var(--surface-hover)",
+          color: project.color || "var(--text-secondary)",
         }}
       >
         {project.icon || project.name.slice(0, 1).toUpperCase()}
@@ -332,7 +332,7 @@ function ProjectItem({
       <span className="project-name min-w-0 flex-1 truncate">
         {project.name}
         {(project.progress ?? 0) > 0 && (
-          <span className="ml-1 text-[10px] text-[var(--text-lo)]">
+          <span className="ml-1 text-[10px] text-[var(--text-secondary)]">
             {project.progress ?? 0}%
           </span>
         )}

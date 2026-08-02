@@ -88,9 +88,6 @@ export function CustomizationSettings() {
   useEffect(() => {
     const root = document.documentElement;
     // Customize semantic tokens so every shared component updates together.
-    // The legacy aliases in globals.css continue to follow these values.
-    root.style.removeProperty("--accent");
-    root.style.removeProperty("--app-bg");
     root.style.setProperty("--color-accent", settings.accentColor);
     // backgroundTint remains in the persisted payload for backwards
     // compatibility, but themes now own the canvas color.

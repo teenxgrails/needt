@@ -27,6 +27,10 @@ CSS selector for a future `data-app-theme` preset, but it never writes product
 settings. New themes must be finalized in `globals.css` and must continue to
 reuse the same shared components.
 
+The built-in Light, Graphite, and Dark previews use the same resolved theme
+classes as the product. A custom draft starts from one of those modes and then
+overrides semantic tokens only; malformed saved drafts are ignored.
+
 ## Token architecture
 
 Tokens have three layers:
@@ -45,17 +49,17 @@ tokens for layout. Primitive tokens are only for defining a theme.
 | Purpose                | Token                     | Current value |
 | ---------------------- | ------------------------- | ------------- |
 | App/calendar canvas    | `--surface-canvas`        | `#0E0E10`     |
-| Panel/card surface     | `--surface-panel`         | `#151517`     |
-| Popover/dialog surface | `--dialog-bg`             | `#1A1A1E`     |
-| Raised surface         | `--surface-raised`        | `#212126`     |
-| Hover/selected row     | `--surface-hover`         | `#242429`     |
-| Control/button surface | `--surface-control`       | `#212126`     |
-| Control hover          | `--surface-control-hover` | `#29292F`     |
-| Inset input            | `--surface-input`         | `#151517`     |
-| Grid/subtle divider    | `--border-subtle`         | `#26262A`     |
+| Panel/card surface     | `--surface-panel`         | canvas        |
+| Popover/dialog surface | `--dialog-bg`             | canvas        |
+| Raised surface         | `--surface-raised`        | canvas        |
+| Hover/selected row     | `--surface-hover`         | `#202024`     |
+| Control/button surface | `--surface-control`       | `#1B1B1E`     |
+| Control hover          | `--surface-control-hover` | `#232327`     |
+| Inset input            | `--surface-input`         | canvas        |
+| Grid/subtle divider    | `--border-subtle`         | `#242428`     |
 | Control border         | `--border-control`        | `#303036`     |
 | Primary text           | `--text-primary`          | `#ECECEE`     |
-| Secondary text/icons   | `--text-secondary`        | `#9C9CA2`     |
+| Secondary text/icons   | `--text-secondary`        | `#9AA0A6`     |
 | Muted text             | `--text-muted`            | `#6E6E75`     |
 | Configurable accent    | `--color-accent`          | `#6366F1`     |
 
@@ -119,10 +123,10 @@ document.documentElement.dataset.appTheme = "example";
 
 No component or page should need theme-specific conditionals. User-selected
 accent and background customization write to `--color-accent` and
-`--surface-canvas`, so legacy aliases and all shared components update together.
+`--surface-canvas`, so all shared components update together.
 
 ## Migration rule
 
-Older aliases (`--app-bg`, `--raised`, `--active`, `--line-strong`,
-`--text-hi`, `--accent`, and related variables) remain supported while older
-screens are migrated. Do not introduce new usages of those aliases.
+Legacy aliases have been removed. Product code and global integration CSS must
+use semantic or component tokens directly; `check:ui-contracts` rejects the
+retired names.

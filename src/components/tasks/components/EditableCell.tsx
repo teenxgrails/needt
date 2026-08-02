@@ -8,13 +8,7 @@ import { HiCheck, HiExclamation, HiX } from "react-icons/hi";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import {
   createUTCMidnightDate,
@@ -254,7 +248,9 @@ export function EditableCell({
           autoFocus
         />
       ) : field === "energyLevel" ? (
-        <Select
+        <NeedtPicker
+          ariaLabel="Energy level"
+          className="h-8 min-w-[140px]"
           value={editValue || "none"}
           onValueChange={(value) => {
             onSave({
@@ -263,21 +259,18 @@ export function EditableCell({
             });
             setIsEditing(false);
           }}
-        >
-          <SelectTrigger className="h-8 min-w-[140px]">
-            <SelectValue placeholder="No Energy Level" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No Energy Level</SelectItem>
-            {Object.values(EnergyLevel).map((level) => (
-              <SelectItem key={level} value={level}>
-                {formatEnumValue(level)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={[
+            { value: "none", label: "No Energy Level" },
+            ...Object.values(EnergyLevel).map((level) => ({
+              value: level,
+              label: formatEnumValue(level),
+            })),
+          ]}
+        />
       ) : field === "preferredTime" ? (
-        <Select
+        <NeedtPicker
+          ariaLabel="Time preference"
+          className="h-8 min-w-[140px]"
           value={editValue || "none"}
           onValueChange={(value) => {
             onSave({
@@ -286,21 +279,18 @@ export function EditableCell({
             });
             setIsEditing(false);
           }}
-        >
-          <SelectTrigger className="h-8 min-w-[140px]">
-            <SelectValue placeholder="No Time Preference" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No Time Preference</SelectItem>
-            {Object.values(TimePreference).map((time) => (
-              <SelectItem key={time} value={time}>
-                {formatEnumValue(time)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={[
+            { value: "none", label: "No Time Preference" },
+            ...Object.values(TimePreference).map((time) => ({
+              value: time,
+              label: formatEnumValue(time),
+            })),
+          ]}
+        />
       ) : field === "priority" ? (
-        <Select
+        <NeedtPicker
+          ariaLabel="Priority"
+          className="h-8 min-w-[140px]"
           value={editValue || "none"}
           onValueChange={(value) => {
             onSave({
@@ -309,19 +299,14 @@ export function EditableCell({
             });
             setIsEditing(false);
           }}
-        >
-          <SelectTrigger className="h-8 min-w-[140px]">
-            <SelectValue placeholder="No Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No Priority</SelectItem>
-            {Object.values(Priority).map((priority) => (
-              <SelectItem key={priority} value={priority}>
-                {formatEnumValue(priority)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={[
+            { value: "none", label: "No Priority" },
+            ...Object.values(Priority).map((priority) => ({
+              value: priority,
+              label: formatEnumValue(priority),
+            })),
+          ]}
+        />
       ) : field === "duration" ? (
         <div className="flex items-center gap-1">
           <Input
@@ -429,45 +414,30 @@ export function EditableCell({
           </Button>
         </div>
       ) : field === "projectId" ? (
-        <Select
+        <NeedtPicker
+          ariaLabel="Project"
+          className="h-8 min-w-[140px]"
           value={editValue || "none"}
           onValueChange={(value) => {
             onSave({ ...task, projectId: value === "none" ? null : value });
             setIsEditing(false);
           }}
-        >
-          <SelectTrigger className="h-8 min-w-[140px]">
-            <SelectValue>
-              {task.project ? (
-                <div className="flex items-center gap-2">
-                  <div
-                    className="h-3 w-3 rounded-full"
-                    style={{
-                      backgroundColor: task.project.color || "var(--muted)",
-                    }}
-                  />
-                  <span>{task.project.name}</span>
-                </div>
-              ) : (
-                "No project"
-              )}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">No project</SelectItem>
-            {projects.map((project) => (
-              <SelectItem key={project.id} value={project.id}>
-                <div className="flex items-center gap-2">
-                  <div
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: project.color || "var(--muted)" }}
-                  />
-                  <span>{project.name}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          options={[
+            { value: "none", label: "No project" },
+            ...projects.map((project) => ({
+              value: project.id,
+              label: project.name,
+              icon: (
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{
+                    backgroundColor: project.color || "var(--text-muted)",
+                  }}
+                />
+              ),
+            })),
+          ]}
+        />
       ) : null}
       {field === "title" && (
         <>

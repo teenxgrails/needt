@@ -3,19 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Plus, Save, Trash2 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import { Switch } from "@/components/ui/switch";
+
+import { notify } from "@/lib/notifications";
 
 import { SettingRow, SettingsSection } from "./SettingsSection";
 
@@ -232,77 +227,47 @@ export function SmartSchedulingSettings() {
                   key={`${window.dayOfWeek}-${window.startTime}-${window.endTime}-${index}`}
                   className="grid gap-2 rounded-md border p-3 sm:grid-cols-[1fr_1fr_1fr_1fr_auto]"
                 >
-                  <Select
+                  <NeedtPicker
+                    ariaLabel="Energy profile day"
                     value={window.dayOfWeek.toString()}
                     onValueChange={(value) =>
                       updateEnergyWindow(index, { dayOfWeek: Number(value) })
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS.map((day) => (
-                        <SelectItem
-                          key={day.value}
-                          value={day.value.toString()}
-                        >
-                          {day.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
+                    options={DAYS.map((day) => ({
+                      value: day.value.toString(),
+                      label: day.label,
+                    }))}
+                  />
+                  <NeedtPicker
+                    ariaLabel="Energy window start"
                     value={window.startTime}
                     onValueChange={(value) =>
                       updateEnergyWindow(index, { startTime: value })
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIME_OPTIONS.map((time) => (
-                        <SelectItem key={time.value} value={time.value}>
-                          {time.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
+                    options={TIME_OPTIONS}
+                  />
+                  <NeedtPicker
+                    ariaLabel="Energy window end"
                     value={window.endTime}
                     onValueChange={(value) =>
                       updateEnergyWindow(index, { endTime: value })
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIME_OPTIONS.map((time) => (
-                        <SelectItem key={time.value} value={time.value}>
-                          {time.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select
+                    options={TIME_OPTIONS}
+                  />
+                  <NeedtPicker
+                    ariaLabel="Energy level"
                     value={window.energyLevel}
                     onValueChange={(value) =>
                       updateEnergyWindow(index, {
                         energyLevel: value as SchedulingEnergyLevel,
                       })
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HIGH">High</SelectItem>
-                      <SelectItem value="MEDIUM">Medium</SelectItem>
-                      <SelectItem value="LOW">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    options={[
+                      { value: "HIGH", label: "High" },
+                      { value: "MEDIUM", label: "Medium" },
+                      { value: "LOW", label: "Low" },
+                    ]}
+                  />
                   <Button
                     type="button"
                     variant="ghost"
