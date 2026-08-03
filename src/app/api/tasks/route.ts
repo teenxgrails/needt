@@ -111,6 +111,8 @@ export async function POST(request: NextRequest) {
 
     const json = await request.json();
     const { tagIds, recurrenceRule, scheduleId, ...taskData } = json;
+    delete taskData.recurrenceMasterId;
+    delete taskData.recurrenceInstanceAt;
     const description = sanitizeTaskDescriptionForStorage(taskData.description);
     if (scheduleId) {
       const schedule = await prisma.workSchedule.findFirst({

@@ -86,6 +86,8 @@ export interface Task {
   updatedAt: Date;
   recurrenceRule?: string | null;
   lastCompletedDate?: Date | null;
+  recurrenceMasterId?: string | null;
+  recurrenceInstanceAt?: Date | null;
   completedAt?: Date | null;
   isRecurring: boolean;
   // Auto-scheduling fields

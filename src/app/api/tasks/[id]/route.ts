@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
 import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
-import { Task } from "@prisma/client";
+import type { Prisma, Task } from "@prisma/client";
 import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
@@ -114,6 +114,8 @@ export async function PUT(
     delete updates.project;
     delete updates.userId;
     delete updates.archivedAt;
+    delete updates.recurrenceMasterId;
+    delete updates.recurrenceInstanceAt;
     if (
       updates.isArchived !== undefined &&
       typeof updates.isArchived !== "boolean"
@@ -164,7 +166,13 @@ export async function PUT(
       updates.completedAt = newDate();
     }
 
-    // Handle recurring task completion
+    let recurringCompletion: {
+      occurrenceAt: Date;
+      completedAt: Date;
+    } | null = null;
+
+    // Completing the series row records an immutable occurrence snapshot and
+    // advances only the future-facing master row.
     if (
       task.isRecurring &&
       updates.status === TaskStatus.COMPLETED &&
@@ -193,73 +201,29 @@ export async function PUT(
           nextOccurrence.setUTCHours(0, 0, 0, 0);
         }
 
+        const completedAt = updates.completedAt ?? newDate();
+        recurringCompletion = { occurrenceAt: baseDate, completedAt };
+
+        // Calculate the time delta between start date and due date (if both exist)
+        let nextStartDate = undefined;
+        if (nextOccurrence && task.startDate && task.dueDate) {
+          const startToDueDelta = Math.round(
+            (task.dueDate.getTime() - task.startDate.getTime()) /
+              (1000 * 60 * 60 * 24)
+          );
+          const calculatedStart = newDate(nextOccurrence);
+          calculatedStart.setDate(
+            calculatedStart.getDate() - startToDueDelta
+          );
+          nextStartDate = calculatedStart;
+        }
+
         if (nextOccurrence) {
-          // Calculate the time delta between start date and due date (if both exist)
-          let nextStartDate = undefined;
-          if (task.startDate && task.dueDate) {
-            // Calculate the number of days between the original start and due dates
-            const startToDueDelta = Math.round(
-              (task.dueDate.getTime() - task.startDate.getTime()) /
-                (1000 * 60 * 60 * 24)
-            );
-
-            // Apply the same delta to the new due date to get the new start date
-            const newStartDate = new Date(nextOccurrence);
-            newStartDate.setDate(newStartDate.getDate() - startToDueDelta);
-            nextStartDate = newStartDate;
-
-            logger.info(
-              "Calculated new start date for recurring task",
-              {
-                taskId: task.id,
-                originalStartDate: task.startDate?.toISOString(),
-                originalDueDate: task.dueDate?.toISOString(),
-                deltaInDays: startToDueDelta,
-                newDueDate: nextOccurrence.toISOString(),
-                newStartDate: nextStartDate.toISOString(),
-              },
-              LOG_SOURCE
-            );
-          }
-
-          // Create a completed instance as a separate task
-          await prisma.task.create({
-            data: {
-              title: task.title,
-              description: task.description,
-              status: TaskStatus.COMPLETED,
-              dueDate: baseDate, // Use the original due date for the completed instance
-              startDate: task.startDate, // Use the original start date for the completed instance
-              duration: task.duration,
-              estimatedMinutes: task.estimatedMinutes,
-              estOptimistic: task.estOptimistic,
-              estLikely: task.estLikely,
-              estPessimistic: task.estPessimistic,
-              minChunkMinutes: task.minChunkMinutes,
-              maxChunkMinutes: task.maxChunkMinutes,
-              deadline: task.deadline,
-              energyRequired: task.energyRequired,
-              priorityLevel: task.priorityLevel,
-              contextTag: task.contextTag,
-              priority: task.priority,
-              energyLevel: task.energyLevel,
-              preferredTime: task.preferredTime,
-              projectId: task.projectId,
-              isRecurring: false,
-              completedAt: newDate(), // Set completedAt for the completed instance
-              // Associate the task with the current user
-              userId,
-              tags: {
-                connect: task.tags.map((tag) => ({ id: tag.id })),
-              },
-            },
-          });
-
-          // Update the recurring task with new due date and reset status
           updates.dueDate = nextOccurrence;
-          updates.startDate = nextStartDate; // Update the start date if calculated
+          updates.startDate = nextStartDate;
           updates.status = TaskStatus.TODO;
-          updates.lastCompletedDate = newDate();
+          updates.completedAt = null;
+          updates.lastCompletedDate = completedAt;
         }
       } catch (error) {
         logger.error(
@@ -298,7 +262,7 @@ export async function PUT(
     // Save the old task for change tracking
     const oldTask = { ...task };
 
-    let updatedTask = await prisma.task.update({
+    const taskUpdate: Prisma.TaskUpdateArgs = {
       where: {
         id: id,
         // Ensure the task belongs to the current user
@@ -325,7 +289,57 @@ export async function PUT(
         project: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
       },
-    });
+    };
+
+    let updatedTask;
+    if (recurringCompletion) {
+      updatedTask = await prisma.$transaction(async (transaction) => {
+        await transaction.task.upsert({
+          where: {
+            recurrenceMasterId_recurrenceInstanceAt: {
+              recurrenceMasterId: task.id,
+              recurrenceInstanceAt: recurringCompletion.occurrenceAt,
+            },
+          },
+          update: {},
+          create: {
+            title: task.title,
+            description: task.description,
+            status: TaskStatus.COMPLETED,
+            dueDate: recurringCompletion.occurrenceAt,
+            startDate: task.startDate,
+            duration: task.duration,
+            estimatedMinutes: task.estimatedMinutes,
+            estOptimistic: task.estOptimistic,
+            estLikely: task.estLikely,
+            estPessimistic: task.estPessimistic,
+            minChunkMinutes: task.minChunkMinutes,
+            maxChunkMinutes: task.maxChunkMinutes,
+            deadline: task.deadline,
+            hardDeadline: task.hardDeadline,
+            energyRequired: task.energyRequired,
+            priorityLevel: task.priorityLevel,
+            contextTag: task.contextTag,
+            priority: task.priority,
+            energyLevel: task.energyLevel,
+            preferredTime: task.preferredTime,
+            projectId: task.projectId,
+            scheduleId: task.scheduleId,
+            isRecurring: false,
+            recurrenceMasterId: task.id,
+            recurrenceInstanceAt: recurringCompletion.occurrenceAt,
+            completedAt: recurringCompletion.completedAt,
+            userId,
+            tags: {
+              connect: task.tags.map((tag) => ({ id: tag.id })),
+            },
+          },
+        });
+        return transaction.task.update(taskUpdate);
+      });
+    } else {
+      updatedTask = await prisma.task.update(taskUpdate);
+    }
 
     if (archiveStateChanged && updates.isArchived) {
       await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });

@@ -389,10 +389,14 @@ model Task {
   tags Tag[]
 
   // Recurrence
-  isRecurring       Boolean   @default(false)
-  recurrenceRule    String?
-  lastCompletedDate DateTime?
-  completedAt       DateTime? // When the task was marked as completed
+  isRecurring          Boolean   @default(false)
+  recurrenceRule       String?
+  lastCompletedDate    DateTime?
+  completedAt          DateTime? // When the task was marked as completed
+  recurrenceMasterId   String?
+  recurrenceInstanceAt DateTime?
+  recurrenceMaster     Task?      @relation("TaskRecurrenceInstances", fields: [recurrenceMasterId], references: [id], onDelete: Restrict)
+  recurrenceInstances  Task[]     @relation("TaskRecurrenceInstances")
 
   // External Integration
   externalTaskId String?
@@ -444,6 +448,8 @@ model Task {
   @@index([boardId])
   @@index([boardColumnId])
   @@index([isRecurring])
+  @@index([recurrenceMasterId])
+  @@unique([recurrenceMasterId, recurrenceInstanceAt])
   @@index([isAutoScheduled])
   @@index([scheduledStart, scheduledEnd])
   @@index([scheduleId])

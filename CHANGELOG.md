@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Completing a recurring task now records the finished occurrence as an immutable instance linked to its series master, instead of rewriting the master row and leaving a detached completed copy. The master only advances to the next occurrence, so editing a series affects future occurrences and never rewrites past ones. Completion is idempotent — a repeated or concurrent completion of the same occurrence can no longer create duplicate instances.
 - Auto-scheduling now honors task start and postpone dates, preserves exact unscheduled reason codes, falls back after soft deadlines, and refuses to place hard-deadline tasks past their deadline.
 - Fixed the root `not-found.tsx` rendering its own `<html>`/`<body>` nested inside the app's root layout, crashing the React tree on any genuinely missing route (could leave client-side navigation, including `/style`, stuck broken until a hard reload).
 - Reduced the blocked-hours diagonal texture's opacity and tightened its stripe spacing so it reads as the same pattern in the short all-day row as in the full-height timed grid, instead of smearing into a solid block there.
