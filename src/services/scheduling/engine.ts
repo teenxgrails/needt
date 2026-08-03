@@ -96,6 +96,7 @@ export interface UnscheduledTask {
   title: string;
   reason:
     | "DEPENDENCY_BLOCKED"
+    | "BEFORE_EARLIEST_START"
     | "NO_WORKING_TIME"
     | "NO_DURATION"
     | "HARD_DEADLINE_MISSED";
@@ -474,20 +475,17 @@ function findSlot(
   profile: EnergyProfile,
   prefs: SchedulingPreferences,
   earliestStart: Date,
+  planningHorizonEnd: Date,
   deepWorkByDay: Map<string, number>,
   strictEnergy: boolean
 ): { start: Date; end: Date } | null {
   const spacingMinutes = Math.max(prefs.bufferMinutes, prefs.minBreakMinutes);
-  const defaultSearchEnd = addMinutes(
-    earliestStart,
-    DEFAULT_SEARCH_DAYS * 24 * 60
-  );
   const searchEnd =
     chunk.task.hardDeadline && chunk.task.deadline
-      ? chunk.task.deadline < defaultSearchEnd
+      ? chunk.task.deadline < planningHorizonEnd
         ? chunk.task.deadline
-        : defaultSearchEnd
-      : defaultSearchEnd;
+        : planningHorizonEnd
+      : planningHorizonEnd;
   let day = startOfDay(earliestStart);
 
   while (day <= searchEnd) {
@@ -598,12 +596,31 @@ export function scheduleTasks(input: {
     input.tasks.filter((task) => !isDone(task) && !task.isFrozen),
     input.now
   );
+  const planningHorizonEnd = addMinutes(
+    input.now,
+    DEFAULT_SEARCH_DAYS * 24 * 60
+  );
 
   for (const task of candidateTasks) {
     const availableFrom =
       task.availableFrom && task.availableFrom > input.now
         ? task.availableFrom
         : input.now;
+    if (
+      availableFrom > planningHorizonEnd ||
+      (task.hardDeadline &&
+        task.deadline !== null &&
+        task.deadline !== undefined &&
+        availableFrom >= task.deadline)
+    ) {
+      unscheduled.push({
+        taskId: task.id,
+        title: task.title,
+        reason: "BEFORE_EARLIEST_START",
+      });
+      unscheduledTaskIds.add(task.id);
+      continue;
+    }
     const dependencyReadyAt = findDependencyReadyAt(
       task,
       placedTaskEnds,
@@ -646,6 +663,7 @@ export function scheduleTasks(input: {
         input.energyProfile,
         input.prefs,
         cursor,
+        planningHorizonEnd,
         deepWorkByDay,
         true
       );
@@ -657,6 +675,7 @@ export function scheduleTasks(input: {
           input.energyProfile,
           input.prefs,
           cursor,
+          planningHorizonEnd,
           deepWorkByDay,
           false
         );

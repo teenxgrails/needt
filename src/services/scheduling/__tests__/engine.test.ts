@@ -216,6 +216,55 @@ describe("scheduleTasks", () => {
     );
   });
 
+  it("reports an earliest start beyond the planning horizon", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "future",
+          availableFrom: new Date(2026, 7, 1, 9, 0, 0),
+        }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.blocks).toHaveLength(0);
+    expect(result.unscheduled).toEqual([
+      expect.objectContaining({
+        taskId: "future",
+        reason: "BEFORE_EARLIEST_START",
+      }),
+    ]);
+  });
+
+  it("reports an earliest start at or after a hard deadline", () => {
+    const boundary = new Date(2026, 6, 6, 13, 0, 0);
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "not-actionable-in-time",
+          availableFrom: boundary,
+          deadline: boundary,
+          hardDeadline: true,
+        }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.blocks).toHaveLength(0);
+    expect(result.unscheduled).toEqual([
+      expect.objectContaining({
+        taskId: "not-actionable-in-time",
+        reason: "BEFORE_EARLIEST_START",
+      }),
+    ]);
+  });
+
   it("allows a soft deadline to fall back to the nearest later slot", () => {
     const result = scheduleTasks({
       tasks: [
