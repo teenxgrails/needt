@@ -34,6 +34,7 @@ export function buildOptimisticTask(
   return {
     ...taskFields,
     hardDeadline: taskFields.hardDeadline ?? false,
+    availableFrom: taskFields.availableFrom ?? null,
     isArchived: false,
     archivedAt: null,
     id,

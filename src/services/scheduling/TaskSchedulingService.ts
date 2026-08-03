@@ -90,6 +90,7 @@ type DbTaskWithRelations = {
   scheduleScore: number | null;
   lastScheduled: Date | null;
   scheduleLocked: boolean;
+  availableFrom: Date | null;
   postponedUntil: Date | null;
   isArchived: boolean;
   archivedAt: Date | null;
@@ -177,9 +178,11 @@ function convertDbTaskToTaskWithRelations(
 }
 
 function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
-  const availabilityDates = [task.startDate, task.postponedUntil].filter(
-    (value): value is Date => value !== null
-  );
+  const availabilityDates = [
+    task.availableFrom,
+    task.startDate,
+    task.postponedUntil,
+  ].filter((value): value is Date => value !== null);
   return {
     id: task.id,
     title: task.title,

@@ -11,7 +11,9 @@ export interface SchedulableTask {
   minChunkMinutes?: number | null;
   maxChunkMinutes?: number | null;
   deadline?: Date | null;
+  /** Earliest instant this task may be placed. */
   availableFrom?: Date | null;
+  /** May use free time outside Work Schedule, but never end after deadline. */
   hardDeadline?: boolean;
   priority: SchedulingTaskPriority;
   energyRequired: SchedulingEnergyLevel;

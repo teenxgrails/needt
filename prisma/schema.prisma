@@ -373,7 +373,10 @@ model Task {
   schedule        WorkSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
   scheduleScore   Float?
   lastScheduled   DateTime?
-  postponedUntil  DateTime? // New field for postponing tasks
+  // Earliest explicit scheduling boundary. The scheduler also respects
+  // startDate and postponedUntil and uses the latest of all three.
+  availableFrom   DateTime?
+  postponedUntil  DateTime?
   isArchived      Boolean       @default(false)
   archivedAt      DateTime?
 
@@ -446,6 +449,7 @@ model Task {
   @@index([scheduleId])
   @@index([externalTaskId])
   @@index([source])
+  @@index([availableFrom])
   @@index([postponedUntil])
   @@index([deadline])
   @@index([userId, isArchived])

@@ -96,6 +96,7 @@ export interface Task {
   scheduleScore?: number | null;
   lastScheduled?: Date | null;
   scheduleLocked: boolean;
+  availableFrom?: Date | null;
   postponedUntil?: Date | null;
   isArchived: boolean;
   archivedAt?: Date | null;
