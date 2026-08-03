@@ -1,3 +1,5 @@
+import type { UnscheduledReason } from "@/lib/scheduling-reasons";
+
 export type SchedulingEnergyLevel = "LOW" | "MEDIUM" | "HIGH";
 export type SchedulingTaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -94,12 +96,7 @@ export interface ScheduledBlock {
 export interface UnscheduledTask {
   taskId: string;
   title: string;
-  reason:
-    | "DEPENDENCY_BLOCKED"
-    | "BEFORE_EARLIEST_START"
-    | "NO_WORKING_TIME"
-    | "NO_DURATION"
-    | "HARD_DEADLINE_MISSED";
+  reason: UnscheduledReason;
 }
 
 export interface ScheduleResult {
@@ -497,7 +494,8 @@ function findSlot(
   earliestStart: Date,
   planningHorizonEnd: Date,
   deepWorkByDay: Map<string, number>,
-  strictEnergy: boolean
+  strictEnergy: boolean,
+  ignoreEnergyLimits = false
 ): { start: Date; end: Date } | null {
   const spacingMinutes = Math.max(prefs.bufferMinutes, prefs.minBreakMinutes);
   const searchEnd =
@@ -523,13 +521,15 @@ function findSlot(
             dayKey(cursor) + cursor.toISOString().slice(0, 10);
           const currentDeepWork = deepWorkByDay.get(deepWorkKey) ?? 0;
           const fitsDeepWork =
+            ignoreEnergyLimits ||
             chunk.task.energyRequired !== "HIGH" ||
             currentDeepWork + chunk.minutes <= prefs.maxDeepWorkPerDay;
 
           if (
             fitsDeepWork &&
             !hasConflict(cursor, end, occupied, spacingMinutes) &&
-            hasEnergyMatch(cursor, end, chunk.task, profile, strictEnergy)
+            (ignoreEnergyLimits ||
+              hasEnergyMatch(cursor, end, chunk.task, profile, strictEnergy))
           ) {
             return { start: cursor, end };
           }
@@ -656,17 +656,20 @@ export function scheduleTasks(input: {
       task.availableFrom && task.availableFrom > input.now
         ? task.availableFrom
         : input.now;
-    if (
-      availableFrom > planningHorizonEnd ||
-      (task.hardDeadline &&
-        task.deadline !== null &&
-        task.deadline !== undefined &&
-        availableFrom >= task.deadline)
-    ) {
+    if (availableFrom > planningHorizonEnd) {
       unscheduled.push({
         taskId: task.id,
         title: task.title,
         reason: "BEFORE_EARLIEST_START",
+      });
+      unscheduledTaskIds.add(task.id);
+      continue;
+    }
+    if (task.hardDeadline && task.deadline && availableFrom >= task.deadline) {
+      unscheduled.push({
+        taskId: task.id,
+        title: task.title,
+        reason: "DEADLINE_IMPOSSIBLE",
       });
       unscheduledTaskIds.add(task.id);
       continue;
@@ -694,6 +697,20 @@ export function scheduleTasks(input: {
         taskId: task.id,
         title: task.title,
         reason: "NO_DURATION",
+      });
+      unscheduledTaskIds.add(task.id);
+      continue;
+    }
+    const duration = explicitDuration ?? DEFAULT_ESTIMATE_MINUTES;
+    if (
+      task.hardDeadline &&
+      task.deadline &&
+      addMinutes(dependencyReadyAt, duration) > task.deadline
+    ) {
+      unscheduled.push({
+        taskId: task.id,
+        title: task.title,
+        reason: "DEADLINE_IMPOSSIBLE",
       });
       unscheduledTaskIds.add(task.id);
       continue;
@@ -740,10 +757,24 @@ export function scheduleTasks(input: {
         );
 
       if (!slot) {
-        failedReason =
-          task.hardDeadline && task.deadline
-            ? "HARD_DEADLINE_MISSED"
+        if (task.hardDeadline && task.deadline) {
+          failedReason = "HARD_DEADLINE_MISSED";
+        } else {
+          const slotWithoutEnergyLimits = findSlot(
+            chunk,
+            occupied,
+            input.energyProfile,
+            input.prefs,
+            cursor,
+            planningHorizonEnd,
+            deepWorkByDay,
+            false,
+            true
+          );
+          failedReason = slotWithoutEnergyLimits
+            ? "ENERGY_WINDOW_UNAVAILABLE"
             : "NO_WORKING_TIME";
+        }
         break;
       }
 

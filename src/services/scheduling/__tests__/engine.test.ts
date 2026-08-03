@@ -306,9 +306,42 @@ describe("scheduleTasks", () => {
     expect(result.unscheduled).toEqual([
       expect.objectContaining({
         taskId: "not-actionable-in-time",
-        reason: "BEFORE_EARLIEST_START",
+        reason: "DEADLINE_IMPOSSIBLE",
       }),
     ]);
+  });
+
+  it("reports a hard deadline that cannot contain the task duration", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "too-long",
+          estimatedMinutes: 120,
+          deadline: new Date(2026, 6, 6, 9, 0, 0),
+          hardDeadline: true,
+        }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.unscheduled[0]?.reason).toBe("DEADLINE_IMPOSSIBLE");
+  });
+
+  it("reports when energy limits prevent an otherwise valid slot", () => {
+    const result = scheduleTasks({
+      tasks: [task({ id: "energy-limited", energyRequired: "HIGH" })],
+      busyBlocks: [],
+      energyProfile,
+      prefs: { ...prefs, maxDeepWorkPerDay: 0 },
+      now: mondayMorning,
+    });
+
+    expect(result.unscheduled[0]?.reason).toBe(
+      "ENERGY_WINDOW_UNAVAILABLE"
+    );
   });
 
   it("allows a soft deadline to fall back to the nearest later slot", () => {

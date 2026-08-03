@@ -19,6 +19,7 @@ import {
   deleteTaskRequest,
   updateTaskRequest,
 } from "@/lib/task-api";
+import type { UnscheduledReasonItem } from "@/lib/scheduling-reasons";
 
 import { useDurationMemoryStore } from "@/store/durationMemory";
 
@@ -40,7 +41,13 @@ interface SchedulingRunResponse {
   id?: string;
   status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
   changedTaskCount?: number;
+  unscheduled?: UnscheduledReasonItem[];
   errorMessage?: string | null;
+}
+
+export interface SchedulingSummary {
+  changedTaskCount: number;
+  unscheduled: UnscheduledReasonItem[];
 }
 
 async function waitForSchedulingRun(
@@ -96,7 +103,7 @@ interface TaskState {
   ) => Promise<void>;
 
   // Auto-scheduling actions
-  scheduleAllTasks: () => Promise<number>;
+  scheduleAllTasks: () => Promise<SchedulingSummary>;
   triggerScheduleAllTasks: () => Promise<void>;
   notifyScheduleAnimation: () => void;
 }
@@ -451,7 +458,10 @@ export const useTaskStore = create<TaskState>()(
           const completed = await waitForSchedulingRun(initial);
           await get().fetchTasks();
           get().notifyScheduleAnimation();
-          return completed.changedTaskCount ?? 0;
+          return {
+            changedTaskCount: completed.changedTaskCount ?? 0,
+            unscheduled: completed.unscheduled ?? [],
+          };
         } catch (error) {
           set({ error: error as Error });
           throw error;

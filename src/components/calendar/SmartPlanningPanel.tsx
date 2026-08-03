@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { APP_NAME } from "@/lib/app-config";
 import { newDate } from "@/lib/date-utils";
 import { notify } from "@/lib/notifications";
+import { summarizeUnscheduledReasons } from "@/lib/scheduling-reasons";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
@@ -189,8 +190,15 @@ export function SmartPlanningPanel() {
   const runSchedule = async () => {
     try {
       setIsScheduling(true);
-      await scheduleAllTasks();
-      notify.success("Schedule refreshed");
+      const result = await scheduleAllTasks();
+      if (result.unscheduled.length > 0) {
+        notify.warning(
+          `${result.unscheduled.length} task${result.unscheduled.length === 1 ? "" : "s"} could not be scheduled.`,
+          { description: summarizeUnscheduledReasons(result.unscheduled) }
+        );
+      } else {
+        notify.success("Schedule refreshed");
+      }
     } catch (error) {
       notify.error("Could not reschedule", {
         description:

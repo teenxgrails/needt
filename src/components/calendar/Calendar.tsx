@@ -56,6 +56,7 @@ import { useEventModalStore } from "@/lib/commands/groups/calendar";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notifications";
+import { summarizeUnscheduledReasons } from "@/lib/scheduling-reasons";
 import { cn } from "@/lib/utils";
 
 import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
@@ -142,12 +143,19 @@ export function Calendar({
       closeButton: true,
     });
     try {
-      const scheduledCount = await scheduleAllTasks();
-      notify.success(
-        scheduledCount > 0
-          ? `${scheduledCount} tasks refreshed on your calendar.`
-          : "All tasks are already up to date."
-      );
+      const result = await scheduleAllTasks();
+      if (result.unscheduled.length > 0) {
+        notify.warning(
+          `${result.unscheduled.length} task${result.unscheduled.length === 1 ? "" : "s"} could not be scheduled.`,
+          { description: summarizeUnscheduledReasons(result.unscheduled) }
+        );
+      } else {
+        notify.success(
+          result.changedTaskCount > 0
+            ? `${result.changedTaskCount} tasks refreshed on your calendar.`
+            : "All tasks are already up to date."
+        );
+      }
     } catch (error) {
       notify.error("Couldn't refresh tasks. Please try again.");
       void logger.error(
