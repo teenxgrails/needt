@@ -164,6 +164,10 @@ export default function TasksPage() {
     await fetchProjects();
   };
 
+  const handleRestoreTask = async (taskId: string) => {
+    await updateTask(taskId, { isArchived: false });
+  };
+
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
     if (status === TaskStatus.COMPLETED) {
       await completeTask(taskId, status);
@@ -584,6 +588,8 @@ export default function TasksPage() {
                 onCreateTask={
                   viewMode === "archived" ? undefined : openCreateTask
                 }
+                readOnly={viewMode === "archived"}
+                onRestore={handleRestoreTask}
               />
             )}
           </motion.div>

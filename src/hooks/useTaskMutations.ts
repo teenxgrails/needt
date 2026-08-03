@@ -202,7 +202,7 @@ export function useTaskMutations() {
       if (isLatestTaskMutation(context.taskId, context.version)) {
         writeTasks(queryClient, context.previousTasks);
       }
-      reportMutationError("delete task", context.taskId, error);
+      reportMutationError("archive task", context.taskId, error);
     },
     onSuccess: (_result, _id, context) => {
       if (context && isLatestTaskMutation(context.taskId, context.version)) {

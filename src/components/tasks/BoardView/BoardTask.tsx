@@ -1,6 +1,6 @@
 "use client";
 
-import { HiClock, HiLockClosed, HiPencil, HiTrash } from "react-icons/hi";
+import { HiArchive, HiClock, HiLockClosed, HiPencil } from "react-icons/hi";
 
 import { useDraggableTask } from "@/components/dnd/useDragAndDrop";
 import { TaskDescription } from "@/components/tasks/TaskDescription";
@@ -216,9 +216,9 @@ export function BoardTask({ task, onEdit, onDelete }: BoardTaskProps) {
           type="button"
           onClick={() => onDelete(task.id)}
           className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
-          title="Delete task"
+          title="Archive task"
         >
-          <HiTrash className="h-4 w-4" />
+          <HiArchive className="h-4 w-4" />
         </button>
       </div>
     </div>

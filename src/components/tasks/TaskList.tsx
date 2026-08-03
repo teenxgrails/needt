@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
+  ArchiveRestore,
   CalendarClock,
   Check,
   ChevronDown,
@@ -58,6 +59,8 @@ interface TaskListProps {
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   onCreateTask?: () => void;
   compact?: boolean;
+  readOnly?: boolean;
+  onRestore?: (taskId: string) => void;
 }
 
 const CONTROL_CLASS = APP_TOOLBAR_BUTTON_CLASS;
@@ -137,6 +140,8 @@ export function TaskList({
   onStatusChange,
   onCreateTask,
   compact = false,
+  readOnly = false,
+  onRestore,
 }: TaskListProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set()
@@ -664,6 +669,8 @@ export function TaskList({
                   onEdit={onEdit}
                   onStatusChange={onStatusChange}
                   onCreateTask={onCreateTask}
+                  readOnly={readOnly}
+                  onRestore={onRestore}
                 />
               );
             })}
@@ -676,16 +683,20 @@ export function TaskList({
               <CalendarClock className="mx-auto mb-3 h-5 w-5 text-[var(--text-muted)]" />
               <p className="text-[13px] text-[var(--text-secondary)]">
                 {tasks.length === 0
-                  ? "No tasks yet."
+                  ? readOnly
+                    ? "No archived tasks."
+                    : "No tasks yet."
                   : "No tasks match this view."}
               </p>
-              <button
-                type="button"
-                onClick={tasks.length === 0 ? onCreateTask : clearFilters}
-                className="mt-2 text-[12px] text-[var(--text-primary)] underline-offset-4 hover:underline"
-              >
-                {tasks.length === 0 ? "Create task" : "Clear filters"}
-              </button>
+              {(!readOnly || tasks.length > 0) && (
+                <button
+                  type="button"
+                  onClick={tasks.length === 0 ? onCreateTask : clearFilters}
+                  className="mt-2 text-[12px] text-[var(--text-primary)] underline-offset-4 hover:underline"
+                >
+                  {tasks.length === 0 ? "Create task" : "Clear filters"}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -704,6 +715,8 @@ interface GroupRowsProps {
   onEdit: (task: Task) => void;
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   onCreateTask?: () => void;
+  readOnly: boolean;
+  onRestore?: (taskId: string) => void;
 }
 
 function GroupRows({
@@ -715,6 +728,8 @@ function GroupRows({
   onEdit,
   onStatusChange,
   onCreateTask,
+  readOnly,
+  onRestore,
 }: GroupRowsProps) {
   const columnSpan = visibleColumns.length + 2;
   const groupMinutes = tasks.reduce(
@@ -752,38 +767,43 @@ function GroupRows({
         tasks.map((task) => (
           <tr
             key={task.id}
-            className="group h-10 cursor-pointer border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] text-[12px] text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--surface-hover)]"
-            onClick={() => onEdit(task)}
+            className={cn(
+              "group h-10 border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] text-[12px] text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--surface-hover)]",
+              !readOnly && "cursor-pointer"
+            )}
+            onClick={readOnly ? undefined : () => onEdit(task)}
           >
             <td className="px-3">
               <div className="flex min-w-0 items-center gap-2">
-                <button
-                  type="button"
-                  aria-label={
-                    task.status === TaskStatus.COMPLETED
-                      ? `Reopen ${task.title}`
-                      : `Complete ${task.title}`
-                  }
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onStatusChange(
-                      task.id,
+                {!readOnly && (
+                  <button
+                    type="button"
+                    aria-label={
                       task.status === TaskStatus.COMPLETED
-                        ? TaskStatus.TODO
-                        : TaskStatus.COMPLETED
-                    );
-                  }}
-                  className={cn(
-                    "grid h-4 w-4 flex-none place-items-center rounded-full border transition-colors",
-                    task.status === TaskStatus.COMPLETED
-                      ? "border-[var(--color-success)] bg-[var(--color-success)] text-[var(--color-success-contrast)]"
-                      : "border-[var(--text-muted)] hover:border-[var(--text-primary)]"
-                  )}
-                >
-                  {task.status === TaskStatus.COMPLETED && (
-                    <Check className="h-2.5 w-2.5" />
-                  )}
-                </button>
+                        ? `Reopen ${task.title}`
+                        : `Complete ${task.title}`
+                    }
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onStatusChange(
+                        task.id,
+                        task.status === TaskStatus.COMPLETED
+                          ? TaskStatus.TODO
+                          : TaskStatus.COMPLETED
+                      );
+                    }}
+                    className={cn(
+                      "grid h-4 w-4 flex-none place-items-center rounded-full border transition-colors",
+                      task.status === TaskStatus.COMPLETED
+                        ? "border-[var(--color-success)] bg-[var(--color-success)] text-[var(--color-success-contrast)]"
+                        : "border-[var(--text-muted)] hover:border-[var(--text-primary)]"
+                    )}
+                  >
+                    {task.status === TaskStatus.COMPLETED && (
+                      <Check className="h-2.5 w-2.5" />
+                    )}
+                  </button>
+                )}
                 <span
                   className={cn(
                     "min-w-0 truncate font-medium text-[var(--text-primary)]",
@@ -840,10 +860,22 @@ function GroupRows({
               className="relative px-1"
               onClick={(event) => event.stopPropagation()}
             >
-              <CalendarTaskActionsMenu
-                task={task}
-                onOpenTask={() => onEdit(task)}
-              />
+              {readOnly ? (
+                <button
+                  type="button"
+                  aria-label={`Restore ${task.title}`}
+                  title="Restore task"
+                  onClick={() => onRestore?.(task.id)}
+                  className="grid h-7 w-7 place-items-center rounded text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+                >
+                  <ArchiveRestore className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <CalendarTaskActionsMenu
+                  task={task}
+                  onOpenTask={() => onEdit(task)}
+                />
+              )}
             </td>
           </tr>
         ))}

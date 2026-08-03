@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { CheckCircle2 } from "lucide-react";
-import { HiClock, HiPencil, HiTrash } from "react-icons/hi";
+import { HiArchive, HiClock, HiPencil } from "react-icons/hi";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 import { Button } from "@/components/ui/button";
@@ -46,15 +46,15 @@ export function QuickActions() {
     }
   };
 
-  const handleDeleteTask = async () => {
+  const handleArchiveTask = async () => {
     if (!currentTask) return;
 
-    if (confirm("Are you sure you want to delete this task?")) {
+    if (confirm("Archive this task?")) {
       try {
         await deleteTask(currentTask.id);
       } catch (error) {
         logger.error(
-          "Failed to delete task in focus mode",
+          "Failed to archive task in focus mode",
           {
             error: error instanceof Error ? error.message : String(error),
             taskId: currentTask.id,
@@ -105,16 +105,16 @@ export function QuickActions() {
           </span>
         </Button>
 
-        {/* Delete Task */}
+        {/* Archive Task */}
         <Button
           variant="outline"
-          onClick={handleDeleteTask}
-          className="h-11 justify-start text-destructive hover:text-destructive sm:h-9"
+          onClick={handleArchiveTask}
+          className="h-11 justify-start sm:h-9"
           disabled={!currentTask}
         >
           <span className="flex items-center">
-            <HiTrash className="mr-2 h-4 w-4" />
-            Delete Task
+            <HiArchive className="mr-2 h-4 w-4" />
+            Archive Task
           </span>
         </Button>
 

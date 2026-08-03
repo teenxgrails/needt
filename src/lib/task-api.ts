@@ -52,6 +52,6 @@ export async function deleteTaskRequest(id: string): Promise<void> {
   const response = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
 
   if (!response.ok) {
-    throw await readError(response, "Failed to delete task");
+    throw await readError(response, "Failed to archive task");
   }
 }

@@ -1,12 +1,12 @@
 import {
   HiCheck,
+  HiArchive,
   HiClock,
   HiCloud,
   HiLockClosed,
   HiMenuAlt4,
   HiPencil,
   HiRefresh,
-  HiTrash,
 } from "react-icons/hi";
 
 import { Button } from "@/components/ui/button";
@@ -283,9 +283,9 @@ export function TaskRow({
               e.stopPropagation();
               onDelete(task.id);
             }}
-            title="Delete task"
+            title="Archive task"
           >
-            <HiTrash className="h-4 w-4" />
+            <HiArchive className="h-4 w-4" />
           </Button>
         </div>
       </td>

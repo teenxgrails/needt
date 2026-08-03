@@ -10,10 +10,7 @@ import { newDate } from "@/lib/date-utils";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import {
-  deleteTaskBlockEvent,
-  schedulePushTaskBlock,
-} from "@/lib/task-block-push";
+import { schedulePushTaskBlock } from "@/lib/task-block-push";
 import { sanitizeTaskDescriptionForStorage } from "@/lib/task-description-format";
 import {
   ChangeType,
@@ -100,6 +97,17 @@ export async function PUT(
 
     const json = await request.json();
     logger.info(`Update payload for task ${id}`, { payload: json }, LOG_SOURCE);
+
+    if (
+      task.isArchived &&
+      (json.isArchived !== false ||
+        Object.keys(json).some((key) => key !== "isArchived"))
+    ) {
+      return new NextResponse(
+        "Archived tasks are read-only. Restore the task before editing it.",
+        { status: 409 }
+      );
+    }
 
     const { tagIds, projectId, scheduleId, bypassBlockedHours, ...updates } =
       json;
@@ -441,63 +449,20 @@ export async function DELETE(
       return new NextResponse("Task not found", { status: 404 });
     }
 
-    // Check if the task belongs to a mapped project
-    let mappingId = null;
-    if (task.projectId) {
-      const mapping = await prisma.taskListMapping.findFirst({
-        where: {
-          projectId: task.projectId,
+    if (!task.isArchived) {
+      await prisma.task.update({
+        where: { id, userId },
+        data: {
+          isArchived: true,
+          archivedAt: newDate(),
+          scheduledStart: null,
+          scheduledEnd: null,
+          scheduleLocked: false,
         },
       });
-      if (mapping) {
-        mappingId = mapping.id;
-      }
+      await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });
+      schedulePushTaskBlock(userId, id);
     }
-
-    // Track the deletion for sync purposes if the task was in a mapped project
-    // and had an external ID BEFORE actually deleting the task
-    if (mappingId && task.externalTaskId && task.source) {
-      const changeTracker = new TaskChangeTracker();
-      await changeTracker.trackChange(
-        id,
-        "DELETE" as ChangeType,
-        userId,
-        {
-          externalTaskId: task.externalTaskId,
-          source: task.source,
-          externalListId: task.externalListId,
-          projectId: task.projectId,
-          title: task.title,
-        },
-        undefined, // providerId will be set during sync
-        mappingId
-      );
-
-      logger.info(
-        `Tracked DELETE change for task ${id} in mapping ${mappingId}`,
-        {
-          taskId: id,
-          mappingId,
-          externalTaskId: task.externalTaskId,
-          title: task.title,
-        },
-        LOG_SOURCE
-      );
-    }
-
-    // Delete the calendar event if it exists BEFORE deleting the task
-    if (task.blockEventId && task.blockFeedId) {
-      await deleteTaskBlockEvent(userId, task.blockEventId, task.blockFeedId);
-    }
-
-    // Now delete the task AFTER tracking the change and deleting calendar event
-    await prisma.task.delete({
-      where: {
-        id,
-        // Ensure the task belongs to the current user
-        userId,
-      },
-    });
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

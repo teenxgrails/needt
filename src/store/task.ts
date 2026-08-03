@@ -313,7 +313,7 @@ export const useTaskStore = create<TaskState>()(
             set({ tasks: previousTasks });
           }
           set({ error: error as Error });
-          toast.error("Could not delete task. Your changes were reverted.");
+          toast.error("Could not archive task. Your changes were reverted.");
           throw error;
         } finally {
           set({ loading: false });

@@ -60,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added non-destructive task archiving with a separate Archived view, restore and permanent-delete actions, and exclusions from normal planning, Focus, reminders, search, AI context, connectors, and project counts.
+- Added non-destructive task archiving with a read-only Archived view, restore actions, and exclusions from normal planning, Focus, reminders, search, AI context, connectors, and project counts; legacy task deletion now archives data instead of removing it.
 - Added a Notion-like Page canvas with a borderless title, icon and cover controls, full-canvas focus, searchable keyboard slash commands, canonical text/list/checklist/quote/code/divider blocks, and extensible callout, toggle, link, bookmark, media, layout and mention blocks.
 - Added private Page assets, resolvable comments, reusable templates, authenticated forms, explicit AI proposal diffs, and functional Table, Board, List, Calendar, Timeline, and Gallery database views over shared editable records.
 - Added named work schedules with saved timezones, multiple daily intervals, default selection, task and recurring-task assignment, selected-day copy, precise time fields, and 15-minute create/move/resize editing. Existing work hours migrate additively into the first `Work Hours` schedule and the deterministic scheduler resolves each task against its selected schedule.

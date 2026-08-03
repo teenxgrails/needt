@@ -14,6 +14,7 @@ jest.mock("@/lib/prisma", () => ({
       findMany: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     },
     scheduledBlock: { deleteMany: jest.fn() },
     taskListMapping: { findFirst: jest.fn() },
@@ -36,6 +37,7 @@ const taskModel = prisma.task as unknown as {
   findMany: jest.Mock;
   findUnique: jest.Mock;
   update: jest.Mock;
+  delete: jest.Mock;
 };
 const scheduledBlockModel = prisma.scheduledBlock as unknown as {
   deleteMany: jest.Mock;
@@ -152,5 +154,50 @@ describe("task archive API", () => {
     );
     expect(taskModel.update.mock.calls[0][0].data.status).toBeUndefined();
     expect(scheduledBlockModel.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects edits to an archived task until it is restored", async () => {
+    taskModel.findUnique.mockResolvedValue(storedTask(true));
+
+    const response = await taskRoute.PUT(
+      new NextRequest("http://localhost/api/tasks/task-1", {
+        method: "PUT",
+        body: JSON.stringify({ title: "Changed while archived" }),
+      }),
+      { params: Promise.resolve({ id: "task-1" }) }
+    );
+
+    expect(response!.status).toBe(409);
+    expect(taskModel.update).not.toHaveBeenCalled();
+  });
+
+  it("turns the legacy delete route into a non-destructive archive", async () => {
+    taskModel.findUnique.mockResolvedValue(storedTask(false));
+    taskModel.update.mockResolvedValue(storedTask(true));
+    scheduledBlockModel.deleteMany.mockResolvedValue({ count: 1 });
+
+    const response = await taskRoute.DELETE(
+      new NextRequest("http://localhost/api/tasks/task-1", {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ id: "task-1" }) }
+    );
+
+    expect(response!.status).toBe(204);
+    expect(taskModel.update).toHaveBeenCalledWith({
+      where: { id: "task-1", userId: "user-1" },
+      data: expect.objectContaining({
+        isArchived: true,
+        archivedAt: expect.any(Date),
+        scheduledStart: null,
+        scheduledEnd: null,
+        scheduleLocked: false,
+      }),
+    });
+    expect(taskModel.delete).not.toHaveBeenCalled();
+    expect(scheduledBlockModel.deleteMany).toHaveBeenCalledWith({
+      where: { taskId: "task-1", userId: "user-1" },
+    });
+    expect(schedulePushTaskBlock).toHaveBeenCalledWith("user-1", "task-1");
   });
 });

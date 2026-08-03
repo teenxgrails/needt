@@ -22,7 +22,6 @@ import {
   Play,
   Puzzle,
   Timer,
-  Trash2,
   X,
 } from "lucide-react";
 
@@ -95,8 +94,7 @@ export function CalendarTaskActionsMenu({
   onOpenTask,
 }: CalendarTaskActionsMenuProps) {
   const [startModalOpen, setStartModalOpen] = useState(false);
-  const { createTask, updateTask, completeTask, deleteTask } =
-    useTaskMutations();
+  const { createTask, updateTask, completeTask } = useTaskMutations();
   const createProject = useProjectStore((state) => state.createProject);
   const switchToTask = useFocusModeStore((state) => state.switchToTask);
   const router = useRouter();
@@ -238,13 +236,6 @@ export function CalendarTaskActionsMenu({
           >
             <Archive />
             Restore task
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className={`${MENU_ITEM_CLASS} text-[var(--color-danger)] focus:bg-[var(--button-danger-bg)] focus:text-[var(--color-danger)] [&>svg]:text-[var(--color-danger)]`}
-            onSelect={() => run("Delete task", () => deleteTask(task.id))}
-          >
-            <Trash2 />
-            Delete permanently
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -419,13 +410,6 @@ export function CalendarTaskActionsMenu({
           >
             <Archive />
             Archive
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className={`${MENU_ITEM_CLASS} text-[var(--color-danger)] focus:bg-[var(--button-danger-bg)] focus:text-[var(--color-danger)] [&>svg]:text-[var(--color-danger)]`}
-            onSelect={() => run("Delete task", () => deleteTask(task.id))}
-          >
-            <Trash2 />
-            Delete task
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
