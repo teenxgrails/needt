@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "motion/react";
 import { Sparkles } from "lucide-react";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import {
   LEGACY_AI_ACTION_EVENT,
@@ -16,7 +18,7 @@ interface CursorState {
 }
 
 export function AIActionCursor() {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const [cursor, setCursor] = useState<CursorState | null>(null);
 
   useEffect(() => {

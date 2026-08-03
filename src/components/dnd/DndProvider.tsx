@@ -12,11 +12,13 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { HiCheckCircle, HiClock } from "react-icons/hi";
 
 import { logger } from "@/lib/logger";
-import { quickEase, springSnappy } from "@/lib/motion";
+import { dragSpring, instantTransition } from "@/lib/motion";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
@@ -34,7 +36,7 @@ export function DndProvider({ children }: DndProviderProps) {
   const { moveTask } = useTaskMutations();
   const { fetchProjects } = useProjectStore();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -104,19 +106,17 @@ export function DndProvider({ children }: DndProviderProps) {
           prefersReducedMotion
             ? null
             : {
-                duration: 220,
-                easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+                duration: 180,
+                easing: "cubic-bezier(0.2, 0, 0, 1)",
               }
         }
       >
         {activeTask ? (
           <motion.div
-            initial={
-              prefersReducedMotion ? false : { opacity: 0.8, scale: 0.98 }
-            }
-            animate={{ opacity: 0.98, scale: prefersReducedMotion ? 1 : 1.03 }}
-            transition={prefersReducedMotion ? quickEase : springSnappy}
-            className="needt-overlay-shadow flex min-w-56 max-w-80 items-center gap-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-3 py-2 text-[var(--text-primary)]"
+            initial={prefersReducedMotion ? false : { opacity: 0.9 }}
+            animate={{ opacity: 0.98, scale: prefersReducedMotion ? 1 : 1.015 }}
+            transition={prefersReducedMotion ? instantTransition : dragSpring}
+            className="needt-overlay-shadow flex min-w-56 max-w-80 origin-center items-center gap-2 rounded-md border border-[var(--border-control)] bg-[var(--surface-control)] px-3 py-2 text-[var(--text-primary)] shadow-md"
           >
             <HiCheckCircle className="h-4 w-4 shrink-0 text-[var(--text-secondary)]" />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium">

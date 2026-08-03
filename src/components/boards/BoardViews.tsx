@@ -20,6 +20,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { motion } from "motion/react";
 import {
   addDays,
   addMonths,
@@ -45,7 +46,9 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
+import { dragSpring, instantTransition } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import type { BoardCalendarEvent, BoardDetail } from "@/hooks/use-board-detail";
@@ -222,7 +225,7 @@ function BoardGalleryView({ board, onOpenTask }: BoardViewsProps) {
                 key={task.id}
                 type="button"
                 onClick={() => onOpenTask(task)}
-                className="needt-panel-depth group min-h-44 rounded-lg border border-[var(--border-subtle)] p-4 text-left transition-[border-color,background-color,transform] duration-150 hover:-translate-y-0.5 hover:border-[var(--border-control)] hover:bg-[var(--surface-control)] hover:bg-none"
+                className="needt-panel-depth group min-h-44 rounded-lg border border-[var(--border-subtle)] p-4 text-left transition-colors duration-150 hover:border-[var(--border-control)] hover:bg-[var(--surface-control)] hover:bg-none"
               >
                 <div className="flex items-start justify-between gap-3">
                   <StageLabel column={column} />
@@ -488,6 +491,7 @@ function BoardKanbanView({
   onAddCard,
   onMoveCard,
 }: BoardViewsProps) {
+  const prefersReducedMotion = useNeedtReducedMotion();
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -568,11 +572,28 @@ function BoardKanbanView({
         ))}
       </div>
 
-      <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
+      <DragOverlay
+        dropAnimation={
+          prefersReducedMotion
+            ? null
+            : {
+                duration: 180,
+                easing: "cubic-bezier(0.2, 0, 0, 1)",
+              }
+        }
+      >
         {activeTask ? (
-          <div className="needt-panel-depth w-64 rotate-1 rounded-md border border-[var(--border-control)] px-3 py-2 text-left text-[13px] text-[var(--text-primary)] shadow-lg">
+          <motion.div
+            initial={prefersReducedMotion ? false : { opacity: 0.9 }}
+            animate={{
+              opacity: 0.98,
+              scale: prefersReducedMotion ? 1 : 1.015,
+            }}
+            transition={prefersReducedMotion ? instantTransition : dragSpring}
+            className="needt-panel-depth w-64 origin-center rounded-md border border-[var(--border-control)] px-3 py-2 text-left text-[13px] text-[var(--text-primary)] shadow-md"
+          >
             {activeTask.title}
-          </div>
+          </motion.div>
         ) : null}
       </DragOverlay>
     </DndContext>

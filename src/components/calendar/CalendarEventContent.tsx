@@ -2,8 +2,10 @@ import { memo, type CSSProperties } from "react";
 
 import type { EventContentArg } from "@fullcalendar/core";
 import { Check } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { IoRepeat } from "react-icons/io5";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { getMonthEventDisplay } from "@/lib/calendar-event-display";
 import { springSnappy, springSoft } from "@/lib/motion";
@@ -39,7 +41,7 @@ export const CalendarEventContent = memo(function CalendarEventContent({
   onTaskComplete,
   onTaskOpen,
 }: CalendarEventContentProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const { user: userSettings } = useSettingsStore();
   const scheduleAnimationRevision = useTaskStore(
     (state) => state.scheduleAnimationRevision

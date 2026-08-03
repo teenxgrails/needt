@@ -2,7 +2,9 @@
 
 import { type RefObject, useEffect, useId, useState } from "react";
 
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { cn } from "@/lib/utils";
 
@@ -50,7 +52,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   endYOffset = 0,
 }) => {
   const id = useId();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const [pathD, setPathD] = useState("");
   const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
 

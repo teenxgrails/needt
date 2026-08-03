@@ -1,21 +1,95 @@
 "use client";
 
-import { useEffect } from "react";
+import {
+  PropsWithChildren,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
-export function MotionRuntime() {
+import { MotionConfig } from "motion/react";
+
+import {
+  fastFadeTransition,
+  instantTransition,
+  resolveMotionPolicy,
+} from "@/lib/motion";
+
+export const MOTION_PREFERENCE_EVENT = "needt:motion-preference";
+const MotionPreferenceContext = createContext(false);
+
+export function useNeedtReducedMotion() {
+  return useContext(MotionPreferenceContext);
+}
+
+export function MotionRuntime({ children }: PropsWithChildren) {
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const preferenceChanged = useRef(false);
+
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => {
-      const enabled = !document.hidden && !reduced.matches;
-      document.documentElement.dataset.needtMotion = enabled ? "on" : "off";
+    const syncEnvironment = () => {
+      setDocumentVisible(!document.hidden);
+      setPrefersReducedMotion(reduced.matches);
     };
-    sync();
-    document.addEventListener("visibilitychange", sync);
-    reduced.addEventListener("change", sync);
+    const syncPreference = (event: Event) => {
+      const enabled = (event as CustomEvent<{ enabled?: boolean }>).detail
+        ?.enabled;
+      if (typeof enabled === "boolean") {
+        preferenceChanged.current = true;
+        setAnimationsEnabled(enabled);
+      }
+    };
+    const controller = new AbortController();
+
+    syncEnvironment();
+    document.addEventListener("visibilitychange", syncEnvironment);
+    reduced.addEventListener("change", syncEnvironment);
+    window.addEventListener(MOTION_PREFERENCE_EVENT, syncPreference);
+    fetch("/api/customization", { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((customization) => {
+        if (
+          !preferenceChanged.current &&
+          typeof customization?.animationsEnabled === "boolean"
+        ) {
+          setAnimationsEnabled(customization.animationsEnabled);
+        }
+      })
+      .catch(() => undefined);
+
     return () => {
-      document.removeEventListener("visibilitychange", sync);
-      reduced.removeEventListener("change", sync);
+      controller.abort();
+      document.removeEventListener("visibilitychange", syncEnvironment);
+      reduced.removeEventListener("change", syncEnvironment);
+      window.removeEventListener(MOTION_PREFERENCE_EVENT, syncPreference);
     };
   }, []);
-  return null;
+
+  const policy = resolveMotionPolicy({
+    animationsEnabled,
+    documentVisible,
+    prefersReducedMotion,
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.animations = policy.datasetValue;
+    root.dataset.needtMotion = policy.datasetValue;
+  }, [policy.datasetValue]);
+
+  return (
+    <MotionPreferenceContext.Provider value={!policy.enabled}>
+      <MotionConfig
+        reducedMotion={policy.reducedMotion}
+        transition={policy.enabled ? fastFadeTransition : instantTransition}
+      >
+        {children}
+      </MotionConfig>
+    </MotionPreferenceContext.Provider>
+  );
 }

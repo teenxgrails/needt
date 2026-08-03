@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Archive,
   Box,
@@ -42,6 +42,8 @@ import {
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
 
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
+
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import { useUnreadMailCount } from "@/hooks/useUnreadMailCount";
 
@@ -75,7 +77,7 @@ export default function TasksPage() {
   const { projects, fetchProjects, activeProject } = useProjectStore();
   const { viewMode, setViewMode } = useTaskPageSettings();
   const { isOpen, setOpen } = useTaskModalStore();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const unreadMailCount = useUnreadMailCount();
 
   const [selectedTask, setSelectedTask] = useState<Task | undefined>();
@@ -541,7 +543,7 @@ export default function TasksPage() {
       )}
 
       <main className="min-h-0 flex-1 overflow-hidden">
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence initial={false}>
           <motion.div
             key={viewMode}
             className="h-full min-h-0"

@@ -1,7 +1,9 @@
 import { useCallback, useState } from "react";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "motion/react";
 import { BsArrowRepeat, BsGoogle, BsMicrosoft, BsTrash } from "react-icons/bs";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -19,7 +21,7 @@ import { MiniCalendar } from "./MiniCalendar";
 
 export function FeedManager() {
   const [syncingFeeds, setSyncingFeeds] = useState<Set<string>>(new Set());
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const { feeds, removeFeed, toggleFeed, syncFeed } = useCalendarStore();
   const { date: currentDate, setDate } = useViewStore();
 

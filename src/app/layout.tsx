@@ -2,7 +2,6 @@ import Script from "next/script";
 
 import { AmbientBackdrop } from "@/components/liquid";
 import { Providers } from "@/components/providers";
-import { MotionRuntime } from "@/components/providers/MotionRuntime";
 
 import "./globals.css";
 import { metadata as baseMetadata, viewport as baseViewport } from "./metadata";
@@ -56,7 +55,6 @@ export default function RootLayout({
         />
       </head>
       <body className="flex h-full flex-col bg-[var(--surface-canvas)] antialiased">
-        <MotionRuntime />
         <AmbientBackdrop />
         <div className="relative z-10 flex min-h-full flex-col">
           <Providers>{children}</Providers>

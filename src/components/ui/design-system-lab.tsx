@@ -1383,7 +1383,7 @@ function QuickThemeButton({
   return (
     <button
       aria-pressed={active}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--text-secondary)] transition-[background-color,color,transform] [transition-duration:var(--motion-duration-fast)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] active:scale-[0.98] aria-pressed:bg-[var(--surface-control)] aria-pressed:text-[var(--text-primary)] motion-reduce:transition-none motion-reduce:active:scale-100 max-sm:[&_span]:sr-only"
+      className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] aria-pressed:bg-[var(--surface-control)] aria-pressed:text-[var(--text-primary)] max-sm:[&_span]:sr-only"
       onClick={onClick}
       type="button"
     >

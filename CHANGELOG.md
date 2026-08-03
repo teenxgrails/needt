@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replaced global lift, zoom, and icon-growth effects with calm contrast feedback, short fade/slide overlays, restrained drag springs, and one reduced-motion runtime that honors OS, saved, and hidden-tab preferences across every route.
 - Completed the internal `/style` laboratory for Light, Graphite, and Dark, and aligned product pickers, surfaces, overlays, rows, cards, and feedback states with the shared semantic design-system contract.
 - Flattened Focus into one state-stable canvas, made the AI companion freely draggable and keyboard movable with a saved safe position, unified product notifications behind the typed facade, and constrained Settings content to the shared readable width.
 - Unified desktop Calendar range navigation around current-time positioning, horizontal gestures, Shift+wheel, Alt+Arrow, and Space+drag; Today now keeps its document and day timeline in independent desktop scrollers.

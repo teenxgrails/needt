@@ -102,3 +102,25 @@ test("date and priority pickers keep their overlay depth", async ({ page }) => {
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("style-priority-picker-open.png");
 });
+
+test("motion runtime honors reduced motion and the Animations setting", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/style", { waitUntil: "domcontentloaded" });
+  await expect(page.locator("html")).toHaveAttribute("data-needt-motion", "off");
+  await expect(page.locator("html")).toHaveAttribute("data-animations", "off");
+
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await expect(page.locator("html")).toHaveAttribute("data-needt-motion", "on");
+
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new CustomEvent("needt:motion-preference", {
+        detail: { enabled: false },
+      })
+    );
+  });
+  await expect(page.locator("html")).toHaveAttribute("data-needt-motion", "off");
+  await expect(page.locator("html")).toHaveAttribute("data-animations", "off");
+});

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "motion/react";
 import {
   ChevronDown,
   ChevronLeft,
@@ -11,6 +11,8 @@ import {
   Filter,
   Layers3,
 } from "lucide-react";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -35,6 +37,12 @@ import {
   startOfMonth,
 } from "@/lib/date-utils";
 import { cn } from "@/lib/utils";
+import {
+  fastFadeTransition,
+  instantTransition,
+  layoutSpring,
+  panelTransition,
+} from "@/lib/motion";
 
 import { Priority, Task, TaskStatus } from "@/types/task";
 
@@ -201,7 +209,7 @@ export function TimelineView({
   query,
   optionsHidden,
 }: TimelineViewProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [viewportWidth, setViewportWidth] = useState(1440);
   const [viewportHeight, setViewportHeight] = useState(720);
@@ -755,15 +763,21 @@ export function TimelineView({
                                   initial={
                                     prefersReducedMotion
                                       ? false
-                                      : { opacity: 0, scale: 0.98 }
+                                      : { opacity: 0, y: 2 }
                                   }
                                   animate={{
                                     opacity: completed ? 0.58 : 1,
-                                    scale: 1,
+                                    y: 0,
                                   }}
-                                  transition={{
-                                    duration: prefersReducedMotion ? 0 : 0.16,
-                                  }}
+                                  transition={
+                                    prefersReducedMotion
+                                      ? instantTransition
+                                      : {
+                                          layout: layoutSpring,
+                                          opacity: fastFadeTransition,
+                                          y: panelTransition,
+                                        }
+                                  }
                                   className="group absolute top-1 h-8 min-w-[18px] overflow-hidden rounded-[4px] text-left text-[13px] text-[var(--text-primary)] outline-none ring-offset-1 ring-offset-[var(--surface-canvas)] hover:ring-1 hover:ring-[var(--text-secondary)] focus-visible:ring-1 focus-visible:ring-[var(--text-primary)]"
                                   style={{
                                     left: itemPlacement.left,

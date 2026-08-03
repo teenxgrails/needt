@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { MotionSwitchRow } from "@/components/settings/MotionSettingsControls";
+import { MOTION_PREFERENCE_EVENT } from "@/components/providers/MotionRuntime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,7 +99,11 @@ export function CustomizationSettings() {
       `${settings.sidebarWidth}px`
     );
     root.dataset.density = settings.density;
-    root.dataset.animations = settings.animationsEnabled ? "on" : "off";
+    window.dispatchEvent(
+      new CustomEvent(MOTION_PREFERENCE_EVENT, {
+        detail: { enabled: settings.animationsEnabled },
+      })
+    );
   }, [settings]);
 
   const update = <Key extends keyof CustomizationState>(

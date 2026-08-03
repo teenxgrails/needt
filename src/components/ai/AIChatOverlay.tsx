@@ -1,9 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 
 import { AIChatSurface } from "./AIChatSurface";
+
+import { fastFadeTransition, panelTransition } from "@/lib/motion";
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 interface AIChatOverlayProps {
   open: boolean;
@@ -11,7 +14,7 @@ interface AIChatOverlayProps {
 }
 
 export function AIChatOverlay({ open, onOpenChange }: AIChatOverlayProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
 
   return (
     <AnimatePresence>
@@ -21,15 +24,17 @@ export function AIChatOverlay({ open, onOpenChange }: AIChatOverlayProps) {
           initial={prefersReducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={prefersReducedMotion ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ duration: prefersReducedMotion ? 0 : 0.16 }}
+          transition={
+            prefersReducedMotion ? { duration: 0 } : fastFadeTransition
+          }
           onMouseDown={() => onOpenChange(false)}
         >
           <motion.aside
             className="needt-overlay-depth m-2 flex h-[calc(100vh-1rem)] w-full max-w-[420px] flex-col rounded-md border border-[var(--dialog-border)] text-[var(--text-primary)] shadow-2xl"
-            initial={prefersReducedMotion ? false : { x: 32, opacity: 0 }}
+            initial={prefersReducedMotion ? false : { x: 16, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={prefersReducedMotion ? { opacity: 1 } : { x: 32, opacity: 0 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.18 }}
+            exit={prefersReducedMotion ? { opacity: 1 } : { x: 12, opacity: 0 }}
+            transition={prefersReducedMotion ? { duration: 0 } : panelTransition}
             onMouseDown={(event) => event.stopPropagation()}
           >
             <header className="flex h-11 items-center justify-between border-b border-[var(--border-subtle)] px-3">

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { Command } from "cmdk";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { HiOutlineSearch, HiX } from "react-icons/hi";
 import {
   HiOutlineCalendar,
@@ -17,8 +17,10 @@ import {
 } from "react-icons/hi";
 
 import { fuzzyMatch } from "@/lib/fuzzy-match";
-import { quickEase, springSnappy } from "@/lib/motion";
+import { fastFadeTransition, panelTransition } from "@/lib/motion";
 import { cn, formatShortcut } from "@/lib/utils";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { useCommands } from "@/hooks/useCommands";
 
@@ -55,14 +57,12 @@ function AnimatedItem({
   children: ReactNode;
   index: number;
 }) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
 
   return (
     <motion.div
-      initial={
-        prefersReducedMotion ? false : { opacity: 0, y: 4, scale: 0.995 }
-      }
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={
         prefersReducedMotion
           ? { duration: 0 }
@@ -80,7 +80,7 @@ function AnimatedItem({
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const router = useRouter();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const [search, setSearch] = useState("");
   const [showAllCommands, setShowAllCommands] = useState(false);
   const [results, setResults] = useState<
@@ -147,7 +147,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
             <motion.div
               initial={prefersReducedMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={prefersReducedMotion ? { duration: 0 } : quickEase}
+              transition={
+                prefersReducedMotion ? { duration: 0 } : fastFadeTransition
+              }
               className="needt-scrim fixed inset-0 z-50"
             />
           </Dialog.Overlay>
@@ -161,10 +163,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               initial={
                 prefersReducedMotion
                   ? false
-                  : { opacity: 0, scale: 0.94, y: -12 }
+                  : { opacity: 0, y: -6 }
               }
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : springSnappy}
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                prefersReducedMotion ? { duration: 0 } : panelTransition
+              }
             >
               <Command
                 shouldFilter={false}

@@ -14,7 +14,6 @@ import {
   AnimatePresence,
   LayoutGroup,
   motion,
-  useReducedMotion,
 } from "motion/react";
 import {
   IoAddOutline,
@@ -58,6 +57,8 @@ import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useCalendarHorizontalNavigation } from "@/hooks/useCalendarHorizontalNavigation";
@@ -105,7 +106,7 @@ export function Calendar({
     updateCalendarSettings,
   } = useSettingsStore();
   const eventModalStore = useEventModalStore();
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useNeedtReducedMotion();
   const isPhone = useIsMobile(640);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isRefreshingTasks, setIsRefreshingTasks] = useState(false);
@@ -492,7 +493,7 @@ export function Calendar({
             )}
           </AnimatePresence>
           <LayoutGroup id="calendar-schedule">
-            <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence initial={false}>
               <motion.div
                 key={effectiveView}
                 className="h-full"

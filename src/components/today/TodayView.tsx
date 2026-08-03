@@ -435,7 +435,7 @@ export function TodayView({
                 type="button"
                 onClick={() => setAddOpen(true)}
                 aria-label="Quick add task"
-                className="needt-raised-depth grid h-11 w-11 touch-manipulation place-items-center rounded-full border border-[var(--border-subtle)] text-[var(--text-primary)] transition-transform duration-150 active:scale-95 motion-reduce:transition-none"
+                className="needt-raised-depth grid h-11 w-11 touch-manipulation place-items-center rounded-full border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors duration-150"
               >
                 <Plus className="h-6 w-6" strokeWidth={1.8} />
               </button>
@@ -540,7 +540,7 @@ export function TodayView({
         onClick={() => setAddOpen(true)}
         data-assistant-avoid
         aria-label="Quick add task"
-        className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-5 z-10 hidden h-12 w-12 touch-manipulation place-items-center rounded-full border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)] shadow-[var(--button-primary-shadow)] transition-[transform,background-color] duration-150 active:scale-95 motion-reduce:transition-none sm:grid lg:bottom-6 xl:hidden"
+        className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] right-5 z-10 hidden h-12 w-12 touch-manipulation place-items-center rounded-full border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)] shadow-[var(--button-primary-shadow)] transition-colors duration-150 sm:grid lg:bottom-6 xl:hidden"
       >
         <Plus className="h-5 w-5" />
       </button>
