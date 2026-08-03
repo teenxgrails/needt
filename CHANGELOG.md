@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Auto-scheduling now honors task start and postpone dates, preserves exact unscheduled reason codes, falls back after soft deadlines, and refuses to place hard-deadline tasks past their deadline.
 - Fixed the root `not-found.tsx` rendering its own `<html>`/`<body>` nested inside the app's root layout, crashing the React tree on any genuinely missing route (could leave client-side navigation, including `/style`, stuck broken until a hard reload).
 - Reduced the blocked-hours diagonal texture's opacity and tightened its stripe spacing so it reads as the same pattern in the short all-day row as in the full-height timed grid, instead of smearing into a solid block there.
 - "Start task now" now bypasses blocked-hours overrides, since it's an explicit immediate action; all other manual scheduling continues to respect them.
@@ -58,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added non-destructive task archiving with a separate Archived view, restore and permanent-delete actions, and exclusions from normal planning, Focus, reminders, search, AI context, connectors, and project counts.
 - Added a Notion-like Page canvas with a borderless title, icon and cover controls, full-canvas focus, searchable keyboard slash commands, canonical text/list/checklist/quote/code/divider blocks, and extensible callout, toggle, link, bookmark, media, layout and mention blocks.
 - Added private Page assets, resolvable comments, reusable templates, authenticated forms, explicit AI proposal diffs, and functional Table, Board, List, Calendar, Timeline, and Gallery database views over shared editable records.
 - Added named work schedules with saved timezones, multiple daily intervals, default selection, task and recurring-task assignment, selected-day copy, precise time fields, and 15-minute create/move/resize editing. Existing work hours migrate additively into the first `Work Hours` schedule and the deterministic scheduler resolves each task against its selected schedule.

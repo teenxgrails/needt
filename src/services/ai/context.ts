@@ -10,6 +10,7 @@ export async function getTodayScheduleSummary(userId: string) {
     prisma.task.findMany({
       where: {
         userId,
+        isArchived: false,
         status: { not: "completed" },
         OR: [
           {

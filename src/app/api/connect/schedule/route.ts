@@ -10,6 +10,7 @@ async function readSchedule(userId: string) {
   const tasks = await prisma.task.findMany({
     where: {
       userId,
+      isArchived: false,
       status: { not: "completed" },
       OR: [
         { scheduledEnd: { gte: now } },

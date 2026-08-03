@@ -33,7 +33,7 @@ export function TaskQueue() {
   });
 
   // Get all tasks (including current task)
-  const allTasks = tasks;
+  const allTasks = tasks.filter((task) => !task.isArchived);
 
   // Queued tasks: get from focus mode store
   const queuedTasks = getQueuedTasks();

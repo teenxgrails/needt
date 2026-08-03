@@ -51,6 +51,7 @@ type DbTaskWithRelations = {
   minChunkMinutes: number | null;
   maxChunkMinutes: number | null;
   deadline: Date | null;
+  hardDeadline: boolean;
   priorityLevel: SchedulingTaskPriority;
   contextTag: string | null;
   isFrozen: boolean;
@@ -90,6 +91,8 @@ type DbTaskWithRelations = {
   lastScheduled: Date | null;
   scheduleLocked: boolean;
   postponedUntil: Date | null;
+  isArchived: boolean;
+  archivedAt: Date | null;
   userId: string | null;
   tags: {
     id: string;
@@ -174,6 +177,9 @@ function convertDbTaskToTaskWithRelations(
 }
 
 function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
+  const availabilityDates = [task.startDate, task.postponedUntil].filter(
+    (value): value is Date => value !== null
+  );
   return {
     id: task.id,
     title: task.title,
@@ -184,6 +190,13 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
     minChunkMinutes: task.minChunkMinutes,
     maxChunkMinutes: task.maxChunkMinutes,
     deadline: task.deadline ?? task.dueDate,
+    hardDeadline: task.hardDeadline,
+    availableFrom:
+      availabilityDates.length > 0
+        ? availabilityDates.reduce((latest, value) =>
+            value > latest ? value : latest
+          )
+        : null,
     priority: task.priorityLevel,
     energyRequired: task.energyRequired,
     contextTag: task.contextTag,
@@ -198,11 +211,9 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
           (dependency) => dependency.blocker.status === TaskStatus.COMPLETED
         )
         .map((dependency) => dependency.blockerTaskId) ?? []),
-      ...(
-        task.dependsOnId && task.dependsOn?.status === TaskStatus.COMPLETED
-          ? [task.dependsOnId]
-          : []
-      ),
+      ...(task.dependsOnId && task.dependsOn?.status === TaskStatus.COMPLETED
+        ? [task.dependsOnId]
+        : []),
     ],
     autoScheduled: task.autoScheduled || task.isAutoScheduled,
     scheduledStart: task.scheduledStart,
@@ -313,10 +324,10 @@ function summarizeSchedule(result: ScheduleResult) {
   };
 }
 
-export async function scheduleAllTasksForUser(
+export async function scheduleAllTasksForUserDetailed(
   userId: string,
   options: { entitlementUserId?: string } = {}
-): Promise<TaskWithRelations[]> {
+): Promise<{ tasks: TaskWithRelations[]; scheduleResult: ScheduleResult }> {
   try {
     logger.info("Starting task scheduling for user", { userId }, LOG_SOURCE);
 
@@ -385,6 +396,7 @@ export async function scheduleAllTasksForUser(
           },
         },
         userId,
+        isArchived: false,
       },
       include: {
         project: true,
@@ -418,13 +430,15 @@ export async function scheduleAllTasksForUser(
 
     const result = scheduleTasks({
       tasks: dbTasks.map(toSchedulableTask),
-      busyBlocks: busyEvents.map((event): CalendarBusyBlock => ({
-        id: event.id,
-        title: event.title,
-        start: event.start,
-        end: event.end,
-        source: "calendar",
-      })),
+      busyBlocks: busyEvents.map(
+        (event): CalendarBusyBlock => ({
+          id: event.id,
+          title: event.title,
+          start: event.start,
+          end: event.end,
+          source: "calendar",
+        })
+      ),
       energyProfile:
         energyWindows.length > 0
           ? {
@@ -535,6 +549,7 @@ export async function scheduleAllTasksForUser(
     const updatedDbTasks = (await prisma.task.findMany({
       where: {
         userId,
+        isArchived: false,
       },
       include: {
         tags: true,
@@ -556,7 +571,7 @@ export async function scheduleAllTasksForUser(
       LOG_SOURCE
     );
 
-    return tasksWithRelations;
+    return { tasks: tasksWithRelations, scheduleResult: result };
   } catch (error) {
     logger.error(
       "Error scheduling tasks",
@@ -568,4 +583,12 @@ export async function scheduleAllTasksForUser(
     );
     throw error;
   }
+}
+
+export async function scheduleAllTasksForUser(
+  userId: string,
+  options: { entitlementUserId?: string } = {}
+): Promise<TaskWithRelations[]> {
+  const { tasks } = await scheduleAllTasksForUserDetailed(userId, options);
+  return tasks;
 }

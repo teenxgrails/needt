@@ -170,11 +170,14 @@ export function useTaskMutations() {
         }
         reportMutationError(action, context.taskId, error);
       },
-      onSuccess: (task, _variables, context) => {
+      onSuccess: (task, variables, context) => {
         if (context && isLatestTaskMutation(context.taskId, context.version)) {
+          const tasks = useTaskStore.getState().tasks;
           writeTasks(
             queryClient,
-            reconcileOptimisticTask(useTaskStore.getState().tasks, task)
+            variables.updates.isArchived !== undefined
+              ? removeOptimisticTask(tasks, task.id)
+              : reconcileOptimisticTask(tasks, task)
           );
         }
         scheduleInBackground();

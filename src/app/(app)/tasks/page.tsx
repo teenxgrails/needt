@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
+  Archive,
   Box,
   CalendarRange,
   ChevronDown,
@@ -98,10 +99,13 @@ export default function TasksPage() {
   const [timelineOptionsHidden, setTimelineOptionsHidden] = useState(false);
 
   useEffect(() => {
-    fetchTasks();
     fetchTags();
     fetchProjects();
-  }, [fetchProjects, fetchTags, fetchTasks]);
+  }, [fetchProjects, fetchTags]);
+
+  useEffect(() => {
+    fetchTasks({ archived: viewMode === "archived" });
+  }, [fetchTasks, viewMode]);
 
   useEffect(() => {
     const taskId = new URLSearchParams(window.location.search).get("task");
@@ -404,6 +408,18 @@ export default function TasksPage() {
               Kanban
             </button>
           )}
+          {viewMode === "archived" && (
+            <button
+              type="button"
+              className={cn(
+                VIEW_BUTTON_CLASS,
+                "bg-[var(--surface-hover)] text-[var(--text-primary)]"
+              )}
+            >
+              <Archive className="h-3.5 w-3.5" />
+              Archived
+            </button>
+          )}
         </nav>
 
         <DropdownMenu>
@@ -470,6 +486,13 @@ export default function TasksPage() {
             >
               <Kanban />
               Kanban
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => setViewMode("archived")}
+              className="h-9 text-[12px]"
+            >
+              <Archive />
+              Archived
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled className="h-9 text-[12px]">
@@ -554,9 +577,11 @@ export default function TasksPage() {
             ) : (
               <TaskList
                 tasks={viewMode === "deadlines" ? deadlineTasks : tasks}
-                onEdit={openTask}
+                onEdit={viewMode === "archived" ? () => undefined : openTask}
                 onStatusChange={handleStatusChange}
-                onCreateTask={openCreateTask}
+                onCreateTask={
+                  viewMode === "archived" ? undefined : openCreateTask
+                }
               />
             )}
           </motion.div>

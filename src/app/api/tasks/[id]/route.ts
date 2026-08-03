@@ -105,6 +105,24 @@ export async function PUT(
       json;
     delete updates.project;
     delete updates.userId;
+    delete updates.archivedAt;
+    if (
+      updates.isArchived !== undefined &&
+      typeof updates.isArchived !== "boolean"
+    ) {
+      return new NextResponse("Invalid archive state", { status: 400 });
+    }
+    const archiveStateChanged =
+      typeof updates.isArchived === "boolean" &&
+      updates.isArchived !== task.isArchived;
+    if (archiveStateChanged) {
+      updates.archivedAt = updates.isArchived ? newDate() : null;
+      if (updates.isArchived) {
+        updates.scheduledStart = null;
+        updates.scheduledEnd = null;
+        updates.scheduleLocked = false;
+      }
+    }
     if (scheduleId) {
       const schedule = await prisma.workSchedule.findFirst({
         where: { id: scheduleId, userId },
@@ -119,11 +137,7 @@ export async function PUT(
         sanitizeTaskDescriptionForStorage(updates.description) ?? null;
     }
 
-    if (
-      !bypassBlockedHours &&
-      updates.scheduledStart &&
-      updates.scheduledEnd
-    ) {
+    if (!bypassBlockedHours && updates.scheduledStart && updates.scheduledEnd) {
       const blocked = await isTaskPlacementBlocked(
         userId,
         newDate(updates.scheduledStart),
@@ -304,6 +318,10 @@ export async function PUT(
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
       },
     });
+
+    if (archiveStateChanged && updates.isArchived) {
+      await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });
+    }
 
     // A manually placed task is represented by one frozen block. Keeping the
     // block relation in sync here makes Calendar, Space, Focus, and connector

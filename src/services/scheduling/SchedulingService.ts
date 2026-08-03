@@ -131,7 +131,9 @@ export class SchedulingService {
     });
 
     // Clear existing schedules for non-locked tasks
-    const tasksToSchedule = tasks.filter((t) => !t.scheduleLocked);
+    const tasksToSchedule = tasks.filter(
+      (task) => !task.scheduleLocked && !task.isArchived
+    );
 
     // Resolve the user's timezone so work hours apply in their local time
     await this.loadUserTimeZone(userId);

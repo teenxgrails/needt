@@ -7,12 +7,12 @@ import {
   addMinutes,
   areIntervalsOverlapping,
   differenceInHours,
+  fromZonedTime,
   getDay,
   newDate,
   roundDateUp,
   setHours,
   setMinutes,
-  fromZonedTime,
   toZonedTime,
 } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
@@ -70,6 +70,7 @@ export class TimeSlotManagerImpl implements TimeSlotManager {
         isAutoScheduled: true,
         scheduledStart: { not: null },
         scheduledEnd: { not: null },
+        isArchived: false,
         // Locked tasks keep their slots across runs, so they must count as
         // busy no matter what project they belong to (or none at all);
         // unlocked tasks are about to be rescheduled and must not block

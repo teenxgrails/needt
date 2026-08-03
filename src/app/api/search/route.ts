@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     prisma.task.findMany({
       where: {
         userId: auth.userId,
+        isArchived: false,
         OR: [
           { title: { contains: q, mode: "insensitive" } },
           { description: { contains: q, mode: "insensitive" } },

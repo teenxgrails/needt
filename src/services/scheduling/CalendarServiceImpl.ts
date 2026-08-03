@@ -107,6 +107,7 @@ export class CalendarServiceImpl implements CalendarService {
         isAutoScheduled: true,
         scheduledStart: { not: null },
         scheduledEnd: { not: null },
+        isArchived: false,
         id: excludeTaskId ? { not: excludeTaskId } : undefined,
         userId,
       },
@@ -232,6 +233,7 @@ export class CalendarServiceImpl implements CalendarService {
         isAutoScheduled: true,
         scheduledStart: { not: null },
         scheduledEnd: { not: null },
+        isArchived: false,
         id: excludeTaskId ? { not: excludeTaskId } : undefined,
         userId,
       },
@@ -244,7 +246,7 @@ export class CalendarServiceImpl implements CalendarService {
     const pushedBlockIds = new Set(
       (
         await prisma.task.findMany({
-          where: { userId, blockEventId: { not: null } },
+          where: { userId, isArchived: false, blockEventId: { not: null } },
           select: { blockEventId: true },
         })
       ).map((t) => t.blockEventId)
@@ -262,7 +264,10 @@ export class CalendarServiceImpl implements CalendarService {
           continue;
         }
         // Skip echoes of our own pushed task blocks
-        if (event.externalEventId && pushedBlockIds.has(event.externalEventId)) {
+        if (
+          event.externalEventId &&
+          pushedBlockIds.has(event.externalEventId)
+        ) {
           continue;
         }
         if (

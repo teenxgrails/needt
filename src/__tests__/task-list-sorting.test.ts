@@ -20,6 +20,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     isRecurring: false,
     isAutoScheduled: false,
     scheduleLocked: false,
+    hardDeadline: false,
+    isArchived: false,
     ...overrides,
   };
 }

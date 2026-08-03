@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         _count: {
-          select: { tasks: true },
+          select: { tasks: { where: { isArchived: false } } },
         },
       },
       orderBy: {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         _count: {
-          select: { tasks: true },
+          select: { tasks: { where: { isArchived: false } } },
         },
       },
     });

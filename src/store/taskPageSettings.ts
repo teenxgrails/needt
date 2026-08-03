@@ -7,6 +7,7 @@ export type ViewMode =
   | "board"
   | "deadlines"
   | "timeline"
+  | "archived"
   | "mail";
 
 interface TaskPageSettings {

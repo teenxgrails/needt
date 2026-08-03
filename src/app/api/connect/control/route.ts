@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   if (action === "overview") {
     const [tasks, projects, calendars, events] = await Promise.all([
       prisma.task.findMany({
-        where: { userId },
+        where: { userId, isArchived: false },
         orderBy: [{ scheduledStart: "asc" }, { createdAt: "desc" }],
       }),
       prisma.project.findMany({ where: { userId }, orderBy: { createdAt: "desc" } }),
@@ -85,10 +85,10 @@ export async function POST(request: NextRequest) {
           ...(typeof body.status === "string" ? { status: body.status as TaskStatus } : {}),
           ...(typeof body.projectId === "string" || body.projectId === null ? { projectId: body.projectId } : {}),
         };
-    const result = await prisma.task.updateMany({ where: { id: body.id, userId }, data });
+    const result = await prisma.task.updateMany({ where: { id: body.id, userId, isArchived: false }, data });
     if (!result.count) return NextResponse.json({ error: "Task not found" }, { status: 404 });
     await scheduleAllTasksForUser(userId);
-    return NextResponse.json(await prisma.task.findFirst({ where: { id: body.id, userId } }));
+    return NextResponse.json(await prisma.task.findFirst({ where: { id: body.id, userId, isArchived: false } }));
   }
 
   if (action === "create_calendar") {

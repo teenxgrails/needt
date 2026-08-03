@@ -76,7 +76,7 @@ interface TaskState {
   scheduleAnimationRevision: number;
 
   // Task actions
-  fetchTasks: () => Promise<void>;
+  fetchTasks: (options?: { archived?: boolean }) => Promise<void>;
   createTask: (task: NewTask) => Promise<Task>;
   updateTask: (id: string, updates: UpdateTask) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
@@ -117,11 +117,12 @@ export const useTaskStore = create<TaskState>()(
         })),
 
       // Task actions
-      fetchTasks: async () => {
+      fetchTasks: async (options) => {
         set({ loading: true, error: null });
         try {
           const { filters } = get();
           const params = new URLSearchParams();
+          if (options?.archived) params.set("archived", "true");
 
           if (filters.status?.length) {
             filters.status.forEach((s) => params.append("status", s));
@@ -244,7 +245,10 @@ export const useTaskStore = create<TaskState>()(
           );
           if (isLatestTaskMutation(id, version)) {
             set((state) => ({
-              tasks: reconcileOptimisticTask(state.tasks, updatedTask),
+              tasks:
+                updates.isArchived !== undefined
+                  ? removeOptimisticTask(state.tasks, id)
+                  : reconcileOptimisticTask(state.tasks, updatedTask),
             }));
           }
           void get()

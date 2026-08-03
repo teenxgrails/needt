@@ -41,6 +41,7 @@ export async function findDueReminderIds(now = new Date()) {
       deliveryStatus: ReminderDeliveryStatus.DELIVERING,
       lastAttemptAt: { lt: new Date(now.getTime() - 15 * 60_000) },
       deliveredAt: null,
+      task: { isArchived: false },
     },
     data: { deliveryStatus: ReminderDeliveryStatus.FAILED },
   });
@@ -49,6 +50,7 @@ export async function findDueReminderIds(now = new Date()) {
     where: {
       canceledAt: null,
       deliveredAt: null,
+      task: { isArchived: false },
       OR: [
         { deliveryStatus: ReminderDeliveryStatus.PENDING },
         {
@@ -144,7 +146,7 @@ export async function deliverTaskReminder(reminderId: string) {
   const reminder = await prisma.taskReminder.findUnique({
     where: { id: reminderId },
     include: {
-      task: { select: { id: true, title: true } },
+      task: { select: { id: true, title: true, isArchived: true } },
       user: {
         select: {
           email: true,
@@ -154,6 +156,13 @@ export async function deliverTaskReminder(reminderId: string) {
     },
   });
   if (!reminder) return { delivered: false, skipped: true };
+  if (reminder.task.isArchived) {
+    await prisma.taskReminder.update({
+      where: { id: reminder.id },
+      data: { deliveryStatus: ReminderDeliveryStatus.PENDING },
+    });
+    return { delivered: false, skipped: true };
+  }
 
   const channels = parseChannels(reminder.channels);
   const payload = {

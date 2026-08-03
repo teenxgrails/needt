@@ -72,6 +72,7 @@ export interface Task {
   minChunkMinutes?: number | null;
   maxChunkMinutes?: number | null;
   deadline?: Date | null;
+  hardDeadline: boolean;
   priorityLevel?: SchedulingTaskPriority;
   contextTag?: string | null;
   isFrozen?: boolean;
@@ -96,6 +97,8 @@ export interface Task {
   lastScheduled?: Date | null;
   scheduleLocked: boolean;
   postponedUntil?: Date | null;
+  isArchived: boolean;
+  archivedAt?: Date | null;
   // External sync fields
   externalTaskId?: string | null;
   source?: string | null;
@@ -119,18 +122,28 @@ export interface ScheduledTaskBlock {
   isFrozen: boolean;
 }
 
-export interface NewTask extends Omit<
-  Task,
-  "id" | "createdAt" | "updatedAt" | "tags" | "project"
-> {
+export interface NewTask
+  extends Omit<
+    Task,
+    | "id"
+    | "createdAt"
+    | "updatedAt"
+    | "tags"
+    | "project"
+    | "hardDeadline"
+    | "isArchived"
+    | "archivedAt"
+  > {
   tagIds?: string[];
+  hardDeadline?: boolean;
   isAutoScheduled: boolean;
   scheduleLocked: boolean;
 }
 
-export interface UpdateTask extends Partial<
-  Omit<Task, "id" | "createdAt" | "updatedAt" | "tags" | "project">
-> {
+export interface UpdateTask
+  extends Partial<
+    Omit<Task, "id" | "createdAt" | "updatedAt" | "tags" | "project">
+  > {
   tagIds?: string[];
   /** "Start task now" is an explicit, immediate action — let it through even
    * if the target time falls inside a blocked-hours override. Not for any

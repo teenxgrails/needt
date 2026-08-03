@@ -98,7 +98,7 @@ async function publishAgentMutation(userId: string) {
 async function findTask(userId: string, args: Record<string, unknown>) {
   const taskId = stringArg(args, "taskId");
   if (taskId) {
-    return prisma.task.findFirst({ where: { id: taskId, userId } });
+    return prisma.task.findFirst({ where: { id: taskId, userId, isArchived: false } });
   }
 
   const titleQuery = stringArg(args, "titleQuery");
@@ -106,6 +106,7 @@ async function findTask(userId: string, args: Record<string, unknown>) {
   return prisma.task.findFirst({
     where: {
       userId,
+      isArchived: false,
       title: { equals: titleQuery, mode: "insensitive" },
     },
   });
@@ -345,7 +346,7 @@ async function executeTool(
       const taskId = stringArg(call.arguments, "taskId");
       if (
         taskId &&
-        !(await prisma.task.findFirst({ where: { id: taskId, userId } }))
+        !(await prisma.task.findFirst({ where: { id: taskId, userId, isArchived: false } }))
       ) {
         return {
           text: "I could not find that task for this focus session.",
@@ -632,7 +633,7 @@ async function executeTool(
         12
       );
       const tasks = await prisma.task.findMany({
-        where: { userId, status: { not: "completed" } },
+        where: { userId, isArchived: false, status: { not: "completed" } },
         orderBy: [
           { scheduledStart: "asc" },
           { dueDate: "asc" },

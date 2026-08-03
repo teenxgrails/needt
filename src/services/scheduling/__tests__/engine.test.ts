@@ -201,6 +201,80 @@ describe("scheduleTasks", () => {
     expect(result.blocks[0].start.getHours()).toBe(10);
   });
 
+  it("does not place a task before its available start", () => {
+    const availableFrom = new Date(2026, 6, 6, 13, 0, 0);
+    const result = scheduleTasks({
+      tasks: [task({ id: "later", availableFrom })],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.blocks[0].start.getTime()).toBeGreaterThanOrEqual(
+      availableFrom.getTime()
+    );
+  });
+
+  it("allows a soft deadline to fall back to the nearest later slot", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "soft-deadline",
+          deadline: new Date(2026, 6, 6, 9, 30, 0),
+        }),
+      ],
+      busyBlocks: [busy({})],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.unscheduled).toHaveLength(0);
+    expect(result.blocks[0].start.getHours()).toBe(10);
+  });
+
+  it("rejects placement after a hard deadline", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "hard-deadline",
+          deadline: new Date(2026, 6, 6, 9, 30, 0),
+          hardDeadline: true,
+        }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.blocks).toHaveLength(0);
+    expect(result.unscheduled).toEqual([
+      expect.objectContaining({
+        taskId: "hard-deadline",
+        reason: "HARD_DEADLINE_MISSED",
+      }),
+    ]);
+  });
+
+  it("reports an explicit non-positive duration", () => {
+    const result = scheduleTasks({
+      tasks: [task({ id: "no-duration", estimatedMinutes: 0 })],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.unscheduled).toEqual([
+      expect.objectContaining({
+        taskId: "no-duration",
+        reason: "NO_DURATION",
+      }),
+    ]);
+  });
+
   it("splits large tasks into bounded chunks", () => {
     const result = scheduleTasks({
       tasks: [
@@ -257,7 +331,7 @@ describe("scheduleTasks", () => {
       {
         taskId: "two",
         title: "Two",
-        reason: "No available work-hours slot",
+        reason: "NO_WORKING_TIME",
       },
     ]);
   });

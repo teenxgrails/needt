@@ -41,12 +41,14 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get("endDate");
     const taskStartDate = searchParams.get("taskStartDate");
     const hideUpcomingTasks = searchParams.get("hideUpcomingTasks") === "true";
+    const archived = searchParams.get("archived") === "true";
 
     const now = newDate();
     const tasks = await prisma.task.findMany({
       where: {
         // Filter by the current user's ID
         userId,
+        isArchived: archived,
         ...(status.length > 0 && { status: { in: status } }),
         ...(energyLevel.length > 0 && { energyLevel: { in: energyLevel } }),
         ...(timePreference.length > 0 && {

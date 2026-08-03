@@ -57,7 +57,7 @@ export type RescheduleChange = {
 async function captureSnapshot(userId: string): Promise<ScheduleSnapshot> {
   const [tasks, blocks] = await Promise.all([
     prisma.task.findMany({
-      where: { userId },
+      where: { userId, isArchived: false },
       select: {
         id: true,
         title: true,
@@ -107,6 +107,7 @@ async function computeStagedSnapshot(
     prisma.task.findMany({
       where: {
         userId,
+        isArchived: false,
         OR: [{ isAutoScheduled: true }, { autoScheduled: true }],
         status: { notIn: ["completed", "in_progress"] },
       },

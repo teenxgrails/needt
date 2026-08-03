@@ -1,10 +1,6 @@
-import {
-  SchedulingRunSource,
-  SchedulingRunStatus,
-} from "@prisma/client";
-
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
-import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { scheduleAllTasksForUserDetailed } from "@/services/scheduling/TaskSchedulingService";
+import { SchedulingRunSource, SchedulingRunStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
@@ -17,7 +13,7 @@ type ScheduleSnapshot = Map<
 
 async function scheduleSnapshot(userId: string): Promise<ScheduleSnapshot> {
   const tasks = await prisma.task.findMany({
-    where: { userId },
+    where: { userId, isArchived: false },
     select: {
       id: true,
       scheduledStart: true,
@@ -77,7 +73,9 @@ export async function executeSchedulingRun(runId: string) {
 
   try {
     const before = await scheduleSnapshot(run.userId);
-    const tasks = await scheduleAllTasksForUser(run.userId);
+    const { tasks, scheduleResult } = await scheduleAllTasksForUserDetailed(
+      run.userId
+    );
     const after = await scheduleSnapshot(run.userId);
     let changedTaskCount = 0;
     let placedBlockCount = 0;
@@ -96,32 +94,9 @@ export async function executeSchedulingRun(runId: string) {
       }
     }
 
-    const unscheduledTasks = tasks.filter(
-      (task) =>
-        (task.isAutoScheduled || task.autoScheduled) &&
-        !task.scheduledStart &&
-        task.status !== "completed"
+    const unscheduled = scheduleResult.unscheduled.map(
+      ({ taskId, reason }) => ({ taskId, reason })
     );
-    const blockedTaskIds = new Set(
-      (
-        await prisma.taskDependency.findMany({
-          where: {
-            userId: run.userId,
-            blockedTaskId: { in: unscheduledTasks.map((task) => task.id) },
-            blocker: { status: { not: "completed" } },
-          },
-          select: { blockedTaskId: true },
-        })
-      ).map((dependency) => dependency.blockedTaskId)
-    );
-    const unscheduled = unscheduledTasks.map((task) => ({
-        taskId: task.id,
-        reason: blockedTaskIds.has(task.id)
-          ? "DEPENDENCY_BLOCKED"
-          : task.duration || task.estimatedMinutes
-            ? "NO_WORKING_TIME"
-            : "NO_DURATION",
-      }));
 
     await repushDirtyBlocks(run.userId);
     await sendConnectorWebhook({
@@ -185,10 +160,7 @@ export async function reapSchedulingRuns() {
     prisma.schedulingRun.deleteMany({
       where: {
         status: {
-          in: [
-            SchedulingRunStatus.SUCCEEDED,
-            SchedulingRunStatus.FAILED,
-          ],
+          in: [SchedulingRunStatus.SUCCEEDED, SchedulingRunStatus.FAILED],
         },
         finishedAt: { lt: retentionBefore },
       },

@@ -78,6 +78,7 @@ function duplicatePayload(task: Task, suffix = "copy"): NewTask {
     minChunkMinutes: task.minChunkMinutes,
     maxChunkMinutes: task.maxChunkMinutes,
     deadline: task.deadline,
+    hardDeadline: task.hardDeadline,
     priorityLevel: task.priorityLevel,
     contextTag: task.contextTag,
     projectId: task.projectId,
@@ -206,13 +207,49 @@ export function CalendarTaskActionsMenu({
       scheduleLocked: false,
     });
 
-  const archive = () =>
-    updateTask(task.id, {
-      status: TaskStatus.COMPLETED,
-      scheduledStart: null,
-      scheduledEnd: null,
-      scheduleLocked: false,
-    });
+  const archive = () => updateTask(task.id, { isArchived: true });
+  const restore = () => updateTask(task.id, { isArchived: false });
+
+  if (task.isArchived) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Task actions"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+            className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded border border-transparent text-[var(--text-secondary)] opacity-0 transition-[opacity,background-color,border-color,color] duration-150 hover:border-[var(--control-border)] hover:bg-[var(--control-bg)] hover:text-[var(--text-primary)] group-hover:opacity-100 data-[state=open]:border-[var(--control-border)] data-[state=open]:bg-[var(--control-bg)] data-[state=open]:text-[var(--text-primary)] data-[state=open]:opacity-100"
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          side="right"
+          sideOffset={6}
+          collisionPadding={10}
+          className="w-[220px] border-[var(--menu-border)] bg-[var(--menu-bg)] p-1 text-[var(--text-primary)] shadow-lg"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <DropdownMenuItem
+            className={MENU_ITEM_CLASS}
+            onSelect={() => run("Restore task", restore)}
+          >
+            <Archive />
+            Restore task
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className={`${MENU_ITEM_CLASS} text-[var(--color-danger)] focus:bg-[var(--button-danger-bg)] focus:text-[var(--color-danger)] [&>svg]:text-[var(--color-danger)]`}
+            onSelect={() => run("Delete task", () => deleteTask(task.id))}
+          >
+            <Trash2 />
+            Delete permanently
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
   return (
     <>

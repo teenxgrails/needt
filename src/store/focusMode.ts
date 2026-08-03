@@ -109,6 +109,7 @@ export const useFocusModeStore = create<FocusModeStore>()(
         const availableTasks = tasks.filter(
           (task) =>
             task.status !== TaskStatus.COMPLETED &&
+            !task.isArchived &&
             (!task.postponedUntil || newDate(task.postponedUntil) <= now) &&
             (!task.startDate || newDate(task.startDate) <= now)
         );

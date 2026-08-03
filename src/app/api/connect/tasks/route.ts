@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   }
 
   const tasks = await prisma.task.findMany({
-    where: { userId },
+    where: { userId, isArchived: false },
     orderBy: [{ scheduledStart: "asc" }, { createdAt: "desc" }],
     include: { scheduledBlocks: { orderBy: { chunkIndex: "asc" } } },
   });

@@ -31,7 +31,7 @@ export async function startTaskNow(input: {
 
   const [task, activeFocus] = await Promise.all([
     prisma.task.findFirst({
-      where: { id: input.taskId, userId: input.userId },
+      where: { id: input.taskId, userId: input.userId, isArchived: false },
       select: { id: true, scheduleId: true },
     }),
     input.startFocus
@@ -59,8 +59,7 @@ export async function startTaskNow(input: {
     }));
   if (schedule) {
     const now = newDate();
-    const dayOfWeek =
-      Number(formatInTimeZone(now, schedule.timeZone, "i")) % 7;
+    const dayOfWeek = Number(formatInTimeZone(now, schedule.timeZone, "i")) % 7;
     const time = formatInTimeZone(now, schedule.timeZone, "HH:mm");
     const inside = schedule.windows.some(
       (window) =>
@@ -170,7 +169,7 @@ export async function startTaskNow(input: {
                 ? "TASK_NOT_FOUND"
                 : error instanceof OutsideWorkHoursError
                   ? "OUTSIDE_WORK_HOURS"
-                : "START_FAILED",
+                  : "START_FAILED",
         },
       },
     });

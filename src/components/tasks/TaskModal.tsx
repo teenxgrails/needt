@@ -217,6 +217,7 @@ export function TaskModal({
   const [scheduleLocked, setScheduleLocked] = useState(
     task?.scheduleLocked || false
   );
+  const [hardDeadline, setHardDeadline] = useState(task?.hardDeadline || false);
   const [isFrozen, setIsFrozen] = useState(task?.isFrozen || false);
   const [priority, setPriority] = useState<Priority | null>(
     task?.priority || null
@@ -265,7 +266,8 @@ export function TaskModal({
     setIsRecurring(false);
     setRecurrenceRule(undefined);
     setIsAutoScheduled(defaults.autoScheduled);
-    setScheduleLocked(defaults.hardDeadline);
+    setScheduleLocked(false);
+    setHardDeadline(defaults.hardDeadline);
     setIsFrozen(false);
     setPriority(defaults.priority === "none" ? null : defaults.priority);
     setPriorityLevel(SchedulingTaskPriority.MEDIUM);
@@ -377,6 +379,7 @@ export function TaskModal({
       setRecurrenceRule(task.recurrenceRule || undefined);
       setIsAutoScheduled(task.isAutoScheduled);
       setScheduleLocked(task.scheduleLocked);
+      setHardDeadline(task.hardDeadline);
       setIsFrozen(task.isFrozen || false);
       setPriority(task.priority || null);
       setPriorityLevel(task.priorityLevel || SchedulingTaskPriority.MEDIUM);
@@ -473,6 +476,7 @@ export function TaskModal({
         : dueDate
           ? newDate(dueDate)
           : null,
+      hardDeadline,
       energyLevel: energyLevel || undefined,
       energyRequired,
       preferredTime: preferredTime || undefined,
@@ -972,8 +976,8 @@ export function TaskModal({
                   └ Hard deadline:
                 </span>
                 <Switch
-                  checked={isFrozen}
-                  onCheckedChange={setIsFrozen}
+                  checked={hardDeadline}
+                  onCheckedChange={setHardDeadline}
                   className="h-4 w-[26px] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
                 />
               </label>

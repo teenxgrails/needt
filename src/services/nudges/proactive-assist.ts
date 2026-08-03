@@ -79,6 +79,7 @@ export async function generateProactiveNudges(now = new Date()) {
       const tasks = await prisma.task.findMany({
         where: {
           userId: user.id,
+          isArchived: false,
           status: { not: "completed" },
           OR: [
             { deadline: { not: null } },
@@ -96,7 +97,9 @@ export async function generateProactiveNudges(now = new Date()) {
           estimatedMinutes: true,
           duration: true,
           focusSessions: {
-            where: { startedAt: { gte: new Date(now.getTime() - 24 * 60 * 60_000) } },
+            where: {
+              startedAt: { gte: new Date(now.getTime() - 24 * 60 * 60_000) },
+            },
             select: { id: true },
             take: 1,
           },

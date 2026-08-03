@@ -26,9 +26,9 @@ export async function GET(
         userId,
       },
       include: {
-        tasks: true,
+        tasks: { where: { isArchived: false } },
         _count: {
-          select: { tasks: true },
+          select: { tasks: { where: { isArchived: false } } },
         },
       },
     });
@@ -84,7 +84,7 @@ export async function PUT(
       },
       include: {
         _count: {
-          select: { tasks: true },
+          select: { tasks: { where: { isArchived: false } } },
         },
       },
     });

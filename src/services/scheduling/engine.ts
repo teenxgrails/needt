@@ -11,6 +11,8 @@ export interface SchedulableTask {
   minChunkMinutes?: number | null;
   maxChunkMinutes?: number | null;
   deadline?: Date | null;
+  availableFrom?: Date | null;
+  hardDeadline?: boolean;
   priority: SchedulingTaskPriority;
   energyRequired: SchedulingEnergyLevel;
   contextTag?: string | null;
@@ -90,7 +92,11 @@ export interface ScheduledBlock {
 export interface UnscheduledTask {
   taskId: string;
   title: string;
-  reason: string;
+  reason:
+    | "DEPENDENCY_BLOCKED"
+    | "NO_WORKING_TIME"
+    | "NO_DURATION"
+    | "HARD_DEADLINE_MISSED";
 }
 
 export interface ScheduleResult {
@@ -470,7 +476,16 @@ function findSlot(
   strictEnergy: boolean
 ): { start: Date; end: Date } | null {
   const spacingMinutes = Math.max(prefs.bufferMinutes, prefs.minBreakMinutes);
-  const searchEnd = addMinutes(earliestStart, DEFAULT_SEARCH_DAYS * 24 * 60);
+  const defaultSearchEnd = addMinutes(
+    earliestStart,
+    DEFAULT_SEARCH_DAYS * 24 * 60
+  );
+  const searchEnd =
+    chunk.task.hardDeadline && chunk.task.deadline
+      ? chunk.task.deadline < defaultSearchEnd
+        ? chunk.task.deadline
+        : defaultSearchEnd
+      : defaultSearchEnd;
   let day = startOfDay(earliestStart);
 
   while (day <= searchEnd) {
@@ -583,11 +598,15 @@ export function scheduleTasks(input: {
   );
 
   for (const task of candidateTasks) {
+    const availableFrom =
+      task.availableFrom && task.availableFrom > input.now
+        ? task.availableFrom
+        : input.now;
     const dependencyReadyAt = findDependencyReadyAt(
       task,
       placedTaskEnds,
       unscheduledTaskIds,
-      input.now
+      availableFrom
     );
 
     if (!dependencyReadyAt) {
@@ -600,12 +619,23 @@ export function scheduleTasks(input: {
       continue;
     }
 
+    const explicitDuration = task.estimatedMinutes ?? task.durationMinutes;
+    if (explicitDuration != null && explicitDuration <= 0) {
+      unscheduled.push({
+        taskId: task.id,
+        title: task.title,
+        reason: "NO_DURATION",
+      });
+      unscheduledTaskIds.add(task.id);
+      continue;
+    }
+
     const chunks = splitTaskIntoChunks(task, input.prefs);
     const taskBlocks: ScheduledBlock[] = [];
     const occupiedLengthBeforeTask = occupied.length;
     const deepWorkBeforeTask = new Map(deepWorkByDay);
     let cursor = dependencyReadyAt;
-    let failedReason: string | null = null;
+    let failedReason: UnscheduledTask["reason"] | null = null;
 
     for (const chunk of chunks) {
       const strictSlot = findSlot(
@@ -630,7 +660,10 @@ export function scheduleTasks(input: {
         );
 
       if (!slot) {
-        failedReason = "No available work-hours slot";
+        failedReason =
+          task.hardDeadline && task.deadline
+            ? "HARD_DEADLINE_MISSED"
+            : "NO_WORKING_TIME";
         break;
       }
 

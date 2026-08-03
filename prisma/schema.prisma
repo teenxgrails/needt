@@ -351,6 +351,7 @@ model Task {
   minChunkMinutes       Int?
   maxChunkMinutes       Int?
   deadline              DateTime?
+  hardDeadline          Boolean                @default(false)
   priorityLevel         SchedulingTaskPriority @default(MEDIUM)
   contextTag            String?
   isFrozen              Boolean                @default(false)
@@ -373,6 +374,8 @@ model Task {
   scheduleScore   Float?
   lastScheduled   DateTime?
   postponedUntil  DateTime? // New field for postponing tasks
+  isArchived      Boolean       @default(false)
+  archivedAt      DateTime?
 
   // Calendar block push
   blockEventId String? // Google Calendar event ID of the pushed block
@@ -445,6 +448,7 @@ model Task {
   @@index([source])
   @@index([postponedUntil])
   @@index([deadline])
+  @@index([userId, isArchived])
   @@index([energyRequired])
   @@index([priorityLevel])
   @@index([contextTag])
