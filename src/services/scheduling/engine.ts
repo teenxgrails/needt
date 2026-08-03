@@ -545,6 +545,36 @@ function findSlot(
   return null;
 }
 
+function findHardDeadlineOverflowSlot(
+  chunk: TaskChunk,
+  occupied: OccupiedBlock[],
+  prefs: SchedulingPreferences,
+  earliestStart: Date,
+  planningHorizonEnd: Date
+): { start: Date; end: Date } | null {
+  if (!chunk.task.hardDeadline || !chunk.task.deadline) return null;
+
+  const searchEnd =
+    chunk.task.deadline < planningHorizonEnd
+      ? chunk.task.deadline
+      : planningHorizonEnd;
+  const spacingMinutes = Math.max(prefs.bufferMinutes, prefs.minBreakMinutes);
+  let cursor = roundUpToStep(earliestStart);
+
+  while (cursor < searchEnd) {
+    const end = addMinutes(cursor, chunk.minutes);
+    if (
+      end <= searchEnd &&
+      !hasConflict(cursor, end, occupied, spacingMinutes)
+    ) {
+      return { start: cursor, end };
+    }
+    cursor = addMinutes(cursor, SLOT_STEP_MINUTES);
+  }
+
+  return null;
+}
+
 function toFrozenBlock(task: SchedulableTask): ScheduledBlock | null {
   if (!task.scheduledStart || !task.scheduledEnd) {
     return null;
@@ -687,7 +717,7 @@ export function scheduleTasks(input: {
         deepWorkByDay,
         true
       );
-      const slot =
+      const workScheduleSlot =
         strictSlot ??
         findSlot(
           chunk,
@@ -698,6 +728,15 @@ export function scheduleTasks(input: {
           planningHorizonEnd,
           deepWorkByDay,
           false
+        );
+      const slot =
+        workScheduleSlot ??
+        findHardDeadlineOverflowSlot(
+          chunk,
+          occupied,
+          input.prefs,
+          cursor,
+          planningHorizonEnd
         );
 
       if (!slot) {

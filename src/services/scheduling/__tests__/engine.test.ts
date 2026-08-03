@@ -338,7 +338,12 @@ describe("scheduleTasks", () => {
           hardDeadline: true,
         }),
       ],
-      busyBlocks: [],
+      busyBlocks: [
+        busy({
+          start: new Date(2026, 6, 6, 8, 0, 0),
+          end: new Date(2026, 6, 6, 9, 30, 0),
+        }),
+      ],
       energyProfile,
       prefs,
       now: mondayMorning,
@@ -351,6 +356,96 @@ describe("scheduleTasks", () => {
         reason: "HARD_DEADLINE_MISSED",
       }),
     ]);
+  });
+
+  it("uses free time outside Work Schedule to meet a hard deadline", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "hard-overflow",
+          hardDeadline: true,
+          deadline: new Date(2026, 6, 6, 11, 0, 0),
+        }),
+      ],
+      busyBlocks: [
+        busy({
+          start: new Date(2026, 6, 6, 8, 0, 0),
+          end: new Date(2026, 6, 6, 10, 0, 0),
+        }),
+      ],
+      energyProfile,
+      prefs: {
+        ...prefs,
+        workHours: { "1": { start: "09:00", end: "10:00" } },
+      },
+      now: mondayMorning,
+    });
+
+    expect(result.unscheduled).toHaveLength(0);
+    expect(result.blocks).toEqual([
+      expect.objectContaining({
+        taskId: "hard-overflow",
+        start: new Date(2026, 6, 6, 10, 0, 0),
+        end: new Date(2026, 6, 6, 11, 0, 0),
+      }),
+    ]);
+  });
+
+  it("keeps hard-deadline overflow clear of Busy events", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "hard-overflow",
+          estimatedMinutes: 30,
+          hardDeadline: true,
+          deadline: new Date(2026, 6, 6, 11, 30, 0),
+        }),
+      ],
+      busyBlocks: [
+        busy({
+          start: new Date(2026, 6, 6, 8, 0, 0),
+          end: new Date(2026, 6, 6, 10, 30, 0),
+        }),
+      ],
+      energyProfile,
+      prefs: {
+        ...prefs,
+        workHours: { "1": { start: "09:00", end: "10:00" } },
+      },
+      now: mondayMorning,
+    });
+
+    expect(result.blocks[0]).toEqual(
+      expect.objectContaining({
+        start: new Date(2026, 6, 6, 10, 30, 0),
+        end: new Date(2026, 6, 6, 11, 0, 0),
+      })
+    );
+  });
+
+  it("does not use overflow time for a soft deadline", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "soft-no-overflow",
+          deadline: new Date(2026, 6, 6, 11, 0, 0),
+        }),
+      ],
+      busyBlocks: [
+        busy({
+          start: new Date(2026, 6, 6, 9, 0, 0),
+          end: new Date(2026, 6, 6, 10, 0, 0),
+        }),
+      ],
+      energyProfile,
+      prefs: {
+        ...prefs,
+        workHours: { "1": { start: "09:00", end: "10:00" } },
+      },
+      now: mondayMorning,
+    });
+
+    expect(result.blocks[0].start).toEqual(new Date(2026, 6, 13, 9, 0, 0));
   });
 
   it("reports an explicit non-positive duration", () => {
