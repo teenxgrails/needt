@@ -64,6 +64,52 @@ function busy(overrides: Partial<CalendarBusyBlock>): CalendarBusyBlock {
 }
 
 describe("scheduleTasks", () => {
+  it("uses the documented scheduling hierarchy", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({ id: "low-hard", title: "Low hard", priority: "LOW", hardDeadline: true, deadline: new Date(2026, 6, 8, 17, 0, 0) }),
+        task({ id: "high-soft", title: "High soft", priority: "HIGH", deadline: new Date(2026, 6, 7, 17, 0, 0) }),
+        task({ id: "urgent", title: "Urgent", priority: "URGENT" }),
+        task({ id: "high-none", title: "High none", priority: "HIGH" }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.blocks.map((block) => block.taskId)).toEqual([
+      "urgent",
+      "low-hard",
+      "high-soft",
+      "high-none",
+    ]);
+  });
+
+  it("uses duration, availability, recurrence, and id as stable tie-breakers", () => {
+    const result = scheduleTasks({
+      tasks: [
+        task({ id: "same-b", title: "Same", estimatedMinutes: 30 }),
+        task({ id: "later", title: "Same", estimatedMinutes: 20, availableFrom: new Date(2026, 6, 6, 10, 0, 0) }),
+        task({ id: "recurring", title: "Same", estimatedMinutes: 20, isRecurring: true }),
+        task({ id: "same-a", title: "Same", estimatedMinutes: 30 }),
+        task({ id: "short", title: "Same", estimatedMinutes: 20 }),
+      ],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.blocks.map((block) => block.taskId)).toEqual([
+      "recurring",
+      "short",
+      "later",
+      "same-a",
+      "same-b",
+    ]);
+  });
+
   it("orders nearer deadlines before later deadlines", () => {
     const result = scheduleTasks({
       tasks: [

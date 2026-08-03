@@ -346,34 +346,54 @@ function hasConflict(
   );
 }
 
-function priorityScore(task: SchedulableTask, now: Date): number {
-  const priority = PRIORITY_WEIGHT[task.priority] * 100_000;
-  const deadline = task.deadline
-    ? Math.max(
-        0,
-        30_000 - (task.deadline.getTime() - now.getTime()) / 3_600_000
-      )
-    : 0;
-  const age = task.createdAt
-    ? Math.max(
-        0,
-        Math.min(10_000, (now.getTime() - task.createdAt.getTime()) / 3_600_000)
-      )
-    : 0;
-
-  return priority + deadline + age;
-}
-
 function sortTasks(tasks: SchedulableTask[], now: Date): SchedulableTask[] {
   const sortedByPriority = [...tasks].sort((a, b) => {
-    const scoreDelta = priorityScore(b, now) - priorityScore(a, now);
-    if (scoreDelta !== 0) return scoreDelta;
+    const asapDelta = Number(b.priority === "URGENT") - Number(a.priority === "URGENT");
+    if (asapDelta !== 0) return asapDelta;
 
-    if (a.contextTag && b.contextTag && a.contextTag !== b.contextTag) {
-      return a.contextTag.localeCompare(b.contextTag);
+    const hardDeadlineDelta =
+      Number(Boolean(b.hardDeadline && b.deadline)) -
+      Number(Boolean(a.hardDeadline && a.deadline));
+    if (hardDeadlineDelta !== 0) return hardDeadlineDelta;
+
+    const deadlinePresenceDelta =
+      Number(Boolean(b.deadline)) - Number(Boolean(a.deadline));
+    if (deadlinePresenceDelta !== 0) return deadlinePresenceDelta;
+
+    if (a.deadline && b.deadline) {
+      const deadlineDelta = a.deadline.getTime() - b.deadline.getTime();
+      if (deadlineDelta !== 0) return deadlineDelta;
     }
 
-    return a.title.localeCompare(b.title);
+    const priorityDelta =
+      PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority];
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const durationDelta =
+      (a.estimatedMinutes ?? a.durationMinutes ?? DEFAULT_ESTIMATE_MINUTES) -
+      (b.estimatedMinutes ?? b.durationMinutes ?? DEFAULT_ESTIMATE_MINUTES);
+    if (durationDelta !== 0) return durationDelta;
+
+    const availableFromDelta =
+      (a.availableFrom?.getTime() ?? now.getTime()) -
+      (b.availableFrom?.getTime() ?? now.getTime());
+    if (availableFromDelta !== 0) return availableFromDelta;
+
+    const recurrenceDelta = Number(Boolean(b.isRecurring)) - Number(Boolean(a.isRecurring));
+    if (recurrenceDelta !== 0) return recurrenceDelta;
+
+    const createdAtDelta =
+      (a.createdAt?.getTime() ?? now.getTime()) -
+      (b.createdAt?.getTime() ?? now.getTime());
+    if (createdAtDelta !== 0) return createdAtDelta;
+
+    const contextDelta = (a.contextTag ?? "").localeCompare(b.contextTag ?? "");
+    if (contextDelta !== 0) return contextDelta;
+
+    const titleDelta = a.title.localeCompare(b.title);
+    if (titleDelta !== 0) return titleDelta;
+
+    return a.id.localeCompare(b.id);
   });
   const taskById = new Map(sortedByPriority.map((task) => [task.id, task]));
   const visited = new Set<string>();
