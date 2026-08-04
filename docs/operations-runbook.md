@@ -49,6 +49,15 @@ drill succeeds.
 - Operator: release owner with Codex guidance
 - Outcome: passed; scratch database and copied restore artifact removed
 
+## Workspace rollout rollback
+
+The `workspaces` feature flag is seeded disabled with zero-percent rollout.
+Enable users through `FeatureFlagOverride` while the migration is evaluated.
+To roll back application behavior, disable the flag and remove any enabled
+per-user overrides. The additive workspace tables and nullable `workspaceId`
+columns stay in place; legacy `userId` reads and writes remain authoritative
+while the flag is off. Do not drop or rewrite the workspace migration.
+
 ## Scheduling and queue health
 
 `/admin/operations` is admin-only and shows scheduling success by source,

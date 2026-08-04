@@ -138,6 +138,65 @@ model User {
   bookingPages           BookingPage[]
   bookings               Booking[]               @relation("BookingOwner")
   featureFlagOverrides   FeatureFlagOverride[]
+  personalWorkspace      Workspace?              @relation("PersonalWorkspaceOwner")
+  workspaceMemberships   WorkspaceMember[]
+  workspaceInvitesSent   WorkspaceInvite[]       @relation("WorkspaceInviteSender")
+  workspaceInvitesUsed   WorkspaceInvite[]       @relation("WorkspaceInviteAcceptor")
+}
+
+model Workspace {
+  id              String            @id @default(cuid())
+  name            String
+  kind            WorkspaceKind     @default(PERSONAL)
+  personalOwnerId String?           @unique
+  personalOwner   User?             @relation("PersonalWorkspaceOwner", fields: [personalOwnerId], references: [id], onDelete: SetNull)
+  members         WorkspaceMember[]
+  invites         WorkspaceInvite[]
+  projects        Project[]
+  tasks           Task[]
+  boards          Board[]
+  pages           Page[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([kind])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        WorkspaceRole
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId, role])
+}
+
+model WorkspaceInvite {
+  id           String        @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email        String
+  role         WorkspaceRole
+  tokenHash    String        @unique
+  invitedById  String?
+  invitedBy    User?         @relation("WorkspaceInviteSender", fields: [invitedById], references: [id], onDelete: SetNull)
+  acceptedById String?
+  acceptedBy   User?         @relation("WorkspaceInviteAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([workspaceId, email])
+  @@index([email, expiresAt])
+  @@index([invitedById])
+  @@index([acceptedById])
 }
 
 model VerificationToken {
@@ -297,12 +356,16 @@ model Project {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([userId])
+  @@index([workspaceId])
   @@index([externalId, externalSource])
 }
 
@@ -395,8 +458,8 @@ model Task {
   completedAt          DateTime? // When the task was marked as completed
   recurrenceMasterId   String?
   recurrenceInstanceAt DateTime?
-  recurrenceMaster     Task?      @relation("TaskRecurrenceInstances", fields: [recurrenceMasterId], references: [id], onDelete: Restrict)
-  recurrenceInstances  Task[]     @relation("TaskRecurrenceInstances")
+  recurrenceMaster     Task?     @relation("TaskRecurrenceInstances", fields: [recurrenceMasterId], references: [id], onDelete: Restrict)
+  recurrenceInstances  Task[]    @relation("TaskRecurrenceInstances")
 
   // External Integration
   externalTaskId String?
@@ -422,6 +485,9 @@ model Task {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -440,6 +506,7 @@ model Task {
   boardPosition Float?
   properties    Json?
 
+  @@unique([recurrenceMasterId, recurrenceInstanceAt])
   @@index([status])
   @@index([dueDate])
   @@index([startDate])
@@ -449,7 +516,6 @@ model Task {
   @@index([boardColumnId])
   @@index([isRecurring])
   @@index([recurrenceMasterId])
-  @@unique([recurrenceMasterId, recurrenceInstanceAt])
   @@index([isAutoScheduled])
   @@index([scheduledStart, scheduledEnd])
   @@index([scheduleId])
@@ -466,6 +532,7 @@ model Task {
   @@index([dependsOnId])
   @@index([autoScheduled])
   @@index([userId])
+  @@index([workspaceId])
   @@index([externalTaskId, source])
   @@index([syncStatus])
   @@index([externalListId])
@@ -764,21 +831,24 @@ model Booking {
 }
 
 model Board {
-  id         String        @id @default(cuid())
-  userId     String
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name       String
-  icon       String? // emoji
-  position   Float         @default(0)
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String?
+  workspace   Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  name        String
+  icon        String? // emoji
+  position    Float         @default(0)
   // "manual" columns, or auto-group by status | priority | project | tag.
-  groupBy    String        @default("manual")
-  columns    BoardColumn[]
-  tasks      Task[]
-  savedViews SavedView[]
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  groupBy     String        @default("manual")
+  columns     BoardColumn[]
+  tasks       Task[]
+  savedViews  SavedView[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([userId])
+  @@index([workspaceId])
 }
 
 model BoardColumn {
@@ -823,6 +893,8 @@ model Page {
   id                    String                 @id @default(cuid())
   userId                String
   user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId           String?
+  workspace             Workspace?             @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   parentId              String?
   parent                Page?                  @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
   children              Page[]                 @relation("PageTree")
@@ -847,6 +919,7 @@ model Page {
   updatedAt             DateTime               @updatedAt
 
   @@index([userId, parentId, position])
+  @@index([workspaceId])
   @@index([userId, isFavorite])
   @@index([userId, trashedAt])
 }
@@ -1770,6 +1843,17 @@ enum DatabasePropertyType {
   FORMULA
   RELATION
   ROLLUP
+}
+
+enum WorkspaceKind {
+  PERSONAL
+  SHARED
+}
+
+enum WorkspaceRole {
+  OWNER
+  EDITOR
+  VIEWER
 }
 
 enum DatabaseViewType {
