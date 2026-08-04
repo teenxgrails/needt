@@ -777,9 +777,9 @@ export function SpaceView({
                             }}
                             aria-label={`Select task ${task.title}`}
                             className={cn(
-                              "workspace-space-task group absolute z-10 flex h-9 w-[146px] -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-md border bg-[var(--space-task-bg)] px-2 text-left transition-[border-color,background-color,scale,opacity] duration-150 hover:z-20 hover:bg-[var(--space-task-bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--space-text-primary)]",
+                              "workspace-space-task group absolute z-10 h-9 w-[146px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[4px] border border-[var(--calendar-task-border)] bg-[var(--calendar-task-bg)] text-left text-[var(--text-primary)] transition-[border-color,opacity] duration-150 hover:z-20 focus-visible:outline-none",
                               selected &&
-                                "z-20 scale-[1.04] bg-[var(--space-task-bg-hover)]",
+                                "z-20 border-[var(--text-secondary)] ring-1 ring-inset ring-[var(--text-secondary)]",
                               task.status === TaskStatus.COMPLETED &&
                                 "opacity-55",
                               draggingTaskId === task.id && "opacity-30"
@@ -787,27 +787,40 @@ export function SpaceView({
                             style={style}
                           >
                             <span
-                              className="grid h-5 w-5 flex-none place-items-center rounded-full border"
-                              style={{
-                                color,
-                                borderColor: `color-mix(in srgb, ${color} 48%, transparent)`,
-                                background: `color-mix(in srgb, ${color} 12%, var(--space-task-bg))`,
-                              }}
-                            >
-                              {task.status === TaskStatus.COMPLETED ? (
-                                <Check className="h-3 w-3" />
-                              ) : getTaskStart(task) ? (
-                                <Clock3 className="h-3 w-3" />
-                              ) : (
-                                <CircleDot className="h-3 w-3" />
-                              )}
-                            </span>
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate text-[11px] font-medium text-[var(--space-text-primary)]">
-                                {task.title}
+                              aria-hidden="true"
+                              className="pointer-events-none absolute -bottom-px -left-px -top-px z-[1] w-1 rounded-l-[4px]"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span
+                              aria-hidden="true"
+                              className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-150 group-hover:opacity-[0.15]"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span className="relative z-[2] grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-start gap-[3px] overflow-hidden py-px pl-[5px] pr-1 text-[12px] leading-4">
+                              <span
+                                className="mt-[2px] grid h-3 w-3 place-items-center rounded-full border border-[var(--text-secondary)] text-[var(--text-secondary)]"
+                                style={{
+                                  color:
+                                    task.status === TaskStatus.COMPLETED
+                                      ? "var(--color-success)"
+                                      : undefined,
+                                }}
+                              >
+                                {task.status === TaskStatus.COMPLETED ? (
+                                  <Check className="h-2.5 w-2.5" />
+                                ) : getTaskStart(task) ? (
+                                  <Clock3 className="h-2.5 w-2.5" />
+                                ) : (
+                                  <CircleDot className="h-2.5 w-2.5" />
+                                )}
                               </span>
-                              <span className="block truncate text-[9px] text-[var(--space-text-muted)]">
-                                {formatTaskTime(task)} · {taskDuration(task)}m
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-[12px] font-normal leading-4">
+                                  {task.title}
+                                </span>
+                                <span className="block truncate text-[12px] font-normal leading-4 tabular-nums text-[var(--text-secondary)]">
+                                  {formatTaskTime(task)} · {taskDuration(task)}m
+                                </span>
                               </span>
                             </span>
                           </button>

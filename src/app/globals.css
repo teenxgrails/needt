@@ -222,8 +222,6 @@
     --space-panel: var(--surface-panel);
     --space-panel-raised: var(--surface-control);
     --space-panel-hover: var(--surface-control-hover);
-    --space-task-bg: var(--surface-control);
-    --space-task-bg-hover: var(--surface-control-hover);
     --space-label-bg: var(--surface-panel);
     --space-border: var(--border-control);
     --space-project-border: var(--border-subtle);
