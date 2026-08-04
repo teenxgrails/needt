@@ -1,6 +1,8 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+import type { WorkspaceRole } from "@prisma/client";
+
 import { logger } from "@/lib/logger";
 import {
   requestedWorkspaceId,
@@ -19,7 +21,8 @@ const LOG_SOURCE = "APIAuth";
  */
 export async function authenticateRequest(
   request: NextRequest,
-  logSource: string
+  logSource: string,
+  options: { requiredRole?: WorkspaceRole } = {}
 ): Promise<
   | { userId: string; workspace?: WorkspaceAccess; response?: undefined }
   | { response: NextResponse; userId?: undefined; workspace?: undefined }
@@ -46,6 +49,7 @@ export async function authenticateRequest(
     const workspace = await resolveWorkspaceAccess({
       userId,
       requestedWorkspaceId: requestedWorkspaceId(request),
+      requiredRole: options.requiredRole,
     });
     return { userId, workspace };
   } catch (error) {

@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
 import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
-import type { Prisma, Task } from "@prisma/client";
+import {
+  TaskBusyStatus,
+  WorkspaceRole,
+  type Prisma,
+  type Task,
+} from "@prisma/client";
 import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { newDate } from "@/lib/date-utils";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
@@ -37,13 +43,16 @@ export async function GET(
     const task = await prisma.task.findUnique({
       where: {
         id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         tags: true,
         project: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
+        activities: {
+          include: { actor: { select: { id: true, name: true, image: true } } },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -69,7 +78,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -82,8 +93,7 @@ export async function PUT(
     const task = await prisma.task.findUnique({
       where: {
         id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         tags: true,
@@ -109,13 +119,64 @@ export async function PUT(
       );
     }
 
-    const { tagIds, projectId, scheduleId, bypassBlockedHours, ...updates } =
-      json;
+    const {
+      tagIds,
+      projectId,
+      scheduleId,
+      bypassBlockedHours,
+      assigneeId: requestedAssigneeId,
+      ...updates
+    } = json;
     delete updates.project;
     delete updates.userId;
+    delete updates.workspaceId;
+    delete updates.assignee;
+    delete updates.activities;
     delete updates.archivedAt;
     delete updates.recurrenceMasterId;
     delete updates.recurrenceInstanceAt;
+    const workspaceId = task.workspaceId ?? auth.workspace?.workspaceId;
+    if (
+      requestedAssigneeId !== undefined &&
+      requestedAssigneeId !== null &&
+      (typeof requestedAssigneeId !== "string" ||
+        !workspaceId ||
+        (requestedAssigneeId !== userId &&
+          !(await prisma.workspaceMember.findUnique({
+            where: {
+              workspaceId_userId: {
+                workspaceId,
+                userId: requestedAssigneeId,
+              },
+            },
+            select: { id: true },
+          }))))
+    ) {
+      return new NextResponse("Invalid workspace assignee", { status: 400 });
+    }
+    if (
+      updates.busyStatus !== undefined &&
+      !Object.values(TaskBusyStatus).includes(updates.busyStatus)
+    ) {
+      return new NextResponse("Invalid busy status", { status: 400 });
+    }
+    if (
+      updates.stageId !== undefined &&
+      updates.stageId !== null &&
+      typeof updates.stageId !== "string"
+    ) {
+      return new NextResponse("Invalid stage", { status: 400 });
+    }
+    if (
+      projectId &&
+      (!workspaceId ||
+        !(await prisma.project.findFirst({
+          where: { id: projectId, workspaceId },
+          select: { id: true },
+        })))
+    ) {
+      return new NextResponse("Invalid workspace project", { status: 400 });
+    }
     if (
       updates.isArchived !== undefined &&
       typeof updates.isArchived !== "boolean"
@@ -265,11 +326,13 @@ export async function PUT(
     const taskUpdate: Prisma.TaskUpdateArgs = {
       where: {
         id: id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       data: {
         ...updates,
+        ...(requestedAssigneeId !== undefined && {
+          assigneeId: requestedAssigneeId,
+        }),
         ...(scheduleId !== undefined && { scheduleId: scheduleId || null }),
         ...(tagIds && {
           tags: {
@@ -283,6 +346,15 @@ export async function PUT(
             : projectId
               ? { connect: { id: projectId } }
               : undefined,
+        ...(workspaceId && {
+          activities: {
+            create: {
+              workspaceId,
+              actorId: userId,
+              action: "UPDATED",
+            },
+          },
+        }),
       },
       include: {
         tags: true,
@@ -324,6 +396,10 @@ export async function PUT(
             energyLevel: task.energyLevel,
             preferredTime: task.preferredTime,
             projectId: task.projectId,
+            workspaceId: task.workspaceId,
+            assigneeId: task.assigneeId,
+            busyStatus: task.busyStatus,
+            stageId: task.stageId,
             scheduleId: task.scheduleId,
             isRecurring: false,
             recurrenceMasterId: task.id,
@@ -370,7 +446,10 @@ export async function PUT(
 
       updatedTask =
         (await prisma.task.findUnique({
-          where: { id, userId },
+          where: {
+            id,
+            ...workspaceDataScopeWhere(auth.workspace, userId),
+          },
           include: {
             tags: true,
             project: true,
@@ -440,7 +519,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -451,8 +532,7 @@ export async function DELETE(
     const task = await prisma.task.findUnique({
       where: {
         id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         project: true,
@@ -465,13 +545,25 @@ export async function DELETE(
 
     if (!task.isArchived) {
       await prisma.task.update({
-        where: { id, userId },
+        where: {
+          id,
+          ...workspaceDataScopeWhere(auth.workspace, userId),
+        },
         data: {
           isArchived: true,
           archivedAt: newDate(),
           scheduledStart: null,
           scheduledEnd: null,
           scheduleLocked: false,
+          ...(task.workspaceId && {
+            activities: {
+              create: {
+                workspaceId: task.workspaceId,
+                actorId: userId,
+                action: "ARCHIVED",
+              },
+            },
+          }),
         },
       });
       await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });

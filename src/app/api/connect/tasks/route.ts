@@ -4,6 +4,10 @@ import { authenticateConnectorToken } from "@/services/connectors/auth";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 
 import { prisma } from "@/lib/prisma";
+import {
+  resolveWorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 
 import {
   SchedulingEnergyLevel,
@@ -31,9 +35,13 @@ export async function GET(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const workspace = await resolveWorkspaceAccess({ userId });
 
   const tasks = await prisma.task.findMany({
-    where: { userId, isArchived: false },
+    where: {
+      ...workspaceDataScopeWhere(workspace, userId),
+      isArchived: false,
+    },
     orderBy: [{ scheduledStart: "asc" }, { createdAt: "desc" }],
     include: { scheduledBlocks: { orderBy: { chunkIndex: "asc" } } },
   });
@@ -51,6 +59,7 @@ export async function POST(request: NextRequest) {
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const workspace = await resolveWorkspaceAccess({ userId });
 
   const body = await request.json();
   if (typeof body.title !== "string" || !body.title.trim()) {
@@ -60,6 +69,8 @@ export async function POST(request: NextRequest) {
   const task = await prisma.task.create({
     data: {
       userId,
+      workspaceId: workspace.workspaceId,
+      assigneeId: userId,
       title: body.title.trim(),
       description:
         typeof body.description === "string" ? body.description.trim() : null,
@@ -85,6 +96,13 @@ export async function POST(request: NextRequest) {
       scheduleLocked: false,
       isFrozen: false,
       isRecurring: false,
+      activities: {
+        create: {
+          workspaceId: workspace.workspaceId,
+          actorId: userId,
+          action: "CREATED",
+        },
+      },
     },
   });
 

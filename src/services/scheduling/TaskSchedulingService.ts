@@ -37,6 +37,7 @@ const DEFAULT_WORK_HOURS: SchedulingPreferences["workHours"] = {
 type DbTaskWithRelations = {
   id: string;
   title: string;
+  assigneeId: string | null;
   description: string | null;
   status: string;
   dueDate: Date | null;
@@ -186,6 +187,7 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
   return {
     id: task.id,
     title: task.title,
+    assigneeId: task.assigneeId,
     status: task.status,
     createdAt: task.createdAt,
     estimatedMinutes: task.estLikely ?? task.estimatedMinutes,

@@ -25,6 +25,15 @@ export interface WorkspaceAccess {
   dataScope: WorkspaceDataScope;
 }
 
+export function workspaceDataScopeWhere(
+  access: WorkspaceAccess | undefined,
+  legacyUserId: string
+) {
+  return access?.dataScope.mode === "workspace"
+    ? { workspaceId: access.dataScope.workspaceId }
+    : { userId: legacyUserId };
+}
+
 export class WorkspaceAuthorizationError extends Error {
   constructor(
     message: string,

@@ -349,6 +349,11 @@ export class TaskSyncManager {
     fieldMapper: FieldMapper
   ): Promise<void> {
     const tracker = new TaskChangeTracker();
+    const project = await prisma.project.findUnique({
+      where: { id: mapping.projectId },
+      select: { workspaceId: true },
+    });
+    const workspaceId = project?.workspaceId ?? null;
 
     // Local tasks already linked to this provider, keyed by external id.
     // todo: this keys by (projectId, source, externalTaskId) and ignores
@@ -454,7 +459,18 @@ export class TaskSyncManager {
               lastSyncedAt: newDate(),
               syncStatus: "SYNCED",
               userId: mapping.provider.userId,
+              workspaceId,
+              assigneeId: mapping.provider.userId,
               projectId: mapping.projectId,
+              ...(workspaceId && {
+                activities: {
+                  create: {
+                    workspaceId,
+                    actorId: mapping.provider.userId,
+                    action: "IMPORTED",
+                  },
+                },
+              }),
               externalUpdatedAt: externalTask.lastModified
                 ? newDate(externalTask.lastModified)
                 : externalTask.lastModifiedDateTime
@@ -499,6 +515,11 @@ export class TaskSyncManager {
     tracker: TaskChangeTracker
   ): Promise<void> {
     try {
+      const project = await prisma.project.findUnique({
+        where: { id: mapping.projectId },
+        select: { workspaceId: true },
+      });
+      const workspaceId = project?.workspaceId ?? null;
       // Step 1: Fetch tasks from both sources
       const localTasks = (
         await prisma.task.findMany({
@@ -686,7 +707,18 @@ export class TaskSyncManager {
                   lastSyncedAt: newDate(),
                   syncStatus: "SYNCED",
                   userId: mapping.provider.userId,
+                  workspaceId,
+                  assigneeId: mapping.provider.userId,
                   projectId: mapping.projectId,
+                  ...(workspaceId && {
+                    activities: {
+                      create: {
+                        workspaceId,
+                        actorId: mapping.provider.userId,
+                        action: "IMPORTED",
+                      },
+                    },
+                  }),
                   externalUpdatedAt: externalTask.lastModified
                     ? newDate(externalTask.lastModified)
                     : externalTask.lastModifiedDateTime

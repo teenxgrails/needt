@@ -43,6 +43,7 @@ function task(overrides: Partial<SchedulableTask>): SchedulableTask {
   return {
     id: "task",
     title: "Task",
+    assigneeId: "user-1",
     status: "todo",
     createdAt: new Date("2026-07-01T08:00:00.000Z"),
     estimatedMinutes: 60,
@@ -64,6 +65,24 @@ function busy(overrides: Partial<CalendarBusyBlock>): CalendarBusyBlock {
 }
 
 describe("scheduleTasks", () => {
+  it("reports NO_ASSIGNEE without placing an unassigned task", () => {
+    const result = scheduleTasks({
+      tasks: [task({ id: "unassigned", assigneeId: null })],
+      busyBlocks: [],
+      energyProfile,
+      prefs,
+      now: mondayMorning,
+    });
+
+    expect(result.blocks).toHaveLength(0);
+    expect(result.unscheduled).toEqual([
+      expect.objectContaining({
+        taskId: "unassigned",
+        reason: "NO_ASSIGNEE",
+      }),
+    ]);
+  });
+
   it("uses the documented scheduling hierarchy", () => {
     const result = scheduleTasks({
       tasks: [

@@ -22,6 +22,9 @@ jest.mock("@/lib/prisma", () => ({
     taskChange: {
       findMany: jest.fn().mockResolvedValue([]),
     },
+    project: {
+      findUnique: jest.fn().mockResolvedValue({ workspaceId: "workspace-1" }),
+    },
   },
 }));
 
@@ -39,6 +42,7 @@ const mockPrisma = prisma as unknown as {
     delete: jest.Mock;
   };
   taskChange: { findMany: jest.Mock };
+  project: { findUnique: jest.Mock };
 };
 
 const WRITE_NOT_SUPPORTED = "CalDAV task write-back is not supported";
@@ -107,6 +111,14 @@ describe("TaskSyncManager incoming-only sync for import-only providers (issue #1
 
     expect(result.success).toBe(true);
     expect(mockPrisma.task.create).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.task.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          workspaceId: "workspace-1",
+          assigneeId: "user-1",
+        }),
+      })
+    );
     // Crucially: no write-back to the CalDAV server is attempted.
     expect(provider.createTask).not.toHaveBeenCalled();
     expect(provider.updateTask).not.toHaveBeenCalled();

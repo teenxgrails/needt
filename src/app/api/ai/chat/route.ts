@@ -143,6 +143,7 @@ async function executeTool(
   ai: SchedulerAI,
   call: AIChatToolCall,
   userId: string,
+  workspaceId: string,
   confirmed: boolean
 ): Promise<ToolResult> {
   const validatedArguments = validateAgentToolCall(call.name, call.arguments);
@@ -190,6 +191,8 @@ async function executeTool(
       const task = await prisma.task.create({
         data: {
           userId,
+          workspaceId,
+          assigneeId: userId,
           title: title.slice(0, 160),
           status: "todo",
           isAutoScheduled: autoSchedule,
@@ -211,6 +214,9 @@ async function executeTool(
                 : stringArg(call.arguments, "priority") === "LOW"
                   ? "LOW"
                   : "MEDIUM",
+          activities: {
+            create: { workspaceId, actorId: userId, action: "CREATED" },
+          },
         },
       });
       await publishAgentMutation(userId);
@@ -488,6 +494,8 @@ async function executeTool(
       const task = await prisma.task.create({
         data: {
           userId,
+          workspaceId,
+          assigneeId: userId,
           title:
             stringArg(call.arguments, "title")?.slice(0, 160) ||
             `Follow up: ${message.subject}`.slice(0, 160),
@@ -497,6 +505,9 @@ async function executeTool(
           estimatedMinutes: minutes ? Math.round(minutes) : undefined,
           duration: minutes ? Math.round(minutes) : undefined,
           isAutoScheduled: true,
+          activities: {
+            create: { workspaceId, actorId: userId, action: "CREATED" },
+          },
         },
       });
       await publishAgentMutation(userId);
@@ -934,7 +945,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (selectedTool && tools.some((tool) => tool.name === selectedTool?.name)) {
-    toolResult = await executeTool(ai, selectedTool, auth.userId, confirmed);
+    toolResult = await executeTool(
+      ai,
+      selectedTool,
+      auth.userId,
+      auth.workspace!.workspaceId,
+      confirmed
+    );
   }
 
   const finalRequest: AIChatRequest = {

@@ -210,7 +210,11 @@ async function computeStagedSnapshot(
         originalId: id,
         dependsOnId,
         staged: await prisma.task.create({
-          data: { ...task, userId: stagingUser.id },
+          data: {
+            ...task,
+            userId: stagingUser.id,
+            assigneeId: stagingUser.id,
+          },
           select: { id: true },
         }),
       }))
