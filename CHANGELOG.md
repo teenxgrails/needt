@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added paid shared-workspace creation and expiring, single-use invitations with Owner/Editor/Viewer enforcement and protection against removing or demoting the final Owner.
 - Added the feature-flagged workspace tenancy foundation with personal workspaces, Owner/Editor/Viewer memberships, expiring invite records, and an idempotent backfill for existing projects, tasks, boards, and pages.
 - Added non-destructive task archiving with a read-only Archived view, restore actions, and exclusions from normal planning, Focus, reminders, search, AI context, connectors, and project counts; legacy task deletion now archives data instead of removing it.
 - Added a Notion-like Page canvas with a borderless title, icon and cover controls, full-canvas focus, searchable keyboard slash commands, canonical text/list/checklist/quote/code/divider blocks, and extensible callout, toggle, link, bookmark, media, layout and mention blocks.
