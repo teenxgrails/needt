@@ -42,6 +42,19 @@ reminders, dependencies, push subscriptions, bookings — everything is keyed by
 `userId`, and FREE/PRO/LIFETIME limits are enforced server-side in
 `src/lib/entitlements.ts`. Hidden UI is never the security boundary.
 
+**Workspaces are being introduced as the tenancy boundary** (Motion-compatible
+model: personal workspace for everyone, shared workspaces with Owner/Editor/
+Viewer roles and invites). While that migration is in progress:
+
+- New user-owned entities must carry a workspace scope, not only `userId`.
+- Every authenticated route resolves membership **server-side** through the
+  shared workspace authorization helper. A workspace ID in a request, a room
+  ID, or a share link is never by itself proof of access.
+- Personal workspaces stay available on FREE; joining or owning a shared
+  workspace requires PRO/LIFETIME for every member.
+- Shared calendars expose busy/free only — never titles or details of another
+  member's personal events.
+
 ---
 
 ## Non-negotiable rules
@@ -139,7 +152,10 @@ always reads local data.
   unified build.
 - No new UI primitives when a shared one exists.
 - No site/app blocking (deferred to desktop clients).
-- No team/org expansion beyond the existing entitlements.
+- No seat-based billing. Team membership is gated by each member holding their
+  own PRO/LIFETIME plan, not by charging per seat.
+- No cross-workspace data access, aggregation, or "global" views that expose
+  content from a workspace the caller is not a member of.
 - No rewriting the scheduling engine to be AI-driven.
 
 ---
