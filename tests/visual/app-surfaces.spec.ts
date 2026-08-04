@@ -41,7 +41,10 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   await expect(page).toHaveScreenshot("settings-appearance.png");
   await page.goto("/calendar", { waitUntil: "domcontentloaded" });
 
-  await expect(page.locator(".fc-timegrid")).toBeVisible();
+  const visibleTimeGrid = page
+    .locator(".fc-timegrid")
+    .filter({ visible: true });
+  await expect(visibleTimeGrid).toHaveCount(1);
   await expect(
     page
       .getByTestId("calendar-task")
@@ -172,7 +175,10 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
   await expect(page).toHaveScreenshot("settings-appearance-light.png");
 
   await page.goto("/calendar", { waitUntil: "domcontentloaded" });
-  await expect(page.locator(".fc-timegrid")).toBeVisible();
+  const visibleTimeGrid = page
+    .locator(".fc-timegrid")
+    .filter({ visible: true });
+  await expect(visibleTimeGrid).toHaveCount(1);
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("calendar-light.png");
 

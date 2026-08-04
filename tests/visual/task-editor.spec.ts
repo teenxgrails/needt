@@ -111,7 +111,10 @@ test("calendar plus opens Task directly and switches into the shared Event edito
   await signInVisualUser(page);
   await page.goto("/calendar", { waitUntil: "domcontentloaded" });
 
-  const todayHeader = page.locator(".fc-col-header-cell.fc-day-today");
+  const todayHeader = page
+    .locator(".fc-col-header-cell.fc-day-today")
+    .filter({ visible: true });
+  await expect(todayHeader).toHaveCount(1);
   await expect(todayHeader).toContainText("Thu");
   await expect(todayHeader).toContainText("16");
   const dayAction = todayHeader.getByRole("button", {
