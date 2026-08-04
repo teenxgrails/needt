@@ -2,6 +2,12 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 import { logger } from "@/lib/logger";
+import {
+  requestedWorkspaceId,
+  resolveWorkspaceAccess,
+  type WorkspaceAccess,
+  WorkspaceAuthorizationError,
+} from "@/lib/auth/workspace-auth";
 
 const LOG_SOURCE = "APIAuth";
 
@@ -14,7 +20,10 @@ const LOG_SOURCE = "APIAuth";
 export async function authenticateRequest(
   request: NextRequest,
   logSource: string
-) {
+): Promise<
+  | { userId: string; workspace?: WorkspaceAccess; response?: undefined }
+  | { response: NextResponse; userId?: undefined; workspace?: undefined }
+> {
   // Get the user token from the request
   const token = await getToken({
     req: request,
@@ -33,7 +42,28 @@ export async function authenticateRequest(
     return { response: new NextResponse("Unauthorized", { status: 401 }) };
   }
 
-  return { userId };
+  try {
+    const workspace = await resolveWorkspaceAccess({
+      userId,
+      requestedWorkspaceId: requestedWorkspaceId(request),
+    });
+    return { userId, workspace };
+  } catch (error) {
+    if (error instanceof WorkspaceAuthorizationError) {
+      logger.warn(
+        "Workspace authorization rejected",
+        { userId, code: error.code, path: request.nextUrl.pathname },
+        logSource
+      );
+      return {
+        response: NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: error.status }
+        ),
+      };
+    }
+    throw error;
+  }
 }
 
 /**
