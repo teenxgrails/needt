@@ -170,10 +170,19 @@ export async function POST(request: NextRequest) {
     ) {
       return new NextResponse("Invalid workspace project", { status: 400 });
     }
+    if (
+      assigneeId === null &&
+      (taskData.scheduledStart || taskData.scheduledEnd)
+    ) {
+      return new NextResponse("Assign the task before scheduling it", {
+        status: 400,
+      });
+    }
     const description = sanitizeTaskDescriptionForStorage(taskData.description);
+    const schedulingUserId = assigneeId ?? userId;
     if (scheduleId) {
       const schedule = await prisma.workSchedule.findFirst({
-        where: { id: scheduleId, userId },
+        where: { id: scheduleId, userId: schedulingUserId },
         select: { id: true },
       });
       if (!schedule) {
@@ -183,7 +192,7 @@ export async function POST(request: NextRequest) {
 
     if (taskData.scheduledStart && taskData.scheduledEnd) {
       const blocked = await isTaskPlacementBlocked(
-        userId,
+        schedulingUserId,
         newDate(taskData.scheduledStart),
         newDate(taskData.scheduledEnd)
       );
@@ -271,7 +280,7 @@ export async function POST(request: NextRequest) {
           ];
     await prisma.taskReminder.createMany({
       data: defaultReminders.map((reminder) => ({
-        userId,
+        userId: schedulingUserId,
         taskId: task.id,
         ...reminder,
         channels: ["push", "email"],
@@ -303,7 +312,7 @@ export async function POST(request: NextRequest) {
 
     // Schedule calendar block push if task has scheduled times
     if (task.scheduledStart && task.scheduledEnd) {
-      schedulePushTaskBlock(userId, task.id);
+      schedulePushTaskBlock(schedulingUserId, task.id);
     }
 
     return NextResponse.json(task);

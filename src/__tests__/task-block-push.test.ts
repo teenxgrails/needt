@@ -382,7 +382,7 @@ describe("repushDirtyBlocks", () => {
     expect(mockPrisma.task.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          userId: USER,
+          assigneeId: USER,
           OR: expect.arrayContaining([{ blockDirty: true }]),
         }),
       })

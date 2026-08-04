@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { toWorkspaceBusyEvent } from "@/lib/calendar-privacy";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -40,8 +41,50 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    logger.debug(`Found ${events.length} events in database`, {}, LOG_SOURCE);
-    return NextResponse.json(events);
+    const otherMemberIds =
+      auth.workspace?.enabled && auth.workspace.workspaceKind === "SHARED"
+        ? (
+            await prisma.workspaceMember.findMany({
+              where: {
+                workspaceId: auth.workspace.workspaceId,
+                userId: { not: userId },
+              },
+              select: { userId: true },
+            })
+          ).map((member) => member.userId)
+        : [];
+    const otherMemberBusyEvents =
+      otherMemberIds.length > 0
+        ? await prisma.calendarEvent.findMany({
+            where: {
+              feed: { userId: { in: otherMemberIds } },
+              OR: [
+                { description: null },
+                {
+                  NOT: {
+                    description: { startsWith: "[NEEDT_DAY_BLOCK]" },
+                  },
+                },
+              ],
+            },
+            select: {
+              id: true,
+              start: true,
+              end: true,
+              allDay: true,
+            },
+          })
+        : [];
+
+    logger.debug(
+      `Found ${events.length} personal events and ${otherMemberBusyEvents.length} shared busy intervals`,
+      {},
+      LOG_SOURCE
+    );
+    return NextResponse.json([
+      ...events,
+      ...otherMemberBusyEvents.map(toWorkspaceBusyEvent),
+    ]);
   } catch (error) {
     logger.error(
       "Failed to fetch events:",

@@ -383,6 +383,7 @@ export async function scheduleAllTasksForUserDetailed(
     const busyEvents = await prisma.calendarEvent.findMany({
       where: {
         feedId: { in: selectedCalendarIds },
+        feed: { userId },
         start: { lt: addDays(now, DEFAULT_HORIZON_DAYS) },
         end: { gt: now },
         OR: [
@@ -390,6 +391,7 @@ export async function scheduleAllTasksForUserDetailed(
           { NOT: { description: { startsWith: "[NEEDT_DAY_BLOCK]" } } },
         ],
       },
+      select: { id: true, start: true, end: true },
     });
 
     let dbTasks = (await prisma.task.findMany({
@@ -400,7 +402,7 @@ export async function scheduleAllTasksForUserDetailed(
             in: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS],
           },
         },
-        userId,
+        assigneeId: userId,
         isArchived: false,
       },
       include: {
@@ -438,7 +440,7 @@ export async function scheduleAllTasksForUserDetailed(
       busyBlocks: busyEvents.map(
         (event): CalendarBusyBlock => ({
           id: event.id,
-          title: event.title,
+          title: "Busy",
           start: event.start,
           end: event.end,
           source: "calendar",
@@ -494,7 +496,7 @@ export async function scheduleAllTasksForUserDetailed(
             .filter((task) => !task.scheduleLocked && !task.isFrozen)
             .map((task) => task.id),
         },
-        userId,
+        assigneeId: userId,
       },
       data: {
         scheduledStart: null,
@@ -524,7 +526,7 @@ export async function scheduleAllTasksForUserDetailed(
     await Promise.all(
       [...firstBlockByTask.values()].map((block) =>
         prisma.task.update({
-          where: { id: block.taskId, userId },
+          where: { id: block.taskId, assigneeId: userId },
           data: {
             scheduledStart: block.start,
             scheduledEnd: block.end,
@@ -553,7 +555,7 @@ export async function scheduleAllTasksForUserDetailed(
 
     const updatedDbTasks = (await prisma.task.findMany({
       where: {
-        userId,
+        assigneeId: userId,
         isArchived: false,
       },
       include: {

@@ -13,7 +13,7 @@ type ScheduleSnapshot = Map<
 
 async function scheduleSnapshot(userId: string): Promise<ScheduleSnapshot> {
   const tasks = await prisma.task.findMany({
-    where: { userId, isArchived: false },
+    where: { assigneeId: userId, isArchived: false },
     select: {
       id: true,
       scheduledStart: true,

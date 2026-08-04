@@ -32,7 +32,7 @@ export async function pushTaskBlock(userId: string, taskId: string) {
     // Load task and user settings in parallel
     const [task, settings, userSettings] = await Promise.all([
       prisma.task.findUnique({
-        where: { id: taskId, userId },
+        where: { id: taskId, assigneeId: userId },
       }),
       prisma.autoScheduleSettings.findUnique({
         where: { userId },
@@ -72,7 +72,7 @@ export async function pushTaskBlock(userId: string, taskId: string) {
 
     if (shouldExist) {
       targetFeed = await prisma.calendarFeed.findUnique({
-        where: { id: settings.pushTasksFeedId! },
+        where: { id: settings.pushTasksFeedId!, userId },
         include: { account: true },
       });
 
@@ -122,7 +122,7 @@ export async function pushTaskBlock(userId: string, taskId: string) {
 
     if (task.blockEventId && task.blockFeedId) {
       oldFeed = await prisma.calendarFeed.findUnique({
-        where: { id: task.blockFeedId },
+        where: { id: task.blockFeedId, userId },
         include: { account: true },
       });
 
@@ -509,7 +509,7 @@ export async function deleteTaskBlockEvent(
     );
 
     const feed = await prisma.calendarFeed.findUnique({
-      where: { id: feedId },
+      where: { id: feedId, userId },
       include: { account: true },
     });
 
@@ -578,7 +578,7 @@ export async function removeAllTaskBlocks(userId: string) {
     // Find all tasks with pushed events
     const tasksWithEvents = await prisma.task.findMany({
       where: {
-        userId,
+        assigneeId: userId,
         blockEventId: { not: null },
       },
     });
@@ -646,7 +646,7 @@ export async function repushDirtyBlocks(userId: string) {
     // 2. scheduledStart/End set, status not completed, but blockEventId null (new schedules)
     const tasks = await prisma.task.findMany({
       where: {
-        userId,
+        assigneeId: userId,
         OR: [
           { blockDirty: true },
           {

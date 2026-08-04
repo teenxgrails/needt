@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Auto-scheduling now plans only tasks assigned to the active user, using that assignee's schedules, flexible hours, calendar conflicts, reminders, and calendar-block destination; shared-workspace members receive redacted Busy intervals for one another's personal events without titles, descriptions, attendees, organizers, or locations.
 - Authenticated API requests now resolve workspace membership and minimum roles through one server-side authorization boundary, while the disabled rollout flag preserves legacy `userId` scoping.
 - Replaced global lift, zoom, and icon-growth effects with calm contrast feedback, short fade/slide overlays, restrained drag springs, and one reduced-motion runtime that honors OS, saved, and hidden-tab preferences across every route.
 - Completed the internal `/style` laboratory for Light, Graphite, and Dark, and aligned product pickers, surfaces, overlays, rows, cards, and feedback states with the shared semantic design-system contract.

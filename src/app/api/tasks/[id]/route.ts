@@ -16,7 +16,10 @@ import { newDate } from "@/lib/date-utils";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { schedulePushTaskBlock } from "@/lib/task-block-push";
+import {
+  deleteTaskBlockEvent,
+  schedulePushTaskBlock,
+} from "@/lib/task-block-push";
 import { sanitizeTaskDescriptionForStorage } from "@/lib/task-description-format";
 import {
   ChangeType,
@@ -177,6 +180,28 @@ export async function PUT(
     ) {
       return new NextResponse("Invalid workspace project", { status: 400 });
     }
+    const effectiveAssigneeId =
+      requestedAssigneeId !== undefined
+        ? requestedAssigneeId
+        : task.assigneeId;
+    const assigneeChanged =
+      requestedAssigneeId !== undefined &&
+      requestedAssigneeId !== task.assigneeId;
+    if (assigneeChanged && !updates.scheduledStart && !updates.scheduledEnd) {
+      updates.scheduledStart = null;
+      updates.scheduledEnd = null;
+      updates.scheduleLocked = false;
+      updates.scheduleScore = null;
+    }
+    if (
+      effectiveAssigneeId === null &&
+      (updates.scheduledStart || updates.scheduledEnd)
+    ) {
+      return new NextResponse("Assign the task before scheduling it", {
+        status: 400,
+      });
+    }
+    const schedulingUserId = effectiveAssigneeId ?? userId;
     if (
       updates.isArchived !== undefined &&
       typeof updates.isArchived !== "boolean"
@@ -196,7 +221,7 @@ export async function PUT(
     }
     if (scheduleId) {
       const schedule = await prisma.workSchedule.findFirst({
-        where: { id: scheduleId, userId },
+        where: { id: scheduleId, userId: schedulingUserId },
         select: { id: true },
       });
       if (!schedule) {
@@ -210,7 +235,7 @@ export async function PUT(
 
     if (!bypassBlockedHours && updates.scheduledStart && updates.scheduledEnd) {
       const blocked = await isTaskPlacementBlocked(
-        userId,
+        schedulingUserId,
         newDate(updates.scheduledStart),
         newDate(updates.scheduledEnd)
       );
@@ -333,6 +358,12 @@ export async function PUT(
         ...(requestedAssigneeId !== undefined && {
           assigneeId: requestedAssigneeId,
         }),
+        ...(assigneeChanged && {
+          blockEventId: null,
+          blockFeedId: null,
+          blockDirty: false,
+          ...(scheduleId === undefined && { scheduleId: null }),
+        }),
         ...(scheduleId !== undefined && { scheduleId: scheduleId || null }),
         ...(tagIds && {
           tags: {
@@ -417,8 +448,21 @@ export async function PUT(
       updatedTask = await prisma.task.update(taskUpdate);
     }
 
+    if (assigneeChanged) {
+      if (task.blockEventId && task.blockFeedId) {
+        await deleteTaskBlockEvent(
+          task.assigneeId ?? userId,
+          task.blockEventId,
+          task.blockFeedId
+        );
+      }
+      await prisma.scheduledBlock.deleteMany({ where: { taskId: id } });
+    }
+
     if (archiveStateChanged && updates.isArchived) {
-      await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });
+      await prisma.scheduledBlock.deleteMany({
+        where: { taskId: id, userId: schedulingUserId },
+      });
     }
 
     // A manually placed task is represented by one frozen block. Keeping the
@@ -434,7 +478,7 @@ export async function PUT(
         prisma.scheduledBlock.create({
           data: {
             taskId: id,
-            userId,
+            userId: schedulingUserId,
             start: newDate(updates.scheduledStart),
             end: newDate(updates.scheduledEnd),
             chunkIndex: 0,
@@ -487,7 +531,9 @@ export async function PUT(
     }
 
     // Schedule calendar block push for any changes to scheduled times or status
-    schedulePushTaskBlock(userId, id);
+    if (effectiveAssigneeId !== null) {
+      schedulePushTaskBlock(schedulingUserId, id);
+    }
 
     if (
       updates.status === TaskStatus.COMPLETED &&
@@ -544,6 +590,7 @@ export async function DELETE(
     }
 
     if (!task.isArchived) {
+      const schedulingUserId = task.assigneeId ?? userId;
       await prisma.task.update({
         where: {
           id,
@@ -566,8 +613,10 @@ export async function DELETE(
           }),
         },
       });
-      await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });
-      schedulePushTaskBlock(userId, id);
+      await prisma.scheduledBlock.deleteMany({
+        where: { taskId: id, userId: schedulingUserId },
+      });
+      schedulePushTaskBlock(schedulingUserId, id);
     }
 
     return new NextResponse(null, { status: 204 });
