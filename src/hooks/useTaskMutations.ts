@@ -3,9 +3,9 @@
 import { useCallback } from "react";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 import {
   beginTaskMutation,
   buildOptimisticTask,
@@ -63,7 +63,7 @@ function reportMutationError(action: string, taskId: string, error: unknown) {
   useTaskStore.setState({
     error: error instanceof Error ? error : new Error(message),
   });
-  toast.error(message);
+  notify.error(message);
   void logger.error(
     `Optimistic task ${action} failed`,
     {
@@ -76,7 +76,7 @@ function reportMutationError(action: string, taskId: string, error: unknown) {
 
 function scheduleInBackground(showProgress = false) {
   const toastId = showProgress
-    ? toast.loading("Recalculating tasks...", {
+    ? notify.loading("Recalculating tasks...", {
         className: "recalc-toast",
         closeButton: true,
       })
@@ -95,7 +95,7 @@ function scheduleInBackground(showProgress = false) {
       );
     })
     .finally(() => {
-      if (toastId) toast.dismiss(toastId);
+      if (toastId) notify.dismiss(toastId);
     });
 }
 

@@ -62,8 +62,10 @@ Reference implementation: the Calendar options panel in
 - no backdrop blur or colored glow.
 
 Sonner notifications are top-center and must go through the typed
-`src/lib/notifications.ts` facade. Actionable nudges include one concise deep
-link action.
+`src/lib/notifications.ts` facade. The shared animated queue shows at most
+three items, pauses on hover, announces additions politely, and exposes a
+visible dismiss control. Actionable nudges include one concise deep link
+action.
 
 The AI companion is a movable 88px desktop / 64px phone affordance. Position
 updates use a transform in `requestAnimationFrame`, persist normalized viewport

@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosInstance } from "axios";
-import { toast } from "sonner";
+
+import { notify } from "@/lib/notifications";
 
 interface ApiErrorResponse {
   message?: string;
@@ -35,7 +36,7 @@ api.interceptors.response.use(
 
     // Don't show toast for 401 errors as they're handled by auth
     if (error.response?.status !== 401) {
-      toast.error(message);
+      notify.error(message);
     }
 
     return Promise.reject(

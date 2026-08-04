@@ -15,8 +15,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       position="top-center"
       richColors={false}
       closeButton
+      visibleToasts={3}
+      containerAriaLabel="Needt notifications"
       className="toaster group"
       toastOptions={{
+        closeButtonAriaLabel: "Dismiss notification",
         classNames: {
           toast:
             "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",

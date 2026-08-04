@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified desktop Calendar range navigation around current-time positioning, horizontal gestures, Shift+wheel, Alt+Arrow, and Space+drag; Today now keeps its document and day timeline in independent desktop scrollers.
 - Moved Mail into Workspace as an "Email" tab (`/tasks?view=mail`) instead of a separate sidebar item; the old `/mail` URL redirects there.
 - The sidebar's account menu trigger now shows the signed-in user's name next to their avatar, not just the avatar.
+- Notifications now use one accessible, animated top-center queue with deduplication and a visible dismiss control.
 
 ### Fixed
 

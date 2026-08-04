@@ -1,8 +1,8 @@
-import { toast } from "sonner";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 import {
   beginTaskMutation,
   buildOptimisticTask,
@@ -205,7 +205,7 @@ export const useTaskStore = create<TaskState>()(
           // close immediately and a scheduling failure never blocks (or
           // duplicates) task creation.
           void (async () => {
-            const toastId = toast.loading("Recalculating tasks...", {
+            const toastId = notify.loading("Recalculating tasks...", {
               className: "recalc-toast",
               closeButton: true,
             });
@@ -223,7 +223,7 @@ export const useTaskStore = create<TaskState>()(
                 LOG_SOURCE
               );
             } finally {
-              toast.dismiss(toastId);
+              notify.dismiss(toastId);
             }
           })();
           return newTask;
@@ -232,7 +232,7 @@ export const useTaskStore = create<TaskState>()(
             set({ tasks: previousTasks });
           }
           set({ error: error as Error });
-          toast.error("Could not create task. Your changes were reverted.");
+          notify.error("Could not create task. Your changes were reverted.");
           throw error;
         } finally {
           set({ loading: false });
@@ -279,7 +279,7 @@ export const useTaskStore = create<TaskState>()(
             set({ tasks: previousTasks });
           }
           set({ error: error as Error });
-          toast.error("Could not update task. Your changes were reverted.");
+          notify.error("Could not update task. Your changes were reverted.");
           throw error;
         } finally {
           set({ loading: false });
@@ -313,7 +313,7 @@ export const useTaskStore = create<TaskState>()(
             set({ tasks: previousTasks });
           }
           set({ error: error as Error });
-          toast.error("Could not archive task. Your changes were reverted.");
+          notify.error("Could not archive task. Your changes were reverted.");
           throw error;
         } finally {
           set({ loading: false });
