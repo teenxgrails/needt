@@ -136,3 +136,8 @@ Shared `@/components/ui/dialog`:
 For "working…" status (e.g. Refresh all tasks), use a sonner `toast.loading`
 with `className: "recalc-toast"` — an inverse-of-theme pill (white on dark,
 dark on light). See `.recalc-toast` in `globals.css`.
+
+Space inherits that canvas rather than adding its own dark background. Its
+ambient particles render in a transparent, pointer-inert canvas (white in dark
+themes, black in light) and stop completely when motion is reduced or the tab
+is hidden.

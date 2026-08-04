@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CSSProperties,
   PointerEvent,
   WheelEvent,
   useMemo,
@@ -43,6 +42,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+
+import { SpaceParticles } from "@/components/tasks/SpaceParticles";
 
 import {
   addDays,
@@ -638,8 +639,9 @@ export function SpaceView({
           if (!(event.target as HTMLElement).closest("button")) onCreateTask();
         }}
       >
+        <SpaceParticles />
         {draggingTaskId && (
-          <div className="pointer-events-none absolute inset-0 z-20 border border-dashed border-[var(--space-border)] bg-[color-mix(in_srgb,var(--space-canvas)_82%,transparent)]">
+          <div className="pointer-events-none absolute inset-0 z-20 border border-dashed border-[var(--space-border)] bg-[var(--space-drag-overlay)]">
             <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-[var(--space-border)] bg-[var(--space-label-bg)] px-3 py-1.5 text-[10px] text-[var(--space-text-secondary)]">
               Explore freely — dropping here never changes the schedule
             </span>
@@ -735,7 +737,7 @@ export function SpaceView({
                     </Tooltip>
                   )}
 
-                  {cluster.tasks.map(({ task, x, y }, taskIndex) => {
+                  {cluster.tasks.map(({ task, x, y }) => {
                     const selected = selectedTaskId === task.id;
                     const overdue = isTaskOverdue(task);
                     const color = overdue
@@ -747,9 +749,7 @@ export function SpaceView({
                       left: `${x}%`,
                       top: `${y}%`,
                       borderColor: `color-mix(in srgb, ${color} ${selected ? "72%" : "38%"}, var(--space-border))`,
-                      "--space-delay": `${-(hashString(task.id) % 5000)}ms`,
-                      "--space-distance": `${1 + (hashString(task.id) % 3)}px`,
-                    } as CSSProperties;
+                    };
 
                     return (
                       <Tooltip key={task.id} delayDuration={300}>
@@ -784,10 +784,7 @@ export function SpaceView({
                                 "opacity-55",
                               draggingTaskId === task.id && "opacity-30"
                             )}
-                            style={{
-                              ...style,
-                              animationDelay: `calc(var(--space-delay) + ${taskIndex * 35}ms)`,
-                            }}
+                            style={style}
                           >
                             <span
                               className="grid h-5 w-5 flex-none place-items-center rounded-full border"

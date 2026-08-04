@@ -216,61 +216,36 @@
     --motion-ease-pop: cubic-bezier(0.16, 1, 0.3, 1);
     --motion-ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-    /* Space canvas: intentionally dark in every app theme. Keeping its
-       palette semantic makes future custom themes a token swap instead of a
-       component rewrite. */
-    --space-canvas: color-mix(
-      in srgb,
-      var(--primitive-neutral-950) 86%,
-      var(--primitive-black)
-    );
-    --space-panel: color-mix(
-      in srgb,
-      var(--primitive-neutral-900) 94%,
-      transparent
-    );
-    --space-panel-raised: var(--primitive-neutral-825);
-    --space-panel-hover: var(--primitive-neutral-750);
-    --space-task-bg: color-mix(
-      in srgb,
-      var(--primitive-neutral-900) 88%,
-      transparent
-    );
-    --space-task-bg-hover: var(--primitive-neutral-825);
-    --space-label-bg: color-mix(
-      in srgb,
-      var(--primitive-neutral-950) 90%,
-      transparent
-    );
-    --space-border: color-mix(
-      in srgb,
-      var(--primitive-neutral-500) 42%,
-      transparent
-    );
-    --space-project-border: color-mix(
-      in srgb,
-      var(--primitive-neutral-250) 22%,
-      transparent
-    );
+    /* Space inherits the active semantic surface. The particle canvas above
+       it is transparent, leaving the workspace readable in every theme. */
+    --space-canvas: var(--surface-canvas);
+    --space-panel: var(--surface-panel);
+    --space-panel-raised: var(--surface-control);
+    --space-panel-hover: var(--surface-control-hover);
+    --space-task-bg: var(--surface-control);
+    --space-task-bg-hover: var(--surface-control-hover);
+    --space-label-bg: var(--surface-panel);
+    --space-border: var(--border-control);
+    --space-project-border: var(--border-subtle);
     --space-grid: color-mix(
       in srgb,
-      var(--primitive-neutral-250) 5%,
+      var(--text-primary) 5%,
       transparent
     );
     --space-grid-strong: color-mix(
       in srgb,
-      var(--primitive-neutral-250) 16%,
+      var(--text-primary) 16%,
       transparent
     );
     --space-drag-overlay: color-mix(
       in srgb,
-      var(--primitive-neutral-950) 72%,
+      var(--surface-canvas) 84%,
       transparent
     );
-    --space-star: color-mix(in srgb, var(--primitive-white) 36%, transparent);
-    --space-text-primary: var(--primitive-neutral-050);
-    --space-text-secondary: var(--primitive-neutral-250);
-    --space-text-muted: var(--primitive-neutral-500);
+    --space-particle: var(--primitive-black);
+    --space-text-primary: var(--text-primary);
+    --space-text-secondary: var(--text-secondary);
+    --space-text-muted: var(--text-muted);
     --space-cluster-blue: var(--primitive-blue-500);
     --space-cluster-violet: var(--primitive-violet-500);
     --space-cluster-teal: var(--primitive-teal-400);
@@ -391,6 +366,7 @@
     --calendar-task-bg: var(--primitive-neutral-705);
     --calendar-task-border: var(--primitive-neutral-590);
     --calendar-now-indicator: var(--text-primary);
+    --space-particle: var(--primitive-white);
     --background: 224 12% 7%;
     --foreground: 210 17% 96%;
 
@@ -1165,124 +1141,10 @@
   }
 }
 
-/* Workspace Space view: a deliberately lightweight CSS canvas. The star field
-   and task drift use only composited transforms/gradients, so no animation
-   loop or force simulation runs on the main thread. */
+/* Workspace Space view: the transparent particle canvas lives in React so it
+   can stop immediately when motion is disabled or the tab is hidden. */
 .workspace-space-canvas {
-  background-color: var(--space-canvas);
   isolation: isolate;
-}
-
-.workspace-space-canvas::before,
-.workspace-space-canvas::after {
-  position: absolute;
-  z-index: 0;
-  inset: -8%;
-  content: "";
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.workspace-space-canvas::before {
-  opacity: 0.52;
-  background-image:
-    radial-gradient(
-      circle at 15% 18%,
-      var(--space-star) 0 1px,
-      transparent 1.5px
-    ),
-    radial-gradient(
-      circle at 68% 35%,
-      color-mix(in srgb, var(--space-star) 72%, transparent) 0 1px,
-      transparent 1.5px
-    ),
-    radial-gradient(
-      circle at 38% 72%,
-      color-mix(in srgb, var(--space-star) 60%, transparent) 0 1px,
-      transparent 1.5px
-    ),
-    radial-gradient(
-      circle at 82% 78%,
-      color-mix(in srgb, var(--space-star) 84%, transparent) 0 1px,
-      transparent 1.5px
-    );
-  background-size:
-    170px 160px,
-    230px 210px,
-    290px 250px,
-    360px 330px;
-  animation: workspace-star-drift-a 17s ease-in-out infinite alternate;
-}
-
-.workspace-space-canvas::after {
-  opacity: 0.28;
-  background-image:
-    radial-gradient(
-      circle at 27% 31%,
-      color-mix(in srgb, var(--space-star) 76%, transparent) 0 0.8px,
-      transparent 1.4px
-    ),
-    radial-gradient(
-      circle at 74% 66%,
-      color-mix(in srgb, var(--space-star) 58%, transparent) 0 0.8px,
-      transparent 1.4px
-    );
-  background-size:
-    110px 130px,
-    190px 175px;
-  animation: workspace-star-drift-b 23s ease-in-out infinite alternate;
-}
-
-.workspace-space-task {
-  animation: workspace-task-float 5.5s ease-in-out infinite alternate;
-  animation-delay: var(--space-delay, 0ms);
-  will-change: translate;
-}
-
-@keyframes workspace-star-drift-a {
-  0% {
-    opacity: 0.38;
-    transform: translate3d(-0.4%, 0.35%, 0);
-  }
-
-  52% {
-    opacity: 0.68;
-  }
-
-  to {
-    opacity: 0.48;
-    transform: translate3d(1.1%, -0.75%, 0);
-  }
-}
-
-@keyframes workspace-star-drift-b {
-  0% {
-    opacity: 0.2;
-    transform: translate3d(0.55%, -0.35%, 0);
-  }
-
-  45% {
-    opacity: 0.46;
-  }
-
-  to {
-    opacity: 0.3;
-    transform: translate3d(-0.9%, 0.65%, 0);
-  }
-}
-
-@keyframes workspace-task-float {
-  to {
-    translate: var(--space-distance, 3px) calc(var(--space-distance, 3px) * -1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .workspace-space-canvas::before,
-  .workspace-space-canvas::after,
-  .workspace-space-task {
-    animation: none;
-  }
 }
 
 html[data-animations="off"] *,
