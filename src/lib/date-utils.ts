@@ -40,6 +40,10 @@ export function newDateFromYMD(year: number, month: number, day: number): Date {
   return new Date(year, month, day);
 }
 
+export function addCalendarDays(date: Date, days: number): Date {
+  return addDays(date, days);
+}
+
 /**
  * Formats a date as a local YYYY-MM-DD key, for grouping/lookup by calendar
  * day without any UTC/timezone shifting.

@@ -3,6 +3,7 @@ import { getCalibrationContext } from "@/services/time-tracking/calibration";
 import { canAutoScheduleMore } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { deriveProjectBlockerDependencies } from "@/lib/projects/blockers";
 
 import { ProjectStatus } from "@/types/project";
 import {
@@ -66,6 +67,16 @@ type DbTaskWithRelations = {
       status: string;
     };
   }[];
+  projectBlockersTargeted?: {
+    id: string;
+    blockerTask: { status: string } | null;
+  }[];
+  stage?: {
+    blockers: {
+      id: string;
+      blockerTask: { status: string } | null;
+    }[];
+  } | null;
   autoScheduled: boolean;
   scheduledBlocks?: {
     id: string;
@@ -184,6 +195,10 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
     task.startDate,
     task.postponedUntil,
   ].filter((value): value is Date => value !== null);
+  const projectBlockers = deriveProjectBlockerDependencies([
+    ...(task.projectBlockersTargeted ?? []),
+    ...(task.stage?.blockers ?? []),
+  ]);
   return {
     id: task.id,
     title: task.title,
@@ -207,9 +222,12 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
     contextTag: task.contextTag,
     isFrozen: task.isFrozen || task.scheduleLocked,
     dependsOnId: task.dependsOnId,
-    dependencyIds: task.blockedByDependencies?.map(
-      (dependency) => dependency.blockerTaskId
-    ),
+    dependencyIds: [
+      ...(task.blockedByDependencies?.map(
+        (dependency) => dependency.blockerTaskId
+      ) ?? []),
+      ...projectBlockers.dependencyIds,
+    ],
     completedDependencyIds: [
       ...(task.blockedByDependencies
         ?.filter(
@@ -219,6 +237,7 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
       ...(task.dependsOnId && task.dependsOn?.status === TaskStatus.COMPLETED
         ? [task.dependsOnId]
         : []),
+      ...projectBlockers.completedDependencyIds,
     ],
     autoScheduled: task.autoScheduled || task.isAutoScheduled,
     scheduledStart: task.scheduledStart,
@@ -413,6 +432,24 @@ export async function scheduleAllTasksForUserDetailed(
         blockedByDependencies: {
           include: {
             blocker: { select: { status: true } },
+          },
+        },
+        projectBlockersTargeted: {
+          where: { resolvedAt: null },
+          select: {
+            id: true,
+            blockerTask: { select: { status: true } },
+          },
+        },
+        stage: {
+          select: {
+            blockers: {
+              where: { resolvedAt: null },
+              select: {
+                id: true,
+                blockerTask: { select: { status: true } },
+              },
+            },
           },
         },
       },

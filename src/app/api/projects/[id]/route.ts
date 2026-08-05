@@ -1,34 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { WorkspaceRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { deriveProjectProgress } from "@/lib/projects/progress";
+
+import { ProjectStatus } from "@/types/project";
 
 const LOG_SOURCE = "project-route";
+type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+function optionalDate(value: unknown) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return null;
+  if (typeof value !== "string") return false;
+  const parsed = newDate(value);
+  return Number.isNaN(parsed.getTime()) ? false : parsed;
+}
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const auth = await authenticateRequest(request, LOG_SOURCE);
-    if ("response" in auth) {
-      return auth.response;
-    }
-
-    const userId = auth.userId;
+    if ("response" in auth) return auth.response;
 
     const { id } = await params;
-    const project = await prisma.project.findUnique({
+    const project = await prisma.project.findFirst({
       where: {
         id,
-        // Ensure the project belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, auth.userId),
       },
       include: {
-        tasks: { where: { isArchived: false } },
-        _count: {
-          select: { tasks: { where: { isArchived: false } } },
+        tasks: {
+          where: { isArchived: false },
+          include: {
+            tags: true,
+            assignee: {
+              select: { id: true, name: true, email: true, image: true },
+            },
+            stage: true,
+            blockedByDependencies: {
+              include: {
+                blocker: { select: { id: true, title: true, status: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        },
+        stages: { orderBy: { position: "asc" } },
+        blockers: {
+          include: {
+            task: { select: { id: true, title: true, status: true } },
+            stage: { select: { id: true, name: true } },
+            blockerTask: { select: { id: true, title: true, status: true } },
+            createdBy: { select: { id: true, name: true, image: true } },
+          },
+          orderBy: { createdAt: "asc" },
         },
       },
     });
@@ -37,122 +67,143 @@ export async function GET(
       return new NextResponse("Project not found", { status: 404 });
     }
 
-    return NextResponse.json(project);
+    return NextResponse.json({
+      ...project,
+      ...deriveProjectProgress(project.tasks),
+      _count: { tasks: project.tasks.length },
+    });
   } catch (error) {
     logger.error(
       "Error fetching project:",
-      {
-        error: error instanceof Error ? error.message : String(error),
-      },
+      { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: RouteContext) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
-    if ("response" in auth) {
-      return auth.response;
-    }
-
-    const userId = auth.userId;
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
+    if ("response" in auth) return auth.response;
 
     const { id } = await params;
-    const json = await request.json();
+    const existing = await prisma.project.findFirst({
+      where: { id, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
+      select: { id: true, startDate: true, deadline: true },
+    });
+    if (!existing) {
+      return new NextResponse("Project not found", { status: 404 });
+    }
+
+    const json = (await request.json()) as Record<string, unknown>;
+    const startDate = optionalDate(json.startDate);
+    const deadline = optionalDate(json.deadline);
+    if (startDate === false || deadline === false) {
+      return NextResponse.json(
+        { error: "Invalid project date" },
+        { status: 400 }
+      );
+    }
+    const nextStart = startDate === undefined ? existing.startDate : startDate;
+    const nextDeadline = deadline === undefined ? existing.deadline : deadline;
+    if (nextStart && nextDeadline && nextStart > nextDeadline) {
+      return NextResponse.json(
+        { error: "Project start must not be after its deadline" },
+        { status: 400 }
+      );
+    }
+    if (
+      json.name !== undefined &&
+      (typeof json.name !== "string" || !json.name.trim())
+    ) {
+      return NextResponse.json(
+        { error: "Project name is required" },
+        { status: 400 }
+      );
+    }
 
     const project = await prisma.project.update({
-      where: {
-        id,
-        // Ensure the project belongs to the current user
-        userId,
-      },
+      where: { id },
       data: {
-        name: json.name,
-        description: json.description,
-        color: json.color,
-        icon: json.icon,
+        name: typeof json.name === "string" ? json.name.trim() : undefined,
+        description:
+          typeof json.description === "string"
+            ? json.description.trim() || null
+            : json.description === null
+              ? null
+              : undefined,
+        color:
+          typeof json.color === "string"
+            ? json.color
+            : json.color === null
+              ? null
+              : undefined,
+        icon:
+          typeof json.icon === "string"
+            ? json.icon
+            : json.icon === null
+              ? null
+              : undefined,
+        startDate,
+        deadline,
+        // Temporary rollback compatibility. The response always uses derived
+        // progress and the field is removed after the UI migration.
         progress:
           typeof json.progress === "number"
             ? Math.max(0, Math.min(100, Math.round(json.progress)))
             : undefined,
-        status: json.status,
+        status:
+          json.status === ProjectStatus.ACTIVE ||
+          json.status === ProjectStatus.ARCHIVED
+            ? json.status
+            : undefined,
       },
       include: {
-        _count: {
-          select: { tasks: { where: { isArchived: false } } },
+        tasks: {
+          where: { isArchived: false },
+          select: { status: true, isArchived: true },
         },
       },
     });
 
-    return NextResponse.json(project);
+    const { tasks, ...result } = project;
+    return NextResponse.json({
+      ...result,
+      ...deriveProjectProgress(tasks),
+      _count: { tasks: tasks.length },
+    });
   } catch (error) {
     logger.error(
       "Error updating project:",
-      {
-        error: error instanceof Error ? error.message : String(error),
-      },
+      { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
-    if ("response" in auth) {
-      return auth.response;
-    }
-
-    const userId = auth.userId;
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
+    if ("response" in auth) return auth.response;
 
     const { id } = await params;
-
-    // Check if project exists and get task count
-    const project = await prisma.project.findUnique({
-      where: {
-        id,
-        // Ensure the project belongs to the current user
-        userId,
-      },
-      include: {
-        _count: {
-          select: { tasks: true },
-        },
-      },
+    const project = await prisma.project.findFirst({
+      where: { id, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
+      include: { _count: { select: { tasks: true } } },
     });
-
     if (!project) {
       return new NextResponse("Project not found", { status: 404 });
     }
 
-    // Use transaction to ensure atomic deletion
     await prisma.$transaction(async (tx) => {
-      // Delete all tasks associated with the project
-      await tx.task.deleteMany({
-        where: {
-          projectId: id,
-          // Ensure we only delete tasks belonging to the current user
-          userId,
-        },
-      });
-
-      // Delete the project (this will cascade delete TaskListMappings due to onDelete: CASCADE)
-      await tx.project.delete({
-        where: {
-          id,
-          // Ensure the project belongs to the current user
-          userId,
-        },
-      });
+      await tx.task.deleteMany({ where: { projectId: id } });
+      await tx.project.delete({ where: { id } });
     });
 
     return NextResponse.json({
@@ -162,9 +213,7 @@ export async function DELETE(
   } catch (error) {
     logger.error(
       "Error deleting project:",
-      {
-        error: error instanceof Error ? error.message : String(error),
-      },
+      { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
     return new NextResponse("Internal Server Error", { status: 500 });
