@@ -6,8 +6,9 @@ export interface PrivateCalendarBusyInterval {
 }
 
 export function toWorkspaceBusyEvent(event: PrivateCalendarBusyInterval) {
+  const opaqueId = createHash("sha256").update(event.id).digest("hex");
   return {
-    id: `workspace-busy:${event.id}`,
+    id: `workspace-busy:${opaqueId}`,
     feedId: "workspace-busy",
     externalEventId: null,
     title: "Busy",
@@ -30,3 +31,4 @@ export function toWorkspaceBusyEvent(event: PrivateCalendarBusyInterval) {
     feed: { name: "Busy", color: null },
   };
 }
+import { createHash } from "crypto";

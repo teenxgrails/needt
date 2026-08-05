@@ -53,7 +53,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       );
     }
     const updated = await prisma.projectBlocker.update({
-      where: { id: blockerId },
+      where: { id: blockerId, projectId },
       data: { resolvedAt: body.resolved ? newDate() : null },
     });
     return NextResponse.json(updated);

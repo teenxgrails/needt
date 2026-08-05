@@ -157,7 +157,7 @@ describe("projects API", () => {
 
     expect(response!.status).toBe(200);
     expect(projectModel.update).toHaveBeenCalledWith({
-      where: { id: "project-1" },
+      where: { id: "project-1", workspaceId: "workspace-1" },
       data: { status: "archived" },
     });
     expect(await response!.json()).toEqual(
@@ -168,6 +168,25 @@ describe("projects API", () => {
         progress: 50,
       })
     );
+  });
+
+  it("rejects cross-workspace archive attempts without writing", async () => {
+    projectModel.findFirst.mockResolvedValue(null);
+
+    const response = await projectRoute.DELETE(
+      new NextRequest("http://localhost/api/projects/outside-project", {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ id: "outside-project" }) }
+    );
+
+    expect(response!.status).toBe(404);
+    expect(projectModel.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "outside-project", workspaceId: "workspace-1" },
+      })
+    );
+    expect(projectModel.update).not.toHaveBeenCalled();
   });
 
   it("allows only restoration writes for an archived project", async () => {

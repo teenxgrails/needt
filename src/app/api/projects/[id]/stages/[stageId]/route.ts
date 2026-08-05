@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     }
 
     const updated = await prisma.projectStage.update({
-      where: { id: stageId },
+      where: { id: stageId, projectId },
       data: {
         name: typeof body.name === "string" ? body.name.trim() : undefined,
         color:

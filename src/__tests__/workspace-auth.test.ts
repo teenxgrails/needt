@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 
-import { WorkspaceKind, WorkspaceRole } from "@prisma/client";
+import { SubscriptionPlan, WorkspaceKind, WorkspaceRole } from "@prisma/client";
 import { NextRequest } from "next/server";
 
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { getPlan } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 import {
   requestedWorkspaceId,
@@ -14,6 +15,7 @@ import {
 jest.mock("@/lib/feature-flags", () => ({
   isFeatureEnabled: jest.fn(),
 }));
+jest.mock("@/lib/entitlements", () => ({ getPlan: jest.fn() }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     workspace: { upsert: jest.fn() },
@@ -38,6 +40,7 @@ describe("workspace authorization", () => {
     });
     memberModel.upsert.mockResolvedValue({ role: WorkspaceRole.OWNER });
     jest.mocked(isFeatureEnabled).mockResolvedValue(false);
+    jest.mocked(getPlan).mockResolvedValue(SubscriptionPlan.PRO);
   });
 
   it("keeps legacy user scope while the flag is disabled", async () => {
@@ -113,6 +116,25 @@ describe("workspace authorization", () => {
     ).rejects.toMatchObject({
       status: 403,
       code: "WORKSPACE_ACCESS_DENIED",
+    });
+  });
+
+  it("rejects shared workspace access after a paid plan expires", async () => {
+    jest.mocked(isFeatureEnabled).mockResolvedValue(true);
+    jest.mocked(getPlan).mockResolvedValue(SubscriptionPlan.FREE);
+    memberModel.findUnique.mockResolvedValue({
+      role: WorkspaceRole.OWNER,
+      workspace: { id: "shared-1", kind: WorkspaceKind.SHARED },
+    });
+
+    await expect(
+      resolveWorkspaceAccess({
+        userId: "user-1",
+        requestedWorkspaceId: "shared-1",
+      })
+    ).rejects.toMatchObject({
+      status: 403,
+      code: "WORKSPACE_PAID_PLAN_REQUIRED",
     });
   });
 

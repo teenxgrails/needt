@@ -133,7 +133,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     }
 
     const project = await prisma.project.update({
-      where: { id },
+      where: { id, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
       data: {
         name: typeof json.name === "string" ? json.name.trim() : undefined,
         description:
@@ -208,7 +208,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     }
 
     const archived = await prisma.project.update({
-      where: { id },
+      where: { id, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
       data: { status: ProjectStatus.ARCHIVED },
     });
 

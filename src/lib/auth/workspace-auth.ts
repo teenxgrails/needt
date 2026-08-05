@@ -1,7 +1,8 @@
-import { WorkspaceKind, WorkspaceRole } from "@prisma/client";
+import { SubscriptionPlan, WorkspaceKind, WorkspaceRole } from "@prisma/client";
 import type { NextRequest } from "next/server";
 
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { getPlan } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 
 export const WORKSPACES_FEATURE_FLAG = "workspaces";
@@ -41,6 +42,7 @@ export class WorkspaceAuthorizationError extends Error {
     public readonly code:
       | "INVALID_WORKSPACE_REQUEST"
       | "WORKSPACE_ACCESS_DENIED"
+      | "WORKSPACE_PAID_PLAN_REQUIRED"
       | "WORKSPACE_ROLE_REQUIRED"
   ) {
     super(message);
@@ -154,6 +156,18 @@ export async function resolveWorkspaceAccess(input: {
       "Workspace access denied.",
       403,
       "WORKSPACE_ACCESS_DENIED"
+    );
+  }
+  const plan = await getPlan(input.userId);
+  if (
+    membership.workspace.kind === WorkspaceKind.SHARED &&
+    plan !== SubscriptionPlan.PRO &&
+    plan !== SubscriptionPlan.LIFETIME
+  ) {
+    throw new WorkspaceAuthorizationError(
+      "A paid plan is required for shared workspace access.",
+      403,
+      "WORKSPACE_PAID_PLAN_REQUIRED"
     );
   }
 

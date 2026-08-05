@@ -172,9 +172,27 @@ describe("project-scoped task dependencies", () => {
     });
     expect(dependencyModel.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: expect.objectContaining({ workspaceId: "workspace-1" }),
         data: { removedAt: expect.any(Date) },
       })
     );
+  });
+
+  it("rejects cross-workspace dependency reads before querying edges", async () => {
+    taskModel.findFirst.mockResolvedValue(null);
+
+    await expect(
+      listTaskDependencies(
+        { userId: "user-1", workspace },
+        "outside-task"
+      )
+    ).rejects.toMatchObject({ code: "TASK_NOT_FOUND" });
+    expect(taskModel.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "outside-task", workspaceId: "workspace-1" },
+      })
+    );
+    expect(dependencyModel.findMany).not.toHaveBeenCalled();
   });
 
   it("names the conflicting task when a move crosses a dependency", async () => {

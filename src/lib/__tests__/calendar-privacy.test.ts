@@ -45,6 +45,7 @@ describe("workspace calendar privacy", () => {
       end: privateEvent.end,
     });
     expect(serialized).not.toContain(privateEvent.title);
+    expect(serialized).not.toContain(privateEvent.id);
     expect(serialized).not.toContain(privateEvent.description);
     expect(serialized).not.toContain(privateEvent.location);
     expect(serialized).not.toContain("secret@example.com");
@@ -96,7 +97,7 @@ describe("workspace calendar privacy", () => {
       expect.arrayContaining([
         expect.objectContaining({ id: "own-event", title: "My own title" }),
         expect.objectContaining({
-          id: "workspace-busy:peer-event",
+          id: expect.stringMatching(/^workspace-busy:[a-f0-9]{64}$/),
           title: "Busy",
           description: null,
           location: null,
@@ -105,6 +106,7 @@ describe("workspace calendar privacy", () => {
       ])
     );
     expect(serialized).not.toContain("Peer secret");
+    expect(serialized).not.toContain("peer-event");
     expect(serialized).not.toContain("Peer description");
     expect(serialized).not.toContain("Peer location");
     expect(serialized).not.toContain("peer@example.com");

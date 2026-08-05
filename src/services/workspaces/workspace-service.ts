@@ -99,11 +99,15 @@ async function serializableTransaction<T>(
 }
 
 export async function listUserWorkspaces(userId: string) {
-  const enabled = await isFeatureEnabled(WORKSPACES_FEATURE_FLAG, userId);
+  const [enabled, plan] = await Promise.all([
+    isFeatureEnabled(WORKSPACES_FEATURE_FLAG, userId),
+    getPlan(userId),
+  ]);
+  const canListShared = enabled && isPaid(plan);
   return prisma.workspaceMember.findMany({
     where: {
       userId,
-      ...(!enabled && { workspace: { kind: WorkspaceKind.PERSONAL } }),
+      ...(!canListShared && { workspace: { kind: WorkspaceKind.PERSONAL } }),
     },
     select: {
       role: true,
