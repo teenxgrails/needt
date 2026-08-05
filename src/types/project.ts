@@ -32,7 +32,6 @@ export interface NewProject {
   description?: string;
   color?: string;
   icon?: string;
-  progress?: number;
   startDate?: Date | string | null;
   deadline?: Date | string | null;
   status?: ProjectStatus;

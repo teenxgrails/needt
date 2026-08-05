@@ -92,6 +92,8 @@ Stages, blockers, derived progress (replacing the manual field), List / Kanban /
 Gantt views, regular and workflow templates, placeholder roles, relative dates.
 Remove the manual progress control only after the UI migration lands.
 
+**Status:** complete (2026-08-05).
+
 *Validate:* `npm run test:unit && npm run test:e2e -- projects`
 
 ### 2.7 Dependencies scoped to a project

@@ -149,12 +149,6 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
               : undefined,
         startDate,
         deadline,
-        // Temporary rollback compatibility. The response always uses derived
-        // progress and the field is removed after the UI migration.
-        progress:
-          typeof json.progress === "number"
-            ? Math.max(0, Math.min(100, Math.round(json.progress)))
-            : undefined,
         status:
           json.status === ProjectStatus.ACTIVE ||
           json.status === ProjectStatus.ARCHIVED

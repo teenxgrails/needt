@@ -63,31 +63,3 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }
-
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
-  try {
-    const auth = await authenticateRequest(request, LOG_SOURCE, {
-      requiredRole: WorkspaceRole.EDITOR,
-    });
-    if ("response" in auth) return auth.response;
-
-    const { id: projectId, blockerId } = await params;
-    const blocker = await findBlocker(
-      projectId,
-      blockerId,
-      auth.userId,
-      auth.workspace
-    );
-    if (!blocker) return new NextResponse("Blocker not found", { status: 404 });
-
-    await prisma.projectBlocker.delete({ where: { id: blockerId } });
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    logger.error(
-      "Failed to delete project blocker",
-      { error: error instanceof Error ? error.message : String(error) },
-      LOG_SOURCE
-    );
-    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
-  }
-}

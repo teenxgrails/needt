@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
         description: typeof body.description === "string" ? body.description : null,
         color: typeof body.color === "string" ? body.color : null,
         icon: typeof body.icon === "string" ? body.icon : null,
-        progress: typeof body.progress === "number" ? Math.max(0, Math.min(100, Math.round(body.progress))) : 0,
       },
     });
     return NextResponse.json(project, { status: 201 });

@@ -48,8 +48,8 @@ describe("projects workspace UI contract", () => {
     expect(templates).toContain("calendarDayDifference");
   });
 
-  it("keeps manual progress available until every project view lands", () => {
-    expect(modal).toContain('htmlFor="progress"');
-    expect(modal).toContain("setProgress");
+  it("removes manual progress after every project view lands", () => {
+    expect(modal).not.toContain('htmlFor="progress"');
+    expect(modal).not.toContain("setProgress");
   });
 });

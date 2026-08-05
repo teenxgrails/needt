@@ -103,7 +103,7 @@ describe("projects API", () => {
     );
   });
 
-  it("returns derived progress after a legacy-compatible update", async () => {
+  it("ignores manual progress and returns derived progress after an update", async () => {
     projectModel.findFirst.mockResolvedValue({
       id: "project-1",
       startDate: null,
@@ -128,5 +128,8 @@ describe("projects API", () => {
       { params: Promise.resolve({ id: "project-1" }) }
     );
     expect((await response!.json()).progress).toBe(67);
+    expect(projectModel.update.mock.calls[0][0].data).not.toHaveProperty(
+      "progress"
+    );
   });
 });
