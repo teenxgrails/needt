@@ -17,6 +17,7 @@ import {
   Sparkles,
   Sun,
 } from "lucide-react";
+import { HiOutlineFolder } from "react-icons/hi";
 
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
@@ -88,6 +89,7 @@ export const AppNav = memo(function AppNav({
       "/today",
       "/calendar",
       "/tasks",
+      "/projects",
       "/focus",
       "/pages",
       "/settings",
@@ -140,12 +142,14 @@ export const AppNav = memo(function AppNav({
       icon: CheckSquare,
       badge: overdueCount,
     },
+    { href: "/projects", label: "Projects", icon: HiOutlineFolder },
     { href: "/focus", label: "Focus", icon: Focus },
   ];
   const tabletLinks = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/today", label: "Today", icon: Sun },
     { href: "/tasks", label: "Tasks", icon: CheckSquare },
+    { href: "/projects", label: "Projects", icon: HiOutlineFolder },
     { href: "/focus", label: "Focus", icon: Focus },
   ];
   const phoneLinks = [

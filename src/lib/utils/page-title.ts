@@ -6,6 +6,8 @@ export const getTitleFromPathname = (pathname: string) => {
       return `Calendar | ${APP_NAME}`;
     case "/tasks":
       return `Tasks | ${APP_NAME}`;
+    case "/projects":
+      return `Projects | ${APP_NAME}`;
     case "/focus":
       return `Focus | ${APP_NAME}`;
     case "/settings":
