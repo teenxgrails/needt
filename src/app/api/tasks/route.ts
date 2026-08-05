@@ -10,6 +10,7 @@ import { getPlan } from "@/lib/entitlements";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
 import { schedulePushTaskBlock } from "@/lib/task-block-push";
 import { sanitizeTaskDescriptionForStorage } from "@/lib/task-description-format";
 import {
@@ -59,6 +60,7 @@ export async function GET(request: NextRequest) {
       where: {
         ...workspaceDataScopeWhere(auth.workspace, userId),
         isArchived: archived,
+        ...(!archived && { AND: [activeProjectTaskWhere] }),
         ...(status.length > 0 && { status: { in: status } }),
         ...(energyLevel.length > 0 && { energyLevel: { in: energyLevel } }),
         ...(timePreference.length > 0 && {
@@ -164,7 +166,7 @@ export async function POST(request: NextRequest) {
       taskData.projectId &&
       (!workspaceId ||
         !(await prisma.project.findFirst({
-          where: { id: taskData.projectId, workspaceId },
+          where: { id: taskData.projectId, workspaceId, status: "active" },
           select: { id: true },
         })))
     ) {

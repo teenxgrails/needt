@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
+  HiOutlineArchive,
   HiOutlineChartBar,
   HiOutlineCollection,
   HiOutlineExclamation,
@@ -16,6 +17,7 @@ import {
   HiOutlineViewBoards,
 } from "react-icons/hi";
 
+import { ArchivedProjectsDialog } from "@/components/projects/ArchivedProjectsDialog";
 import { ProjectGanttView } from "@/components/projects/ProjectGanttView";
 import {
   ProjectKanbanView,
@@ -69,11 +71,17 @@ export function ProjectWorkspace() {
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [stageModalOpen, setStageModalOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [archivedOpen, setArchivedOpen] = useState(false);
   const [stageName, setStageName] = useState("");
   const [stageSaving, setStageSaving] = useState(false);
 
   const activeProjects = useMemo(
     () => projects.filter((project) => project.status === ProjectStatus.ACTIVE),
+    [projects]
+  );
+  const archivedProjects = useMemo(
+    () =>
+      projects.filter((project) => project.status === ProjectStatus.ARCHIVED),
     [projects]
   );
 
@@ -205,6 +213,11 @@ export function ProjectWorkspace() {
     setSelectedProjectId(projectId);
   };
 
+  const selectRestoredProject = async (projectId: string) => {
+    await fetchProjects();
+    setSelectedProjectId(projectId);
+  };
+
   const selectedSummary = activeProjects.find(
     (project) => project.id === selectedProjectId
   );
@@ -222,22 +235,41 @@ export function ProjectWorkspace() {
         <div className="max-w-sm text-center">
           <HiOutlineFolder className="mx-auto h-8 w-8 text-[var(--text-secondary)]" />
           <h1 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
-            Create your first project
+            {archivedProjects.length > 0
+              ? "All projects are archived"
+              : "Create your first project"}
           </h1>
           <p className="mt-2 text-[13px] text-[var(--text-secondary)]">
-            Group tasks into stages, track progress, and switch between project
-            views.
+            {archivedProjects.length > 0
+              ? "Restore an archived project or create a new one."
+              : "Group tasks into stages, track progress, and switch between project views."}
           </p>
           <Button className="mt-5" onClick={() => setProjectModalOpen(true)}>
             <HiOutlinePlus className="h-4 w-4" />
             New project
           </Button>
+          {archivedProjects.length > 0 && (
+            <Button
+              className="ml-2 mt-5"
+              variant="outline"
+              onClick={() => setArchivedOpen(true)}
+            >
+              <HiOutlineArchive className="h-4 w-4" />
+              Archived
+            </Button>
+          )}
           <ProjectModal
             isOpen={projectModalOpen}
             onClose={() => {
               setProjectModalOpen(false);
               void fetchProjects();
             }}
+          />
+          <ArchivedProjectsDialog
+            open={archivedOpen}
+            onOpenChange={setArchivedOpen}
+            projects={archivedProjects}
+            onRestored={(projectId) => void selectRestoredProject(projectId)}
           />
         </div>
       </div>
@@ -307,6 +339,14 @@ export function ProjectWorkspace() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setArchivedOpen(true)}
+          >
+            <HiOutlineArchive className="h-4 w-4" />
+            Archived
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -418,9 +458,16 @@ export function ProjectWorkspace() {
         isOpen={projectModalOpen}
         onClose={() => {
           setProjectModalOpen(false);
-          void refresh();
+          void fetchProjects();
         }}
         project={detail ?? selectedSummary}
+      />
+
+      <ArchivedProjectsDialog
+        open={archivedOpen}
+        onOpenChange={setArchivedOpen}
+        projects={archivedProjects}
+        onRestored={(projectId) => void selectRestoredProject(projectId)}
       />
 
       {detail && (

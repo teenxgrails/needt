@@ -26,6 +26,18 @@ const project = {
   _count: { tasks: 2 },
 };
 
+const archivedProject = {
+  ...project,
+  id: "project-archived",
+  name: "Previous launch",
+  status: "archived",
+  progress: 100,
+  completed: 1,
+  total: 1,
+  blockerCount: 0,
+  _count: { tasks: 1 },
+};
+
 const stages = [
   {
     id: "stage-plan",
@@ -82,6 +94,7 @@ function task(
 test("Projects switch between List, Kanban, Gantt, and templates", async ({
   page,
 }) => {
+  let archivedStatus = "archived";
   const secret = process.env.NEXTAUTH_SECRET;
   expect(secret, "NEXTAUTH_SECRET is required for projects E2E").toBeTruthy();
   const token = await encode({
@@ -106,7 +119,25 @@ test("Projects switch between List, Kanban, Gantt, and templates", async ({
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === "/api/projects") {
-      await route.fulfill({ json: [{ ...project, stages }] });
+      await route.fulfill({
+        json: [
+          { ...project, stages },
+          { ...archivedProject, status: archivedStatus, stages: [] },
+        ],
+      });
+      return;
+    }
+    if (url.pathname === `/api/projects/${archivedProject.id}`) {
+      if (route.request().method() === "PUT") archivedStatus = "active";
+      await route.fulfill({
+        json: {
+          ...archivedProject,
+          status: archivedStatus,
+          stages: [],
+          tasks: [],
+          blockers: [],
+        },
+      });
       return;
     }
     if (url.pathname === `/api/projects/${project.id}`) {
@@ -166,4 +197,10 @@ test("Projects switch between List, Kanban, Gantt, and templates", async ({
   await expect(
     page.getByText("Optional placeholder role per task")
   ).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+
+  await page.getByRole("button", { name: "Archived" }).click();
+  await expect(page.getByText("Previous launch")).toBeVisible();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await expect(page.getByText("Previous launch").first()).toBeVisible();
 });

@@ -15,12 +15,13 @@ import { LoadingOverlay } from "@/components/ui/loading-overlay";
 import { Textarea } from "@/components/ui/textarea";
 
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 
 import { useProjectStore } from "@/store/project";
 
 import { Project, ProjectStatus } from "@/types/project";
 
-import { DeleteProjectDialog } from "./DeleteProjectDialog";
+import { ArchiveProjectDialog } from "./ArchiveProjectDialog";
 
 const LOG_SOURCE = "ProjectModal";
 
@@ -31,13 +32,14 @@ interface ProjectModalProps {
 }
 
 export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
-  const { createProject, updateProject } = useProjectStore();
+  const { createProject, updateProject, unarchiveProject } = useProjectStore();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("#E5E7EB");
   const [icon, setIcon] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
+  const archived = project?.status === ProjectStatus.ARCHIVED;
 
   useEffect(() => {
     if (project && isOpen) {
@@ -55,7 +57,7 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || archived) return;
 
     setIsSubmitting(true);
     try {
@@ -87,6 +89,25 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
     }
   };
 
+  const restoreProject = async () => {
+    if (!project) return;
+    setIsSubmitting(true);
+    try {
+      await unarchiveProject(project.id);
+      notify.success("Project restored.");
+      onClose();
+    } catch (error) {
+      notify.error("Could not restore the project.");
+      void logger.error(
+        "Failed to restore project",
+        { error: error instanceof Error ? error.message : String(error) },
+        LOG_SOURCE
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -94,7 +115,11 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
           {isSubmitting && <LoadingOverlay />}
           <DialogHeader>
             <DialogTitle>
-              {project ? "Edit Project" : "Create Project"}
+              {archived
+                ? "Archived project"
+                : project
+                  ? "Edit Project"
+                  : "Create Project"}
             </DialogTitle>
           </DialogHeader>
 
@@ -105,6 +130,7 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={archived}
                 required
               />
             </div>
@@ -115,6 +141,7 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                disabled={archived}
                 className="min-h-[100px]"
               />
             </div>
@@ -127,6 +154,7 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
                   id="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
+                  disabled={archived}
                   className="h-10 w-20 p-1"
                 />
                 <div
@@ -142,20 +170,21 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
                 id="icon"
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
+                disabled={archived}
                 maxLength={2}
                 placeholder="◆"
               />
             </div>
 
             <div className="flex justify-between pt-4">
-              {project && (
+              {project && !archived && (
                 <Button
                   type="button"
-                  variant="destructive"
-                  onClick={() => setShowDeleteDialog(true)}
+                  variant="outline"
+                  onClick={() => setShowArchiveDialog(true)}
                   disabled={isSubmitting}
                 >
-                  Delete Project
+                  Archive Project
                 </Button>
               )}
               <div className="ml-auto flex gap-2">
@@ -165,11 +194,21 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
                   onClick={onClose}
                   disabled={isSubmitting}
                 >
-                  Cancel
+                  {archived ? "Close" : "Cancel"}
                 </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : "Save Project"}
-                </Button>
+                {archived ? (
+                  <Button
+                    type="button"
+                    onClick={() => void restoreProject()}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Restoring..." : "Restore Project"}
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Save Project"}
+                  </Button>
+                )}
               </div>
             </div>
           </form>
@@ -177,11 +216,11 @@ export function ProjectModal({ isOpen, onClose, project }: ProjectModalProps) {
       </Dialog>
 
       {project && (
-        <DeleteProjectDialog
-          isOpen={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
-          project={{ ...project, onClose }}
-          taskCount={project._count?.tasks || 0}
+        <ArchiveProjectDialog
+          open={showArchiveDialog}
+          onOpenChange={setShowArchiveDialog}
+          project={project}
+          onArchived={onClose}
         />
       )}
     </>

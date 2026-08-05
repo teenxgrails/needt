@@ -3,6 +3,7 @@ import { scheduleAllTasksForUserDetailed } from "@/services/scheduling/TaskSched
 import { SchedulingRunSource, SchedulingRunStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
 import { repushDirtyBlocks } from "@/lib/task-block-push";
 
@@ -13,7 +14,11 @@ type ScheduleSnapshot = Map<
 
 async function scheduleSnapshot(userId: string): Promise<ScheduleSnapshot> {
   const tasks = await prisma.task.findMany({
-    where: { assigneeId: userId, isArchived: false },
+    where: {
+      assigneeId: userId,
+      isArchived: false,
+      AND: [activeProjectTaskWhere],
+    },
     select: {
       id: true,
       scheduledStart: true,

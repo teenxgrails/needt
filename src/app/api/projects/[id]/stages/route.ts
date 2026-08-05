@@ -29,6 +29,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const project = await prisma.project.findFirst({
       where: {
         id: projectId,
+        status: "active",
         ...workspaceDataScopeWhere(auth.workspace, auth.userId),
       },
       select: { id: true },

@@ -29,7 +29,10 @@ async function findStage(
     where: {
       id: stageId,
       projectId,
-      project: workspaceDataScopeWhere(workspace, userId),
+      project: {
+        ...workspaceDataScopeWhere(workspace, userId),
+        status: "active",
+      },
     },
   });
 }
@@ -98,40 +101,6 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
   } catch (error) {
     logger.error(
       "Failed to update project stage",
-      { error: error instanceof Error ? error.message : String(error) },
-      LOG_SOURCE
-    );
-    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: RouteContext) {
-  try {
-    const auth = await authenticateRequest(request, LOG_SOURCE, {
-      requiredRole: WorkspaceRole.EDITOR,
-    });
-    if ("response" in auth) return auth.response;
-
-    const { id: projectId, stageId } = await params;
-    const stage = await findStage(
-      projectId,
-      stageId,
-      auth.userId,
-      auth.workspace
-    );
-    if (!stage) return new NextResponse("Stage not found", { status: 404 });
-
-    await prisma.$transaction([
-      prisma.task.updateMany({
-        where: { projectId, stageId },
-        data: { stageId: null },
-      }),
-      prisma.projectStage.delete({ where: { id: stageId } }),
-    ]);
-    return new NextResponse(null, { status: 204 });
-  } catch (error) {
-    logger.error(
-      "Failed to delete project stage",
       { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );

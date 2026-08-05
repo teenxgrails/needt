@@ -66,7 +66,18 @@ describe("executeSchedulingRun", () => {
     });
     expect(taskFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { assigneeId: "user-1", isArchived: false },
+        where: expect.objectContaining({
+          assigneeId: "user-1",
+          isArchived: false,
+          AND: [
+            {
+              OR: [
+                { projectId: null },
+                { project: { is: { status: "active" } } },
+              ],
+            },
+          ],
+        }),
       })
     );
   });

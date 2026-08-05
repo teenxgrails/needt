@@ -132,4 +132,79 @@ describe("projects API", () => {
       "progress"
     );
   });
+
+  it("archives without deleting tasks and keeps the transition idempotent", async () => {
+    projectModel.findFirst.mockResolvedValue({
+      id: "project-1",
+      status: "active",
+      tasks: [
+        { status: "completed", isArchived: false },
+        { status: "todo", isArchived: false },
+      ],
+    });
+    projectModel.update.mockResolvedValue({
+      id: "project-1",
+      name: "Launch",
+      status: "archived",
+    });
+
+    const response = await projectRoute.DELETE(
+      new NextRequest("http://localhost/api/projects/project-1", {
+        method: "DELETE",
+      }),
+      { params: Promise.resolve({ id: "project-1" }) }
+    );
+
+    expect(response!.status).toBe(200);
+    expect(projectModel.update).toHaveBeenCalledWith({
+      where: { id: "project-1" },
+      data: { status: "archived" },
+    });
+    expect(await response!.json()).toEqual(
+      expect.objectContaining({
+        status: "archived",
+        completed: 1,
+        total: 2,
+        progress: 50,
+      })
+    );
+  });
+
+  it("allows only restoration writes for an archived project", async () => {
+    projectModel.findFirst.mockResolvedValue({
+      id: "project-1",
+      status: "archived",
+      startDate: null,
+      deadline: null,
+    });
+
+    const rejected = await projectRoute.PUT(
+      new NextRequest("http://localhost/api/projects/project-1", {
+        method: "PUT",
+        body: JSON.stringify({ name: "Changed" }),
+      }),
+      { params: Promise.resolve({ id: "project-1" }) }
+    );
+    expect(rejected!.status).toBe(409);
+    expect(projectModel.update).not.toHaveBeenCalled();
+
+    projectModel.update.mockResolvedValue({
+      id: "project-1",
+      status: "active",
+      tasks: [],
+    });
+    const restored = await projectRoute.PUT(
+      new NextRequest("http://localhost/api/projects/project-1", {
+        method: "PUT",
+        body: JSON.stringify({ status: "active" }),
+      }),
+      { params: Promise.resolve({ id: "project-1" }) }
+    );
+    expect(restored!.status).toBe(200);
+    expect(projectModel.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "active" }),
+      })
+    );
+  });
 });

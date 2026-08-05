@@ -21,7 +21,10 @@ async function findBlocker(
     where: {
       id: blockerId,
       projectId,
-      project: workspaceDataScopeWhere(workspace, userId),
+      project: {
+        ...workspaceDataScopeWhere(workspace, userId),
+        status: "active",
+      },
     },
   });
 }

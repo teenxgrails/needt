@@ -92,13 +92,19 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     const { id } = await params;
     const existing = await prisma.project.findFirst({
       where: { id, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
-      select: { id: true, startDate: true, deadline: true },
+      select: { id: true, startDate: true, deadline: true, status: true },
     });
     if (!existing) {
       return new NextResponse("Project not found", { status: 404 });
     }
 
     const json = (await request.json()) as Record<string, unknown>;
+    if (
+      existing.status === ProjectStatus.ARCHIVED &&
+      (json.status !== ProjectStatus.ACTIVE || Object.keys(json).length !== 1)
+    ) {
+      return NextResponse.json({ error: "PROJECT_ARCHIVED" }, { status: 409 });
+    }
     const startDate = optionalDate(json.startDate);
     const deadline = optionalDate(json.deadline);
     if (startDate === false || deadline === false) {
@@ -189,24 +195,30 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     const { id } = await params;
     const project = await prisma.project.findFirst({
       where: { id, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
-      include: { _count: { select: { tasks: true } } },
+      include: {
+        tasks: {
+          where: { isArchived: false },
+          select: { status: true, isArchived: true },
+        },
+      },
     });
     if (!project) {
       return new NextResponse("Project not found", { status: 404 });
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.task.deleteMany({ where: { projectId: id } });
-      await tx.project.delete({ where: { id } });
+    const archived = await prisma.project.update({
+      where: { id },
+      data: { status: ProjectStatus.ARCHIVED },
     });
 
     return NextResponse.json({
-      success: true,
-      deletedTasks: project._count.tasks,
+      ...archived,
+      ...deriveProjectProgress(project.tasks),
+      _count: { tasks: project.tasks.length },
     });
   } catch (error) {
     logger.error(
-      "Error deleting project:",
+      "Error archiving project:",
       { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );

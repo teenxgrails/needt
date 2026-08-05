@@ -3,6 +3,7 @@ import { getCalibrationContext } from "@/services/time-tracking/calibration";
 import { canAutoScheduleMore } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
 import { deriveProjectBlockerDependencies } from "@/lib/projects/blockers";
 
 import { ProjectStatus } from "@/types/project";
@@ -423,6 +424,7 @@ export async function scheduleAllTasksForUserDetailed(
         },
         assigneeId: userId,
         isArchived: false,
+        AND: [activeProjectTaskWhere],
       },
       include: {
         project: true,
@@ -594,6 +596,7 @@ export async function scheduleAllTasksForUserDetailed(
       where: {
         assigneeId: userId,
         isArchived: false,
+        AND: [activeProjectTaskWhere],
       },
       include: {
         tags: true,

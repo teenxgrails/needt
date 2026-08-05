@@ -73,6 +73,14 @@ describe("task archive API", () => {
         where: expect.objectContaining({
           userId: "user-1",
           isArchived: false,
+          AND: [
+            {
+              OR: [
+                { projectId: null },
+                { project: { is: { status: "active" } } },
+              ],
+            },
+          ],
         }),
       })
     );
@@ -168,6 +176,26 @@ describe("task archive API", () => {
     );
 
     expect(response!.status).toBe(409);
+    expect(taskModel.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects edits to tasks in an archived project", async () => {
+    taskModel.findUnique.mockResolvedValue({
+      ...storedTask(false),
+      projectId: "project-1",
+      project: { status: "archived" },
+    });
+
+    const response = await taskRoute.PUT(
+      new NextRequest("http://localhost/api/tasks/task-1", {
+        method: "PUT",
+        body: JSON.stringify({ title: "Changed while project archived" }),
+      }),
+      { params: Promise.resolve({ id: "task-1" }) }
+    );
+
+    expect(response!.status).toBe(409);
+    expect(await response!.json()).toEqual({ error: "PROJECT_ARCHIVED" });
     expect(taskModel.update).not.toHaveBeenCalled();
   });
 

@@ -26,6 +26,14 @@ describe("projects workspace UI contract", () => {
     join(process.cwd(), "src/components/projects/ProjectModal.tsx"),
     "utf8"
   );
+  const archiveDialog = readFileSync(
+    join(process.cwd(), "src/components/projects/ArchiveProjectDialog.tsx"),
+    "utf8"
+  );
+  const archivedDialog = readFileSync(
+    join(process.cwd(), "src/components/projects/ArchivedProjectsDialog.tsx"),
+    "utf8"
+  );
 
   it("uses the shared picker and accessible project view tabs", () => {
     expect(workspace).toContain("<NeedtPicker");
@@ -51,5 +59,14 @@ describe("projects workspace UI contract", () => {
   it("removes manual progress after every project view lands", () => {
     expect(modal).not.toContain('htmlFor="progress"');
     expect(modal).not.toContain("setProgress");
+  });
+
+  it("archives projects without destructive copy and provides restore", () => {
+    expect(modal).toContain("Archive Project");
+    expect(modal).toContain("Restore Project");
+    expect(modal).not.toContain("Delete Project");
+    expect(archiveDialog).toContain("tasks, stages, and history stay intact");
+    expect(archivedDialog).toContain("unarchiveProject");
+    expect(workspace).toContain("ArchivedProjectsDialog");
   });
 });

@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
 import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
 import {
-  TaskBusyStatus,
-  WorkspaceRole,
   type Prisma,
   type Task,
+  TaskBusyStatus,
+  WorkspaceRole,
 } from "@prisma/client";
 import { RRule } from "rrule";
 
@@ -100,12 +100,17 @@ export async function PUT(
       },
       include: {
         tags: true,
+        project: { select: { status: true } },
       },
     });
 
     if (!task) {
       logger.warn(`Task not found: ${id}`, { userId }, LOG_SOURCE);
       return new NextResponse("Task not found", { status: 404 });
+    }
+
+    if (task.project?.status === "archived") {
+      return NextResponse.json({ error: "PROJECT_ARCHIVED" }, { status: 409 });
     }
 
     const json = await request.json();
@@ -174,16 +179,14 @@ export async function PUT(
       projectId &&
       (!workspaceId ||
         !(await prisma.project.findFirst({
-          where: { id: projectId, workspaceId },
+          where: { id: projectId, workspaceId, status: "active" },
           select: { id: true },
         })))
     ) {
       return new NextResponse("Invalid workspace project", { status: 400 });
     }
     const effectiveAssigneeId =
-      requestedAssigneeId !== undefined
-        ? requestedAssigneeId
-        : task.assigneeId;
+      requestedAssigneeId !== undefined ? requestedAssigneeId : task.assigneeId;
     const assigneeChanged =
       requestedAssigneeId !== undefined &&
       requestedAssigneeId !== task.assigneeId;
@@ -298,9 +301,7 @@ export async function PUT(
               (1000 * 60 * 60 * 24)
           );
           const calculatedStart = newDate(nextOccurrence);
-          calculatedStart.setDate(
-            calculatedStart.getDate() - startToDueDelta
-          );
+          calculatedStart.setDate(calculatedStart.getDate() - startToDueDelta);
           nextStartDate = calculatedStart;
         }
 
@@ -587,6 +588,10 @@ export async function DELETE(
 
     if (!task) {
       return new NextResponse("Task not found", { status: 404 });
+    }
+
+    if (task.project?.status === "archived") {
+      return NextResponse.json({ error: "PROJECT_ARCHIVED" }, { status: 409 });
     }
 
     if (!task.isArchived) {
