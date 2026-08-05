@@ -432,6 +432,7 @@ export async function scheduleAllTasksForUserDetailed(
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
         dependsOn: { select: { status: true } },
         blockedByDependencies: {
+          where: { removedAt: null },
           include: {
             blocker: { select: { status: true } },
           },

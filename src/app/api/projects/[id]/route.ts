@@ -43,6 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
             },
             stage: true,
             blockedByDependencies: {
+              where: { removedAt: null },
               include: {
                 blocker: { select: { id: true, title: true, status: true } },
               },

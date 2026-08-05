@@ -65,7 +65,11 @@ describe("project stages, blockers, and templates API", () => {
 
     expect(response!.status).toBe(201);
     expect(prisma.project.findFirst).toHaveBeenCalledWith({
-      where: { id: "project-1", workspaceId: "workspace-1" },
+      where: {
+        id: "project-1",
+        status: "active",
+        workspaceId: "workspace-1",
+      },
       select: { id: true },
     });
     expect(prisma.projectStage.create).toHaveBeenCalledWith(

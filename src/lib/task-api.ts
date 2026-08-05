@@ -5,7 +5,8 @@ const JSON_HEADERS = { "Content-Type": "application/json" } as const;
 export class TaskApiError extends Error {
   constructor(
     message: string,
-    readonly status: number
+    readonly status: number,
+    readonly code?: string
   ) {
     super(message);
     this.name = "TaskApiError";
@@ -14,7 +15,16 @@ export class TaskApiError extends Error {
 
 async function readError(response: Response, fallback: string) {
   const detail = (await response.text()).trim();
-  return new TaskApiError(detail || fallback, response.status);
+  try {
+    const payload = JSON.parse(detail) as { error?: string; message?: string };
+    return new TaskApiError(
+      payload.message || fallback,
+      response.status,
+      payload.error
+    );
+  } catch {
+    return new TaskApiError(detail || fallback, response.status);
+  }
 }
 
 export async function createTaskRequest(task: NewTask): Promise<Task> {

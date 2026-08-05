@@ -18,6 +18,7 @@ import {
   updateOptimisticTask,
 } from "@/lib/optimistic-tasks";
 import {
+  TaskApiError,
   createTaskRequest,
   deleteTaskRequest,
   updateTaskRequest,
@@ -59,7 +60,11 @@ function mutationErrorMessage(action: string) {
 }
 
 function reportMutationError(action: string, taskId: string, error: unknown) {
-  const message = mutationErrorMessage(action);
+  const message =
+    error instanceof TaskApiError &&
+    error.code === "PROJECT_DEPENDENCY_CONFLICT"
+      ? error.message
+      : mutationErrorMessage(action);
   useTaskStore.setState({
     error: error instanceof Error ? error : new Error(message),
   });

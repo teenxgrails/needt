@@ -193,6 +193,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         await tx.taskDependency.createMany({
           data: template.dependencies.map((dependency) => ({
             userId: auth.userId,
+            workspaceId,
             blockerTaskId: taskMap.get(dependency.blockerTaskId)!,
             blockedTaskId: taskMap.get(dependency.blockedTaskId)!,
           })),

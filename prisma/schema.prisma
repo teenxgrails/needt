@@ -161,6 +161,7 @@ model Workspace {
   boards           Board[]
   pages            Page[]
   taskActivities   TaskActivity[]
+  taskDependencies TaskDependency[]
   projectTemplates ProjectTemplate[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -878,18 +879,22 @@ model IdempotencyRecord {
 }
 
 model TaskDependency {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   userId        String
-  user          User     @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
   blockerTaskId String
-  blocker       Task     @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
+  blocker       Task      @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
   blockedTaskId String
-  blocked       Task     @relation("TaskDependencyBlocked", fields: [blockedTaskId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
+  blocked       Task      @relation("TaskDependencyBlocked", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  removedAt     DateTime?
 
   @@unique([blockerTaskId, blockedTaskId])
   @@index([userId, blockedTaskId])
   @@index([userId, blockerTaskId])
+  @@index([workspaceId, removedAt])
 }
 
 model TaskReminder {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
+import { findTaskProjectMoveConflict } from "@/services/tasks/dependencies";
 import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
 import {
   type Prisma,
@@ -185,6 +186,26 @@ export async function PUT(
     ) {
       return new NextResponse("Invalid workspace project", { status: 400 });
     }
+    const targetProjectId =
+      projectId === undefined ? task.projectId : projectId;
+    if (projectId !== undefined && targetProjectId !== task.projectId) {
+      const conflict = await findTaskProjectMoveConflict({
+        userId,
+        workspace: auth.workspace,
+        taskId: id,
+        targetProjectId,
+      });
+      if (conflict) {
+        return NextResponse.json(
+          {
+            error: "PROJECT_DEPENDENCY_CONFLICT",
+            message: `Cannot move task while it is linked to “${conflict.task.title}”. Remove that dependency first.`,
+            conflict,
+          },
+          { status: 409 }
+        );
+      }
+    }
     const effectiveAssigneeId =
       requestedAssigneeId !== undefined ? requestedAssigneeId : task.assigneeId;
     const assigneeChanged =
@@ -333,12 +354,13 @@ export async function PUT(
 
     // Find the project's task mapping if it exists
     let mappingId = null;
-    const targetProjectId = projectId || task.projectId;
+    const mappingProjectId =
+      projectId === undefined ? task.projectId : projectId;
 
-    if (targetProjectId) {
+    if (mappingProjectId) {
       const mapping = await prisma.taskListMapping.findFirst({
         where: {
-          projectId: targetProjectId,
+          projectId: mappingProjectId,
         },
       });
       if (mapping) {

@@ -34,6 +34,10 @@ describe("projects workspace UI contract", () => {
     join(process.cwd(), "src/components/projects/ArchivedProjectsDialog.tsx"),
     "utf8"
   );
+  const dependencies = readFileSync(
+    join(process.cwd(), "src/components/tasks/TaskDependenciesSection.tsx"),
+    "utf8"
+  );
 
   it("uses the shared picker and accessible project view tabs", () => {
     expect(workspace).toContain("<NeedtPicker");
@@ -68,5 +72,12 @@ describe("projects workspace UI contract", () => {
     expect(archiveDialog).toContain("tasks, stages, and history stay intact");
     expect(archivedDialog).toContain("unarchiveProject");
     expect(workspace).toContain("ArchivedProjectsDialog");
+  });
+
+  it("offers dependency choices only inside the current project", () => {
+    expect(dependencies).toContain("task.projectId === projectId");
+    expect(dependencies).toContain(
+      "Add this task to a project before creating dependencies."
+    );
   });
 });

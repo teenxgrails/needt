@@ -1,11 +1,24 @@
 import { Prisma } from "@prisma/client";
 
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
+import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
+
+interface DependencyScope {
+  userId: string;
+  workspace?: WorkspaceAccess;
+}
 
 export class TaskDependencyError extends Error {
   constructor(
     public readonly code:
       | "TASK_NOT_FOUND"
+      | "PROJECT_REQUIRED"
+      | "CROSS_PROJECT_DEPENDENCY"
+      | "PROJECT_ARCHIVED"
       | "SELF_DEPENDENCY"
       | "DUPLICATE_DEPENDENCY"
       | "DEPENDENCY_CYCLE"
@@ -39,32 +52,59 @@ export function wouldCreateDependencyCycle(
   return false;
 }
 
-export async function listTaskDependencies(userId: string, taskId: string) {
+export async function listTaskDependencies(
+  scope: DependencyScope,
+  taskId: string
+) {
+  const taskScope = workspaceDataScopeWhere(scope.workspace, scope.userId);
+  const dependencyScope = workspaceDataScopeWhere(
+    scope.workspace,
+    scope.userId
+  );
   const task = await prisma.task.findFirst({
-    where: { id: taskId, userId },
+    where: { id: taskId, ...taskScope },
     select: { id: true },
   });
   if (!task) throw new TaskDependencyError("TASK_NOT_FOUND");
 
   const [blocks, blockedBy] = await Promise.all([
     prisma.taskDependency.findMany({
-      where: { userId, blockerTaskId: taskId },
+      where: {
+        ...dependencyScope,
+        blockerTaskId: taskId,
+        removedAt: null,
+        blocker: { is: taskScope },
+        blocked: { is: taskScope },
+      },
       include: {
-        blocked: { select: { id: true, title: true, status: true } },
+        blocked: {
+          select: { id: true, title: true, status: true, projectId: true },
+        },
       },
       orderBy: { createdAt: "asc" },
     }),
     prisma.taskDependency.findMany({
-      where: { userId, blockedTaskId: taskId },
+      where: {
+        ...dependencyScope,
+        blockedTaskId: taskId,
+        removedAt: null,
+        blocker: { is: taskScope },
+        blocked: { is: taskScope },
+      },
       include: {
-        blocker: { select: { id: true, title: true, status: true } },
+        blocker: {
+          select: { id: true, title: true, status: true, projectId: true },
+        },
       },
       orderBy: { createdAt: "asc" },
     }),
   ]);
 
   return {
-    blocks: blocks.map(({ id, blocked }) => ({ dependencyId: id, task: blocked })),
+    blocks: blocks.map(({ id, blocked }) => ({
+      dependencyId: id,
+      task: blocked,
+    })),
     blockedBy: blockedBy.map(({ id, blocker }) => ({
       dependencyId: id,
       task: blocker,
@@ -74,6 +114,7 @@ export async function listTaskDependencies(userId: string, taskId: string) {
 
 export async function addTaskDependency(input: {
   userId: string;
+  workspace?: WorkspaceAccess;
   blockerTaskId: string;
   blockedTaskId: string;
 }) {
@@ -81,33 +122,68 @@ export async function addTaskDependency(input: {
     throw new TaskDependencyError("SELF_DEPENDENCY");
   }
 
-  const taskCount = await prisma.task.count({
+  const taskScope = workspaceDataScopeWhere(input.workspace, input.userId);
+  const tasks = await prisma.task.findMany({
     where: {
-      userId: input.userId,
+      ...taskScope,
       id: { in: [input.blockerTaskId, input.blockedTaskId] },
     },
+    select: {
+      id: true,
+      projectId: true,
+      workspaceId: true,
+      project: { select: { status: true } },
+    },
   });
-  if (taskCount !== 2) throw new TaskDependencyError("TASK_NOT_FOUND");
+  if (tasks.length !== 2) throw new TaskDependencyError("TASK_NOT_FOUND");
+  if (tasks.some((task) => !task.projectId)) {
+    throw new TaskDependencyError("PROJECT_REQUIRED");
+  }
+  const projectId = tasks[0].projectId!;
+  if (tasks.some((task) => task.projectId !== projectId)) {
+    throw new TaskDependencyError("CROSS_PROJECT_DEPENDENCY");
+  }
+  if (tasks.some((task) => task.project?.status === "archived")) {
+    throw new TaskDependencyError("PROJECT_ARCHIVED");
+  }
+  const workspaceId = input.workspace?.workspaceId ?? tasks[0].workspaceId;
+  if (!workspaceId) throw new TaskDependencyError("TASK_NOT_FOUND");
 
   const edges = await prisma.taskDependency.findMany({
-    where: { userId: input.userId },
+    where: {
+      ...workspaceDataScopeWhere(input.workspace, input.userId),
+      removedAt: null,
+      blocker: { is: { projectId } },
+      blocked: { is: { projectId } },
+    },
     select: { blockerTaskId: true, blockedTaskId: true },
   });
   // The new edge is blocker -> blocked. It creates a cycle when blocker is
   // already reachable from blocked.
   if (
-    wouldCreateDependencyCycle(
-      edges,
-      input.blockerTaskId,
-      input.blockedTaskId
-    )
+    wouldCreateDependencyCycle(edges, input.blockerTaskId, input.blockedTaskId)
   ) {
     throw new TaskDependencyError("DEPENDENCY_CYCLE");
   }
 
   try {
-    return await prisma.taskDependency.create({
-      data: input,
+    return await prisma.taskDependency.upsert({
+      where: {
+        blockerTaskId_blockedTaskId: {
+          blockerTaskId: input.blockerTaskId,
+          blockedTaskId: input.blockedTaskId,
+        },
+      },
+      update: {
+        workspaceId,
+        removedAt: null,
+      },
+      create: {
+        userId: input.userId,
+        workspaceId,
+        blockerTaskId: input.blockerTaskId,
+        blockedTaskId: input.blockedTaskId,
+      },
       include: {
         blocker: { select: { id: true, title: true, status: true } },
         blocked: { select: { id: true, title: true, status: true } },
@@ -126,10 +202,48 @@ export async function addTaskDependency(input: {
 
 export async function removeTaskDependency(input: {
   userId: string;
+  workspace?: WorkspaceAccess;
   dependencyId: string;
 }) {
-  const deleted = await prisma.taskDependency.deleteMany({
-    where: { id: input.dependencyId, userId: input.userId },
+  const removed = await prisma.taskDependency.updateMany({
+    where: {
+      id: input.dependencyId,
+      removedAt: null,
+      ...workspaceDataScopeWhere(input.workspace, input.userId),
+    },
+    data: { removedAt: newDate() },
   });
-  if (deleted.count === 0) throw new TaskDependencyError("TASK_NOT_FOUND");
+  if (removed.count === 0) throw new TaskDependencyError("TASK_NOT_FOUND");
+}
+
+export async function findTaskProjectMoveConflict(input: {
+  userId: string;
+  workspace?: WorkspaceAccess;
+  taskId: string;
+  targetProjectId: string | null;
+}) {
+  const dependencies = await prisma.taskDependency.findMany({
+    where: {
+      ...workspaceDataScopeWhere(input.workspace, input.userId),
+      removedAt: null,
+      OR: [{ blockerTaskId: input.taskId }, { blockedTaskId: input.taskId }],
+    },
+    select: {
+      id: true,
+      blockerTaskId: true,
+      blocker: { select: { id: true, title: true, projectId: true } },
+      blocked: { select: { id: true, title: true, projectId: true } },
+    },
+  });
+
+  for (const dependency of dependencies) {
+    const other =
+      dependency.blockerTaskId === input.taskId
+        ? dependency.blocked
+        : dependency.blocker;
+    if (other.projectId !== input.targetProjectId) {
+      return { dependencyId: dependency.id, task: other };
+    }
+  }
+  return null;
 }

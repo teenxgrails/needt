@@ -1070,7 +1070,12 @@ export function TaskModal({
                     likelyDelta={task.likelyDelta}
                   />
                 )}
-                {task && <TaskDependenciesSection taskId={task.id} />}
+                {task && (
+                  <TaskDependenciesSection
+                    taskId={task.id}
+                    projectId={task.projectId}
+                  />
+                )}
                 <section className="space-y-3 rounded-lg border border-[var(--border-subtle)] p-3">
                   <div>
                     <h3 className="font-medium text-[var(--text-primary)]">
