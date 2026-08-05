@@ -18,12 +18,13 @@ jest.mock("@/lib/feature-flags", () => ({
 jest.mock("@/lib/entitlements", () => ({ getPlan: jest.fn() }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    workspace: { upsert: jest.fn() },
+    workspace: { findUnique: jest.fn(), upsert: jest.fn() },
     workspaceMember: { upsert: jest.fn(), findUnique: jest.fn() },
   },
 }));
 
 const workspaceModel = prisma.workspace as unknown as {
+  findUnique: jest.Mock;
   upsert: jest.Mock;
 };
 const memberModel = prisma.workspaceMember as unknown as {
@@ -35,6 +36,10 @@ describe("workspace authorization", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     workspaceModel.upsert.mockResolvedValue({
+      id: "personal-1",
+      kind: WorkspaceKind.PERSONAL,
+    });
+    workspaceModel.findUnique.mockResolvedValue({
       id: "personal-1",
       kind: WorkspaceKind.PERSONAL,
     });
@@ -70,6 +75,36 @@ describe("workspace authorization", () => {
       workspaceId: "personal-1",
     });
     expect(memberModel.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("recovers when concurrent requests create the personal workspace", async () => {
+    workspaceModel.upsert.mockRejectedValueOnce({ code: "P2002" });
+
+    const access = await resolveWorkspaceAccess({ userId: "user-1" });
+
+    expect(workspaceModel.findUnique).toHaveBeenCalledWith({
+      where: { personalOwnerId: "user-1" },
+      select: { id: true, kind: true },
+    });
+    expect(access.workspaceId).toBe("personal-1");
+  });
+
+  it("recovers when concurrent requests create the owner membership", async () => {
+    memberModel.upsert.mockRejectedValueOnce({ code: "P2002" });
+    memberModel.findUnique.mockResolvedValueOnce({ role: WorkspaceRole.OWNER });
+
+    const access = await resolveWorkspaceAccess({ userId: "user-1" });
+
+    expect(memberModel.findUnique).toHaveBeenCalledWith({
+      where: {
+        workspaceId_userId: {
+          workspaceId: "personal-1",
+          userId: "user-1",
+        },
+      },
+      select: { role: true },
+    });
+    expect(access.role).toBe(WorkspaceRole.OWNER);
   });
 
   it("resolves shared access only through the user membership key", async () => {

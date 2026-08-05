@@ -66,29 +66,60 @@ export function requestedWorkspaceId(request: NextRequest): string | undefined {
   return headerId ?? queryId;
 }
 
+function isUniqueConstraintRace(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
+  );
+}
+
 async function ensurePersonalWorkspace(userId: string) {
-  const workspace = await prisma.workspace.upsert({
-    where: { personalOwnerId: userId },
-    update: {},
-    create: {
-      name: "Personal Workspace",
-      kind: WorkspaceKind.PERSONAL,
-      personalOwnerId: userId,
-    },
-    select: { id: true, kind: true },
-  });
-  const membership = await prisma.workspaceMember.upsert({
-    where: {
-      workspaceId_userId: { workspaceId: workspace.id, userId },
-    },
-    update: { role: WorkspaceRole.OWNER },
-    create: {
-      workspaceId: workspace.id,
-      userId,
-      role: WorkspaceRole.OWNER,
-    },
-    select: { role: true },
-  });
+  let workspace;
+  try {
+    workspace = await prisma.workspace.upsert({
+      where: { personalOwnerId: userId },
+      update: {},
+      create: {
+        name: "Personal Workspace",
+        kind: WorkspaceKind.PERSONAL,
+        personalOwnerId: userId,
+      },
+      select: { id: true, kind: true },
+    });
+  } catch (error) {
+    if (!isUniqueConstraintRace(error)) throw error;
+    workspace = await prisma.workspace.findUnique({
+      where: { personalOwnerId: userId },
+      select: { id: true, kind: true },
+    });
+    if (!workspace) throw error;
+  }
+  let membership;
+  try {
+    membership = await prisma.workspaceMember.upsert({
+      where: {
+        workspaceId_userId: { workspaceId: workspace.id, userId },
+      },
+      update: { role: WorkspaceRole.OWNER },
+      create: {
+        workspaceId: workspace.id,
+        userId,
+        role: WorkspaceRole.OWNER,
+      },
+      select: { role: true },
+    });
+  } catch (error) {
+    if (!isUniqueConstraintRace(error)) throw error;
+    membership = await prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: { workspaceId: workspace.id, userId },
+      },
+      select: { role: true },
+    });
+    if (!membership) throw error;
+  }
   return { ...workspace, role: membership.role };
 }
 

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Project dependencies are now created only between tasks in the same active project, remain readable as soft-removed history, and block cross-project task moves with the linked task named in the conflict message.
+- Project removal now archives projects without deleting tasks, stages, blockers, or history; archived projects are read-only and can be restored from the Projects screen.
 - Auto-scheduling now plans only tasks assigned to the active user, using that assignee's schedules, flexible hours, calendar conflicts, reminders, and calendar-block destination; shared-workspace members receive redacted Busy intervals for one another's personal events without titles, descriptions, attendees, organizers, or locations.
 - Authenticated API requests now resolve workspace membership and minimum roles through one server-side authorization boundary, while the disabled rollout flag preserves legacy `userId` scoping.
 - Replaced global lift, zoom, and icon-growth effects with calm contrast feedback, short fade/slide overlays, restrained drag springs, and one reduced-motion runtime that honors OS, saved, and hidden-tab preferences across every route.
@@ -23,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Hardened shared-workspace API boundaries: expired paid plans can no longer read shared workspace metadata or data, invite creation and acceptance are rate-limited, project mutations retain workspace scope at write time, concurrent personal-workspace initialization is race-safe, and shared calendar Busy intervals no longer expose source event IDs.
 - Completing a recurring task now records the finished occurrence as an immutable instance linked to its series master, instead of rewriting the master row and leaving a detached completed copy. The master only advances to the next occurrence, so editing a series affects future occurrences and never rewrites past ones. Completion is idempotent — a repeated or concurrent completion of the same occurrence can no longer create duplicate instances.
 - Auto-scheduling now honors task start and postpone dates, preserves exact unscheduled reason codes, falls back after soft deadlines, and refuses to place hard-deadline tasks past their deadline.
 - Fixed the root `not-found.tsx` rendering its own `<html>`/`<body>` nested inside the app's root layout, crashing the React tree on any genuinely missing route (could leave client-side navigation, including `/style`, stuck broken until a hard reload).
