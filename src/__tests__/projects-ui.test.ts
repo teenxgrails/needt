@@ -14,6 +14,14 @@ describe("projects workspace UI contract", () => {
     join(process.cwd(), "src/components/projects/ProjectKanbanView.tsx"),
     "utf8"
   );
+  const gantt = readFileSync(
+    join(process.cwd(), "src/components/projects/ProjectGanttView.tsx"),
+    "utf8"
+  );
+  const templates = readFileSync(
+    join(process.cwd(), "src/components/projects/ProjectTemplatesDialog.tsx"),
+    "utf8"
+  );
   const modal = readFileSync(
     join(process.cwd(), "src/components/projects/ProjectModal.tsx"),
     "utf8"
@@ -24,6 +32,7 @@ describe("projects workspace UI contract", () => {
     expect(workspace).toContain('ariaLabel="Choose project"');
     expect(workspace).toMatch(/<TabsTrigger\s+value="list"/);
     expect(workspace).toMatch(/<TabsTrigger\s+value="kanban"/);
+    expect(workspace).toMatch(/<TabsTrigger\s+value="gantt"/);
     expect(workspace).not.toContain("<select");
   });
 
@@ -32,6 +41,11 @@ describe("projects workspace UI contract", () => {
     expect(list).toContain("ProjectListView");
     expect(kanban).toContain("useDroppable");
     expect(kanban).toContain("UNASSIGNED_STAGE_ID");
+    expect(gantt).toContain("buildProjectGanttRange");
+    expect(gantt).toContain("Project timeline");
+    expect(templates).toContain("placeholder role per task");
+    expect(templates).toContain("ProjectTemplateKind.WORKFLOW");
+    expect(templates).toContain("calendarDayDifference");
   });
 
   it("keeps manual progress available until every project view lands", () => {

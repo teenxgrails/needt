@@ -1,7 +1,8 @@
 import { ProjectRelativeDateAnchor } from "@prisma/client";
 
-import { newDate } from "@/lib/date-utils";
+import { newDate, toLocalDateKey } from "@/lib/date-utils";
 import { deriveProjectBlockerDependencies } from "@/lib/projects/blockers";
+import { buildProjectGanttRange, ganttBarMetrics } from "@/lib/projects/gantt";
 import { deriveProjectProgress } from "@/lib/projects/progress";
 import { resolveProjectRelativeDate } from "@/lib/projects/relative-dates";
 
@@ -52,5 +53,30 @@ describe("project workflow calculations", () => {
       dependencyIds: ["project-blocker:external", "project-blocker:done"],
       completedDependencyIds: ["project-blocker:done"],
     });
+  });
+
+  it("builds bounded Gantt ranges and day-aligned bars", () => {
+    const range = buildProjectGanttRange({
+      project: {
+        startDate: "2026-08-10T00:00:00.000Z",
+        deadline: "2026-08-20T00:00:00.000Z",
+      },
+      stages: [],
+      tasks: [],
+      today: newDate("2026-08-12T00:00:00.000Z"),
+    });
+    expect(toLocalDateKey(range.start)).toBe("2026-08-08");
+    expect(toLocalDateKey(range.end)).toBe("2026-08-28");
+    expect(range.days).toHaveLength(21);
+    expect(
+      ganttBarMetrics(
+        {
+          startDate: "2026-08-10T00:00:00.000Z",
+          deadline: "2026-08-12T00:00:00.000Z",
+        },
+        range.start,
+        40
+      )
+    ).toEqual({ left: 80, width: 120 });
   });
 });

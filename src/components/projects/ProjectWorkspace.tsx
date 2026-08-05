@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DndContext, type DragEndEvent } from "@dnd-kit/core";
 import {
+  HiOutlineChartBar,
   HiOutlineCollection,
   HiOutlineExclamation,
   HiOutlineFolder,
@@ -11,15 +12,18 @@ import {
   HiOutlinePencil,
   HiOutlinePlus,
   HiOutlineRefresh,
+  HiOutlineTemplate,
   HiOutlineViewBoards,
 } from "react-icons/hi";
 
+import { ProjectGanttView } from "@/components/projects/ProjectGanttView";
 import {
   ProjectKanbanView,
   UNASSIGNED_STAGE_ID,
 } from "@/components/projects/ProjectKanbanView";
 import { ProjectListView } from "@/components/projects/ProjectListView";
 import { ProjectModal } from "@/components/projects/ProjectModal";
+import { ProjectTemplatesDialog } from "@/components/projects/ProjectTemplatesDialog";
 import type {
   ProjectWorkspaceDetail,
   ProjectWorkspaceTask,
@@ -49,7 +53,7 @@ import { ProjectStatus } from "@/types/project";
 import { type NewTask, TaskStatus } from "@/types/task";
 
 const LOG_SOURCE = "ProjectWorkspace";
-type ProjectView = "list" | "kanban";
+type ProjectView = "list" | "kanban" | "gantt";
 
 export function ProjectWorkspace() {
   const { projects, loading, fetchProjects } = useProjectStore();
@@ -64,6 +68,7 @@ export function ProjectWorkspace() {
   const [selectedTask, setSelectedTask] = useState<ProjectWorkspaceTask>();
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [stageModalOpen, setStageModalOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [stageName, setStageName] = useState("");
   const [stageSaving, setStageSaving] = useState(false);
 
@@ -195,6 +200,11 @@ export function ProjectWorkspace() {
     return tag;
   };
 
+  const selectCreatedProject = async (projectId: string) => {
+    await fetchProjects();
+    setSelectedProjectId(projectId);
+  };
+
   const selectedSummary = activeProjects.find(
     (project) => project.id === selectedProjectId
   );
@@ -296,7 +306,15 @@ export function ProjectWorkspace() {
             )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setTemplatesOpen(true)}
+          >
+            <HiOutlineTemplate className="h-4 w-4" />
+            Templates
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -333,6 +351,13 @@ export function ProjectWorkspace() {
               <HiOutlineViewBoards className="h-3.5 w-3.5" />
               Kanban
             </TabsTrigger>
+            <TabsTrigger
+              value="gantt"
+              className="h-7 gap-1.5 px-2.5 text-[12px]"
+            >
+              <HiOutlineChartBar className="h-3.5 w-3.5" />
+              Gantt
+            </TabsTrigger>
           </TabsList>
         </div>
         <div className="relative min-h-0 flex-1">
@@ -368,6 +393,11 @@ export function ProjectWorkspace() {
               </DndContext>
             )}
           </TabsContent>
+          <TabsContent value="gantt" className="m-0 h-full">
+            {detail && (
+              <ProjectGanttView project={detail} onOpenTask={openTask} />
+            )}
+          </TabsContent>
         </div>
       </Tabs>
 
@@ -392,6 +422,15 @@ export function ProjectWorkspace() {
         }}
         project={detail ?? selectedSummary}
       />
+
+      {detail && (
+        <ProjectTemplatesDialog
+          open={templatesOpen}
+          onOpenChange={setTemplatesOpen}
+          project={detail}
+          onProjectCreated={(projectId) => void selectCreatedProject(projectId)}
+        />
+      )}
 
       <Dialog open={stageModalOpen} onOpenChange={setStageModalOpen}>
         <DialogContent className="sm:max-w-[420px]">

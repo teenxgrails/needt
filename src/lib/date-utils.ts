@@ -3,6 +3,7 @@ import {
   addDays,
   addMinutes,
   areIntervalsOverlapping,
+  differenceInCalendarDays,
   differenceInHours,
   differenceInMinutes,
   eachDayOfInterval,
@@ -42,6 +43,10 @@ export function newDateFromYMD(year: number, month: number, day: number): Date {
 
 export function addCalendarDays(date: Date, days: number): Date {
   return addDays(date, days);
+}
+
+export function calendarDayDifference(later: Date, earlier: Date): number {
+  return differenceInCalendarDays(later, earlier);
 }
 
 /**
