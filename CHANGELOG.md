@@ -69,6 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Pages can now be published through separate read-only bearer links with public asset delivery; unpublishing revokes the link and closes already open public sessions immediately.
+
 - Added self-hosted realtime Page collaboration with short-lived document-scoped tokens, server-side workspace and Page authorization, Yjs presence/cursors and offline merge semantics, Postgres persistence, and optional Redis fan-out.
 
 - Pages now resolve Full Access, Editor, and Viewer roles per document, with direct member grants overriding inherited workspace access on every Page-backed API.

@@ -126,6 +126,7 @@ model User {
   pageComments           PageComment[]
   pageAccessGrants       PageAccessGrant[]       @relation("PageAccessGrantee")
   pageAccessGrantsGiven  PageAccessGrant[]       @relation("PageAccessGrantor")
+  pagePublications       PagePublication[]       @relation("PagePublicationPublisher")
   pageTemplates          PageTemplate[]
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
@@ -1085,23 +1086,23 @@ model SavedView {
 /// A personal, block-based document. Pages are deliberately independent from
 /// Task so notebooks and databases never become a parallel scheduling system.
 model Page {
-  id                    String                 @id @default(cuid())
+  id                    String                  @id @default(cuid())
   userId                String
-  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspaceId           String?
-  workspace             Workspace?             @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  workspace             Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   parentId              String?
-  parent                Page?                  @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children              Page[]                 @relation("PageTree")
-  title                 String                 @default("Untitled")
+  parent                Page?                   @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Page[]                  @relation("PageTree")
+  title                 String                  @default("Untitled")
   icon                  String?
   coverUrl              String?
-  isPrivate             Boolean                @default(false)
-  isFavorite            Boolean                @default(false)
-  createdBy             PageAuthor             @default(HUMAN)
+  isPrivate             Boolean                 @default(false)
+  isFavorite            Boolean                 @default(false)
+  createdBy             PageAuthor              @default(HUMAN)
   trashedAt             DateTime?
-  position              Float                  @default(0)
-  documentFormatVersion Int                    @default(1)
+  position              Float                   @default(0)
+  documentFormatVersion Int                     @default(1)
   blocks                PageBlock[]
   database              PageDatabase?
   record                DatabaseRecord?
@@ -1111,9 +1112,10 @@ model Page {
   comments              PageComment[]
   forms                 PageForm[]
   accessGrants          PageAccessGrant[]
-  collaborationState   PageCollaborationState?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  collaborationState    PageCollaborationState?
+  publication           PagePublication?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 
   @@index([userId, parentId, position])
   @@index([workspaceId])
@@ -1325,6 +1327,21 @@ model PageCollaborationState {
   updatedAt DateTime @updatedAt
 
   @@index([updatedAt])
+}
+
+model PagePublication {
+  id            String    @id @default(cuid())
+  pageId        String    @unique
+  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  token         String    @unique
+  publishedById String?
+  publishedBy   User?     @relation("PagePublicationPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  publishedAt   DateTime  @default(now())
+  revokedAt     DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@index([revokedAt])
+  @@index([publishedById])
 }
 
 model AiPageChangeProposal {

@@ -162,6 +162,7 @@ type WorkspaceMember = {
   role: "OWNER" | "EDITOR" | "VIEWER";
   user: { name: string | null; email: string | null; image: string | null };
 };
+type PagePublication = { published: boolean; url: string | null };
 type CollaborationTokenResponse = {
   token: string;
   documentName: string;
@@ -431,6 +432,10 @@ export function PageWorkspace({
   const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>(
     []
   );
+  const [publication, setPublication] = useState<PagePublication>({
+    published: false,
+    url: null,
+  });
   const [mentionPages, setMentionPages] = useState<PageReference[]>([]);
   const [pendingMentionId, setPendingMentionId] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -814,12 +819,14 @@ export function PageWorkspace({
       }
     }
     if (tool === "permissions") {
-      const [permissionsResponse, membersResponse] = await Promise.all([
-        fetch(`/api/pages/${pageId}/permissions`),
-        page?.workspaceId
-          ? fetch(`/api/workspaces/${page.workspaceId}/members`)
-          : Promise.resolve(null),
-      ]);
+      const [permissionsResponse, membersResponse, publicationResponse] =
+        await Promise.all([
+          fetch(`/api/pages/${pageId}/permissions`),
+          page?.workspaceId
+            ? fetch(`/api/workspaces/${page.workspaceId}/members`)
+            : Promise.resolve(null),
+          fetch(`/api/pages/${pageId}/publication`),
+        ]);
       if (permissionsResponse.ok) {
         const data = (await permissionsResponse.json()) as {
           ownerId: string;
@@ -835,6 +842,9 @@ export function PageWorkspace({
         setWorkspaceMembers(data.members);
       } else {
         setWorkspaceMembers([]);
+      }
+      if (publicationResponse.ok) {
+        setPublication((await publicationResponse.json()) as PagePublication);
       }
     }
     if (tool === "ai") {
@@ -870,6 +880,39 @@ export function PageWorkspace({
       ...current.filter((grant) => grant.userId !== userId),
       data.grant,
     ]);
+  };
+
+  const publishPublicLink = async () => {
+    const response = await fetch(`/api/pages/${pageId}/publication`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      notify.error("Could not publish this Page");
+      return;
+    }
+    setPublication((await response.json()) as PagePublication);
+  };
+
+  const unpublishPublicLink = async () => {
+    const response = await fetch(`/api/pages/${pageId}/publication`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      notify.error("Could not unpublish this Page");
+      return;
+    }
+    setPublication((await response.json()) as PagePublication);
+    notify.success("Public link disabled");
+  };
+
+  const copyPublicLink = async () => {
+    if (!publication.url) return;
+    try {
+      await navigator.clipboard.writeText(publication.url);
+      notify.success("Public link copied");
+    } catch {
+      notify.error("Could not copy the public link");
+    }
   };
 
   const restoreRevision = async (revisionId: string) => {
@@ -1831,6 +1874,41 @@ export function PageWorkspace({
                 </div>
               );
             })}
+          </div>
+          <div className="border-t border-[var(--border-subtle)] pt-4">
+            <div className="mb-3">
+              <div className="text-[13px] font-medium">Public link</div>
+              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                Anyone with this separate link can read the Page. They cannot
+                edit it or access the workspace.
+              </p>
+            </div>
+            {publication.published && publication.url ? (
+              <div className="space-y-2">
+                <Input
+                  aria-label="Published Page link"
+                  value={publication.url}
+                  readOnly
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => void unpublishPublicLink()}
+                  >
+                    Unpublish
+                  </Button>
+                  <Button onClick={() => void copyPublicLink()}>
+                    Copy link
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <Button onClick={() => void publishPublicLink()}>
+                  Publish Page
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

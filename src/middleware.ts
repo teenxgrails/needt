@@ -1,6 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
 import { publicAppUrl, publicRequestUrl } from "@/lib/public-url";
 
 // List of public routes that don't require authentication
@@ -14,6 +15,7 @@ const publicRoutes = [
   "/beta",
   "/terms",
   "/privacy",
+  "/p/",
   "/style",
   "/subscription/lifetime/success",
   "/subscription/lifetime/setup-password",
