@@ -21,7 +21,11 @@ export function blockTypeForNode(node: JSONContent): string {
     return `HEADING_${Math.max(1, Math.min(3, level || 1))}`;
   }
   if (node.type === "needtPageBlock") {
-    return typeof node.attrs?.kind === "string" ? node.attrs.kind : "CALLOUT";
+    const kind =
+      typeof node.attrs?.kind === "string" ? node.attrs.kind : "CALLOUT";
+    return kind === "TASK_REFERENCE" || kind === "PROJECT_REFERENCE"
+      ? "LINK"
+      : kind;
   }
   return NODE_TO_BLOCK[node.type || ""] || "PARAGRAPH";
 }

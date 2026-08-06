@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
 import { type JSONContent } from "@tiptap/core";
 import ImageExtension from "@tiptap/extension-image";
+import LinkExtension from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
 import { Editor, EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -20,10 +22,13 @@ import {
   Code2,
   Columns3,
   File,
+  FilePlus,
   FileText,
+  FolderKanban,
   Heading1,
   Heading2,
   Heading3,
+  History,
   Image,
   LayoutTemplate,
   Link2,
@@ -49,6 +54,10 @@ import {
 } from "@/components/documents/BlockIdentity";
 import { DatabaseWorkspace } from "@/components/pages/DatabaseWorkspace";
 import { PageBlockNode } from "@/components/pages/PageBlockNode";
+import {
+  PageAutosave,
+  type PageSaveState,
+} from "@/components/pages/page-autosave";
 import {
   documentFromPageBlocks,
   legacyPageHtml,
@@ -78,7 +87,7 @@ import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { randomId } from "@/lib/uuid";
 
-type SaveState = "saved" | "saving" | "failed";
+type SaveState = PageSaveState;
 type BasicCommand =
   | "paragraph"
   | "heading1"
@@ -100,6 +109,8 @@ type SpecialKind =
   | "TABLE"
   | "COLUMNS"
   | "PAGE_MENTION"
+  | "TASK_REFERENCE"
+  | "PROJECT_REFERENCE"
   | "DATE_MENTION"
   | "FORM";
 type PageCommand = BasicCommand | SpecialKind;
@@ -120,6 +131,18 @@ type PageProposal = {
   operations: unknown;
   status: "PENDING" | "APPLIED" | "REJECTED";
 };
+type PageRevision = {
+  id: string;
+  createdAt: string;
+  createdBy: "HUMAN" | "AI";
+};
+type PageReference = {
+  id: string;
+  title: string;
+  icon: string | null;
+  updatedAt: string;
+};
+type AiAction = "rewrite" | "summarize" | "critique";
 
 const COMMANDS: Array<{
   id: PageCommand;
@@ -176,6 +199,20 @@ const COMMANDS: Array<{
     hint: "Track lightweight items",
     keywords: "todo check task",
     icon: CheckSquare,
+  },
+  {
+    id: "TASK_REFERENCE",
+    label: "Task",
+    hint: "Create and embed a workspace task",
+    keywords: "task todo action",
+    icon: CheckSquare,
+  },
+  {
+    id: "PROJECT_REFERENCE",
+    label: "Project",
+    hint: "Create and embed a workspace project",
+    keywords: "project initiative",
+    icon: FolderKanban,
   },
   {
     id: "quote",
@@ -287,6 +324,8 @@ const SPECIAL_LABELS: Record<SpecialKind, string> = {
   TABLE: "Table title",
   COLUMNS: "Columns label",
   PAGE_MENTION: "Page title",
+  TASK_REFERENCE: "Task title",
+  PROJECT_REFERENCE: "Project title",
   DATE_MENTION: "Date",
   FORM: "Form title",
 };
@@ -308,8 +347,7 @@ export function PageWorkspace({
 }) {
   const router = useRouter();
   const hostRef = useRef<HTMLDivElement>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const revision = useRef(0);
+  const autosave = useRef<PageAutosave | null>(null);
   const hydrated = useRef(false);
   const pendingRange = useRef<{ from: number; to: number } | null>(null);
   const [page, setPage] = useState<PageDetail | null>(null);
@@ -327,39 +365,47 @@ export function PageWorkspace({
   const [coverOpen, setCoverOpen] = useState(false);
   const [coverUrl, setCoverUrl] = useState("");
   const [toolOpen, setToolOpen] = useState<
-    "comments" | "templates" | "ai" | null
+    "comments" | "templates" | "history" | "backlinks" | "ai" | null
   >(null);
   const [comments, setComments] = useState<PageComment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [templates, setTemplates] = useState<PageTemplate[]>([]);
   const [templateName, setTemplateName] = useState("");
   const [proposals, setProposals] = useState<PageProposal[]>([]);
+  const [revisions, setRevisions] = useState<PageRevision[]>([]);
+  const [backlinks, setBacklinks] = useState<PageReference[]>([]);
+  const [mentionPages, setMentionPages] = useState<PageReference[]>([]);
+  const [pendingMentionId, setPendingMentionId] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiAction, setAiAction] = useState<AiAction>("rewrite");
 
-  const saveBlocks = useCallback(
-    async (document: JSONContent, requestRevision: number) => {
-      setSaveState("saving");
-      const blocks = pageBlocksFromDocument(document);
-      try {
+  useEffect(() => {
+    const draftKey = `needt-page-draft:${pageId}`;
+    const queue = new PageAutosave({
+      isOnline: () => navigator.onLine,
+      onStateChange: setSaveState,
+      persistDraft: (document) =>
+        localStorage.setItem(draftKey, JSON.stringify(document)),
+      removeDraft: () => localStorage.removeItem(draftKey),
+      save: async (document) => {
         const response = await fetch(`/api/pages/${pageId}/blocks`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blocks, documentFormatVersion }),
+          body: JSON.stringify({
+            blocks: pageBlocksFromDocument(document),
+            documentFormatVersion,
+          }),
         });
         if (!response.ok) throw new Error("Save failed");
-        if (revision.current === requestRevision) setSaveState("saved");
-        localStorage.removeItem(`needt-page-draft:${pageId}`);
         window.dispatchEvent(new Event("pages-changed"));
-      } catch {
-        localStorage.setItem(
-          `needt-page-draft:${pageId}`,
-          JSON.stringify(document)
-        );
-        if (revision.current === requestRevision) setSaveState("failed");
-      }
-    },
-    [documentFormatVersion, pageId]
-  );
+      },
+    });
+    autosave.current = queue;
+    return () => {
+      queue.dispose();
+      if (autosave.current === queue) autosave.current = null;
+    };
+  }, [documentFormatVersion, pageId]);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -371,6 +417,12 @@ export function PageWorkspace({
       TaskList,
       TaskItem.configure({ nested: true }),
       ImageExtension.configure({ allowBase64: false }),
+      LinkExtension.configure({
+        autolink: true,
+        defaultProtocol: "https",
+        openOnClick: false,
+      }),
+      TableKit.configure({ table: { resizable: true } }),
       BlockIdentity,
       PageBlockNode,
     ],
@@ -404,18 +456,7 @@ export function PageWorkspace({
       if (!hydrated.current) return;
       ensureBlockIds(current);
       const document = current.getJSON();
-      revision.current += 1;
-      const requestRevision = revision.current;
-      localStorage.setItem(
-        `needt-page-draft:${pageId}`,
-        JSON.stringify(document)
-      );
-      setSaveState("saving");
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(
-        () => void saveBlocks(document, requestRevision),
-        650
-      );
+      autosave.current?.schedule(document);
 
       const { $from } = current.state.selection;
       const match = $from.parent.textContent.match(/^\/([^\s]*)$/);
@@ -484,11 +525,11 @@ export function PageWorkspace({
         }
         ensureBlockIds(editor);
         hydrated.current = true;
+        if (localDraft) autosave.current?.schedule(editor.getJSON());
       })
       .catch(() => router.replace("/pages"));
     return () => {
       cancelled = true;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [editor, pageId, router]);
 
@@ -499,6 +540,17 @@ export function PageWorkspace({
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
   }, [saveState]);
+
+  useEffect(() => {
+    const handleOffline = () => setSaveState("offline");
+    const handleOnline = () => autosave.current?.retryWhenOnline();
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
 
   const patchPage = async (values: Record<string, unknown>) => {
     setPage((current) =>
@@ -513,7 +565,25 @@ export function PageWorkspace({
     window.dispatchEvent(new Event("pages-changed"));
   };
 
-  const openTool = async (tool: "comments" | "templates" | "ai") => {
+  const createSubpage = async () => {
+    const response = await fetch("/api/pages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Untitled", parentId: pageId }),
+    });
+    if (!response.ok) {
+      notify.error("Could not create subpage");
+      return;
+    }
+    const data = (await response.json()) as { page?: { id: string } };
+    if (!data.page?.id) return;
+    window.dispatchEvent(new Event("pages-changed"));
+    router.push(`/pages/${data.page.id}`);
+  };
+
+  const openTool = async (
+    tool: "comments" | "templates" | "history" | "backlinks" | "ai"
+  ) => {
     setToolOpen(tool);
     if (tool === "comments") {
       const response = await fetch(`/api/pages/${pageId}/comments`);
@@ -529,6 +599,20 @@ export function PageWorkspace({
         setTemplates(data.templates);
       }
     }
+    if (tool === "history") {
+      const response = await fetch(`/api/pages/${pageId}/revisions`);
+      if (response.ok) {
+        const data = (await response.json()) as { revisions: PageRevision[] };
+        setRevisions(data.revisions);
+      }
+    }
+    if (tool === "backlinks") {
+      const response = await fetch(`/api/pages/${pageId}/backlinks`);
+      if (response.ok) {
+        const data = (await response.json()) as { backlinks: PageReference[] };
+        setBacklinks(data.backlinks);
+      }
+    }
     if (tool === "ai") {
       const response = await fetch(
         `/api/ai/page-proposals?pageId=${encodeURIComponent(pageId)}`
@@ -538,6 +622,20 @@ export function PageWorkspace({
         setProposals(data.proposals);
       }
     }
+  };
+
+  const restoreRevision = async (revisionId: string) => {
+    const response = await fetch(`/api/pages/${pageId}/revisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ revisionId }),
+    });
+    if (!response.ok) {
+      notify.error("Could not restore this version");
+      return;
+    }
+    notify.success("Page version restored");
+    window.location.reload();
   };
 
   const addComment = async () => {
@@ -613,7 +711,7 @@ export function PageWorkspace({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: `Use propose_page_changes for pageId "${pageId}". ${aiPrompt}`,
+        message: `Use propose_page_changes for pageId "${pageId}". Action: ${aiAction}. ${aiPrompt}`,
       }),
     });
     if (!response.ok) {
@@ -769,6 +867,44 @@ export function PageWorkspace({
       });
       return;
     }
+    if (pendingInsert === "PAGE_MENTION") {
+      const target = mentionPages.find((page) => page.id === pendingMentionId);
+      if (!target) return;
+      insertSpecial("PAGE_MENTION", target.title, {
+        pageId: target.id,
+        title: target.title,
+        url: `/pages/${target.id}`,
+      });
+      setPendingMentionId(null);
+      return;
+    }
+    if (
+      pendingInsert === "TASK_REFERENCE" ||
+      pendingInsert === "PROJECT_REFERENCE"
+    ) {
+      const response = await fetch(`/api/pages/${pageId}/entities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: pendingInsert === "TASK_REFERENCE" ? "task" : "project",
+          title: pendingValue,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        entity?: { id: string; title: string; href: string };
+        error?: string;
+      };
+      if (!response.ok || !data.entity) {
+        notify.error(data.error || "Could not create workspace entity");
+        return;
+      }
+      insertSpecial(pendingInsert, data.entity.title, {
+        entityId: data.entity.id,
+        title: data.entity.title,
+        url: data.entity.href,
+      });
+      return;
+    }
     insertSpecial(pendingInsert, pendingValue);
   };
 
@@ -781,9 +917,10 @@ export function PageWorkspace({
       command === "BOOKMARK" ||
       command === "IMAGE" ||
       command === "FILE" ||
-      command === "TABLE" ||
       command === "COLUMNS" ||
       command === "PAGE_MENTION" ||
+      command === "TASK_REFERENCE" ||
+      command === "PROJECT_REFERENCE" ||
       command === "DATE_MENTION" ||
       command === "FORM"
     ) {
@@ -796,6 +933,19 @@ export function PageWorkspace({
       if (editor.isActive("taskItem")) {
         editor.chain().focus().liftListItem("taskItem").run();
       }
+      if (command === "PAGE_MENTION") {
+        void fetch("/api/pages/search?q=")
+          .then((response) =>
+            response.ok ? response.json() : ({ pages: [] } as const)
+          )
+          .then((data: { pages?: PageReference[] }) =>
+            setMentionPages(
+              (data.pages ?? []).filter((candidate) => candidate.id !== pageId)
+            )
+          )
+          .catch(() => setMentionPages([]));
+        setPendingMentionId(null);
+      }
       const { $from } = editor.state.selection;
       pendingRange.current = { from: $from.start(), to: $from.end() };
       setPendingInsert(command);
@@ -803,11 +953,9 @@ export function PageWorkspace({
       setPendingValue(
         command === "DATE_MENTION"
           ? new Date().toISOString().slice(0, 10)
-          : command === "TABLE"
-            ? "Table"
-            : command === "COLUMNS"
-              ? "Two columns"
-              : ""
+          : command === "COLUMNS"
+            ? "Two columns"
+            : ""
       );
       return;
     }
@@ -823,6 +971,8 @@ export function PageWorkspace({
     else if (command === "quote") chain.toggleBlockquote().run();
     else if (command === "code") chain.toggleCodeBlock().run();
     else if (command === "divider") chain.setHorizontalRule().run();
+    else if (command === "TABLE")
+      chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
     setSlash(null);
   };
 
@@ -854,9 +1004,11 @@ export function PageWorkspace({
         <span className="text-[11px] text-[var(--text-muted)]">
           {saveState === "saving"
             ? "Saving…"
-            : saveState === "failed"
-              ? "Failed · draft kept"
-              : "Saved"}
+            : saveState === "offline"
+              ? "Offline · draft kept"
+              : saveState === "failed"
+                ? "Failed · draft kept"
+                : "Saved"}
         </span>
         <Button
           variant="ghost"
@@ -912,11 +1064,35 @@ export function PageWorkspace({
             </button>
             <button
               type="button"
+              onClick={() => void createSubpage()}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <FilePlus className="h-4 w-4 text-[var(--text-muted)]" />
+              New subpage
+            </button>
+            <button
+              type="button"
               onClick={() => void openTool("templates")}
               className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
             >
               <LayoutTemplate className="h-4 w-4 text-[var(--text-muted)]" />
               Templates
+            </button>
+            <button
+              type="button"
+              onClick={() => void openTool("history")}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <History className="h-4 w-4 text-[var(--text-muted)]" />
+              Version history
+            </button>
+            <button
+              type="button"
+              onClick={() => void openTool("backlinks")}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <Link2 className="h-4 w-4 text-[var(--text-muted)]" />
+              Backlinks
             </button>
             <button
               type="button"
@@ -1068,6 +1244,29 @@ export function PageWorkspace({
                 Stored privately with this Page · 10 MB maximum.
               </p>
             </div>
+          ) : pendingInsert === "PAGE_MENTION" ? (
+            <div className="max-h-56 space-y-1 overflow-y-auto">
+              {mentionPages.length === 0 && (
+                <p className="py-3 text-center text-[12px] text-[var(--text-muted)]">
+                  No other Pages to mention.
+                </p>
+              )}
+              {mentionPages.map((candidate) => (
+                <button
+                  key={candidate.id}
+                  type="button"
+                  onClick={() => setPendingMentionId(candidate.id)}
+                  className={cn(
+                    "flex min-h-11 w-full items-center gap-2 rounded-[var(--control-radius)] px-3 text-left text-[13px] hover:bg-[var(--surface-hover)]",
+                    pendingMentionId === candidate.id &&
+                      "bg-[var(--surface-hover)]"
+                  )}
+                >
+                  <FileText className="h-4 w-4 text-[var(--text-muted)]" />
+                  <span className="truncate">{candidate.title}</span>
+                </button>
+              ))}
+            </div>
           ) : (
             <div className="space-y-2">
               <Label htmlFor="page-block-value">
@@ -1092,7 +1291,9 @@ export function PageWorkspace({
                 isUploading ||
                 (pendingInsert === "IMAGE" || pendingInsert === "FILE"
                   ? !pendingFile
-                  : !pendingValue.trim())
+                  : pendingInsert === "PAGE_MENTION"
+                    ? !pendingMentionId
+                    : !pendingValue.trim())
               }
             >
               {isUploading ? "Uploading…" : "Add block"}
@@ -1155,6 +1356,28 @@ export function PageWorkspace({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
+            <div className="flex flex-wrap gap-1.5" aria-label="AI page action">
+              {(
+                [
+                  ["rewrite", "Rewrite"],
+                  ["summarize", "Summarize"],
+                  ["critique", "Critique"],
+                ] as const
+              ).map(([action, label]) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => setAiAction(action)}
+                  className={cn(
+                    "min-h-9 rounded-[var(--control-radius)] border border-[var(--border-control)] px-3 text-[12px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]",
+                    aiAction === action &&
+                      "bg-[var(--text-primary)] text-[var(--surface-canvas)]"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <Textarea
               aria-label="New page comment"
               value={commentText}
@@ -1269,6 +1492,78 @@ export function PageWorkspace({
       </Dialog>
 
       <Dialog
+        open={toolOpen === "history"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Version history</DialogTitle>
+            <DialogDescription>
+              Restoring a version keeps your current document as a new revision.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[360px] space-y-1 overflow-y-auto">
+            {revisions.length === 0 && (
+              <div className="py-6 text-center text-[12px] text-[var(--text-muted)]">
+                No saved versions yet.
+              </div>
+            )}
+            {revisions.map((revision) => (
+              <div
+                key={revision.id}
+                className="flex min-h-11 items-center gap-3 rounded-[var(--control-radius)] px-2.5 hover:bg-[var(--surface-hover)]"
+              >
+                <History className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="min-w-0 flex-1 text-[13px]">
+                  {new Date(revision.createdAt).toLocaleString()} ·{" "}
+                  {revision.createdBy === "AI" ? "AI" : "You"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void restoreRevision(revision.id)}
+                >
+                  Restore
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={toolOpen === "backlinks"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Backlinks</DialogTitle>
+            <DialogDescription>
+              Pages that reference this document.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[360px] space-y-1 overflow-y-auto">
+            {backlinks.length === 0 && (
+              <div className="py-6 text-center text-[12px] text-[var(--text-muted)]">
+                No Pages link here yet.
+              </div>
+            )}
+            {backlinks.map((backlink) => (
+              <button
+                key={backlink.id}
+                type="button"
+                onClick={() => router.push(`/pages/${backlink.id}`)}
+                className="flex min-h-11 w-full items-center gap-2 rounded-[var(--control-radius)] px-3 text-left text-[13px] hover:bg-[var(--surface-hover)]"
+              >
+                <FileText className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="truncate">{backlink.title}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={toolOpen === "ai"}
         onOpenChange={(open) => !open && setToolOpen(null)}
       >
@@ -1285,7 +1580,7 @@ export function PageWorkspace({
               aria-label="AI page request"
               value={aiPrompt}
               onChange={(event) => setAiPrompt(event.target.value)}
-              placeholder="Describe what should be added or rewritten…"
+              placeholder={`Describe what should be ${aiAction}…`}
               rows={3}
               disabled={page.isPrivate}
             />

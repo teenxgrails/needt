@@ -21,15 +21,16 @@ import {
 } from "@/services/ai/types";
 import { recordHostedAiAction } from "@/services/ai/usage";
 import {
-  createAiProposal,
-  listAiReadablePages,
-} from "@/services/pages/page-service";
-import {
   finalizeSession,
   getActiveSession,
   startSession,
 } from "@/services/focus/focusSession";
 import { getWeeklyFocusReport } from "@/services/focus/focusStats";
+import {
+  type PageActor,
+  createAiProposal,
+  listAiReadablePages,
+} from "@/services/pages/page-service";
 import { FocusSessionMode, Prisma } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
@@ -98,7 +99,9 @@ async function publishAgentMutation(userId: string) {
 async function findTask(userId: string, args: Record<string, unknown>) {
   const taskId = stringArg(args, "taskId");
   if (taskId) {
-    return prisma.task.findFirst({ where: { id: taskId, userId, isArchived: false } });
+    return prisma.task.findFirst({
+      where: { id: taskId, userId, isArchived: false },
+    });
   }
 
   const titleQuery = stringArg(args, "titleQuery");
@@ -144,7 +147,8 @@ async function executeTool(
   call: AIChatToolCall,
   userId: string,
   workspaceId: string,
-  confirmed: boolean
+  confirmed: boolean,
+  pageActor: PageActor = userId
 ): Promise<ToolResult> {
   const validatedArguments = validateAgentToolCall(call.name, call.arguments);
   if (!validatedArguments) {
@@ -303,24 +307,41 @@ async function executeTool(
     }
 
     case "list_pages": {
-      const pages = await listAiReadablePages(userId);
+      const pages = await listAiReadablePages(pageActor);
       return {
         text: pages.length
           ? `Pages: ${pages.map((page) => page.title).join(", ")}.`
           : "No AI-readable pages yet.",
         toolName: call.name,
-        toolPayload: jsonValue({ pages: pages.map((page) => ({ id: page.id, title: page.title, updatedAt: page.updatedAt })) }),
+        toolPayload: jsonValue({
+          pages: pages.map((page) => ({
+            id: page.id,
+            title: page.title,
+            updatedAt: page.updatedAt,
+          })),
+        }),
         requiresConfirm: false,
       };
     }
 
     case "search_pages": {
       const query = stringArg(call.arguments, "query");
-      const pages = query ? await listAiReadablePages(userId, query) : [];
+      const pages = query ? await listAiReadablePages(pageActor, query) : [];
       return {
-        text: pages.length ? `Found ${pages.length} matching page${pages.length === 1 ? "" : "s"}.` : "No matching AI-readable page was found.",
+        text: pages.length
+          ? `Found ${pages.length} matching page${pages.length === 1 ? "" : "s"}.`
+          : "No matching AI-readable page was found.",
         toolName: call.name,
-        toolPayload: jsonValue({ pages: pages.map((page) => ({ id: page.id, title: page.title, blocks: page.blocks.map((block) => ({ type: block.type, content: block.content })) })) }),
+        toolPayload: jsonValue({
+          pages: pages.map((page) => ({
+            id: page.id,
+            title: page.title,
+            blocks: page.blocks.map((block) => ({
+              type: block.type,
+              content: block.content,
+            })),
+          })),
+        }),
         requiresConfirm: false,
       };
     }
@@ -336,14 +357,25 @@ async function executeTool(
           requiresConfirm: false,
         };
       }
-      const proposal = await createAiProposal(userId, pageId, {
+      const proposal = await createAiProposal(pageActor, pageId, {
         summary,
-        operations: [{ type: "append_block", blockType: "PARAGRAPH", content: { text: proposedText } }],
+        operations: [
+          {
+            type: "append_block",
+            blockType: "PARAGRAPH",
+            content: { text: proposedText },
+          },
+        ],
       });
       return {
         text: `Prepared a page change preview: ${proposal.summary}. Review it before applying.`,
         toolName: call.name,
-        toolPayload: jsonValue({ proposalId: proposal.id, pageId: proposal.pageId, summary: proposal.summary, status: proposal.status }),
+        toolPayload: jsonValue({
+          proposalId: proposal.id,
+          pageId: proposal.pageId,
+          summary: proposal.summary,
+          status: proposal.status,
+        }),
         requiresConfirm: false,
       };
     }
@@ -352,7 +384,9 @@ async function executeTool(
       const taskId = stringArg(call.arguments, "taskId");
       if (
         taskId &&
-        !(await prisma.task.findFirst({ where: { id: taskId, userId, isArchived: false } }))
+        !(await prisma.task.findFirst({
+          where: { id: taskId, userId, isArchived: false },
+        }))
       ) {
         return {
           text: "I could not find that task for this focus session.",
@@ -950,7 +984,8 @@ export async function POST(request: NextRequest) {
       selectedTool,
       auth.userId,
       auth.workspace!.workspaceId,
-      confirmed
+      confirmed,
+      auth
     );
   }
 

@@ -69,6 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Pages now provide a nested workspace tree, real tables, resilient autosave drafts with offline retry, revision restore, backlinks, workspace-scoped inline tasks and projects, and reviewable Needt AI rewrite, summary, and critique proposals.
+
 - Added workspace-scoped Projects with stages, task and external blockers, derived task progress, dedicated List/Kanban/Gantt views, and regular or workflow templates with placeholder-role assignments and relative dates.
 - Added workspace-scoped task assignees, Busy/Free status, stage references, and task activity records; existing owned tasks retain their owner as assignee, while intentionally unassigned tasks report `NO_ASSIGNEE` instead of being scheduled.
 - Added paid shared-workspace creation and expiring, single-use invitations with Owner/Editor/Viewer enforcement and protection against removing or demoting the final Owner.

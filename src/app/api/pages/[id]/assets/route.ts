@@ -1,15 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { WorkspaceRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "PageAssetsAPI";
 const MAX_ASSET_BYTES = 10 * 1024 * 1024;
 type RouteContext = { params: Promise<{ id: string }> };
 
-async function ownedPage(userId: string, pageId: string) {
+async function ownedPage(
+  auth: {
+    userId: string;
+    workspace?: Parameters<typeof workspaceDataScopeWhere>[0];
+  },
+  pageId: string
+) {
   return prisma.page.findFirst({
-    where: { id: pageId, userId, trashedAt: null },
+    where: {
+      id: pageId,
+      ...workspaceDataScopeWhere(auth.workspace, auth.userId),
+      trashedAt: null,
+    },
     select: { id: true },
   });
 }
@@ -18,11 +31,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
-  if (!(await ownedPage(auth.userId, id))) {
+  if (!(await ownedPage(auth, id))) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
   const assets = await prisma.pageAsset.findMany({
-    where: { pageId: id, userId: auth.userId },
+    where: { pageId: id },
     select: {
       id: true,
       originalName: true,
@@ -36,10 +49,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
   const { id } = await params;
-  if (!(await ownedPage(auth.userId, id))) {
+  if (!(await ownedPage(auth, id))) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
   const form = await request.formData();

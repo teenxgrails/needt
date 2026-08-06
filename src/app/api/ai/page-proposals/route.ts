@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const proposal = await createAiProposal(auth.userId, body.pageId, {
+    const proposal = await createAiProposal(auth, body.pageId, {
       summary: body.summary,
       operations: JSON.parse(JSON.stringify(body.operations ?? [])),
     });

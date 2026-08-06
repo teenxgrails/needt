@@ -7,7 +7,33 @@ import {
   Prisma,
 } from "@prisma/client";
 
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
+
+export type PageActor =
+  | string
+  | {
+      userId: string;
+      workspace?: WorkspaceAccess;
+    };
+
+function actorUserId(actor: PageActor) {
+  return typeof actor === "string" ? actor : actor.userId;
+}
+
+function actorPageScope(actor: PageActor) {
+  const userId = actorUserId(actor);
+  return typeof actor === "string"
+    ? { userId }
+    : workspaceDataScopeWhere(actor.workspace, userId);
+}
+
+function actorWorkspaceId(actor: PageActor) {
+  return typeof actor === "string" ? undefined : actor.workspace?.workspaceId;
+}
 
 export interface PageBlockInput {
   id?: string;
@@ -39,10 +65,13 @@ const pageDetailInclude = {
   },
 } satisfies Prisma.PageInclude;
 
-export async function listPages(userId: string, options?: { search?: string }) {
+export async function listPages(
+  actor: PageActor,
+  options?: { search?: string }
+) {
   return prisma.page.findMany({
     where: {
-      userId,
+      ...actorPageScope(actor),
       trashedAt: null,
       ...(options?.search?.trim()
         ? {
@@ -73,24 +102,24 @@ export async function listPages(userId: string, options?: { search?: string }) {
   });
 }
 
-export async function getPage(userId: string, pageId: string) {
+export async function getPage(actor: PageActor, pageId: string) {
   return prisma.page.findFirst({
-    where: { id: pageId, userId, trashedAt: null },
+    where: { id: pageId, ...actorPageScope(actor), trashedAt: null },
     include: pageDetailInclude,
   });
 }
 
-async function assertOwnedParent(userId: string, parentId?: string | null) {
+async function assertOwnedParent(actor: PageActor, parentId?: string | null) {
   if (!parentId) return;
   const parent = await prisma.page.findFirst({
-    where: { id: parentId, userId, trashedAt: null },
+    where: { id: parentId, ...actorPageScope(actor), trashedAt: null },
     select: { id: true },
   });
   if (!parent) throw new Error("Parent page not found");
 }
 
 export async function createPage(
-  userId: string,
+  actor: PageActor,
   input: {
     title?: string;
     parentId?: string | null;
@@ -99,15 +128,21 @@ export async function createPage(
     createdBy?: PageAuthor;
   }
 ) {
-  await assertOwnedParent(userId, input.parentId);
+  const userId = actorUserId(actor);
+  await assertOwnedParent(actor, input.parentId);
   const last = await prisma.page.findFirst({
-    where: { userId, parentId: input.parentId ?? null, trashedAt: null },
+    where: {
+      ...actorPageScope(actor),
+      parentId: input.parentId ?? null,
+      trashedAt: null,
+    },
     orderBy: { position: "desc" },
     select: { position: true },
   });
   return prisma.page.create({
     data: {
       userId,
+      ...(actorWorkspaceId(actor) && { workspaceId: actorWorkspaceId(actor) }),
       parentId: input.parentId ?? null,
       title: input.title?.trim().slice(0, 240) || "Untitled",
       icon: input.icon?.slice(0, 32) || null,
@@ -128,7 +163,7 @@ export async function createPage(
 }
 
 export async function updatePage(
-  userId: string,
+  actor: PageActor,
   pageId: string,
   input: {
     title?: string;
@@ -141,12 +176,12 @@ export async function updatePage(
     trashed?: boolean;
   }
 ) {
-  const existing = await getPage(userId, pageId);
+  const existing = await getPage(actor, pageId);
   if (!existing) return null;
   if (input.parentId === pageId)
     throw new Error("A page cannot contain itself");
   if (input.parentId !== undefined) {
-    await assertOwnedParent(userId, input.parentId);
+    await assertOwnedParent(actor, input.parentId);
   }
   return prisma.page.update({
     where: { id: pageId },
@@ -175,13 +210,14 @@ export async function updatePage(
 }
 
 export async function replacePageBlocks(
-  userId: string,
+  actor: PageActor,
   pageId: string,
   blocks: PageBlockInput[],
   createdBy: PageAuthor = PageAuthor.HUMAN,
   documentFormatVersion: 1 | 2 = 1
 ) {
-  const page = await getPage(userId, pageId);
+  const userId = actorUserId(actor);
+  const page = await getPage(actor, pageId);
   if (!page) return null;
   if (blocks.length > 2_000) throw new Error("Page has too many blocks");
 
@@ -320,10 +356,10 @@ export class PageBlockIdentityError extends Error {
 }
 
 export async function createDatabase(
-  userId: string,
+  actor: PageActor,
   input: { title?: string; parentId?: string | null; isPrivate?: boolean }
 ) {
-  const page = await createPage(userId, input);
+  const page = await createPage(actor, input);
   return prisma.page.update({
     where: { id: page.id },
     data: {
@@ -358,10 +394,10 @@ export async function createDatabase(
   });
 }
 
-export async function listAiReadablePages(userId: string, query?: string) {
+export async function listAiReadablePages(actor: PageActor, query?: string) {
   const pages = await prisma.page.findMany({
     where: {
-      userId,
+      ...actorPageScope(actor),
       trashedAt: null,
     },
     include: { blocks: { orderBy: { position: "asc" } } },
@@ -391,12 +427,13 @@ export async function listAiReadablePages(userId: string, query?: string) {
 }
 
 export async function createAiProposal(
-  userId: string,
+  actor: PageActor,
   pageId: string,
   input: { summary: string; operations: Prisma.InputJsonValue }
 ) {
+  const userId = actorUserId(actor);
   const page = await prisma.page.findFirst({
-    where: { id: pageId, userId, trashedAt: null },
+    where: { id: pageId, ...actorPageScope(actor), trashedAt: null },
     select: { id: true, parentId: true, isPrivate: true },
   });
   if (!page) throw new Error("Page is private or unavailable");
@@ -411,7 +448,11 @@ export async function createAiProposal(
     if (!cursor.parentId || visited.has(cursor.parentId)) break;
     visited.add(cursor.parentId);
     cursor = await prisma.page.findFirst({
-      where: { id: cursor.parentId, userId, trashedAt: null },
+      where: {
+        id: cursor.parentId,
+        ...actorPageScope(actor),
+        trashedAt: null,
+      },
       select: { id: true, parentId: true, isPrivate: true },
     });
   }
@@ -447,13 +488,10 @@ export async function getAiProposal(userId: string, proposalId: string) {
   });
 }
 
-export async function applyAiProposal(userId: string, proposalId: string) {
+export async function applyAiProposal(actor: PageActor, proposalId: string) {
+  const userId = actorUserId(actor);
   const proposal = await getAiProposal(userId, proposalId);
-  if (
-    !proposal ||
-    proposal.status !== AiProposalStatus.PENDING ||
-    proposal.page.isPrivate
-  ) {
+  if (!proposal || proposal.status !== AiProposalStatus.PENDING) {
     return null;
   }
   const operations = Array.isArray(proposal.operations)
@@ -480,11 +518,30 @@ export async function applyAiProposal(userId: string, proposalId: string) {
     });
   }
 
-  const page = await getPage(userId, proposal.pageId);
+  const page = await getPage(actor, proposal.pageId);
   if (!page) return null;
+  let cursor: {
+    id: string;
+    parentId: string | null;
+    isPrivate: boolean;
+  } | null = page;
+  const visited = new Set<string>();
+  while (cursor) {
+    if (cursor.isPrivate) return null;
+    if (!cursor.parentId || visited.has(cursor.parentId)) break;
+    visited.add(cursor.parentId);
+    cursor = await prisma.page.findFirst({
+      where: {
+        id: cursor.parentId,
+        ...actorPageScope(actor),
+        trashedAt: null,
+      },
+      select: { id: true, parentId: true, isPrivate: true },
+    });
+  }
   if (blocks.length > 0) {
     await replacePageBlocks(
-      userId,
+      actor,
       page.id,
       [
         ...page.blocks.map((block) => ({
@@ -506,5 +563,130 @@ export async function applyAiProposal(userId: string, proposalId: string) {
   return prisma.aiPageChangeProposal.update({
     where: { id: proposalId },
     data: { status: AiProposalStatus.APPLIED, appliedAt: new Date() },
+  });
+}
+
+export async function listPageRevisions(actor: PageActor, pageId: string) {
+  const page = await prisma.page.findFirst({
+    where: { id: pageId, ...actorPageScope(actor), trashedAt: null },
+    select: { id: true },
+  });
+  if (!page) return null;
+  return prisma.pageRevision.findMany({
+    where: { pageId },
+    select: { id: true, createdAt: true, createdBy: true },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+}
+
+export async function listPageBacklinks(actor: PageActor, pageId: string) {
+  const pages = await prisma.page.findMany({
+    where: { ...actorPageScope(actor), trashedAt: null, id: { not: pageId } },
+    select: {
+      id: true,
+      title: true,
+      icon: true,
+      updatedAt: true,
+      blocks: { select: { content: true } },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+  return pages
+    .filter((page) =>
+      page.blocks.some((block) => {
+        const content = JSON.stringify(block.content);
+        return (
+          content.includes(`\"pageId\":\"${pageId}\"`) ||
+          content.includes(`\"url\":\"/pages/${pageId}\"`)
+        );
+      })
+    )
+    .map((page) => ({
+      id: page.id,
+      title: page.title,
+      icon: page.icon,
+      updatedAt: page.updatedAt,
+    }));
+}
+
+export async function restorePageRevision(
+  actor: PageActor,
+  pageId: string,
+  revisionId: string
+) {
+  const revision = await prisma.pageRevision.findFirst({
+    where: {
+      id: revisionId,
+      pageId,
+      page: { ...actorPageScope(actor), trashedAt: null },
+    },
+    select: {
+      snapshot: true,
+      page: { select: { documentFormatVersion: true } },
+    },
+  });
+  if (
+    !revision ||
+    !revision.snapshot ||
+    typeof revision.snapshot !== "object"
+  ) {
+    return null;
+  }
+  const snapshot = revision.snapshot as Prisma.JsonObject;
+  const blocks = Array.isArray(snapshot.blocks)
+    ? snapshot.blocks.filter(
+        (block): block is Prisma.JsonObject =>
+          Boolean(block) && typeof block === "object" && !Array.isArray(block)
+      )
+    : [];
+  const restored = await replacePageBlocks(
+    actor,
+    pageId,
+    blocks.flatMap((block, index) => {
+      const type = block.type;
+      const content = block.content;
+      if (
+        typeof type !== "string" ||
+        !Object.values(PageBlockType).includes(type as PageBlockType) ||
+        content === undefined
+      ) {
+        return [];
+      }
+      return [
+        {
+          id: typeof block.id === "string" ? block.id : undefined,
+          parentBlockId:
+            typeof block.parentBlockId === "string"
+              ? block.parentBlockId
+              : null,
+          type: type as PageBlockType,
+          content: JSON.parse(JSON.stringify(content)) as Prisma.InputJsonValue,
+          position:
+            typeof block.position === "number"
+              ? block.position
+              : (index + 1) * 1024,
+          createdBy:
+            block.createdBy === PageAuthor.AI
+              ? PageAuthor.AI
+              : PageAuthor.HUMAN,
+        },
+      ];
+    }),
+    PageAuthor.HUMAN,
+    revision.page.documentFormatVersion === 2 ? 2 : 1
+  );
+  if (!restored) return null;
+  return prisma.page.update({
+    where: { id: pageId },
+    data: {
+      title:
+        typeof snapshot.title === "string"
+          ? snapshot.title.slice(0, 240) || "Untitled"
+          : undefined,
+      icon:
+        typeof snapshot.icon === "string" ? snapshot.icon.slice(0, 32) : null,
+    },
+    include: pageDetailInclude,
   });
 }

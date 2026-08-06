@@ -4,7 +4,7 @@ import {
   PageBlockIdentityError,
   replacePageBlocks,
 } from "@/services/pages/page-service";
-import { PageAuthor, PageBlockType } from "@prisma/client";
+import { PageAuthor, PageBlockType, WorkspaceRole } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
@@ -14,7 +14,9 @@ type RouteContext = { params: Promise<{ id: string }> };
 const blockTypes = new Set(Object.values(PageBlockType));
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
@@ -55,10 +57,9 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
             : PageAuthor.HUMAN,
       };
     });
-    const documentFormatVersion =
-      body.documentFormatVersion === 2 ? 2 : 1;
+    const documentFormatVersion = body.documentFormatVersion === 2 ? 2 : 1;
     const page = await replacePageBlocks(
-      auth.userId,
+      auth,
       id,
       blocks,
       PageAuthor.HUMAN,

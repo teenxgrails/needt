@@ -6,6 +6,7 @@ import {
   updatePage,
 } from "@/services/pages/page-service";
 import { PageAuthor, PageBlockType, type Prisma } from "@prisma/client";
+import { WorkspaceRole } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +15,9 @@ const LOG_SOURCE = "PageTemplateInstantiateAPI";
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
   const { id } = await params;
   const template = await prisma.pageTemplate.findFirst({
@@ -28,7 +31,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     string,
     unknown
   >;
-  const page = await createPage(auth.userId, {
+  const page = await createPage(auth, {
     title:
       typeof body.title === "string"
         ? body.title
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     ];
   });
   const hydrated = await replacePageBlocks(
-    auth.userId,
+    auth,
     page.id,
     blocks.length > 0
       ? blocks
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         ]
   );
   if (typeof snapshot.coverUrl === "string") {
-    await updatePage(auth.userId, page.id, {
+    await updatePage(auth, page.id, {
       coverUrl: snapshot.coverUrl,
     });
   }
