@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Pages now use a viewport-safe slash-command sheet on phones, expose block reordering after a scroll-safe 350 ms long press, and position the selection formatting toolbar outside the selected text.
+
 - Project dependencies are now created only between tasks in the same active project, remain readable as soft-removed history, and block cross-project task moves with the linked task named in the conflict message.
 - Project removal now archives projects without deleting tasks, stages, blockers, or history; archived projects are read-only and can be restored from the Projects screen.
 - Auto-scheduling now plans only tasks assigned to the active user, using that assignee's schedules, flexible hours, calendar conflicts, reminders, and calendar-block destination; shared-workspace members receive redacted Busy intervals for one another's personal events without titles, descriptions, attendees, organizers, or locations.

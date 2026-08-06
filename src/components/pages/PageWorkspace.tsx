@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -16,10 +23,13 @@ import LinkExtension from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TableKit } from "@tiptap/extension-table";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Editor, EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import {
   Bell,
+  Bold,
   Bookmark,
   CalendarDays,
   CheckSquare,
@@ -31,11 +41,13 @@ import {
   FilePlus,
   FileText,
   FolderKanban,
+  GripVertical,
   Heading1,
   Heading2,
   Heading3,
   History,
   Image,
+  Italic,
   LayoutTemplate,
   Link2,
   List,
@@ -51,9 +63,11 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  Strikethrough,
   Table2,
   Undo2,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import * as Y from "yjs";
 
 import {
@@ -172,6 +186,7 @@ type CollaborationTokenResponse = {
   user: { name: string; color: string };
 };
 type AiAction = "rewrite" | "summarize" | "critique";
+type MobileBlockHandle = { blockId: string; top: number; left: number };
 
 const COMMANDS: Array<{
   id: PageCommand;
@@ -394,6 +409,13 @@ export function PageWorkspace({
   const hostRef = useRef<HTMLDivElement>(null);
   const autosave = useRef<PageAutosave | null>(null);
   const hydrated = useRef(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressStart = useRef<{ x: number; y: number } | null>(null);
+  const mobileBlockDrag = useRef<{
+    blockId: string;
+    pointerId: number;
+    startY: number;
+  } | null>(null);
   const pendingRange = useRef<{ from: number; to: number } | null>(null);
   const [page, setPage] = useState<PageDetail | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -403,6 +425,9 @@ export function PageWorkspace({
     left: number;
   } | null>(null);
   const [slashIndex, setSlashIndex] = useState(0);
+  const [mobileBlockHandle, setMobileBlockHandle] =
+    useState<MobileBlockHandle | null>(null);
+  const [mobileBlockDragOffset, setMobileBlockDragOffset] = useState(0);
   const [pendingInsert, setPendingInsert] = useState<SpecialKind | null>(null);
   const [pendingValue, setPendingValue] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -490,6 +515,89 @@ export function PageWorkspace({
       }),
     [collaborationDocument, collaborationSocket, pageId]
   );
+
+  const clearLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = null;
+    longPressStart.current = null;
+  };
+
+  const topLevelBlockElement = (target: EventTarget | null) => {
+    if (!editor || !(target instanceof HTMLElement)) return null;
+    const editorElement = editor.view.dom;
+    let element: HTMLElement | null = target;
+    while (element && element.parentElement !== editorElement) {
+      element = element.parentElement;
+    }
+    return element?.parentElement === editorElement ? element : null;
+  };
+
+  const revealMobileBlockHandle = (element: HTMLElement) => {
+    const blockId = element.dataset.blockId;
+    const host = hostRef.current;
+    if (!blockId || !host || !editor) return;
+    const blockBounds = element.getBoundingClientRect();
+    const hostBounds = host.getBoundingClientRect();
+    const editorBounds = editor.view.dom.getBoundingClientRect();
+    setMobileBlockHandle({
+      blockId,
+      top: blockBounds.top - hostBounds.top + blockBounds.height / 2 - 22,
+      left: Math.max(0, editorBounds.left - hostBounds.left - 44),
+    });
+    setMobileBlockDragOffset(0);
+  };
+
+  const reorderMobileBlock = (blockId: string, targetIndex: number) => {
+    if (!editor) return;
+    const blocks: Array<{ node: ProseMirrorNode; position: number }> = [];
+    editor.state.doc.forEach((node, position) => {
+      blocks.push({ node, position });
+    });
+    const sourceIndex = blocks.findIndex(
+      ({ node }) => node.attrs.blockId === blockId
+    );
+    const boundedTarget = Math.max(0, Math.min(blocks.length - 1, targetIndex));
+    if (sourceIndex < 0 || sourceIndex === boundedTarget) return;
+    const source = blocks[sourceIndex];
+    const target = blocks[boundedTarget];
+    const transaction = editor.state.tr.delete(
+      source.position,
+      source.position + source.node.nodeSize
+    );
+    const insertPosition =
+      boundedTarget > sourceIndex
+        ? target.position + target.node.nodeSize - source.node.nodeSize
+        : target.position;
+    transaction.insert(insertPosition, source.node);
+    editor.view.dispatch(transaction.scrollIntoView());
+  };
+
+  const mobileBlockTargetIndex = (clientY: number) => {
+    if (!editor) return -1;
+    const elements = Array.from(editor.view.dom.children).filter(
+      (element): element is HTMLElement =>
+        element instanceof HTMLElement && Boolean(element.dataset.blockId)
+    );
+    const index = elements.findIndex((element) => {
+      const bounds = element.getBoundingClientRect();
+      return clientY < bounds.top + bounds.height / 2;
+    });
+    return index < 0 ? elements.length - 1 : index;
+  };
+
+  const moveMobileBlockBy = (blockId: string, direction: -1 | 1) => {
+    if (!editor) return;
+    const blockIds: string[] = [];
+    editor.state.doc.forEach((node) => {
+      if (typeof node.attrs.blockId === "string") {
+        blockIds.push(node.attrs.blockId);
+      }
+    });
+    const sourceIndex = blockIds.indexOf(blockId);
+    if (sourceIndex < 0) return;
+    reorderMobileBlock(blockId, sourceIndex + direction);
+    setMobileBlockHandle(null);
+  };
 
   useEffect(() => {
     const draftKey = `needt-page-draft:${pageId}`;
@@ -581,20 +689,15 @@ export function PageWorkspace({
 
       const { $from } = current.state.selection;
       const match = $from.parent.textContent.match(/^\/([^\s]*)$/);
-      const host = hostRef.current;
-      if (!match || !host) {
+      if (!match) {
         setSlash(null);
         return;
       }
       const caret = current.view.coordsAtPos(current.state.selection.from);
-      const bounds = host.getBoundingClientRect();
       setSlash({
         query: match[1].toLowerCase(),
-        top: caret.bottom - bounds.top + 8,
-        left: Math.max(
-          0,
-          Math.min(caret.left - bounds.left, bounds.width - 320)
-        ),
+        top: caret.bottom + 8,
+        left: Math.max(8, Math.min(caret.left, window.innerWidth - 328)),
       });
       setSlashIndex(0);
     },
@@ -612,6 +715,72 @@ export function PageWorkspace({
       `${command.label} ${command.keywords}`.toLowerCase().includes(slash.query)
     );
   }, [slash?.query]);
+
+  const startMobileLongPress = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!canEdit || event.pointerType !== "touch") return;
+    const block = topLevelBlockElement(event.target);
+    if (!block?.dataset.blockId) return;
+    clearLongPress();
+    longPressStart.current = { x: event.clientX, y: event.clientY };
+    longPressTimer.current = setTimeout(() => {
+      revealMobileBlockHandle(block);
+      clearLongPress();
+    }, 350);
+  };
+
+  const moveMobileLongPress = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = longPressStart.current;
+    if (!start) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) {
+      clearLongPress();
+    }
+  };
+
+  const startMobileBlockDrag = (
+    event: ReactPointerEvent<HTMLButtonElement>
+  ) => {
+    if (!mobileBlockHandle) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    mobileBlockDrag.current = {
+      blockId: mobileBlockHandle.blockId,
+      pointerId: event.pointerId,
+      startY: event.clientY,
+    };
+    setMobileBlockDragOffset(0);
+  };
+
+  const moveMobileBlockDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = mobileBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    setMobileBlockDragOffset(event.clientY - drag.startY);
+  };
+
+  const finishMobileBlockDrag = (
+    event: ReactPointerEvent<HTMLButtonElement>
+  ) => {
+    const drag = mobileBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    reorderMobileBlock(drag.blockId, mobileBlockTargetIndex(event.clientY));
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    mobileBlockDrag.current = null;
+    setMobileBlockHandle(null);
+    setMobileBlockDragOffset(0);
+  };
+
+  useEffect(() => {
+    const hideHandle = () => setMobileBlockHandle(null);
+    document.addEventListener("scroll", hideHandle, true);
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      document.removeEventListener("scroll", hideHandle, true);
+    };
+  }, []);
 
   useEffect(() => {
     if (!editor) return;
@@ -1498,48 +1667,164 @@ export function PageWorkspace({
             if (event.target === event.currentTarget)
               editor?.commands.focus("end");
           }}
+          onPointerDown={startMobileLongPress}
+          onPointerMove={moveMobileLongPress}
+          onPointerUp={clearLongPress}
+          onPointerCancel={clearLongPress}
         >
           <EditorContent editor={editor} />
+          {editor && canEdit && (
+            <BubbleMenu
+              editor={editor}
+              shouldShow={({ state }) =>
+                !slash &&
+                !state.selection.empty &&
+                !editor.isActive("codeBlock")
+              }
+              options={{
+                placement: "top",
+                offset: 10,
+                flip: true,
+                shift: { padding: 8 },
+                inline: true,
+              }}
+            >
+              <div
+                className="needt-overlay-depth flex items-center gap-0.5 rounded-[var(--control-radius)] border border-[var(--popover-border)] p-1"
+                aria-label="Text formatting"
+              >
+                {[
+                  {
+                    label: "Bold",
+                    active: editor.isActive("bold"),
+                    icon: Bold,
+                    run: () => editor.chain().focus().toggleBold().run(),
+                  },
+                  {
+                    label: "Italic",
+                    active: editor.isActive("italic"),
+                    icon: Italic,
+                    run: () => editor.chain().focus().toggleItalic().run(),
+                  },
+                  {
+                    label: "Strikethrough",
+                    active: editor.isActive("strike"),
+                    icon: Strikethrough,
+                    run: () => editor.chain().focus().toggleStrike().run(),
+                  },
+                  {
+                    label: "Inline code",
+                    active: editor.isActive("code"),
+                    icon: Code2,
+                    run: () => editor.chain().focus().toggleCode().run(),
+                  },
+                ].map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.label}
+                      type="button"
+                      aria-label={action.label}
+                      aria-pressed={action.active}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={action.run}
+                      className={cn(
+                        "flex h-11 w-11 items-center justify-center rounded-[var(--control-radius)] text-[var(--text-secondary)] hover:bg-[var(--menu-item-hover)] sm:h-8 sm:w-8",
+                        action.active &&
+                          "bg-[var(--menu-item-hover)] text-[var(--text-primary)]"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            </BubbleMenu>
+          )}
         </div>
 
-        {slash && filteredCommands.length > 0 && (
-          <div
-            role="menu"
-            aria-label="Page commands"
-            className="needt-overlay-depth absolute z-30 max-h-[430px] w-[320px] overflow-y-auto rounded-[var(--panel-radius)] border border-[var(--popover-border)] p-1.5 shadow-lg"
-            style={{ top: slash.top, left: slash.left }}
+        {mobileBlockHandle && canEdit && (
+          <button
+            type="button"
+            aria-label="Drag block"
+            className="absolute z-20 flex h-11 w-11 touch-none items-center justify-center rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"
+            style={{
+              top: mobileBlockHandle.top + mobileBlockDragOffset,
+              left: mobileBlockHandle.left,
+            }}
+            onPointerDown={startMobileBlockDrag}
+            onPointerMove={moveMobileBlockDrag}
+            onPointerUp={finishMobileBlockDrag}
+            onPointerCancel={finishMobileBlockDrag}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+                moveMobileBlockBy(
+                  mobileBlockHandle.blockId,
+                  event.key === "ArrowUp" ? -1 : 1
+                );
+              }
+            }}
           >
-            <div className="px-2.5 pb-1.5 pt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">
-              Blocks
-            </div>
-            {filteredCommands.map((command, index) => {
-              const Icon = command.icon;
-              return (
-                <button
-                  key={command.id}
-                  type="button"
-                  role="menuitem"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => applyCommand(command.id)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-[var(--control-radius)] px-2.5 py-2 text-left hover:bg-[var(--menu-item-hover)]",
-                    index === slashIndex && "bg-[var(--menu-item-hover)]"
-                  )}
-                >
-                  <Icon className="h-4 w-4 flex-none text-[var(--text-muted)]" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-medium">
-                      {command.label}
-                    </span>
-                    <span className="block truncate text-[11px] text-[var(--text-muted)]">
-                      {command.hint}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            <GripVertical className="h-5 w-5" />
+          </button>
         )}
+
+        {slash &&
+          filteredCommands.length > 0 &&
+          createPortal(
+            <>
+              <button
+                type="button"
+                aria-label="Close Page commands"
+                className="fixed inset-0 z-[59] bg-black/20 sm:hidden"
+                onClick={() => setSlash(null)}
+              />
+              <div
+                role="menu"
+                aria-label="Page commands"
+                className="needt-page-command-menu needt-overlay-depth z-[60] overflow-y-auto border border-[var(--popover-border)] p-1.5 sm:z-30"
+                style={
+                  {
+                    "--page-command-top": `${slash.top}px`,
+                    "--page-command-left": `${slash.left}px`,
+                  } as CSSProperties
+                }
+              >
+                <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-[var(--border-control)] sm:hidden" />
+                <div className="px-2.5 pb-1.5 pt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                  Blocks
+                </div>
+                {filteredCommands.map((command, index) => {
+                  const Icon = command.icon;
+                  return (
+                    <button
+                      key={command.id}
+                      type="button"
+                      role="menuitem"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => applyCommand(command.id)}
+                      className={cn(
+                        "flex min-h-11 w-full items-center gap-3 rounded-[var(--control-radius)] px-2.5 py-2 text-left hover:bg-[var(--menu-item-hover)] sm:min-h-0",
+                        index === slashIndex && "bg-[var(--menu-item-hover)]"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 flex-none text-[var(--text-muted)]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-medium">
+                          {command.label}
+                        </span>
+                        <span className="block truncate text-[11px] text-[var(--text-muted)]">
+                          {command.hint}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>,
+            document.body
+          )}
       </main>
 
       <Dialog

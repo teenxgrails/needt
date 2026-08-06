@@ -2597,6 +2597,30 @@ html[data-needt-motion="off"] .needt-aurora-blob {
   padding: 0.25rem 0.35rem;
   white-space: nowrap;
 }
+.needt-page-command-menu {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: min(68dvh, 430px);
+  padding-bottom: calc(0.375rem + env(safe-area-inset-bottom));
+  border-radius: var(--panel-radius) var(--panel-radius) 0 0;
+  box-shadow: var(--menu-shadow);
+}
+@media (min-width: 640px) {
+  .needt-page-command-menu {
+    position: fixed;
+    top: var(--page-command-top);
+    right: auto;
+    bottom: auto;
+    left: var(--page-command-left);
+    width: 320px;
+    max-height: 430px;
+    padding-bottom: 0.375rem;
+    border-radius: var(--panel-radius);
+  }
+}
 .needt-page-special-block {
   display: flex;
   min-height: 44px;
