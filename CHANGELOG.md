@@ -69,6 +69,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added self-hosted realtime Page collaboration with short-lived document-scoped tokens, server-side workspace and Page authorization, Yjs presence/cursors and offline merge semantics, Postgres persistence, and optional Redis fan-out.
+
 - Pages now resolve Full Access, Editor, and Viewer roles per document, with direct member grants overriding inherited workspace access on every Page-backed API.
 
 - Pages now provide a nested workspace tree, real tables, resilient autosave drafts with offline retry, revision restore, backlinks, workspace-scoped inline tasks and projects, and reviewable Needt AI rewrite, summary, and critique proposals.

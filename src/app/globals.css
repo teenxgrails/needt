@@ -2576,6 +2576,27 @@ html[data-needt-motion="off"] .needt-aurora-blob {
 .needt-page-editor .selectedCell::after {
   background: color-mix(in srgb, var(--color-accent) 14%, transparent);
 }
+.needt-page-editor .collaboration-carets__caret {
+  position: relative;
+  border-left: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  margin-left: -1px;
+  margin-right: -1px;
+  pointer-events: none;
+  word-break: normal;
+}
+.needt-page-editor .collaboration-carets__label {
+  position: absolute;
+  top: -1.45em;
+  left: -1px;
+  border-radius: 3px 3px 3px 0;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.25rem 0.35rem;
+  white-space: nowrap;
+}
 .needt-page-special-block {
   display: flex;
   min-height: 44px;

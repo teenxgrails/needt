@@ -68,6 +68,10 @@ test("Full Access manages direct Page roles and denied writes stay denied", asyn
       await route.fulfill({ json: { page: pageDetail } });
       return;
     }
+    if (url.pathname === `/api/pages/${pageId}/collaboration-token`) {
+      await route.fulfill({ status: 503, json: { error: "Unavailable" } });
+      return;
+    }
     if (url.pathname === `/api/pages/${pageId}/permissions`) {
       if (request.method() === "GET") {
         await route.fulfill({ json: { ownerId: "page-owner", grants: [] } });

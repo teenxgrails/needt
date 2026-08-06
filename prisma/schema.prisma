@@ -1111,6 +1111,7 @@ model Page {
   comments              PageComment[]
   forms                 PageForm[]
   accessGrants          PageAccessGrant[]
+  collaborationState   PageCollaborationState?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
@@ -1313,6 +1314,17 @@ model PageAccessGrant {
   @@unique([pageId, userId])
   @@index([userId, role])
   @@index([grantedById])
+}
+
+model PageCollaborationState {
+  id        String   @id @default(cuid())
+  pageId    String   @unique
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  state     Bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt])
 }
 
 model AiPageChangeProposal {

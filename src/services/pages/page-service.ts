@@ -11,6 +11,7 @@ import {
 import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
 import { type WorkspaceAccess } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
+import { pageBlocksToCollaborationState } from "@/services/pages/page-collaboration-document";
 
 export type PageActor =
   | string
@@ -227,7 +228,8 @@ export async function replacePageBlocks(
   pageId: string,
   blocks: PageBlockInput[],
   createdBy: PageAuthor = PageAuthor.HUMAN,
-  documentFormatVersion: 1 | 2 = 1
+  documentFormatVersion: 1 | 2 = 1,
+  options: { syncCollaborationState?: boolean } = {}
 ) {
   if (!(await actorCanAccess(actor, pageId, PageAccessRole.EDITOR)))
     return null;
@@ -359,6 +361,23 @@ export async function replacePageBlocks(
       where: { id: pageId },
       data: { updatedAt: new Date() },
     });
+    if (options.syncCollaborationState !== false) {
+      const state = pageBlocksToCollaborationState(
+        normalized.map((block, index) => ({
+          id: reconciledIds[index],
+          parentBlockId: block.parentBlockId,
+          type: block.type,
+          content: block.content,
+          position: block.position,
+          createdBy: block.createdBy,
+        }))
+      );
+      await tx.pageCollaborationState.upsert({
+        where: { pageId },
+        create: { pageId, state: Buffer.from(state) },
+        update: { state: Buffer.from(state) },
+      });
+    }
     return tx.page.findUnique({
       where: { id: pageId },
       include: pageDetailInclude,

@@ -4,7 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
+import {
+  HocuspocusProvider,
+  HocuspocusProviderWebsocket,
+} from "@hocuspocus/provider";
 import { type JSONContent } from "@tiptap/core";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import ImageExtension from "@tiptap/extension-image";
 import LinkExtension from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
@@ -48,6 +54,7 @@ import {
   Table2,
   Undo2,
 } from "lucide-react";
+import * as Y from "yjs";
 
 import {
   BlockIdentity,
@@ -154,6 +161,14 @@ type WorkspaceMember = {
   userId: string;
   role: "OWNER" | "EDITOR" | "VIEWER";
   user: { name: string | null; email: string | null; image: string | null };
+};
+type CollaborationTokenResponse = {
+  token: string;
+  documentName: string;
+  initialState: string;
+  url: string;
+  role: PagePermissionRole;
+  user: { name: string; color: string };
 };
 type AiAction = "rewrite" | "summarize" | "critique";
 
@@ -362,6 +377,11 @@ function removeSlashText(editor: Editor) {
     .deleteRange({ from: $from.start(), to: $from.end() });
 }
 
+function decodeCollaborationState(value: string) {
+  const binary = window.atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
 export function PageWorkspace({
   pageId,
   documentFormatVersion = 1,
@@ -417,6 +437,54 @@ export function PageWorkspace({
   const [aiAction, setAiAction] = useState<AiAction>("rewrite");
   const canEdit = page?.accessRole !== "VIEWER";
   const canManageAccess = page?.accessRole === "FULL_ACCESS";
+  const [collaborationStatus, setCollaborationStatus] = useState<
+    "connecting" | "connected" | "disconnected"
+  >("connecting");
+  const [collaborators, setCollaborators] = useState<
+    Array<{ name: string; color: string }>
+  >([]);
+  const collaborationDocument = useMemo(
+    () => new Y.Doc({ guid: `page:${pageId}` }),
+    [pageId]
+  );
+  const collaborationSocket = useMemo(
+    () =>
+      new HocuspocusProviderWebsocket({
+        url: process.env.NEXT_PUBLIC_COLLABORATION_URL ?? "ws://localhost:1234",
+        autoConnect: false,
+      }),
+    []
+  );
+  const collaborationProvider = useMemo(
+    () =>
+      new HocuspocusProvider({
+        name: `page:${pageId}`,
+        document: collaborationDocument,
+        websocketProvider: collaborationSocket,
+        token: null,
+        onStatus: ({ status }) =>
+          setCollaborationStatus(
+            status === "connected"
+              ? "connected"
+              : status === "disconnected"
+                ? "disconnected"
+                : "connecting"
+          ),
+        onAwarenessChange: ({ states }) =>
+          setCollaborators(
+            states.flatMap((state) => {
+              const user = state.user as
+                | { name?: unknown; color?: unknown }
+                | undefined;
+              return typeof user?.name === "string" &&
+                typeof user.color === "string"
+                ? [{ name: user.name, color: user.color }]
+                : [];
+            })
+          ),
+      }),
+    [collaborationDocument, collaborationSocket, pageId]
+  );
 
   useEffect(() => {
     const draftKey = `needt-page-draft:${pageId}`;
@@ -449,7 +517,11 @@ export function PageWorkspace({
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        link: false,
+        undoRedo: false,
+      }),
       Placeholder.configure({
         placeholder: "Write anything, or type / for commands…",
       }),
@@ -464,6 +536,11 @@ export function PageWorkspace({
       TableKit.configure({ table: { resizable: true } }),
       BlockIdentity,
       PageBlockNode,
+      Collaboration.configure({ document: collaborationDocument }),
+      CollaborationCaret.configure({
+        provider: collaborationProvider,
+        user: { name: "Needt collaborator", color: "#4F46E5" },
+      }),
     ],
     content: "<p></p>",
     editorProps: {
@@ -535,42 +612,116 @@ export function PageWorkspace({
     if (!editor) return;
     let cancelled = false;
     hydrated.current = false;
-    void fetch(`/api/pages/${pageId}`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Page not found");
-        return response.json() as Promise<{ page: PageDetail }>;
-      })
-      .then(({ page: loaded }) => {
-        if (cancelled) return;
-        setPage(loaded);
-        const localDraft = localStorage.getItem(`needt-page-draft:${pageId}`);
+    void (async () => {
+      const response = await fetch(`/api/pages/${pageId}`);
+      if (!response.ok) {
+        router.replace("/pages");
+        return;
+      }
+      const { page: loaded } = (await response.json()) as { page: PageDetail };
+      if (cancelled) return;
+      setPage(loaded);
+      const localDraft = localStorage.getItem(`needt-page-draft:${pageId}`);
+
+      const tokenResponse = await fetch(
+        `/api/pages/${pageId}/collaboration-token`,
+        { method: "POST" }
+      ).catch(() => null);
+      if (cancelled) return;
+
+      if (tokenResponse?.ok) {
+        const collaboration =
+          (await tokenResponse.json()) as CollaborationTokenResponse;
+        Y.applyUpdate(
+          collaborationDocument,
+          decodeCollaborationState(collaboration.initialState)
+        );
+        collaborationSocket.setConfiguration({ url: collaboration.url });
+        let nextToken: string | null = collaboration.token;
+        collaborationProvider.setConfiguration({
+          token: async () => {
+            if (nextToken) {
+              const currentToken = nextToken;
+              nextToken = null;
+              return currentToken;
+            }
+            const refreshed = await fetch(
+              `/api/pages/${pageId}/collaboration-token`,
+              { method: "POST" }
+            );
+            if (!refreshed.ok) {
+              throw new Error("Page collaboration access denied");
+            }
+            const data = (await refreshed.json()) as CollaborationTokenResponse;
+            return data.token;
+          },
+        });
+        collaborationProvider.attach();
+        editor.commands.updateUser(collaboration.user);
         if (localDraft) {
           try {
             editor.commands.setContent(JSON.parse(localDraft) as JSONContent, {
               emitUpdate: false,
             });
+            setSaveState("failed");
           } catch {
-            editor.commands.setContent(legacyPageHtml(loaded.blocks), {
-              emitUpdate: false,
-            });
+            localStorage.removeItem(`needt-page-draft:${pageId}`);
           }
-          setSaveState("failed");
-        } else {
-          const document = documentFromPageBlocks(loaded.blocks);
-          editor.commands.setContent(
-            document || legacyPageHtml(loaded.blocks),
-            { emitUpdate: false }
-          );
         }
         ensureBlockIds(editor);
         hydrated.current = true;
         if (localDraft) autosave.current?.schedule(editor.getJSON());
-      })
-      .catch(() => router.replace("/pages"));
+        void collaborationSocket
+          .connect()
+          .catch(() => setCollaborationStatus("disconnected"));
+        return;
+      }
+
+      const document = documentFromPageBlocks(loaded.blocks);
+      editor.commands.setContent(document || legacyPageHtml(loaded.blocks), {
+        emitUpdate: false,
+      });
+      if (localDraft) {
+        try {
+          editor.commands.setContent(JSON.parse(localDraft) as JSONContent, {
+            emitUpdate: false,
+          });
+          setSaveState("failed");
+        } catch {
+          localStorage.removeItem(`needt-page-draft:${pageId}`);
+        }
+      }
+      ensureBlockIds(editor);
+      hydrated.current = true;
+      setCollaborationStatus("disconnected");
+      if (localDraft) autosave.current?.schedule(editor.getJSON());
+    })().catch(() => router.replace("/pages"));
     return () => {
       cancelled = true;
     };
-  }, [editor, pageId, router]);
+  }, [
+    collaborationDocument,
+    collaborationProvider,
+    collaborationSocket,
+    editor,
+    pageId,
+    router,
+  ]);
+
+  useEffect(
+    () => () => {
+      collaborationProvider.destroy();
+    },
+    [collaborationProvider]
+  );
+
+  useEffect(
+    () => () => {
+      collaborationSocket.destroy();
+      collaborationDocument.destroy();
+    },
+    [collaborationDocument, collaborationSocket]
+  );
 
   useEffect(() => {
     editor?.setEditable(canEdit);
@@ -1098,13 +1249,31 @@ export function PageWorkspace({
         <span className="min-w-0 flex-1 truncate text-sm">
           {page.icon} {page.title}
         </span>
+        <div
+          className="hidden items-center -space-x-1 sm:flex"
+          aria-label={`${collaborators.length} active collaborators`}
+        >
+          {collaborators.slice(0, 3).map((collaborator, index) => (
+            <span
+              key={`${collaborator.name}-${index}`}
+              className="h-5 w-5 rounded-full border-2 border-[var(--surface-canvas)]"
+              style={{ backgroundColor: collaborator.color }}
+              title={collaborator.name}
+            />
+          ))}
+        </div>
         <span className="text-[11px] text-[var(--text-muted)]">
+          {collaborationStatus === "connected"
+            ? "Live · "
+            : collaborationStatus === "connecting"
+              ? "Connecting · "
+              : "Offline · "}
           {saveState === "saving"
             ? "Saving…"
             : saveState === "offline"
-              ? "Offline · draft kept"
+              ? "Draft kept"
               : saveState === "failed"
-                ? "Failed · draft kept"
+                ? "Draft kept"
                 : "Saved"}
         </span>
         <Button
