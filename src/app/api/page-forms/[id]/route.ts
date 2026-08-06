@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { PageAccessRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "PageFormAPI";
@@ -15,10 +18,15 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     unknown
   >;
   const existing = await prisma.pageForm.findFirst({
-    where: { id, page: { userId: auth.userId } },
+    where: { id },
   });
   if (!existing)
     return NextResponse.json({ error: "Form not found" }, { status: 404 });
+  if (
+    !(await resolvePageAccess(auth, existing.pageId, PageAccessRole.EDITOR))
+  ) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
+  }
   const form = await prisma.pageForm.update({
     where: { id },
     data: {
@@ -37,11 +45,16 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
-  const result = await prisma.pageForm.deleteMany({
-    where: { id, page: { userId: auth.userId } },
+  const form = await prisma.pageForm.findUnique({
+    where: { id },
+    select: { pageId: true },
   });
-  if (result.count === 0) {
+  if (!form) {
     return NextResponse.json({ error: "Form not found" }, { status: 404 });
   }
+  if (!(await resolvePageAccess(auth, form.pageId, PageAccessRole.EDITOR))) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
+  }
+  await prisma.pageForm.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }

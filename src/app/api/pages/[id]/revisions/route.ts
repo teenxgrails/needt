@@ -4,10 +4,11 @@ import {
   listPageRevisions,
   restorePageRevision,
 } from "@/services/pages/page-service";
-import { WorkspaceRole } from "@prisma/client";
+import { PageAccessRole } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 
 const LOG_SOURCE = "PageRevisionsAPI";
 type RouteContext = { params: Promise<{ id: string }> };
@@ -17,6 +18,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
+    if (!(await resolvePageAccess(auth, id))) {
+      return NextResponse.json(
+        { error: "Page access denied" },
+        { status: 403 }
+      );
+    }
     const revisions = await listPageRevisions(auth, id);
     if (!revisions) {
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
@@ -33,12 +40,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE, {
-    requiredRole: WorkspaceRole.EDITOR,
-  });
+  const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
+    if (!(await resolvePageAccess(auth, id, PageAccessRole.EDITOR))) {
+      return NextResponse.json(
+        { error: "Page access denied" },
+        { status: 403 }
+      );
+    }
     const body = await request.json().catch(() => ({}));
     if (typeof body.revisionId !== "string") {
       return NextResponse.json(

@@ -2,15 +2,14 @@ import {
   AiProposalStatus,
   DatabasePropertyType,
   DatabaseViewType,
+  PageAccessRole,
   PageAuthor,
   PageBlockType,
   Prisma,
 } from "@prisma/client";
 
-import {
-  type WorkspaceAccess,
-  workspaceDataScopeWhere,
-} from "@/lib/auth/workspace-auth";
+import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
+import { type WorkspaceAccess } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
 export type PageActor =
@@ -26,9 +25,21 @@ function actorUserId(actor: PageActor) {
 
 function actorPageScope(actor: PageActor) {
   const userId = actorUserId(actor);
-  return typeof actor === "string"
-    ? { userId }
-    : workspaceDataScopeWhere(actor.workspace, userId);
+  return typeof actor === "string" ? { userId } : pageVisibilityWhere(actor);
+}
+
+async function actorCanAccess(
+  actor: PageActor,
+  pageId: string,
+  role: PageAccessRole
+) {
+  if (typeof actor === "string") {
+    return prisma.page.findFirst({
+      where: { id: pageId, userId: actor, trashedAt: null },
+      select: { id: true },
+    });
+  }
+  return resolvePageAccess(actor, pageId, role);
 }
 
 function actorWorkspaceId(actor: PageActor) {
@@ -111,10 +122,7 @@ export async function getPage(actor: PageActor, pageId: string) {
 
 async function assertOwnedParent(actor: PageActor, parentId?: string | null) {
   if (!parentId) return;
-  const parent = await prisma.page.findFirst({
-    where: { id: parentId, ...actorPageScope(actor), trashedAt: null },
-    select: { id: true },
-  });
+  const parent = await actorCanAccess(actor, parentId, PageAccessRole.EDITOR);
   if (!parent) throw new Error("Parent page not found");
 }
 
@@ -176,6 +184,11 @@ export async function updatePage(
     trashed?: boolean;
   }
 ) {
+  const requiredRole =
+    input.isPrivate !== undefined || input.trashed !== undefined
+      ? PageAccessRole.FULL_ACCESS
+      : PageAccessRole.EDITOR;
+  if (!(await actorCanAccess(actor, pageId, requiredRole))) return null;
   const existing = await getPage(actor, pageId);
   if (!existing) return null;
   if (input.parentId === pageId)
@@ -216,6 +229,8 @@ export async function replacePageBlocks(
   createdBy: PageAuthor = PageAuthor.HUMAN,
   documentFormatVersion: 1 | 2 = 1
 ) {
+  if (!(await actorCanAccess(actor, pageId, PageAccessRole.EDITOR)))
+    return null;
   const userId = actorUserId(actor);
   const page = await getPage(actor, pageId);
   if (!page) return null;
@@ -431,6 +446,9 @@ export async function createAiProposal(
   pageId: string,
   input: { summary: string; operations: Prisma.InputJsonValue }
 ) {
+  if (!(await actorCanAccess(actor, pageId, PageAccessRole.EDITOR))) {
+    throw new Error("Page is private or unavailable");
+  }
   const userId = actorUserId(actor);
   const page = await prisma.page.findFirst({
     where: { id: pageId, ...actorPageScope(actor), trashedAt: null },
@@ -466,11 +484,15 @@ export async function createAiProposal(
   });
 }
 
-export async function rejectAiProposal(userId: string, proposalId: string) {
+export async function rejectAiProposal(actor: PageActor, proposalId: string) {
+  const userId = actorUserId(actor);
   const proposal = await prisma.aiPageChangeProposal.findFirst({
     where: { id: proposalId, userId, status: AiProposalStatus.PENDING },
   });
   if (!proposal) return null;
+  if (!(await actorCanAccess(actor, proposal.pageId, PageAccessRole.VIEWER))) {
+    return null;
+  }
   return prisma.aiPageChangeProposal.update({
     where: { id: proposalId },
     data: { status: AiProposalStatus.REJECTED },
@@ -492,6 +514,9 @@ export async function applyAiProposal(actor: PageActor, proposalId: string) {
   const userId = actorUserId(actor);
   const proposal = await getAiProposal(userId, proposalId);
   if (!proposal || proposal.status !== AiProposalStatus.PENDING) {
+    return null;
+  }
+  if (!(await actorCanAccess(actor, proposal.pageId, PageAccessRole.EDITOR))) {
     return null;
   }
   const operations = Array.isArray(proposal.operations)
@@ -615,6 +640,8 @@ export async function restorePageRevision(
   pageId: string,
   revisionId: string
 ) {
+  if (!(await actorCanAccess(actor, pageId, PageAccessRole.EDITOR)))
+    return null;
   const revision = await prisma.pageRevision.findFirst({
     where: {
       id: revisionId,

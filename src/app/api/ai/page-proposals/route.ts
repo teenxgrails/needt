@@ -4,6 +4,7 @@ import { createAiProposal } from "@/services/pages/page-service";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "AiPageProposalsAPI";
@@ -14,6 +15,9 @@ export async function GET(request: NextRequest) {
   const pageId = request.nextUrl.searchParams.get("pageId");
   if (!pageId) {
     return NextResponse.json({ error: "pageId is required" }, { status: 400 });
+  }
+  if (!(await resolvePageAccess(auth, pageId))) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
   }
   const proposals = await prisma.aiPageChangeProposal.findMany({
     where: { userId: auth.userId, pageId },

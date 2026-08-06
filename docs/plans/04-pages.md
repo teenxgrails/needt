@@ -6,7 +6,7 @@ collaboration-token tasks (4.5, 4.6) are **Sol High**.
 **Prerequisite:** plan 02 deployed — page permissions inherit from workspace
 roles.
 
-**Status:** 4.1–4.4 complete. Stop here; 4.5–4.9 remain deferred.
+**Status:** 4.1–4.5 complete. 4.6–4.9 in progress.
 
 ## Context — the editor already exists, extend it
 

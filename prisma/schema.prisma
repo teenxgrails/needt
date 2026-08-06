@@ -124,6 +124,8 @@ model User {
   aiPageProposals        AiPageChangeProposal[]
   pageAssets             PageAsset[]
   pageComments           PageComment[]
+  pageAccessGrants       PageAccessGrant[]       @relation("PageAccessGrantee")
+  pageAccessGrantsGiven  PageAccessGrant[]       @relation("PageAccessGrantor")
   pageTemplates          PageTemplate[]
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
@@ -1108,6 +1110,7 @@ model Page {
   assets                PageAsset[]
   comments              PageComment[]
   forms                 PageForm[]
+  accessGrants          PageAccessGrant[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
@@ -1293,6 +1296,23 @@ model PageRevision {
 
   @@index([pageId, createdAt])
   @@index([userId, createdAt])
+}
+
+model PageAccessGrant {
+  id          String         @id @default(cuid())
+  pageId      String
+  page        Page           @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User           @relation("PageAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
+  role        PageAccessRole
+  grantedById String
+  grantedBy   User           @relation("PageAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([pageId, userId])
+  @@index([userId, role])
+  @@index([grantedById])
 }
 
 model AiPageChangeProposal {
@@ -2045,6 +2065,12 @@ enum WorkspaceKind {
 
 enum WorkspaceRole {
   OWNER
+  EDITOR
+  VIEWER
+}
+
+enum PageAccessRole {
+  FULL_ACCESS
   EDITOR
   VIEWER
 }

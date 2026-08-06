@@ -42,6 +42,7 @@ import {
   Pilcrow,
   Quote,
   Redo2,
+  ShieldCheck,
   Sparkles,
   Star,
   Table2,
@@ -75,6 +76,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import {
   Popover,
   PopoverContent,
@@ -141,6 +143,17 @@ type PageReference = {
   title: string;
   icon: string | null;
   updatedAt: string;
+};
+type PagePermissionRole = "FULL_ACCESS" | "EDITOR" | "VIEWER";
+type PagePermissionGrant = {
+  userId: string;
+  role: PagePermissionRole;
+  user: { name: string | null; email: string | null; image: string | null };
+};
+type WorkspaceMember = {
+  userId: string;
+  role: "OWNER" | "EDITOR" | "VIEWER";
+  user: { name: string | null; email: string | null; image: string | null };
 };
 type AiAction = "rewrite" | "summarize" | "critique";
 
@@ -330,6 +343,17 @@ const SPECIAL_LABELS: Record<SpecialKind, string> = {
   FORM: "Form title",
 };
 
+const PAGE_PERMISSION_OPTIONS = [
+  {
+    value: "INHERITED",
+    label: "Inherited",
+    description: "Use the workspace role",
+  },
+  { value: "FULL_ACCESS", label: "Full access" },
+  { value: "EDITOR", label: "Editor" },
+  { value: "VIEWER", label: "Viewer" },
+];
+
 function removeSlashText(editor: Editor) {
   const { $from } = editor.state.selection;
   return editor
@@ -365,7 +389,13 @@ export function PageWorkspace({
   const [coverOpen, setCoverOpen] = useState(false);
   const [coverUrl, setCoverUrl] = useState("");
   const [toolOpen, setToolOpen] = useState<
-    "comments" | "templates" | "history" | "backlinks" | "ai" | null
+    | "comments"
+    | "templates"
+    | "history"
+    | "backlinks"
+    | "permissions"
+    | "ai"
+    | null
   >(null);
   const [comments, setComments] = useState<PageComment[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -374,10 +404,19 @@ export function PageWorkspace({
   const [proposals, setProposals] = useState<PageProposal[]>([]);
   const [revisions, setRevisions] = useState<PageRevision[]>([]);
   const [backlinks, setBacklinks] = useState<PageReference[]>([]);
+  const [permissionOwnerId, setPermissionOwnerId] = useState("");
+  const [permissionGrants, setPermissionGrants] = useState<
+    PagePermissionGrant[]
+  >([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>(
+    []
+  );
   const [mentionPages, setMentionPages] = useState<PageReference[]>([]);
   const [pendingMentionId, setPendingMentionId] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiAction, setAiAction] = useState<AiAction>("rewrite");
+  const canEdit = page?.accessRole !== "VIEWER";
+  const canManageAccess = page?.accessRole === "FULL_ACCESS";
 
   useEffect(() => {
     const draftKey = `needt-page-draft:${pageId}`;
@@ -534,6 +573,10 @@ export function PageWorkspace({
   }, [editor, pageId, router]);
 
   useEffect(() => {
+    editor?.setEditable(canEdit);
+  }, [canEdit, editor]);
+
+  useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (saveState !== "saved") event.preventDefault();
     };
@@ -582,7 +625,13 @@ export function PageWorkspace({
   };
 
   const openTool = async (
-    tool: "comments" | "templates" | "history" | "backlinks" | "ai"
+    tool:
+      | "comments"
+      | "templates"
+      | "history"
+      | "backlinks"
+      | "permissions"
+      | "ai"
   ) => {
     setToolOpen(tool);
     if (tool === "comments") {
@@ -613,6 +662,30 @@ export function PageWorkspace({
         setBacklinks(data.backlinks);
       }
     }
+    if (tool === "permissions") {
+      const [permissionsResponse, membersResponse] = await Promise.all([
+        fetch(`/api/pages/${pageId}/permissions`),
+        page?.workspaceId
+          ? fetch(`/api/workspaces/${page.workspaceId}/members`)
+          : Promise.resolve(null),
+      ]);
+      if (permissionsResponse.ok) {
+        const data = (await permissionsResponse.json()) as {
+          ownerId: string;
+          grants: PagePermissionGrant[];
+        };
+        setPermissionOwnerId(data.ownerId);
+        setPermissionGrants(data.grants);
+      }
+      if (membersResponse?.ok) {
+        const data = (await membersResponse.json()) as {
+          members: WorkspaceMember[];
+        };
+        setWorkspaceMembers(data.members);
+      } else {
+        setWorkspaceMembers([]);
+      }
+    }
     if (tool === "ai") {
       const response = await fetch(
         `/api/ai/page-proposals?pageId=${encodeURIComponent(pageId)}`
@@ -622,6 +695,30 @@ export function PageWorkspace({
         setProposals(data.proposals);
       }
     }
+  };
+
+  const setMemberPermission = async (userId: string, role: string) => {
+    const inherited = role === "INHERITED";
+    const response = await fetch(`/api/pages/${pageId}/permissions`, {
+      method: inherited ? "DELETE" : "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, ...(inherited ? {} : { role }) }),
+    });
+    if (!response.ok) {
+      notify.error("Could not update Page access");
+      return;
+    }
+    if (inherited) {
+      setPermissionGrants((current) =>
+        current.filter((grant) => grant.userId !== userId)
+      );
+      return;
+    }
+    const data = (await response.json()) as { grant: PagePermissionGrant };
+    setPermissionGrants((current) => [
+      ...current.filter((grant) => grant.userId !== userId),
+      data.grant,
+    ]);
   };
 
   const restoreRevision = async (revisionId: string) => {
@@ -1014,7 +1111,7 @@ export function PageWorkspace({
           variant="ghost"
           size="icon"
           onClick={() => editor?.chain().focus().undo().run()}
-          disabled={!editor?.can().undo()}
+          disabled={!canEdit || !editor?.can().undo()}
           aria-label="Undo"
         >
           <Undo2 />
@@ -1023,7 +1120,7 @@ export function PageWorkspace({
           variant="ghost"
           size="icon"
           onClick={() => editor?.chain().focus().redo().run()}
-          disabled={!editor?.can().redo()}
+          disabled={!canEdit || !editor?.can().redo()}
           aria-label="Redo"
         >
           <Redo2 />
@@ -1032,6 +1129,7 @@ export function PageWorkspace({
           variant="ghost"
           size="icon"
           onClick={() => void patchPage({ isFavorite: !page.isFavorite })}
+          disabled={!canEdit}
           aria-label="Favorite"
         >
           <Star
@@ -1042,6 +1140,7 @@ export function PageWorkspace({
           <LockKeyhole className="h-3.5 w-3.5" />
           <Switch
             checked={page.isPrivate}
+            disabled={!canManageAccess}
             onCheckedChange={(checked) =>
               void patchPage({ isPrivate: checked })
             }
@@ -1062,10 +1161,21 @@ export function PageWorkspace({
               <MessageSquare className="h-4 w-4 text-[var(--text-muted)]" />
               Comments
             </button>
+            {canManageAccess && (
+              <button
+                type="button"
+                onClick={() => void openTool("permissions")}
+                className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+              >
+                <ShieldCheck className="h-4 w-4 text-[var(--text-muted)]" />
+                Share &amp; permissions
+              </button>
+            )}
             <button
               type="button"
               onClick={() => void createSubpage()}
-              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+              disabled={!canEdit}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)] disabled:opacity-40"
             >
               <FilePlus className="h-4 w-4 text-[var(--text-muted)]" />
               New subpage
@@ -1110,6 +1220,7 @@ export function PageWorkspace({
         <button
           type="button"
           aria-label="Change cover"
+          disabled={!canEdit}
           onClick={() => {
             setCoverUrl(page.coverUrl || "");
             setCoverOpen(true);
@@ -1133,19 +1244,21 @@ export function PageWorkspace({
         <div className="mb-2 flex h-7 items-center gap-3 text-[12px] text-[var(--text-muted)]">
           <button
             type="button"
+            disabled={!canEdit}
             onClick={() => void patchPage({ icon: page.icon ? null : "📄" })}
-            className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+            className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
           >
             {page.icon ? "Remove icon" : "Add icon"}
           </button>
           {!page.coverUrl && (
             <button
               type="button"
+              disabled={!canEdit}
               onClick={() => {
                 setCoverUrl("");
                 setCoverOpen(true);
               }}
-              className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
             >
               Add cover
             </button>
@@ -1154,6 +1267,7 @@ export function PageWorkspace({
         {page.icon && <div className="mb-2 text-5xl">{page.icon}</div>}
         <input
           value={page.title}
+          readOnly={!canEdit}
           onChange={(event) => setPage({ ...page, title: event.target.value })}
           onBlur={() => void patchPage({ title: page.title })}
           className="mb-5 w-full border-0 bg-transparent p-0 text-4xl font-semibold tracking-[-0.045em] outline-none ring-0 placeholder:text-[var(--text-disabled)] focus:ring-0"
@@ -1487,6 +1601,67 @@ export function PageWorkspace({
                 </Button>
               </div>
             ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={toolOpen === "permissions"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Share &amp; permissions</DialogTitle>
+            <DialogDescription>
+              A direct Page role overrides the member&apos;s workspace role.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[420px] space-y-1 overflow-y-auto">
+            {workspaceMembers.length === 0 && (
+              <div className="rounded-[var(--control-radius)] border border-[var(--border-subtle)] px-3 py-4 text-[13px] text-[var(--text-secondary)]">
+                This personal Page is only available to its owner.
+              </div>
+            )}
+            {workspaceMembers.map((member) => {
+              const grant = permissionGrants.find(
+                (candidate) => candidate.userId === member.userId
+              );
+              const isOwner = member.userId === permissionOwnerId;
+              return (
+                <div
+                  key={member.userId}
+                  className="flex min-h-12 items-center gap-3 rounded-[var(--control-radius)] px-2.5 hover:bg-[var(--surface-hover)]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-medium">
+                      {member.user.name || member.user.email || "Member"}
+                    </div>
+                    <div className="truncate text-[11px] text-[var(--text-muted)]">
+                      {isOwner
+                        ? "Page owner"
+                        : `${member.role.toLowerCase()} in workspace`}
+                    </div>
+                  </div>
+                  {isOwner ? (
+                    <span className="text-[12px] text-[var(--text-secondary)]">
+                      Full access
+                    </span>
+                  ) : (
+                    <NeedtPicker
+                      ariaLabel={`Access for ${member.user.name || member.user.email || "member"}`}
+                      options={PAGE_PERMISSION_OPTIONS}
+                      value={grant?.role ?? "INHERITED"}
+                      onValueChange={(role) =>
+                        void setMemberPermission(member.userId, role)
+                      }
+                      align="end"
+                      triggerVariant="field"
+                      className="w-36"
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>

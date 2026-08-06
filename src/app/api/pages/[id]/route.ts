@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getPage, updatePage } from "@/services/pages/page-service";
-import { WorkspaceRole } from "@prisma/client";
+import { PageAccessRole } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 
 const LOG_SOURCE = "PageDetailAPI";
 type RouteContext = { params: Promise<{ id: string }> };
@@ -14,10 +15,16 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
+    const access = await resolvePageAccess(auth, id);
+    if (!access)
+      return NextResponse.json(
+        { error: "Page access denied" },
+        { status: 403 }
+      );
     const page = await getPage(auth, id);
     if (!page)
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
-    return NextResponse.json({ page });
+    return NextResponse.json({ page: { ...page, accessRole: access.role } });
   } catch (error) {
     return routeErrorResponse(
       error,
@@ -29,13 +36,21 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE, {
-    requiredRole: WorkspaceRole.EDITOR,
-  });
+  const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
     const body = await request.json().catch(() => ({}));
+    const requiredRole =
+      typeof body.isPrivate === "boolean" || typeof body.trashed === "boolean"
+        ? PageAccessRole.FULL_ACCESS
+        : PageAccessRole.EDITOR;
+    if (!(await resolvePageAccess(auth, id, requiredRole))) {
+      return NextResponse.json(
+        { error: "Page access denied" },
+        { status: 403 }
+      );
+    }
     const page = await updatePage(auth, id, {
       title: typeof body.title === "string" ? body.title : undefined,
       icon:
@@ -71,12 +86,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE, {
-    requiredRole: WorkspaceRole.EDITOR,
-  });
+  const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
+    if (!(await resolvePageAccess(auth, id, PageAccessRole.FULL_ACCESS))) {
+      return NextResponse.json(
+        { error: "Page access denied" },
+        { status: 403 }
+      );
+    }
     const page = await updatePage(auth, id, { trashed: true });
     if (!page)
       return NextResponse.json({ error: "Page not found" }, { status: 404 });

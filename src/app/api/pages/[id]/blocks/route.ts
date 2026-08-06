@@ -4,22 +4,27 @@ import {
   PageBlockIdentityError,
   replacePageBlocks,
 } from "@/services/pages/page-service";
-import { PageAuthor, PageBlockType, WorkspaceRole } from "@prisma/client";
+import { PageAccessRole, PageAuthor, PageBlockType } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 
 const LOG_SOURCE = "PageBlocksAPI";
 type RouteContext = { params: Promise<{ id: string }> };
 const blockTypes = new Set(Object.values(PageBlockType));
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE, {
-    requiredRole: WorkspaceRole.EDITOR,
-  });
+  const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
+    if (!(await resolvePageAccess(auth, id, PageAccessRole.EDITOR))) {
+      return NextResponse.json(
+        { error: "Page access denied" },
+        { status: 403 }
+      );
+    }
     const body = await request.json().catch(() => ({}));
     if (!Array.isArray(body.blocks)) {
       return NextResponse.json(

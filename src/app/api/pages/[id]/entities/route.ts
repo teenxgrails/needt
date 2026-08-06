@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { WorkspaceRole } from "@prisma/client";
+import { PageAccessRole, WorkspaceRole } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
-import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 import { ProjectStatus } from "@/types/project";
@@ -37,16 +37,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     );
   }
 
-  const page = await prisma.page.findFirst({
-    where: {
-      id: pageId,
-      ...workspaceDataScopeWhere(auth.workspace, auth.userId),
-      trashedAt: null,
-    },
-    select: { id: true },
-  });
-  if (!page)
-    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  if (!(await resolvePageAccess(auth, pageId, PageAccessRole.EDITOR)))
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
 
   if (type === "task") {
     const task = await prisma.task.create({

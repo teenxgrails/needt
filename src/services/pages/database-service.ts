@@ -1,12 +1,31 @@
-import { DatabasePropertyType, DatabaseViewType, Prisma } from "@prisma/client";
+import type { PageActor } from "@/services/pages/page-service";
+import {
+  DatabasePropertyType,
+  DatabaseViewType,
+  PageAccessRole,
+  Prisma,
+} from "@prisma/client";
 
+import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 import { evaluateFormula } from "./formula";
 
-async function ownedDatabase(userId: string, databaseId: string) {
-  return prisma.pageDatabase.findFirst({
-    where: { id: databaseId, page: { userId, trashedAt: null } },
+async function ownedDatabase(
+  actor: PageActor,
+  databaseId: string,
+  requiredRole: PageAccessRole
+) {
+  const database = await prisma.pageDatabase.findFirst({
+    where: {
+      id: databaseId,
+      page: {
+        ...(typeof actor === "string"
+          ? { userId: actor }
+          : pageVisibilityWhere(actor)),
+        trashedAt: null,
+      },
+    },
     include: {
       page: true,
       properties: { orderBy: { position: "asc" } },
@@ -17,14 +36,22 @@ async function ownedDatabase(userId: string, databaseId: string) {
       },
     },
   });
+  if (
+    database &&
+    typeof actor !== "string" &&
+    !(await resolvePageAccess(actor, database.pageId, requiredRole))
+  ) {
+    return null;
+  }
+  return database;
 }
 
-export async function getDatabase(userId: string, databaseId: string) {
-  return ownedDatabase(userId, databaseId);
+export async function getDatabase(actor: PageActor, databaseId: string) {
+  return ownedDatabase(actor, databaseId, PageAccessRole.VIEWER);
 }
 
 export async function createDatabaseProperty(
-  userId: string,
+  actor: PageActor,
   databaseId: string,
   input: {
     name: string;
@@ -32,7 +59,11 @@ export async function createDatabaseProperty(
     config?: Prisma.InputJsonValue;
   }
 ) {
-  const database = await ownedDatabase(userId, databaseId);
+  const database = await ownedDatabase(
+    actor,
+    databaseId,
+    PageAccessRole.EDITOR
+  );
   if (!database) return null;
   return prisma.databaseProperty.create({
     data: {
@@ -46,11 +77,15 @@ export async function createDatabaseProperty(
 }
 
 export async function createDatabaseView(
-  userId: string,
+  actor: PageActor,
   databaseId: string,
   input: { name: string; type: DatabaseViewType }
 ) {
-  const database = await ownedDatabase(userId, databaseId);
+  const database = await ownedDatabase(
+    actor,
+    databaseId,
+    PageAccessRole.EDITOR
+  );
   if (!database) return null;
   return prisma.databaseView.create({
     data: {
@@ -63,12 +98,17 @@ export async function createDatabaseView(
 }
 
 export async function createDatabaseRecord(
-  userId: string,
+  actor: PageActor,
   databaseId: string,
   input: { title?: string; values?: Record<string, Prisma.InputJsonValue> }
 ) {
-  const database = await ownedDatabase(userId, databaseId);
+  const database = await ownedDatabase(
+    actor,
+    databaseId,
+    PageAccessRole.EDITOR
+  );
   if (!database) return null;
+  const userId = typeof actor === "string" ? actor : actor.userId;
   const validPropertyIds = new Set(
     database.properties.map((property) => property.id)
   );
@@ -76,6 +116,7 @@ export async function createDatabaseRecord(
     const page = await tx.page.create({
       data: {
         userId,
+        workspaceId: database.page.workspaceId,
         parentId: database.pageId,
         title: input.title?.trim().slice(0, 240) || "Untitled",
         isPrivate: database.page.isPrivate,
@@ -102,15 +143,37 @@ export async function createDatabaseRecord(
 }
 
 export async function updateDatabaseRecord(
-  userId: string,
+  actor: PageActor,
   recordId: string,
   input: { title?: string; values?: Record<string, Prisma.InputJsonValue> }
 ) {
   const record = await prisma.databaseRecord.findFirst({
-    where: { id: recordId, database: { page: { userId, trashedAt: null } } },
-    include: { database: { include: { properties: true } } },
+    where: {
+      id: recordId,
+      database: {
+        page: {
+          ...(typeof actor === "string"
+            ? { userId: actor }
+            : pageVisibilityWhere(actor)),
+          trashedAt: null,
+        },
+      },
+    },
+    include: {
+      database: { include: { page: true, properties: true } },
+    },
   });
   if (!record) return null;
+  if (
+    typeof actor !== "string" &&
+    !(await resolvePageAccess(
+      actor,
+      record.database.pageId,
+      PageAccessRole.EDITOR
+    ))
+  ) {
+    return null;
+  }
   const validPropertyIds = new Set(
     record.database.properties.map((property) => property.id)
   );
@@ -136,12 +199,32 @@ export async function updateDatabaseRecord(
   });
 }
 
-export async function deleteDatabaseRecord(userId: string, recordId: string) {
+export async function deleteDatabaseRecord(actor: PageActor, recordId: string) {
   const record = await prisma.databaseRecord.findFirst({
-    where: { id: recordId, database: { page: { userId, trashedAt: null } } },
-    select: { pageId: true },
+    where: {
+      id: recordId,
+      database: {
+        page: {
+          ...(typeof actor === "string"
+            ? { userId: actor }
+            : pageVisibilityWhere(actor)),
+          trashedAt: null,
+        },
+      },
+    },
+    select: { pageId: true, database: { select: { pageId: true } } },
   });
   if (!record) return false;
+  if (
+    typeof actor !== "string" &&
+    !(await resolvePageAccess(
+      actor,
+      record.database.pageId,
+      PageAccessRole.EDITOR
+    ))
+  ) {
+    return false;
+  }
   await prisma.page.delete({ where: { id: record.pageId } });
   return true;
 }
@@ -159,11 +242,15 @@ interface QuerySort {
 }
 
 export async function queryDatabase(
-  userId: string,
+  actor: PageActor,
   databaseId: string,
   input: { filters?: QueryFilter[]; sort?: QuerySort[] }
 ) {
-  const database = await ownedDatabase(userId, databaseId);
+  const database = await ownedDatabase(
+    actor,
+    databaseId,
+    PageAccessRole.VIEWER
+  );
   if (!database) return null;
   const propertyById = new Map(
     database.properties.map((property) => [property.id, property])
