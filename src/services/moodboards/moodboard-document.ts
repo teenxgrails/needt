@@ -74,7 +74,8 @@ export function readMoodboardScene(document: Y.Doc): MoodboardScene {
 export function writeMoodboardScene(
   document: Y.Doc,
   scene: MoodboardScene,
-  origin?: unknown
+  origin?: unknown,
+  includeAppState = true
 ) {
   const root = document.getMap<unknown>("moodboard");
   const elements = childMap(root, "elements");
@@ -82,7 +83,7 @@ export function writeMoodboardScene(
   const normalizedAppState = JSON.stringify(compactAppState(scene.appState));
   let changed = false;
   document.transact(() => {
-    if (root.get("appState") !== normalizedAppState) {
+    if (includeAppState && root.get("appState") !== normalizedAppState) {
       root.set("appState", normalizedAppState);
       changed = true;
     }
@@ -103,6 +104,53 @@ export function writeMoodboardScene(
     }
   }, origin);
   return changed;
+}
+
+export function writeMoodboardSceneChanges(
+  document: Y.Doc,
+  previous: MoodboardScene,
+  next: MoodboardScene,
+  origin?: unknown
+) {
+  const previousElements = new Map(
+    previous.elements.flatMap((element) =>
+      typeof element.id === "string"
+        ? [[element.id, JSON.stringify(element)] as const]
+        : []
+    )
+  );
+  const changedElements = next.elements.filter(
+    (element) =>
+      typeof element.id === "string" &&
+      previousElements.get(element.id) !== JSON.stringify(element)
+  );
+  const changedFiles = Object.fromEntries(
+    Object.entries(next.files).filter(
+      ([id, file]) =>
+        JSON.stringify(previous.files[id]) !== JSON.stringify(file)
+    )
+  );
+  const appStateChanged =
+    JSON.stringify(compactAppState(previous.appState)) !==
+    JSON.stringify(compactAppState(next.appState));
+
+  if (
+    changedElements.length === 0 &&
+    Object.keys(changedFiles).length === 0 &&
+    !appStateChanged
+  )
+    return false;
+
+  return writeMoodboardScene(
+    document,
+    {
+      elements: changedElements,
+      appState: next.appState,
+      files: changedFiles,
+    },
+    origin,
+    appStateChanged
+  );
 }
 
 export function replaceMoodboardScene(

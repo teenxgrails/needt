@@ -10,7 +10,7 @@ import {
   type MoodboardScene,
   readMoodboardScene,
   replaceMoodboardScene,
-  writeMoodboardScene,
+  writeMoodboardSceneChanges,
 } from "@/services/moodboards/moodboard-document";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type {
@@ -107,6 +107,11 @@ export function MoodboardWorkspace({ moodboardId }: { moodboardId: string }) {
   const excalidrawApi = useRef<ExcalidrawImperativeAPI | null>(null);
   const applyingRemote = useRef(false);
   const initialized = useRef(false);
+  const lastScene = useRef<MoodboardScene>({
+    elements: [],
+    appState: { viewBackgroundColor: "#ffffff" },
+    files: {},
+  });
   const document = useMemo(
     () => new Y.Doc({ guid: `moodboard:${moodboardId}` }),
     [moodboardId]
@@ -153,6 +158,7 @@ export function MoodboardWorkspace({ moodboardId }: { moodboardId: string }) {
   const applyScene = useCallback((scene: MoodboardScene) => {
     const api = excalidrawApi.current;
     if (!api) return;
+    lastScene.current = scene;
     applyingRemote.current = true;
     api.updateScene({
       elements: scene.elements as ExcalidrawElement[],
@@ -429,15 +435,18 @@ export function MoodboardWorkspace({ moodboardId }: { moodboardId: string }) {
               moodboard.accessRole === "VIEWER"
             )
               return;
-            writeMoodboardScene(
+            const nextScene = {
+              elements: [...elements] as Record<string, unknown>[],
+              appState: appState as unknown as Record<string, unknown>,
+              files: files as Record<string, Record<string, unknown>>,
+            };
+            writeMoodboardSceneChanges(
               document,
-              {
-                elements: [...elements] as Record<string, unknown>[],
-                appState: appState as unknown as Record<string, unknown>,
-                files: files as Record<string, Record<string, unknown>>,
-              },
+              lastScene.current,
+              nextScene,
               LOCAL_ORIGIN
             );
+            lastScene.current = nextScene;
           }}
           viewModeEnabled={moodboard.accessRole === "VIEWER"}
         />
