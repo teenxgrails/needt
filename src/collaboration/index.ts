@@ -1,5 +1,8 @@
 import {
-  type PageCollaborationContext,
+  authenticateMoodboardCollaboration,
+  moodboardIdFromCollaborationDocument,
+} from "@/services/moodboards/moodboard-collaboration-auth";
+import {
   authenticatePageCollaboration,
   pageIdFromCollaborationDocument,
 } from "@/services/pages/page-collaboration-auth";
@@ -7,13 +10,18 @@ import { collaborationDocumentToPageBlocks } from "@/services/pages/page-collabo
 import { replacePageBlocks } from "@/services/pages/page-service";
 import { Redis as RedisExtension } from "@hocuspocus/extension-redis";
 import { Server } from "@hocuspocus/server";
-import { PageAccessRole, PageAuthor } from "@prisma/client";
+import { PageAuthor } from "@prisma/client";
 import * as Y from "yjs";
 
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
-const LOG_SOURCE = "PageCollaborationServer";
+import {
+  type CollaborationContext,
+  isCollaborationReadOnly,
+} from "./access-policy";
+
+const LOG_SOURCE = "CollaborationServer";
 
 function redisExtensions() {
   if (!process.env.REDIS_URL) return [];
@@ -36,7 +44,7 @@ function redisExtensions() {
   ];
 }
 
-const server = new Server<PageCollaborationContext>({
+const server = new Server<CollaborationContext>({
   address: process.env.COLLABORATION_HOST ?? "0.0.0.0",
   port: Number(process.env.COLLABORATION_PORT ?? 1234),
   quiet: true,
@@ -47,11 +55,25 @@ const server = new Server<PageCollaborationContext>({
   websocketOptions: { maxPayload: 2 * 1024 * 1024 },
   extensions: redisExtensions(),
   async onAuthenticate({ token, documentName, connectionConfig }) {
-    const context = await authenticatePageCollaboration(token, documentName);
-    connectionConfig.readOnly = context.role === PageAccessRole.VIEWER;
+    const context = documentName.startsWith("moodboard:")
+      ? await authenticateMoodboardCollaboration(token, documentName)
+      : await authenticatePageCollaboration(token, documentName);
+    connectionConfig.readOnly = isCollaborationReadOnly(context);
     return context;
   },
   async onLoadDocument({ document, documentName }) {
+    const moodboardId = moodboardIdFromCollaborationDocument(documentName);
+    if (moodboardId) {
+      const stored = await prisma.moodboardCollaborationState.findUnique({
+        where: { moodboardId },
+        select: { state: true },
+      });
+      if (!stored) {
+        throw new Error("Moodboard collaboration state is unavailable");
+      }
+      Y.applyUpdate(document, new Uint8Array(stored.state));
+      return document;
+    }
     const pageId = pageIdFromCollaborationDocument(documentName);
     if (!pageId) throw new Error("Invalid Page document name");
     const stored = await prisma.pageCollaborationState.findUnique({
@@ -63,6 +85,16 @@ const server = new Server<PageCollaborationContext>({
     return document;
   },
   async onStoreDocument({ document, documentName, lastContext }) {
+    const moodboardId = moodboardIdFromCollaborationDocument(documentName);
+    if (moodboardId) {
+      const state = Y.encodeStateAsUpdate(document);
+      await prisma.moodboardCollaborationState.upsert({
+        where: { moodboardId },
+        create: { moodboardId, state: Buffer.from(state) },
+        update: { state: Buffer.from(state) },
+      });
+      return;
+    }
     const pageId = pageIdFromCollaborationDocument(documentName);
     if (!pageId) throw new Error("Invalid Page document name");
     const state = Y.encodeStateAsUpdate(document);
@@ -77,7 +109,7 @@ const server = new Server<PageCollaborationContext>({
     });
     if (!page) return;
     await replacePageBlocks(
-      lastContext?.actor ?? page.userId,
+      lastContext?.resource === "page" ? lastContext.actor : page.userId,
       pageId,
       collaborationDocumentToPageBlocks(document),
       PageAuthor.HUMAN,

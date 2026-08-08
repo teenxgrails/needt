@@ -7,6 +7,7 @@ import { resolveWorkspaceAccess } from "@/lib/auth/workspace-auth";
 const DOCUMENT_PREFIX = "page:";
 
 export type PageCollaborationContext = {
+  resource: "page";
   actor: PageAccessActor;
   pageId: string;
   role: PageAccessRole;
@@ -34,5 +35,5 @@ export async function authenticatePageCollaboration(
   const actor = { userId: claims.sub, workspace };
   const access = await resolvePageAccess(actor, pageId);
   if (!access) throw new Error("Page collaboration access denied");
-  return { actor, pageId, role: access.role };
+  return { resource: "page", actor, pageId, role: access.role };
 }

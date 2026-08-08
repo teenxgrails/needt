@@ -7,6 +7,9 @@ tokens) is **Sol High**.
 collaboration server, token issuing and presence built there are reused here
 rather than duplicated.
 
+**Status:** 5.2–5.3 server foundation complete (2026-08-08). Canvas-level E2E
+coverage remains blocked on 5.1; 5.1 and 5.4–5.6 are not started.
+
 ## Context
 
 - Excalidraw is MIT licensed and provides the canvas, import and export.
@@ -31,7 +34,7 @@ rather than duplicated.
 Excalidraw embedded in the workspace: images, sticky notes, arrows, freehand
 drawing, undo/redo, zoom, export to PNG/SVG/JSON.
 
-*Validate:* `npm run test:e2e -- moodboard` covering create, edit, reload, export
+_Validate:_ `npm run test:e2e -- moodboard` covering create, edit, reload, export
 
 ### 5.2 Authorization and tokens — Sol High
 
@@ -39,21 +42,29 @@ Workspace membership and board role are resolved server-side **before** a
 connection token is issued. A room or document ID is never permission by
 itself. Tokens are short-lived and scoped to one board.
 
-*Validate:* `npm run test:e2e -- moodboard-access` including an attempt to connect with a valid session but no membership, and with a guessed room ID
+**Status:** server complete (2026-08-08). Membership and board access are
+rechecked at socket authentication; guessed-room and expired/tampered-token
+tests are in place. Full route E2E follows the 5.1 creation flow.
+
+_Validate:_ `npm run test:e2e -- moodboard-access` including an attempt to connect with a valid session but no membership, and with a guessed room ID
 
 ### 5.3 Roles
 
 Full Access / Editor / Viewer, consistent with pages. Viewer cannot mutate the
 document through the socket, not merely through the UI.
 
-*Validate:* a socket-level test asserting a Viewer's mutation is rejected server-side
+**Status:** server complete (2026-08-08). Direct roles override inherited
+workspace roles, creator access is fixed, and Hocuspocus rejects Viewer Yjs
+updates before applying them to the document.
+
+_Validate:_ a socket-level test asserting a Viewer's mutation is rejected server-side
 
 ### 5.4 Collaboration
 
 Presence and cursors through the shared realtime layer. Concurrent edits must
 not lose updates or duplicate elements.
 
-*Validate:* concurrency test with two simultaneous editors
+_Validate:_ concurrency test with two simultaneous editors
 
 ### 5.5 Persistence and recovery
 
@@ -61,14 +72,14 @@ The realtime document is the live source of truth; Needt stores board metadata
 and periodic snapshots in its own database for recovery and export. A snapshot
 must be restorable into a working board.
 
-*Validate:* restore test — snapshot, corrupt the live doc, restore, compare element counts
+_Validate:_ restore test — snapshot, corrupt the live doc, restore, compare element counts
 
 ### 5.6 Mobile
 
 Usable at 360 px: toolbar reachable, no horizontal overflow, touch targets at
 least 44 px, safe areas respected.
 
-*Validate:* `npm run test:e2e -- moodboard-mobile && npm run test:visual`
+_Validate:_ `npm run test:e2e -- moodboard-mobile && npm run test:visual`
 
 ## Definition of done
 

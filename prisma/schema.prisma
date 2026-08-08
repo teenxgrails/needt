@@ -127,6 +127,9 @@ model User {
   pageAccessGrants       PageAccessGrant[]       @relation("PageAccessGrantee")
   pageAccessGrantsGiven  PageAccessGrant[]       @relation("PageAccessGrantor")
   pagePublications       PagePublication[]       @relation("PagePublicationPublisher")
+  moodboardsCreated      Moodboard[]             @relation("MoodboardCreator")
+  moodboardAccessGrants  MoodboardAccessGrant[]  @relation("MoodboardAccessGrantee")
+  moodboardGrantsGiven   MoodboardAccessGrant[]  @relation("MoodboardAccessGrantor")
   pageTemplates          PageTemplate[]
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
@@ -163,6 +166,7 @@ model Workspace {
   tasks            Task[]
   boards           Board[]
   pages            Page[]
+  moodboards       Moodboard[]
   taskActivities   TaskActivity[]
   taskDependencies TaskDependency[]
   projectTemplates ProjectTemplate[]
@@ -1344,6 +1348,54 @@ model PagePublication {
   @@index([publishedById])
 }
 
+/// A workspace-scoped collaborative visual board. Canvas behavior is added by
+/// plan 05.1; access and realtime state live here so authorization is never
+/// inferred from a room ID.
+model Moodboard {
+  id                 String                       @id @default(cuid())
+  workspaceId        String
+  workspace          Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdById        String
+  createdBy          User                         @relation("MoodboardCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  title              String                       @default("Untitled Moodboard")
+  archivedAt         DateTime?
+  accessGrants       MoodboardAccessGrant[]
+  collaborationState MoodboardCollaborationState?
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@index([workspaceId, archivedAt])
+  @@index([createdById])
+}
+
+model MoodboardAccessGrant {
+  id          String              @id @default(cuid())
+  moodboardId String
+  moodboard   Moodboard           @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User                @relation("MoodboardAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
+  role        MoodboardAccessRole
+  grantedById String
+  grantedBy   User                @relation("MoodboardAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([moodboardId, userId])
+  @@index([userId, role])
+  @@index([grantedById])
+}
+
+model MoodboardCollaborationState {
+  id          String    @id @default(cuid())
+  moodboardId String    @unique
+  moodboard   Moodboard @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
+  state       Bytes
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([updatedAt])
+}
+
 model AiPageChangeProposal {
   id         String           @id @default(cuid())
   userId     String
@@ -2099,6 +2151,12 @@ enum WorkspaceRole {
 }
 
 enum PageAccessRole {
+  FULL_ACCESS
+  EDITOR
+  VIEWER
+}
+
+enum MoodboardAccessRole {
   FULL_ACCESS
   EDITOR
   VIEWER
