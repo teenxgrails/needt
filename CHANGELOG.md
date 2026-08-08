@@ -71,6 +71,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added collaborative Moodboards: an Excalidraw canvas for images, sketches,
+  sticky notes and export; workspace-scoped boards with live presence; periodic
+  recoverable snapshots; Full Access/Editor/Viewer enforcement; and a
+  safe-area-aware mobile workspace.
+
 - Added the Moodboard security foundation: workspace-scoped boards, direct Full Access/Editor/Viewer grants, five-minute document-scoped collaboration tokens, membership and role rechecks at WebSocket authentication, and server-enforced read-only Yjs connections for Viewers.
 
 - Pages can now be published through separate read-only bearer links with public asset delivery; unpublishing revokes the link and closes already open public sessions immediately.

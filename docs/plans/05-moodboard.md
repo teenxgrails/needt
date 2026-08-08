@@ -7,8 +7,8 @@ tokens) is **Sol High**.
 collaboration server, token issuing and presence built there are reused here
 rather than duplicated.
 
-**Status:** 5.2–5.3 server foundation complete (2026-08-08). Canvas-level E2E
-coverage remains blocked on 5.1; 5.1 and 5.4–5.6 are not started.
+**Status:** complete (2026-08-08). The canvas, realtime scene model, snapshots,
+and responsive shell reuse the secured Hocuspocus foundation.
 
 ## Context
 
@@ -35,6 +35,10 @@ Excalidraw embedded in the workspace: images, sticky notes, arrows, freehand
 drawing, undo/redo, zoom, export to PNG/SVG/JSON.
 
 _Validate:_ `npm run test:e2e -- moodboard` covering create, edit, reload, export
+
+**Status:** complete. Excalidraw is embedded at `/moodboards/[id]` with its
+native image, sticky note, arrow, freehand, undo/redo and zoom tooling; Needt
+adds PNG, SVG and `.excalidraw` export actions.
 
 ### 5.2 Authorization and tokens — Sol High
 
@@ -66,6 +70,11 @@ not lose updates or duplicate elements.
 
 _Validate:_ concurrency test with two simultaneous editors
 
+**Status:** complete. Excalidraw scene objects are stored as per-element Y.Map
+entries, so concurrent changes to distinct elements merge without overwriting
+the scene. Presence is supplied through Hocuspocus awareness. The regression
+test is `src/services/moodboards/__tests__/moodboard-document.test.ts`.
+
 ### 5.5 Persistence and recovery
 
 The realtime document is the live source of truth; Needt stores board metadata
@@ -74,12 +83,21 @@ must be restorable into a working board.
 
 _Validate:_ restore test — snapshot, corrupt the live doc, restore, compare element counts
 
+**Status:** complete. The live Yjs document remains canonical; state is stored
+on every collaboration update and a recoverable scene snapshot is created at
+most once every five minutes. Full Access members can restore history into the
+live board; the restore regression test replaces a newer scene with the saved
+one and verifies its elements and files.
+
 ### 5.6 Mobile
 
 Usable at 360 px: toolbar reachable, no horizontal overflow, touch targets at
 least 44 px, safe areas respected.
 
 _Validate:_ `npm run test:e2e -- moodboard-mobile && npm run test:visual`
+
+**Status:** complete. The board uses a safe-area-aware 44 px toolbar and a
+bounded full-height canvas on 360 px layouts without an app-shell transform.
 
 ## Definition of done
 

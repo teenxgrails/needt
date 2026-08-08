@@ -12,6 +12,7 @@ import {
   Download,
   FileText,
   Focus,
+  Palette,
   Search,
   Settings,
   Sparkles,
@@ -144,6 +145,7 @@ export const AppNav = memo(function AppNav({
     },
     { href: "/projects", label: "Projects", icon: HiOutlineFolder },
     { href: "/focus", label: "Focus", icon: Focus },
+    { href: "/moodboards", label: "Moodboards", icon: Palette },
   ];
   const tabletLinks = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays },
@@ -151,11 +153,13 @@ export const AppNav = memo(function AppNav({
     { href: "/tasks", label: "Tasks", icon: CheckSquare },
     { href: "/projects", label: "Projects", icon: HiOutlineFolder },
     { href: "/focus", label: "Focus", icon: Focus },
+    { href: "/moodboards", label: "Boards", icon: Palette },
   ];
   const phoneLinks = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/today", label: "Today", icon: CalendarDays },
     { href: "/focus", label: "Focus", icon: CircleDashed },
+    { href: "/moodboards", label: "Boards", icon: Palette },
   ];
   return (
     <aside

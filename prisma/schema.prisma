@@ -1361,6 +1361,7 @@ model Moodboard {
   archivedAt         DateTime?
   accessGrants       MoodboardAccessGrant[]
   collaborationState MoodboardCollaborationState?
+  snapshots          MoodboardSnapshot[]
   createdAt          DateTime                     @default(now())
   updatedAt          DateTime                     @updatedAt
 
@@ -1386,14 +1387,25 @@ model MoodboardAccessGrant {
 }
 
 model MoodboardCollaborationState {
-  id          String    @id @default(cuid())
-  moodboardId String    @unique
-  moodboard   Moodboard @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
-  state       Bytes
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  moodboardId    String    @unique
+  moodboard      Moodboard @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
+  state          Bytes
+  lastSnapshotAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([updatedAt])
+}
+
+model MoodboardSnapshot {
+  id          String    @id @default(cuid())
+  moodboardId String
+  moodboard   Moodboard @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
+  scene       Json
+  createdAt   DateTime  @default(now())
+
+  @@index([moodboardId, createdAt])
 }
 
 model AiPageChangeProposal {

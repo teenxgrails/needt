@@ -3,6 +3,10 @@ import {
   moodboardIdFromCollaborationDocument,
 } from "@/services/moodboards/moodboard-collaboration-auth";
 import {
+  readMoodboardScene,
+  writeMoodboardScene,
+} from "@/services/moodboards/moodboard-document";
+import {
   authenticatePageCollaboration,
   pageIdFromCollaborationDocument,
 } from "@/services/pages/page-collaboration-auth";
@@ -10,9 +14,10 @@ import { collaborationDocumentToPageBlocks } from "@/services/pages/page-collabo
 import { replacePageBlocks } from "@/services/pages/page-service";
 import { Redis as RedisExtension } from "@hocuspocus/extension-redis";
 import { Server } from "@hocuspocus/server";
-import { PageAuthor } from "@prisma/client";
+import { PageAuthor, Prisma } from "@prisma/client";
 import * as Y from "yjs";
 
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -22,6 +27,7 @@ import {
 } from "./access-policy";
 
 const LOG_SOURCE = "CollaborationServer";
+const MOODBOARD_SNAPSHOT_INTERVAL_MS = 5 * 60 * 1_000;
 
 function redisExtensions() {
   if (!process.env.REDIS_URL) return [];
@@ -72,6 +78,7 @@ const server = new Server<CollaborationContext>({
         throw new Error("Moodboard collaboration state is unavailable");
       }
       Y.applyUpdate(document, new Uint8Array(stored.state));
+      writeMoodboardScene(document, readMoodboardScene(document));
       return document;
     }
     const pageId = pageIdFromCollaborationDocument(documentName);
@@ -88,10 +95,37 @@ const server = new Server<CollaborationContext>({
     const moodboardId = moodboardIdFromCollaborationDocument(documentName);
     if (moodboardId) {
       const state = Y.encodeStateAsUpdate(document);
-      await prisma.moodboardCollaborationState.upsert({
+      const now = newDate();
+      const existing = await prisma.moodboardCollaborationState.findUnique({
         where: { moodboardId },
-        create: { moodboardId, state: Buffer.from(state) },
-        update: { state: Buffer.from(state) },
+        select: { lastSnapshotAt: true },
+      });
+      const shouldSnapshot =
+        !existing?.lastSnapshotAt ||
+        now.getTime() - existing.lastSnapshotAt.getTime() >=
+          MOODBOARD_SNAPSHOT_INTERVAL_MS;
+      const scene = shouldSnapshot ? readMoodboardScene(document) : null;
+      await prisma.$transaction(async (transaction) => {
+        await transaction.moodboardCollaborationState.upsert({
+          where: { moodboardId },
+          create: {
+            moodboardId,
+            state: Buffer.from(state),
+            ...(shouldSnapshot && { lastSnapshotAt: now }),
+          },
+          update: {
+            state: Buffer.from(state),
+            ...(shouldSnapshot && { lastSnapshotAt: now }),
+          },
+        });
+        if (scene) {
+          await transaction.moodboardSnapshot.create({
+            data: {
+              moodboardId,
+              scene: scene as Prisma.InputJsonValue,
+            },
+          });
+        }
       });
       return;
     }

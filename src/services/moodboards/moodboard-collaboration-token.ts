@@ -1,3 +1,7 @@
+import {
+  EMPTY_MOODBOARD_SCENE,
+  writeMoodboardScene,
+} from "@/services/moodboards/moodboard-document";
 import { MoodboardAccessRole } from "@prisma/client";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import * as Y from "yjs";
@@ -76,6 +80,7 @@ async function initialState(moodboardId: string) {
   if (existing) return new Uint8Array(existing.state);
 
   const document = new Y.Doc();
+  writeMoodboardScene(document, EMPTY_MOODBOARD_SCENE);
   const state = Y.encodeStateAsUpdate(document);
   document.destroy();
   try {
