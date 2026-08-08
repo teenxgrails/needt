@@ -68,6 +68,10 @@ test("Pages supports workspace entities, tables, and version history", async ({
       await route.fulfill({ json: { page: pageDetail } });
       return;
     }
+    if (url.pathname === `/api/pages/${pageId}/collaboration-token`) {
+      await route.fulfill({ status: 503, json: { error: "Unavailable" } });
+      return;
+    }
     if (url.pathname === `/api/pages/${pageId}/entities`) {
       const input = JSON.parse(request.postData() ?? "{}") as {
         type: string;

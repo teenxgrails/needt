@@ -86,5 +86,10 @@ export default defineConfig({
     command: "npm run dev",
     url: testBaseUrl,
     reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      RATE_LIMIT_HASH_SECRET:
+        process.env.RATE_LIMIT_HASH_SECRET || "needt-e2e-rate-limit-secret",
+    },
   },
 });

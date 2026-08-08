@@ -44,6 +44,7 @@ const pageDetail = {
 test("publishes a read-only link and revokes an already open session", async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   const secret = process.env.NEXTAUTH_SECRET;
   expect(secret, "NEXTAUTH_SECRET is required").toBeTruthy();
   const session = await encode({

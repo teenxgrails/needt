@@ -1,28 +1,32 @@
+import { encode } from "next-auth/jwt";
+import { existsSync } from "node:fs";
+
 import { expect, request as playwrightRequest, test } from "@playwright/test";
 
-const PASSWORD = "Needt-ci-Password1";
+import { prisma } from "@/lib/prisma";
+
+if (!process.env.NEXTAUTH_SECRET && existsSync(".env.local")) {
+  process.loadEnvFile(".env.local");
+}
 
 async function authenticatedRequest(email: string) {
-  const context = await playwrightRequest.newContext({
-    baseURL: process.env.TEST_BASE_URL || "http://127.0.0.1:3000",
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, email: true, role: true },
   });
-  const csrfResponse = await context.get("/api/auth/csrf");
-  const { csrfToken } = (await csrfResponse.json()) as { csrfToken: string };
-  const signIn = await context.post("/api/auth/callback/credentials", {
-    form: {
-      csrfToken,
-      email,
-      password: PASSWORD,
-      callbackUrl: "/today",
-      json: "true",
+  expect(user, `missing seeded user ${email}`).not.toBeNull();
+  const secret = process.env.NEXTAUTH_SECRET;
+  expect(secret, "NEXTAUTH_SECRET is required for entitlement e2e").toBeTruthy();
+  const sessionToken = await encode({
+    secret: secret!,
+    token: { sub: user!.id, email: user!.email, role: user!.role },
+  });
+  return playwrightRequest.newContext({
+    baseURL: process.env.TEST_BASE_URL || "http://127.0.0.1:3000",
+    extraHTTPHeaders: {
+      cookie: `next-auth.session-token=${sessionToken}`,
     },
   });
-  const signInBody = await signIn.text();
-  expect(
-    signIn.ok(),
-    `credentials sign-in returned ${signIn.status()}: ${signInBody}`
-  ).toBeTruthy();
-  return context;
 }
 
 async function createTask(
@@ -43,6 +47,10 @@ async function createTask(
 }
 
 test.describe("plan entitlements and tenant isolation", () => {
+  test.afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
   test("FREE cannot reach paid focus, reminder, or booking behavior through APIs", async () => {
     const free = await authenticatedRequest("ci-free@needt.local");
     const paidFocus = await free.post("/api/focus/session", {

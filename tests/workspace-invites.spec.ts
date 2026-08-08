@@ -1,8 +1,13 @@
 import { expect, request as playwrightRequest, test } from "@playwright/test";
 import { encode } from "next-auth/jwt";
+import { existsSync } from "node:fs";
 
 import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
+
+if (!process.env.NEXTAUTH_SECRET && existsSync(".env.local")) {
+  process.loadEnvFile(".env.local");
+}
 
 async function authenticatedRequest(email: string) {
   const user = await prisma.user.findUnique({
@@ -31,6 +36,27 @@ test.describe("workspace invites", () => {
 
   test("enforces paid plans, single use, roles, and the last owner", async () => {
     test.setTimeout(90_000);
+    const rolloutUsers = await prisma.user.findMany({
+      where: {
+        email: {
+          in: [
+            "ci-free@needt.local",
+            "ci-pro@needt.local",
+            "ci-lifetime@needt.local",
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    await Promise.all(
+      rolloutUsers.map(({ id: userId }) =>
+        prisma.featureFlagOverride.upsert({
+          where: { flagKey_userId: { flagKey: "workspaces", userId } },
+          update: { enabled: true },
+          create: { flagKey: "workspaces", userId, enabled: true },
+        })
+      )
+    );
     const free = await authenticatedRequest("ci-free@needt.local");
     const pro = await authenticatedRequest("ci-pro@needt.local");
     const lifetime = await authenticatedRequest("ci-lifetime@needt.local");
