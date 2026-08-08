@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Style: applying a theme token object in `/style` now persists it per user and
+  updates shared product controls globally.
+
 ### Changed
 
 - Reworked Pages around the existing MIT-licensed Tiptap editor: the desktop editor now has a quiet persistent formatting/insert toolbar and a simplified document header, phones have a Notes-style bottom action bar and formatting/insert sheets, and the Pages home now provides search, favorites, recent notes, and honest quick-create actions.

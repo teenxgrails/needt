@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { parseDesignTokens } from "@/lib/design-tokens";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -61,51 +62,76 @@ export async function PATCH(request: NextRequest) {
     if ("response" in auth) return auth.response;
 
     const body = await request.json();
-    const sidebarWidth = Number(body.sidebarWidth);
-    const radius = Number(body.radius);
-
     const data = {
-      accentColor: cleanHex(
-        body.accentColor,
-        DEFAULT_CUSTOMIZATION.accentColor
-      ),
-      backgroundTint: cleanHex(
-        body.backgroundTint,
-        DEFAULT_CUSTOMIZATION.backgroundTint
-      ),
-      density: cleanChoice(
-        body.density,
-        ["compact", "comfortable", "spacious"],
-        "comfortable"
-      ),
-      sidebarWidth:
-        Number.isFinite(sidebarWidth) &&
-        sidebarWidth >= 220 &&
-        sidebarWidth <= 320
-          ? Math.round(sidebarWidth)
-          : DEFAULT_CUSTOMIZATION.sidebarWidth,
-      radius:
-        Number.isFinite(radius) && radius >= 4 && radius <= 16
-          ? Math.round(radius)
-          : DEFAULT_CUSTOMIZATION.radius,
-      fontFamily: cleanChoice(
-        body.fontFamily,
-        ["system", "rounded", "mono"],
-        "system"
-      ),
-      eventChipStyle: cleanChoice(
-        body.eventChipStyle,
-        ["flat", "outlined", "filled"],
-        "flat"
-      ),
-      animationsEnabled: body.animationsEnabled !== false,
-      themePreset: "needt",
+      ...("accentColor" in body && {
+        accentColor: cleanHex(
+          body.accentColor,
+          DEFAULT_CUSTOMIZATION.accentColor
+        ),
+      }),
+      ...("backgroundTint" in body && {
+        backgroundTint: cleanHex(
+          body.backgroundTint,
+          DEFAULT_CUSTOMIZATION.backgroundTint
+        ),
+      }),
+      ...("density" in body && {
+        density: cleanChoice(
+          body.density,
+          ["compact", "comfortable", "spacious"],
+          "comfortable"
+        ),
+      }),
+      ...("sidebarWidth" in body && {
+        sidebarWidth:
+          Number.isFinite(Number(body.sidebarWidth)) &&
+          Number(body.sidebarWidth) >= 220 &&
+          Number(body.sidebarWidth) <= 320
+            ? Math.round(Number(body.sidebarWidth))
+            : DEFAULT_CUSTOMIZATION.sidebarWidth,
+      }),
+      ...("radius" in body && {
+        radius:
+          Number.isFinite(Number(body.radius)) &&
+          Number(body.radius) >= 4 &&
+          Number(body.radius) <= 16
+            ? Math.round(Number(body.radius))
+            : DEFAULT_CUSTOMIZATION.radius,
+      }),
+      ...("fontFamily" in body && {
+        fontFamily: cleanChoice(
+          body.fontFamily,
+          ["system", "rounded", "mono"],
+          "system"
+        ),
+      }),
+      ...("eventChipStyle" in body && {
+        eventChipStyle: cleanChoice(
+          body.eventChipStyle,
+          ["flat", "outlined", "filled"],
+          "flat"
+        ),
+      }),
+      ...("animationsEnabled" in body && {
+        animationsEnabled: body.animationsEnabled !== false,
+      }),
     };
+
+    if ("designTokens" in body) {
+      const designTokens = parseDesignTokens(body.designTokens);
+      if (!designTokens) {
+        return NextResponse.json(
+          { error: "Invalid design token object" },
+          { status: 400 }
+        );
+      }
+      Object.assign(data, { designTokens });
+    }
 
     const customization = await prisma.userCustomization.upsert({
       where: { userId: auth.userId },
       update: data,
-      create: { userId: auth.userId, ...data },
+      create: { userId: auth.userId, ...DEFAULT_CUSTOMIZATION, ...data },
     });
 
     return NextResponse.json(customization);
