@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reworked Pages around the existing MIT-licensed Tiptap editor: the desktop editor now has a quiet persistent formatting/insert toolbar and a simplified document header, phones have a Notes-style bottom action bar and formatting/insert sheets, and the Pages home now provides search, favorites, recent notes, and honest quick-create actions.
+- Updated Auth.js Core, Excalidraw, Next.js 15, and compatible transitive dependencies; the production audit no longer reports critical vulnerabilities, while breaking major upgrades remain isolated for a dedicated migration.
 - Pages now use a viewport-safe slash-command sheet on phones, expose block reordering after a scroll-safe 350 ms long press, and position the selection formatting toolbar outside the selected text.
 
 - Project dependencies are now created only between tasks in the same active project, remain readable as soft-removed history, and block cross-project task moves with the linked task named in the conflict message.
@@ -27,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made Today autosave serialize date-keyed writes without stale success or failure clearing newer drafts, collapse duplicate inline task references, preserve completed tasks on historical days, and reject interrupted/invalid agenda request bodies cleanly.
+- Prevented stale Excalidraw clients from overwriting concurrent edits to different existing moodboard elements by publishing per-element scene deltas.
+- Fixed mobile Page block dragging when pointer capture is unavailable and made drop targets resolve to the nearest block instead of skipping over short blocks.
+- Made Playwright honor `TEST_BASE_URL` for both navigation and dev-server readiness, so local UI gates can run reliably on a non-default port.
 - Hardened shared-workspace API boundaries: expired paid plans can no longer read shared workspace metadata or data, invite creation and acceptance are rate-limited, project mutations retain workspace scope at write time, concurrent personal-workspace initialization is race-safe, and shared calendar Busy intervals no longer expose source event IDs.
 - Completing a recurring task now records the finished occurrence as an immutable instance linked to its series master, instead of rewriting the master row and leaving a detached completed copy. The master only advances to the next occurrence, so editing a series affects future occurrences and never rewrites past ones. Completion is idempotent — a repeated or concurrent completion of the same occurrence can no longer create duplicate instances.
 - Auto-scheduling now honors task start and postpone dates, preserves exact unscheduled reason codes, falls back after soft deadlines, and refuses to place hard-deadline tasks past their deadline.

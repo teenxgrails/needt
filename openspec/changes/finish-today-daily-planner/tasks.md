@@ -38,16 +38,16 @@
 
 ## Wave 3 — Evidence and handoff
 
-- [ ] **T-008 — Add focused Today regression tests** (REQ-002–REQ-006, REQ-010)
+- [x] **T-008 — Add focused Today regression tests** (REQ-002–REQ-006, REQ-010)
   - Add unit/integration coverage for sanitizer, task-reference reconciliation, autosave/date races, create failure/retry, and historical completion behavior.
   - Run targeted Jest files only during iteration.
 
-- [ ] **T-009 — Add Today-only Playwright evidence** (REQ-001, REQ-004, REQ-007–REQ-011)
+- [x] **T-009 — Add Today-only Playwright evidence** (REQ-001, REQ-004, REQ-007–REQ-011)
   - Add/update a Today-focused visual/e2e spec for desktop/tablet/mobile in dark/light plus the write, `/task`, date, duration, complete, modal, history, reload, and error flows.
-  - Commands: `pnpm test:visual -- --project=desktop <today-spec>`, then tablet/mobile after desktop is accepted.
+  - Commands: `npm run test:visual -- --project=desktop <today-spec>`, then tablet/mobile after desktop is accepted.
   - Completion: screenshots match the user references in hierarchy/density and all interactions persist.
 
-- [ ] **T-010 — Targeted gate and release note** (REQ-001–REQ-012)
-  - Run only the proportional gate requested for this block: targeted Jest, `pnpm type-check`, Today visual/e2e, and `pnpm lint` if the repo lint command is operational.
+- [x] **T-010 — Targeted gate and release note** (REQ-001–REQ-012)
+  - Run only the proportional gate requested for this block: targeted Jest, `npm run type-check`, Today visual/e2e, and `npm run lint`.
   - Update `CHANGELOG.md` under `[Unreleased]`, keep `.project-pilot` current, and review the diff for Calendar/sidebar/shared-file leakage.
   - Completion: no known high/medium Today defect; planning-only files ship with the actual Today code rather than triggering their own deployment.

@@ -5,6 +5,8 @@ and no security surface.
 
 **Independent of 02** — can ship before or after it.
 
+**Status:** complete (2026-08-08).
+
 ## Context
 
 - Overlay and menu animation already runs off the in-app motion flag; the

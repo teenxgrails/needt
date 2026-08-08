@@ -5,13 +5,16 @@ gates, and commit. **Do not start a later plan before the earlier one is
 deployed and smoke-tested** — every plan after 02 assumes workspace scoping
 exists.
 
-| # | Plan | Model | Ships |
-|---|------|-------|-------|
-| 01 | [Scheduling and task lifecycle](01-scheduling.md) | Sol High | Hard deadlines, archive, recurrence rework |
-| 02 | [Workspaces, projects, security](02-workspaces.md) | Sol High | Tenancy boundary — riskiest, feature-flagged |
-| 03 | [Animation, notifications, Space](03-motion-ui.md) | Terra Medium | Visual only, no schema |
-| 04 | [Pages](04-pages.md) | Terra High | Extends the existing editor |
-| 05 | [Moodboard](05-moodboard.md) | Terra High | Excalidraw canvas |
+| # | Plan | Status | Model | Ships |
+|---|------|--------|-------|-------|
+| 01 | [Scheduling and task lifecycle](01-scheduling.md) | Complete | Sol High | Hard deadlines, archive, recurrence rework |
+| 02 | [Workspaces, projects, security](02-workspaces.md) | Complete | Sol High | Tenancy boundary — riskiest, feature-flagged |
+| 03 | [Animation, notifications, Space](03-motion-ui.md) | Complete | Terra Medium | Visual only, no schema |
+| 04 | [Pages](04-pages.md) | Complete | Terra High | Extends the existing editor |
+| 05 | [Moodboard](05-moodboard.md) | Complete | Terra High | Excalidraw canvas |
+
+The implementation plans are complete. Remaining product opportunities and
+known debt are tracked in [06 — Product gap audit](06-product-gap-audit.md).
 
 A final security pass (Sol High) runs at the end of 02, 04, and 05 — not as a
 separate plan. It reviews only workspace isolation, invites, entitlement
