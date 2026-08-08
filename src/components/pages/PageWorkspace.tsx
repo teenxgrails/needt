@@ -33,8 +33,8 @@ import {
   Bookmark,
   CalendarDays,
   CheckSquare,
+  ChevronDown,
   ChevronLeft,
-  Clock3,
   Code2,
   Columns3,
   File,
@@ -58,6 +58,7 @@ import {
   Minus,
   MoreHorizontal,
   Pilcrow,
+  Plus,
   Quote,
   Redo2,
   ShieldCheck,
@@ -86,6 +87,12 @@ import {
   pageBlocksFromDocument,
 } from "@/components/pages/page-document";
 import type { PageDetail } from "@/components/pages/page-types";
+import {
+  BottomSheet,
+  BottomSheetContent,
+  BottomSheetDescription,
+  BottomSheetTitle,
+} from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -106,6 +113,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
+import { newDate } from "@/lib/date-utils";
 import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { randomId } from "@/lib/uuid";
@@ -398,6 +406,24 @@ function decodeCollaborationState(value: string) {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
 }
 
+function pageEditedLabel(value: string) {
+  const edited = newDate(value);
+  const today = newDate();
+  const sameDay = edited.toDateString() === today.toDateString();
+
+  return sameDay
+    ? `Edited ${edited.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : `Edited ${edited.toLocaleDateString([], {
+        day: "numeric",
+        month: "short",
+        year:
+          edited.getFullYear() === today.getFullYear() ? undefined : "numeric",
+      })}`;
+}
+
 export function PageWorkspace({
   pageId,
   documentFormatVersion = 1,
@@ -425,6 +451,8 @@ export function PageWorkspace({
     left: number;
   } | null>(null);
   const [slashIndex, setSlashIndex] = useState(0);
+  const [mobileFormatOpen, setMobileFormatOpen] = useState(false);
+  const [mobileInsertOpen, setMobileInsertOpen] = useState(false);
   const [mobileBlockHandle, setMobileBlockHandle] =
     useState<MobileBlockHandle | null>(null);
   const [mobileBlockDragOffset, setMobileBlockDragOffset] = useState(0);
@@ -578,11 +606,15 @@ export function PageWorkspace({
       (element): element is HTMLElement =>
         element instanceof HTMLElement && Boolean(element.dataset.blockId)
     );
-    const index = elements.findIndex((element) => {
-      const bounds = element.getBoundingClientRect();
-      return clientY < bounds.top + bounds.height / 2;
-    });
-    return index < 0 ? elements.length - 1 : index;
+    if (elements.length === 0) return -1;
+    return elements.reduce(
+      (closest, element, index) => {
+        const bounds = element.getBoundingClientRect();
+        const distance = Math.abs(clientY - (bounds.top + bounds.height / 2));
+        return distance < closest.distance ? { index, distance } : closest;
+      },
+      { index: 0, distance: Number.POSITIVE_INFINITY }
+    ).index;
   };
 
   const moveMobileBlockBy = (blockId: string, direction: -1 | 1) => {
@@ -742,12 +774,18 @@ export function PageWorkspace({
     if (!mobileBlockHandle) return;
     event.preventDefault();
     event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
     mobileBlockDrag.current = {
       blockId: mobileBlockHandle.blockId,
       pointerId: event.pointerId,
       startY: event.clientY,
     };
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic and assistive pointer events can reorder without capture.
+      }
+    }
     setMobileBlockDragOffset(0);
   };
 
@@ -1368,7 +1406,7 @@ export function PageWorkspace({
     insertSpecial(pendingInsert, pendingValue);
   };
 
-  const applyCommand = (command: PageCommand) => {
+  const applyCommand = (command: PageCommand, fromSlash = true) => {
     if (!editor) return;
     if (
       command === "CALLOUT" ||
@@ -1406,13 +1444,15 @@ export function PageWorkspace({
           .catch(() => setMentionPages([]));
         setPendingMentionId(null);
       }
-      const { $from } = editor.state.selection;
-      pendingRange.current = { from: $from.start(), to: $from.end() };
+      const { $from, from } = editor.state.selection;
+      pendingRange.current = fromSlash
+        ? { from: $from.start(), to: $from.end() }
+        : { from, to: from };
       setPendingInsert(command);
       setPendingFile(null);
       setPendingValue(
         command === "DATE_MENTION"
-          ? new Date().toISOString().slice(0, 10)
+          ? newDate().toISOString().slice(0, 10)
           : command === "COLUMNS"
             ? "Two columns"
             : ""
@@ -1420,7 +1460,7 @@ export function PageWorkspace({
       return;
     }
 
-    const chain = removeSlashText(editor);
+    const chain = fromSlash ? removeSlashText(editor) : editor.chain().focus();
     if (command === "paragraph") chain.setParagraph().run();
     else if (command === "heading1") chain.toggleHeading({ level: 1 }).run();
     else if (command === "heading2") chain.toggleHeading({ level: 2 }).run();
@@ -1449,7 +1489,7 @@ export function PageWorkspace({
 
   return (
     <div className="min-h-dvh bg-[var(--surface-canvas)] text-[var(--text-primary)]">
-      <header className="sticky top-0 z-20 flex h-11 items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-3">
+      <header className="sticky top-0 z-20 flex h-12 items-center gap-1.5 border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-2 sm:px-3">
         <Button
           variant="ghost"
           size="icon"
@@ -1458,8 +1498,9 @@ export function PageWorkspace({
         >
           <ChevronLeft />
         </Button>
-        <span className="min-w-0 flex-1 truncate text-sm">
-          {page.icon} {page.title}
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+          <span className="mr-1.5">{page.icon || "📄"}</span>
+          {page.title || "Untitled"}
         </span>
         <div
           className="hidden items-center -space-x-1 sm:flex"
@@ -1474,12 +1515,20 @@ export function PageWorkspace({
             />
           ))}
         </div>
-        <span className="text-[11px] text-[var(--text-muted)]">
-          {collaborationStatus === "connected"
-            ? "Live · "
-            : collaborationStatus === "connecting"
-              ? "Connecting · "
-              : "Offline · "}
+        <span
+          className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]"
+          aria-live="polite"
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              collaborationStatus === "connected"
+                ? "bg-emerald-500"
+                : collaborationStatus === "connecting"
+                  ? "bg-amber-500"
+                  : "bg-[var(--text-disabled)]"
+            )}
+          />
           {saveState === "saving"
             ? "Saving…"
             : saveState === "offline"
@@ -1488,52 +1537,61 @@ export function PageWorkspace({
                 ? "Draft kept"
                 : "Saved"}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor?.chain().focus().undo().run()}
-          disabled={!canEdit || !editor?.can().undo()}
-          aria-label="Undo"
-        >
-          <Undo2 />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor?.chain().focus().redo().run()}
-          disabled={!canEdit || !editor?.can().redo()}
-          aria-label="Redo"
-        >
-          <Redo2 />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => void patchPage({ isFavorite: !page.isFavorite })}
-          disabled={!canEdit}
-          aria-label="Favorite"
-        >
-          <Star
-            className={page.isFavorite ? "fill-current text-amber-400" : ""}
-          />
-        </Button>
-        <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-          <LockKeyhole className="h-3.5 w-3.5" />
-          <Switch
-            checked={page.isPrivate}
-            disabled={!canManageAccess}
-            onCheckedChange={(checked) =>
-              void patchPage({ isPrivate: checked })
-            }
-          />
-        </label>
+        {canManageAccess && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden sm:inline-flex"
+            onClick={() => void openTool("permissions")}
+          >
+            Share
+          </Button>
+        )}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Page options">
               <MoreHorizontal />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-52 p-1.5">
+          <PopoverContent align="end" className="w-60 p-1.5">
+            <div className="mb-1 flex items-center gap-1 border-b border-[var(--border-subtle)] px-1 pb-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-1"
+                onClick={() => editor?.chain().focus().undo().run()}
+                disabled={!canEdit || !editor?.can().undo()}
+                aria-label="Undo"
+              >
+                <Undo2 />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-1"
+                onClick={() => editor?.chain().focus().redo().run()}
+                disabled={!canEdit || !editor?.can().redo()}
+                aria-label="Redo"
+              >
+                <Redo2 />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-1"
+                onClick={() => void patchPage({ isFavorite: !page.isFavorite })}
+                disabled={!canEdit}
+                aria-label={
+                  page.isFavorite ? "Remove from favorites" : "Add to favorites"
+                }
+              >
+                <Star
+                  className={
+                    page.isFavorite ? "fill-current text-amber-400" : ""
+                  }
+                />
+              </Button>
+            </div>
             <button
               type="button"
               onClick={() => void openTool("comments")}
@@ -1593,9 +1651,191 @@ export function PageWorkspace({
               <Sparkles className="h-4 w-4 text-[var(--text-muted)]" />
               Ask AI
             </button>
+            <label className="mt-1 flex min-h-10 items-center gap-2 border-t border-[var(--border-subtle)] px-2.5 pt-1 text-[13px]">
+              <LockKeyhole className="h-4 w-4 text-[var(--text-muted)]" />
+              <span className="min-w-0 flex-1">Private Page</span>
+              <Switch
+                checked={page.isPrivate}
+                disabled={!canManageAccess}
+                onCheckedChange={(checked) =>
+                  void patchPage({ isPrivate: checked })
+                }
+              />
+            </label>
           </PopoverContent>
         </Popover>
       </header>
+
+      <div
+        className="sticky top-12 z-[15] hidden h-10 items-center justify-center border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-3 sm:flex"
+        aria-label="Page editor toolbar"
+      >
+        <div className="flex max-w-full items-center gap-1 overflow-x-auto">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-w-24 justify-between"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Pilcrow className="h-3.5 w-3.5" />
+                  {editor?.isActive("heading", { level: 1 })
+                    ? "Heading 1"
+                    : editor?.isActive("heading", { level: 2 })
+                      ? "Heading 2"
+                      : editor?.isActive("heading", { level: 3 })
+                        ? "Heading 3"
+                        : "Text"}
+                </span>
+                <ChevronDown className="h-3 w-3 text-[var(--text-muted)]" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-52 p-1.5">
+              {COMMANDS.filter((command) =>
+                ["paragraph", "heading1", "heading2", "heading3"].includes(
+                  command.id
+                )
+              ).map((command) => {
+                const Icon = command.icon;
+                return (
+                  <button
+                    key={command.id}
+                    type="button"
+                    onClick={() => applyCommand(command.id, false)}
+                    className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+                  >
+                    <Icon className="h-4 w-4 text-[var(--text-muted)]" />
+                    {command.label}
+                  </button>
+                );
+              })}
+            </PopoverContent>
+          </Popover>
+
+          <span className="mx-1 h-5 w-px bg-[var(--border-subtle)]" />
+          {[
+            {
+              label: "Bold",
+              active: editor?.isActive("bold"),
+              icon: Bold,
+              run: () => editor?.chain().focus().toggleBold().run(),
+            },
+            {
+              label: "Italic",
+              active: editor?.isActive("italic"),
+              icon: Italic,
+              run: () => editor?.chain().focus().toggleItalic().run(),
+            },
+            {
+              label: "Strikethrough",
+              active: editor?.isActive("strike"),
+              icon: Strikethrough,
+              run: () => editor?.chain().focus().toggleStrike().run(),
+            },
+            {
+              label: "Inline code",
+              active: editor?.isActive("code"),
+              icon: Code2,
+              run: () => editor?.chain().focus().toggleCode().run(),
+            },
+          ].map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.label}
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-7 w-7",
+                  action.active && "bg-[var(--menu-item-hover)]"
+                )}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={action.run}
+                aria-label={action.label}
+                aria-pressed={Boolean(action.active)}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            );
+          })}
+
+          <span className="mx-1 h-5 w-px bg-[var(--border-subtle)]" />
+          {[
+            { label: "Bulleted list", command: "bullet" as const, icon: List },
+            {
+              label: "Numbered list",
+              command: "ordered" as const,
+              icon: ListOrdered,
+            },
+            {
+              label: "Checklist",
+              command: "checklist" as const,
+              icon: CheckSquare,
+            },
+            { label: "Quote", command: "quote" as const, icon: Quote },
+          ].map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.command}
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applyCommand(action.command, false)}
+                aria-label={action.label}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            );
+          })}
+
+          <span className="mx-1 h-5 w-px bg-[var(--border-subtle)]" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Plus className="h-3.5 w-3.5" /> Insert
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-1.5">
+              <div className="grid grid-cols-2 gap-1">
+                {COMMANDS.filter((command) =>
+                  [
+                    "divider",
+                    "CALLOUT",
+                    "TOGGLE",
+                    "LINK",
+                    "BOOKMARK",
+                    "IMAGE",
+                    "FILE",
+                    "TABLE",
+                    "COLUMNS",
+                    "PAGE_MENTION",
+                    "TASK_REFERENCE",
+                    "PROJECT_REFERENCE",
+                    "DATE_MENTION",
+                    "FORM",
+                  ].includes(command.id)
+                ).map((command) => {
+                  const Icon = command.icon;
+                  return (
+                    <button
+                      key={command.id}
+                      type="button"
+                      onClick={() => applyCommand(command.id, false)}
+                      className="flex min-h-9 items-center gap-2 rounded-[var(--control-radius)] px-2 text-left text-[12px] hover:bg-[var(--menu-item-hover)]"
+                    >
+                      <Icon className="h-3.5 w-3.5 flex-none text-[var(--text-muted)]" />
+                      <span className="truncate">{command.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
 
       {page.coverUrl && (
         <button
@@ -1606,7 +1846,7 @@ export function PageWorkspace({
             setCoverUrl(page.coverUrl || "");
             setCoverOpen(true);
           }}
-          className="h-44 w-full bg-cover bg-center"
+          className="h-36 w-full bg-cover bg-center sm:h-52"
           style={{ backgroundImage: `url("${page.coverUrl}")` }}
         />
       )}
@@ -1614,15 +1854,15 @@ export function PageWorkspace({
       <main
         ref={hostRef}
         className={cn(
-          "relative mx-auto max-w-[900px] px-7 pb-32 sm:px-12 lg:px-20",
-          page.coverUrl ? "pt-8" : "pt-16"
+          "group/page relative mx-auto max-w-[820px] px-5 pb-52 sm:px-12 sm:pb-36 lg:px-14",
+          page.coverUrl ? "pt-7" : "pt-10 sm:pt-16"
         )}
         onClick={(event) => {
           if (event.target === event.currentTarget)
             editor?.commands.focus("end");
         }}
       >
-        <div className="mb-2 flex h-7 items-center gap-3 text-[12px] text-[var(--text-muted)]">
+        <div className="mb-2 flex h-7 items-center gap-3 text-[12px] text-[var(--text-muted)] opacity-100 transition-opacity sm:opacity-0 sm:group-hover/page:opacity-100 sm:group-focus-within/page:opacity-100">
           <button
             type="button"
             disabled={!canEdit}
@@ -1645,17 +1885,17 @@ export function PageWorkspace({
             </button>
           )}
         </div>
-        {page.icon && <div className="mb-2 text-5xl">{page.icon}</div>}
+        {page.icon && <div className="mb-3 text-5xl">{page.icon}</div>}
         <input
           value={page.title}
           readOnly={!canEdit}
           onChange={(event) => setPage({ ...page, title: event.target.value })}
           onBlur={() => void patchPage({ title: page.title })}
-          className="mb-5 w-full border-0 bg-transparent p-0 text-4xl font-semibold tracking-[-0.045em] outline-none ring-0 placeholder:text-[var(--text-disabled)] focus:ring-0"
+          className="mb-3 w-full border-0 bg-transparent p-0 text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.045em] outline-none ring-0 placeholder:text-[var(--text-disabled)] focus:ring-0 sm:text-5xl"
           placeholder="Untitled"
         />
-        <div className="mb-4 flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-          <Clock3 className="h-3.5 w-3.5" /> Edited just now
+        <div className="mb-12 flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+          {pageEditedLabel(page.updatedAt)}
           {page.blocks.some((block) => block.createdBy === "AI") && (
             <span className="ml-2 flex items-center gap-1">
               <Sparkles className="h-3 w-3" /> Written with AI
@@ -1690,7 +1930,7 @@ export function PageWorkspace({
               }}
             >
               <div
-                className="needt-overlay-depth flex items-center gap-0.5 rounded-[var(--control-radius)] border border-[var(--popover-border)] p-1"
+                className="needt-overlay-depth hidden items-center gap-0.5 rounded-[var(--control-radius)] border border-[var(--popover-border)] p-1 sm:flex"
                 aria-label="Text formatting"
               >
                 {[
@@ -1826,6 +2066,196 @@ export function PageWorkspace({
             document.body
           )}
       </main>
+
+      {canEdit && (
+        <div
+          className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 flex h-12 items-center justify-around border-t border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2 sm:hidden"
+          aria-label="Page editing actions"
+        >
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().undo().run()}
+            disabled={!editor?.can().undo()}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-[var(--text-secondary)] active:bg-[var(--surface-hover)] disabled:opacity-35"
+            aria-label="Undo"
+          >
+            <Undo2 className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileFormatOpen(true)}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-base font-semibold text-[var(--text-secondary)] active:bg-[var(--surface-hover)]"
+            aria-label="Format text"
+          >
+            Aa
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().toggleTaskList().run()}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-[var(--text-secondary)] active:bg-[var(--surface-hover)]"
+            aria-label="Checklist"
+          >
+            <CheckSquare className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileInsertOpen(true)}
+            className="grid h-9 min-w-14 place-items-center rounded-full bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)]"
+            aria-label="Insert block or attachment"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().redo().run()}
+            disabled={!editor?.can().redo()}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-[var(--text-secondary)] active:bg-[var(--surface-hover)] disabled:opacity-35"
+            aria-label="Redo"
+          >
+            <Redo2 className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
+      <BottomSheet open={mobileFormatOpen} onOpenChange={setMobileFormatOpen}>
+        <BottomSheetContent className="sm:hidden">
+          <BottomSheetTitle>Format</BottomSheetTitle>
+          <BottomSheetDescription className="mt-1">
+            Applies to the current block or selected text.
+          </BottomSheetDescription>
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {COMMANDS.filter((command) =>
+              ["paragraph", "heading1", "heading2", "heading3"].includes(
+                command.id
+              )
+            ).map((command) => {
+              const Icon = command.icon;
+              return (
+                <button
+                  key={command.id}
+                  type="button"
+                  onClick={() => {
+                    applyCommand(command.id, false);
+                    setMobileFormatOpen(false);
+                  }}
+                  className="flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-[var(--control-radius)] bg-[var(--surface-control)] text-xs"
+                >
+                  <Icon className="h-5 w-5 text-[var(--text-secondary)]" />
+                  {command.label.replace("Heading ", "H")}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {[
+              {
+                label: "Bold",
+                icon: Bold,
+                run: () => editor?.chain().focus().toggleBold().run(),
+              },
+              {
+                label: "Italic",
+                icon: Italic,
+                run: () => editor?.chain().focus().toggleItalic().run(),
+              },
+              {
+                label: "Strike",
+                icon: Strikethrough,
+                run: () => editor?.chain().focus().toggleStrike().run(),
+              },
+              {
+                label: "Code",
+                icon: Code2,
+                run: () => editor?.chain().focus().toggleCode().run(),
+              },
+            ].map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={() => {
+                    action.run();
+                    setMobileFormatOpen(false);
+                  }}
+                  className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-[var(--control-radius)] border border-[var(--border-subtle)] text-xs"
+                >
+                  <Icon className="h-4 w-4" />
+                  {action.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {COMMANDS.filter((command) =>
+              ["bullet", "ordered", "checklist", "quote", "code"].includes(
+                command.id
+              )
+            ).map((command) => {
+              const Icon = command.icon;
+              return (
+                <button
+                  key={command.id}
+                  type="button"
+                  onClick={() => {
+                    applyCommand(command.id, false);
+                    setMobileFormatOpen(false);
+                  }}
+                  className="flex min-h-11 items-center gap-2.5 rounded-[var(--control-radius)] border border-[var(--border-subtle)] px-3 text-left text-sm"
+                >
+                  <Icon className="h-4 w-4 text-[var(--text-muted)]" />
+                  {command.label}
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheetContent>
+      </BottomSheet>
+
+      <BottomSheet open={mobileInsertOpen} onOpenChange={setMobileInsertOpen}>
+        <BottomSheetContent className="sm:hidden">
+          <BottomSheetTitle>Insert</BottomSheetTitle>
+          <BottomSheetDescription className="mt-1">
+            Add media, links and connected Needt blocks at the cursor.
+          </BottomSheetDescription>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {COMMANDS.filter((command) =>
+              [
+                "divider",
+                "CALLOUT",
+                "TOGGLE",
+                "LINK",
+                "BOOKMARK",
+                "IMAGE",
+                "FILE",
+                "TABLE",
+                "COLUMNS",
+                "PAGE_MENTION",
+                "TASK_REFERENCE",
+                "PROJECT_REFERENCE",
+                "DATE_MENTION",
+                "FORM",
+              ].includes(command.id)
+            ).map((command) => {
+              const Icon = command.icon;
+              return (
+                <button
+                  key={command.id}
+                  type="button"
+                  onClick={() => {
+                    applyCommand(command.id, false);
+                    setMobileInsertOpen(false);
+                  }}
+                  className="flex min-h-12 items-center gap-2.5 rounded-[var(--control-radius)] border border-[var(--border-subtle)] px-3 text-left text-sm"
+                >
+                  <Icon className="h-4 w-4 flex-none text-[var(--text-muted)]" />
+                  <span className="truncate">{command.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheetContent>
+      </BottomSheet>
 
       <Dialog
         open={Boolean(pendingInsert)}

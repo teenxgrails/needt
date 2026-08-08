@@ -2471,31 +2471,40 @@ html[data-needt-motion="off"] .needt-aurora-blob {
 .needt-page-editor {
   color: var(--text-primary);
   caret-color: var(--text-primary);
-  font-size: 16px;
-  line-height: 1.7;
+  font-size: 17px;
+  line-height: 1.68;
   overflow-wrap: anywhere;
 }
 
 .needt-page-editor > * + * {
-  margin-top: 0.55em;
+  margin-top: 0.48em;
+}
+
+.needt-page-editor > [data-block-id] {
+  min-height: 1.68em;
+}
+
+.needt-page-editor ::selection {
+  background: color-mix(in srgb, var(--color-accent) 24%, transparent);
 }
 
 .needt-page-editor h1,
 .needt-page-editor h2,
 .needt-page-editor h3 {
-  margin-top: 1.25em;
+  margin-top: 1.45em;
   font-weight: 650;
-  letter-spacing: -0.025em;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
 }
 
 .needt-page-editor h1 {
-  font-size: 1.8rem;
+  font-size: 1.9rem;
 }
 .needt-page-editor h2 {
-  font-size: 1.45rem;
+  font-size: 1.5rem;
 }
 .needt-page-editor h3 {
-  font-size: 1.15rem;
+  font-size: 1.18rem;
 }
 .needt-page-editor ul:not([data-type="taskList"]) {
   list-style: disc;
@@ -2517,14 +2526,41 @@ html[data-needt-motion="off"] .needt-aurora-blob {
 .needt-page-editor ul[data-type="taskList"] li > label {
   margin-top: 0.2rem;
 }
+.needt-page-editor ul[data-type="taskList"] input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-accent);
+}
 .needt-page-editor ul[data-type="taskList"] li > div {
   min-width: 0;
   flex: 1;
 }
+.needt-page-editor ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
 .needt-page-editor blockquote {
-  border-left: 2px solid var(--border-control);
-  padding-left: 0.9rem;
+  border-left: 3px solid var(--border-control);
+  padding-left: 1rem;
   color: var(--text-secondary);
+}
+.needt-page-editor :not(pre) > code {
+  border-radius: 4px;
+  background: var(--surface-raised);
+  padding: 0.1rem 0.3rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+.needt-page-editor a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--color-accent) 45%,
+    transparent
+  );
+  text-underline-offset: 0.16em;
 }
 .needt-page-editor pre {
   overflow-x: auto;
@@ -2545,6 +2581,12 @@ html[data-needt-motion="off"] .needt-aurora-blob {
   color: var(--text-muted);
   content: attr(data-placeholder);
   pointer-events: none;
+}
+@media (max-width: 639px) {
+  .needt-page-editor {
+    font-size: 16.5px;
+    line-height: 1.66;
+  }
 }
 .needt-page-editor img {
   max-height: 560px;

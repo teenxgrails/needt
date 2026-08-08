@@ -207,15 +207,25 @@ for (const viewport of viewports) {
       const bounds = range.getBoundingClientRect();
       return { top: bounds.top, bottom: bounds.bottom };
     });
-    const formatting = page.locator('[aria-label="Text formatting"]');
-    await expect(formatting).toBeVisible();
-    const formattingBounds = await formatting.boundingBox();
-    expect(formattingBounds).not.toBeNull();
-    const toolbarDoesNotOverlap =
-      formattingBounds!.y + formattingBounds!.height <=
-        selectionBounds.top + 1 ||
-      formattingBounds!.y >= selectionBounds.bottom - 1;
-    expect(toolbarDoesNotOverlap).toBe(true);
+    if (viewport.width < 640) {
+      await expect(page.getByLabel("Page editing actions")).toBeVisible();
+      await page.getByRole("button", { name: "Format text" }).click();
+      await expect(page.getByRole("heading", { name: "Format" })).toBeVisible();
+      await page.getByRole("button", { name: "Bold" }).click();
+      await expect(selectionBlock.locator("strong")).toContainText(
+        "Second mobile block"
+      );
+    } else {
+      const formatting = page.locator('[aria-label="Text formatting"]');
+      await expect(formatting).toBeVisible();
+      const formattingBounds = await formatting.boundingBox();
+      expect(formattingBounds).not.toBeNull();
+      const toolbarDoesNotOverlap =
+        formattingBounds!.y + formattingBounds!.height <=
+          selectionBounds.top + 1 ||
+        formattingBounds!.y >= selectionBounds.bottom - 1;
+      expect(toolbarDoesNotOverlap).toBe(true);
+    }
 
     const emptyBlock = page.locator('[data-block-id="mobile-empty"]');
     await emptyBlock.click();
