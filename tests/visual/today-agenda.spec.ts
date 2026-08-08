@@ -16,6 +16,25 @@ async function useTheme(
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 }
 
+async function hideDevOverlays(page: import("@playwright/test").Page) {
+  await page
+    .locator("nextjs-portal, .tsqd-parent-container")
+    .evaluateAll((elements) => elements.forEach((element) => element.remove()));
+  await page.addStyleTag({
+    content: "nextjs-portal, .tsqd-parent-container { display: none !important; }",
+  });
+}
+
+async function waitForAutosave(page: import("@playwright/test").Page) {
+  const retry = page.getByRole("button", { name: "Retry" });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await page.waitForTimeout(700);
+    if (!(await retry.isVisible())) break;
+    await retry.click();
+  }
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+}
+
 test("Today is a persistent daily document with a balanced timeline", async ({
   page,
 }, testInfo) => {
@@ -26,12 +45,13 @@ test("Today is a persistent daily document with a balanced timeline", async ({
   });
   await signInVisualUser(page);
   await useTheme(page, "dark");
-  await page.request.put("/api/daily-agenda", {
+  const agendaResponse = await page.request.put("/api/daily-agenda", {
     data: {
       date: "2026-07-16",
       content: "<p>Write the one thing that would make today lighter.</p>",
     },
   });
+  expect(agendaResponse.ok()).toBeTruthy();
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
   await expect(
@@ -66,24 +86,123 @@ test("Today is a persistent daily document with a balanced timeline", async ({
   await editable.type(taskTitle);
   await editable.press("Enter");
   await expect(editor.getByText(taskTitle).first()).toBeVisible();
+  const agendaSave = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/daily-agenda") &&
+      response.request().method() === "PUT" &&
+      (response.request().postData() ?? "").includes("taskReference") &&
+      response.ok()
+  );
+  await agendaSave;
   await expect(page.getByText("Saved")).toBeVisible();
 
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(
-    page.getByLabel("Daily agenda notes").getByText(taskTitle).first()
-  ).toBeVisible();
+  const taskRow = page
+    .getByLabel("Daily agenda notes")
+    .locator('[data-type="taskReference"]')
+    .filter({ hasText: taskTitle });
+  await expect(taskRow).toBeVisible();
+  await waitForAutosave(page);
+  await hideDevOverlays(page);
+
   await expect(page).toHaveScreenshot("today-daily-document.png", {
     animations: "disabled",
   });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        (date) => localStorage.getItem(`needt-agenda-draft:${date}`),
+        "2026-07-16"
+      )
+    )
+    .toBeNull();
 
   await useTheme(page, "light");
   await page.goto("/today", { waitUntil: "domcontentloaded" });
-  await expect(
-    page.getByLabel("Daily agenda notes").getByText(taskTitle).first()
-  ).toBeVisible();
+  await expect(taskRow).toBeVisible();
+  await waitForAutosave(page);
+  await hideDevOverlays(page);
   await expect(page).toHaveScreenshot("today-daily-document-light.png", {
     animations: "disabled",
   });
+
+  await taskRow
+    .getByRole("button", { name: taskTitle, exact: true })
+    .click();
+  const taskDialog = page.getByRole("dialog").filter({
+    has: page.getByRole("textbox", { name: "Task name" }),
+  });
+  await expect(taskDialog).toBeVisible();
+  await expect(
+    taskDialog.getByRole("textbox", { name: "Task name" })
+  ).toHaveValue(taskTitle);
+  await page.keyboard.press("Escape");
+
+  await taskRow.getByRole("button").last().click();
+  const customDuration = page.getByLabel("Custom task duration");
+  await customDuration.fill("45m");
+  await customDuration.press("Enter");
+  await expect(taskRow.getByRole("button", { name: "45m" })).toBeVisible();
+
+  await taskRow
+    .getByRole("button", { name: `Change date for ${taskTitle}` })
+    .click();
+  await page.getByRole("button", { name: /Tomorrow/ }).click();
+  await page.getByRole("button", { name: "Done" }).click();
+  await taskRow.getByRole("button", { name: `Complete ${taskTitle}` }).click();
+  await expect(
+    taskRow.getByRole("button", { name: `Reopen ${taskTitle}` })
+  ).toBeVisible();
+});
+
+test("Today exposes agenda and task-create failures with retry", async ({
+  page,
+}, testInfo) => {
+  await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
+  await page.addInitScript(() => {
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
+  });
+  await signInVisualUser(page);
+  await useTheme(page, "dark");
+  let failAgendaLoad = true;
+  await page.route("**/api/daily-agenda?*", async (route) => {
+    if (failAgendaLoad && route.request().method() === "GET") {
+      failAgendaLoad = false;
+      await route.fulfill({ status: 503, json: { error: "Unavailable" } });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.goto("/today", { waitUntil: "domcontentloaded" });
+  await expect(page.getByText("Could not load this agenda")).toBeVisible();
+  await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Daily agenda notes")).toHaveAttribute(
+    "contenteditable",
+    "true"
+  );
+
+  let failTaskCreate = true;
+  await page.route(/\/api\/tasks(?:\?.*)?$/, async (route) => {
+    if (failTaskCreate && route.request().method() === "POST") {
+      await route.fulfill({ status: 503, json: { error: "Unavailable" } });
+      return;
+    }
+    await route.continue();
+  });
+  const editor = page.getByLabel("Daily agenda notes");
+  const retryTitle = `Recovered task ${testInfo.project.name} ${Date.now()}`;
+  await editor.click();
+  await editor.press("Control+End");
+  await editor.press("Enter");
+  await editor.type(`/task ${retryTitle}`);
+  await editor.press("Enter");
+  await expect(editor).toContainText(`/task ${retryTitle}`);
+  failTaskCreate = false;
+  await editor.press("Control+End");
+  await editor.press("Enter");
+  await expect(editor.getByText(retryTitle, { exact: true })).toHaveCount(1);
 });
 
 test("Today keeps both panes scrollable and pins 15-minute timeline edits", async ({
@@ -174,8 +293,7 @@ test("Today keeps both panes scrollable and pins 15-minute timeline edits", asyn
     .boundingBox();
   expect(markerBox).not.toBeNull();
   expect(timelineBox).not.toBeNull();
-  const markerRatio =
-    (markerBox!.y - timelineBox!.y) / timelineBox!.height;
+  const markerRatio = (markerBox!.y - timelineBox!.y) / timelineBox!.height;
   expect(markerRatio).toBeGreaterThanOrEqual(0.25);
   expect(markerRatio).toBeLessThanOrEqual(0.4);
 

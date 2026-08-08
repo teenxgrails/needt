@@ -49,7 +49,8 @@ export async function PUT(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
 
-  const payload = payloadSchema.safeParse(await request.json());
+  const body = await request.json().catch(() => null);
+  const payload = payloadSchema.safeParse(body);
   const date = payload.success ? agendaDate(payload.data.date) : null;
   if (!payload.success || !date) {
     return new NextResponse("Invalid agenda payload", { status: 400 });
