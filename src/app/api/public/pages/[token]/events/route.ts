@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { pagePublicationChannel } from "@/lib/pages/page-publication-realtime";
 import { prisma } from "@/lib/prisma";
 import { createRedisSubscriber } from "@/lib/queue/connection";
+import { getPublishedPageAvailability } from "@/services/pages/page-publication-service";
 
 const LOG_SOURCE = "PublicPageEventsAPI";
 const VALIDATE_INTERVAL_MS = 2_000;
@@ -14,14 +15,19 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
   const { token } = await params;
-  const publication = await prisma.pagePublication.findFirst({
-    where: { token, revokedAt: null, page: { trashedAt: null } },
-    select: { id: true },
-  });
-  if (!publication) {
+  const availability = await getPublishedPageAvailability(token);
+  if (availability !== "active") {
     return NextResponse.json(
-      { error: "This Page is not published" },
-      { status: 404, headers: { "Cache-Control": "no-store" } }
+      {
+        error:
+          availability === "revoked"
+            ? "This Page is no longer available"
+            : "Page not found",
+      },
+      {
+        status: availability === "revoked" ? 410 : 404,
+        headers: { "Cache-Control": "no-store" },
+      }
     );
   }
 

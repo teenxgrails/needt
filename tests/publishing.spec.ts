@@ -121,6 +121,8 @@ test("publishes a read-only link and revokes an already open session", async ({
     "contenteditable",
     "false"
   );
-  await expect(page.getByText("This Page is not published")).toBeVisible();
+  await expect(
+    page.getByText("This Page is no longer available")
+  ).toBeVisible();
   await expect(page.getByText("Published read-only content")).toHaveCount(0);
 });

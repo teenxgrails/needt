@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getPublishedPage } from "@/services/pages/page-publication-service";
+import {
+  getPublishedPage,
+  getPublishedPageAvailability,
+} from "@/services/pages/page-publication-service";
 
 type RouteContext = { params: Promise<{ token: string }> };
 
@@ -10,9 +13,18 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { token } = await params;
   const page = await getPublishedPage(token);
   if (!page) {
+    const availability = await getPublishedPageAvailability(token);
     return NextResponse.json(
-      { error: "This Page is not published" },
-      { status: 404, headers: { "Cache-Control": "no-store" } }
+      {
+        error:
+          availability === "revoked"
+            ? "This Page is no longer available"
+            : "Page not found",
+      },
+      {
+        status: availability === "revoked" ? 410 : 404,
+        headers: { "Cache-Control": "no-store" },
+      }
     );
   }
   return NextResponse.json(

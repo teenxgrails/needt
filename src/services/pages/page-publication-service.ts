@@ -6,6 +6,8 @@ import { newDate } from "@/lib/date-utils";
 import { publishPagePublicationRevoked } from "@/lib/pages/page-publication-realtime";
 import { prisma } from "@/lib/prisma";
 
+export type PublishedPageAvailability = "active" | "missing" | "revoked";
+
 function publicAssetUrl(token: string, assetId: string) {
   return `/api/public/pages/${encodeURIComponent(token)}/assets/${encodeURIComponent(assetId)}`;
 }
@@ -140,4 +142,20 @@ export async function getPublishedPage(token: string) {
       createdBy: block.createdBy,
     })),
   };
+}
+
+export async function getPublishedPageAvailability(
+  token: string
+): Promise<PublishedPageAvailability> {
+  const publication = await prisma.pagePublication.findUnique({
+    where: { token },
+    select: {
+      revokedAt: true,
+      page: { select: { trashedAt: true } },
+    },
+  });
+
+  if (!publication) return "missing";
+  if (publication.revokedAt || publication.page.trashedAt) return "revoked";
+  return "active";
 }

@@ -2,7 +2,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { publicAppUrl, publicRequestUrl } from "@/lib/public-url";
+import { publicAppUrl } from "@/lib/public-url";
 
 // List of public routes that don't require authentication
 const publicRoutes = [
@@ -41,6 +41,14 @@ const staticFileExtensions = [
   ".otf",
   ".webmanifest",
 ];
+
+function isPublicRoute(pathname: string): boolean {
+  return (
+    publicRoutes.some((route) => pathname.startsWith(route)) ||
+    pathname === "/book" ||
+    pathname.startsWith("/book/")
+  );
+}
 
 /**
  * Middleware for handling authentication and authorization
@@ -88,7 +96,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check if the route is public
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  if (isPublicRoute(pathname)) {
     return NextResponse.next();
   }
 
@@ -106,7 +114,10 @@ export async function middleware(request: NextRequest) {
   // If there's no token, redirect to the sign-in page
   if (!token) {
     const url = publicAppUrl("/auth/signin", request);
-    url.searchParams.set("callbackUrl", publicRequestUrl(request).toString());
+    url.searchParams.set(
+      "callbackUrl",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`
+    );
     return NextResponse.redirect(url);
   }
 

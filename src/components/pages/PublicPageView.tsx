@@ -23,9 +23,54 @@ type PublishedPage = {
   blocks: PageBlock[];
 };
 
+type UnavailableReason = "missing" | "revoked" | "error";
+
+class PublicPageLoadError extends Error {
+  constructor(readonly reason: UnavailableReason) {
+    super(reason);
+  }
+}
+
+function unavailableReasonForStatus(status: number): UnavailableReason {
+  if (status === 410) return "revoked";
+  if (status === 404) return "missing";
+  return "error";
+}
+
+function PublicPageUnavailable({ reason }: { reason: UnavailableReason }) {
+  const copy =
+    reason === "revoked"
+      ? {
+          title: "This Page is no longer available",
+          description: "The owner unpublished it or replaced the public link.",
+        }
+      : reason === "missing"
+        ? {
+            title: "Page not found",
+            description: "This public link is invalid or no longer exists.",
+          }
+        : {
+            title: "We couldn't load this Page",
+            description: "Check your connection and refresh to try again.",
+          };
+
+  return (
+    <main className="flex min-h-dvh items-center justify-center bg-[var(--surface-canvas)] px-6 text-[var(--text-primary)]">
+      <div className="max-w-md text-center">
+        <FileText className="mx-auto mb-4 h-9 w-9 text-[var(--text-muted)]" />
+        <h1 className="text-xl font-semibold">{copy.title}</h1>
+        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+          {copy.description}
+        </p>
+      </div>
+    </main>
+  );
+}
+
 export function PublicPageView({ token }: { token: string }) {
   const [page, setPage] = useState<PublishedPage | null>(null);
-  const [unavailable, setUnavailable] = useState(false);
+  const [unavailableReason, setUnavailableReason] =
+    useState<UnavailableReason | null>(null);
   const editor = useEditor({
     immediatelyRender: false,
     editable: false,
@@ -60,7 +105,11 @@ export function PublicPageView({ token }: { token: string }) {
       cache: "no-store",
     })
       .then(async (response) => {
-        if (!response.ok) throw new Error("Page is not published");
+        if (!response.ok) {
+          throw new PublicPageLoadError(
+            unavailableReasonForStatus(response.status)
+          );
+        }
         return response.json() as Promise<{ page: PublishedPage }>;
       })
       .then(({ page: published }) => {
@@ -74,38 +123,31 @@ export function PublicPageView({ token }: { token: string }) {
           { emitUpdate: false }
         );
       })
-      .catch(() => !cancelled && setUnavailable(true));
+      .catch((error) => {
+        if (cancelled) return;
+        setUnavailableReason(
+          error instanceof PublicPageLoadError ? error.reason : "error"
+        );
+      });
     return () => {
       cancelled = true;
     };
   }, [editor, token]);
 
   useEffect(() => {
-    if (unavailable) return;
+    if (unavailableReason) return;
     const source = new EventSource(
       `/api/public/pages/${encodeURIComponent(token)}/events`
     );
     source.addEventListener("revoked", () => {
-      setUnavailable(true);
+      setUnavailableReason("revoked");
       setPage(null);
       source.close();
     });
     return () => source.close();
-  }, [token, unavailable]);
+  }, [token, unavailableReason]);
 
-  if (unavailable) {
-    return (
-      <main className="flex min-h-dvh items-center justify-center bg-[var(--surface-canvas)] px-6 text-[var(--text-primary)]">
-        <div className="max-w-md text-center">
-          <FileText className="mx-auto mb-4 h-9 w-9 text-[var(--text-muted)]" />
-          <h1 className="text-xl font-semibold">This Page is not published</h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            The owner may have unpublished it or replaced the public link.
-          </p>
-        </div>
-      </main>
-    );
-  }
+  if (unavailableReason) return <PublicPageUnavailable reason={unavailableReason} />;
 
   if (!page) {
     return (

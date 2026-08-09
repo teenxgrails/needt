@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { signIn } from "next-auth/react";
+import { getProviders, signIn, type ClientSafeProvider } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -23,13 +23,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { APP_NAME } from "@/lib/app-config";
 import { isPublicSignupEnabledClient } from "@/lib/auth/client-public-signup";
+import { safeCallbackPath } from "@/lib/auth/callback-url";
 import { logger } from "@/lib/logger";
 
 const LOG_SOURCE = "SignInForm";
 
 type AuthMode = "signin" | "signup";
 
-export function SignInForm() {
+type OAuthProviderId = "google" | "azure-ad";
+
+const OAUTH_PROVIDERS: Record<OAuthProviderId, string> = {
+  google: "Google",
+  "azure-ad": "Microsoft",
+};
+
+export function SignInForm({
+  callbackUrl,
+  error,
+}: {
+  callbackUrl?: string;
+  error?: string;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -37,15 +51,42 @@ export function SignInForm() {
   const [mode, setMode] = useState<AuthMode>("signin");
   const [isLoading, setIsLoading] = useState(false);
   const [publicSignupEnabled, setPublicSignupEnabled] = useState(false);
+  const [providers, setProviders] = useState<Partial<
+    Record<OAuthProviderId, ClientSafeProvider>
+  >>({});
+  const [oauthLoading, setOauthLoading] = useState<OAuthProviderId | null>(
+    null
+  );
   const router = useRouter();
+  const safeCallbackUrl = safeCallbackPath(callbackUrl);
 
   useEffect(() => {
     void isPublicSignupEnabledClient().then(setPublicSignupEnabled);
+    void getProviders()
+      .then((available) => {
+        if (!available) return;
+        setProviders({
+          google: available.google,
+          "azure-ad": available["azure-ad"],
+        });
+      })
+      .catch((providerError) => {
+        logger.warn(
+          "Could not load OAuth providers",
+          {
+            error:
+              providerError instanceof Error
+                ? providerError.message
+                : "Unknown error",
+          },
+          LOG_SOURCE
+        );
+      });
   }, []);
 
   const finishSignIn = () => {
     notify.success("Signed in successfully");
-    window.location.href = "/calendar";
+    window.location.href = safeCallbackUrl;
   };
 
   const handleEmailSignIn = async (event: React.FormEvent) => {
@@ -57,6 +98,7 @@ export function SignInForm() {
         email: email.trim().toLowerCase(),
         password,
         redirect: false,
+        callbackUrl: safeCallbackUrl,
       });
 
       if (result?.error) {
@@ -109,6 +151,7 @@ export function SignInForm() {
         email: email.trim().toLowerCase(),
         password,
         redirect: false,
+        callbackUrl: safeCallbackUrl,
       });
       if (result?.error) {
         notify.success("Account created", {
@@ -134,14 +177,33 @@ export function SignInForm() {
     }
   };
 
+  const handleOAuthSignIn = async (provider: OAuthProviderId) => {
+    setOauthLoading(provider);
+    try {
+      await signIn(provider, { callbackUrl: safeCallbackUrl });
+    } catch (providerError) {
+      logger.error(
+        "OAuth sign in failed",
+        {
+          provider,
+          error:
+            providerError instanceof Error
+              ? providerError.message
+              : "Unknown error",
+        },
+        LOG_SOURCE
+      );
+      notify.error(`Could not continue with ${OAUTH_PROVIDERS[provider]}`);
+      setOauthLoading(null);
+    }
+  };
+
   return (
     <Card className="mx-auto w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold">
-          Welcome to {APP_NAME}
-        </CardTitle>
+        <CardTitle className="text-2xl font-bold">Sign in to {APP_NAME}</CardTitle>
         <CardDescription>
-          Sign in or create an account to start planning
+          Access your calendar, tasks, and workspace.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -164,6 +226,11 @@ export function SignInForm() {
 
           <TabsContent value="signin">
             <form onSubmit={handleEmailSignIn} className="space-y-4">
+              {error && (
+                <p className="text-sm text-destructive" role="alert">
+                  We couldn&apos;t sign you in. Please try again.
+                </p>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="signin-email">Email</Label>
                 <Input
@@ -202,6 +269,30 @@ export function SignInForm() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+            {(providers.google || providers["azure-ad"]) && (
+              <div className="mt-6 space-y-3">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
+                  Or continue with
+                </div>
+                {(["google", "azure-ad"] as const).map(
+                  (provider) =>
+                    providers[provider] && (
+                      <Button
+                        key={provider}
+                        className="w-full"
+                        variant="outline"
+                        disabled={oauthLoading !== null}
+                        onClick={() => void handleOAuthSignIn(provider)}
+                        type="button"
+                      >
+                        {oauthLoading === provider
+                          ? `Connecting to ${OAUTH_PROVIDERS[provider]}...`
+                          : `Continue with ${OAUTH_PROVIDERS[provider]}`}
+                      </Button>
+                    )
+                )}
+              </div>
+            )}
           </TabsContent>
 
           {publicSignupEnabled && (
