@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { signInVisualUser } from "./helpers";
+
 const VISUAL_TEST_NOW = "2026-07-22T10:00:00.000+02:00";
 
 async function settleVisualSurface(page: import("@playwright/test").Page) {
@@ -26,6 +28,11 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
     localStorage.setItem("needt-visit-count", "0");
   });
+  await signInVisualUser(page);
+  const customizationResponse = await page.request.patch("/api/customization", {
+    data: { animationsEnabled: true },
+  });
+  expect(customizationResponse.ok()).toBeTruthy();
 });
 
 test("component laboratory stays coherent in dark mode", async ({ page }) => {
@@ -84,6 +91,10 @@ test("component laboratory uses the product Graphite theme", async ({
 test("date and priority pickers keep their overlay depth", async ({ page }) => {
   await page.goto("/style#forms", { waitUntil: "domcontentloaded" });
   await waitForStyleLab(page);
+  await page.waitForTimeout(100);
+  await page
+    .locator("#forms")
+    .evaluate((element) => element.scrollIntoView({ block: "start" }));
 
   await page
     .getByRole("button", { name: "Preview the shared date picker" })
@@ -96,8 +107,17 @@ test("date and priority pickers keep their overlay depth", async ({ page }) => {
   // surface so its exit animation/focus trap cannot intercept the next picker.
   await page.goto("/style#forms", { waitUntil: "domcontentloaded" });
   await waitForStyleLab(page);
+  await page.waitForTimeout(100);
+  await page
+    .locator("#forms")
+    .evaluate((element) => element.scrollIntoView({ block: "start" }));
 
-  await page.getByRole("combobox", { name: "Priority", exact: true }).click();
+  const priority = page.getByRole("combobox", {
+    name: "Priority",
+    exact: true,
+  });
+  await priority.scrollIntoViewIfNeeded();
+  await priority.click();
   await expect(page.getByRole("combobox", { name: "Search" })).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("style-priority-picker-open.png");

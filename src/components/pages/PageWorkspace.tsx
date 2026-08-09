@@ -2074,6 +2074,7 @@ export function PageWorkspace({
 
       {canEdit && (
         <div
+          data-assistant-avoid
           className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 flex h-12 items-center justify-around border-t border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2 sm:hidden"
           aria-label="Page editing actions"
         >

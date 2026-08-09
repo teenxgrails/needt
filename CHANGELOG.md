@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Restricted the internal `/style` laboratory to administrators in production,
+  while keeping it available for local design work and visual regression checks.
 - Made the live `/style` laboratory wider and easier to scan, clarified the
   saved-versus-preview state of its theme editor, and kept named theme choices
   visible on phones.
@@ -35,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Simplified the AI companion into a compact, high-contrast draggable action
+  and keep it clear of fixed mobile and editor controls across viewports.
 - Revalidated collaboration authorization for every live socket message and
   idle connection, so workspace removal closes the room and Editor-to-Viewer
   downgrades become read-only without waiting for reconnect; Page and Moodboard

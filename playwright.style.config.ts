@@ -1,5 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
+import { configureE2eEnvironment } from "./tests/e2e/environment";
+
+configureE2eEnvironment();
+
 const baseURL = process.env.TEST_BASE_URL || "http://127.0.0.1:3000";
 const useProductionServer =
   process.env.NEEDT_VISUAL_PRODUCTION_SERVER === "1";
@@ -24,6 +28,8 @@ export default defineConfig({
       maxDiffPixelRatio: 0.005,
     },
   },
+  globalSetup: "./tests/visual/global-setup.ts",
+  globalTeardown: "./tests/visual/global-teardown.ts",
   snapshotPathTemplate:
     "{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}",
   use: {
@@ -52,7 +58,7 @@ export default defineConfig({
     // while local snapshot work keeps the fast development workflow.
     command: useProductionServer ? productionServerCommand : "npm run dev",
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: useProductionServer ? 60_000 : 120_000,
     env: {
       ...process.env,

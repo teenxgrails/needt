@@ -56,24 +56,18 @@ function readSafeAreaInset(edge: "top" | "bottom"): number {
 }
 
 function suggestionFor(pathname: string): string {
-  if (pathname === "/today") return "Want help choosing today's main priority?";
-  if (pathname === "/calendar")
-    return "Want me to find a calm window for important work?";
-  if (pathname === "/tasks")
-    return "I can sort this list and suggest the next step.";
-  if (pathname === "/focus")
-    return "Want to start a short focus session together?";
-  if (pathname.startsWith("/pages"))
-    return "I can turn a note into a scheduled task.";
-  if (pathname === "/mail")
-    return "Want to see which messages should become tasks?";
-  return "I'm here whenever you want to reshape the day.";
+  if (pathname === "/today") return "Choose the task that matters most today.";
+  if (pathname === "/calendar") return "Find an open block for focused work.";
+  if (pathname === "/tasks") return "Sort tasks by deadline and effort.";
+  if (pathname === "/focus") return "Start a 25-minute focus session.";
+  if (pathname.startsWith("/pages")) return "Turn this note into a task.";
+  if (pathname === "/mail") return "Review messages that need a task.";
+  return "Plan the next task without changing your schedule.";
 }
 
 export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
   const pathname = usePathname();
   const rootRef = useRef<HTMLDivElement>(null);
-  const orbRef = useRef<HTMLButtonElement>(null);
   const hideTimerRef = useRef<number | null>(null);
   const positionFrameRef = useRef<number | null>(null);
   const positionRef = useRef<Point>({ x: 0, y: 0 });
@@ -114,7 +108,7 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
           .getComputedStyle(document.documentElement)
           .getPropertyValue("--needt-sidebar-width")
       ) || 244;
-    const size = window.innerWidth < 640 ? 64 : 88;
+    const size = window.innerWidth < 640 ? 56 : 72;
     return companionBounds({
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
@@ -131,12 +125,19 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
     const bounds = boundsRef.current;
     if (!root || !bounds) return point;
 
-    const size = window.innerWidth < 640 ? 64 : 88;
+    const size = window.innerWidth < 640 ? 56 : 72;
     let next = clampPoint(point, bounds);
     const avoid = Array.from(
       document.querySelectorAll<HTMLElement>("[data-assistant-avoid]")
     )
-      .filter((element) => element.offsetParent !== null)
+      .filter((element) => {
+        const styles = window.getComputedStyle(element);
+        return (
+          styles.display !== "none" &&
+          styles.visibility !== "hidden" &&
+          element.getClientRects().length > 0
+        );
+      })
       .map((element) => element.getBoundingClientRect());
 
     for (const rect of avoid) {
@@ -232,127 +233,12 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
 
   useEffect(() => {
     if (hidden) return;
-    let frame = 0;
-    const finePointer = window.matchMedia("(pointer: fine)");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (!finePointer.matches || reducedMotion.matches) return;
-
-    const target = { x: 0, y: 0, distance: 0.52, angle: 0 };
-    const current = { ...target };
-
-    const renderFrame = () => {
-      const root = rootRef.current;
-      if (!root) {
-        frame = 0;
-        return;
-      }
-
-      current.x += (target.x - current.x) * 0.085;
-      current.y += (target.y - current.y) * 0.085;
-      current.distance += (target.distance - current.distance) * 0.055;
-      const angleDelta = ((target.angle - current.angle + 540) % 360) - 180;
-      current.angle += angleDelta * 0.07;
-
-      root.style.setProperty("--companion-look-x", `${current.x * 1.8}px`);
-      root.style.setProperty("--companion-look-y", `${current.y * 1.5}px`);
-      root.style.setProperty("--companion-face-x", `${current.x * 6.5}px`);
-      root.style.setProperty("--companion-face-y", `${current.y * 5.2}px`);
-      root.style.setProperty(
-        "--companion-face-rotate",
-        `${current.x * 2.2}deg`
-      );
-      root.style.setProperty("--companion-head-x", `${current.x * 3.4}px`);
-      root.style.setProperty("--companion-head-y", `${current.y * 2.8}px`);
-      root.style.setProperty(
-        "--companion-aura-angle",
-        `${current.angle * 0.04}deg`
-      );
-      root.style.setProperty("--companion-cyan-x", `${current.x * 9.1}px`);
-      root.style.setProperty("--companion-cyan-y", `${current.y * 7.7}px`);
-      root.style.setProperty(
-        "--companion-cyan-angle",
-        `${current.angle * 0.16}deg`
-      );
-      root.style.setProperty("--companion-violet-x", `${current.x * -8.1}px`);
-      root.style.setProperty("--companion-violet-y", `${current.y * -6.8}px`);
-      root.style.setProperty(
-        "--companion-violet-angle",
-        `${current.angle * -0.13}deg`
-      );
-      root.style.setProperty("--companion-rose-x", `${current.x * -11.7}px`);
-      root.style.setProperty("--companion-rose-y", `${current.y * -7.9}px`);
-      root.style.setProperty(
-        "--companion-rose-angle",
-        `${current.angle * -0.2}deg`
-      );
-      root.style.setProperty(
-        "--companion-saturation",
-        (0.98 + current.distance * 0.2).toFixed(3)
-      );
-      root.style.setProperty(
-        "--companion-distance",
-        current.distance.toFixed(3)
-      );
-      root.style.setProperty(
-        "--companion-cyan-opacity",
-        (0.9 - current.distance * 0.22).toFixed(3)
-      );
-      root.style.setProperty(
-        "--companion-violet-opacity",
-        (0.42 + current.distance * 0.38).toFixed(3)
-      );
-      root.style.setProperty(
-        "--companion-rose-opacity",
-        Math.max(0.02, (current.distance - 0.42) * 0.72).toFixed(3)
-      );
-
-      const remaining =
-        Math.abs(target.x - current.x) +
-        Math.abs(target.y - current.y) +
-        Math.abs(target.distance - current.distance) +
-        Math.abs(((target.angle - current.angle + 540) % 360) - 180) / 180;
-
-      if (remaining > 0.002) frame = window.requestAnimationFrame(renderFrame);
-      else frame = 0;
-    };
-
-    const requestRender = () => {
-      if (!frame) frame = window.requestAnimationFrame(renderFrame);
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-      const orb = orbRef.current;
-      if (!orb) return;
-      const bounds = orb.getBoundingClientRect();
-      const centerX = bounds.left + bounds.width / 2;
-      const centerY = bounds.top + bounds.height / 2;
-      const deltaX = event.clientX - centerX;
-      const deltaY = event.clientY - centerY;
-      target.x = Math.max(-1, Math.min(1, deltaX / 420));
-      target.y = Math.max(-1, Math.min(1, deltaY / 340));
-      target.distance = Math.max(
-        0,
-        Math.min(1, Math.hypot(deltaX, deltaY) / 820)
-      );
-      target.angle = (Math.atan2(deltaY, deltaX) * 180) / Math.PI;
-      requestRender();
-    };
-
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("pointermove", onPointerMove);
-    };
-  }, [hidden]);
-
-  useEffect(() => {
-    if (hidden) return;
     let introTimer: number | undefined;
     try {
       if (!window.sessionStorage.getItem(INTRO_SEEN_KEY)) {
         window.sessionStorage.setItem(INTRO_SEEN_KEY, "1");
         introTimer = window.setTimeout(
-          () => revealMessage("I'm here. I can help plan your next step."),
+          () => revealMessage("Open Needt to choose your next task."),
           6200
         );
       }
@@ -379,14 +265,14 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
     const onAIAction = (event: Event) => {
       const detail = (event as CustomEvent<{ label?: string }>).detail;
       revealMessage(
-        detail?.label || "Thinking through the plan…",
+        detail?.label || "Reviewing the plan…",
         "thinking",
         3200
       );
       completionTimer = window.setTimeout(
         () =>
           revealMessage(
-            "Done. Take a look and see if it feels right.",
+            "Plan ready to review.",
             "happy"
           ),
         1450
@@ -446,7 +332,7 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
         <button
           type="button"
           onClick={hideMessage}
-          className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-md text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+          className="absolute right-1.5 top-1.5 grid h-11 w-11 place-items-center rounded-md text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
           aria-label="Dismiss suggestion"
         >
           <X className="h-3.5 w-3.5" />
@@ -460,7 +346,7 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
             hideMessage();
             onOpenChat();
           }}
-          className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-lg border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] px-2.5 text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--button-secondary-bg-hover)]"
+          className="mt-2 inline-flex h-11 items-center gap-1.5 rounded-lg border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] px-3 text-[13px] font-medium text-[var(--text-primary)] hover:bg-[var(--button-secondary-bg-hover)]"
         >
           Ask Needt
           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -468,9 +354,8 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
       </div>
 
       <button
-        ref={orbRef}
         type="button"
-        aria-label="Open or move Needt assistant"
+        aria-label="Open Needt assistant"
         aria-expanded={Boolean(message)}
         onClick={(event) => {
           if (suppressClickRef.current) {
@@ -562,15 +447,8 @@ export function AICompanion({ hidden = false, onOpenChat }: AICompanionProps) {
         onPointerLeave={() => {
           if (!message) setEmotion("calm");
         }}
-        className="needt-ai-companion-orb group relative grid h-[88px] w-[88px] touch-none cursor-grab place-items-center rounded-full outline-none active:cursor-grabbing focus-visible:ring-1 focus-visible:ring-[var(--control-border)] max-sm:h-16 max-sm:w-16"
+        className="needt-ai-companion-orb group relative grid h-[72px] w-[72px] touch-none cursor-grab place-items-center rounded-full outline-none active:cursor-grabbing focus-visible:ring-1 focus-visible:ring-[var(--control-border)] max-sm:h-14 max-sm:w-14"
       >
-        <span className="needt-ai-aura" aria-hidden>
-          <span className="needt-ai-color-layer needt-ai-color-base" />
-          <span className="needt-ai-color-layer needt-ai-color-cyan" />
-          <span className="needt-ai-color-layer needt-ai-color-violet" />
-          <span className="needt-ai-color-layer needt-ai-color-rose" />
-        </span>
-
         <svg
           className="needt-ai-face relative z-10 h-full w-full"
           viewBox="0 0 100 100"
