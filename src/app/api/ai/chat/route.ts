@@ -31,9 +31,13 @@ import {
   createAiProposal,
   listAiReadablePages,
 } from "@/services/pages/page-service";
-import { FocusSessionMode, Prisma } from "@prisma/client";
+import { FocusSessionMode, Prisma, WorkspaceRole } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { getMailMessage } from "@/lib/mail-db";
@@ -96,11 +100,16 @@ async function publishAgentMutation(userId: string) {
   }
 }
 
-async function findTask(userId: string, args: Record<string, unknown>) {
+async function findTask(
+  userId: string,
+  workspace: WorkspaceAccess,
+  args: Record<string, unknown>
+) {
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const taskId = stringArg(args, "taskId");
   if (taskId) {
     return prisma.task.findFirst({
-      where: { id: taskId, userId, isArchived: false },
+      where: { id: taskId, ...scope, isArchived: false },
     });
   }
 
@@ -108,7 +117,7 @@ async function findTask(userId: string, args: Record<string, unknown>) {
   if (!titleQuery) return null;
   return prisma.task.findFirst({
     where: {
-      userId,
+      ...scope,
       isArchived: false,
       title: { equals: titleQuery, mode: "insensitive" },
     },
@@ -146,10 +155,12 @@ async function executeTool(
   ai: SchedulerAI,
   call: AIChatToolCall,
   userId: string,
-  workspaceId: string,
+  workspace: WorkspaceAccess,
   confirmed: boolean,
   pageActor: PageActor = userId
 ): Promise<ToolResult> {
+  const workspaceId = workspace.workspaceId;
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const validatedArguments = validateAgentToolCall(call.name, call.arguments);
   if (!validatedArguments) {
     return {
@@ -234,7 +245,7 @@ async function executeTool(
     }
 
     case "edit_task": {
-      const task = await findTask(userId, call.arguments);
+      const task = await findTask(userId, workspace, call.arguments);
       if (!task) {
         return {
           text: "I could not find that task to edit.",
@@ -276,7 +287,7 @@ async function executeTool(
     }
 
     case "delete_task": {
-      const task = await findTask(userId, call.arguments);
+      const task = await findTask(userId, workspace, call.arguments);
       if (!task) {
         return {
           text: "I could not find that task to delete.",
@@ -295,7 +306,7 @@ async function executeTool(
     }
 
     case "auto_schedule": {
-      const preview = await createReschedulePreview(userId);
+      const preview = await createReschedulePreview(userId, workspace);
       return {
         text: preview.changes.length
           ? `Prepared a dry-run with ${preview.changes.length} schedule changes. Review the diff, then choose Apply or Cancel.`
@@ -385,7 +396,7 @@ async function executeTool(
       if (
         taskId &&
         !(await prisma.task.findFirst({
-          where: { id: taskId, userId, isArchived: false },
+          where: { id: taskId, ...scope, isArchived: false },
         }))
       ) {
         return {
@@ -678,7 +689,11 @@ async function executeTool(
         12
       );
       const tasks = await prisma.task.findMany({
-        where: { userId, isArchived: false, status: { not: "completed" } },
+        where: {
+          ...scope,
+          isArchived: false,
+          status: { not: "completed" },
+        },
         orderBy: [
           { scheduledStart: "asc" },
           { dueDate: "asc" },
@@ -709,7 +724,7 @@ async function executeTool(
       const action = stringArg(call.arguments, "action") || "list";
       if (action === "list") {
         const projects = await prisma.project.findMany({
-          where: { userId, status: { not: "archived" } },
+          where: { ...scope, status: { not: "archived" } },
           orderBy: { updatedAt: "desc" },
           take: 12,
           select: {
@@ -742,6 +757,7 @@ async function executeTool(
         const project = await prisma.project.create({
           data: {
             userId,
+            workspaceId,
             name: name.slice(0, 120),
             color: stringArg(call.arguments, "color"),
             icon: stringArg(call.arguments, "icon"),
@@ -770,7 +786,7 @@ async function executeTool(
 
       if (action === "archive") {
         const project = await prisma.project.findFirst({
-          where: { id: projectId, userId },
+          where: { id: projectId, ...scope },
         });
         if (!project) {
           return {
@@ -792,7 +808,7 @@ async function executeTool(
       }
 
       const existingProject = await prisma.project.findFirst({
-        where: { id: projectId, userId },
+        where: { id: projectId, ...scope },
       });
       if (!existingProject) {
         return {
@@ -952,7 +968,8 @@ export async function POST(request: NextRequest) {
   }
   const systemPrompt = await buildAgentPromptForUser(
     auth.userId,
-    settings.soulPreset
+    settings.soulPreset,
+    auth.workspace!
   );
   const tools = getAgentToolDefinitions(settings);
   const chatRequest: AIChatRequest = {
@@ -978,12 +995,26 @@ export async function POST(request: NextRequest) {
     selectedTool = fallbackToolFromMessage(message);
   }
 
+  if (
+    selectedTool &&
+    isDangerousAgentTool(selectedTool.name, selectedTool.arguments) &&
+    auth.workspace?.role === WorkspaceRole.VIEWER
+  ) {
+    return NextResponse.json(
+      {
+        error: "An Editor or Owner role is required for this AI action.",
+        code: "WORKSPACE_ROLE_REQUIRED",
+      },
+      { status: 403 }
+    );
+  }
+
   if (selectedTool && tools.some((tool) => tool.name === selectedTool?.name)) {
     toolResult = await executeTool(
       ai,
       selectedTool,
       auth.userId,
-      auth.workspace!.workspaceId,
+      auth.workspace!,
       confirmed,
       auth
     );

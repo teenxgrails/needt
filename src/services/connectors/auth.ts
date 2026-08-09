@@ -1,5 +1,14 @@
+import { NextRequest, NextResponse } from "next/server";
+
+import { WorkspaceRole } from "@prisma/client";
 import crypto from "crypto";
 
+import {
+  type WorkspaceAccess,
+  WorkspaceAuthorizationError,
+  requestedWorkspaceId,
+  resolveWorkspaceAccess,
+} from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
 export function generateConnectorToken() {
@@ -29,4 +38,47 @@ export async function authenticateConnectorToken(authHeader: string | null) {
   });
 
   return settings?.userId ?? null;
+}
+
+export async function authorizeConnectorWorkspace(
+  request: NextRequest,
+  userId: string,
+  requiredRole: WorkspaceRole
+): Promise<
+  | { userId: string; workspace: WorkspaceAccess; response?: undefined }
+  | { response: NextResponse; userId?: undefined; workspace?: undefined }
+> {
+  try {
+    const workspace = await resolveWorkspaceAccess({
+      userId,
+      requestedWorkspaceId: requestedWorkspaceId(request),
+      requiredRole,
+    });
+    return { userId, workspace };
+  } catch (error) {
+    if (error instanceof WorkspaceAuthorizationError) {
+      return {
+        response: NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: error.status }
+        ),
+      };
+    }
+    throw error;
+  }
+}
+
+export async function authenticateConnectorRequest(
+  request: NextRequest,
+  requiredRole: WorkspaceRole
+) {
+  const userId = await authenticateConnectorToken(
+    request.headers.get("authorization")
+  );
+  if (!userId) {
+    return {
+      response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+    };
+  }
+  return authorizeConnectorWorkspace(request, userId, requiredRole);
 }

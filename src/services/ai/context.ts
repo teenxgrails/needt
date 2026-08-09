@@ -1,15 +1,22 @@
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { endOfDay, newDate, startOfDay } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
 import { listAgentMemories, touchMemories } from "./memory";
 import { assembleAgentSystemPrompt } from "./system-prompt";
 
-export async function getTodayScheduleSummary(userId: string) {
+export async function getTodayScheduleSummary(
+  userId: string,
+  workspace: WorkspaceAccess
+) {
   const now = newDate();
   const [tasks, preferences] = await Promise.all([
     prisma.task.findMany({
       where: {
-        userId,
+        ...workspaceDataScopeWhere(workspace, userId),
         isArchived: false,
         status: { not: "completed" },
         OR: [
@@ -97,11 +104,12 @@ export async function getTodayScheduleSummary(userId: string) {
 
 export async function buildAgentPromptForUser(
   userId: string,
-  soulPreset: string
+  soulPreset: string,
+  workspace: WorkspaceAccess
 ) {
   const [memories, schedule] = await Promise.all([
     listAgentMemories(userId),
-    getTodayScheduleSummary(userId),
+    getTodayScheduleSummary(userId, workspace),
   ]);
   const result = assembleAgentSystemPrompt({
     soulPreset,

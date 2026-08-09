@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
           userId,
           ...(providerId ? { id: providerId } : {}),
         },
+        project: workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         provider: {
@@ -106,7 +108,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: "EDITOR",
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -133,10 +137,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the project exists and belongs to the user
-    const project = await prisma.project.findUnique({
+    const project = await prisma.project.findFirst({
       where: {
         id: validatedData.projectId,
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
     });
 

@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Hardened authentication and workspace isolation: stale or disabled-user
+  tokens now return `401` before personal-workspace creation, admin routes use
+  the current database role, logs metadata requires admin access, and AI,
+  search, exports, connectors, schedule previews and task-sync mappings retain
+  the active workspace scope server-side.
 - Made Today autosave serialize date-keyed writes without stale success or failure clearing newer drafts, collapse duplicate inline task references, preserve completed tasks on historical days, and reject interrupted/invalid agenda request bodies cleanly.
 - Prevented stale Excalidraw clients from overwriting concurrent edits to different existing moodboard elements by publishing per-element scene deltas.
 - Fixed mobile Page block dragging when pointer capture is unavailable and made drop targets resolve to the nearest block instead of skipping over short blocks.

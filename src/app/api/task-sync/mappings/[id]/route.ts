@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -33,9 +34,11 @@ export async function GET(
     const userId = auth.userId;
 
     // Get the mapping
-    const mapping = await prisma.taskListMapping.findUnique({
+    const mapping = await prisma.taskListMapping.findFirst({
       where: {
         id: id,
+        provider: { userId },
+        project: workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         provider: {
@@ -59,17 +62,6 @@ export async function GET(
 
     if (!mapping) {
       return NextResponse.json({ error: "Mapping not found" }, { status: 404 });
-    }
-
-    // Verify the mapping belongs to the user (via provider and project)
-    if (
-      mapping.provider.userId !== userId ||
-      mapping.project.userId !== userId
-    ) {
-      return NextResponse.json(
-        { error: "Unauthorized access to mapping" },
-        { status: 403 }
-      );
     }
 
     return NextResponse.json({
@@ -118,7 +110,9 @@ export async function PATCH(
 
   try {
     // Authenticate the request
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: "EDITOR",
+    });
     if ("response" in auth) {
       return auth.response as NextResponse;
     }
@@ -133,6 +127,7 @@ export async function PATCH(
         provider: {
           userId,
         },
+        project: workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         provider: true,
@@ -159,6 +154,19 @@ export async function PATCH(
 
     const updateData: UpdateData = {};
     if (validatedData.projectId !== undefined) {
+      const project = await prisma.project.findFirst({
+        where: {
+          id: validatedData.projectId,
+          ...workspaceDataScopeWhere(auth.workspace, userId),
+        },
+        select: { id: true },
+      });
+      if (!project) {
+        return NextResponse.json(
+          { error: "Project not found in the active workspace" },
+          { status: 404 }
+        );
+      }
       updateData.projectId = validatedData.projectId;
     }
     if (validatedData.direction !== undefined) {
@@ -235,7 +243,9 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: "EDITOR",
+    });
     if ("response" in auth) {
       return auth.response as NextResponse;
     }
@@ -243,9 +253,10 @@ export async function DELETE(
     const userId = auth.userId;
 
     // Get the existing mapping
-    const existingMapping = await prisma.taskListMapping.findUnique({
+    const existingMapping = await prisma.taskListMapping.findFirst({
       where: {
         id: id,
+        project: workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         provider: {
@@ -260,7 +271,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Mapping not found" }, { status: 404 });
     }
 
-    // Verify the mapping belongs to the user (via provider)
     if (existingMapping.provider.userId !== userId) {
       return NextResponse.json(
         { error: "Unauthorized access to mapping" },

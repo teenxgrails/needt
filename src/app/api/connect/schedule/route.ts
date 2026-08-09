@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { authenticateConnectorToken } from "@/services/connectors/auth";
+import { authenticateConnectorRequest } from "@/services/connectors/auth";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { WorkspaceRole } from "@prisma/client";
 
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
-async function readSchedule(userId: string) {
+async function readSchedule(userId: string, workspace: WorkspaceAccess) {
   const now = new Date();
   const tasks = await prisma.task.findMany({
     where: {
-      userId,
+      ...workspaceDataScopeWhere(workspace, userId),
       isArchived: false,
       status: { not: "completed" },
       OR: [
@@ -31,24 +36,22 @@ async function readSchedule(userId: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const userId = await authenticateConnectorToken(
-    request.headers.get("authorization")
+  const auth = await authenticateConnectorRequest(
+    request,
+    WorkspaceRole.VIEWER
   );
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if ("response" in auth) return auth.response;
 
-  return NextResponse.json(await readSchedule(userId));
+  return NextResponse.json(await readSchedule(auth.userId, auth.workspace));
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await authenticateConnectorToken(
-    request.headers.get("authorization")
+  const auth = await authenticateConnectorRequest(
+    request,
+    WorkspaceRole.EDITOR
   );
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if ("response" in auth) return auth.response;
 
-  await scheduleAllTasksForUser(userId);
-  return NextResponse.json(await readSchedule(userId));
+  await scheduleAllTasksForUser(auth.userId);
+  return NextResponse.json(await readSchedule(auth.userId, auth.workspace));
 }

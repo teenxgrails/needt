@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { WorkspaceRole } from "@prisma/client";
 import { z } from "zod";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -71,6 +73,27 @@ export async function POST(request: NextRequest) {
     // Parse and validate the request body
     const body = await request.json();
     const validatedData = createProviderSchema.parse(body);
+    if (validatedData.defaultProjectId) {
+      if (auth.workspace?.role === WorkspaceRole.VIEWER) {
+        return NextResponse.json(
+          { error: "An Editor or Owner role is required" },
+          { status: 403 }
+        );
+      }
+      const project = await prisma.project.findFirst({
+        where: {
+          id: validatedData.defaultProjectId,
+          ...workspaceDataScopeWhere(auth.workspace, userId),
+        },
+        select: { id: true },
+      });
+      if (!project) {
+        return NextResponse.json(
+          { error: "Default project is not in the active workspace" },
+          { status: 400 }
+        );
+      }
+    }
 
     // If an account is supplied, it must belong to the requesting user and
     // match the provider type. Without this, a client could link a provider to

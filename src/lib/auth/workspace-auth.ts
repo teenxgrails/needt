@@ -1,12 +1,26 @@
-import { SubscriptionPlan, WorkspaceKind, WorkspaceRole } from "@prisma/client";
 import type { NextRequest } from "next/server";
 
-import { isFeatureEnabled } from "@/lib/feature-flags";
+import { SubscriptionPlan, WorkspaceKind, WorkspaceRole } from "@prisma/client";
+
 import { getPlan } from "@/lib/entitlements";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 import { prisma } from "@/lib/prisma";
 
 export const WORKSPACES_FEATURE_FLAG = "workspaces";
 export const WORKSPACE_HEADER = "x-workspace-id";
+
+// These resources intentionally follow the user across workspace switches.
+// Workspace-owned entities must use workspaceDataScopeWhere instead.
+export const ACCOUNT_GLOBAL_RESOURCES = [
+  "ai-conversations",
+  "ai-memories",
+  "calendar-accounts",
+  "connector-settings",
+  "focus-history",
+  "mail-accounts",
+  "scheduling-preferences",
+  "task-providers",
+] as const;
 
 const ROLE_RANK: Record<WorkspaceRole, number> = {
   [WorkspaceRole.VIEWER]: 0,
@@ -38,8 +52,9 @@ export function workspaceDataScopeWhere(
 export class WorkspaceAuthorizationError extends Error {
   constructor(
     message: string,
-    public readonly status: 400 | 403,
+    public readonly status: 400 | 401 | 403,
     public readonly code:
+      | "AUTHENTICATED_USER_NOT_FOUND"
       | "INVALID_WORKSPACE_REQUEST"
       | "WORKSPACE_ACCESS_DENIED"
       | "WORKSPACE_PAID_PLAN_REQUIRED"
@@ -139,11 +154,20 @@ export async function resolveWorkspaceAccess(input: {
   requestedWorkspaceId?: string;
   requiredRole?: WorkspaceRole;
 }): Promise<WorkspaceAccess> {
+  const user = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { id: true, isActive: true },
+  });
+  if (!user?.isActive) {
+    throw new WorkspaceAuthorizationError(
+      "The authenticated user is no longer active.",
+      401,
+      "AUTHENTICATED_USER_NOT_FOUND"
+    );
+  }
+
   const personal = await ensurePersonalWorkspace(input.userId);
-  const enabled = await isFeatureEnabled(
-    WORKSPACES_FEATURE_FLAG,
-    input.userId
-  );
+  const enabled = await isFeatureEnabled(WORKSPACES_FEATURE_FLAG, input.userId);
   const requiredRole = input.requiredRole ?? WorkspaceRole.VIEWER;
 
   if (!enabled) {

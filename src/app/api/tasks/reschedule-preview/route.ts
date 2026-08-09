@@ -24,15 +24,17 @@ export async function POST(request: NextRequest) {
     if ("response" in auth) return auth.response;
     const input = requestSchema.parse(await request.json());
     if (input.action === "preview") {
-      return NextResponse.json(await createReschedulePreview(auth.userId));
+      return NextResponse.json(
+        await createReschedulePreview(auth.userId, auth.workspace!)
+      );
     }
     if (input.action === "apply") {
       return NextResponse.json(
-        await applyReschedulePreview(auth.userId, input.token)
+        await applyReschedulePreview(auth.userId, auth.workspace!, input.token)
       );
     }
     return NextResponse.json(
-      await undoReschedulePreview(auth.userId, input.token)
+      await undoReschedulePreview(auth.userId, auth.workspace!, input.token)
     );
   } catch (error) {
     logger.error(

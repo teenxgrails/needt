@@ -1,16 +1,16 @@
-import { readFileSync } from "node:fs";
-
-import { SubscriptionPlan, WorkspaceKind, WorkspaceRole } from "@prisma/client";
 import { NextRequest } from "next/server";
 
-import { isFeatureEnabled } from "@/lib/feature-flags";
-import { getPlan } from "@/lib/entitlements";
-import { prisma } from "@/lib/prisma";
+import { SubscriptionPlan, WorkspaceKind, WorkspaceRole } from "@prisma/client";
+import { readFileSync } from "node:fs";
+
 import {
+  WorkspaceAuthorizationError,
   requestedWorkspaceId,
   resolveWorkspaceAccess,
-  WorkspaceAuthorizationError,
 } from "@/lib/auth/workspace-auth";
+import { getPlan } from "@/lib/entitlements";
+import { isFeatureEnabled } from "@/lib/feature-flags";
+import { prisma } from "@/lib/prisma";
 
 jest.mock("@/lib/feature-flags", () => ({
   isFeatureEnabled: jest.fn(),
@@ -18,6 +18,7 @@ jest.mock("@/lib/feature-flags", () => ({
 jest.mock("@/lib/entitlements", () => ({ getPlan: jest.fn() }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
+    user: { findUnique: jest.fn() },
     workspace: { findUnique: jest.fn(), upsert: jest.fn() },
     workspaceMember: { upsert: jest.fn(), findUnique: jest.fn() },
   },
@@ -27,6 +28,7 @@ const workspaceModel = prisma.workspace as unknown as {
   findUnique: jest.Mock;
   upsert: jest.Mock;
 };
+const userModel = prisma.user as unknown as { findUnique: jest.Mock };
 const memberModel = prisma.workspaceMember as unknown as {
   upsert: jest.Mock;
   findUnique: jest.Mock;
@@ -35,6 +37,7 @@ const memberModel = prisma.workspaceMember as unknown as {
 describe("workspace authorization", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    userModel.findUnique.mockResolvedValue({ id: "user-1", isActive: true });
     workspaceModel.upsert.mockResolvedValue({
       id: "personal-1",
       kind: WorkspaceKind.PERSONAL,
@@ -46,6 +49,33 @@ describe("workspace authorization", () => {
     memberModel.upsert.mockResolvedValue({ role: WorkspaceRole.OWNER });
     jest.mocked(isFeatureEnabled).mockResolvedValue(false);
     jest.mocked(getPlan).mockResolvedValue(SubscriptionPlan.PRO);
+  });
+
+  it("rejects an orphaned authenticated user before creating a workspace", async () => {
+    userModel.findUnique.mockResolvedValue(null);
+
+    await expect(
+      resolveWorkspaceAccess({ userId: "deleted-user" })
+    ).rejects.toMatchObject({
+      status: 401,
+      code: "AUTHENTICATED_USER_NOT_FOUND",
+    });
+    expect(workspaceModel.upsert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a disabled user before creating a workspace", async () => {
+    userModel.findUnique.mockResolvedValue({
+      id: "user-1",
+      isActive: false,
+    });
+
+    await expect(
+      resolveWorkspaceAccess({ userId: "user-1" })
+    ).rejects.toMatchObject({
+      status: 401,
+      code: "AUTHENTICATED_USER_NOT_FOUND",
+    });
+    expect(workspaceModel.upsert).not.toHaveBeenCalled();
   });
 
   it("keeps legacy user scope while the flag is disabled", async () => {

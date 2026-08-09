@@ -3,13 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 import type { WorkspaceRole } from "@prisma/client";
 
-import { logger } from "@/lib/logger";
 import {
-  requestedWorkspaceId,
-  resolveWorkspaceAccess,
   type WorkspaceAccess,
   WorkspaceAuthorizationError,
+  requestedWorkspaceId,
+  resolveWorkspaceAccess,
 } from "@/lib/auth/workspace-auth";
+import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "APIAuth";
 
@@ -81,10 +82,23 @@ export async function requireAuth(
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-    if (!token) {
+    if (!token?.sub) {
       logger.warn(
         "Unauthenticated API access attempt",
         { path: req.nextUrl.pathname },
+        LOG_SOURCE
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: token.sub },
+      select: { isActive: true },
+    });
+    if (!user?.isActive) {
+      logger.warn(
+        "Inactive or missing user attempted API access",
+        { userId: token.sub, path: req.nextUrl.pathname },
         LOG_SOURCE
       );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -119,7 +133,7 @@ export async function requireAdmin(
   try {
     const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
-    if (!token) {
+    if (!token?.sub) {
       logger.warn(
         "Unauthenticated admin API access attempt",
         { path: req.nextUrl.pathname },
@@ -128,10 +142,23 @@ export async function requireAdmin(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (token.role !== "admin") {
+    const user = await prisma.user.findUnique({
+      where: { id: token.sub },
+      select: { isActive: true, role: true },
+    });
+    if (!user?.isActive) {
+      logger.warn(
+        "Inactive or missing user attempted admin API access",
+        { userId: token.sub, path: req.nextUrl.pathname },
+        LOG_SOURCE
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.role !== "admin") {
       logger.warn(
         "Non-admin user attempted to access admin API",
-        { userId: token.sub ?? "unknown", path: req.nextUrl.pathname },
+        { userId: token.sub, path: req.nextUrl.pathname },
         LOG_SOURCE
       );
 

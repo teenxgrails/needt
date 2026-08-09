@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { TaskSyncManager } from "@/lib/task-sync/task-sync-manager";
@@ -36,7 +37,9 @@ function isValidDirection(
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     // Authenticate the request
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: "EDITOR",
+    });
     if ("response" in auth) {
       // If response exists, authentication failed
       return auth.response as NextResponse;
@@ -99,6 +102,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             provider: {
               userId,
             },
+            project: workspaceDataScopeWhere(auth.workspace, userId),
           },
           include: { provider: true },
         });
@@ -143,7 +147,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
         // Get all mappings for this provider
         const mappings = await prisma.taskListMapping.findMany({
-          where: { providerId },
+          where: {
+            providerId,
+            project: workspaceDataScopeWhere(auth.workspace, userId),
+          },
           include: { provider: true },
         });
 
