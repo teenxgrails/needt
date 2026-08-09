@@ -39,6 +39,8 @@ jobs:
       - run: npm run test:unit -- --runInBand
       - run: npm run build
       - run: npm run build:worker
+      - run: npm run build:collaboration
+      - run: npm run check:collaboration-runtime
 
   publish:
     needs: gates
@@ -88,6 +90,7 @@ jobs:
     env:
       MIGRATION_HOOK: ${{ secrets.COOLIFY_MIGRATION_WEBHOOK_URL }}
       WORKER_HOOK: ${{ secrets.COOLIFY_WORKER_WEBHOOK_URL }}
+      COLLABORATION_HOOK: ${{ secrets.COOLIFY_COLLABORATION_WEBHOOK_URL }}
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
       ROLLBACK_HOOK: ${{ secrets.COOLIFY_ROLLBACK_WEBHOOK_URL }}
@@ -99,6 +102,9 @@ jobs:
       - name: Trigger worker redeploy
         if: ${{ env.WORKER_HOOK != '' }}
         run: curl --fail --silent --show-error --retry 3 -X POST "$WORKER_HOOK?sha=$DEPLOY_SHA"
+      - name: Trigger collaboration redeploy
+        if: ${{ env.COLLABORATION_HOOK != '' }}
+        run: curl --fail --silent --show-error --retry 3 -X POST "$COLLABORATION_HOOK?sha=$DEPLOY_SHA"
       - name: Trigger web redeploy
         if: ${{ env.WEB_HOOK != '' }}
         run: curl --fail --silent --show-error --retry 3 -X POST "$WEB_HOOK?sha=$DEPLOY_SHA"

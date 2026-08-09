@@ -94,7 +94,7 @@ Web and worker use expand/contract deployment:
 
 1. take/verify a database backup;
 2. deploy additive migrations;
-3. deploy worker and web from the same SHA;
+3. deploy web, worker and collaboration from the same SHA;
 4. run the release gate and inspect `/admin/operations`;
 5. enable feature flags only after the smoke test;
 6. contract/remove old fields only after at least one fallback release.

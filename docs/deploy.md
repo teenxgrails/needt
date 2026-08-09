@@ -38,10 +38,13 @@ node dist/collaboration/index.js
 
 Set `COLLABORATION_HOST=0.0.0.0`, expose port `1234` through a TLS-enabled
 WebSocket domain, and set that public `wss://` URL on the web service as
-`COLLABORATION_PUBLIC_URL`. 5. Do not expose the worker publicly. Deploy web first, then worker and
-collaboration, and keep all services on the same Git commit. 6. The web entrypoint applies lockfile-pinned Prisma migrations before starting
-Next.js. A failed migration must fail the deployment instead of starting a
-mismatched application.
+`COLLABORATION_PUBLIC_URL`.
+
+5. Do not expose the worker publicly. Deploy web first, then worker and
+   collaboration, and keep all services on the same Git commit.
+6. The web entrypoint applies lockfile-pinned Prisma migrations before starting
+   Next.js. A failed migration must fail the deployment instead of starting a
+   mismatched application. Worker and collaboration processes skip migrations.
 
 ## 3. Environment Variables
 

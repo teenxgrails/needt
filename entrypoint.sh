@@ -20,8 +20,8 @@ echo "Database is ready!"
 # docs/STACK.md's deploy order, which treats migrations as a step separate
 # from starting web/worker.
 case "$*" in
-  *worker*)
-    echo "Worker process detected ($*); skipping migrations (web container runs them)."
+  *worker*|*collaboration*)
+    echo "Runtime process detected ($*); skipping migrations (web container runs them)."
     ;;
   *)
     # The client is generated during the image build. At runtime, use only
