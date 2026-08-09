@@ -47,6 +47,10 @@ npm run lint
 
 **Prerequisite:** S1 authorization contract complete.
 
+**Status:** complete (2026-08-09). Prisma validation, 614 unit tests,
+type-check, lint and local task/calendar E2E are green. External Google Calendar
+cases remain credential-gated and were skipped by their existing test guard.
+
 - Replace user-triggered physical deletion with archive/trash/tombstones.
 - Require an explicit confirmation showing the exact object before AI performs
   a destructive-looking mutation.
@@ -66,7 +70,7 @@ archive and restore preserve relations and history.
 ```bash
 npx prisma validate
 npm run test:unit -- --runInBand src/lib/task-sync src/app/api/connect src/app/api/ai
-npm run test:e2e -- tests/e2e/tasks.spec.ts tests/e2e/calendar.spec.ts
+npm run test:e2e -- tests/tasks.spec.ts tests/google-calendar.spec.ts
 npm run type-check
 npm run lint
 ```

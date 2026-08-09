@@ -11,6 +11,7 @@ import { APP_NAME } from "@/lib/app-config";
 import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
+import { schedulePushTaskBlock } from "@/lib/task-block-push";
 
 import { TaskStatus } from "@/types/task";
 
@@ -18,9 +19,15 @@ function forbidden() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 
-function confirmationRequired() {
+function confirmationRequired(
+  action: string,
+  target: { type: string; id: string; title: string }
+) {
   return NextResponse.json(
-    { error: "Set confirm: true to perform this destructive action." },
+    {
+      error: `Set confirm: true to archive ${target.type} "${target.title}".`,
+      confirmation: { action, target },
+    },
     { status: 400 }
   );
 }
@@ -48,16 +55,22 @@ export async function POST(request: NextRequest) {
         where: { ...scope, isArchived: false },
         orderBy: [{ scheduledStart: "asc" }, { createdAt: "desc" }],
       }),
-      prisma.project.findMany({ where: scope, orderBy: { createdAt: "desc" } }),
+      prisma.project.findMany({
+        where: { ...scope, status: { not: "archived" } },
+        orderBy: { createdAt: "desc" },
+      }),
       workspace.workspaceKind === WorkspaceKind.PERSONAL
         ? prisma.calendarFeed.findMany({
-            where: { userId },
+            where: { userId, enabled: true },
             orderBy: { createdAt: "asc" },
           })
         : Promise.resolve([]),
       workspace.workspaceKind === WorkspaceKind.PERSONAL
         ? prisma.calendarEvent.findMany({
-            where: { feed: { userId } },
+            where: {
+              archivedAt: null,
+              feed: { userId, enabled: true },
+            },
             orderBy: { start: "asc" },
             take: 100,
           })
@@ -161,7 +174,9 @@ export async function POST(request: NextRequest) {
     action === "create_event" ||
     action === "update_event" ||
     action === "delete_event" ||
-    action === "delete_calendar";
+    action === "delete_calendar" ||
+    action === "restore_event" ||
+    action === "restore_calendar";
   if (calendarAction && workspace.workspaceKind !== WorkspaceKind.PERSONAL) {
     return NextResponse.json(
       {
@@ -244,7 +259,7 @@ export async function POST(request: NextRequest) {
     if (typeof body.id !== "string")
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     const result = await prisma.calendarEvent.updateMany({
-      where: { id: body.id, feed: { userId } },
+      where: { id: body.id, archivedAt: null, feed: { userId, enabled: true } },
       data: {
         ...(typeof body.title === "string" ? { title: body.title.trim() } : {}),
         ...(typeof body.description === "string"
@@ -263,7 +278,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     return NextResponse.json(
       await prisma.calendarEvent.findFirst({
-        where: { id: body.id, feed: { userId } },
+        where: {
+          id: body.id,
+          archivedAt: null,
+          feed: { userId, enabled: true },
+        },
       })
     );
   }
@@ -274,24 +293,144 @@ export async function POST(request: NextRequest) {
     action === "delete_event" ||
     action === "delete_calendar"
   ) {
-    if (body.confirm !== true) return confirmationRequired();
+    if (typeof body.id !== "string")
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+
+    const target =
+      action === "delete_task"
+        ? await prisma.task.findFirst({
+            where: { id: body.id, ...scope, isArchived: false },
+            select: {
+              id: true,
+              title: true,
+              assigneeId: true,
+              workspaceId: true,
+            },
+          })
+        : action === "delete_project"
+          ? await prisma.project.findFirst({
+              where: { id: body.id, ...scope, status: { not: "archived" } },
+              select: { id: true, name: true },
+            })
+          : action === "delete_event"
+            ? await prisma.calendarEvent.findFirst({
+                where: { id: body.id, archivedAt: null, feed: { userId } },
+                select: { id: true, title: true },
+              })
+            : await prisma.calendarFeed.findFirst({
+                where: { id: body.id, userId, enabled: true },
+                select: { id: true, name: true },
+              });
+    if (!target) {
+      return NextResponse.json({ error: "Object not found" }, { status: 404 });
+    }
+    const confirmationTarget = {
+      type:
+        action === "delete_task"
+          ? "task"
+          : action === "delete_project"
+            ? "project"
+            : action === "delete_event"
+              ? "event"
+              : "calendar",
+      id: target.id,
+      title: "title" in target ? target.title : target.name,
+    };
+    if (body.confirm !== true) {
+      return confirmationRequired(action, confirmationTarget);
+    }
+
+    if (action === "delete_task") {
+      const taskTarget = target as {
+        id: string;
+        title: string;
+        assigneeId: string | null;
+        workspaceId: string | null;
+      };
+      const schedulingUserId = taskTarget.assigneeId ?? userId;
+      await prisma.task.update({
+        where: { id: taskTarget.id },
+        data: {
+          isArchived: true,
+          archivedAt: newDate(),
+          scheduledStart: null,
+          scheduledEnd: null,
+          scheduleLocked: false,
+          ...(taskTarget.workspaceId && {
+            activities: {
+              create: {
+                workspaceId: taskTarget.workspaceId,
+                actorId: userId,
+                action: "ARCHIVED",
+              },
+            },
+          }),
+        },
+      });
+      await prisma.scheduledBlock.deleteMany({
+        where: { taskId: taskTarget.id, userId: schedulingUserId },
+      });
+      schedulePushTaskBlock(schedulingUserId, taskTarget.id);
+    } else if (action === "delete_project") {
+      await prisma.project.update({
+        where: { id: target.id },
+        data: { status: "archived" },
+      });
+    } else if (action === "delete_event") {
+      await prisma.calendarEvent.update({
+        where: { id: target.id },
+        data: { archivedAt: newDate() },
+      });
+    } else {
+      await prisma.calendarFeed.update({
+        where: { id: target.id },
+        data: { enabled: false },
+      });
+    }
+    return NextResponse.json({
+      deleted: false,
+      archived: true,
+      target: confirmationTarget,
+    });
+  }
+
+  if (
+    action === "restore_task" ||
+    action === "restore_project" ||
+    action === "restore_event" ||
+    action === "restore_calendar"
+  ) {
     if (typeof body.id !== "string")
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     const result =
-      action === "delete_task"
-        ? await prisma.task.deleteMany({ where: { id: body.id, ...scope } })
-        : action === "delete_project"
-          ? await prisma.project.deleteMany({
-              where: { id: body.id, ...scope },
+      action === "restore_task"
+        ? await prisma.task.updateMany({
+            where: { id: body.id, ...scope, isArchived: true },
+            data: { isArchived: false, archivedAt: null },
+          })
+        : action === "restore_project"
+          ? await prisma.project.updateMany({
+              where: { id: body.id, ...scope, status: "archived" },
+              data: { status: "active" },
             })
-          : action === "delete_event"
-            ? await prisma.calendarEvent.deleteMany({
-                where: { id: body.id, feed: { userId } },
+          : action === "restore_event"
+            ? await prisma.calendarEvent.updateMany({
+                where: {
+                  id: body.id,
+                  archivedAt: { not: null },
+                  feed: { userId },
+                },
+                data: { archivedAt: null },
               })
-            : await prisma.calendarFeed.deleteMany({
-                where: { id: body.id, userId },
+            : await prisma.calendarFeed.updateMany({
+                where: { id: body.id, userId, enabled: false },
+                data: { enabled: true },
               });
-    return NextResponse.json({ deleted: result.count === 1 });
+    if (!result.count) {
+      return NextResponse.json({ error: "Object not found" }, { status: 404 });
+    }
+    if (action === "restore_task") await scheduleAllTasksForUser(userId);
+    return NextResponse.json({ restored: true, id: body.id });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

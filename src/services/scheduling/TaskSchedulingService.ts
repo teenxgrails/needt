@@ -402,8 +402,9 @@ export async function scheduleAllTasksForUserDetailed(
     );
     const busyEvents = await prisma.calendarEvent.findMany({
       where: {
+        archivedAt: null,
         feedId: { in: selectedCalendarIds },
-        feed: { userId },
+        feed: { userId, enabled: true },
         start: { lt: addDays(now, DEFAULT_HORIZON_DAYS) },
         end: { gt: now },
         OR: [

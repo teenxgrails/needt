@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Replaced user-triggered physical deletion with recoverable archive semantics
+  for tasks, projects, calendar events and feeds; AI and connector mutations now
+  confirm the exact target, provider sync preserves tombstones, and disconnecting
+  an account revokes credentials without cascading through local calendar data.
 - Hardened authentication and workspace isolation: stale or disabled-user
   tokens now return `401` before personal-workspace creation, admin routes use
   the current database role, logs metadata requires admin access, and AI,

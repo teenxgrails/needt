@@ -106,12 +106,12 @@ export async function DELETE(
     }
 
     await disableGoogleWatch(id);
-    // Delete the feed
-    await prisma.calendarFeed.delete({
+    await prisma.calendarFeed.update({
       where: { id, userId },
+      data: { enabled: false },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, archived: true });
   } catch (error) {
     await logger.error(
       "Failed to delete Google calendar",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { Prisma } from "@prisma/client";
 
+import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
 import {
@@ -74,20 +75,35 @@ export async function persistGoogleCalendarEvents(options: {
   await prisma.$transaction(
     async (tx) => {
       if (replaceAll) {
-        await tx.calendarEvent.deleteMany({ where: { feedId } });
-      } else if (deletedExternalIds.length > 0) {
-        await tx.calendarEvent.deleteMany({
+        const receivedExternalIds = events.map(
+          (event) => event.externalEventId
+        );
+        await tx.calendarEvent.updateMany({
           where: {
             feedId,
+            archivedAt: null,
+            externalEventId:
+              receivedExternalIds.length > 0
+                ? { notIn: receivedExternalIds }
+                : { not: null },
+          },
+          data: { archivedAt: newDate() },
+        });
+      } else if (deletedExternalIds.length > 0) {
+        await tx.calendarEvent.updateMany({
+          where: {
+            feedId,
+            archivedAt: null,
             externalEventId: { in: deletedExternalIds },
           },
+          data: { archivedAt: newDate() },
         });
       }
 
       for (const event of events) {
         const existing = await tx.calendarEvent.findFirst({
           where: { feedId, externalEventId: event.externalEventId },
-          select: { id: true },
+          select: { id: true, archivedAt: true },
         });
         const data = {
           ...event,
@@ -96,6 +112,9 @@ export async function persistGoogleCalendarEvents(options: {
           masterEventId: null,
         };
 
+        if (existing?.archivedAt) {
+          continue;
+        }
         if (existing) {
           await tx.calendarEvent.update({
             where: { id: existing.id },
@@ -194,8 +213,8 @@ export async function deleteCalendarWebhook(
 export async function getEvent(
   eventId: string
 ): Promise<CalendarEventWithFeed | null> {
-  const event = await prisma.calendarEvent.findUnique({
-    where: { id: eventId },
+  const event = await prisma.calendarEvent.findFirst({
+    where: { id: eventId, archivedAt: null, feed: { enabled: true } },
     include: { feed: true },
   });
 
@@ -282,13 +301,14 @@ export async function deleteCalendarEvent(
   }
 
   if (mode === "series") {
-    // Delete the event and any related instances from our database
+    // Archive the event and its related instances so the operation is
+    // recoverable and relations/history remain intact.
     if (event.isMaster || !event.masterEventId) {
-      //deleting the master event will cascade to all instances
-      await prisma.calendarEvent.delete({
+      await prisma.calendarEvent.updateMany({
         where: {
-          id: event.id,
+          OR: [{ id: event.id }, { masterEventId: event.id }],
         },
+        data: { archivedAt: newDate() },
       });
     } else {
       const masterEvent = await prisma.calendarEvent.findFirst({
@@ -296,19 +316,21 @@ export async function deleteCalendarEvent(
           id: event.masterEventId,
         },
       });
-      //deleting the master event will cascade to all instances
-      await prisma.calendarEvent.delete({
-        where: {
-          id: masterEvent?.id,
-        },
-      });
+      if (masterEvent) {
+        await prisma.calendarEvent.updateMany({
+          where: {
+            OR: [{ id: masterEvent.id }, { masterEventId: masterEvent.id }],
+          },
+          data: { archivedAt: newDate() },
+        });
+      }
     }
   } else {
-    //delete a single instance
-    await prisma.calendarEvent.delete({
+    await prisma.calendarEvent.update({
       where: {
         id: event.id,
       },
+      data: { archivedAt: newDate() },
     });
   }
 

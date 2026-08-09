@@ -528,13 +528,6 @@ export class CalDAVCalendarService {
       if (!feed) {
         throw new Error(`Calendar feed not found for path: ${calendarPath}`);
       }
-      //delete all events from the database
-      await prisma.calendarEvent.deleteMany({
-        where: {
-          feedId: feed.id,
-        },
-      });
-
       // Get existing events for this feed
       // const existingEvents = await this.getExistingEvents(feed.id);
 
@@ -547,6 +540,21 @@ export class CalDAVCalendarService {
         timeRange.end,
         calendarPath
       );
+
+      const externalEventIds = events.flatMap((event) =>
+        event.externalEventId ? [event.externalEventId] : []
+      );
+      await prisma.calendarEvent.updateMany({
+        where: {
+          feedId: feed.id,
+          archivedAt: null,
+          externalEventId:
+            externalEventIds.length > 0
+              ? { notIn: externalEventIds }
+              : { not: null },
+        },
+        data: { archivedAt: newDate() },
+      });
 
       // Process events and update database
       // const result = await this.processEvents(events, existingEvents, feed.id);
@@ -1361,6 +1369,16 @@ export class CalDAVCalendarService {
     // Process events in batches to avoid potential issues with large datasets
     for (const event of masterEvents) {
       try {
+        const existing = event.externalEventId
+          ? await prisma.calendarEvent.findFirst({
+              where: {
+                feedId,
+                externalEventId: event.externalEventId,
+              },
+            })
+          : null;
+        if (existing?.archivedAt) continue;
+
         // Prepare event data for database
         const eventData = {
           feedId,
@@ -1383,9 +1401,12 @@ export class CalDAVCalendarService {
         };
 
         // Create the event
-        const createdEvent = await prisma.calendarEvent.create({
-          data: eventData,
-        });
+        const createdEvent = existing
+          ? await prisma.calendarEvent.update({
+              where: { id: existing.id },
+              data: eventData,
+            })
+          : await prisma.calendarEvent.create({ data: eventData });
 
         createdEvents.push(createdEvent);
       } catch (error) {
@@ -1414,6 +1435,16 @@ export class CalDAVCalendarService {
     // Process events in batches to avoid potential issues with large datasets
     for (const event of instanceEvents) {
       try {
+        const existing = event.externalEventId
+          ? await prisma.calendarEvent.findFirst({
+              where: {
+                feedId,
+                externalEventId: event.externalEventId,
+              },
+            })
+          : null;
+        if (existing?.archivedAt) continue;
+
         // Find the master event ID for this instance
         let masterEventId = null;
         if (
@@ -1445,9 +1476,12 @@ export class CalDAVCalendarService {
         };
 
         // Create the event
-        const createdEvent = await prisma.calendarEvent.create({
-          data: eventData,
-        });
+        const createdEvent = existing
+          ? await prisma.calendarEvent.update({
+              where: { id: existing.id },
+              data: eventData,
+            })
+          : await prisma.calendarEvent.create({ data: eventData });
 
         createdEvents.push(createdEvent);
       } catch (error) {

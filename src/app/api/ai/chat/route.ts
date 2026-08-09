@@ -43,6 +43,7 @@ import { logger } from "@/lib/logger";
 import { getMailMessage } from "@/lib/mail-db";
 import { prisma } from "@/lib/prisma";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
+import { schedulePushTaskBlock } from "@/lib/task-block-push";
 
 const LOG_SOURCE = "ai-chat";
 
@@ -177,6 +178,27 @@ async function executeTool(
     LOG_SOURCE
   );
 
+  if (call.name === "delete_task" && !confirmed) {
+    const task = await findTask(userId, workspace, call.arguments);
+    if (!task) {
+      return {
+        text: "I could not find that task to archive.",
+        toolName: "delete_task",
+        requiresConfirm: false,
+      };
+    }
+    return {
+      text: `Archive task "${task.title}"? You can restore it from the archive.`,
+      toolName: "confirmation_required",
+      toolPayload: jsonValue({
+        requestedTool: call.name,
+        arguments: { taskId: task.id },
+        target: { type: "task", id: task.id, title: task.title },
+      }),
+      requiresConfirm: true,
+    };
+  }
+
   if (isDangerousAgentTool(call.name, call.arguments) && !confirmed) {
     return {
       text: "This action can change or delete planner data. Confirm it to continue.",
@@ -290,17 +312,44 @@ async function executeTool(
       const task = await findTask(userId, workspace, call.arguments);
       if (!task) {
         return {
-          text: "I could not find that task to delete.",
+          text: "I could not find that task to archive.",
           toolName: "delete_task",
           requiresConfirm: false,
         };
       }
-      await prisma.task.delete({ where: { id: task.id } });
+      const schedulingUserId = task.assigneeId ?? userId;
+      await prisma.task.update({
+        where: { id: task.id },
+        data: {
+          isArchived: true,
+          archivedAt: newDate(),
+          scheduledStart: null,
+          scheduledEnd: null,
+          scheduleLocked: false,
+          ...(task.workspaceId && {
+            activities: {
+              create: {
+                workspaceId: task.workspaceId,
+                actorId: userId,
+                action: "ARCHIVED",
+              },
+            },
+          }),
+        },
+      });
+      await prisma.scheduledBlock.deleteMany({
+        where: { taskId: task.id, userId: schedulingUserId },
+      });
+      schedulePushTaskBlock(schedulingUserId, task.id);
       await publishAgentMutation(userId);
       return {
-        text: `Deleted task "${task.title}".`,
+        text: `Archived task "${task.title}".`,
         toolName: "delete_task",
-        toolPayload: jsonValue({ taskId: task.id, title: task.title }),
+        toolPayload: jsonValue({
+          taskId: task.id,
+          title: task.title,
+          archived: true,
+        }),
         requiresConfirm: false,
       };
     }
@@ -963,6 +1012,42 @@ export async function POST(request: NextRequest) {
   });
 
   const history = await recentMessages(conversation.id);
+  let confirmedTool: AIChatToolCall | null = null;
+  let confirmationMessageId: string | null = null;
+  if (confirmed) {
+    const confirmation = await prisma.aiMessage.findFirst({
+      where: {
+        conversationId: conversation.id,
+        userId: auth.userId,
+        role: "assistant",
+        toolName: "confirmation_required",
+        requiresConfirm: true,
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, toolPayload: true },
+    });
+    const payload = confirmation?.toolPayload;
+    if (
+      !confirmation ||
+      !payload ||
+      typeof payload !== "object" ||
+      Array.isArray(payload) ||
+      typeof payload.requestedTool !== "string" ||
+      !payload.arguments ||
+      typeof payload.arguments !== "object" ||
+      Array.isArray(payload.arguments)
+    ) {
+      return NextResponse.json(
+        { error: "The confirmation expired. Ask to perform the action again." },
+        { status: 409 }
+      );
+    }
+    confirmedTool = {
+      name: payload.requestedTool,
+      arguments: payload.arguments as Record<string, unknown>,
+    };
+    confirmationMessageId = confirmation.id;
+  }
   if (source === "hosted") {
     await recordHostedAiAction(auth.userId);
   }
@@ -979,16 +1064,18 @@ export async function POST(request: NextRequest) {
   };
 
   let toolResult: ToolResult | null = null;
-  let selectedTool: AIChatToolCall | null = null;
-  try {
-    selectedTool = (await ai.selectChatTool?.(chatRequest)) || null;
-  } catch (error) {
-    logger.warn(
-      "AI tool selection failed; using local fallback",
-      { error: error instanceof Error ? error.message : String(error) },
-      LOG_SOURCE
-    );
-    selectedTool = fallbackToolFromMessage(message);
+  let selectedTool: AIChatToolCall | null = confirmedTool;
+  if (!selectedTool) {
+    try {
+      selectedTool = (await ai.selectChatTool?.(chatRequest)) || null;
+    } catch (error) {
+      logger.warn(
+        "AI tool selection failed; using local fallback",
+        { error: error instanceof Error ? error.message : String(error) },
+        LOG_SOURCE
+      );
+      selectedTool = fallbackToolFromMessage(message);
+    }
   }
 
   if (!selectedTool) {
@@ -1018,6 +1105,12 @@ export async function POST(request: NextRequest) {
       confirmed,
       auth
     );
+    if (confirmationMessageId && !toolResult.requiresConfirm) {
+      await prisma.aiMessage.update({
+        where: { id: confirmationMessageId },
+        data: { requiresConfirm: false },
+      });
+    }
   }
 
   const finalRequest: AIChatRequest = {

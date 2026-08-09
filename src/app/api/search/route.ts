@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
     auth.workspace?.workspaceKind === "PERSONAL"
       ? prisma.calendarEvent.findMany({
           where: {
-            feed: { userId: auth.userId },
+            archivedAt: null,
+            feed: { userId: auth.userId, enabled: true },
             OR: [
               { title: { contains: q, mode: "insensitive" } },
               { description: { contains: q, mode: "insensitive" } },

@@ -164,6 +164,7 @@ export class CalendarServiceImpl implements CalendarService {
 
     const events = await prisma.calendarEvent.findMany({
       where: {
+        archivedAt: null,
         feedId: {
           in: selectedCalendarIds,
         },

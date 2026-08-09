@@ -290,6 +290,7 @@ model CalendarEvent {
   attendees       Json? // Stored as JSON array of { name?: string, email: string, status?: string }
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+  archivedAt      DateTime?
 
   // New fields for hybrid approach
   isMaster         Boolean         @default(false) // True if this is a master event
@@ -299,6 +300,7 @@ model CalendarEvent {
   recurringEventId String? // Google Calendar's recurring event ID
 
   @@index([feedId])
+  @@index([feedId, archivedAt])
   @@index([start, end])
   @@index([externalEventId])
   @@index([masterEventId])

@@ -189,6 +189,17 @@ export class TaskSyncManager {
 }
 ```
 
+#### Recoverable deletion contract
+
+- Needt archives tasks with `isArchived`/`archivedAt`; archive changes never call
+  a provider delete operation.
+- If a linked task disappears from a bidirectional provider, Needt archives the
+  local task and keeps its relations and activity history.
+- An archived linked task is a tombstone: subsequent imports skip it until the
+  user explicitly restores it.
+- Removing a mapping or provider detaches sync/revokes credentials. It does not
+  delete local tasks or projects.
+
 ### 3. Task Change Tracker
 
 Service to track changes to tasks for efficient syncing:
@@ -286,13 +297,11 @@ Multiple external task lists could map to a single Needt project.
      - Create a new project with the same name as the external list
      - Optionally sync project metadata
 
-4. **Project Deletion Handling**:
-   - If a project is deleted in Needt:
-     - Option 1: Delete the mapping but preserve the external task list
-     - Option 2: Delete both the mapping and the external task list (if supported)
-   - If an external task list is deleted:
-     - Option 1: Preserve the Needt project but mark tasks as disconnected
-     - Option 2: Delete the Needt project (user configurable)
+4. **Project Archive Handling**:
+   - Archiving a Needt project preserves its tasks, mappings and external list.
+   - Removing a mapping preserves both the Needt project and external list.
+   - If an external list disappears, Needt preserves the project and archives
+     missing linked tasks as recoverable tombstones.
 
 ### Project-aware Task Operations
 
