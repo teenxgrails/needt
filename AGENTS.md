@@ -103,6 +103,22 @@ Viewer roles and invites). While that migration is in progress:
   run on an unreviewed plan, and handle small fixes directly in Codex.
 - Apply the decision workflow in `.agents/skills/route-ai-tools/SKILL.md`.
 
+### Design, copy, and critique skills
+
+- **Hallmark:** use for a new or redesigned user-facing surface, or when
+  auditing a screen for generic AI-looking design. It informs the visual
+  direction but never overrides `design-refs/ui-conventions.md`, accessibility,
+  or the existing Needt component system.
+- **humanize:** use for new user-facing product copy and when revising copy
+  that is generic, robotic, or over-polished. Preserve product facts, locale,
+  and the user's intended voice; never claim it bypasses AI detectors.
+- **ai-check:** use before publishing or shipping substantial user-facing copy
+  when an AI-tell audit is useful. Treat findings as editorial suggestions, not
+  a detector verdict.
+- **needt-critique:** use to review a plan, diff, API, or UI proposal before a
+  risky or multi-step change. It is read-only: no sandbox bypasses, external
+  agents, raw diagnostics, or hidden automated changes.
+
 ---
 
 ## Conventions that are easy to get wrong
