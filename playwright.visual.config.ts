@@ -1,5 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
+import { configureE2eEnvironment } from "./tests/e2e/environment";
+
+configureE2eEnvironment();
+
 const baseURL = process.env.TEST_BASE_URL || "http://127.0.0.1:3000";
 const useProductionServer =
   process.env.NEEDT_VISUAL_PRODUCTION_SERVER === "1";

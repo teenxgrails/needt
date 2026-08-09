@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { configureE2eEnvironment } from "./tests/e2e/environment";
+
+configureE2eEnvironment();
+
 const testBaseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
 
 /**
@@ -16,6 +20,7 @@ const testBaseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
 export default defineConfig({
   testDir: "./tests",
   testIgnore: ["**/visual/**"],
+  globalSetup: "./tests/e2e/global-setup.ts",
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -85,7 +90,10 @@ export default defineConfig({
   webServer: {
     command: "npm run dev",
     url: testBaseUrl,
-    reuseExistingServer: !process.env.CI,
+    // E2E resets its own database and Redis state before every run. Reusing a
+    // previous dev server can retain a different environment or exit midway
+    // through the suite while Playwright still considers it ready.
+    reuseExistingServer: false,
     env: {
       ...process.env,
       RATE_LIMIT_HASH_SECRET:

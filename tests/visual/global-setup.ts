@@ -1,6 +1,9 @@
 import { hash } from "bcryptjs";
+import { WorkspaceKind, WorkspaceRole } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+
+import { prepareE2eEnvironment } from "../e2e/environment";
 
 import {
   VISUAL_TEST_BOARD_COLUMNS,
@@ -11,7 +14,7 @@ import {
   VISUAL_TEST_TASK_IDS,
 } from "./fixtures";
 
-export async function resetVisualTaskData(userId: string) {
+export async function resetVisualTaskData(userId: string, workspaceId: string) {
   await prisma.task.deleteMany({
     where: {
       OR: [{ userId }, { id: { in: [...VISUAL_TEST_TASK_IDS] } }],
@@ -22,6 +25,7 @@ export async function resetVisualTaskData(userId: string) {
       {
         id: "visual-task-plan",
         userId,
+        workspaceId,
         title: "Plan the launch",
         description:
           "<!--needt-rich-text:v1--><p>Review the brief and choose the <strong>next action</strong>.</p>",
@@ -38,6 +42,7 @@ export async function resetVisualTaskData(userId: string) {
       {
         id: "visual-task-morning",
         userId,
+        workspaceId,
         title: "Morning deep work",
         description:
           '<!--needt-rich-text:v1--><h2>Focus block</h2><ul data-type="taskList"><li data-checked="false"><p>Draft the first section</p></li></ul>',
@@ -57,6 +62,7 @@ export async function resetVisualTaskData(userId: string) {
       {
         id: "visual-task-afternoon",
         userId,
+        workspaceId,
         title: "Review calendar sync",
         description: "Check the latest provider status.",
         status: "todo",
@@ -75,6 +81,7 @@ export async function resetVisualTaskData(userId: string) {
       {
         id: "visual-task-evening",
         userId,
+        workspaceId,
         title: "Evening shutdown",
         status: "todo",
         duration: 20,
@@ -91,6 +98,7 @@ export async function resetVisualTaskData(userId: string) {
 }
 
 export default async function globalSetup() {
+  await prepareE2eEnvironment();
   const passwordHash = await hash(VISUAL_TEST_PASSWORD, 8);
   const user = await prisma.user.upsert({
     where: { email: VISUAL_TEST_EMAIL },
@@ -103,6 +111,20 @@ export default async function globalSetup() {
       name: "Visual QA",
       role: "admin",
     },
+  });
+  const workspace = await prisma.workspace.upsert({
+    where: { personalOwnerId: user.id },
+    update: { name: "Visual QA" },
+    create: {
+      name: "Visual QA",
+      kind: WorkspaceKind.PERSONAL,
+      personalOwnerId: user.id,
+    },
+  });
+  await prisma.workspaceMember.upsert({
+    where: { workspaceId_userId: { workspaceId: workspace.id, userId: user.id } },
+    update: { role: WorkspaceRole.OWNER },
+    create: { workspaceId: workspace.id, userId: user.id, role: WorkspaceRole.OWNER },
   });
 
   await prisma.account.upsert({
@@ -193,6 +215,7 @@ export default async function globalSetup() {
     where: { id: VISUAL_TEST_PAGE_ID },
     update: {
       userId: user.id,
+      workspaceId: workspace.id,
       title: "Visual design notes",
       icon: "🎨",
       isPrivate: false,
@@ -202,6 +225,7 @@ export default async function globalSetup() {
     create: {
       id: VISUAL_TEST_PAGE_ID,
       userId: user.id,
+      workspaceId: workspace.id,
       title: "Visual design notes",
       icon: "🎨",
       isPrivate: false,
@@ -233,6 +257,7 @@ export default async function globalSetup() {
     where: { id: VISUAL_TEST_BOARD_ID },
     update: {
       userId: user.id,
+      workspaceId: workspace.id,
       name: "Launch plan",
       icon: "🚀",
       position: 0,
@@ -240,6 +265,7 @@ export default async function globalSetup() {
     create: {
       id: VISUAL_TEST_BOARD_ID,
       userId: user.id,
+      workspaceId: workspace.id,
       name: "Launch plan",
       icon: "🚀",
       position: 0,
@@ -274,7 +300,7 @@ export default async function globalSetup() {
     ],
   });
 
-  await resetVisualTaskData(user.id);
+  await resetVisualTaskData(user.id, workspace.id);
 
   const mailAccount = await prisma.mailAccount.upsert({
     where: {

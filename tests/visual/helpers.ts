@@ -12,6 +12,11 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
     select: { id: true },
   });
   expect(user).toBeTruthy();
+  const workspace = await prisma.workspace.findUnique({
+    where: { personalOwnerId: user!.id },
+    select: { id: true },
+  });
+  expect(workspace).toBeTruthy();
   await Promise.all([
     prisma.dailyAgenda.deleteMany({ where: { userId: user!.id } }),
     prisma.focusSession.deleteMany({ where: { userId: user!.id } }),
@@ -19,7 +24,7 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
       where: { userId: user!.id, id: { not: VISUAL_TEST_PAGE_ID } },
     }),
   ]);
-  await resetVisualTaskData(user!.id);
+  await resetVisualTaskData(user!.id, workspace!.id);
 
   // Visual specs authenticate a fixed test fixture directly. Repeatedly
   // exercising the credentials endpoint here would correctly trigger the

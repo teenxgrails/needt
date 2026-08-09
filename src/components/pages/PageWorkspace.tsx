@@ -842,51 +842,56 @@ export function PageWorkspace({
       if (cancelled) return;
 
       if (tokenResponse?.ok) {
-        const collaboration =
-          (await tokenResponse.json()) as CollaborationTokenResponse;
-        Y.applyUpdate(
-          collaborationDocument,
-          decodeCollaborationState(collaboration.initialState)
-        );
-        collaborationSocket.setConfiguration({ url: collaboration.url });
-        let nextToken: string | null = collaboration.token;
-        collaborationProvider.setConfiguration({
-          token: async () => {
-            if (nextToken) {
-              const currentToken = nextToken;
-              nextToken = null;
-              return currentToken;
+        try {
+          const collaboration =
+            (await tokenResponse.json()) as CollaborationTokenResponse;
+          Y.applyUpdate(
+            collaborationDocument,
+            decodeCollaborationState(collaboration.initialState)
+          );
+          collaborationSocket.setConfiguration({ url: collaboration.url });
+          let nextToken: string | null = collaboration.token;
+          collaborationProvider.setConfiguration({
+            token: async () => {
+              if (nextToken) {
+                const currentToken = nextToken;
+                nextToken = null;
+                return currentToken;
+              }
+              const refreshed = await fetch(
+                `/api/pages/${pageId}/collaboration-token`,
+                { method: "POST" }
+              );
+              if (!refreshed.ok) {
+                throw new Error("Page collaboration access denied");
+              }
+              const data =
+                (await refreshed.json()) as CollaborationTokenResponse;
+              return data.token;
+            },
+          });
+          collaborationProvider.attach();
+          editor.commands.updateUser(collaboration.user);
+          if (localDraft) {
+            try {
+              editor.commands.setContent(JSON.parse(localDraft) as JSONContent, {
+                emitUpdate: false,
+              });
+              setSaveState("failed");
+            } catch {
+              localStorage.removeItem(`needt-page-draft:${pageId}`);
             }
-            const refreshed = await fetch(
-              `/api/pages/${pageId}/collaboration-token`,
-              { method: "POST" }
-            );
-            if (!refreshed.ok) {
-              throw new Error("Page collaboration access denied");
-            }
-            const data = (await refreshed.json()) as CollaborationTokenResponse;
-            return data.token;
-          },
-        });
-        collaborationProvider.attach();
-        editor.commands.updateUser(collaboration.user);
-        if (localDraft) {
-          try {
-            editor.commands.setContent(JSON.parse(localDraft) as JSONContent, {
-              emitUpdate: false,
-            });
-            setSaveState("failed");
-          } catch {
-            localStorage.removeItem(`needt-page-draft:${pageId}`);
           }
+          ensureBlockIds(editor);
+          hydrated.current = true;
+          if (localDraft) autosave.current?.schedule(editor.getJSON());
+          void collaborationSocket
+            .connect()
+            .catch(() => setCollaborationStatus("disconnected"));
+          return;
+        } catch {
+          setCollaborationStatus("disconnected");
         }
-        ensureBlockIds(editor);
-        hydrated.current = true;
-        if (localDraft) autosave.current?.schedule(editor.getJSON());
-        void collaborationSocket
-          .connect()
-          .catch(() => setCollaborationStatus("disconnected"));
-        return;
       }
 
       const document = documentFromPageBlocks(loaded.blocks);

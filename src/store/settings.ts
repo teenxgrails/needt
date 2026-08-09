@@ -412,14 +412,17 @@ export const useSettingsStore = create<SettingsStore>()(
           });
 
           // Update all settings
-          get().updateUserSettings({
-            theme: normalizeThemeMode(userSettings.theme),
-            defaultView: userSettings.defaultView,
-            timeZone: userSettings.timeZone,
-            secondaryTimeZone: userSettings.secondaryTimeZone ?? null,
-            weekStartDay: userSettings.weekStartDay,
-            timeFormat: userSettings.timeFormat,
-          });
+          set((state) => ({
+            user: {
+              ...state.user,
+              theme: normalizeThemeMode(userSettings.theme),
+              defaultView: userSettings.defaultView,
+              timeZone: userSettings.timeZone,
+              secondaryTimeZone: userSettings.secondaryTimeZone ?? null,
+              weekStartDay: userSettings.weekStartDay,
+              timeFormat: userSettings.timeFormat,
+            },
+          }));
 
           // More updates will be added here
           get().updateCalendarSettings({

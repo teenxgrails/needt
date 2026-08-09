@@ -20,6 +20,12 @@ function cursorColor(userId: string) {
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
+  if (process.env.COLLABORATION_DISABLED === "1") {
+    return NextResponse.json(
+      { error: "Collaboration is temporarily unavailable" },
+      { status: 503 }
+    );
+  }
   const { id } = await params;
   const issued = await issuePageCollaborationToken(auth, id);
   if (!issued) {
