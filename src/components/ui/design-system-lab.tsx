@@ -170,12 +170,33 @@ async function fetchSavedDesignTokens(): Promise<DesignTokens | null> {
   return parseDesignTokens((await response.json()).designTokens);
 }
 
+function designTokensMatch(left: DesignTokens, right: DesignTokens) {
+  return (
+    left.name === right.name &&
+    left.mode === right.mode &&
+    left.canvas === right.canvas &&
+    left.control === right.control &&
+    left.controlHover === right.controlHover &&
+    left.hover === right.hover &&
+    left.borderSubtle === right.borderSubtle &&
+    left.border === right.border &&
+    left.text === right.text &&
+    left.textSecondary === right.textSecondary &&
+    left.muted === right.muted &&
+    left.accent === right.accent &&
+    left.radius === right.radius
+  );
+}
+
 export function DesignSystemLab() {
   const [preset, setPreset] = React.useState("dark");
   const [draft, setDraft] = React.useState<DesignTokens>(PRESETS.dark);
   const [copyState, setCopyState] = React.useState("Copy theme CSS");
   const [editorStatus, setEditorStatus] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [savedDraft, setSavedDraft] = React.useState<DesignTokens | null>(
+    null
+  );
   const originalRootRef = React.useRef<{
     className: string;
     dataTheme: string | null;
@@ -202,6 +223,7 @@ export function DesignSystemLab() {
         if (!cancelled && savedTokens) {
           setPreset("custom");
           setDraft(savedTokens);
+          setSavedDraft(savedTokens);
         }
       })
       .catch(() => undefined);
@@ -285,6 +307,7 @@ export function DesignSystemLab() {
       ]);
       if (!customization.ok || !userSettings.ok) throw new Error("Save failed");
       committedTokensRef.current = draft;
+      setSavedDraft(draft);
       window.dispatchEvent(
         new CustomEvent(DESIGN_TOKENS_EVENT, { detail: draft })
       );
@@ -305,6 +328,7 @@ export function DesignSystemLab() {
       }
       setPreset("custom");
       setDraft(parsed);
+      setSavedDraft(parsed);
       setEditorStatus("Saved global theme loaded");
     } catch {
       setEditorStatus("Could not load saved theme");
@@ -323,11 +347,13 @@ export function DesignSystemLab() {
     }
   };
 
+  const isDraftDirty = !savedDraft || !designTokensMatch(draft, savedDraft);
+
   return (
     <TooltipProvider>
       <main className="needt-page-depth min-h-screen text-[var(--text-primary)]">
-        <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[216px_minmax(0,1fr)]">
-          <aside className="hidden border-r border-[var(--border-subtle)] px-5 py-8 lg:block">
+        <div className="mx-auto grid max-w-[1680px] lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside className="hidden border-r border-[var(--border-subtle)] px-6 py-8 lg:block">
             <div className="sticky top-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
                 {APP_NAME} UI
@@ -353,10 +379,11 @@ export function DesignSystemLab() {
           </aside>
 
           <div className="min-w-0 px-5 py-9 sm:px-8 lg:px-12 lg:py-12">
+            <div className="mx-auto max-w-[1240px]">
             <div className="pointer-events-none sticky top-3 z-40 mb-5 flex justify-end">
               <div
                 aria-label="Quick theme switcher"
-                className="pointer-events-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border-control)] bg-[var(--surface-canvas)] p-1 shadow-lg"
+                className="needt-overlay-shadow pointer-events-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border-control)] bg-[var(--surface-canvas)] p-1"
                 role="group"
               >
                 <QuickThemeButton
@@ -405,7 +432,7 @@ export function DesignSystemLab() {
                   description="Primitive values feed semantic roles."
                   reference="Theme / semantic-tokens"
                 >
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                       ["Canvas", "canvas", draft.canvas],
                       ["Control", "control", draft.control],
@@ -454,6 +481,29 @@ export function DesignSystemLab() {
                   <div className="flex items-center gap-2">
                     <Settings2 className="h-4 w-4 text-[var(--text-secondary)]" />
                     <h3 className="text-[14px] font-semibold">Theme editor</h3>
+                  </div>
+                  <div className="mt-4 flex items-start gap-2 border-y border-[var(--border-subtle)] py-3">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "mt-1.5 h-1.5 w-1.5 rounded-full",
+                        isDraftDirty
+                          ? "bg-[var(--color-warning)]"
+                          : "bg-[var(--color-success)]"
+                      )}
+                    />
+                    <div>
+                      <p className="text-[12px] font-medium">
+                        {isDraftDirty
+                          ? "Preview only"
+                          : "Applied across Needt"}
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-4 text-[var(--text-muted)]">
+                        {isDraftDirty
+                          ? "Review the shared components, then apply this draft everywhere."
+                          : "This saved token set is active on product screens."}
+                      </p>
+                    </div>
                   </div>
                   <div className="mt-4 space-y-4">
                     <Field label="Preset">
@@ -541,10 +591,9 @@ export function DesignSystemLab() {
                         aria-label="Component radius"
                       />
                     </Field>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pt-1">
                       <Button
                         size="sm"
-                        variant="outline"
                         onClick={saveDraft}
                         disabled={isSaving}
                       >
@@ -559,7 +608,12 @@ export function DesignSystemLab() {
                         <RotateCcw /> Load saved
                       </Button>
                     </div>
-                    <Button className="w-full" size="sm" onClick={copyThemeCss}>
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      variant="outline"
+                      onClick={copyThemeCss}
+                    >
                       <Copy /> {copyState}
                     </Button>
                     <p
@@ -1037,6 +1091,7 @@ export function DesignSystemLab() {
                 </Pattern>
               </div>
             </CatalogSection>
+            </div>
           </div>
         </div>
       </main>
@@ -1338,7 +1393,7 @@ function QuickThemeButton({
   return (
     <button
       aria-pressed={active}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] aria-pressed:bg-[var(--surface-control)] aria-pressed:text-[var(--text-primary)] max-sm:[&_span]:sr-only"
+      className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] aria-pressed:bg-[var(--surface-control)] aria-pressed:text-[var(--text-primary)]"
       onClick={onClick}
       type="button"
     >

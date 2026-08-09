@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Made the live `/style` laboratory wider and easier to scan, clarified the
+  saved-versus-preview state of its theme editor, and kept named theme choices
+  visible on phones.
 - Reworked Pages around the existing MIT-licensed Tiptap editor: the desktop editor now has a quiet persistent formatting/insert toolbar and a simplified document header, phones have a Notes-style bottom action bar and formatting/insert sheets, and the Pages home now provides search, favorites, recent notes, and honest quick-create actions.
 - Updated Auth.js Core, Excalidraw, Next.js 15, and compatible transitive dependencies; the production audit no longer reports critical vulnerabilities, while breaking major upgrades remain isolated for a dedicated migration.
 - Pages now use a viewport-safe slash-command sheet on phones, expose block reordering after a scroll-safe 350 ms long press, and position the selection formatting toolbar outside the selected text.
