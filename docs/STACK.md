@@ -80,6 +80,8 @@ push subscriptions, nudges, booking pages, and bookings are keyed by `userId`
 or owner ID. All authenticated APIs validate ownership server-side.
 FREE/PRO/LIFETIME restrictions are server-enforced in `src/lib/entitlements.ts`;
 hidden UI is never the security boundary.
+Browser caches, offline snapshots and queued writes follow the scoped purge and
+replay contract in [`docs/offline.md`](offline.md).
 
 ## Deployment order
 

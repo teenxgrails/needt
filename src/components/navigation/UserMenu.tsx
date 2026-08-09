@@ -29,6 +29,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { clearNeedtOfflineData } from "@/lib/pwa/offline-client";
+
 export function UserMenu() {
   const { data: session, status } = useAppSession();
   const { theme, setTheme } = useTheme();
@@ -57,6 +59,7 @@ export function UserMenu() {
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    await clearNeedtOfflineData();
     await signOut({ callbackUrl: "/auth/signin" });
   };
 

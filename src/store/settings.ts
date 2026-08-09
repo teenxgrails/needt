@@ -509,6 +509,7 @@ export const useSettingsStore = create<SettingsStore>()(
     {
       name: "calendar-settings",
       version: 2,
+      migrate: (persistedState) => persistedState as SettingsStore,
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<SettingsStore>;
         return {

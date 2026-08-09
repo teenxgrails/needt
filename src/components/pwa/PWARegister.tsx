@@ -4,8 +4,28 @@ import { useEffect, useState } from "react";
 
 import { WifiOff } from "lucide-react";
 
+import { useAppSession } from "@/components/providers/app-session-context";
+
+import {
+  clearNeedtOfflineData,
+  setNeedtOfflineScope,
+} from "@/lib/pwa/offline-client";
+
+type QueueState =
+  | "idle"
+  | "pending"
+  | "syncing"
+  | "retry"
+  | "conflict"
+  | "sign_in_required"
+  | "forbidden"
+  | "rejected";
+
 export function PWARegister() {
+  const { data: session, status } = useAppSession();
   const [isOffline, setIsOffline] = useState(false);
+  const [queueState, setQueueState] = useState<QueueState>("idle");
+  const [queueCount, setQueueCount] = useState(0);
 
   useEffect(() => {
     const standalone =
@@ -18,7 +38,10 @@ export function PWARegister() {
       : "browser";
 
     if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
-      if (process.env.NODE_ENV === "development") {
+      if (
+        process.env.NODE_ENV === "development" &&
+        process.env.NEXT_PUBLIC_PWA_IN_DEV !== "1"
+      ) {
         // A production service worker caching dev chunks leaves localhost on a
         // stale client bundle after HMR/reload and can manufacture hydration
         // mismatches that do not exist in the current source.
@@ -33,7 +56,10 @@ export function PWARegister() {
       } else {
         void navigator.serviceWorker
           .register("/sw.js", { updateViaCache: "none" })
-          .then((registration) => registration.update())
+          .then(async (registration) => {
+            await registration.update();
+            window.dispatchEvent(new Event("needt-service-worker-ready"));
+          })
           .catch(() => undefined);
       }
     }
@@ -58,12 +84,94 @@ export function PWARegister() {
     };
   }, []);
 
-  if (!isOffline) return null;
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+      return;
+    }
+    const handleWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type !== "NEEDT_OFFLINE_STATE") return;
+      setQueueState(event.data.state || "idle");
+      setQueueCount(Number(event.data.count) || 0);
+    };
+    navigator.serviceWorker.addEventListener("message", handleWorkerMessage);
+    return () =>
+      navigator.serviceWorker.removeEventListener(
+        "message",
+        handleWorkerMessage
+      );
+  }, []);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (status === "unauthenticated" || !userId) {
+      if (status === "unauthenticated") void clearNeedtOfflineData();
+      return;
+    }
+
+    let cancelled = false;
+    const configureScope = async () => {
+      try {
+        const previousUserId = localStorage.getItem("needt-offline-user-id");
+        if (previousUserId && previousUserId !== userId) {
+          await clearNeedtOfflineData();
+        }
+        localStorage.setItem("needt-offline-user-id", userId);
+        const response = await fetch("/api/workspaces");
+        if (!response.ok || cancelled) return;
+        const data = (await response.json()) as {
+          workspaces?: Array<{
+            workspace?: { id?: string; kind?: "PERSONAL" | "SHARED" };
+          }>;
+        };
+        const personal = data.workspaces?.find(
+          (membership) => membership.workspace?.kind === "PERSONAL"
+        );
+        const workspaceId = personal?.workspace?.id;
+        if (!workspaceId || cancelled) return;
+        await setNeedtOfflineScope({ userId, workspaceId });
+        navigator.serviceWorker.controller?.postMessage({
+          type: "NEEDT_OFFLINE_STATE_REQUEST",
+        });
+      } catch {
+        // Offline storage stays disabled until identity and workspace are known.
+      }
+    };
+    void configureScope();
+    window.addEventListener("needt-service-worker-ready", configureScope);
+    navigator.serviceWorker.addEventListener(
+      "controllerchange",
+      configureScope
+    );
+    return () => {
+      cancelled = true;
+      window.removeEventListener("needt-service-worker-ready", configureScope);
+      navigator.serviceWorker.removeEventListener(
+        "controllerchange",
+        configureScope
+      );
+    };
+  }, [session?.user?.id, status]);
+
+  if (!isOffline && queueState === "idle") return null;
+
+  const message = isOffline
+    ? queueCount > 0
+      ? `${queueCount} change${queueCount === 1 ? "" : "s"} saved locally.`
+      : "Offline. Reconnect to sync changes."
+    : queueState === "syncing" || queueState === "pending"
+      ? `Syncing ${queueCount} saved change${queueCount === 1 ? "" : "s"}…`
+      : queueState === "conflict"
+        ? "A saved change conflicts with newer data. Review it before retrying."
+        : queueState === "sign_in_required" || queueState === "forbidden"
+          ? "Sign in again to sync saved changes."
+          : queueState === "rejected"
+            ? "A saved change needs attention before it can sync."
+            : "Saved changes will retry automatically.";
 
   return (
     <div className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-xs shadow-lg">
       <WifiOff className="h-4 w-4 text-[var(--color-warning)]" />
-      Offline mode. Changes will sync on reconnect.
+      {message}
     </div>
   );
 }

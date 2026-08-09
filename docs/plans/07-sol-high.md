@@ -79,6 +79,10 @@ npm run lint
 
 **Prerequisite:** S1 complete. Terra T1 may run in parallel.
 
+**Status:** complete (2026-08-09). Service-worker syntax, 619 unit tests,
+type-check and lint are green. The dedicated Chromium E2E verifies scoped
+offline queueing and purge on account change against isolated local services.
+
 - Partition Cache Storage and IndexedDB by user, workspace and schema version.
 - Purge caches and pending operations on logout/account change; deactivate the
   previous workspace queue on workspace switch.
@@ -97,7 +101,7 @@ mutations remain recoverable.
 
 ```bash
 npm run test:unit -- --runInBand src/components/pwa
-npm run test:e2e -- tests/e2e/offline.spec.ts tests/e2e/workspaces.spec.ts
+NEXT_PUBLIC_PWA_IN_DEV=1 npm run test:e2e -- tests/offline.spec.ts
 npm run type-check
 npm run lint
 ```

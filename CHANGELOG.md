@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Partitioned offline pages, API snapshots and mutation queues by schema, user
+  and workspace; logout/account changes now purge private browser state, only
+  explicitly safe writes can queue, and failed replays remain visible for
+  conflict or sign-in recovery instead of being silently discarded.
 - Replaced user-triggered physical deletion with recoverable archive semantics
   for tasks, projects, calendar events and feeds; AI and connector mutations now
   confirm the exact target, provider sync preserves tombstones, and disconnecting
