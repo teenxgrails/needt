@@ -1,6 +1,5 @@
 import { PageAuthor } from "@prisma/client";
 import { prosemirrorJSONToYDoc, yDocToProsemirrorJSON } from "y-prosemirror";
-import * as Y from "yjs";
 
 import {
   documentFromPageBlocks,
@@ -8,6 +7,7 @@ import {
 } from "@/components/pages/page-document";
 import type { PageBlock } from "@/components/pages/page-types";
 
+import { Yjs as Y } from "@/lib/collaboration/yjs";
 import { pageEditorSchema } from "@/lib/pages/page-editor-schema";
 
 const COLLABORATION_FIELD = "default";

@@ -27,6 +27,7 @@
     "test:style:update": "playwright test --config=playwright.style.config.ts --update-snapshots=all",
     "mcp:needt": "node mcp/needt-mcp-server.mjs",
     "check:branding": "node scripts/check-branding.mjs",
+    "check:collaboration-runtime": "node scripts/check-collaboration-runtime.mjs",
     "check:ui-contracts": "node scripts/check-ui-contracts.mjs",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
@@ -174,6 +175,10 @@
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "yaml": "^2.9.0"
+  },
+  "overrides": {
+    "y-protocols": "$y-protocols",
+    "yjs": "$yjs"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

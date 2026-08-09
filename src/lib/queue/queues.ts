@@ -1,13 +1,15 @@
 import { ConnectionOptions, Queue } from "bullmq";
 
+// Node-only runtime boundary. Next externalizes BullMQ in next.config.js so
+// its optional Valkey transport is never traversed by the client bundler.
 import { getRedisConnection } from "@/lib/queue/connection";
 import {
-  CalendarSyncJobData,
   BugReportSyncJobData,
+  CalendarSyncJobData,
   MailSyncJobData,
-  ReminderJobData,
   NudgeJobData,
   QUEUE_NAMES,
+  ReminderJobData,
   RescheduleJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";

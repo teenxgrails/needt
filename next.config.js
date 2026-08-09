@@ -42,6 +42,8 @@ const nextConfig = {
     "jsdom",
     "googleapis",
     "gaxios",
+    "bullmq",
+    "ioredis",
   ],
 };
 

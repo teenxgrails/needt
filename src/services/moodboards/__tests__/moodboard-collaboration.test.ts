@@ -2,6 +2,7 @@ import { isCollaborationReadOnly } from "@/collaboration/access-policy";
 import {
   authenticateMoodboardCollaboration,
   moodboardIdFromCollaborationDocument,
+  reauthorizeMoodboardCollaboration,
 } from "@/services/moodboards/moodboard-collaboration-auth";
 import {
   type MoodboardCollaborationClaims,
@@ -174,6 +175,36 @@ describe("Moodboard collaboration security", () => {
         role: MoodboardAccessRole.VIEWER,
       })
     );
+  });
+
+  it("refreshes an open board socket against the current role", async () => {
+    const workspace = {
+      enabled: true,
+      workspaceId: "workspace",
+      workspaceKind: WorkspaceKind.SHARED,
+      role: WorkspaceRole.VIEWER,
+      dataScope: { mode: "workspace" as const, workspaceId: "workspace" },
+    };
+    resolveWorkspaceAccessMock.mockResolvedValue(workspace);
+    resolveMoodboardAccessMock.mockResolvedValue({
+      moodboardId: "board-a",
+      role: MoodboardAccessRole.VIEWER,
+    });
+
+    await expect(
+      reauthorizeMoodboardCollaboration(
+        {
+          resource: "moodboard",
+          actor: {
+            userId: "member",
+            workspace: { ...workspace, role: WorkspaceRole.EDITOR },
+          },
+          moodboardId: "board-a",
+          role: MoodboardAccessRole.EDITOR,
+        },
+        "moodboard:board-a"
+      )
+    ).resolves.toMatchObject({ role: MoodboardAccessRole.VIEWER });
   });
 
   it("maps the current Viewer role to the server read-only boundary", () => {

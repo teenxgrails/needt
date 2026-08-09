@@ -22,6 +22,26 @@ export function moodboardIdFromCollaborationDocument(documentName: string) {
     : null;
 }
 
+async function resolveCurrentMoodboardCollaborationAccess(input: {
+  userId: string;
+  workspaceId: string;
+  moodboardId: string;
+}) {
+  const workspace = await resolveWorkspaceAccess({
+    userId: input.userId,
+    requestedWorkspaceId: input.workspaceId,
+  });
+  const actor = { userId: input.userId, workspace };
+  const access = await resolveMoodboardAccess(actor, input.moodboardId);
+  if (!access) throw new Error("Moodboard collaboration access denied");
+  return {
+    resource: "moodboard" as const,
+    actor,
+    moodboardId: input.moodboardId,
+    role: access.role,
+  };
+}
+
 export async function authenticateMoodboardCollaboration(
   token: string,
   documentName: string
@@ -31,17 +51,25 @@ export async function authenticateMoodboardCollaboration(
   if (!claims || !moodboardId || claims.moodboardId !== moodboardId) {
     throw new Error("Moodboard collaboration token is invalid");
   }
-  const workspace = await resolveWorkspaceAccess({
+  return resolveCurrentMoodboardCollaborationAccess({
     userId: claims.sub,
-    requestedWorkspaceId: claims.workspaceId,
-  });
-  const actor = { userId: claims.sub, workspace };
-  const access = await resolveMoodboardAccess(actor, moodboardId);
-  if (!access) throw new Error("Moodboard collaboration access denied");
-  return {
-    resource: "moodboard",
-    actor,
+    workspaceId: claims.workspaceId,
     moodboardId,
-    role: access.role,
-  };
+  });
+}
+
+export async function reauthorizeMoodboardCollaboration(
+  context: MoodboardCollaborationContext,
+  documentName: string
+) {
+  const moodboardId = moodboardIdFromCollaborationDocument(documentName);
+  const workspaceId = context.actor.workspace?.workspaceId;
+  if (!moodboardId || moodboardId !== context.moodboardId || !workspaceId) {
+    throw new Error("Moodboard collaboration room is invalid");
+  }
+  return resolveCurrentMoodboardCollaborationAccess({
+    userId: context.actor.userId,
+    workspaceId,
+    moodboardId,
+  });
 }

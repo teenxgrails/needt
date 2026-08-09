@@ -1,4 +1,4 @@
-import * as Y from "yjs";
+import { Yjs as Y } from "@/lib/collaboration/yjs";
 
 export type MoodboardScene = {
   elements: Array<Record<string, unknown>>;

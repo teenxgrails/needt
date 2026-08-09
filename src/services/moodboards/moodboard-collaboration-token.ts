@@ -4,12 +4,12 @@ import {
 } from "@/services/moodboards/moodboard-document";
 import { MoodboardAccessRole } from "@prisma/client";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import * as Y from "yjs";
 
 import {
   type MoodboardAccessActor,
   resolveMoodboardAccess,
 } from "@/lib/auth/moodboard-auth";
+import { Yjs as Y } from "@/lib/collaboration/yjs";
 import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 

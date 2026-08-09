@@ -1,7 +1,8 @@
 # Needt stack and release contract
 
-Needt is a multi-user Next.js 15 application with a separate BullMQ worker
-built from the same commit and production image.
+Needt is a multi-user Next.js 15 application with separate BullMQ worker and
+Hocuspocus collaboration processes built from the same commit and production
+image.
 
 ## Runtime
 
@@ -10,6 +11,9 @@ built from the same commit and production image.
 - PostgreSQL 16 through Prisma.
 - Redis 7 for BullMQ, rate limits, lockouts, alert throttling, and realtime
   coordination.
+- Hocuspocus 4 and one lockfile-pinned Yjs runtime for Pages and Moodboards;
+  authorization and smoke requirements live in
+  [`docs/collaboration.md`](collaboration.md).
 - NextAuth credentials, Google, and Microsoft OAuth.
 - Sentry in the Next.js client/server/edge runtimes and the worker.
 - Web Push through VAPID with email fallback through Resend.
@@ -29,7 +33,8 @@ change must independently pass:
 5. visual/style suites when UI, CSS, tokens, or shared components change
 6. `npm run build`
 7. `npm run build:worker`
-8. the production Docker build
+8. `npm run build:collaboration`
+9. the production Docker build
 
 GitHub Actions exposes required `security`, `quality-gates`, `schema-drift`,
 `e2e`, and conditionally executed `visual-style` statuses. Production

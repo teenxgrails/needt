@@ -1,6 +1,7 @@
 import {
   authenticatePageCollaboration,
   pageIdFromCollaborationDocument,
+  reauthorizePageCollaboration,
 } from "@/services/pages/page-collaboration-auth";
 import {
   type PageCollaborationClaims,
@@ -113,6 +114,63 @@ describe("Page collaboration security", () => {
     ).resolves.toEqual(
       expect.objectContaining({ pageId: "page-a", role: PageAccessRole.VIEWER })
     );
+  });
+
+  it("refreshes an open socket from Editor to the current Viewer role", async () => {
+    const workspace = {
+      enabled: true,
+      workspaceId: "workspace",
+      workspaceKind: WorkspaceKind.SHARED,
+      role: WorkspaceRole.VIEWER,
+      dataScope: { mode: "workspace" as const, workspaceId: "workspace" },
+    };
+    resolveWorkspaceAccessMock.mockResolvedValue(workspace);
+    resolvePageAccessMock.mockResolvedValue({
+      pageId: "page-a",
+      role: PageAccessRole.VIEWER,
+    });
+
+    await expect(
+      reauthorizePageCollaboration(
+        {
+          resource: "page",
+          actor: {
+            userId: "member",
+            workspace: { ...workspace, role: WorkspaceRole.EDITOR },
+          },
+          pageId: "page-a",
+          role: PageAccessRole.EDITOR,
+        },
+        "page:page-a"
+      )
+    ).resolves.toMatchObject({ role: PageAccessRole.VIEWER });
+  });
+
+  it("rejects an open socket after membership removal", async () => {
+    resolveWorkspaceAccessMock.mockRejectedValue(
+      new Error("Workspace access denied")
+    );
+
+    await expect(
+      reauthorizePageCollaboration(
+        {
+          resource: "page",
+          actor: {
+            userId: "member",
+            workspace: {
+              enabled: true,
+              workspaceId: "workspace",
+              workspaceKind: WorkspaceKind.SHARED,
+              role: WorkspaceRole.EDITOR,
+              dataScope: { mode: "workspace", workspaceId: "workspace" },
+            },
+          },
+          pageId: "page-a",
+          role: PageAccessRole.EDITOR,
+        },
+        "page:page-a"
+      )
+    ).rejects.toThrow("Workspace access denied");
   });
 
   it("parses only Page collaboration document names", () => {

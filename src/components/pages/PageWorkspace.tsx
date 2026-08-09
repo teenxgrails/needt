@@ -69,7 +69,6 @@ import {
   Undo2,
 } from "lucide-react";
 import { createPortal } from "react-dom";
-import * as Y from "yjs";
 
 import {
   BlockIdentity,
@@ -113,6 +112,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
+import { Yjs as Y } from "@/lib/collaboration/yjs";
 import { newDate } from "@/lib/date-utils";
 import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";

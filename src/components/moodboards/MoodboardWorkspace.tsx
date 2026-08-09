@@ -29,10 +29,10 @@ import {
   LoaderCircle,
   Share2,
 } from "lucide-react";
-import * as Y from "yjs";
 
 import { Button } from "@/components/ui/button";
 
+import { Yjs as Y } from "@/lib/collaboration/yjs";
 import { newDate } from "@/lib/date-utils";
 
 import type { MoodboardDetail, MoodboardSnapshot } from "./moodboard-types";

@@ -110,6 +110,11 @@ npm run lint
 
 **Prerequisite:** S1 complete; Terra T2 must provide a working test environment.
 
+**Status:** complete (2026-08-09). Live sockets reauthorize before every
+message and on a 15-second idle interval; role downgrades become read-only,
+membership removal closes the room, exact-room reconnect/denial E2E is green,
+Yjs resolves once, and Next no longer bundles BullMQ or optional Valkey code.
+
 - Authenticate Hocuspocus token, user, workspace membership, room and role on
   connect; handle reconnect, member removal and role downgrade safely.
 - Eliminate duplicate Yjs constructor identity/import paths.

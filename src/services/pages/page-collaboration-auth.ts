@@ -19,6 +19,26 @@ export function pageIdFromCollaborationDocument(documentName: string) {
     : null;
 }
 
+async function resolveCurrentPageCollaborationAccess(input: {
+  userId: string;
+  workspaceId: string;
+  pageId: string;
+}) {
+  const workspace = await resolveWorkspaceAccess({
+    userId: input.userId,
+    requestedWorkspaceId: input.workspaceId,
+  });
+  const actor = { userId: input.userId, workspace };
+  const access = await resolvePageAccess(actor, input.pageId);
+  if (!access) throw new Error("Page collaboration access denied");
+  return {
+    resource: "page" as const,
+    actor,
+    pageId: input.pageId,
+    role: access.role,
+  };
+}
+
 export async function authenticatePageCollaboration(
   token: string,
   documentName: string
@@ -28,12 +48,25 @@ export async function authenticatePageCollaboration(
   if (!claims || !pageId || claims.pageId !== pageId) {
     throw new Error("Page collaboration token is invalid");
   }
-  const workspace = await resolveWorkspaceAccess({
+  return resolveCurrentPageCollaborationAccess({
     userId: claims.sub,
-    requestedWorkspaceId: claims.workspaceId,
+    workspaceId: claims.workspaceId,
+    pageId,
   });
-  const actor = { userId: claims.sub, workspace };
-  const access = await resolvePageAccess(actor, pageId);
-  if (!access) throw new Error("Page collaboration access denied");
-  return { resource: "page", actor, pageId, role: access.role };
+}
+
+export async function reauthorizePageCollaboration(
+  context: PageCollaborationContext,
+  documentName: string
+) {
+  const pageId = pageIdFromCollaborationDocument(documentName);
+  const workspaceId = context.actor.workspace?.workspaceId;
+  if (!pageId || pageId !== context.pageId || !workspaceId) {
+    throw new Error("Page collaboration room is invalid");
+  }
+  return resolveCurrentPageCollaborationAccess({
+    userId: context.actor.userId,
+    workspaceId,
+    pageId,
+  });
 }

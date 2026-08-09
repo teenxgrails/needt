@@ -35,6 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Revalidated collaboration authorization for every live socket message and
+  idle connection, so workspace removal closes the room and Editor-to-Viewer
+  downgrades become read-only without waiting for reconnect; Page and Moodboard
+  clients now share one pinned Yjs runtime, while BullMQ stays outside Next
+  bundles.
 - Partitioned offline pages, API snapshots and mutation queues by schema, user
   and workspace; logout/account changes now purge private browser state, only
   explicitly safe writes can queue, and failed replays remain visible for
