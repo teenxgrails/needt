@@ -118,9 +118,10 @@ Viewer roles and invites). While that migration is in progress:
 - **ai-check:** use before publishing or shipping substantial user-facing copy
   when an AI-tell audit is useful. Treat findings as editorial suggestions, not
   a detector verdict.
-- **needt-critique:** use to review a plan, diff, API, or UI proposal before a
-  risky or multi-step change. It is read-only: no sandbox bypasses, external
-  agents, raw diagnostics, or hidden automated changes.
+- **needt-critique:** load the project-scoped skill from
+  `.codex/skills/needt-critique/SKILL.md` to review a plan, diff, API, or UI
+  proposal before a risky or multi-step change. It is read-only: no sandbox
+  bypasses, external agents, raw diagnostics, or hidden automated changes.
 
 ---
 
