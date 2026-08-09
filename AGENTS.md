@@ -105,10 +105,13 @@ Viewer roles and invites). While that migration is in progress:
 
 ### Design, copy, and critique skills
 
-- **Hallmark:** use for a new or redesigned user-facing surface, or when
-  auditing a screen for generic AI-looking design. It informs the visual
-  direction but never overrides `design-refs/ui-conventions.md`, accessibility,
-  or the existing Needt component system.
+- **Hallmark:** load the project-scoped skill from
+  `.codex/skills/hallmark/SKILL.md` for a new or redesigned user-facing surface,
+  or when auditing a screen for generic AI-looking design. The repository copy
+  is authoritative for every agent; do not depend on a personal installation.
+  It informs the visual direction but never overrides
+  `design-refs/ui-conventions.md`, accessibility, or the existing Needt
+  component system.
 - **humanize:** use for new user-facing product copy and when revising copy
   that is generic, robotic, or over-polished. Preserve product facts, locale,
   and the user's intended voice; never claim it bypasses AI detectors.
