@@ -1,0 +1,7 @@
+interface:
+  display_name: "Handoff Project Work"
+  short_description: "Preserve and resume shared project work"
+  default_prompt: "Use $handoff-project-work to recover this Needt workstream and leave a durable checkpoint."
+
+policy:
+  allow_implicit_invocation: true
