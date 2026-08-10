@@ -2,17 +2,17 @@
 
 Needt production runs on the existing VPS through Coolify. Coolify-managed
 PostgreSQL stores application data, Coolify-managed Redis backs realtime updates
-and BullMQ, and the same repository/Dockerfile is deployed as a web service and a
-background worker. Coolify is the production source of truth for v0.1; Vercel is
-not part of the release path.
+and BullMQ, and the same repository/Dockerfile is deployed as web, worker, and
+Page collaboration services. Coolify is the production source of truth for v0.1;
+Vercel is not part of the release path.
 
 ## 1. Create the data services
 
 1. Create a PostgreSQL resource in the Coolify production environment.
 2. Create a Redis resource in the same environment.
-3. Set the PostgreSQL internal URL as `DATABASE_URL` and `DIRECT_URL` for both
-   the web and worker services.
-4. Set the Redis internal URL as `REDIS_URL` for both services.
+3. Set the PostgreSQL internal URL as `DATABASE_URL` and `DIRECT_URL` for all
+   three services.
+4. Set the Redis internal URL as `REDIS_URL` for all three services.
 
 `DATABASE_URL` is used by the app at runtime. `DIRECT_URL` is used by Prisma
 migrations and may point to the same internal PostgreSQL endpoint.
@@ -22,19 +22,30 @@ migrations and may point to the same internal PostgreSQL endpoint.
 1. Connect the GitHub repository and deploy `main` with the root `Dockerfile`.
    Use its `production` stage for the web service.
 2. Keep the image default command for web startup.
-3. Create a second service from the same repository, branch, Dockerfile, and
-   environment. Set its Docker build-stage target to `worker`; the image already
-   supplies the worker command:
+3. Create a second service from the same image and environment, with this
+   command:
 
 ```bash
 node dist/worker/index.js
 ```
 
-5. Do not expose the worker publicly. Deploy web first, then worker, and keep both
-   on the same Git commit.
+4. Create a third service from the same image and environment for Page
+   collaboration:
+
+```bash
+node dist/collaboration/index.js
+```
+
+Set `COLLABORATION_HOST=0.0.0.0`, expose port `1234` through a TLS-enabled
+WebSocket domain, and set that public `wss://` URL on the web service as
+`COLLABORATION_PUBLIC_URL`.
+
+5. Do not expose the worker publicly. Deploy web first and wait until
+   `/api/health` reports the expected commit and a healthy database. Only then
+   deploy worker and collaboration, keeping all services on that commit.
 6. The web entrypoint applies lockfile-pinned Prisma migrations before starting
    Next.js. A failed migration must fail the deployment instead of starting a
-   mismatched application.
+   mismatched application. Worker and collaboration processes skip migrations.
 
 ## 3. Environment Variables
 
@@ -49,6 +60,10 @@ NEXT_PUBLIC_SITE_URL="https://use.needt.app"
 NEXTAUTH_SECRET="random-32-plus-character-secret"
 CRON_SECRET="random-cron-secret"
 REDIS_URL="redis://default:password@redis:6379"
+COLLABORATION_SECRET="separate-random-32-plus-character-secret"
+COLLABORATION_PUBLIC_URL="wss://collaboration.use.needt.app"
+COLLABORATION_HOST="0.0.0.0"
+COLLABORATION_PORT="1234"
 WEBHOOK_BASE_URL="https://use.needt.app"
 ```
 
@@ -81,7 +96,8 @@ Apple/iCloud CalDAV credentials are entered in the app at runtime and never stor
 1. Add `use.needt.app` to the Coolify web service. The separate marketing
    deployment owns `needt.app`.
 2. Point DNS to the VPS/Coolify proxy target.
-3. Confirm Coolify provisions HTTPS and the worker has no public domain.
+3. Add the collaboration WebSocket domain to the collaboration service and
+   confirm Coolify provisions TLS. The worker has no public domain.
 
 Set `NEXTAUTH_URL`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SITE_URL`, and
 `WEBHOOK_BASE_URL` to the exact public HTTPS origin.
@@ -147,5 +163,7 @@ the same SHA before a release is accepted.
   client path against the Coolify internal database endpoint.
 - Neon adapter support remains available for development or a future database
   move, but it is not part of the current production topology.
-- Production deploys are triggered from `main` in Coolify. Verify both web and
-  worker show the same SHA before a release smoke.
+- Production deploys are triggered from `main` in Coolify. Verify web, worker,
+  and collaboration run the same SHA before a release smoke.
+- The GitHub workflow fails when any required deployment hook, health URL or
+  rollback hook is missing; it must never report a successful no-op deploy.

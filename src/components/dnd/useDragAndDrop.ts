@@ -22,10 +22,14 @@ export function useDraggableTask(task: Task) {
   };
 }
 
-export function useDroppableProject(project?: Project | null) {
+export function useDroppableProject(
+  project?: Project | null,
+  disabled: boolean = false
+) {
   const id = project?.id ?? "remove-project";
   const { setNodeRef, isOver } = useDroppable({
     id,
+    disabled,
     data: {
       type: "project",
       project,

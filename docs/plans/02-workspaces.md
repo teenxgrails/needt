@@ -5,6 +5,8 @@ project's history: it adds a tenancy boundary to data that currently has none.
 
 **Prerequisite:** plan 01 deployed and smoke-tested.
 
+**Status:** complete (2026-08-05).
+
 ## Context (verified against the code)
 
 - There is no `Workspace` model. Ownership is `userId` only
@@ -92,6 +94,8 @@ Stages, blockers, derived progress (replacing the manual field), List / Kanban /
 Gantt views, regular and workflow templates, placeholder roles, relative dates.
 Remove the manual progress control only after the UI migration lands.
 
+**Status:** complete (2026-08-05).
+
 *Validate:* `npm run test:unit && npm run test:e2e -- projects`
 
 ### 2.7 Dependencies scoped to a project
@@ -100,12 +104,16 @@ New dependencies must stay inside one project. Existing cross-project links
 remain readable and are not deleted. Moving a task is blocked while a
 conflicting link exists, with a message naming the blocker.
 
+**Status:** complete (2026-08-05).
+
 *Validate:* `npm run test:unit -- dependencies`
 
 ### 2.8 Project archive replaces delete
 
 Archiving is read-only and restorable. The old `DELETE` route becomes archive;
 tasks are never destroyed.
+
+**Status:** complete (2026-08-05).
 
 *Validate:* `npm run test:e2e -- projects` and a test asserting no task rows are removed
 
@@ -115,6 +123,8 @@ Reviews only: workspace isolation, invite abuse, entitlement bypass through the
 API rather than the UI, calendar privacy, and migration correctness. Fixes are
 committed into the task they belong to; a separate audit commit only if code
 actually changed.
+
+**Status:** complete (2026-08-05).
 
 *Validate:* full gates plus targeted IDOR tests attempting cross-workspace reads and writes
 

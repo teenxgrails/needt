@@ -55,6 +55,12 @@ describe("page document contract", () => {
         attrs: { kind: "BOOKMARK" },
       })
     ).toBe("BOOKMARK");
+    expect(
+      blockTypeForNode({
+        type: "needtPageBlock",
+        attrs: { kind: "TASK_REFERENCE" },
+      })
+    ).toBe("LINK");
   });
 
   it("repairs duplicate and missing block IDs before persistence", () => {

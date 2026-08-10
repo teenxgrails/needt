@@ -21,23 +21,29 @@ import {
 } from "@/services/ai/types";
 import { recordHostedAiAction } from "@/services/ai/usage";
 import {
-  createAiProposal,
-  listAiReadablePages,
-} from "@/services/pages/page-service";
-import {
   finalizeSession,
   getActiveSession,
   startSession,
 } from "@/services/focus/focusSession";
 import { getWeeklyFocusReport } from "@/services/focus/focusStats";
-import { FocusSessionMode, Prisma } from "@prisma/client";
+import {
+  type PageActor,
+  createAiProposal,
+  listAiReadablePages,
+} from "@/services/pages/page-service";
+import { FocusSessionMode, Prisma, WorkspaceRole } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { getMailMessage } from "@/lib/mail-db";
 import { prisma } from "@/lib/prisma";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
+import { schedulePushTaskBlock } from "@/lib/task-block-push";
 
 const LOG_SOURCE = "ai-chat";
 
@@ -95,17 +101,24 @@ async function publishAgentMutation(userId: string) {
   }
 }
 
-async function findTask(userId: string, args: Record<string, unknown>) {
+async function findTask(
+  userId: string,
+  workspace: WorkspaceAccess,
+  args: Record<string, unknown>
+) {
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const taskId = stringArg(args, "taskId");
   if (taskId) {
-    return prisma.task.findFirst({ where: { id: taskId, userId, isArchived: false } });
+    return prisma.task.findFirst({
+      where: { id: taskId, ...scope, isArchived: false },
+    });
   }
 
   const titleQuery = stringArg(args, "titleQuery");
   if (!titleQuery) return null;
   return prisma.task.findFirst({
     where: {
-      userId,
+      ...scope,
       isArchived: false,
       title: { equals: titleQuery, mode: "insensitive" },
     },
@@ -143,8 +156,12 @@ async function executeTool(
   ai: SchedulerAI,
   call: AIChatToolCall,
   userId: string,
-  confirmed: boolean
+  workspace: WorkspaceAccess,
+  confirmed: boolean,
+  pageActor: PageActor = userId
 ): Promise<ToolResult> {
+  const workspaceId = workspace.workspaceId;
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const validatedArguments = validateAgentToolCall(call.name, call.arguments);
   if (!validatedArguments) {
     return {
@@ -160,6 +177,27 @@ async function executeTool(
     { userId, toolName: call.name, confirmed },
     LOG_SOURCE
   );
+
+  if (call.name === "delete_task" && !confirmed) {
+    const task = await findTask(userId, workspace, call.arguments);
+    if (!task) {
+      return {
+        text: "I could not find that task to archive.",
+        toolName: "delete_task",
+        requiresConfirm: false,
+      };
+    }
+    return {
+      text: `Archive task "${task.title}"? You can restore it from the archive.`,
+      toolName: "confirmation_required",
+      toolPayload: jsonValue({
+        requestedTool: call.name,
+        arguments: { taskId: task.id },
+        target: { type: "task", id: task.id, title: task.title },
+      }),
+      requiresConfirm: true,
+    };
+  }
 
   if (isDangerousAgentTool(call.name, call.arguments) && !confirmed) {
     return {
@@ -190,6 +228,8 @@ async function executeTool(
       const task = await prisma.task.create({
         data: {
           userId,
+          workspaceId,
+          assigneeId: userId,
           title: title.slice(0, 160),
           status: "todo",
           isAutoScheduled: autoSchedule,
@@ -211,6 +251,9 @@ async function executeTool(
                 : stringArg(call.arguments, "priority") === "LOW"
                   ? "LOW"
                   : "MEDIUM",
+          activities: {
+            create: { workspaceId, actorId: userId, action: "CREATED" },
+          },
         },
       });
       await publishAgentMutation(userId);
@@ -224,7 +267,7 @@ async function executeTool(
     }
 
     case "edit_task": {
-      const task = await findTask(userId, call.arguments);
+      const task = await findTask(userId, workspace, call.arguments);
       if (!task) {
         return {
           text: "I could not find that task to edit.",
@@ -266,26 +309,53 @@ async function executeTool(
     }
 
     case "delete_task": {
-      const task = await findTask(userId, call.arguments);
+      const task = await findTask(userId, workspace, call.arguments);
       if (!task) {
         return {
-          text: "I could not find that task to delete.",
+          text: "I could not find that task to archive.",
           toolName: "delete_task",
           requiresConfirm: false,
         };
       }
-      await prisma.task.delete({ where: { id: task.id } });
+      const schedulingUserId = task.assigneeId ?? userId;
+      await prisma.task.update({
+        where: { id: task.id },
+        data: {
+          isArchived: true,
+          archivedAt: newDate(),
+          scheduledStart: null,
+          scheduledEnd: null,
+          scheduleLocked: false,
+          ...(task.workspaceId && {
+            activities: {
+              create: {
+                workspaceId: task.workspaceId,
+                actorId: userId,
+                action: "ARCHIVED",
+              },
+            },
+          }),
+        },
+      });
+      await prisma.scheduledBlock.deleteMany({
+        where: { taskId: task.id, userId: schedulingUserId },
+      });
+      schedulePushTaskBlock(schedulingUserId, task.id);
       await publishAgentMutation(userId);
       return {
-        text: `Deleted task "${task.title}".`,
+        text: `Archived task "${task.title}".`,
         toolName: "delete_task",
-        toolPayload: jsonValue({ taskId: task.id, title: task.title }),
+        toolPayload: jsonValue({
+          taskId: task.id,
+          title: task.title,
+          archived: true,
+        }),
         requiresConfirm: false,
       };
     }
 
     case "auto_schedule": {
-      const preview = await createReschedulePreview(userId);
+      const preview = await createReschedulePreview(userId, workspace);
       return {
         text: preview.changes.length
           ? `Prepared a dry-run with ${preview.changes.length} schedule changes. Review the diff, then choose Apply or Cancel.`
@@ -297,24 +367,41 @@ async function executeTool(
     }
 
     case "list_pages": {
-      const pages = await listAiReadablePages(userId);
+      const pages = await listAiReadablePages(pageActor);
       return {
         text: pages.length
           ? `Pages: ${pages.map((page) => page.title).join(", ")}.`
           : "No AI-readable pages yet.",
         toolName: call.name,
-        toolPayload: jsonValue({ pages: pages.map((page) => ({ id: page.id, title: page.title, updatedAt: page.updatedAt })) }),
+        toolPayload: jsonValue({
+          pages: pages.map((page) => ({
+            id: page.id,
+            title: page.title,
+            updatedAt: page.updatedAt,
+          })),
+        }),
         requiresConfirm: false,
       };
     }
 
     case "search_pages": {
       const query = stringArg(call.arguments, "query");
-      const pages = query ? await listAiReadablePages(userId, query) : [];
+      const pages = query ? await listAiReadablePages(pageActor, query) : [];
       return {
-        text: pages.length ? `Found ${pages.length} matching page${pages.length === 1 ? "" : "s"}.` : "No matching AI-readable page was found.",
+        text: pages.length
+          ? `Found ${pages.length} matching page${pages.length === 1 ? "" : "s"}.`
+          : "No matching AI-readable page was found.",
         toolName: call.name,
-        toolPayload: jsonValue({ pages: pages.map((page) => ({ id: page.id, title: page.title, blocks: page.blocks.map((block) => ({ type: block.type, content: block.content })) })) }),
+        toolPayload: jsonValue({
+          pages: pages.map((page) => ({
+            id: page.id,
+            title: page.title,
+            blocks: page.blocks.map((block) => ({
+              type: block.type,
+              content: block.content,
+            })),
+          })),
+        }),
         requiresConfirm: false,
       };
     }
@@ -330,14 +417,25 @@ async function executeTool(
           requiresConfirm: false,
         };
       }
-      const proposal = await createAiProposal(userId, pageId, {
+      const proposal = await createAiProposal(pageActor, pageId, {
         summary,
-        operations: [{ type: "append_block", blockType: "PARAGRAPH", content: { text: proposedText } }],
+        operations: [
+          {
+            type: "append_block",
+            blockType: "PARAGRAPH",
+            content: { text: proposedText },
+          },
+        ],
       });
       return {
         text: `Prepared a page change preview: ${proposal.summary}. Review it before applying.`,
         toolName: call.name,
-        toolPayload: jsonValue({ proposalId: proposal.id, pageId: proposal.pageId, summary: proposal.summary, status: proposal.status }),
+        toolPayload: jsonValue({
+          proposalId: proposal.id,
+          pageId: proposal.pageId,
+          summary: proposal.summary,
+          status: proposal.status,
+        }),
         requiresConfirm: false,
       };
     }
@@ -346,7 +444,9 @@ async function executeTool(
       const taskId = stringArg(call.arguments, "taskId");
       if (
         taskId &&
-        !(await prisma.task.findFirst({ where: { id: taskId, userId, isArchived: false } }))
+        !(await prisma.task.findFirst({
+          where: { id: taskId, ...scope, isArchived: false },
+        }))
       ) {
         return {
           text: "I could not find that task for this focus session.",
@@ -488,6 +588,8 @@ async function executeTool(
       const task = await prisma.task.create({
         data: {
           userId,
+          workspaceId,
+          assigneeId: userId,
           title:
             stringArg(call.arguments, "title")?.slice(0, 160) ||
             `Follow up: ${message.subject}`.slice(0, 160),
@@ -497,6 +599,9 @@ async function executeTool(
           estimatedMinutes: minutes ? Math.round(minutes) : undefined,
           duration: minutes ? Math.round(minutes) : undefined,
           isAutoScheduled: true,
+          activities: {
+            create: { workspaceId, actorId: userId, action: "CREATED" },
+          },
         },
       });
       await publishAgentMutation(userId);
@@ -633,7 +738,11 @@ async function executeTool(
         12
       );
       const tasks = await prisma.task.findMany({
-        where: { userId, isArchived: false, status: { not: "completed" } },
+        where: {
+          ...scope,
+          isArchived: false,
+          status: { not: "completed" },
+        },
         orderBy: [
           { scheduledStart: "asc" },
           { dueDate: "asc" },
@@ -664,7 +773,7 @@ async function executeTool(
       const action = stringArg(call.arguments, "action") || "list";
       if (action === "list") {
         const projects = await prisma.project.findMany({
-          where: { userId, status: { not: "archived" } },
+          where: { ...scope, status: { not: "archived" } },
           orderBy: { updatedAt: "desc" },
           take: 12,
           select: {
@@ -697,6 +806,7 @@ async function executeTool(
         const project = await prisma.project.create({
           data: {
             userId,
+            workspaceId,
             name: name.slice(0, 120),
             color: stringArg(call.arguments, "color"),
             icon: stringArg(call.arguments, "icon"),
@@ -725,7 +835,7 @@ async function executeTool(
 
       if (action === "archive") {
         const project = await prisma.project.findFirst({
-          where: { id: projectId, userId },
+          where: { id: projectId, ...scope },
         });
         if (!project) {
           return {
@@ -747,7 +857,7 @@ async function executeTool(
       }
 
       const existingProject = await prisma.project.findFirst({
-        where: { id: projectId, userId },
+        where: { id: projectId, ...scope },
       });
       if (!existingProject) {
         return {
@@ -902,12 +1012,49 @@ export async function POST(request: NextRequest) {
   });
 
   const history = await recentMessages(conversation.id);
+  let confirmedTool: AIChatToolCall | null = null;
+  let confirmationMessageId: string | null = null;
+  if (confirmed) {
+    const confirmation = await prisma.aiMessage.findFirst({
+      where: {
+        conversationId: conversation.id,
+        userId: auth.userId,
+        role: "assistant",
+        toolName: "confirmation_required",
+        requiresConfirm: true,
+      },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, toolPayload: true },
+    });
+    const payload = confirmation?.toolPayload;
+    if (
+      !confirmation ||
+      !payload ||
+      typeof payload !== "object" ||
+      Array.isArray(payload) ||
+      typeof payload.requestedTool !== "string" ||
+      !payload.arguments ||
+      typeof payload.arguments !== "object" ||
+      Array.isArray(payload.arguments)
+    ) {
+      return NextResponse.json(
+        { error: "The confirmation expired. Ask to perform the action again." },
+        { status: 409 }
+      );
+    }
+    confirmedTool = {
+      name: payload.requestedTool,
+      arguments: payload.arguments as Record<string, unknown>,
+    };
+    confirmationMessageId = confirmation.id;
+  }
   if (source === "hosted") {
     await recordHostedAiAction(auth.userId);
   }
   const systemPrompt = await buildAgentPromptForUser(
     auth.userId,
-    settings.soulPreset
+    settings.soulPreset,
+    auth.workspace!
   );
   const tools = getAgentToolDefinitions(settings);
   const chatRequest: AIChatRequest = {
@@ -917,24 +1064,53 @@ export async function POST(request: NextRequest) {
   };
 
   let toolResult: ToolResult | null = null;
-  let selectedTool: AIChatToolCall | null = null;
-  try {
-    selectedTool = (await ai.selectChatTool?.(chatRequest)) || null;
-  } catch (error) {
-    logger.warn(
-      "AI tool selection failed; using local fallback",
-      { error: error instanceof Error ? error.message : String(error) },
-      LOG_SOURCE
-    );
-    selectedTool = fallbackToolFromMessage(message);
+  let selectedTool: AIChatToolCall | null = confirmedTool;
+  if (!selectedTool) {
+    try {
+      selectedTool = (await ai.selectChatTool?.(chatRequest)) || null;
+    } catch (error) {
+      logger.warn(
+        "AI tool selection failed; using local fallback",
+        { error: error instanceof Error ? error.message : String(error) },
+        LOG_SOURCE
+      );
+      selectedTool = fallbackToolFromMessage(message);
+    }
   }
 
   if (!selectedTool) {
     selectedTool = fallbackToolFromMessage(message);
   }
 
+  if (
+    selectedTool &&
+    isDangerousAgentTool(selectedTool.name, selectedTool.arguments) &&
+    auth.workspace?.role === WorkspaceRole.VIEWER
+  ) {
+    return NextResponse.json(
+      {
+        error: "An Editor or Owner role is required for this AI action.",
+        code: "WORKSPACE_ROLE_REQUIRED",
+      },
+      { status: 403 }
+    );
+  }
+
   if (selectedTool && tools.some((tool) => tool.name === selectedTool?.name)) {
-    toolResult = await executeTool(ai, selectedTool, auth.userId, confirmed);
+    toolResult = await executeTool(
+      ai,
+      selectedTool,
+      auth.userId,
+      auth.workspace!,
+      confirmed,
+      auth
+    );
+    if (confirmationMessageId && !toolResult.requiresConfirm) {
+      await prisma.aiMessage.update({
+        where: { id: confirmationMessageId },
+        data: { requiresConfirm: false },
+      });
+    }
   }
 
   const finalRequest: AIChatRequest = {

@@ -163,6 +163,7 @@ export async function saveEventToDatabase(
   });
 
   if (existingEvent) {
+    if (existingEvent.archivedAt) return existingEvent;
     return await prisma.calendarEvent.update({
       where: { id: existingEvent.id },
       data: eventData as Prisma.CalendarEventUpdateInput,
@@ -415,15 +416,6 @@ export async function syncOutlookCalendar(
     },
     LOG_SOURCE
   );
-  if (fullSync) {
-    // delete all events from the database
-    await prisma.calendarEvent.deleteMany({
-      where: {
-        feedId: feed.id,
-      },
-    });
-  }
-
   // Handle deleted events first if this is a delta sync
   if (lastSyncToken && deletedEventIds?.length > 0) {
     for (const eventId of deletedEventIds) {
@@ -436,8 +428,9 @@ export async function syncOutlookCalendar(
           },
         });
         if (existingEvent) {
-          await prisma.calendarEvent.delete({
+          await prisma.calendarEvent.update({
             where: { id: existingEvent.id },
+            data: { archivedAt: newDate() },
           });
         }
       } catch (error) {
@@ -510,6 +503,21 @@ export async function syncOutlookCalendar(
   for (const [, masterEvent] of masterEvents) {
     const processedIds = await processMasterEvent(client, masterEvent, feed);
     processedIds.forEach((id) => processedEventIds.add(id));
+  }
+
+  if (fullSync) {
+    const externalEventIds = Array.from(processedEventIds);
+    await prisma.calendarEvent.updateMany({
+      where: {
+        feedId: feed.id,
+        archivedAt: null,
+        externalEventId:
+          externalEventIds.length > 0
+            ? { notIn: externalEventIds }
+            : { not: null },
+      },
+      data: { archivedAt: newDate() },
+    });
   }
 
   return { processedEventIds, nextSyncToken };

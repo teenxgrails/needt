@@ -165,4 +165,20 @@ describe("task store rollback", () => {
     await expect(pending).rejects.toThrow("Offline");
     expect(useTaskStore.getState().tasks).toEqual([makeTask()]);
   });
+
+  it("keeps the optimistic task when the service worker queues the update", async () => {
+    global.fetch = jest.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ queued: true }), { status: 202 })
+      )
+    );
+
+    const updated = await useTaskStore
+      .getState()
+      .updateTask("task-1", { title: "Queued title" });
+
+    expect(updated.title).toBe("Queued title");
+    expect(useTaskStore.getState().tasks[0].title).toBe("Queued title");
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
 });

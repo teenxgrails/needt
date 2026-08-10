@@ -1,6 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+import { authSecret } from "@/lib/auth/auth-secret";
 import { logger } from "@/lib/logger";
 
 const LOG_SOURCE = "CheckAdminAPI";
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET,
+      secret: authSecret(),
     });
 
     if (!token) {

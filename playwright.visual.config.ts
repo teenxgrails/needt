@@ -1,11 +1,16 @@
 import { defineConfig } from "@playwright/test";
 
+import { configureE2eEnvironment } from "./tests/e2e/environment";
+
+configureE2eEnvironment();
+
 const baseURL = process.env.TEST_BASE_URL || "http://127.0.0.1:3000";
 const useProductionServer =
   process.env.NEEDT_VISUAL_PRODUCTION_SERVER === "1";
 const productionServerCommand = `${JSON.stringify(
   process.execPath
 )} ./node_modules/next/dist/bin/next start`;
+const snapshotPlatformSuffix = process.platform === "darwin" ? "" : "-{platform}";
 
 export default defineConfig({
   testDir: "./tests/visual",
@@ -26,7 +31,7 @@ export default defineConfig({
   globalSetup: "./tests/visual/global-setup.ts",
   globalTeardown: "./tests/visual/global-teardown.ts",
   snapshotPathTemplate:
-    "{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}",
+    `{testDir}/{testFilePath}-snapshots/{arg}-{projectName}${snapshotPlatformSuffix}{ext}`,
   use: {
     baseURL,
     colorScheme: "dark",

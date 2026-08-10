@@ -35,18 +35,34 @@ declare module "next-auth/jwt" {
   }
 }
 
-// Create a NextAuth handler with the auth options
-const handler = NextAuth(await getAuthOptions());
-
-export { handler as GET };
-
 interface AuthRouteContext {
   params: Promise<{
     nextauth: string[];
   }>;
 }
 
+type AuthHandler = ReturnType<typeof NextAuth>;
+
+let handlerPromise: Promise<AuthHandler> | undefined;
+
+async function getHandler(): Promise<AuthHandler> {
+  handlerPromise ??= getAuthOptions().then((options) => NextAuth(options));
+
+  try {
+    return await handlerPromise;
+  } catch (error) {
+    handlerPromise = undefined;
+    throw error;
+  }
+}
+
+export async function GET(request: NextRequest, context: AuthRouteContext) {
+  const handler = await getHandler();
+  return handler(request, context);
+}
+
 export async function POST(request: NextRequest, context: AuthRouteContext) {
+  const handler = await getHandler();
   if (request.nextUrl.pathname.endsWith("/callback/credentials")) {
     const form = await request.clone().formData();
     const email = String(form.get("email") ?? "").trim().toLowerCase();

@@ -5,6 +5,7 @@ import {
   HiOutlineChatAlt2,
   HiOutlineClipboardList,
   HiOutlineCog,
+  HiOutlineFolder,
   HiOutlineLightningBolt,
   HiOutlineMail,
 } from "react-icons/hi";
@@ -33,6 +34,17 @@ export function useNavigationCommands(): Command[] {
       shortcut: "gt",
       perform: (router?: AppRouterInstance) => {
         if (router) router.push("/tasks");
+      },
+    },
+    {
+      id: "navigation.projects",
+      title: "Go to Projects",
+      keywords: ["navigation", "projects", "stages", "kanban"],
+      icon: HiOutlineFolder,
+      section: "navigation",
+      shortcut: "gp",
+      perform: (router?: AppRouterInstance) => {
+        if (router) router.push("/projects");
       },
     },
     {

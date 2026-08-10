@@ -2,7 +2,9 @@ import { sendConnectorWebhook } from "@/services/connectors/webhooks";
 import { scheduleAllTasksForUserDetailed } from "@/services/scheduling/TaskSchedulingService";
 import { SchedulingRunSource, SchedulingRunStatus } from "@prisma/client";
 
+import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
 import { repushDirtyBlocks } from "@/lib/task-block-push";
 
@@ -11,9 +13,17 @@ type ScheduleSnapshot = Map<
   { start: number | null; end: number | null; auto: boolean }
 >;
 
-async function scheduleSnapshot(userId: string): Promise<ScheduleSnapshot> {
+async function scheduleSnapshot(
+  userId: string,
+  workspaceId?: string | null
+): Promise<ScheduleSnapshot> {
   const tasks = await prisma.task.findMany({
-    where: { userId, isArchived: false },
+    where: {
+      assigneeId: userId,
+      ...(workspaceId ? { workspaceId } : {}),
+      isArchived: false,
+      AND: [activeProjectTaskWhere],
+    },
     select: {
       id: true,
       scheduledStart: true,
@@ -36,6 +46,7 @@ async function scheduleSnapshot(userId: string): Promise<ScheduleSnapshot> {
 
 export async function createSchedulingRun(input: {
   userId: string;
+  workspaceId?: string;
   source: SchedulingRunSource;
   dedupeKey: string;
 }) {
@@ -65,18 +76,19 @@ export async function executeSchedulingRun(runId: string) {
     where: { id: run.id },
     data: {
       status: SchedulingRunStatus.RUNNING,
-      startedAt: new Date(),
+      startedAt: newDate(),
       errorCode: null,
       errorMessage: null,
     },
   });
 
   try {
-    const before = await scheduleSnapshot(run.userId);
+    const before = await scheduleSnapshot(run.userId, run.workspaceId);
     const { tasks, scheduleResult } = await scheduleAllTasksForUserDetailed(
-      run.userId
+      run.userId,
+      { workspaceId: run.workspaceId ?? undefined }
     );
-    const after = await scheduleSnapshot(run.userId);
+    const after = await scheduleSnapshot(run.userId, run.workspaceId);
     let changedTaskCount = 0;
     let placedBlockCount = 0;
 
@@ -98,7 +110,7 @@ export async function executeSchedulingRun(runId: string) {
       ({ taskId, reason }) => ({ taskId, reason })
     );
 
-    await repushDirtyBlocks(run.userId);
+    await repushDirtyBlocks(run.userId, run.workspaceId ?? undefined);
     await sendConnectorWebhook({
       userId: run.userId,
       event: "schedule.changed",
@@ -113,7 +125,7 @@ export async function executeSchedulingRun(runId: string) {
         placedBlockCount,
         unchangedTaskCount: Math.max(0, tasks.length - changedTaskCount),
         unscheduled,
-        finishedAt: new Date(),
+        finishedAt: newDate(),
       },
     });
     await publishRealtimeEvent(run.userId, "schedule-run-updated", {
@@ -130,7 +142,7 @@ export async function executeSchedulingRun(runId: string) {
         status: SchedulingRunStatus.FAILED,
         errorCode: "SCHEDULING_FAILED",
         errorMessage: message.slice(0, 500),
-        finishedAt: new Date(),
+        finishedAt: newDate(),
       },
     });
     await publishRealtimeEvent(run.userId, "schedule-run-updated", {
@@ -142,8 +154,10 @@ export async function executeSchedulingRun(runId: string) {
 }
 
 export async function reapSchedulingRuns() {
-  const staleBefore = new Date(Date.now() - 15 * 60 * 1_000);
-  const retentionBefore = new Date(Date.now() - 30 * 24 * 60 * 60 * 1_000);
+  const staleBefore = newDate(newDate().getTime() - 15 * 60 * 1_000);
+  const retentionBefore = newDate(
+    newDate().getTime() - 30 * 24 * 60 * 60 * 1_000
+  );
   const [failed, deleted] = await prisma.$transaction([
     prisma.schedulingRun.updateMany({
       where: {
@@ -154,7 +168,7 @@ export async function reapSchedulingRuns() {
         status: SchedulingRunStatus.FAILED,
         errorCode: "WORKER_TIMEOUT",
         errorMessage: "The worker stopped before completing this run.",
-        finishedAt: new Date(),
+        finishedAt: newDate(),
       },
     }),
     prisma.schedulingRun.deleteMany({

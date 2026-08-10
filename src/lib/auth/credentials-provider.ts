@@ -28,7 +28,12 @@ export async function authenticateUser(email: string, password: string) {
     });
 
     // If user doesn't exist, return null
-    if (!user || !user.accounts || user.accounts.length === 0) {
+    if (
+      !user ||
+      !user.isActive ||
+      !user.accounts ||
+      user.accounts.length === 0
+    ) {
       logger.warn(
         "Authentication failed: User not found",
         { email },

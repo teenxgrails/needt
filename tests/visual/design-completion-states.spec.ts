@@ -76,7 +76,70 @@ test("Today exposes the responsive timeline and explicit evening review", async 
     review.getByRole("button", { name: "Move to tomorrow" })
   ).toBeEnabled();
   await settle(page);
+  await expect(page.getByText("Loading agenda…")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Thursday", level: 1 })
+  ).toBeVisible();
   await expect(page).toHaveScreenshot("today-evening-review.png");
+});
+
+test("companion stays clear of fixed actions across viewports", async ({
+  page,
+}) => {
+  await prepareAuthenticatedPage(page);
+  await page.goto("/today", { waitUntil: "domcontentloaded" });
+  const companion = page.getByTestId("needt-ai-companion");
+  await expect(companion).toBeVisible();
+
+  const layout = await page.evaluate(() => {
+    const companionElement = document.querySelector<HTMLElement>(
+      '[data-testid="needt-ai-companion"]'
+    );
+    if (!companionElement) return null;
+    const companionRect = companionElement.getBoundingClientRect();
+    const avoids = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-assistant-avoid]")
+    )
+      .filter((element) => {
+        const styles = window.getComputedStyle(element);
+        return (
+          styles.display !== "none" &&
+          styles.visibility !== "hidden" &&
+          element.getClientRects().length > 0
+        );
+      })
+      .map((element) => element.getBoundingClientRect());
+    return {
+      companion: {
+        left: companionRect.left,
+        top: companionRect.top,
+        right: companionRect.right,
+        bottom: companionRect.bottom,
+        width: companionRect.width,
+        height: companionRect.height,
+      },
+      overlap: avoids.some(
+        (avoid) =>
+          companionRect.left < avoid.right &&
+          companionRect.right > avoid.left &&
+          companionRect.top < avoid.bottom &&
+          companionRect.bottom > avoid.top
+      ),
+    };
+  });
+
+  expect(layout).not.toBeNull();
+  expect(layout!.companion.width).toBeGreaterThanOrEqual(44);
+  expect(layout!.companion.height).toBeGreaterThanOrEqual(44);
+  expect(layout!.companion.left).toBeGreaterThanOrEqual(0);
+  expect(layout!.companion.top).toBeGreaterThanOrEqual(0);
+  expect(layout!.companion.right).toBeLessThanOrEqual(
+    page.viewportSize()!.width
+  );
+  expect(layout!.companion.bottom).toBeLessThanOrEqual(
+    page.viewportSize()!.height
+  );
+  expect(layout!.overlap).toBe(false);
 });
 
 test("Integrations empty search and private bug report dialog stay usable", async ({

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import {
   AlertTriangle,
@@ -17,12 +11,15 @@ import {
   Plus,
   RotateCcw,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { TaskModal } from "@/components/tasks/TaskModal";
 import type { AgendaGroup } from "@/components/today/AgendaTaskSection";
 import { DailyAgendaEditor } from "@/components/today/DailyAgendaEditor";
 import { DayTimeline, type TimelineItem } from "@/components/today/DayTimeline";
+import {
+  buildAgendaGroups,
+  taskBelongsToDay,
+} from "@/components/today/agenda-groups";
 import {
   BottomSheet,
   BottomSheetContent,
@@ -36,11 +33,11 @@ import { computeTaskPlacementUpdate } from "@/lib/calendar-drag";
 import {
   addDays,
   endOfDay,
-  endOfWeek,
   isSameDay,
   newDate,
   startOfDay,
 } from "@/lib/date-utils";
+import { notify } from "@/lib/notifications";
 import { readTaskDefaults } from "@/lib/task-defaults";
 
 import { useCalendarStore } from "@/store/calendar";
@@ -70,26 +67,6 @@ function longDateLabel(date: Date): string {
             ? "rd"
             : "th";
   return `${date.toLocaleDateString([], { month: "long" })} ${day}${suffix}, ${date.getFullYear()}`;
-}
-
-function taskDates(task: Task) {
-  return [
-    task.scheduledStart,
-    task.startDate,
-    task.dueDate,
-    ...(task.scheduledBlocks?.map((block) => block.start) ?? []),
-  ]
-    .filter(Boolean)
-    .map((date) => newDate(date!));
-}
-
-function taskBelongsToDay(task: Task, date: Date) {
-  return taskDates(task).some((taskDate) => isSameDay(taskDate, date));
-}
-
-function taskDisplayDate(task: Task) {
-  const value = task.dueDate ?? task.scheduledStart ?? task.startDate;
-  return value ? newDate(value) : null;
 }
 
 export function TodayView({
@@ -195,68 +172,17 @@ export function TodayView({
   }, [dayEnd, dayStart, events, getAllCalendarItems, tasks]);
 
   const agendaGroups = useMemo<AgendaGroup[]>(() => {
-    const incomplete = tasks.filter(
-      (task) => task.status !== TaskStatus.COMPLETED
-    );
-    const todayTasks = incomplete
-      .filter((task) => taskBelongsToDay(task, dayStart))
-      .sort((left, right) => {
-        const leftDate = taskDisplayDate(left)?.getTime() ?? Infinity;
-        const rightDate = taskDisplayDate(right)?.getTime() ?? Infinity;
-        return leftDate - rightDate;
-      });
-    const todayIds = new Set(todayTasks.map((task) => task.id));
-    const overdue = viewingToday
-      ? incomplete.filter(
-          (task) =>
-            !todayIds.has(task.id) &&
-            task.dueDate &&
-            newDate(task.dueDate) < dayStart
-        )
-      : [];
-    const overdueIds = new Set(overdue.map((task) => task.id));
-    const weekEnd = endOfWeek(dayStart, { weekStartsOn: 1 });
-    const weekTasks = viewingToday
-      ? incomplete.filter((task) => {
-          if (todayIds.has(task.id) || overdueIds.has(task.id)) return false;
-          const date = taskDisplayDate(task);
-          return Boolean(date && date > dayEnd && date <= weekEnd);
-        })
-      : [];
-    const completed = tasks.filter((task) => {
-      if (task.status !== TaskStatus.COMPLETED) return false;
-      return Boolean(
-        (task.completedAt && isSameDay(newDate(task.completedAt), dayStart)) ||
-        taskBelongsToDay(task, dayStart)
-      );
-    });
-
     const referencedIds =
       referencedTasks.dateKey === dateKey
         ? referencedTasks.ids
         : new Set<string>();
-
-    return [
-      { id: "today", title: "Today's tasks", tasks: todayTasks },
-      {
-        id: "overdue",
-        title: "Tasks past deadline",
-        tasks: overdue,
-        tone: "danger",
-      },
-      { id: "week", title: "This week's tasks", tasks: weekTasks },
-      {
-        id: "completed",
-        title: "Completed",
-        tasks: completed,
-        tone: "muted",
-      },
-    ]
-      .map((group) => ({
-        ...group,
-        tasks: group.tasks.filter((task) => !referencedIds.has(task.id)),
-      }))
-      .filter((group) => group.tasks.length > 0) as AgendaGroup[];
+    return buildAgendaGroups({
+      tasks,
+      dayStart,
+      dayEnd,
+      viewingToday,
+      referencedIds,
+    });
   }, [dateKey, dayEnd, dayStart, referencedTasks, tasks, viewingToday]);
 
   const referencedDayTasks =

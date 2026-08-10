@@ -21,11 +21,11 @@ reference such as `Button / variants`, `Form / text-date`, or
 `Overlay / popover-dialog-sheet`; use that reference in design requests and
 visual-regression discussions.
 
-The Theme editor changes semantic tokens only for the lifetime of the `/style`
-route, including Radix portals. It can save a draft in local storage or copy a
-CSS selector for a future `data-app-theme` preset, but it never writes product
-settings. New themes must be finalized in `globals.css` and must continue to
-reuse the same shared components.
+The Theme editor previews semantic tokens on `/style`, including Radix portals.
+Applying a valid token object saves it to the authenticated user&apos;s
+customization settings and the runtime uses it across product screens. It can
+also copy a CSS selector for a future `data-app-theme` preset. New themes must
+continue to reuse the same shared components.
 
 The built-in Light, Graphite, and Dark previews use the same resolved theme
 classes as the product. A custom draft starts from one of those modes and then

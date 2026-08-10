@@ -155,16 +155,6 @@ export async function PUT(request: NextRequest) {
       throw new Error("Failed to get event ID from Outlook Calendar");
     }
 
-    // Delete existing event and any related instances from our database
-    await prisma.calendarEvent.deleteMany({
-      where: {
-        OR: [
-          { id: validatedEvent.id },
-          { recurringEventId: validatedEvent.externalEventId },
-        ],
-      },
-    });
-
     // Get the updated event and its instances
     const client = await getOutlookClient(
       validatedEvent.feed.accountId,

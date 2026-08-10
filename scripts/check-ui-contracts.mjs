@@ -156,10 +156,60 @@ for (const required of [
   "setPointerCapture",
   "requestAnimationFrame",
   "toNormalized",
-  "max-sm:h-16 max-sm:w-16",
+  "max-sm:h-14 max-sm:w-14",
+  "h-11 w-11",
 ]) {
   requireText(companionPath, required, companion);
 }
+
+const globalsPath = "src/app/globals.css";
+const globals = await source(globalsPath);
+const companionStylesStart = globals.indexOf(".needt-ai-companion {");
+const companionStylesEnd = globals.indexOf(
+  "@keyframes liquid-shimmer",
+  companionStylesStart
+);
+const companionStyles = globals.slice(companionStylesStart, companionStylesEnd);
+if (companionStylesStart < 0 || companionStylesEnd < 0) {
+  failures.push(`${globalsPath}: missing companion style boundary`);
+} else {
+  requireText(globalsPath, "background: var(--surface-raised)", companionStyles);
+  for (const prohibited of [
+    "radial-gradient",
+    "blur(",
+    "needt-companion-float",
+    "needt-companion-color-breathe",
+  ]) {
+    forbidText(globalsPath, prohibited, companionStyles);
+  }
+}
+
+const pageWorkspacePath = "src/components/pages/PageWorkspace.tsx";
+const pageWorkspace = await source(pageWorkspacePath);
+requireText(
+  pageWorkspacePath,
+  "data-assistant-avoid",
+  pageWorkspace
+);
+requireText(
+  pageWorkspacePath,
+  "h-12 items-center justify-around",
+  pageWorkspace
+);
+
+const appNavPath = "src/components/navigation/AppNav.tsx";
+const appNav = await source(appNavPath);
+requireText(appNavPath, 'label: "Tasks"', appNav);
+requireText(appNavPath, 'label: "Moodboards"', appNav);
+requireText(appNavPath, "data-assistant-avoid", appNav);
+forbidText(appNavPath, 'label: "Workspace"', appNav);
+forbidText(appNavPath, 'label: "Boards"', appNav);
+
+const stylePagePath = "src/app/style/page.tsx";
+const stylePage = await source(stylePagePath);
+requireText(stylePagePath, 'process.env.NODE_ENV === "production"', stylePage);
+requireText(stylePagePath, "await isAdmin()", stylePage);
+requireText(stylePagePath, "notFound()", stylePage);
 
 const packageJson = JSON.parse(await source("package.json"));
 if (packageJson.name !== "needt") {

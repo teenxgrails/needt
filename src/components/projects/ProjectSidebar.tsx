@@ -292,7 +292,8 @@ function ProjectItem({
 }: ProjectItemProps) {
   const { setActiveProject } = useProjectStore();
   const { tasks } = useTaskStore();
-  const { droppableProps, isOver } = useDroppableProject(project);
+  const archived = project.status === ProjectStatus.ARCHIVED;
+  const { droppableProps, isOver } = useDroppableProject(project, archived);
 
   // Count non-completed tasks for this project
   const taskCount = tasks.filter(
@@ -362,7 +363,7 @@ function ProjectItem({
         />
       </span>
 
-      {hasMappings && (
+      {hasMappings && !archived && (
         <Button
           variant="ghost"
           size="icon"

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { PageAccessRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "PageAssetAPI";
@@ -12,8 +15,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id, assetId } = await params;
+  if (!(await resolvePageAccess(auth, id))) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
+  }
   const asset = await prisma.pageAsset.findFirst({
-    where: { id: assetId, pageId: id, userId: auth.userId },
+    where: { id: assetId, pageId: id },
   });
   if (!asset) {
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });
@@ -37,8 +43,11 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id, assetId } = await params;
+  if (!(await resolvePageAccess(auth, id, PageAccessRole.EDITOR))) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
+  }
   const result = await prisma.pageAsset.deleteMany({
-    where: { id: assetId, pageId: id, userId: auth.userId },
+    where: { id: assetId, pageId: id },
   });
   if (result.count === 0) {
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });

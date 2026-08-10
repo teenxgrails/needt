@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "global-search";
@@ -11,11 +12,12 @@ export async function GET(request: NextRequest) {
 
   const q = new URL(request.url).searchParams.get("q")?.trim();
   if (!q) return NextResponse.json({ results: [] });
+  const scope = workspaceDataScopeWhere(auth.workspace, auth.userId);
 
   const [tasks, projects, events] = await Promise.all([
     prisma.task.findMany({
       where: {
-        userId: auth.userId,
+        ...scope,
         isArchived: false,
         OR: [
           { title: { contains: q, mode: "insensitive" } },
@@ -27,7 +29,7 @@ export async function GET(request: NextRequest) {
     }),
     prisma.project.findMany({
       where: {
-        userId: auth.userId,
+        ...scope,
         OR: [
           { name: { contains: q, mode: "insensitive" } },
           { description: { contains: q, mode: "insensitive" } },
@@ -36,17 +38,20 @@ export async function GET(request: NextRequest) {
       take: 6,
       orderBy: { updatedAt: "desc" },
     }),
-    prisma.calendarEvent.findMany({
-      where: {
-        feed: { userId: auth.userId },
-        OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { description: { contains: q, mode: "insensitive" } },
-        ],
-      },
-      take: 6,
-      orderBy: { start: "desc" },
-    }),
+    auth.workspace?.workspaceKind === "PERSONAL"
+      ? prisma.calendarEvent.findMany({
+          where: {
+            archivedAt: null,
+            feed: { userId: auth.userId, enabled: true },
+            OR: [
+              { title: { contains: q, mode: "insensitive" } },
+              { description: { contains: q, mode: "insensitive" } },
+            ],
+          },
+          take: 6,
+          orderBy: { start: "desc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   return NextResponse.json({

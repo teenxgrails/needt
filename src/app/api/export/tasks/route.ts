@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = auth.userId;
+    const scope = workspaceDataScopeWhere(auth.workspace, userId);
 
     // Get the includeCompleted parameter from the query string
     const includeCompleted =
@@ -22,13 +24,12 @@ export async function GET(request: NextRequest) {
     // Fetch all tasks for the user
     const tasks = await prisma.task.findMany({
       where: {
-        userId,
+        ...scope,
         // Filter out completed tasks if includeCompleted is false
         ...(includeCompleted ? {} : { status: { not: "completed" } }),
       },
       include: {
         tags: true,
-        project: true,
       },
       orderBy: {
         createdAt: "asc",
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Fetch all projects for the user
     const projects = await prisma.project.findMany({
       where: {
-        userId,
+        ...scope,
       },
       orderBy: {
         name: "asc",
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
     // Fetch all tags for the user
     const tags = await prisma.tag.findMany({
       where: {
-        userId,
+        tasks: { some: scope },
       },
       orderBy: {
         name: "asc",
@@ -56,13 +57,21 @@ export async function GET(request: NextRequest) {
     });
 
     // Create the export data structure
+    const projectById = new Map(
+      projects.map((project) => [project.id, project])
+    );
     const exportData = {
       metadata: {
         exportDate: new Date().toISOString(),
         version: "1.0",
         includeCompleted,
       },
-      tasks,
+      tasks: tasks.map((task) => ({
+        ...task,
+        project: task.projectId
+          ? (projectById.get(task.projectId) ?? null)
+          : null,
+      })),
       projects,
       tags,
     };

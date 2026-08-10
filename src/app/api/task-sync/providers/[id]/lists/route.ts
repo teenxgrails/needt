@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { getMsGraphClient } from "@/lib/outlook-utils";
 import { prisma } from "@/lib/prisma";
@@ -58,6 +59,7 @@ export async function GET(
     const mappings = await prisma.taskListMapping.findMany({
       where: {
         providerId: provider.id,
+        project: workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         project: {
@@ -81,8 +83,15 @@ export async function GET(
       const { getGoogleTasksClient, GoogleTaskProvider } = await import(
         "@/lib/task-sync/providers/google-provider"
       );
-      const tasksClient = await getGoogleTasksClient(provider.account.id, provider.userId);
-      providerImpl = new GoogleTaskProvider(tasksClient, provider.account.id, provider.userId);
+      const tasksClient = await getGoogleTasksClient(
+        provider.account.id,
+        provider.userId
+      );
+      providerImpl = new GoogleTaskProvider(
+        tasksClient,
+        provider.account.id,
+        provider.userId
+      );
     } else if (provider.type === "CALDAV") {
       // Defense-in-depth: only use the account's CalDAV credentials if the
       // account is owned by this user and is a CalDAV account, so a provider

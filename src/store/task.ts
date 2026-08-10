@@ -14,12 +14,12 @@ import {
   removeOptimisticTask,
   updateOptimisticTask,
 } from "@/lib/optimistic-tasks";
+import type { UnscheduledReasonItem } from "@/lib/scheduling-reasons";
 import {
   createTaskRequest,
   deleteTaskRequest,
   updateTaskRequest,
 } from "@/lib/task-api";
-import type { UnscheduledReasonItem } from "@/lib/scheduling-reasons";
 
 import { useDurationMemoryStore } from "@/store/durationMemory";
 
@@ -242,15 +242,18 @@ export const useTaskStore = create<TaskState>()(
       updateTask: async (id: string, updates: UpdateTask) => {
         set({ loading: true, error: null });
         const previousTasks = get().tasks;
+        const baseRevision = previousTasks.find(
+          (task) => task.id === id
+        )?.updatedAt;
         const version = beginTaskMutation(id);
         set({
           tasks: updateOptimisticTask(previousTasks, id, updates, get().tags),
         });
         try {
           const updatedTask = await enqueueTaskMutation(id, () =>
-            updateTaskRequest(id, updates)
+            updateTaskRequest(id, updates, baseRevision)
           );
-          if (isLatestTaskMutation(id, version)) {
+          if (updatedTask && isLatestTaskMutation(id, version)) {
             set((state) => ({
               tasks:
                 updates.isArchived !== undefined
@@ -258,22 +261,28 @@ export const useTaskStore = create<TaskState>()(
                   : reconcileOptimisticTask(state.tasks, updatedTask),
             }));
           }
-          void get()
-            .triggerScheduleAllTasks()
-            .catch((scheduleError: unknown) => {
-              void logger.error(
-                "Background rescheduling failed",
-                {
-                  taskId: id,
-                  error:
-                    scheduleError instanceof Error
-                      ? scheduleError.message
-                      : String(scheduleError),
-                },
-                LOG_SOURCE
-              );
-            });
-          return updatedTask;
+          if (updatedTask) {
+            void get()
+              .triggerScheduleAllTasks()
+              .catch((scheduleError: unknown) => {
+                void logger.error(
+                  "Background rescheduling failed",
+                  {
+                    taskId: id,
+                    error:
+                      scheduleError instanceof Error
+                        ? scheduleError.message
+                        : String(scheduleError),
+                  },
+                  LOG_SOURCE
+                );
+              });
+          }
+          return (
+            updatedTask ??
+            get().tasks.find((task) => task.id === id) ??
+            previousTasks.find((task) => task.id === id)!
+          );
         } catch (error) {
           if (isLatestTaskMutation(id, version)) {
             set({ tasks: previousTasks });
@@ -289,25 +298,32 @@ export const useTaskStore = create<TaskState>()(
       deleteTask: async (id: string) => {
         set({ loading: true, error: null });
         const previousTasks = get().tasks;
+        const baseRevision = previousTasks.find(
+          (task) => task.id === id
+        )?.updatedAt;
         const version = beginTaskMutation(id);
         set({ tasks: removeOptimisticTask(previousTasks, id) });
         try {
-          await enqueueTaskMutation(id, () => deleteTaskRequest(id));
-          void get()
-            .triggerScheduleAllTasks()
-            .catch((scheduleError: unknown) => {
-              void logger.error(
-                "Background rescheduling failed",
-                {
-                  taskId: id,
-                  error:
-                    scheduleError instanceof Error
-                      ? scheduleError.message
-                      : String(scheduleError),
-                },
-                LOG_SOURCE
-              );
-            });
+          const queued = await enqueueTaskMutation(id, () =>
+            deleteTaskRequest(id, baseRevision)
+          );
+          if (!queued) {
+            void get()
+              .triggerScheduleAllTasks()
+              .catch((scheduleError: unknown) => {
+                void logger.error(
+                  "Background rescheduling failed",
+                  {
+                    taskId: id,
+                    error:
+                      scheduleError instanceof Error
+                        ? scheduleError.message
+                        : String(scheduleError),
+                  },
+                  LOG_SOURCE
+                );
+              });
+          }
         } catch (error) {
           if (isLatestTaskMutation(id, version)) {
             set({ tasks: previousTasks });
@@ -410,19 +426,28 @@ export const useTaskStore = create<TaskState>()(
         projectId: string | null
       ) => {
         set({ loading: true, error: null });
+        const previousTasks = get().tasks;
+        set({
+          tasks: taskIds.reduce(
+            (tasks, taskId) =>
+              updateOptimisticTask(tasks, taskId, { projectId }, get().tags),
+            previousTasks
+          ),
+        });
         try {
-          await Promise.all(
-            taskIds.map((taskId) =>
-              fetch(`/api/tasks/${taskId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ projectId }),
-              })
-            )
+          const results = await Promise.all(
+            taskIds.map((taskId) => {
+              const baseRevision = previousTasks.find(
+                (task) => task.id === taskId
+              )?.updatedAt;
+              return updateTaskRequest(taskId, { projectId }, baseRevision);
+            })
           );
+          if (results.some((task) => task === null)) return;
           await get().fetchTasks(); // Refresh task list
           await get().triggerScheduleAllTasks();
         } catch (error) {
+          set({ tasks: previousTasks });
           set({ error: error as Error });
           throw error;
         } finally {

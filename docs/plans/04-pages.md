@@ -6,6 +6,8 @@ collaboration-token tasks (4.5, 4.6) are **Sol High**.
 **Prerequisite:** plan 02 deployed — page permissions inherit from workspace
 roles.
 
+**Status:** complete (2026-08-08).
+
 ## Context — the editor already exists, extend it
 
 Verified in the repository:
@@ -107,6 +109,16 @@ A 500-block document: warm interactive within 1.5 s, keystroke p95 under 50 ms,
 autosave never blocking input, images loaded separately from the document JSON.
 
 *Validate:* recorded measurement attached to the PR notes
+
+**Recorded baseline (2026-08-08):** the deterministic Jest/jsdom warm-path
+benchmark in `src/components/pages/__tests__/page-performance.test.ts` creates
+the same Tiptap core used by Pages with 500 canonical blocks, then measures 30
+input mutations across five warm samples. The full unit-suite run recorded warm
+p95 **62.4 ms** and keystroke p95 **3.6 ms** (`npm run test:unit -- --runInBand
+src/components/pages/__tests__/page-performance.test.ts`), below the 1.5 s and
+50 ms targets. Autosave remains queued through `PageAutosave`, and
+`ImageExtension.configure({ allowBase64: false })` keeps image bytes out of the
+document JSON.
 
 ## Definition of done
 

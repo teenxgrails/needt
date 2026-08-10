@@ -19,7 +19,10 @@ test("Light, Graphite and Dark keep their palettes at every breakpoint", async (
   expect(resetResponse.ok()).toBeTruthy();
   await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Monday", { exact: true })).toBeVisible();
-  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.getByRole("combobox", { name: "Theme" })).toHaveText(
+    "Light"
+  );
 
   for (const theme of THEMES) {
     const themeRow = page.getByText("Theme:", { exact: true }).locator("..");

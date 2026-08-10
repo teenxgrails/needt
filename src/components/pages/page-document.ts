@@ -1,10 +1,11 @@
+import type { PageBlockType } from "@prisma/client";
 import type { JSONContent } from "@tiptap/react";
 
 import { randomId } from "@/lib/uuid";
 
 import type { PageBlock } from "./page-types";
 
-const NODE_TO_BLOCK: Record<string, string> = {
+const NODE_TO_BLOCK: Record<string, PageBlockType> = {
   paragraph: "PARAGRAPH",
   bulletList: "BULLETED_LIST",
   orderedList: "NUMBERED_LIST",
@@ -15,13 +16,17 @@ const NODE_TO_BLOCK: Record<string, string> = {
   image: "IMAGE",
 };
 
-export function blockTypeForNode(node: JSONContent): string {
+export function blockTypeForNode(node: JSONContent): PageBlockType {
   if (node.type === "heading") {
     const level = Number(node.attrs?.level);
-    return `HEADING_${Math.max(1, Math.min(3, level || 1))}`;
+    return `HEADING_${Math.max(1, Math.min(3, level || 1))}` as PageBlockType;
   }
   if (node.type === "needtPageBlock") {
-    return typeof node.attrs?.kind === "string" ? node.attrs.kind : "CALLOUT";
+    const kind =
+      typeof node.attrs?.kind === "string" ? node.attrs.kind : "CALLOUT";
+    return kind === "TASK_REFERENCE" || kind === "PROJECT_REFERENCE"
+      ? "LINK"
+      : (kind as PageBlockType);
   }
   return NODE_TO_BLOCK[node.type || ""] || "PARAGRAPH";
 }

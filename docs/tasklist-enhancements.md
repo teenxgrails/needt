@@ -1,5 +1,9 @@
 # TaskList Enhancement Implementation Plan
 
+> **Status: superseded.** This pre-workspace proposal is retained for history
+> only. Do not implement its schema. Current follow-up work is tracked in
+> [`docs/plans/06-product-gap-audit.md`](plans/06-product-gap-audit.md).
+
 ## Overview
 
 This document outlines the implementation plan for enhancing the TaskList view with customization options and database persistence. We'll focus exclusively on improving the list view functionality before considering other view types.

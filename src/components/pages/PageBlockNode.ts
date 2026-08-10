@@ -11,6 +11,8 @@ const LABELS: Record<string, string> = {
   PAGE_MENTION: "Page mention",
   DATE_MENTION: "Date mention",
   FORM: "Form",
+  TASK_REFERENCE: "Task",
+  PROJECT_REFERENCE: "Project",
 };
 
 export const PageBlockNode = Node.create({
@@ -70,7 +72,17 @@ export const PageBlockNode = Node.create({
           : "",
       ];
     }
-    if (["FILE", "LINK", "BOOKMARK"].includes(kind) && url) {
+    if (
+      [
+        "FILE",
+        "LINK",
+        "BOOKMARK",
+        "PAGE_MENTION",
+        "TASK_REFERENCE",
+        "PROJECT_REFERENCE",
+      ].includes(kind) &&
+      url
+    ) {
       return [
         "div",
         attributes,

@@ -19,6 +19,7 @@ import { logger } from "@/lib/logger";
 // Import utility to get Microsoft Graph client
 import { getMsGraphClient } from "@/lib/outlook-utils";
 import { prisma } from "@/lib/prisma";
+import { schedulePushTaskBlock } from "@/lib/task-block-push";
 
 import { TaskStatus } from "@/types/task";
 
@@ -349,6 +350,11 @@ export class TaskSyncManager {
     fieldMapper: FieldMapper
   ): Promise<void> {
     const tracker = new TaskChangeTracker();
+    const project = await prisma.project.findUnique({
+      where: { id: mapping.projectId },
+      select: { workspaceId: true },
+    });
+    const workspaceId = project?.workspaceId ?? null;
 
     // Local tasks already linked to this provider, keyed by external id.
     // todo: this keys by (projectId, source, externalTaskId) and ignores
@@ -375,6 +381,10 @@ export class TaskSyncManager {
         const localTask = localTaskByExternalId.get(externalTask.id);
 
         if (localTask) {
+          if (localTask.isArchived) {
+            result.skipped++;
+            continue;
+          }
           // Update the existing local task from the external version, preserving
           // local-owned fields via the field mapper's merge rules.
           const mappedExternalTask = fieldMapper.mapToInternalTask(
@@ -454,7 +464,18 @@ export class TaskSyncManager {
               lastSyncedAt: newDate(),
               syncStatus: "SYNCED",
               userId: mapping.provider.userId,
+              workspaceId,
+              assigneeId: mapping.provider.userId,
               projectId: mapping.projectId,
+              ...(workspaceId && {
+                activities: {
+                  create: {
+                    workspaceId,
+                    actorId: mapping.provider.userId,
+                    action: "IMPORTED",
+                  },
+                },
+              }),
               externalUpdatedAt: externalTask.lastModified
                 ? newDate(externalTask.lastModified)
                 : externalTask.lastModifiedDateTime
@@ -499,6 +520,11 @@ export class TaskSyncManager {
     tracker: TaskChangeTracker
   ): Promise<void> {
     try {
+      const project = await prisma.project.findUnique({
+        where: { id: mapping.projectId },
+        select: { workspaceId: true },
+      });
+      const workspaceId = project?.workspaceId ?? null;
       // Step 1: Fetch tasks from both sources
       const localTasks = (
         await prisma.task.findMany({
@@ -529,7 +555,9 @@ export class TaskSyncManager {
 
       // Unlinked local tasks (tasks without external IDs that may need to be linked)
       let localUnlinkedTasks = localTasks.filter(
-        (task) => !task.externalTaskId || task.source !== mapping.provider.type
+        (task) =>
+          !task.isArchived &&
+          (!task.externalTaskId || task.source !== mapping.provider.type)
       );
 
       // Step 2: Handle unsynced local changes first
@@ -560,7 +588,7 @@ export class TaskSyncManager {
               );
               result.updated++;
             } else if (change.changeType === "DELETE") {
-              await this.processDeleteChange(change, provider);
+              await this.processDeleteChange(change);
               result.deleted++;
             }
 
@@ -626,6 +654,10 @@ export class TaskSyncManager {
           const localTask = localTaskByExternalId.get(externalTask.id);
 
           if (localTask) {
+            if (localTask.isArchived) {
+              result.skipped++;
+              continue;
+            }
             // Task exists in both systems - resolve based on update timestamps
             await this.resolveTaskConflict(
               localTask,
@@ -686,7 +718,18 @@ export class TaskSyncManager {
                   lastSyncedAt: newDate(),
                   syncStatus: "SYNCED",
                   userId: mapping.provider.userId,
+                  workspaceId,
+                  assigneeId: mapping.provider.userId,
                   projectId: mapping.projectId,
+                  ...(workspaceId && {
+                    activities: {
+                      create: {
+                        workspaceId,
+                        actorId: mapping.provider.userId,
+                        action: "IMPORTED",
+                      },
+                    },
+                  }),
                   externalUpdatedAt: externalTask.lastModified
                     ? newDate(externalTask.lastModified)
                     : externalTask.lastModifiedDateTime
@@ -790,10 +833,33 @@ export class TaskSyncManager {
             continue;
           }
 
-          // Delete the local task only if no recent changes
-          await prisma.task.delete({
+          // Preserve a recoverable tombstone instead of destroying the local
+          // task when it disappears from the provider.
+          await prisma.task.update({
             where: { id: localTask.id },
+            data: {
+              isArchived: true,
+              archivedAt: newDate(),
+              scheduledStart: null,
+              scheduledEnd: null,
+              scheduleLocked: false,
+              ...(localTask.workspaceId && {
+                activities: {
+                  create: {
+                    workspaceId: localTask.workspaceId,
+                    actorId: mapping.provider.userId,
+                    action: "ARCHIVED_BY_SYNC",
+                  },
+                },
+              }),
+            },
           });
+          const schedulingUserId =
+            localTask.assigneeId ?? mapping.provider.userId;
+          await prisma.scheduledBlock.deleteMany({
+            where: { taskId: localTask.id, userId: schedulingUserId },
+          });
+          schedulePushTaskBlock(schedulingUserId, localTask.id);
 
           result.deleted++;
         } catch (error) {
@@ -840,6 +906,8 @@ export class TaskSyncManager {
     if (!task) {
       throw new Error(`Task ${taskId} not found for CREATE change`);
     }
+
+    if (task.isArchived) return;
 
     // Convert to TaskWithSync
     const taskWithSync = {
@@ -910,6 +978,8 @@ export class TaskSyncManager {
       throw new Error(`Task ${taskId} not found for UPDATE change`);
     }
 
+    if (task.isArchived) return;
+
     // Convert to TaskWithSync
     const taskWithSync = {
       ...task,
@@ -957,15 +1027,12 @@ export class TaskSyncManager {
   /**
    * Process a DELETE change
    */
-  private async processDeleteChange(
-    change: {
-      id: string;
-      taskId: string | null;
-      changeData?: Record<string, unknown> | null;
-    },
-    provider: TaskProviderInterface
-  ): Promise<void> {
-    const changeData = change.changeData as Record<string, unknown>;
+  private async processDeleteChange(change: {
+    id: string;
+    taskId: string | null;
+    changeData?: Record<string, unknown> | null;
+  }): Promise<void> {
+    const changeData = (change.changeData ?? {}) as Record<string, unknown>;
     const externalTaskId = changeData.externalTaskId as string | undefined;
     const externalListId = changeData.externalListId as string | undefined;
     // Skip tasks that don't have an external ID for this provider
@@ -973,23 +1040,14 @@ export class TaskSyncManager {
       return;
     }
 
-    // Delete the task from the external system
-    try {
-      await provider.deleteTask(externalListId, externalTaskId);
-    } catch (error) {
-      if (error instanceof Error && error.message.includes("Item not found")) {
-        // The task was already deleted, so we don't need to do anything
-        return;
-      }
-      logger.error(
-        `Failed to delete task in external system`,
-        { error: error instanceof Error ? error.message : "Unknown error" },
-        LOG_SOURCE
-      );
-      throw error;
-    }
-    // Note: We don't delete the local task here because it should have already
-    // been deleted when the DELETE change was tracked
+    // Legacy DELETE changes are acknowledged without propagating irreversible
+    // removal to the provider. Current archive operations are tracked as
+    // UPDATE changes and remain recoverable locally.
+    logger.info(
+      "Skipped irreversible provider task deletion",
+      { changeId: change.id, externalListId, externalTaskId },
+      LOG_SOURCE
+    );
   }
 
   /**

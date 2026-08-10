@@ -1,8 +1,10 @@
 # Base stage for both development and production
 FROM node:22-alpine3.19 AS base
 WORKDIR /app
+ARG SOURCE_COMMIT=local
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEEDT_BUILD_SHA=$SOURCE_COMMIT
 
 # Install netcat
 RUN apk add --no-cache netcat-openbsd
@@ -29,6 +31,7 @@ RUN npm ci --include=dev --legacy-peer-deps --ignore-scripts
 COPY . .
 RUN npm run prisma:generate
 RUN npm run build:worker
+RUN npm run build:collaboration
 RUN npm run build
 
 # Runtime dependencies are installed from package-lock.json so the entrypoint
@@ -53,9 +56,31 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
+USER node
 
 # entrypoint.sh runs `exec "$@"`, so this CMD becomes the worker process.
 CMD ["node", "dist/worker/index.js"]
+
+# Collaboration stage - same image, runs the Hocuspocus collaboration server.
+# Coolify: set this service's "Docker Build Stage Target" to `collaboration`.
+FROM base AS collaboration
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=runtime-deps /app/node_modules ./node_modules
+COPY --from=builder /app/dist/collaboration ./dist/collaboration
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma ./prisma
+COPY entrypoint.sh .
+RUN chmod +x /app/entrypoint.sh
+USER node
+
+EXPOSE 1234
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["node", "dist/collaboration/index.js"]
 
 # Production stage
 FROM base AS production
@@ -73,6 +98,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
+USER node
 
 EXPOSE 3000
 

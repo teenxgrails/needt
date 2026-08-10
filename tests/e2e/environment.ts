@@ -1,0 +1,111 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+import { PrismaClient } from "@prisma/client";
+
+const execFileAsync = promisify(execFile);
+
+const localE2eEnvironment = {
+  DATABASE_URL: "postgresql://needt:needt@127.0.0.1:5433/needt_test",
+  DIRECT_URL: "postgresql://needt:needt@127.0.0.1:5433/needt_test",
+  REDIS_URL: "redis://127.0.0.1:6380",
+  NEXTAUTH_URL: "http://127.0.0.1:3000",
+  NEXTAUTH_SECRET: "needt-e2e-only-secret-not-valid-outside-tests",
+  RATE_LIMIT_HASH_SECRET: "needt-e2e-rate-limit-hash-secret",
+  COLLABORATION_DISABLED: "1",
+} as const;
+
+const requiredColumns = [
+  ["User", "id"],
+  ["User", "isActive"],
+  ["Workspace", "id"],
+  ["WorkspaceMember", "workspaceId"],
+  ["Page", "id"],
+  ["Moodboard", "id"],
+] as const;
+
+export function configureE2eEnvironment() {
+  if (!process.env.CI) {
+    Object.assign(process.env, localE2eEnvironment);
+    return;
+  }
+
+  for (const [key, value] of Object.entries(localE2eEnvironment)) {
+    if (!process.env[key]) process.env[key] = value;
+  }
+}
+
+async function run(command: string, args: string[]) {
+  await execFileAsync(command, args, {
+    cwd: process.cwd(),
+    env: process.env,
+  });
+}
+
+async function assertRequiredSchema() {
+  const prisma = new PrismaClient();
+  try {
+    const columns = await prisma.$queryRaw<
+      Array<{ table_name: string; column_name: string }>
+    >`
+      SELECT table_name, column_name
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+    `;
+    const present = new Set(
+      columns.map(({ table_name, column_name }) => `${table_name}.${column_name}`)
+    );
+    const missing = requiredColumns.filter(
+      ([table, column]) => !present.has(`${table}.${column}`)
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `E2E database is missing required schema: ${missing
+          .map(([table, column]) => `${table}.${column}`)
+          .join(", ")}`
+      );
+    }
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function prepareE2eEnvironment() {
+  configureE2eEnvironment();
+  if (!process.env.CI) {
+    await run("docker", [
+      "compose",
+      "-f",
+      "docker-compose.e2e.yml",
+      "up",
+      "--detach",
+      "--wait",
+    ]);
+  }
+  await run("npx", ["prisma", "migrate", "deploy"]);
+  await run("npx", ["tsx", "prisma/ci-seed.ts"]);
+  await assertRequiredSchema();
+}
+
+export async function resetLocalE2eEnvironment() {
+  configureE2eEnvironment();
+  if (process.env.CI) return;
+  // This compose project owns only the `needt-e2e_postgres_data` volume.
+  // Resetting it makes locally generated workspaces, tasks, and invites
+  // deterministic without touching a developer's application database.
+  await run("docker", [
+    "compose",
+    "-f",
+    "docker-compose.e2e.yml",
+    "down",
+    "--volumes",
+  ]);
+  await run("docker", [
+    "compose",
+    "-f",
+    "docker-compose.e2e.yml",
+    "up",
+    "--detach",
+    "--wait",
+  ]);
+}

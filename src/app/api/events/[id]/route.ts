@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { getEvent } from "@/lib/calendar-db";
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -92,9 +93,21 @@ export async function PATCH(
     }
 
     const updates = await request.json();
+    const restore = updates.restore;
+    delete updates.archivedAt;
+    delete updates.restore;
+    if (existingEvent.archivedAt && restore !== true) {
+      return NextResponse.json(
+        { error: "Restore the event before editing it" },
+        { status: 409 }
+      );
+    }
     const updated = await prisma.calendarEvent.update({
       where: { id },
-      data: updates,
+      data: {
+        ...updates,
+        ...(restore === true ? { archivedAt: null } : {}),
+      },
     });
 
     return NextResponse.json(updated);
@@ -148,11 +161,12 @@ export async function DELETE(
       );
     }
 
-    await prisma.calendarEvent.delete({
+    await prisma.calendarEvent.update({
       where: { id },
+      data: { archivedAt: existingEvent.archivedAt ?? newDate() },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, archived: true });
   } catch (error) {
     logger.error(
       "Failed to delete event:",

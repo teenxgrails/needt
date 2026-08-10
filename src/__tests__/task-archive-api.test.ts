@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 import * as taskRoute from "@/app/api/tasks/[id]/route";
 import * as tasksRoute from "@/app/api/tasks/route";
+import { findTaskProjectMoveConflict } from "@/services/tasks/dependencies";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { prisma } from "@/lib/prisma";
@@ -18,6 +19,7 @@ jest.mock("@/lib/prisma", () => ({
     },
     scheduledBlock: { deleteMany: jest.fn() },
     taskListMapping: { findFirst: jest.fn() },
+    project: { findFirst: jest.fn() },
     workSchedule: { findFirst: jest.fn() },
     $transaction: jest.fn(),
   },
@@ -31,6 +33,9 @@ jest.mock("@/services/connectors/webhooks", () => ({
 }));
 jest.mock("@/services/time-tracking/timeEntries", () => ({
   recomputeTaskActuals: jest.fn(),
+}));
+jest.mock("@/services/tasks/dependencies", () => ({
+  findTaskProjectMoveConflict: jest.fn(),
 }));
 
 const taskModel = prisma.task as unknown as {
@@ -73,6 +78,14 @@ describe("task archive API", () => {
         where: expect.objectContaining({
           userId: "user-1",
           isArchived: false,
+          AND: [
+            {
+              OR: [
+                { projectId: null },
+                { project: { is: { status: "active" } } },
+              ],
+            },
+          ],
         }),
       })
     );
@@ -168,6 +181,63 @@ describe("task archive API", () => {
     );
 
     expect(response!.status).toBe(409);
+    expect(taskModel.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects edits to tasks in an archived project", async () => {
+    taskModel.findUnique.mockResolvedValue({
+      ...storedTask(false),
+      projectId: "project-1",
+      project: { status: "archived" },
+    });
+
+    const response = await taskRoute.PUT(
+      new NextRequest("http://localhost/api/tasks/task-1", {
+        method: "PUT",
+        body: JSON.stringify({ title: "Changed while project archived" }),
+      }),
+      { params: Promise.resolve({ id: "task-1" }) }
+    );
+
+    expect(response!.status).toBe(409);
+    expect(await response!.json()).toEqual({ error: "PROJECT_ARCHIVED" });
+    expect(taskModel.update).not.toHaveBeenCalled();
+  });
+
+  it("blocks a project move and names the linked task", async () => {
+    taskModel.findUnique.mockResolvedValue({
+      ...storedTask(false),
+      workspaceId: "workspace-1",
+      projectId: "project-1",
+      project: { status: "active" },
+    });
+    (prisma.project.findFirst as jest.Mock).mockResolvedValue({
+      id: "project-2",
+    });
+    jest.mocked(findTaskProjectMoveConflict).mockResolvedValue({
+      dependencyId: "dependency-1",
+      task: {
+        id: "linked-task",
+        title: "Approve launch brief",
+        projectId: "project-1",
+      },
+    });
+
+    const response = await taskRoute.PUT(
+      new NextRequest("http://localhost/api/tasks/task-1", {
+        method: "PUT",
+        body: JSON.stringify({ projectId: "project-2" }),
+      }),
+      { params: Promise.resolve({ id: "task-1" }) }
+    );
+
+    expect(response!.status).toBe(409);
+    expect(await response!.json()).toEqual(
+      expect.objectContaining({
+        error: "PROJECT_DEPENDENCY_CONFLICT",
+        message: expect.stringContaining("Approve launch brief"),
+      })
+    );
     expect(taskModel.update).not.toHaveBeenCalled();
   });
 

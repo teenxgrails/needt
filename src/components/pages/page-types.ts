@@ -19,6 +19,9 @@ export type PageBlock = {
 };
 
 export type PageDetail = PageSummary & {
+  userId: string;
+  workspaceId: string | null;
+  accessRole?: "FULL_ACCESS" | "EDITOR" | "VIEWER";
   coverUrl: string | null;
   blocks: PageBlock[];
   children: PageSummary[];

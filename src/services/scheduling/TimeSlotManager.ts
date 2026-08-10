@@ -16,6 +16,7 @@ import {
   toZonedTime,
 } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
 
 import { useSettingsStore } from "@/store/settings";
 
@@ -71,6 +72,7 @@ export class TimeSlotManagerImpl implements TimeSlotManager {
         scheduledStart: { not: null },
         scheduledEnd: { not: null },
         isArchived: false,
+        AND: [activeProjectTaskWhere],
         // Locked tasks keep their slots across runs, so they must count as
         // busy no matter what project they belong to (or none at all);
         // unlocked tasks are about to be rescheduled and must not block

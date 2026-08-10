@@ -42,15 +42,36 @@ export enum SchedulingTaskPriority {
   LOW = "LOW",
 }
 
+export enum TaskBusyStatus {
+  BUSY = "BUSY",
+  FREE = "FREE",
+}
+
 export interface Tag {
   id: string;
   name: string;
   color?: string;
 }
 
+export interface TaskActivity {
+  id: string;
+  workspaceId: string;
+  taskId: string;
+  actorId?: string | null;
+  action: string;
+  metadata?: Prisma.JsonValue | null;
+  createdAt: Date;
+  actor?: { id: string; name?: string | null; image?: string | null } | null;
+}
+
 export interface Task {
   id: string;
   title: string;
+  workspaceId?: string | null;
+  assigneeId?: string | null;
+  busyStatus?: TaskBusyStatus;
+  stageId?: string | null;
+  activities?: TaskActivity[];
   description?: string | null;
   status: TaskStatus;
   dueDate?: Date | null;

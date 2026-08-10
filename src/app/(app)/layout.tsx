@@ -68,7 +68,8 @@ export default function RootLayout({
     <div
       className={cn(
         "needt-page-depth relative flex min-h-dvh",
-        pathname === "/today" && "xl:h-dvh xl:overflow-hidden"
+        (pathname === "/today" || pathname.startsWith("/moodboards/")) &&
+          "xl:h-dvh xl:overflow-hidden"
       )}
     >
       {/* Ambient aurora veil, spanning the whole shell (sidebar included) so the
@@ -103,7 +104,8 @@ export default function RootLayout({
                 "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
                 pathname.startsWith("/settings") &&
                   "max-lg:h-dvh max-lg:overflow-hidden max-lg:pb-0",
-                pathname === "/today" &&
+                (pathname === "/today" ||
+                  pathname.startsWith("/moodboards/")) &&
                   "xl:h-dvh xl:min-h-0 xl:overflow-hidden"
               )}
             >
@@ -112,7 +114,8 @@ export default function RootLayout({
                   key={pathname}
                   className={cn(
                     "needt-mobile-route-fallback relative z-[1] min-h-full",
-                    pathname === "/today" &&
+                    (pathname === "/today" ||
+                      pathname.startsWith("/moodboards/")) &&
                       "xl:h-full xl:min-h-0 xl:overflow-hidden"
                   )}
                 >

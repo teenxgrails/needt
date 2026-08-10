@@ -28,7 +28,7 @@ export async function GET(
         // Ensure the feed belongs to the current user
         userId,
       },
-      include: { events: true },
+      include: { events: { where: { archivedAt: null } } },
     });
 
     if (!feed) {
@@ -109,15 +109,15 @@ export async function DELETE(
     const userId = auth.userId;
 
     const { id } = await params;
-    // The feed's events will be automatically deleted due to the cascade delete in the schema
-    await prisma.calendarFeed.delete({
+    const updated = await prisma.calendarFeed.update({
       where: {
         id,
-        // Ensure the feed belongs to the current user
         userId,
       },
+      data: { enabled: false },
     });
-    return NextResponse.json({ success: true });
+    if (updated.type === "OUTLOOK") await disableOutlookSubscription(id);
+    return NextResponse.json({ success: true, archived: true });
   } catch (error) {
     logger.error(
       "Failed to delete feed:",

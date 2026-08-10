@@ -7,8 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Style: applying a theme token object in `/style` now persists it per user and
+  updates shared product controls globally.
+
 ### Changed
 
+- Restricted the internal `/style` laboratory to administrators in production,
+  while keeping it available for local design work and visual regression checks.
+- Made the live `/style` laboratory wider and easier to scan, clarified the
+  saved-versus-preview state of its theme editor, and kept named theme choices
+  visible on phones.
+- Reworked Pages around the existing MIT-licensed Tiptap editor: the desktop editor now has a quiet persistent formatting/insert toolbar and a simplified document header, phones have a Notes-style bottom action bar and formatting/insert sheets, and the Pages home now provides search, favorites, recent notes, and honest quick-create actions.
+- Updated Auth.js Core, Excalidraw, Next.js 15, and compatible transitive dependencies; the production audit no longer reports critical vulnerabilities, while breaking major upgrades remain isolated for a dedicated migration.
+- Pages now use a viewport-safe slash-command sheet on phones, expose block reordering after a scroll-safe 350 ms long press, and position the selection formatting toolbar outside the selected text.
+
+- Project dependencies are now created only between tasks in the same active project, remain readable as soft-removed history, and block cross-project task moves with the linked task named in the conflict message.
+- Project removal now archives projects without deleting tasks, stages, blockers, or history; archived projects are read-only and can be restored from the Projects screen.
+- Auto-scheduling now plans only tasks assigned to the active user, using that assignee's schedules, flexible hours, calendar conflicts, reminders, and calendar-block destination; shared-workspace members receive redacted Busy intervals for one another's personal events without titles, descriptions, attendees, organizers, or locations.
+- Authenticated API requests now resolve workspace membership and minimum roles through one server-side authorization boundary, while the disabled rollout flag preserves legacy `userId` scoping.
 - Replaced global lift, zoom, and icon-growth effects with calm contrast feedback, short fade/slide overlays, restrained drag springs, and one reduced-motion runtime that honors OS, saved, and hidden-tab preferences across every route.
 - Completed the internal `/style` laboratory for Light, Graphite, and Dark, and aligned product pickers, surfaces, overlays, rows, cards, and feedback states with the shared semantic design-system contract.
 - Flattened Focus into one state-stable canvas, made the AI companion freely draggable and keyboard movable with a saved safe position, unified product notifications behind the typed facade, and constrained Settings content to the shared readable width.
@@ -21,6 +37,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Retrying a failed `/task` command in Today now creates the restored task
+  instead of reopening it as editor text; collaboration security tests also
+  generate ephemeral signing keys, and visual baselines are platform-specific.
+- Kept authentication secrets runtime-only during production image builds,
+  rendered session-dependent pages on demand, and made container startup stop
+  immediately when required environment validation or migrations fail; rolling
+  dependency writes remain compatible during workspace migration, and release
+  automation waits for the exact healthy web SHA before dependent runtimes.
+- Kept unassigned Space task nodes in a stable date order instead of letting
+  database response order move them between visits.
+- Made offline task, Page, and Today replays idempotent and revision-aware so
+  reconnecting cannot overwrite a newer server version; connector-triggered
+  scheduling now stays inside the authorized workspace, and production web
+  startup fails closed when its authentication secret is missing.
+- Simplified the AI companion into a compact, high-contrast draggable action
+  and keep it clear of fixed mobile and editor controls across viewports.
+- Revalidated collaboration authorization for every live socket message and
+  idle connection, so workspace removal closes the room and Editor-to-Viewer
+  downgrades become read-only without waiting for reconnect; Page and Moodboard
+  clients and server route bundles now share one pinned Yjs runtime, while
+  BullMQ stays outside Next bundles.
+- Partitioned offline pages, API snapshots and mutation queues by schema, user
+  and workspace; logout/account changes now purge private browser state, only
+  explicitly safe writes can queue, and failed replays remain visible for
+  conflict or sign-in recovery instead of being silently discarded.
+- Replaced user-triggered physical deletion with recoverable archive semantics
+  for tasks, projects, calendar events and feeds; AI and connector mutations now
+  confirm the exact target, provider sync preserves tombstones, and disconnecting
+  an account revokes credentials without cascading through local calendar data.
+- Hardened authentication and workspace isolation: stale or disabled-user
+  tokens now return `401` before personal-workspace creation, admin routes use
+  the current database role, logs metadata requires admin access, and AI,
+  search, exports, connectors, schedule previews and task-sync mappings retain
+  the active workspace scope server-side.
+- Made Today autosave serialize date-keyed writes without stale success or failure clearing newer drafts, collapse duplicate inline task references, preserve completed tasks on historical days, and reject interrupted/invalid agenda request bodies cleanly.
+- Prevented stale Excalidraw clients from overwriting concurrent edits to different existing moodboard elements by publishing per-element scene deltas.
+- Fixed mobile Page block dragging when pointer capture is unavailable and made drop targets resolve to the nearest block instead of skipping over short blocks.
+- Made Playwright honor `TEST_BASE_URL` for both navigation and dev-server readiness, so local UI gates can run reliably on a non-default port.
+- Hardened shared-workspace API boundaries: expired paid plans can no longer read shared workspace metadata or data, invite creation and acceptance are rate-limited, project mutations retain workspace scope at write time, concurrent personal-workspace initialization is race-safe, and shared calendar Busy intervals no longer expose source event IDs.
 - Completing a recurring task now records the finished occurrence as an immutable instance linked to its series master, instead of rewriting the master row and leaving a detached completed copy. The master only advances to the next occurrence, so editing a series affects future occurrences and never rewrites past ones. Completion is idempotent — a repeated or concurrent completion of the same occurrence can no longer create duplicate instances.
 - Auto-scheduling now honors task start and postpone dates, preserves exact unscheduled reason codes, falls back after soft deadlines, and refuses to place hard-deadline tasks past their deadline.
 - Fixed the root `not-found.tsx` rendering its own `<html>`/`<body>` nested inside the app's root layout, crashing the React tree on any genuinely missing route (could leave client-side navigation, including `/style`, stuck broken until a hard reload).
@@ -64,6 +119,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added collaborative Moodboards: an Excalidraw canvas for images, sketches,
+  sticky notes and export; workspace-scoped boards with live presence; periodic
+  recoverable snapshots; Full Access/Editor/Viewer enforcement; and a
+  safe-area-aware mobile workspace.
+
+- Added the Moodboard security foundation: workspace-scoped boards, direct Full Access/Editor/Viewer grants, five-minute document-scoped collaboration tokens, membership and role rechecks at WebSocket authentication, and server-enforced read-only Yjs connections for Viewers.
+
+- Pages can now be published through separate read-only bearer links with public asset delivery; unpublishing revokes the link and closes already open public sessions immediately.
+
+- Added self-hosted realtime Page collaboration with short-lived document-scoped tokens, server-side workspace and Page authorization, Yjs presence/cursors and offline merge semantics, Postgres persistence, and optional Redis fan-out.
+
+- Pages now resolve Full Access, Editor, and Viewer roles per document, with direct member grants overriding inherited workspace access on every Page-backed API.
+
+- Pages now provide a nested workspace tree, real tables, resilient autosave drafts with offline retry, revision restore, backlinks, workspace-scoped inline tasks and projects, and reviewable Needt AI rewrite, summary, and critique proposals.
+
+- Added workspace-scoped Projects with stages, task and external blockers, derived task progress, dedicated List/Kanban/Gantt views, and regular or workflow templates with placeholder-role assignments and relative dates.
+- Added workspace-scoped task assignees, Busy/Free status, stage references, and task activity records; existing owned tasks retain their owner as assignee, while intentionally unassigned tasks report `NO_ASSIGNEE` instead of being scheduled.
+- Added paid shared-workspace creation and expiring, single-use invitations with Owner/Editor/Viewer enforcement and protection against removing or demoting the final Owner.
+- Added the feature-flagged workspace tenancy foundation with personal workspaces, Owner/Editor/Viewer memberships, expiring invite records, and an idempotent backfill for existing projects, tasks, boards, and pages.
 - Added non-destructive task archiving with a read-only Archived view, restore actions, and exclusions from normal planning, Focus, reminders, search, AI context, connectors, and project counts; legacy task deletion now archives data instead of removing it.
 - Added a Notion-like Page canvas with a borderless title, icon and cover controls, full-canvas focus, searchable keyboard slash commands, canonical text/list/checklist/quote/code/divider blocks, and extensible callout, toggle, link, bookmark, media, layout and mention blocks.
 - Added private Page assets, resolvable comments, reusable templates, authenticated forms, explicit AI proposal diffs, and functional Table, Board, List, Calendar, Timeline, and Gallery database views over shared editable records.

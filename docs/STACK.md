@@ -1,7 +1,8 @@
 # Needt stack and release contract
 
-Needt is a multi-user Next.js 15 application with a separate BullMQ worker
-built from the same commit and production image.
+Needt is a multi-user Next.js 15 application with separate BullMQ worker and
+Hocuspocus collaboration processes built from the same commit and production
+image.
 
 ## Runtime
 
@@ -10,6 +11,9 @@ built from the same commit and production image.
 - PostgreSQL 16 through Prisma.
 - Redis 7 for BullMQ, rate limits, lockouts, alert throttling, and realtime
   coordination.
+- Hocuspocus 4 and one lockfile-pinned Yjs runtime for Pages and Moodboards;
+  authorization and smoke requirements live in
+  [`docs/collaboration.md`](collaboration.md).
 - NextAuth credentials, Google, and Microsoft OAuth.
 - Sentry in the Next.js client/server/edge runtimes and the worker.
 - Web Push through VAPID with email fallback through Resend.
@@ -29,7 +33,8 @@ change must independently pass:
 5. visual/style suites when UI, CSS, tokens, or shared components change
 6. `npm run build`
 7. `npm run build:worker`
-8. the production Docker build
+8. `npm run build:collaboration`
+9. the production Docker build
 
 GitHub Actions exposes required `security`, `quality-gates`, `schema-drift`,
 `e2e`, and conditionally executed `visual-style` statuses. Production
@@ -80,14 +85,25 @@ push subscriptions, nudges, booking pages, and bookings are keyed by `userId`
 or owner ID. All authenticated APIs validate ownership server-side.
 FREE/PRO/LIFETIME restrictions are server-enforced in `src/lib/entitlements.ts`;
 hidden UI is never the security boundary.
+Browser caches, offline snapshots and queued writes follow the scoped purge and
+replay contract in [`docs/offline.md`](offline.md).
 
 ## Deployment order
 
 Web and worker use expand/contract deployment:
 
 1. take/verify a database backup;
-2. deploy additive migrations;
-3. deploy worker and web from the same SHA;
+2. deploy web from the exact green SHA; its fail-fast entrypoint applies the
+   additive migrations before accepting traffic;
+3. wait until `/api/health` reports that SHA and a healthy database, then deploy
+   worker and collaboration from the same SHA;
 4. run the release gate and inspect `/admin/operations`;
 5. enable feature flags only after the smoke test;
 6. contract/remove old fields only after at least one fallback release.
+
+For Coolify Dockerfile deployments, enable **Include Source Commit in Build**
+for the web, worker and collaboration resources. The root `Dockerfile` maps
+Coolify's `SOURCE_COMMIT` build argument to `NEEDT_BUILD_SHA`, which is the
+identity checked by `/api/health`. Deployment webhooks use `COOLIFY_API_TOKEN`;
+Coolify rollback is a manual action from the resource's Deployments view and is
+available only while the previous image remains local.

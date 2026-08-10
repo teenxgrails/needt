@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { authenticateConnectorToken } from "@/services/connectors/auth";
+import { authenticateConnectorRequest } from "@/services/connectors/auth";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { WorkspaceRole } from "@prisma/client";
 
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
 import {
@@ -25,15 +27,18 @@ function isPriority(value: unknown): value is SchedulingTaskPriority {
 }
 
 export async function GET(request: NextRequest) {
-  const userId = await authenticateConnectorToken(
-    request.headers.get("authorization")
+  const auth = await authenticateConnectorRequest(
+    request,
+    WorkspaceRole.VIEWER
   );
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if ("response" in auth) return auth.response;
+  const { userId, workspace } = auth;
 
   const tasks = await prisma.task.findMany({
-    where: { userId, isArchived: false },
+    where: {
+      ...workspaceDataScopeWhere(workspace, userId),
+      isArchived: false,
+    },
     orderBy: [{ scheduledStart: "asc" }, { createdAt: "desc" }],
     include: { scheduledBlocks: { orderBy: { chunkIndex: "asc" } } },
   });
@@ -45,12 +50,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await authenticateConnectorToken(
-    request.headers.get("authorization")
+  const auth = await authenticateConnectorRequest(
+    request,
+    WorkspaceRole.EDITOR
   );
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  if ("response" in auth) return auth.response;
+  const { userId, workspace } = auth;
 
   const body = await request.json();
   if (typeof body.title !== "string" || !body.title.trim()) {
@@ -60,6 +65,8 @@ export async function POST(request: NextRequest) {
   const task = await prisma.task.create({
     data: {
       userId,
+      workspaceId: workspace.workspaceId,
+      assigneeId: userId,
       title: body.title.trim(),
       description:
         typeof body.description === "string" ? body.description.trim() : null,
@@ -85,13 +92,25 @@ export async function POST(request: NextRequest) {
       scheduleLocked: false,
       isFrozen: false,
       isRecurring: false,
+      activities: {
+        create: {
+          workspaceId: workspace.workspaceId,
+          actorId: userId,
+          action: "CREATED",
+        },
+      },
     },
   });
 
-  await scheduleAllTasksForUser(userId);
+  await scheduleAllTasksForUser(userId, {
+    workspaceId:
+      workspace.dataScope.mode === "workspace"
+        ? workspace.workspaceId
+        : undefined,
+  });
 
-  const scheduledTask = await prisma.task.findUnique({
-    where: { id: task.id, userId },
+  const scheduledTask = await prisma.task.findFirst({
+    where: { id: task.id, ...workspaceDataScopeWhere(workspace, userId) },
     include: { scheduledBlocks: { orderBy: { chunkIndex: "asc" } } },
   });
 

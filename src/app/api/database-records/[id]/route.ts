@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   try {
     const body = await request.json().catch(() => ({}));
-    const record = await updateDatabaseRecord(auth.userId, id, {
+    const record = await updateDatabaseRecord(auth, id, {
       title: typeof body.title === "string" ? body.title : undefined,
       values:
         body.values && typeof body.values === "object"
@@ -42,7 +42,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
   if ("response" in auth) return auth.response;
   const { id } = await params;
   try {
-    if (!(await deleteDatabaseRecord(auth.userId, id))) {
+    if (!(await deleteDatabaseRecord(auth, id))) {
       return NextResponse.json({ error: "Record not found" }, { status: 404 });
     }
     return NextResponse.json({ success: true });

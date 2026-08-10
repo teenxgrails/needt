@@ -10,6 +10,7 @@ import {
 
 import { requireCronSecret } from "@/lib/cron/auth";
 import { prisma } from "@/lib/prisma";
+import { reapExpiredIdempotencyRecords } from "@/lib/pwa/offline-mutation";
 import {
   enqueueReschedule,
   isQueueConfigured,
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   if (unauthorized) return unauthorized;
 
   const startedAt = Date.now();
-  await reapSchedulingRuns();
+  await Promise.all([reapSchedulingRuns(), reapExpiredIdempotencyRecords()]);
   const state = await prisma.cronState.upsert({
     where: { id: CRON_STATE_ID },
     update: { lastStartedAt: new Date() },

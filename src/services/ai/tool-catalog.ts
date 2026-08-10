@@ -78,7 +78,8 @@ export const AGENT_TOOL_CATALOG: Record<string, ToolEntry> = {
     schema: object(taskRef),
     definition: {
       name: "delete_task",
-      description: "Delete a task by id or exact title. Requires confirmation.",
+      description:
+        "Archive a task by id or exact title. Requires confirmation and can be restored.",
       parameters: jsonObject({
         taskId: { type: "string" },
         titleQuery: { type: "string" },
@@ -144,7 +145,8 @@ export const AGENT_TOOL_CATALOG: Record<string, ToolEntry> = {
     schema: object({}),
     definition: {
       name: "list_pages",
-      description: "List non-private Pages. Private pages are excluded on the server.",
+      description:
+        "List non-private Pages. Private pages are excluded on the server.",
       parameters: jsonObject({}),
     },
   },
@@ -152,7 +154,8 @@ export const AGENT_TOOL_CATALOG: Record<string, ToolEntry> = {
     schema: object({ query: z.string().min(1).max(200) }),
     definition: {
       name: "search_pages",
-      description: "Search and read non-private Pages. Private pages and descendants are never returned.",
+      description:
+        "Search and read non-private Pages. Private pages and descendants are never returned.",
       parameters: jsonObject({ query: { type: "string" } }, ["query"]),
     },
   },
@@ -164,7 +167,8 @@ export const AGENT_TOOL_CATALOG: Record<string, ToolEntry> = {
     }),
     definition: {
       name: "propose_page_changes",
-      description: "Create a preview-only proposal to append AI-written text to a non-private page. Nothing is applied until the user approves the diff.",
+      description:
+        "Create a preview-only proposal to append AI-written text to a non-private page. Nothing is applied until the user approves the diff.",
       parameters: jsonObject(
         {
           pageId: { type: "string" },

@@ -1,7 +1,17 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
+import type { WorkspaceRole } from "@prisma/client";
+
+import { authSecret } from "@/lib/auth/auth-secret";
+import {
+  type WorkspaceAccess,
+  WorkspaceAuthorizationError,
+  requestedWorkspaceId,
+  resolveWorkspaceAccess,
+} from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
+import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "APIAuth";
 
@@ -13,12 +23,16 @@ const LOG_SOURCE = "APIAuth";
  */
 export async function authenticateRequest(
   request: NextRequest,
-  logSource: string
-) {
+  logSource: string,
+  options: { requiredRole?: WorkspaceRole } = {}
+): Promise<
+  | { userId: string; workspace?: WorkspaceAccess; response?: undefined }
+  | { response: NextResponse; userId?: undefined; workspace?: undefined }
+> {
   // Get the user token from the request
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: authSecret(),
   });
 
   // If there's no token, return unauthorized
@@ -33,7 +47,29 @@ export async function authenticateRequest(
     return { response: new NextResponse("Unauthorized", { status: 401 }) };
   }
 
-  return { userId };
+  try {
+    const workspace = await resolveWorkspaceAccess({
+      userId,
+      requestedWorkspaceId: requestedWorkspaceId(request),
+      requiredRole: options.requiredRole,
+    });
+    return { userId, workspace };
+  } catch (error) {
+    if (error instanceof WorkspaceAuthorizationError) {
+      logger.warn(
+        "Workspace authorization rejected",
+        { userId, code: error.code, path: request.nextUrl.pathname },
+        logSource
+      );
+      return {
+        response: NextResponse.json(
+          { error: error.message, code: error.code },
+          { status: error.status }
+        ),
+      };
+    }
+    throw error;
+  }
 }
 
 /**
@@ -45,12 +81,25 @@ export async function requireAuth(
   req: NextRequest
 ): Promise<NextResponse | null> {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: authSecret() });
 
-    if (!token) {
+    if (!token?.sub) {
       logger.warn(
         "Unauthenticated API access attempt",
         { path: req.nextUrl.pathname },
+        LOG_SOURCE
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: token.sub },
+      select: { isActive: true },
+    });
+    if (!user?.isActive) {
+      logger.warn(
+        "Inactive or missing user attempted API access",
+        { userId: token.sub, path: req.nextUrl.pathname },
         LOG_SOURCE
       );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -83,9 +132,9 @@ export async function requireAdmin(
   req: NextRequest
 ): Promise<NextResponse | null> {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: authSecret() });
 
-    if (!token) {
+    if (!token?.sub) {
       logger.warn(
         "Unauthenticated admin API access attempt",
         { path: req.nextUrl.pathname },
@@ -94,10 +143,23 @@ export async function requireAdmin(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (token.role !== "admin") {
+    const user = await prisma.user.findUnique({
+      where: { id: token.sub },
+      select: { isActive: true, role: true },
+    });
+    if (!user?.isActive) {
+      logger.warn(
+        "Inactive or missing user attempted admin API access",
+        { userId: token.sub, path: req.nextUrl.pathname },
+        LOG_SOURCE
+      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.role !== "admin") {
       logger.warn(
         "Non-admin user attempted to access admin API",
-        { userId: token.sub ?? "unknown", path: req.nextUrl.pathname },
+        { userId: token.sub, path: req.nextUrl.pathname },
         LOG_SOURCE
       );
 

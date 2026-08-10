@@ -20,7 +20,6 @@ import {
   Quote,
   SquareCheckBig,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import {
   BlockIdentity,
@@ -33,8 +32,13 @@ import {
 import type { AgendaGroup } from "@/components/today/AgendaTaskSection";
 import { TaskGroupReference } from "@/components/today/TaskGroupReference";
 import { TaskReference } from "@/components/today/TaskReference";
-import { collectTaskReferenceIds } from "@/components/today/task-reference-utils";
+import { DailyAgendaAutosave } from "@/components/today/daily-agenda-autosave";
+import {
+  collapseDuplicateTaskReferences,
+  collectTaskReferenceIds,
+} from "@/components/today/task-reference-utils";
 
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { randomId } from "@/lib/uuid";
 
@@ -202,6 +206,7 @@ export function DailyAgendaEditor({
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const dateKeyRef = useRef(dateKey);
+  const revisionByDateRef = useRef(new Map<string, string | null>());
   const documentFormatVersionRef = useRef(documentFormatVersion);
   const hydratedKeyRef = useRef<string | null>(null);
   const createTaskRef = useRef(onCreateTask);
@@ -211,9 +216,7 @@ export function DailyAgendaEditor({
   const durationChangeRef = useRef(onDurationChange);
   const referencedIdsChangeRef = useRef(onReferencedTaskIdsChange);
   const groupsRef = useRef(groups);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingSavesRef = useRef(new Map<string, string>());
-  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const autosaveRef = useRef<DailyAgendaAutosave | null>(null);
   const scheduleSaveRef = useRef<(content: string) => void>(() => undefined);
   const [saveState, setSaveState] = useState<SaveState>("loading");
   const [loadVersion, setLoadVersion] = useState(0);
@@ -234,63 +237,40 @@ export function DailyAgendaEditor({
   referencedIdsChangeRef.current = onReferencedTaskIdsChange;
   groupsRef.current = groups;
 
-  const flushSave = (targetDate?: string) => {
-    const pending = Array.from(pendingSavesRef.current.entries())
-      .filter(([date]) => !targetDate || date === targetDate)
-      .map(([date, content]) => ({ date, content }));
-    if (pending.length === 0) return saveQueueRef.current;
-
-    for (const { date, content } of pending) {
-      if (pendingSavesRef.current.get(date) === content) {
-        pendingSavesRef.current.delete(date);
-      }
-    }
-    if (pending.some(({ date }) => dateKeyRef.current === date)) {
-      setSaveState("saving");
-    }
-
-    const request = saveQueueRef.current
-      .catch(() => undefined)
-      .then(async () => {
-        for (const entry of pending) {
-          try {
-            const response = await fetch("/api/daily-agenda", {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                ...entry,
-                documentFormatVersion: documentFormatVersionRef.current,
-              }),
-            });
-            if (!response.ok) throw new Error("Agenda save failed");
-            if (
-              !pendingSavesRef.current.has(entry.date) &&
-              dateKeyRef.current === entry.date
-            ) {
-              localStorage.removeItem(`needt-agenda-draft:${entry.date}`);
-              setSaveState("saved");
-            }
-          } catch {
-            // Never replace a newer local edit with the failed request body.
-            if (!pendingSavesRef.current.has(entry.date)) {
-              pendingSavesRef.current.set(entry.date, entry.content);
-            }
-            if (dateKeyRef.current === entry.date) setSaveState("error");
-          }
+  if (!autosaveRef.current) {
+    autosaveRef.current = new DailyAgendaAutosave({
+      getActiveDate: () => dateKeyRef.current,
+      getDocumentFormatVersion: () => documentFormatVersionRef.current,
+      onStateChange: setSaveState,
+      persistDraft: (date, content) =>
+        localStorage.setItem(`needt-agenda-draft:${date}`, content),
+      removeDraft: (date) =>
+        localStorage.removeItem(`needt-agenda-draft:${date}`),
+      save: async (entry) => {
+        const response = await fetch("/api/daily-agenda", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "If-Match": revisionByDateRef.current.get(entry.date) ?? "none",
+          },
+          body: JSON.stringify(entry),
+        });
+        if (!response.ok) throw new Error("Agenda save failed");
+        if (response.status !== 202) {
+          const saved = (await response.json()) as { updatedAt: string };
+          revisionByDateRef.current.set(entry.date, saved.updatedAt);
         }
-      });
-    saveQueueRef.current = request;
-    return request;
-  };
+      },
+    });
+  }
+
+  const flushSave = (targetDate?: string) =>
+    autosaveRef.current?.flush(targetDate) ?? Promise.resolve();
 
   scheduleSaveRef.current = (content: string) => {
     const hydratedDate = hydratedKeyRef.current;
     if (!hydratedDate || hydratedDate !== dateKeyRef.current) return;
-    pendingSavesRef.current.set(hydratedDate, content);
-    localStorage.setItem(`needt-agenda-draft:${hydratedDate}`, content);
-    setSaveState("saving");
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => void flushSave(), 550);
+    autosaveRef.current?.schedule(hydratedDate, content);
   };
 
   const editor = useEditor({
@@ -339,11 +319,6 @@ export function DailyAgendaEditor({
               ? (index + 1) % count
               : (index - 1 + count) % count;
           });
-          return true;
-        }
-        if (slash && event.key === "Enter" && filteredItems[slashIndex]) {
-          event.preventDefault();
-          applyCommand(filteredItems[slashIndex].id);
           return true;
         }
         if (event.key === "Escape") {
@@ -403,10 +378,17 @@ export function DailyAgendaEditor({
           return true;
         }
 
+        if (slash && event.key === "Enter" && filteredItems[slashIndex]) {
+          event.preventDefault();
+          applyCommand(filteredItems[slashIndex].id);
+          return true;
+        }
+
         return false;
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
+      if (collapseDuplicateTaskReferences(currentEditor)) return;
       if (ensureBlockIds(currentEditor)) return;
       scheduleSaveRef.current(encodeDocument("today", currentEditor.getJSON()));
       referencedIdsChangeRef.current(
@@ -452,7 +434,6 @@ export function DailyAgendaEditor({
     if (!editor) return;
     const controller = new AbortController();
 
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     hydratedKeyRef.current = null;
     editor.setEditable(false);
     editor.commands.setContent("<p></p>", { emitUpdate: false });
@@ -469,14 +450,19 @@ export function DailyAgendaEditor({
           { signal: controller.signal }
         );
         if (!response.ok) throw new Error("Agenda load failed");
-        const agenda = (await response.json()) as { content?: string };
+        const agenda = (await response.json()) as {
+          content?: string;
+          updatedAt?: string | null;
+        };
         if (controller.signal.aborted) return;
+        revisionByDateRef.current.set(dateKey, agenda.updatedAt ?? null);
         const localDraft = localStorage.getItem(
           `needt-agenda-draft:${dateKey}`
         );
         const stored = localDraft || agenda.content || "";
         const decoded = decodeDocument(stored, "today");
         editor.commands.setContent(decoded, { emitUpdate: false });
+        collapseDuplicateTaskReferences(editor);
         ensureAgendaGroups(editor);
         ensureBlockIds(editor);
         hydratedKeyRef.current = dateKey;
@@ -497,10 +483,17 @@ export function DailyAgendaEditor({
 
     return () => {
       controller.abort();
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       void flushSave();
     };
   }, [dateKey, editor, loadVersion]);
+
+  useEffect(
+    () => () => {
+      autosaveRef.current?.dispose();
+      void autosaveRef.current?.flush();
+    },
+    []
+  );
 
   const filteredItems = useMemo(() => {
     if (!slash?.query) return SLASH_ITEMS;

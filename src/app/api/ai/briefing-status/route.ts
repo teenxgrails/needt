@@ -9,7 +9,7 @@ const LOG_SOURCE = "ai-briefing-status";
 export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
-  const status = await getTodayScheduleSummary(auth.userId);
+  const status = await getTodayScheduleSummary(auth.userId, auth.workspace!);
   return NextResponse.json({
     overloaded: status.overloaded,
     scheduledMinutes: status.scheduledMinutes,

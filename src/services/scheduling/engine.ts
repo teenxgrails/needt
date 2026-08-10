@@ -6,6 +6,7 @@ export type SchedulingTaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 export interface SchedulableTask {
   id: string;
   title: string;
+  assigneeId: string | null;
   status?: string;
   createdAt?: Date;
   estimatedMinutes?: number | null;
@@ -612,7 +613,8 @@ export function scheduleTasks(input: {
   //    buffers, breaks, hard-stop time, and daily deep-work limits.
   // 5. Try energy-matched slots first, then gracefully fall back to any valid
   //    work slot so the planner reports capacity instead of silently failing.
-  const frozenBlocks = input.tasks
+  const assignedTasks = input.tasks.filter((task) => Boolean(task.assigneeId));
+  const frozenBlocks = assignedTasks
     .filter((task) => task.isFrozen)
     .map(toFrozenBlock)
     .filter((block): block is ScheduledBlock => block !== null);
@@ -632,8 +634,17 @@ export function scheduleTasks(input: {
     })),
   ];
 
-  const unscheduled: UnscheduledTask[] = [];
+  const unscheduled: UnscheduledTask[] = input.tasks
+    .filter((task) => !isDone(task) && !task.assigneeId)
+    .map((task) => ({
+      taskId: task.id,
+      title: task.title,
+      reason: "NO_ASSIGNEE",
+    }));
   const unscheduledTaskIds = new Set<string>();
+  for (const task of unscheduled) {
+    unscheduledTaskIds.add(task.taskId);
+  }
   const placedTaskEnds = new Map<string, Date>();
   const deepWorkByDay = new Map<string, number>();
   const blocks: ScheduledBlock[] = [];
@@ -643,7 +654,7 @@ export function scheduleTasks(input: {
   }
 
   const candidateTasks = sortTasks(
-    input.tasks.filter((task) => !isDone(task) && !task.isFrozen),
+    assignedTasks.filter((task) => !isDone(task) && !task.isFrozen),
     input.now
   );
   const planningHorizonEnd = addMinutes(

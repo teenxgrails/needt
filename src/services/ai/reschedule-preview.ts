@@ -1,6 +1,10 @@
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 import { Prisma } from "@prisma/client";
 
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -40,6 +44,7 @@ type ScheduleToken = {
   version: 1;
   kind: "preview" | "undo";
   userId: string;
+  workspaceId: string;
   expiresAt: string;
   before: ScheduleSnapshot;
   after: ScheduleSnapshot;
@@ -54,10 +59,14 @@ export type RescheduleChange = {
   toEnd: string | null;
 };
 
-async function captureSnapshot(userId: string): Promise<ScheduleSnapshot> {
+async function captureSnapshot(
+  userId: string,
+  workspace: WorkspaceAccess
+): Promise<ScheduleSnapshot> {
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const [tasks, blocks] = await Promise.all([
     prisma.task.findMany({
-      where: { userId, isArchived: false },
+      where: { ...scope, isArchived: false },
       select: {
         id: true,
         title: true,
@@ -70,7 +79,7 @@ async function captureSnapshot(userId: string): Promise<ScheduleSnapshot> {
       },
     }),
     prisma.scheduledBlock.findMany({
-      where: { userId },
+      where: { userId, task: scope },
       select: {
         taskId: true,
         start: true,
@@ -98,6 +107,7 @@ async function captureSnapshot(userId: string): Promise<ScheduleSnapshot> {
 
 async function computeStagedSnapshot(
   userId: string,
+  workspace: WorkspaceAccess,
   before: ScheduleSnapshot
 ): Promise<ScheduleSnapshot> {
   const [legacy, preferences, energyWindows, sourceTasks] = await Promise.all([
@@ -106,7 +116,7 @@ async function computeStagedSnapshot(
     prisma.energyProfileWindow.findMany({ where: { userId } }),
     prisma.task.findMany({
       where: {
-        userId,
+        ...workspaceDataScopeWhere(workspace, userId),
         isArchived: false,
         OR: [{ isAutoScheduled: true }, { autoScheduled: true }],
         status: { notIn: ["completed", "in_progress"] },
@@ -210,7 +220,11 @@ async function computeStagedSnapshot(
         originalId: id,
         dependsOnId,
         staged: await prisma.task.create({
-          data: { ...task, userId: stagingUser.id },
+          data: {
+            ...task,
+            userId: stagingUser.id,
+            assigneeId: stagingUser.id,
+          },
           select: { id: true },
         }),
       }))
@@ -310,9 +324,14 @@ async function computeStagedSnapshot(
   }
 }
 
-async function restoreSnapshot(userId: string, snapshot: ScheduleSnapshot) {
+async function restoreSnapshot(
+  userId: string,
+  workspace: WorkspaceAccess,
+  snapshot: ScheduleSnapshot
+) {
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const ownedTasks = await prisma.task.findMany({
-    where: { userId, id: { in: snapshot.tasks.map((task) => task.id) } },
+    where: { ...scope, id: { in: snapshot.tasks.map((task) => task.id) } },
     select: { id: true },
   });
   const ownedIds = new Set(ownedTasks.map((task) => task.id));
@@ -326,7 +345,7 @@ async function restoreSnapshot(userId: string, snapshot: ScheduleSnapshot) {
     await Promise.all(
       tasks.map((task) =>
         tx.task.updateMany({
-          where: { id: task.id, userId },
+          where: { id: task.id, ...scope },
           data: {
             scheduledStart: task.scheduledStart
               ? newDate(task.scheduledStart)
@@ -387,6 +406,7 @@ export function diffScheduleSnapshots(
 function encodeToken(
   kind: ScheduleToken["kind"],
   userId: string,
+  workspaceId: string,
   before: ScheduleSnapshot,
   after: ScheduleSnapshot
 ) {
@@ -395,6 +415,7 @@ function encodeToken(
       version: 1,
       kind,
       userId,
+      workspaceId,
       expiresAt: newDate(newDate().getTime() + TOKEN_TTL_MS).toISOString(),
       before,
       after,
@@ -405,6 +426,7 @@ function encodeToken(
 function decodeToken(
   token: string,
   userId: string,
+  workspaceId: string,
   kind: ScheduleToken["kind"]
 ) {
   const decrypted = decryptSecret(token);
@@ -414,6 +436,7 @@ function decodeToken(
     value.version !== 1 ||
     value.kind !== kind ||
     value.userId !== userId ||
+    value.workspaceId !== workspaceId ||
     newDate(value.expiresAt) < newDate()
   ) {
     throw new Error("Expired or invalid schedule token");
@@ -421,9 +444,12 @@ function decodeToken(
   return value;
 }
 
-export async function createReschedulePreview(userId: string) {
-  const before = await captureSnapshot(userId);
-  const after = await computeStagedSnapshot(userId, before);
+export async function createReschedulePreview(
+  userId: string,
+  workspace: WorkspaceAccess
+) {
+  const before = await captureSnapshot(userId, workspace);
+  const after = await computeStagedSnapshot(userId, workspace, before);
   const changes = diffScheduleSnapshots(before, after);
   logger.info(
     "Created schedule preview",
@@ -432,24 +458,44 @@ export async function createReschedulePreview(userId: string) {
   );
   return {
     changes,
-    previewToken: encodeToken("preview", userId, before, after),
+    previewToken: encodeToken(
+      "preview",
+      userId,
+      workspace.workspaceId,
+      before,
+      after
+    ),
   };
 }
 
-export async function applyReschedulePreview(userId: string, token: string) {
-  const value = decodeToken(token, userId, "preview");
-  await restoreSnapshot(userId, value.after);
+export async function applyReschedulePreview(
+  userId: string,
+  workspace: WorkspaceAccess,
+  token: string
+) {
+  const value = decodeToken(token, userId, workspace.workspaceId, "preview");
+  await restoreSnapshot(userId, workspace, value.after);
   await publishScheduleChange(userId);
   logger.info("Applied schedule preview", { userId }, LOG_SOURCE);
   return {
     changes: diffScheduleSnapshots(value.before, value.after),
-    undoToken: encodeToken("undo", userId, value.before, value.after),
+    undoToken: encodeToken(
+      "undo",
+      userId,
+      workspace.workspaceId,
+      value.before,
+      value.after
+    ),
   };
 }
 
-export async function undoReschedulePreview(userId: string, token: string) {
-  const value = decodeToken(token, userId, "undo");
-  await restoreSnapshot(userId, value.before);
+export async function undoReschedulePreview(
+  userId: string,
+  workspace: WorkspaceAccess,
+  token: string
+) {
+  const value = decodeToken(token, userId, workspace.workspaceId, "undo");
+  await restoreSnapshot(userId, workspace, value.before);
   await publishScheduleChange(userId);
   logger.info("Undid schedule preview", { userId }, LOG_SOURCE);
   return { changes: diffScheduleSnapshots(value.after, value.before) };

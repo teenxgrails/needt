@@ -3,6 +3,8 @@ import { getCalibrationContext } from "@/services/time-tracking/calibration";
 import { canAutoScheduleMore } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
+import { deriveProjectBlockerDependencies } from "@/lib/projects/blockers";
 
 import { ProjectStatus } from "@/types/project";
 import {
@@ -37,6 +39,7 @@ const DEFAULT_WORK_HOURS: SchedulingPreferences["workHours"] = {
 type DbTaskWithRelations = {
   id: string;
   title: string;
+  assigneeId: string | null;
   description: string | null;
   status: string;
   dueDate: Date | null;
@@ -65,6 +68,16 @@ type DbTaskWithRelations = {
       status: string;
     };
   }[];
+  projectBlockersTargeted?: {
+    id: string;
+    blockerTask: { status: string } | null;
+  }[];
+  stage?: {
+    blockers: {
+      id: string;
+      blockerTask: { status: string } | null;
+    }[];
+  } | null;
   autoScheduled: boolean;
   scheduledBlocks?: {
     id: string;
@@ -183,9 +196,14 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
     task.startDate,
     task.postponedUntil,
   ].filter((value): value is Date => value !== null);
+  const projectBlockers = deriveProjectBlockerDependencies([
+    ...(task.projectBlockersTargeted ?? []),
+    ...(task.stage?.blockers ?? []),
+  ]);
   return {
     id: task.id,
     title: task.title,
+    assigneeId: task.assigneeId,
     status: task.status,
     createdAt: task.createdAt,
     estimatedMinutes: task.estLikely ?? task.estimatedMinutes,
@@ -205,9 +223,12 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
     contextTag: task.contextTag,
     isFrozen: task.isFrozen || task.scheduleLocked,
     dependsOnId: task.dependsOnId,
-    dependencyIds: task.blockedByDependencies?.map(
-      (dependency) => dependency.blockerTaskId
-    ),
+    dependencyIds: [
+      ...(task.blockedByDependencies?.map(
+        (dependency) => dependency.blockerTaskId
+      ) ?? []),
+      ...projectBlockers.dependencyIds,
+    ],
     completedDependencyIds: [
       ...(task.blockedByDependencies
         ?.filter(
@@ -217,6 +238,7 @@ function toSchedulableTask(task: DbTaskWithRelations): SchedulableTask {
       ...(task.dependsOnId && task.dependsOn?.status === TaskStatus.COMPLETED
         ? [task.dependsOnId]
         : []),
+      ...projectBlockers.completedDependencyIds,
     ],
     autoScheduled: task.autoScheduled || task.isAutoScheduled,
     scheduledStart: task.scheduledStart,
@@ -329,7 +351,7 @@ function summarizeSchedule(result: ScheduleResult) {
 
 export async function scheduleAllTasksForUserDetailed(
   userId: string,
-  options: { entitlementUserId?: string } = {}
+  options: { entitlementUserId?: string; workspaceId?: string } = {}
 ): Promise<{ tasks: TaskWithRelations[]; scheduleResult: ScheduleResult }> {
   try {
     logger.info("Starting task scheduling for user", { userId }, LOG_SOURCE);
@@ -380,7 +402,9 @@ export async function scheduleAllTasksForUserDetailed(
     );
     const busyEvents = await prisma.calendarEvent.findMany({
       where: {
+        archivedAt: null,
         feedId: { in: selectedCalendarIds },
+        feed: { userId, enabled: true },
         start: { lt: addDays(now, DEFAULT_HORIZON_DAYS) },
         end: { gt: now },
         OR: [
@@ -388,18 +412,21 @@ export async function scheduleAllTasksForUserDetailed(
           { NOT: { description: { startsWith: "[NEEDT_DAY_BLOCK]" } } },
         ],
       },
+      select: { id: true, start: true, end: true },
     });
 
     let dbTasks = (await prisma.task.findMany({
       where: {
+        ...(options.workspaceId ? { workspaceId: options.workspaceId } : {}),
         OR: [{ isAutoScheduled: true }, { autoScheduled: true }],
         status: {
           not: {
             in: [TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS],
           },
         },
-        userId,
+        assigneeId: userId,
         isArchived: false,
+        AND: [activeProjectTaskWhere],
       },
       include: {
         project: true,
@@ -407,8 +434,27 @@ export async function scheduleAllTasksForUserDetailed(
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
         dependsOn: { select: { status: true } },
         blockedByDependencies: {
+          where: { removedAt: null },
           include: {
             blocker: { select: { status: true } },
+          },
+        },
+        projectBlockersTargeted: {
+          where: { resolvedAt: null },
+          select: {
+            id: true,
+            blockerTask: { select: { status: true } },
+          },
+        },
+        stage: {
+          select: {
+            blockers: {
+              where: { resolvedAt: null },
+              select: {
+                id: true,
+                blockerTask: { select: { status: true } },
+              },
+            },
           },
         },
       },
@@ -436,7 +482,7 @@ export async function scheduleAllTasksForUserDetailed(
       busyBlocks: busyEvents.map(
         (event): CalendarBusyBlock => ({
           id: event.id,
-          title: event.title,
+          title: "Busy",
           start: event.start,
           end: event.end,
           source: "calendar",
@@ -492,7 +538,7 @@ export async function scheduleAllTasksForUserDetailed(
             .filter((task) => !task.scheduleLocked && !task.isFrozen)
             .map((task) => task.id),
         },
-        userId,
+        assigneeId: userId,
       },
       data: {
         scheduledStart: null,
@@ -522,7 +568,7 @@ export async function scheduleAllTasksForUserDetailed(
     await Promise.all(
       [...firstBlockByTask.values()].map((block) =>
         prisma.task.update({
-          where: { id: block.taskId, userId },
+          where: { id: block.taskId, assigneeId: userId },
           data: {
             scheduledStart: block.start,
             scheduledEnd: block.end,
@@ -551,8 +597,10 @@ export async function scheduleAllTasksForUserDetailed(
 
     const updatedDbTasks = (await prisma.task.findMany({
       where: {
-        userId,
+        ...(options.workspaceId ? { workspaceId: options.workspaceId } : {}),
+        assigneeId: userId,
         isArchived: false,
+        AND: [activeProjectTaskWhere],
       },
       include: {
         tags: true,
@@ -590,7 +638,7 @@ export async function scheduleAllTasksForUserDetailed(
 
 export async function scheduleAllTasksForUser(
   userId: string,
-  options: { entitlementUserId?: string } = {}
+  options: { entitlementUserId?: string; workspaceId?: string } = {}
 ): Promise<TaskWithRelations[]> {
   const { tasks } = await scheduleAllTasksForUserDetailed(userId, options);
   return tasks;

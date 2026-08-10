@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 
-import Image from "next/image";
 import { signOut } from "next-auth/react";
+import Image from "next/image";
 
 import { LogOut, UserRound } from "lucide-react";
 
 import { useAppSession } from "@/components/providers/app-session-context";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+
+import { clearNeedtOfflineData } from "@/lib/pwa/offline-client";
 
 import { SettingRow, SettingsCard, SettingsSection } from "./SettingsSection";
 
@@ -19,6 +21,7 @@ export function AccountSettings() {
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    await clearNeedtOfflineData();
     await signOut({ callbackUrl: "/auth/signin" });
   };
 

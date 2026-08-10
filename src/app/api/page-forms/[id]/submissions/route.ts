@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { PageAccessRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "PageFormSubmissionsAPI";
@@ -17,11 +20,14 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   if ("response" in auth) return auth.response;
   const { id } = await params;
   const form = await prisma.pageForm.findFirst({
-    where: { id, page: { userId: auth.userId } },
-    select: { id: true },
+    where: { id },
+    select: { id: true, pageId: true },
   });
   if (!form)
     return NextResponse.json({ error: "Form not found" }, { status: 404 });
+  if (!(await resolvePageAccess(auth, form.pageId, PageAccessRole.EDITOR))) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
+  }
   const submissions = await prisma.pageFormSubmission.findMany({
     where: { formId: id },
     orderBy: { submittedAt: "desc" },
@@ -34,10 +40,13 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   if ("response" in auth) return auth.response;
   const { id } = await params;
   const form = await prisma.pageForm.findFirst({
-    where: { id, isActive: true, page: { userId: auth.userId } },
+    where: { id, isActive: true },
   });
   if (!form)
     return NextResponse.json({ error: "Form not found" }, { status: 404 });
+  if (!(await resolvePageAccess(auth, form.pageId))) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
+  }
   const body = (await request.json().catch(() => ({}))) as Record<
     string,
     unknown

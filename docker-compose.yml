@@ -18,6 +18,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  collaboration:
+    image: ghcr.io/teenxgrails/needt:main
+    command: ["node", "dist/collaboration/index.js"]
+    ports:
+      - "1234:1234"
+    env_file:
+      - .env
+    environment:
+      - COLLABORATION_HOST=0.0.0.0
+      - COLLABORATION_PORT=1234
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     environment:

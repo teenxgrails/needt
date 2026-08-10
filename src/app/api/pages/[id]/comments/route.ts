@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { PageAccessRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "PageCommentsAPI";
@@ -10,14 +13,10 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
-  const page = await prisma.page.findFirst({
-    where: { id, userId: auth.userId, trashedAt: null },
-    select: { id: true },
-  });
-  if (!page)
-    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  if (!(await resolvePageAccess(auth, id)))
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
   const comments = await prisma.pageComment.findMany({
-    where: { pageId: id, userId: auth.userId },
+    where: { pageId: id },
     orderBy: [{ resolvedAt: "asc" }, { createdAt: "desc" }],
   });
   return NextResponse.json({ comments });
@@ -38,12 +37,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       { status: 400 }
     );
   }
-  const page = await prisma.page.findFirst({
-    where: { id, userId: auth.userId, trashedAt: null },
-    select: { id: true },
-  });
-  if (!page)
-    return NextResponse.json({ error: "Page not found" }, { status: 404 });
+  if (!(await resolvePageAccess(auth, id, PageAccessRole.EDITOR)))
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
   const blockId = typeof body.blockId === "string" ? body.blockId : null;
   if (
     blockId &&

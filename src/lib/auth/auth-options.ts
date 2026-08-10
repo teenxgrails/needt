@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 
 import { getGoogleCredentials, getOutlookCredentials } from "@/lib/auth";
+import { authSecret } from "@/lib/auth/auth-secret";
 import { authenticateUser } from "@/lib/auth/credentials-provider";
 import { logger } from "@/lib/logger";
 import { MICROSOFT_GRAPH_SCOPES } from "@/lib/outlook";
@@ -25,16 +26,42 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
   const googleCredentials = await getGoogleCredentials();
   const outlookCredentials = await getOutlookCredentials();
 
-  return {
-    // Add secret for production - required for security
-    secret:
-      process.env.NEXTAUTH_SECRET ||
-      // Fallback secret - only used if NEXTAUTH_SECRET is not set
-      // In production, this should always be set via environment variable
-      "EM2RYkch0Uj+Qt2Cu0eDCmo/kv0MenNnHUaciNAjSrM=",
+  const providers: NextAuthOptions["providers"] = [
+    // Add credentials provider for email/password authentication
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          logger.warn("Missing credentials", {}, LOG_SOURCE);
+          return null;
+        }
 
-    providers: [
-      // Keep existing providers for calendar connections
+        try {
+          const user = await authenticateUser(
+            credentials.email,
+            credentials.password
+          );
+          return user;
+        } catch (error) {
+          logger.error(
+            "Error in credentials authorization",
+            {
+              error: error instanceof Error ? error.message : "Unknown error",
+            },
+            LOG_SOURCE
+          );
+          return null;
+        }
+      },
+    }),
+  ];
+
+  if (googleCredentials.clientId && googleCredentials.clientSecret) {
+    providers.unshift(
       GoogleProvider({
         clientId: googleCredentials.clientId,
         clientSecret: googleCredentials.clientSecret,
@@ -47,7 +74,16 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
             response_type: "code",
           },
         },
-      }),
+      })
+    );
+  }
+
+  if (
+    outlookCredentials.clientId &&
+    outlookCredentials.clientSecret &&
+    outlookCredentials.tenantId
+  ) {
+    providers.unshift(
       AzureADProvider({
         clientId: outlookCredentials.clientId,
         clientSecret: outlookCredentials.clientSecret,
@@ -57,39 +93,15 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
             scope: MICROSOFT_GRAPH_SCOPES.join(" "),
           },
         },
-      }),
-      // Add credentials provider for email/password authentication
-      CredentialsProvider({
-        name: "Credentials",
-        credentials: {
-          email: { label: "Email", type: "email" },
-          password: { label: "Password", type: "password" },
-        },
-        async authorize(credentials) {
-          if (!credentials?.email || !credentials?.password) {
-            logger.warn("Missing credentials", {}, LOG_SOURCE);
-            return null;
-          }
+      })
+    );
+  }
 
-          try {
-            const user = await authenticateUser(
-              credentials.email,
-              credentials.password
-            );
-            return user;
-          } catch (error) {
-            logger.error(
-              "Error in credentials authorization",
-              {
-                error: error instanceof Error ? error.message : "Unknown error",
-              },
-              LOG_SOURCE
-            );
-            return null;
-          }
-        },
-      }),
-    ],
+  return {
+    // Add secret for production - required for security
+    secret: authSecret(),
+
+    providers,
     callbacks: {
       async jwt({ token, account, profile, user }) {
         // Initial sign in

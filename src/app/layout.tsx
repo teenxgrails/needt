@@ -1,5 +1,7 @@
 import Script from "next/script";
 
+import "@excalidraw/excalidraw/index.css";
+
 import { AmbientBackdrop } from "@/components/liquid";
 import { Providers } from "@/components/providers";
 

@@ -6,6 +6,8 @@ data; a wrong placement or a lost recurrence master is expensive.
 **Ships independently.** No workspace concepts here; everything stays
 `userId`-scoped. Later plans build on top.
 
+**Status:** complete (2026-08-08).
+
 ## Context (verified against the code)
 
 - `hardDeadline` already exists as a `Boolean` on Task (`prisma/schema.prisma:354`),

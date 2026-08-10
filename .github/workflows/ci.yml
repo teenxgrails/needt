@@ -102,6 +102,8 @@ jobs:
       - run: npm run check:branding
       - run: npm run check:ui-contracts
       - run: npm run test:unit -- --runInBand
+      - run: npm run build:collaboration
+      - run: npm run check:collaboration-runtime
 
   schema-drift:
     runs-on: ubuntu-latest
@@ -174,7 +176,8 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npx tsx prisma/ci-seed.ts
       - run: npx playwright install --with-deps
-      - run: npm run test:e2e
+      - name: Run E2E and collaboration authorization smoke
+        run: npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

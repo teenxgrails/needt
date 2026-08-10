@@ -12,11 +12,13 @@ import {
   Download,
   FileText,
   Focus,
+  Palette,
   Search,
   Settings,
   Sparkles,
   Sun,
 } from "lucide-react";
+import { HiOutlineFolder } from "react-icons/hi";
 
 import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
@@ -88,6 +90,7 @@ export const AppNav = memo(function AppNav({
       "/today",
       "/calendar",
       "/tasks",
+      "/projects",
       "/focus",
       "/pages",
       "/settings",
@@ -136,22 +139,27 @@ export const AppNav = memo(function AppNav({
     },
     {
       href: "/tasks",
-      label: "Workspace",
+      label: "Tasks",
       icon: CheckSquare,
       badge: overdueCount,
     },
+    { href: "/projects", label: "Projects", icon: HiOutlineFolder },
     { href: "/focus", label: "Focus", icon: Focus },
+    { href: "/moodboards", label: "Moodboards", icon: Palette },
   ];
   const tabletLinks = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/today", label: "Today", icon: Sun },
     { href: "/tasks", label: "Tasks", icon: CheckSquare },
+    { href: "/projects", label: "Projects", icon: HiOutlineFolder },
     { href: "/focus", label: "Focus", icon: Focus },
+    { href: "/moodboards", label: "Moodboards", icon: Palette },
   ];
   const phoneLinks = [
     { href: "/calendar", label: "Calendar", icon: CalendarDays },
     { href: "/today", label: "Today", icon: CalendarDays },
     { href: "/focus", label: "Focus", icon: CircleDashed },
+    { href: "/moodboards", label: "Moodboards", icon: Palette },
   ];
   return (
     <aside
@@ -373,6 +381,7 @@ export const AppNav = memo(function AppNav({
       {isSettings && (
         <Link
           href="/chat"
+          data-assistant-avoid
           aria-label="Open AI Chat"
           className="fixed right-3 z-30 hidden h-11 items-center gap-2 rounded-full border border-[var(--color-accent)] bg-[color-mix(in_srgb,var(--color-accent)_16%,var(--surface-panel))] px-3 text-xs font-medium text-[var(--text-primary)] shadow-sm active:bg-[color-mix(in_srgb,var(--color-accent)_24%,var(--surface-panel))] max-lg:flex"
           style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}

@@ -1,16 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
+import { findTaskProjectMoveConflict } from "@/services/tasks/dependencies";
 import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
-import type { Prisma, Task } from "@prisma/client";
+import {
+  type Prisma,
+  type Task,
+  TaskBusyStatus,
+  WorkspaceRole,
+} from "@prisma/client";
 import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { newDate } from "@/lib/date-utils";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { schedulePushTaskBlock } from "@/lib/task-block-push";
+import {
+  claimOfflineMutation,
+  completeOfflineMutation,
+  failOfflineMutation,
+  offlineRevisionConflict,
+  replayOfflineMutation,
+} from "@/lib/pwa/offline-mutation";
+import {
+  deleteTaskBlockEvent,
+  schedulePushTaskBlock,
+} from "@/lib/task-block-push";
 import { sanitizeTaskDescriptionForStorage } from "@/lib/task-description-format";
 import {
   ChangeType,
@@ -37,13 +54,16 @@ export async function GET(
     const task = await prisma.task.findUnique({
       where: {
         id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         tags: true,
         project: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
+        activities: {
+          include: { actor: { select: { id: true, name: true, image: true } } },
+          orderBy: { createdAt: "desc" },
+        },
       },
     });
 
@@ -68,8 +88,11 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let offlineRecordId: string | null = null;
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -82,17 +105,30 @@ export async function PUT(
     const task = await prisma.task.findUnique({
       where: {
         id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         tags: true,
+        project: { select: { status: true } },
       },
     });
 
     if (!task) {
       logger.warn(`Task not found: ${id}`, { userId }, LOG_SOURCE);
       return new NextResponse("Task not found", { status: 404 });
+    }
+    const offlineOperation = `UPDATE_TASK:${auth.workspace?.workspaceId}:${id}`;
+    const replay = await replayOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (replay) return replay;
+    const revisionConflict = offlineRevisionConflict(request, task.updatedAt);
+    if (revisionConflict) return revisionConflict;
+
+    if (task.project?.status === "archived") {
+      return NextResponse.json({ error: "PROJECT_ARCHIVED" }, { status: 409 });
     }
 
     const json = await request.json();
@@ -109,13 +145,104 @@ export async function PUT(
       );
     }
 
-    const { tagIds, projectId, scheduleId, bypassBlockedHours, ...updates } =
-      json;
+    const {
+      tagIds,
+      projectId,
+      scheduleId,
+      bypassBlockedHours,
+      assigneeId: requestedAssigneeId,
+      ...updates
+    } = json;
     delete updates.project;
     delete updates.userId;
+    delete updates.workspaceId;
+    delete updates.assignee;
+    delete updates.activities;
     delete updates.archivedAt;
     delete updates.recurrenceMasterId;
     delete updates.recurrenceInstanceAt;
+    const workspaceId = task.workspaceId ?? auth.workspace?.workspaceId;
+    if (
+      requestedAssigneeId !== undefined &&
+      requestedAssigneeId !== null &&
+      (typeof requestedAssigneeId !== "string" ||
+        !workspaceId ||
+        (requestedAssigneeId !== userId &&
+          !(await prisma.workspaceMember.findUnique({
+            where: {
+              workspaceId_userId: {
+                workspaceId,
+                userId: requestedAssigneeId,
+              },
+            },
+            select: { id: true },
+          }))))
+    ) {
+      return new NextResponse("Invalid workspace assignee", { status: 400 });
+    }
+    if (
+      updates.busyStatus !== undefined &&
+      !Object.values(TaskBusyStatus).includes(updates.busyStatus)
+    ) {
+      return new NextResponse("Invalid busy status", { status: 400 });
+    }
+    if (
+      updates.stageId !== undefined &&
+      updates.stageId !== null &&
+      typeof updates.stageId !== "string"
+    ) {
+      return new NextResponse("Invalid stage", { status: 400 });
+    }
+    if (
+      projectId &&
+      (!workspaceId ||
+        !(await prisma.project.findFirst({
+          where: { id: projectId, workspaceId, status: "active" },
+          select: { id: true },
+        })))
+    ) {
+      return new NextResponse("Invalid workspace project", { status: 400 });
+    }
+    const targetProjectId =
+      projectId === undefined ? task.projectId : projectId;
+    if (projectId !== undefined && targetProjectId !== task.projectId) {
+      const conflict = await findTaskProjectMoveConflict({
+        userId,
+        workspace: auth.workspace,
+        taskId: id,
+        targetProjectId,
+      });
+      if (conflict) {
+        return NextResponse.json(
+          {
+            error: "PROJECT_DEPENDENCY_CONFLICT",
+            message: `Cannot move task while it is linked to “${conflict.task.title}”. Remove that dependency first.`,
+            conflict,
+          },
+          { status: 409 }
+        );
+      }
+    }
+    const effectiveAssigneeId =
+      requestedAssigneeId !== undefined ? requestedAssigneeId : task.assigneeId;
+    const assigneeChanged =
+      requestedAssigneeId !== undefined &&
+      requestedAssigneeId !== task.assigneeId;
+    if (assigneeChanged && !updates.scheduledStart && !updates.scheduledEnd) {
+      updates.scheduledStart = null;
+      updates.scheduledEnd = null;
+      updates.scheduleLocked = false;
+      updates.scheduleScore = null;
+    }
+    if (
+      effectiveAssigneeId === null &&
+      (updates.scheduledStart || updates.scheduledEnd)
+    ) {
+      return new NextResponse("Assign the task before scheduling it", {
+        status: 400,
+      });
+    }
+    const schedulingUserId = effectiveAssigneeId ?? userId;
     if (
       updates.isArchived !== undefined &&
       typeof updates.isArchived !== "boolean"
@@ -135,7 +262,7 @@ export async function PUT(
     }
     if (scheduleId) {
       const schedule = await prisma.workSchedule.findFirst({
-        where: { id: scheduleId, userId },
+        where: { id: scheduleId, userId: schedulingUserId },
         select: { id: true },
       });
       if (!schedule) {
@@ -149,7 +276,7 @@ export async function PUT(
 
     if (!bypassBlockedHours && updates.scheduledStart && updates.scheduledEnd) {
       const blocked = await isTaskPlacementBlocked(
-        userId,
+        schedulingUserId,
         newDate(updates.scheduledStart),
         newDate(updates.scheduledEnd)
       );
@@ -212,9 +339,7 @@ export async function PUT(
               (1000 * 60 * 60 * 24)
           );
           const calculatedStart = newDate(nextOccurrence);
-          calculatedStart.setDate(
-            calculatedStart.getDate() - startToDueDelta
-          );
+          calculatedStart.setDate(calculatedStart.getDate() - startToDueDelta);
           nextStartDate = calculatedStart;
         }
 
@@ -246,12 +371,13 @@ export async function PUT(
 
     // Find the project's task mapping if it exists
     let mappingId = null;
-    const targetProjectId = projectId || task.projectId;
+    const mappingProjectId =
+      projectId === undefined ? task.projectId : projectId;
 
-    if (targetProjectId) {
+    if (mappingProjectId) {
       const mapping = await prisma.taskListMapping.findFirst({
         where: {
-          projectId: targetProjectId,
+          projectId: mappingProjectId,
         },
       });
       if (mapping) {
@@ -262,14 +388,30 @@ export async function PUT(
     // Save the old task for change tracking
     const oldTask = { ...task };
 
+    const claim = await claimOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (claim.response) return claim.response;
+    offlineRecordId = claim.recordId;
+
     const taskUpdate: Prisma.TaskUpdateArgs = {
       where: {
         id: id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       data: {
         ...updates,
+        ...(requestedAssigneeId !== undefined && {
+          assigneeId: requestedAssigneeId,
+        }),
+        ...(assigneeChanged && {
+          blockEventId: null,
+          blockFeedId: null,
+          blockDirty: false,
+          ...(scheduleId === undefined && { scheduleId: null }),
+        }),
         ...(scheduleId !== undefined && { scheduleId: scheduleId || null }),
         ...(tagIds && {
           tags: {
@@ -283,6 +425,15 @@ export async function PUT(
             : projectId
               ? { connect: { id: projectId } }
               : undefined,
+        ...(workspaceId && {
+          activities: {
+            create: {
+              workspaceId,
+              actorId: userId,
+              action: "UPDATED",
+            },
+          },
+        }),
       },
       include: {
         tags: true,
@@ -324,6 +475,10 @@ export async function PUT(
             energyLevel: task.energyLevel,
             preferredTime: task.preferredTime,
             projectId: task.projectId,
+            workspaceId: task.workspaceId,
+            assigneeId: task.assigneeId,
+            busyStatus: task.busyStatus,
+            stageId: task.stageId,
             scheduleId: task.scheduleId,
             isRecurring: false,
             recurrenceMasterId: task.id,
@@ -341,8 +496,21 @@ export async function PUT(
       updatedTask = await prisma.task.update(taskUpdate);
     }
 
+    if (assigneeChanged) {
+      if (task.blockEventId && task.blockFeedId) {
+        await deleteTaskBlockEvent(
+          task.assigneeId ?? userId,
+          task.blockEventId,
+          task.blockFeedId
+        );
+      }
+      await prisma.scheduledBlock.deleteMany({ where: { taskId: id } });
+    }
+
     if (archiveStateChanged && updates.isArchived) {
-      await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });
+      await prisma.scheduledBlock.deleteMany({
+        where: { taskId: id, userId: schedulingUserId },
+      });
     }
 
     // A manually placed task is represented by one frozen block. Keeping the
@@ -358,7 +526,7 @@ export async function PUT(
         prisma.scheduledBlock.create({
           data: {
             taskId: id,
-            userId,
+            userId: schedulingUserId,
             start: newDate(updates.scheduledStart),
             end: newDate(updates.scheduledEnd),
             chunkIndex: 0,
@@ -370,7 +538,10 @@ export async function PUT(
 
       updatedTask =
         (await prisma.task.findUnique({
-          where: { id, userId },
+          where: {
+            id,
+            ...workspaceDataScopeWhere(auth.workspace, userId),
+          },
           include: {
             tags: true,
             project: true,
@@ -408,7 +579,9 @@ export async function PUT(
     }
 
     // Schedule calendar block push for any changes to scheduled times or status
-    schedulePushTaskBlock(userId, id);
+    if (effectiveAssigneeId !== null) {
+      schedulePushTaskBlock(schedulingUserId, id);
+    }
 
     if (
       updates.status === TaskStatus.COMPLETED &&
@@ -422,8 +595,10 @@ export async function PUT(
       });
     }
 
+    await completeOfflineMutation(offlineRecordId);
     return NextResponse.json(updatedTask);
   } catch (error) {
+    await failOfflineMutation(offlineRecordId);
     logger.error(
       "Error updating task:",
       {
@@ -439,8 +614,11 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let offlineRecordId: string | null = null;
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -451,8 +629,7 @@ export async function DELETE(
     const task = await prisma.task.findUnique({
       where: {
         id,
-        // Ensure the task belongs to the current user
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
       include: {
         project: true,
@@ -462,24 +639,62 @@ export async function DELETE(
     if (!task) {
       return new NextResponse("Task not found", { status: 404 });
     }
+    const offlineOperation = `ARCHIVE_TASK:${auth.workspace?.workspaceId}:${id}`;
+    const replay = await replayOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (replay) return replay;
+    const revisionConflict = offlineRevisionConflict(request, task.updatedAt);
+    if (revisionConflict) return revisionConflict;
+
+    if (task.project?.status === "archived") {
+      return NextResponse.json({ error: "PROJECT_ARCHIVED" }, { status: 409 });
+    }
+
+    const claim = await claimOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (claim.response) return claim.response;
+    offlineRecordId = claim.recordId;
 
     if (!task.isArchived) {
+      const schedulingUserId = task.assigneeId ?? userId;
       await prisma.task.update({
-        where: { id, userId },
+        where: {
+          id,
+          ...workspaceDataScopeWhere(auth.workspace, userId),
+        },
         data: {
           isArchived: true,
           archivedAt: newDate(),
           scheduledStart: null,
           scheduledEnd: null,
           scheduleLocked: false,
+          ...(task.workspaceId && {
+            activities: {
+              create: {
+                workspaceId: task.workspaceId,
+                actorId: userId,
+                action: "ARCHIVED",
+              },
+            },
+          }),
         },
       });
-      await prisma.scheduledBlock.deleteMany({ where: { taskId: id, userId } });
-      schedulePushTaskBlock(userId, id);
+      await prisma.scheduledBlock.deleteMany({
+        where: { taskId: id, userId: schedulingUserId },
+      });
+      schedulePushTaskBlock(schedulingUserId, id);
     }
 
+    await completeOfflineMutation(offlineRecordId);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
+    await failOfflineMutation(offlineRecordId);
     logger.error(
       "Error deleting task:",
       {

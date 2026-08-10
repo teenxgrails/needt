@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { TaskBusyStatus, WorkspaceRole } from "@prisma/client";
 import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { newDate } from "@/lib/date-utils";
 import { getPlan } from "@/lib/entitlements";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
 import { schedulePushTaskBlock } from "@/lib/task-block-push";
 import { sanitizeTaskDescriptionForStorage } from "@/lib/task-description-format";
 import {
@@ -19,6 +22,15 @@ import { normalizeRecurrenceRule } from "@/lib/utils/normalize-recurrence-rules"
 import { EnergyLevel, TaskStatus, TimePreference } from "@/types/task";
 
 const LOG_SOURCE = "tasks-route";
+
+async function isWorkspaceAssignee(workspaceId: string, assigneeId: string) {
+  return Boolean(
+    await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId: assigneeId } },
+      select: { id: true },
+    })
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,9 +58,9 @@ export async function GET(request: NextRequest) {
     const now = newDate();
     const tasks = await prisma.task.findMany({
       where: {
-        // Filter by the current user's ID
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
         isArchived: archived,
+        ...(!archived && { AND: [activeProjectTaskWhere] }),
         ...(status.length > 0 && { status: { in: status } }),
         ...(energyLevel.length > 0 && { energyLevel: { in: energyLevel } }),
         ...(timePreference.length > 0 && {
@@ -102,7 +114,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -110,13 +124,67 @@ export async function POST(request: NextRequest) {
     const userId = auth.userId;
 
     const json = await request.json();
-    const { tagIds, recurrenceRule, scheduleId, ...taskData } = json;
+    const {
+      tagIds,
+      recurrenceRule,
+      scheduleId,
+      assigneeId: requestedAssigneeId,
+      ...taskData
+    } = json;
+    delete taskData.workspaceId;
+    delete taskData.userId;
+    delete taskData.assignee;
+    delete taskData.activities;
     delete taskData.recurrenceMasterId;
     delete taskData.recurrenceInstanceAt;
+    const workspaceId = auth.workspace?.workspaceId;
+    const assigneeId =
+      requestedAssigneeId === undefined ? userId : requestedAssigneeId;
+    if (
+      assigneeId !== null &&
+      (typeof assigneeId !== "string" ||
+        !workspaceId ||
+        (assigneeId !== userId &&
+          !(await isWorkspaceAssignee(workspaceId, assigneeId))))
+    ) {
+      return new NextResponse("Invalid workspace assignee", { status: 400 });
+    }
+    if (
+      taskData.busyStatus !== undefined &&
+      !Object.values(TaskBusyStatus).includes(taskData.busyStatus)
+    ) {
+      return new NextResponse("Invalid busy status", { status: 400 });
+    }
+    if (
+      taskData.stageId !== undefined &&
+      taskData.stageId !== null &&
+      typeof taskData.stageId !== "string"
+    ) {
+      return new NextResponse("Invalid stage", { status: 400 });
+    }
+    if (
+      taskData.projectId &&
+      (!workspaceId ||
+        !(await prisma.project.findFirst({
+          where: { id: taskData.projectId, workspaceId, status: "active" },
+          select: { id: true },
+        })))
+    ) {
+      return new NextResponse("Invalid workspace project", { status: 400 });
+    }
+    if (
+      assigneeId === null &&
+      (taskData.scheduledStart || taskData.scheduledEnd)
+    ) {
+      return new NextResponse("Assign the task before scheduling it", {
+        status: 400,
+      });
+    }
     const description = sanitizeTaskDescriptionForStorage(taskData.description);
+    const schedulingUserId = assigneeId ?? userId;
     if (scheduleId) {
       const schedule = await prisma.workSchedule.findFirst({
-        where: { id: scheduleId, userId },
+        where: { id: scheduleId, userId: schedulingUserId },
         select: { id: true },
       });
       if (!schedule) {
@@ -126,7 +194,7 @@ export async function POST(request: NextRequest) {
 
     if (taskData.scheduledStart && taskData.scheduledEnd) {
       const blocked = await isTaskPlacementBlocked(
-        userId,
+        schedulingUserId,
         newDate(taskData.scheduledStart),
         newDate(taskData.scheduledEnd)
       );
@@ -175,12 +243,23 @@ export async function POST(request: NextRequest) {
         description,
         // Associate the task with the current user
         userId,
+        ...(workspaceId && { workspaceId }),
+        assigneeId,
         scheduleId: scheduleId || null,
         isRecurring: !!recurrenceRule,
         recurrenceRule: standardizedRecurrenceRule,
         ...(tagIds && {
           tags: {
             connect: tagIds.map((id: string) => ({ id })),
+          },
+        }),
+        ...(workspaceId && {
+          activities: {
+            create: {
+              workspaceId,
+              actorId: userId,
+              action: "CREATED",
+            },
           },
         }),
       },
@@ -203,7 +282,7 @@ export async function POST(request: NextRequest) {
           ];
     await prisma.taskReminder.createMany({
       data: defaultReminders.map((reminder) => ({
-        userId,
+        userId: schedulingUserId,
         taskId: task.id,
         ...reminder,
         channels: ["push", "email"],
@@ -235,7 +314,7 @@ export async function POST(request: NextRequest) {
 
     // Schedule calendar block push if task has scheduled times
     if (task.scheduledStart && task.scheduledEnd) {
-      schedulePushTaskBlock(userId, task.id);
+      schedulePushTaskBlock(schedulingUserId, task.id);
     }
 
     return NextResponse.json(task);

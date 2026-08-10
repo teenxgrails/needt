@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "PageTemplatesAPI";
@@ -41,8 +42,11 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+  if (!(await resolvePageAccess(auth, pageId))) {
+    return NextResponse.json({ error: "Page access denied" }, { status: 403 });
+  }
   const page = await prisma.page.findFirst({
-    where: { id: pageId, userId: auth.userId, trashedAt: null },
+    where: { id: pageId, ...pageVisibilityWhere(auth), trashedAt: null },
     include: { blocks: { orderBy: { position: "asc" } } },
   });
   if (!page)

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { WorkspaceRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -47,12 +50,15 @@ function validateImportData(data: unknown): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
 
     const userId = auth.userId;
+    const workspaceId = auth.workspace!.workspaceId;
     const data = (await request.json()) as ImportData;
 
     // Validate the import data
@@ -104,7 +110,7 @@ export async function POST(request: NextRequest) {
           // Check if a project with the same name already exists for this user
           const existingProject = await tx.project.findFirst({
             where: {
-              userId,
+              ...workspaceDataScopeWhere(auth.workspace, userId),
               name: project.name,
             },
           });
@@ -121,6 +127,7 @@ export async function POST(request: NextRequest) {
                 color: project.color,
                 status: project.status || "active",
                 userId,
+                workspaceId,
               },
             });
             projectMap.set(project.id, newProject.id);
@@ -178,7 +185,12 @@ export async function POST(request: NextRequest) {
               data: {
                 ...taskData,
                 user: { connect: { id: userId } },
+                workspace: { connect: { id: workspaceId } },
+                assignee: { connect: { id: userId } },
                 project: { connect: { id: projectId } },
+                activities: {
+                  create: { workspaceId, actorId: userId, action: "IMPORTED" },
+                },
                 ...(tagIds.length > 0
                   ? {
                       tags: { connect: tagIds.map((id) => ({ id })) },
@@ -192,6 +204,11 @@ export async function POST(request: NextRequest) {
               data: {
                 ...taskData,
                 user: { connect: { id: userId } },
+                workspace: { connect: { id: workspaceId } },
+                assignee: { connect: { id: userId } },
+                activities: {
+                  create: { workspaceId, actorId: userId, action: "IMPORTED" },
+                },
                 ...(tagIds.length > 0
                   ? {
                       tags: { connect: tagIds.map((id) => ({ id })) },

@@ -260,7 +260,7 @@ export async function addCard(
 ) {
   const column = await prisma.boardColumn.findFirst({
     where: { id: input.columnId, boardId: input.boardId, board: { userId } },
-    select: { id: true },
+    select: { id: true, board: { select: { workspaceId: true } } },
   });
   if (!column) return null;
 
@@ -275,10 +275,21 @@ export async function addCard(
       title: input.title.trim() || "Untitled",
       status: "todo",
       userId,
+      workspaceId: column.board.workspaceId,
+      assigneeId: userId,
       boardId: input.boardId,
       boardColumnId: input.columnId,
       boardPosition: (last?.boardPosition ?? 0) + POSITION_STEP,
       createdAt: newDate(),
+      ...(column.board.workspaceId && {
+        activities: {
+          create: {
+            workspaceId: column.board.workspaceId,
+            actorId: userId,
+            action: "CREATED",
+          },
+        },
+      }),
     },
   });
 }

@@ -90,12 +90,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // First delete all calendar feeds associated with this account
-    await prisma.calendarFeed.deleteMany({
+    // Keep local calendar history recoverable while revoking credentials.
+    await prisma.calendarFeed.updateMany({
       where: {
         accountId,
         userId,
       },
+      data: { accountId: null, enabled: false },
     });
 
     // Then delete the account
@@ -106,7 +107,7 @@ export async function DELETE(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, disconnected: true });
   } catch (error) {
     logger.error(
       "Failed to remove account:",

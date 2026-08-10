@@ -11,6 +11,7 @@ the same image and SHA.
 ## Commands
 
 ```bash
+npm run agent:context     # Recover branch, worktree, and active handoff state
 npm run dev               # Dev server (Next.js + Turbopack) on :3000
 npm run build             # Production build
 npm run type-check        # tsc --noEmit
@@ -27,6 +28,14 @@ npm run prisma:studio     # Browse the DB
 npm run db:up             # Start the Postgres container (docker compose)
 
 ```
+
+## Shared sessions
+
+At the start of every session, run `npm run agent:context`, then read the active
+handoff for the current branch. For work that continues beyond a short
+read-only investigation, follow `docs/AI-COLLABORATION.md` and maintain a
+per-workstream file under `.agents/handoffs/`. Never let two writers share one
+worktree, and never stage or alter unfamiliar dirty files.
 
 - **npm is the only package manager.** Install with
   `npm install --legacy-peer-deps`; Docker/CI use `npm ci` and `.npmrc`.
@@ -66,7 +75,7 @@ server-controlled through `src/lib/feature-flags.ts`.
 
 ## Conventions
 
-- **Prisma client**: import the singleton `prisma` from `@/lib/prisma`. Never `new PrismaClient()`. Import Prisma *types* from `@prisma/client`.
+- **Prisma client**: import the singleton `prisma` from `@/lib/prisma`. Never `new PrismaClient()`. Import Prisma _types_ from `@prisma/client`.
 - **Dates**: use helpers in `@/lib/date-utils.ts` for all date work, including `new Date()` - don't reach for `date-fns`/`date-fns-tz` directly.
 - **Calendar DB access**: go through `@/lib/calendar-db.ts`.
 - **Logging**: use the `logger` from `@/lib/logger`, never `console.log`. Define a `LOG_SOURCE` string per file and pass it as the last arg: `logger.error("msg", { error }, LOG_SOURCE)`.
@@ -92,12 +101,16 @@ server-controlled through `src/lib/feature-flags.ts`.
 - `src/app/(app)/` - application pages using the shared navigation and provider shell
 
 <!-- mulch:start -->
+
 ## Project Expertise (Mulch)
+
 <!-- mulch-onboard-v:1 -->
 
 This project uses [Mulch](https://github.com/jayminwest/mulch) for structured expertise management.
 
-**At the start of every session**, run:
+**When the `mulch` CLI is installed and the repository has configured
+domains**, run:
+
 ```bash
 mulch prime
 ```
@@ -105,8 +118,9 @@ mulch prime
 This injects project-specific conventions, patterns, decisions, and other learnings into your context.
 Use `mulch prime --files src/foo.ts` to load only records relevant to specific files.
 
-**Before completing your task**, review your work for insights worth preserving — conventions discovered,
+Before completing your task, review your work for insights worth preserving — conventions discovered,
 patterns applied, failures encountered, or decisions made — and record them:
+
 ```bash
 mulch record <domain> --type <convention|pattern|failure|decision|reference|guide> --description "..."
 ```
@@ -131,4 +145,4 @@ Mulch write commands use file locking and atomic writes — multiple agents can 
    ```bash
    mulch sync
    ```
-<!-- mulch:end -->
+   <!-- mulch:end -->

@@ -1,30 +1,53 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { useRouter } from "next/navigation";
 
+import {
+  HocuspocusProvider,
+  HocuspocusProviderWebsocket,
+} from "@hocuspocus/provider";
 import { type JSONContent } from "@tiptap/core";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import ImageExtension from "@tiptap/extension-image";
+import LinkExtension from "@tiptap/extension-link";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Editor, EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import {
   Bell,
+  Bold,
   Bookmark,
   CalendarDays,
   CheckSquare,
+  ChevronDown,
   ChevronLeft,
-  Clock3,
   Code2,
   Columns3,
   File,
+  FilePlus,
   FileText,
+  FolderKanban,
+  GripVertical,
   Heading1,
   Heading2,
   Heading3,
+  History,
   Image,
+  Italic,
   LayoutTemplate,
   Link2,
   List,
@@ -35,13 +58,17 @@ import {
   Minus,
   MoreHorizontal,
   Pilcrow,
+  Plus,
   Quote,
   Redo2,
+  ShieldCheck,
   Sparkles,
   Star,
+  Strikethrough,
   Table2,
   Undo2,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 
 import {
   BlockIdentity,
@@ -50,11 +77,21 @@ import {
 import { DatabaseWorkspace } from "@/components/pages/DatabaseWorkspace";
 import { PageBlockNode } from "@/components/pages/PageBlockNode";
 import {
+  PageAutosave,
+  type PageSaveState,
+} from "@/components/pages/page-autosave";
+import {
   documentFromPageBlocks,
   legacyPageHtml,
   pageBlocksFromDocument,
 } from "@/components/pages/page-document";
 import type { PageDetail } from "@/components/pages/page-types";
+import {
+  BottomSheet,
+  BottomSheetContent,
+  BottomSheetDescription,
+  BottomSheetTitle,
+} from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -66,6 +103,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 import {
   Popover,
   PopoverContent,
@@ -74,11 +112,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
+import { Yjs as Y } from "@/lib/collaboration/yjs";
+import { newDate } from "@/lib/date-utils";
 import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { randomId } from "@/lib/uuid";
 
-type SaveState = "saved" | "saving" | "failed";
+type SaveState = PageSaveState;
 type BasicCommand =
   | "paragraph"
   | "heading1"
@@ -100,6 +140,8 @@ type SpecialKind =
   | "TABLE"
   | "COLUMNS"
   | "PAGE_MENTION"
+  | "TASK_REFERENCE"
+  | "PROJECT_REFERENCE"
   | "DATE_MENTION"
   | "FORM";
 type PageCommand = BasicCommand | SpecialKind;
@@ -120,6 +162,39 @@ type PageProposal = {
   operations: unknown;
   status: "PENDING" | "APPLIED" | "REJECTED";
 };
+type PageRevision = {
+  id: string;
+  createdAt: string;
+  createdBy: "HUMAN" | "AI";
+};
+type PageReference = {
+  id: string;
+  title: string;
+  icon: string | null;
+  updatedAt: string;
+};
+type PagePermissionRole = "FULL_ACCESS" | "EDITOR" | "VIEWER";
+type PagePermissionGrant = {
+  userId: string;
+  role: PagePermissionRole;
+  user: { name: string | null; email: string | null; image: string | null };
+};
+type WorkspaceMember = {
+  userId: string;
+  role: "OWNER" | "EDITOR" | "VIEWER";
+  user: { name: string | null; email: string | null; image: string | null };
+};
+type PagePublication = { published: boolean; url: string | null };
+type CollaborationTokenResponse = {
+  token: string;
+  documentName: string;
+  initialState: string;
+  url: string;
+  role: PagePermissionRole;
+  user: { name: string; color: string };
+};
+type AiAction = "rewrite" | "summarize" | "critique";
+type MobileBlockHandle = { blockId: string; top: number; left: number };
 
 const COMMANDS: Array<{
   id: PageCommand;
@@ -176,6 +251,20 @@ const COMMANDS: Array<{
     hint: "Track lightweight items",
     keywords: "todo check task",
     icon: CheckSquare,
+  },
+  {
+    id: "TASK_REFERENCE",
+    label: "Task",
+    hint: "Create and embed a workspace task",
+    keywords: "task todo action",
+    icon: CheckSquare,
+  },
+  {
+    id: "PROJECT_REFERENCE",
+    label: "Project",
+    hint: "Create and embed a workspace project",
+    keywords: "project initiative",
+    icon: FolderKanban,
   },
   {
     id: "quote",
@@ -287,9 +376,22 @@ const SPECIAL_LABELS: Record<SpecialKind, string> = {
   TABLE: "Table title",
   COLUMNS: "Columns label",
   PAGE_MENTION: "Page title",
+  TASK_REFERENCE: "Task title",
+  PROJECT_REFERENCE: "Project title",
   DATE_MENTION: "Date",
   FORM: "Form title",
 };
+
+const PAGE_PERMISSION_OPTIONS = [
+  {
+    value: "INHERITED",
+    label: "Inherited",
+    description: "Use the workspace role",
+  },
+  { value: "FULL_ACCESS", label: "Full access" },
+  { value: "EDITOR", label: "Editor" },
+  { value: "VIEWER", label: "Viewer" },
+];
 
 function removeSlashText(editor: Editor) {
   const { $from } = editor.state.selection;
@@ -297,6 +399,29 @@ function removeSlashText(editor: Editor) {
     .chain()
     .focus()
     .deleteRange({ from: $from.start(), to: $from.end() });
+}
+
+function decodeCollaborationState(value: string) {
+  const binary = window.atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
+function pageEditedLabel(value: string) {
+  const edited = newDate(value);
+  const today = newDate();
+  const sameDay = edited.toDateString() === today.toDateString();
+
+  return sameDay
+    ? `Edited ${edited.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : `Edited ${edited.toLocaleDateString([], {
+        day: "numeric",
+        month: "short",
+        year:
+          edited.getFullYear() === today.getFullYear() ? undefined : "numeric",
+      })}`;
 }
 
 export function PageWorkspace({
@@ -308,9 +433,16 @@ export function PageWorkspace({
 }) {
   const router = useRouter();
   const hostRef = useRef<HTMLDivElement>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const revision = useRef(0);
+  const autosave = useRef<PageAutosave | null>(null);
+  const pageRevisionRef = useRef<string | null>(null);
   const hydrated = useRef(false);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressStart = useRef<{ x: number; y: number } | null>(null);
+  const mobileBlockDrag = useRef<{
+    blockId: string;
+    pointerId: number;
+    startY: number;
+  } | null>(null);
   const pendingRange = useRef<{ from: number; to: number } | null>(null);
   const [page, setPage] = useState<PageDetail | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -320,6 +452,11 @@ export function PageWorkspace({
     left: number;
   } | null>(null);
   const [slashIndex, setSlashIndex] = useState(0);
+  const [mobileFormatOpen, setMobileFormatOpen] = useState(false);
+  const [mobileInsertOpen, setMobileInsertOpen] = useState(false);
+  const [mobileBlockHandle, setMobileBlockHandle] =
+    useState<MobileBlockHandle | null>(null);
+  const [mobileBlockDragOffset, setMobileBlockDragOffset] = useState(0);
   const [pendingInsert, setPendingInsert] = useState<SpecialKind | null>(null);
   const [pendingValue, setPendingValue] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
@@ -327,52 +464,241 @@ export function PageWorkspace({
   const [coverOpen, setCoverOpen] = useState(false);
   const [coverUrl, setCoverUrl] = useState("");
   const [toolOpen, setToolOpen] = useState<
-    "comments" | "templates" | "ai" | null
+    | "comments"
+    | "templates"
+    | "history"
+    | "backlinks"
+    | "permissions"
+    | "ai"
+    | null
   >(null);
   const [comments, setComments] = useState<PageComment[]>([]);
   const [commentText, setCommentText] = useState("");
   const [templates, setTemplates] = useState<PageTemplate[]>([]);
   const [templateName, setTemplateName] = useState("");
   const [proposals, setProposals] = useState<PageProposal[]>([]);
+  const [revisions, setRevisions] = useState<PageRevision[]>([]);
+  const [backlinks, setBacklinks] = useState<PageReference[]>([]);
+  const [permissionOwnerId, setPermissionOwnerId] = useState("");
+  const [permissionGrants, setPermissionGrants] = useState<
+    PagePermissionGrant[]
+  >([]);
+  const [workspaceMembers, setWorkspaceMembers] = useState<WorkspaceMember[]>(
+    []
+  );
+  const [publication, setPublication] = useState<PagePublication>({
+    published: false,
+    url: null,
+  });
+  const [mentionPages, setMentionPages] = useState<PageReference[]>([]);
+  const [pendingMentionId, setPendingMentionId] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [aiAction, setAiAction] = useState<AiAction>("rewrite");
+  const canEdit = page?.accessRole !== "VIEWER";
+  const canManageAccess = page?.accessRole === "FULL_ACCESS";
+  const [collaborationStatus, setCollaborationStatus] = useState<
+    "connecting" | "connected" | "disconnected"
+  >("connecting");
+  const [collaborators, setCollaborators] = useState<
+    Array<{ name: string; color: string }>
+  >([]);
+  const collaborationDocument = useMemo(
+    () => new Y.Doc({ guid: `page:${pageId}` }),
+    [pageId]
+  );
+  const collaborationSocket = useMemo(
+    () =>
+      new HocuspocusProviderWebsocket({
+        url: process.env.NEXT_PUBLIC_COLLABORATION_URL ?? "ws://localhost:1234",
+        autoConnect: false,
+      }),
+    []
+  );
+  const collaborationProvider = useMemo(
+    () =>
+      new HocuspocusProvider({
+        name: `page:${pageId}`,
+        document: collaborationDocument,
+        websocketProvider: collaborationSocket,
+        token: null,
+        onStatus: ({ status }) =>
+          setCollaborationStatus(
+            status === "connected"
+              ? "connected"
+              : status === "disconnected"
+                ? "disconnected"
+                : "connecting"
+          ),
+        onAwarenessChange: ({ states }) =>
+          setCollaborators(
+            states.flatMap((state) => {
+              const user = state.user as
+                | { name?: unknown; color?: unknown }
+                | undefined;
+              return typeof user?.name === "string" &&
+                typeof user.color === "string"
+                ? [{ name: user.name, color: user.color }]
+                : [];
+            })
+          ),
+      }),
+    [collaborationDocument, collaborationSocket, pageId]
+  );
 
-  const saveBlocks = useCallback(
-    async (document: JSONContent, requestRevision: number) => {
-      setSaveState("saving");
-      const blocks = pageBlocksFromDocument(document);
-      try {
+  const clearLongPress = () => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = null;
+    longPressStart.current = null;
+  };
+
+  const topLevelBlockElement = (target: EventTarget | null) => {
+    if (!editor || !(target instanceof HTMLElement)) return null;
+    const editorElement = editor.view.dom;
+    let element: HTMLElement | null = target;
+    while (element && element.parentElement !== editorElement) {
+      element = element.parentElement;
+    }
+    return element?.parentElement === editorElement ? element : null;
+  };
+
+  const revealMobileBlockHandle = (element: HTMLElement) => {
+    const blockId = element.dataset.blockId;
+    const host = hostRef.current;
+    if (!blockId || !host || !editor) return;
+    const blockBounds = element.getBoundingClientRect();
+    const hostBounds = host.getBoundingClientRect();
+    const editorBounds = editor.view.dom.getBoundingClientRect();
+    setMobileBlockHandle({
+      blockId,
+      top: blockBounds.top - hostBounds.top + blockBounds.height / 2 - 22,
+      left: Math.max(0, editorBounds.left - hostBounds.left - 44),
+    });
+    setMobileBlockDragOffset(0);
+  };
+
+  const reorderMobileBlock = (blockId: string, targetIndex: number) => {
+    if (!editor) return;
+    const blocks: Array<{ node: ProseMirrorNode; position: number }> = [];
+    editor.state.doc.forEach((node, position) => {
+      blocks.push({ node, position });
+    });
+    const sourceIndex = blocks.findIndex(
+      ({ node }) => node.attrs.blockId === blockId
+    );
+    const boundedTarget = Math.max(0, Math.min(blocks.length - 1, targetIndex));
+    if (sourceIndex < 0 || sourceIndex === boundedTarget) return;
+    const source = blocks[sourceIndex];
+    const target = blocks[boundedTarget];
+    const transaction = editor.state.tr.delete(
+      source.position,
+      source.position + source.node.nodeSize
+    );
+    const insertPosition =
+      boundedTarget > sourceIndex
+        ? target.position + target.node.nodeSize - source.node.nodeSize
+        : target.position;
+    transaction.insert(insertPosition, source.node);
+    editor.view.dispatch(transaction.scrollIntoView());
+  };
+
+  const mobileBlockTargetIndex = (clientY: number) => {
+    if (!editor) return -1;
+    const elements = Array.from(editor.view.dom.children).filter(
+      (element): element is HTMLElement =>
+        element instanceof HTMLElement && Boolean(element.dataset.blockId)
+    );
+    if (elements.length === 0) return -1;
+    return elements.reduce(
+      (closest, element, index) => {
+        const bounds = element.getBoundingClientRect();
+        const distance = Math.abs(clientY - (bounds.top + bounds.height / 2));
+        return distance < closest.distance ? { index, distance } : closest;
+      },
+      { index: 0, distance: Number.POSITIVE_INFINITY }
+    ).index;
+  };
+
+  const moveMobileBlockBy = (blockId: string, direction: -1 | 1) => {
+    if (!editor) return;
+    const blockIds: string[] = [];
+    editor.state.doc.forEach((node) => {
+      if (typeof node.attrs.blockId === "string") {
+        blockIds.push(node.attrs.blockId);
+      }
+    });
+    const sourceIndex = blockIds.indexOf(blockId);
+    if (sourceIndex < 0) return;
+    reorderMobileBlock(blockId, sourceIndex + direction);
+    setMobileBlockHandle(null);
+  };
+
+  useEffect(() => {
+    const draftKey = `needt-page-draft:${pageId}`;
+    const queue = new PageAutosave({
+      isOnline: () => navigator.onLine,
+      onStateChange: setSaveState,
+      persistDraft: (document) =>
+        localStorage.setItem(draftKey, JSON.stringify(document)),
+      removeDraft: () => localStorage.removeItem(draftKey),
+      save: async (document) => {
         const response = await fetch(`/api/pages/${pageId}/blocks`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ blocks, documentFormatVersion }),
+          headers: {
+            "Content-Type": "application/json",
+            ...(pageRevisionRef.current
+              ? { "If-Match": pageRevisionRef.current }
+              : {}),
+          },
+          body: JSON.stringify({
+            blocks: pageBlocksFromDocument(document),
+            documentFormatVersion,
+          }),
         });
         if (!response.ok) throw new Error("Save failed");
-        if (revision.current === requestRevision) setSaveState("saved");
-        localStorage.removeItem(`needt-page-draft:${pageId}`);
+        if (response.status !== 202) {
+          const result = (await response.json()) as { page: PageDetail };
+          pageRevisionRef.current = result.page.updatedAt;
+          setPage((current) =>
+            current ? { ...current, updatedAt: result.page.updatedAt } : current
+          );
+        }
         window.dispatchEvent(new Event("pages-changed"));
-      } catch {
-        localStorage.setItem(
-          `needt-page-draft:${pageId}`,
-          JSON.stringify(document)
-        );
-        if (revision.current === requestRevision) setSaveState("failed");
-      }
-    },
-    [documentFormatVersion, pageId]
-  );
+      },
+    });
+    autosave.current = queue;
+    return () => {
+      queue.dispose();
+      if (autosave.current === queue) autosave.current = null;
+    };
+  }, [documentFormatVersion, pageId]);
 
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        link: false,
+        undoRedo: false,
+      }),
       Placeholder.configure({
         placeholder: "Write anything, or type / for commands…",
       }),
       TaskList,
       TaskItem.configure({ nested: true }),
       ImageExtension.configure({ allowBase64: false }),
+      LinkExtension.configure({
+        autolink: true,
+        defaultProtocol: "https",
+        openOnClick: false,
+      }),
+      TableKit.configure({ table: { resizable: true } }),
       BlockIdentity,
       PageBlockNode,
+      Collaboration.configure({ document: collaborationDocument }),
+      CollaborationCaret.configure({
+        provider: collaborationProvider,
+        user: { name: "Needt collaborator", color: "#4F46E5" },
+      }),
     ],
     content: "<p></p>",
     editorProps: {
@@ -404,35 +730,19 @@ export function PageWorkspace({
       if (!hydrated.current) return;
       ensureBlockIds(current);
       const document = current.getJSON();
-      revision.current += 1;
-      const requestRevision = revision.current;
-      localStorage.setItem(
-        `needt-page-draft:${pageId}`,
-        JSON.stringify(document)
-      );
-      setSaveState("saving");
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(
-        () => void saveBlocks(document, requestRevision),
-        650
-      );
+      autosave.current?.schedule(document);
 
       const { $from } = current.state.selection;
       const match = $from.parent.textContent.match(/^\/([^\s]*)$/);
-      const host = hostRef.current;
-      if (!match || !host) {
+      if (!match) {
         setSlash(null);
         return;
       }
       const caret = current.view.coordsAtPos(current.state.selection.from);
-      const bounds = host.getBoundingClientRect();
       setSlash({
         query: match[1].toLowerCase(),
-        top: caret.bottom - bounds.top + 8,
-        left: Math.max(
-          0,
-          Math.min(caret.left - bounds.left, bounds.width - 320)
-        ),
+        top: caret.bottom + 8,
+        left: Math.max(8, Math.min(caret.left, window.innerWidth - 328)),
       });
       setSlashIndex(0);
     },
@@ -451,46 +761,205 @@ export function PageWorkspace({
     );
   }, [slash?.query]);
 
+  const startMobileLongPress = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!canEdit || event.pointerType !== "touch") return;
+    const block = topLevelBlockElement(event.target);
+    if (!block?.dataset.blockId) return;
+    clearLongPress();
+    longPressStart.current = { x: event.clientX, y: event.clientY };
+    longPressTimer.current = setTimeout(() => {
+      revealMobileBlockHandle(block);
+      clearLongPress();
+    }, 350);
+  };
+
+  const moveMobileLongPress = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = longPressStart.current;
+    if (!start) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 8) {
+      clearLongPress();
+    }
+  };
+
+  const startMobileBlockDrag = (
+    event: ReactPointerEvent<HTMLButtonElement>
+  ) => {
+    if (!mobileBlockHandle) return;
+    event.preventDefault();
+    event.stopPropagation();
+    mobileBlockDrag.current = {
+      blockId: mobileBlockHandle.blockId,
+      pointerId: event.pointerId,
+      startY: event.clientY,
+    };
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic and assistive pointer events can reorder without capture.
+      }
+    }
+    setMobileBlockDragOffset(0);
+  };
+
+  const moveMobileBlockDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const drag = mobileBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    setMobileBlockDragOffset(event.clientY - drag.startY);
+  };
+
+  const finishMobileBlockDrag = (
+    event: ReactPointerEvent<HTMLButtonElement>
+  ) => {
+    const drag = mobileBlockDrag.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    reorderMobileBlock(drag.blockId, mobileBlockTargetIndex(event.clientY));
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    mobileBlockDrag.current = null;
+    setMobileBlockHandle(null);
+    setMobileBlockDragOffset(0);
+  };
+
+  useEffect(() => {
+    const hideHandle = () => setMobileBlockHandle(null);
+    document.addEventListener("scroll", hideHandle, true);
+    return () => {
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      document.removeEventListener("scroll", hideHandle, true);
+    };
+  }, []);
+
   useEffect(() => {
     if (!editor) return;
     let cancelled = false;
     hydrated.current = false;
-    void fetch(`/api/pages/${pageId}`)
-      .then(async (response) => {
-        if (!response.ok) throw new Error("Page not found");
-        return response.json() as Promise<{ page: PageDetail }>;
-      })
-      .then(({ page: loaded }) => {
-        if (cancelled) return;
-        setPage(loaded);
-        const localDraft = localStorage.getItem(`needt-page-draft:${pageId}`);
-        if (localDraft) {
-          try {
-            editor.commands.setContent(JSON.parse(localDraft) as JSONContent, {
-              emitUpdate: false,
-            });
-          } catch {
-            editor.commands.setContent(legacyPageHtml(loaded.blocks), {
-              emitUpdate: false,
-            });
-          }
-          setSaveState("failed");
-        } else {
-          const document = documentFromPageBlocks(loaded.blocks);
-          editor.commands.setContent(
-            document || legacyPageHtml(loaded.blocks),
-            { emitUpdate: false }
+    void (async () => {
+      const response = await fetch(`/api/pages/${pageId}`);
+      if (!response.ok) {
+        router.replace("/pages");
+        return;
+      }
+      const { page: loaded } = (await response.json()) as { page: PageDetail };
+      if (cancelled) return;
+      pageRevisionRef.current = loaded.updatedAt;
+      setPage(loaded);
+      const localDraft = localStorage.getItem(`needt-page-draft:${pageId}`);
+
+      const tokenResponse = await fetch(
+        `/api/pages/${pageId}/collaboration-token`,
+        { method: "POST" }
+      ).catch(() => null);
+      if (cancelled) return;
+
+      if (tokenResponse?.ok) {
+        try {
+          const collaboration =
+            (await tokenResponse.json()) as CollaborationTokenResponse;
+          Y.applyUpdate(
+            collaborationDocument,
+            decodeCollaborationState(collaboration.initialState)
           );
+          collaborationSocket.setConfiguration({ url: collaboration.url });
+          let nextToken: string | null = collaboration.token;
+          collaborationProvider.setConfiguration({
+            token: async () => {
+              if (nextToken) {
+                const currentToken = nextToken;
+                nextToken = null;
+                return currentToken;
+              }
+              const refreshed = await fetch(
+                `/api/pages/${pageId}/collaboration-token`,
+                { method: "POST" }
+              );
+              if (!refreshed.ok) {
+                throw new Error("Page collaboration access denied");
+              }
+              const data =
+                (await refreshed.json()) as CollaborationTokenResponse;
+              return data.token;
+            },
+          });
+          collaborationProvider.attach();
+          editor.commands.updateUser(collaboration.user);
+          if (localDraft) {
+            try {
+              editor.commands.setContent(
+                JSON.parse(localDraft) as JSONContent,
+                {
+                  emitUpdate: false,
+                }
+              );
+              setSaveState("failed");
+            } catch {
+              localStorage.removeItem(`needt-page-draft:${pageId}`);
+            }
+          }
+          ensureBlockIds(editor);
+          hydrated.current = true;
+          if (localDraft) autosave.current?.schedule(editor.getJSON());
+          void collaborationSocket
+            .connect()
+            .catch(() => setCollaborationStatus("disconnected"));
+          return;
+        } catch {
+          setCollaborationStatus("disconnected");
         }
-        ensureBlockIds(editor);
-        hydrated.current = true;
-      })
-      .catch(() => router.replace("/pages"));
+      }
+
+      const document = documentFromPageBlocks(loaded.blocks);
+      editor.commands.setContent(document || legacyPageHtml(loaded.blocks), {
+        emitUpdate: false,
+      });
+      if (localDraft) {
+        try {
+          editor.commands.setContent(JSON.parse(localDraft) as JSONContent, {
+            emitUpdate: false,
+          });
+          setSaveState("failed");
+        } catch {
+          localStorage.removeItem(`needt-page-draft:${pageId}`);
+        }
+      }
+      ensureBlockIds(editor);
+      hydrated.current = true;
+      setCollaborationStatus("disconnected");
+      if (localDraft) autosave.current?.schedule(editor.getJSON());
+    })().catch(() => router.replace("/pages"));
     return () => {
       cancelled = true;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [editor, pageId, router]);
+  }, [
+    collaborationDocument,
+    collaborationProvider,
+    collaborationSocket,
+    editor,
+    pageId,
+    router,
+  ]);
+
+  useEffect(
+    () => () => {
+      collaborationProvider.destroy();
+    },
+    [collaborationProvider]
+  );
+
+  useEffect(
+    () => () => {
+      collaborationSocket.destroy();
+      collaborationDocument.destroy();
+    },
+    [collaborationDocument, collaborationSocket]
+  );
+
+  useEffect(() => {
+    editor?.setEditable(canEdit);
+  }, [canEdit, editor]);
 
   useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
@@ -499,6 +968,17 @@ export function PageWorkspace({
     window.addEventListener("beforeunload", beforeUnload);
     return () => window.removeEventListener("beforeunload", beforeUnload);
   }, [saveState]);
+
+  useEffect(() => {
+    const handleOffline = () => setSaveState("offline");
+    const handleOnline = () => autosave.current?.retryWhenOnline();
+    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleOnline);
+    return () => {
+      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
 
   const patchPage = async (values: Record<string, unknown>) => {
     setPage((current) =>
@@ -513,7 +993,31 @@ export function PageWorkspace({
     window.dispatchEvent(new Event("pages-changed"));
   };
 
-  const openTool = async (tool: "comments" | "templates" | "ai") => {
+  const createSubpage = async () => {
+    const response = await fetch("/api/pages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Untitled", parentId: pageId }),
+    });
+    if (!response.ok) {
+      notify.error("Could not create subpage");
+      return;
+    }
+    const data = (await response.json()) as { page?: { id: string } };
+    if (!data.page?.id) return;
+    window.dispatchEvent(new Event("pages-changed"));
+    router.push(`/pages/${data.page.id}`);
+  };
+
+  const openTool = async (
+    tool:
+      | "comments"
+      | "templates"
+      | "history"
+      | "backlinks"
+      | "permissions"
+      | "ai"
+  ) => {
     setToolOpen(tool);
     if (tool === "comments") {
       const response = await fetch(`/api/pages/${pageId}/comments`);
@@ -529,6 +1033,49 @@ export function PageWorkspace({
         setTemplates(data.templates);
       }
     }
+    if (tool === "history") {
+      const response = await fetch(`/api/pages/${pageId}/revisions`);
+      if (response.ok) {
+        const data = (await response.json()) as { revisions: PageRevision[] };
+        setRevisions(data.revisions);
+      }
+    }
+    if (tool === "backlinks") {
+      const response = await fetch(`/api/pages/${pageId}/backlinks`);
+      if (response.ok) {
+        const data = (await response.json()) as { backlinks: PageReference[] };
+        setBacklinks(data.backlinks);
+      }
+    }
+    if (tool === "permissions") {
+      const [permissionsResponse, membersResponse, publicationResponse] =
+        await Promise.all([
+          fetch(`/api/pages/${pageId}/permissions`),
+          page?.workspaceId
+            ? fetch(`/api/workspaces/${page.workspaceId}/members`)
+            : Promise.resolve(null),
+          fetch(`/api/pages/${pageId}/publication`),
+        ]);
+      if (permissionsResponse.ok) {
+        const data = (await permissionsResponse.json()) as {
+          ownerId: string;
+          grants: PagePermissionGrant[];
+        };
+        setPermissionOwnerId(data.ownerId);
+        setPermissionGrants(data.grants);
+      }
+      if (membersResponse?.ok) {
+        const data = (await membersResponse.json()) as {
+          members: WorkspaceMember[];
+        };
+        setWorkspaceMembers(data.members);
+      } else {
+        setWorkspaceMembers([]);
+      }
+      if (publicationResponse.ok) {
+        setPublication((await publicationResponse.json()) as PagePublication);
+      }
+    }
     if (tool === "ai") {
       const response = await fetch(
         `/api/ai/page-proposals?pageId=${encodeURIComponent(pageId)}`
@@ -538,6 +1085,77 @@ export function PageWorkspace({
         setProposals(data.proposals);
       }
     }
+  };
+
+  const setMemberPermission = async (userId: string, role: string) => {
+    const inherited = role === "INHERITED";
+    const response = await fetch(`/api/pages/${pageId}/permissions`, {
+      method: inherited ? "DELETE" : "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, ...(inherited ? {} : { role }) }),
+    });
+    if (!response.ok) {
+      notify.error("Could not update Page access");
+      return;
+    }
+    if (inherited) {
+      setPermissionGrants((current) =>
+        current.filter((grant) => grant.userId !== userId)
+      );
+      return;
+    }
+    const data = (await response.json()) as { grant: PagePermissionGrant };
+    setPermissionGrants((current) => [
+      ...current.filter((grant) => grant.userId !== userId),
+      data.grant,
+    ]);
+  };
+
+  const publishPublicLink = async () => {
+    const response = await fetch(`/api/pages/${pageId}/publication`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      notify.error("Could not publish this Page");
+      return;
+    }
+    setPublication((await response.json()) as PagePublication);
+  };
+
+  const unpublishPublicLink = async () => {
+    const response = await fetch(`/api/pages/${pageId}/publication`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      notify.error("Could not unpublish this Page");
+      return;
+    }
+    setPublication((await response.json()) as PagePublication);
+    notify.success("Public link disabled");
+  };
+
+  const copyPublicLink = async () => {
+    if (!publication.url) return;
+    try {
+      await navigator.clipboard.writeText(publication.url);
+      notify.success("Public link copied");
+    } catch {
+      notify.error("Could not copy the public link");
+    }
+  };
+
+  const restoreRevision = async (revisionId: string) => {
+    const response = await fetch(`/api/pages/${pageId}/revisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ revisionId }),
+    });
+    if (!response.ok) {
+      notify.error("Could not restore this version");
+      return;
+    }
+    notify.success("Page version restored");
+    window.location.reload();
   };
 
   const addComment = async () => {
@@ -613,7 +1231,7 @@ export function PageWorkspace({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: `Use propose_page_changes for pageId "${pageId}". ${aiPrompt}`,
+        message: `Use propose_page_changes for pageId "${pageId}". Action: ${aiAction}. ${aiPrompt}`,
       }),
     });
     if (!response.ok) {
@@ -769,10 +1387,48 @@ export function PageWorkspace({
       });
       return;
     }
+    if (pendingInsert === "PAGE_MENTION") {
+      const target = mentionPages.find((page) => page.id === pendingMentionId);
+      if (!target) return;
+      insertSpecial("PAGE_MENTION", target.title, {
+        pageId: target.id,
+        title: target.title,
+        url: `/pages/${target.id}`,
+      });
+      setPendingMentionId(null);
+      return;
+    }
+    if (
+      pendingInsert === "TASK_REFERENCE" ||
+      pendingInsert === "PROJECT_REFERENCE"
+    ) {
+      const response = await fetch(`/api/pages/${pageId}/entities`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: pendingInsert === "TASK_REFERENCE" ? "task" : "project",
+          title: pendingValue,
+        }),
+      });
+      const data = (await response.json().catch(() => ({}))) as {
+        entity?: { id: string; title: string; href: string };
+        error?: string;
+      };
+      if (!response.ok || !data.entity) {
+        notify.error(data.error || "Could not create workspace entity");
+        return;
+      }
+      insertSpecial(pendingInsert, data.entity.title, {
+        entityId: data.entity.id,
+        title: data.entity.title,
+        url: data.entity.href,
+      });
+      return;
+    }
     insertSpecial(pendingInsert, pendingValue);
   };
 
-  const applyCommand = (command: PageCommand) => {
+  const applyCommand = (command: PageCommand, fromSlash = true) => {
     if (!editor) return;
     if (
       command === "CALLOUT" ||
@@ -781,9 +1437,10 @@ export function PageWorkspace({
       command === "BOOKMARK" ||
       command === "IMAGE" ||
       command === "FILE" ||
-      command === "TABLE" ||
       command === "COLUMNS" ||
       command === "PAGE_MENTION" ||
+      command === "TASK_REFERENCE" ||
+      command === "PROJECT_REFERENCE" ||
       command === "DATE_MENTION" ||
       command === "FORM"
     ) {
@@ -796,23 +1453,36 @@ export function PageWorkspace({
       if (editor.isActive("taskItem")) {
         editor.chain().focus().liftListItem("taskItem").run();
       }
-      const { $from } = editor.state.selection;
-      pendingRange.current = { from: $from.start(), to: $from.end() };
+      if (command === "PAGE_MENTION") {
+        void fetch("/api/pages/search?q=")
+          .then((response) =>
+            response.ok ? response.json() : ({ pages: [] } as const)
+          )
+          .then((data: { pages?: PageReference[] }) =>
+            setMentionPages(
+              (data.pages ?? []).filter((candidate) => candidate.id !== pageId)
+            )
+          )
+          .catch(() => setMentionPages([]));
+        setPendingMentionId(null);
+      }
+      const { $from, from } = editor.state.selection;
+      pendingRange.current = fromSlash
+        ? { from: $from.start(), to: $from.end() }
+        : { from, to: from };
       setPendingInsert(command);
       setPendingFile(null);
       setPendingValue(
         command === "DATE_MENTION"
-          ? new Date().toISOString().slice(0, 10)
-          : command === "TABLE"
-            ? "Table"
-            : command === "COLUMNS"
-              ? "Two columns"
-              : ""
+          ? newDate().toISOString().slice(0, 10)
+          : command === "COLUMNS"
+            ? "Two columns"
+            : ""
       );
       return;
     }
 
-    const chain = removeSlashText(editor);
+    const chain = fromSlash ? removeSlashText(editor) : editor.chain().focus();
     if (command === "paragraph") chain.setParagraph().run();
     else if (command === "heading1") chain.toggleHeading({ level: 1 }).run();
     else if (command === "heading2") chain.toggleHeading({ level: 2 }).run();
@@ -823,6 +1493,8 @@ export function PageWorkspace({
     else if (command === "quote") chain.toggleBlockquote().run();
     else if (command === "code") chain.toggleCodeBlock().run();
     else if (command === "divider") chain.setHorizontalRule().run();
+    else if (command === "TABLE")
+      chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
     setSlash(null);
   };
 
@@ -839,7 +1511,7 @@ export function PageWorkspace({
 
   return (
     <div className="min-h-dvh bg-[var(--surface-canvas)] text-[var(--text-primary)]">
-      <header className="sticky top-0 z-20 flex h-11 items-center gap-2 border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-3">
+      <header className="sticky top-0 z-20 flex h-12 items-center gap-1.5 border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-2 sm:px-3">
         <Button
           variant="ghost"
           size="icon"
@@ -848,60 +1520,100 @@ export function PageWorkspace({
         >
           <ChevronLeft />
         </Button>
-        <span className="min-w-0 flex-1 truncate text-sm">
-          {page.icon} {page.title}
+        <span className="min-w-0 flex-1 truncate text-[13px] font-medium">
+          <span className="mr-1.5">{page.icon || "📄"}</span>
+          {page.title || "Untitled"}
         </span>
-        <span className="text-[11px] text-[var(--text-muted)]">
+        <div
+          className="hidden items-center -space-x-1 sm:flex"
+          aria-label={`${collaborators.length} active collaborators`}
+        >
+          {collaborators.slice(0, 3).map((collaborator, index) => (
+            <span
+              key={`${collaborator.name}-${index}`}
+              className="h-5 w-5 rounded-full border-2 border-[var(--surface-canvas)]"
+              style={{ backgroundColor: collaborator.color }}
+              title={collaborator.name}
+            />
+          ))}
+        </div>
+        <span
+          className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]"
+          aria-live="polite"
+        >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              collaborationStatus === "connected"
+                ? "bg-emerald-500"
+                : collaborationStatus === "connecting"
+                  ? "bg-amber-500"
+                  : "bg-[var(--text-disabled)]"
+            )}
+          />
           {saveState === "saving"
             ? "Saving…"
-            : saveState === "failed"
-              ? "Failed · draft kept"
-              : "Saved"}
+            : saveState === "offline"
+              ? "Draft kept"
+              : saveState === "failed"
+                ? "Draft kept"
+                : "Saved"}
         </span>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor?.chain().focus().undo().run()}
-          disabled={!editor?.can().undo()}
-          aria-label="Undo"
-        >
-          <Undo2 />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => editor?.chain().focus().redo().run()}
-          disabled={!editor?.can().redo()}
-          aria-label="Redo"
-        >
-          <Redo2 />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => void patchPage({ isFavorite: !page.isFavorite })}
-          aria-label="Favorite"
-        >
-          <Star
-            className={page.isFavorite ? "fill-current text-amber-400" : ""}
-          />
-        </Button>
-        <label className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-          <LockKeyhole className="h-3.5 w-3.5" />
-          <Switch
-            checked={page.isPrivate}
-            onCheckedChange={(checked) =>
-              void patchPage({ isPrivate: checked })
-            }
-          />
-        </label>
+        {canManageAccess && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="hidden sm:inline-flex"
+            onClick={() => void openTool("permissions")}
+          >
+            Share
+          </Button>
+        )}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Page options">
               <MoreHorizontal />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-52 p-1.5">
+          <PopoverContent align="end" className="w-60 p-1.5">
+            <div className="mb-1 flex items-center gap-1 border-b border-[var(--border-subtle)] px-1 pb-1.5">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-1"
+                onClick={() => editor?.chain().focus().undo().run()}
+                disabled={!canEdit || !editor?.can().undo()}
+                aria-label="Undo"
+              >
+                <Undo2 />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-1"
+                onClick={() => editor?.chain().focus().redo().run()}
+                disabled={!canEdit || !editor?.can().redo()}
+                aria-label="Redo"
+              >
+                <Redo2 />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex-1"
+                onClick={() => void patchPage({ isFavorite: !page.isFavorite })}
+                disabled={!canEdit}
+                aria-label={
+                  page.isFavorite ? "Remove from favorites" : "Add to favorites"
+                }
+              >
+                <Star
+                  className={
+                    page.isFavorite ? "fill-current text-amber-400" : ""
+                  }
+                />
+              </Button>
+            </div>
             <button
               type="button"
               onClick={() => void openTool("comments")}
@@ -909,6 +1621,25 @@ export function PageWorkspace({
             >
               <MessageSquare className="h-4 w-4 text-[var(--text-muted)]" />
               Comments
+            </button>
+            {canManageAccess && (
+              <button
+                type="button"
+                onClick={() => void openTool("permissions")}
+                className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+              >
+                <ShieldCheck className="h-4 w-4 text-[var(--text-muted)]" />
+                Share &amp; permissions
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void createSubpage()}
+              disabled={!canEdit}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)] disabled:opacity-40"
+            >
+              <FilePlus className="h-4 w-4 text-[var(--text-muted)]" />
+              New subpage
             </button>
             <button
               type="button"
@@ -920,25 +1651,224 @@ export function PageWorkspace({
             </button>
             <button
               type="button"
+              onClick={() => void openTool("history")}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <History className="h-4 w-4 text-[var(--text-muted)]" />
+              Version history
+            </button>
+            <button
+              type="button"
+              onClick={() => void openTool("backlinks")}
+              className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+            >
+              <Link2 className="h-4 w-4 text-[var(--text-muted)]" />
+              Backlinks
+            </button>
+            <button
+              type="button"
               onClick={() => void openTool("ai")}
               className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
             >
               <Sparkles className="h-4 w-4 text-[var(--text-muted)]" />
               Ask AI
             </button>
+            <label className="mt-1 flex min-h-10 items-center gap-2 border-t border-[var(--border-subtle)] px-2.5 pt-1 text-[13px]">
+              <LockKeyhole className="h-4 w-4 text-[var(--text-muted)]" />
+              <span className="min-w-0 flex-1">Private Page</span>
+              <Switch
+                checked={page.isPrivate}
+                disabled={!canManageAccess}
+                onCheckedChange={(checked) =>
+                  void patchPage({ isPrivate: checked })
+                }
+              />
+            </label>
           </PopoverContent>
         </Popover>
       </header>
+
+      <div
+        className="sticky top-12 z-[15] hidden h-10 items-center justify-center border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)] px-3 sm:flex"
+        aria-label="Page editor toolbar"
+      >
+        <div className="flex max-w-full items-center gap-1 overflow-x-auto">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-w-24 justify-between"
+              >
+                <span className="flex items-center gap-1.5">
+                  <Pilcrow className="h-3.5 w-3.5" />
+                  {editor?.isActive("heading", { level: 1 })
+                    ? "Heading 1"
+                    : editor?.isActive("heading", { level: 2 })
+                      ? "Heading 2"
+                      : editor?.isActive("heading", { level: 3 })
+                        ? "Heading 3"
+                        : "Text"}
+                </span>
+                <ChevronDown className="h-3 w-3 text-[var(--text-muted)]" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-52 p-1.5">
+              {COMMANDS.filter((command) =>
+                ["paragraph", "heading1", "heading2", "heading3"].includes(
+                  command.id
+                )
+              ).map((command) => {
+                const Icon = command.icon;
+                return (
+                  <button
+                    key={command.id}
+                    type="button"
+                    onClick={() => applyCommand(command.id, false)}
+                    className="flex h-9 w-full items-center gap-2 rounded-[var(--control-radius)] px-2.5 text-[13px] hover:bg-[var(--menu-item-hover)]"
+                  >
+                    <Icon className="h-4 w-4 text-[var(--text-muted)]" />
+                    {command.label}
+                  </button>
+                );
+              })}
+            </PopoverContent>
+          </Popover>
+
+          <span className="mx-1 h-5 w-px bg-[var(--border-subtle)]" />
+          {[
+            {
+              label: "Bold",
+              active: editor?.isActive("bold"),
+              icon: Bold,
+              run: () => editor?.chain().focus().toggleBold().run(),
+            },
+            {
+              label: "Italic",
+              active: editor?.isActive("italic"),
+              icon: Italic,
+              run: () => editor?.chain().focus().toggleItalic().run(),
+            },
+            {
+              label: "Strikethrough",
+              active: editor?.isActive("strike"),
+              icon: Strikethrough,
+              run: () => editor?.chain().focus().toggleStrike().run(),
+            },
+            {
+              label: "Inline code",
+              active: editor?.isActive("code"),
+              icon: Code2,
+              run: () => editor?.chain().focus().toggleCode().run(),
+            },
+          ].map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.label}
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-7 w-7",
+                  action.active && "bg-[var(--menu-item-hover)]"
+                )}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={action.run}
+                aria-label={action.label}
+                aria-pressed={Boolean(action.active)}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            );
+          })}
+
+          <span className="mx-1 h-5 w-px bg-[var(--border-subtle)]" />
+          {[
+            { label: "Bulleted list", command: "bullet" as const, icon: List },
+            {
+              label: "Numbered list",
+              command: "ordered" as const,
+              icon: ListOrdered,
+            },
+            {
+              label: "Checklist",
+              command: "checklist" as const,
+              icon: CheckSquare,
+            },
+            { label: "Quote", command: "quote" as const, icon: Quote },
+          ].map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.command}
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => applyCommand(action.command, false)}
+                aria-label={action.label}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </Button>
+            );
+          })}
+
+          <span className="mx-1 h-5 w-px bg-[var(--border-subtle)]" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Plus className="h-3.5 w-3.5" /> Insert
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-72 p-1.5">
+              <div className="grid grid-cols-2 gap-1">
+                {COMMANDS.filter((command) =>
+                  [
+                    "divider",
+                    "CALLOUT",
+                    "TOGGLE",
+                    "LINK",
+                    "BOOKMARK",
+                    "IMAGE",
+                    "FILE",
+                    "TABLE",
+                    "COLUMNS",
+                    "PAGE_MENTION",
+                    "TASK_REFERENCE",
+                    "PROJECT_REFERENCE",
+                    "DATE_MENTION",
+                    "FORM",
+                  ].includes(command.id)
+                ).map((command) => {
+                  const Icon = command.icon;
+                  return (
+                    <button
+                      key={command.id}
+                      type="button"
+                      onClick={() => applyCommand(command.id, false)}
+                      className="flex min-h-9 items-center gap-2 rounded-[var(--control-radius)] px-2 text-left text-[12px] hover:bg-[var(--menu-item-hover)]"
+                    >
+                      <Icon className="h-3.5 w-3.5 flex-none text-[var(--text-muted)]" />
+                      <span className="truncate">{command.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
 
       {page.coverUrl && (
         <button
           type="button"
           aria-label="Change cover"
+          disabled={!canEdit}
           onClick={() => {
             setCoverUrl(page.coverUrl || "");
             setCoverOpen(true);
           }}
-          className="h-44 w-full bg-cover bg-center"
+          className="h-36 w-full bg-cover bg-center sm:h-52"
           style={{ backgroundImage: `url("${page.coverUrl}")` }}
         />
       )}
@@ -946,45 +1876,48 @@ export function PageWorkspace({
       <main
         ref={hostRef}
         className={cn(
-          "relative mx-auto max-w-[900px] px-7 pb-32 sm:px-12 lg:px-20",
-          page.coverUrl ? "pt-8" : "pt-16"
+          "group/page relative mx-auto max-w-[820px] px-5 pb-52 sm:px-12 sm:pb-36 lg:px-14",
+          page.coverUrl ? "pt-7" : "pt-10 sm:pt-16"
         )}
         onClick={(event) => {
           if (event.target === event.currentTarget)
             editor?.commands.focus("end");
         }}
       >
-        <div className="mb-2 flex h-7 items-center gap-3 text-[12px] text-[var(--text-muted)]">
+        <div className="mb-2 flex h-7 items-center gap-3 text-[12px] text-[var(--text-muted)] opacity-100 transition-opacity sm:opacity-0 sm:group-hover/page:opacity-100 sm:group-focus-within/page:opacity-100">
           <button
             type="button"
+            disabled={!canEdit}
             onClick={() => void patchPage({ icon: page.icon ? null : "📄" })}
-            className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+            className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
           >
             {page.icon ? "Remove icon" : "Add icon"}
           </button>
           {!page.coverUrl && (
             <button
               type="button"
+              disabled={!canEdit}
               onClick={() => {
                 setCoverUrl("");
                 setCoverOpen(true);
               }}
-              className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]"
+              className="rounded px-1.5 py-1 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:opacity-40"
             >
               Add cover
             </button>
           )}
         </div>
-        {page.icon && <div className="mb-2 text-5xl">{page.icon}</div>}
+        {page.icon && <div className="mb-3 text-5xl">{page.icon}</div>}
         <input
           value={page.title}
+          readOnly={!canEdit}
           onChange={(event) => setPage({ ...page, title: event.target.value })}
           onBlur={() => void patchPage({ title: page.title })}
-          className="mb-5 w-full border-0 bg-transparent p-0 text-4xl font-semibold tracking-[-0.045em] outline-none ring-0 placeholder:text-[var(--text-disabled)] focus:ring-0"
+          className="mb-3 w-full border-0 bg-transparent p-0 text-[2.35rem] font-semibold leading-[1.08] tracking-[-0.045em] outline-none ring-0 placeholder:text-[var(--text-disabled)] focus:ring-0 sm:text-5xl"
           placeholder="Untitled"
         />
-        <div className="mb-4 flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
-          <Clock3 className="h-3.5 w-3.5" /> Edited just now
+        <div className="mb-12 flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+          {pageEditedLabel(page.updatedAt)}
           {page.blocks.some((block) => block.createdBy === "AI") && (
             <span className="ml-2 flex items-center gap-1">
               <Sparkles className="h-3 w-3" /> Written with AI
@@ -996,49 +1929,356 @@ export function PageWorkspace({
             if (event.target === event.currentTarget)
               editor?.commands.focus("end");
           }}
+          onPointerDown={startMobileLongPress}
+          onPointerMove={moveMobileLongPress}
+          onPointerUp={clearLongPress}
+          onPointerCancel={clearLongPress}
         >
           <EditorContent editor={editor} />
+          {editor && canEdit && (
+            <BubbleMenu
+              editor={editor}
+              shouldShow={({ state }) =>
+                !slash &&
+                !state.selection.empty &&
+                !editor.isActive("codeBlock")
+              }
+              options={{
+                placement: "top",
+                offset: 10,
+                flip: true,
+                shift: { padding: 8 },
+                inline: true,
+              }}
+            >
+              <div
+                className="needt-overlay-depth hidden items-center gap-0.5 rounded-[var(--control-radius)] border border-[var(--popover-border)] p-1 sm:flex"
+                aria-label="Text formatting"
+              >
+                {[
+                  {
+                    label: "Bold",
+                    active: editor.isActive("bold"),
+                    icon: Bold,
+                    run: () => editor.chain().focus().toggleBold().run(),
+                  },
+                  {
+                    label: "Italic",
+                    active: editor.isActive("italic"),
+                    icon: Italic,
+                    run: () => editor.chain().focus().toggleItalic().run(),
+                  },
+                  {
+                    label: "Strikethrough",
+                    active: editor.isActive("strike"),
+                    icon: Strikethrough,
+                    run: () => editor.chain().focus().toggleStrike().run(),
+                  },
+                  {
+                    label: "Inline code",
+                    active: editor.isActive("code"),
+                    icon: Code2,
+                    run: () => editor.chain().focus().toggleCode().run(),
+                  },
+                ].map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.label}
+                      type="button"
+                      aria-label={action.label}
+                      aria-pressed={action.active}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={action.run}
+                      className={cn(
+                        "flex h-11 w-11 items-center justify-center rounded-[var(--control-radius)] text-[var(--text-secondary)] hover:bg-[var(--menu-item-hover)] sm:h-8 sm:w-8",
+                        action.active &&
+                          "bg-[var(--menu-item-hover)] text-[var(--text-primary)]"
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </button>
+                  );
+                })}
+              </div>
+            </BubbleMenu>
+          )}
         </div>
 
-        {slash && filteredCommands.length > 0 && (
-          <div
-            role="menu"
-            aria-label="Page commands"
-            className="needt-overlay-depth absolute z-30 max-h-[430px] w-[320px] overflow-y-auto rounded-[var(--panel-radius)] border border-[var(--popover-border)] p-1.5 shadow-lg"
-            style={{ top: slash.top, left: slash.left }}
+        {mobileBlockHandle && canEdit && (
+          <button
+            type="button"
+            aria-label="Drag block"
+            className="absolute z-20 flex h-11 w-11 touch-none items-center justify-center rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] text-[var(--text-muted)]"
+            style={{
+              top: mobileBlockHandle.top + mobileBlockDragOffset,
+              left: mobileBlockHandle.left,
+            }}
+            onPointerDown={startMobileBlockDrag}
+            onPointerMove={moveMobileBlockDrag}
+            onPointerUp={finishMobileBlockDrag}
+            onPointerCancel={finishMobileBlockDrag}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+                moveMobileBlockBy(
+                  mobileBlockHandle.blockId,
+                  event.key === "ArrowUp" ? -1 : 1
+                );
+              }
+            }}
           >
-            <div className="px-2.5 pb-1.5 pt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">
-              Blocks
-            </div>
-            {filteredCommands.map((command, index) => {
+            <GripVertical className="h-5 w-5" />
+          </button>
+        )}
+
+        {slash &&
+          filteredCommands.length > 0 &&
+          createPortal(
+            <>
+              <button
+                type="button"
+                aria-label="Close Page commands"
+                className="fixed inset-0 z-[59] bg-black/20 sm:hidden"
+                onClick={() => setSlash(null)}
+              />
+              <div
+                role="menu"
+                aria-label="Page commands"
+                className="needt-page-command-menu needt-overlay-depth z-[60] overflow-y-auto border border-[var(--popover-border)] p-1.5 sm:z-30"
+                style={
+                  {
+                    "--page-command-top": `${slash.top}px`,
+                    "--page-command-left": `${slash.left}px`,
+                  } as CSSProperties
+                }
+              >
+                <div className="mx-auto mb-1 h-1 w-10 rounded-full bg-[var(--border-control)] sm:hidden" />
+                <div className="px-2.5 pb-1.5 pt-1 text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                  Blocks
+                </div>
+                {filteredCommands.map((command, index) => {
+                  const Icon = command.icon;
+                  return (
+                    <button
+                      key={command.id}
+                      type="button"
+                      role="menuitem"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => applyCommand(command.id)}
+                      className={cn(
+                        "flex min-h-11 w-full items-center gap-3 rounded-[var(--control-radius)] px-2.5 py-2 text-left hover:bg-[var(--menu-item-hover)] sm:min-h-0",
+                        index === slashIndex && "bg-[var(--menu-item-hover)]"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 flex-none text-[var(--text-muted)]" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-medium">
+                          {command.label}
+                        </span>
+                        <span className="block truncate text-[11px] text-[var(--text-muted)]">
+                          {command.hint}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>,
+            document.body
+          )}
+      </main>
+
+      {canEdit && (
+        <div
+          data-assistant-avoid
+          className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-30 flex h-12 items-center justify-around border-t border-[var(--border-subtle)] bg-[var(--surface-raised)] px-2 sm:hidden"
+          aria-label="Page editing actions"
+        >
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().undo().run()}
+            disabled={!editor?.can().undo()}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-[var(--text-secondary)] active:bg-[var(--surface-hover)] disabled:opacity-35"
+            aria-label="Undo"
+          >
+            <Undo2 className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileFormatOpen(true)}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-base font-semibold text-[var(--text-secondary)] active:bg-[var(--surface-hover)]"
+            aria-label="Format text"
+          >
+            Aa
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().toggleTaskList().run()}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-[var(--text-secondary)] active:bg-[var(--surface-hover)]"
+            aria-label="Checklist"
+          >
+            <CheckSquare className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileInsertOpen(true)}
+            className="grid h-9 min-w-14 place-items-center rounded-full bg-[var(--button-primary-bg)] text-[var(--button-primary-fg)]"
+            aria-label="Insert block or attachment"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => editor?.chain().focus().redo().run()}
+            disabled={!editor?.can().redo()}
+            className="grid h-11 min-w-11 place-items-center rounded-[var(--control-radius)] text-[var(--text-secondary)] active:bg-[var(--surface-hover)] disabled:opacity-35"
+            aria-label="Redo"
+          >
+            <Redo2 className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
+      <BottomSheet open={mobileFormatOpen} onOpenChange={setMobileFormatOpen}>
+        <BottomSheetContent className="sm:hidden">
+          <BottomSheetTitle>Format</BottomSheetTitle>
+          <BottomSheetDescription className="mt-1">
+            Applies to the current block or selected text.
+          </BottomSheetDescription>
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {COMMANDS.filter((command) =>
+              ["paragraph", "heading1", "heading2", "heading3"].includes(
+                command.id
+              )
+            ).map((command) => {
               const Icon = command.icon;
               return (
                 <button
                   key={command.id}
                   type="button"
-                  role="menuitem"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => applyCommand(command.id)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-[var(--control-radius)] px-2.5 py-2 text-left hover:bg-[var(--menu-item-hover)]",
-                    index === slashIndex && "bg-[var(--menu-item-hover)]"
-                  )}
+                  onClick={() => {
+                    applyCommand(command.id, false);
+                    setMobileFormatOpen(false);
+                  }}
+                  className="flex min-h-16 flex-col items-center justify-center gap-1.5 rounded-[var(--control-radius)] bg-[var(--surface-control)] text-xs"
                 >
-                  <Icon className="h-4 w-4 flex-none text-[var(--text-muted)]" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-medium">
-                      {command.label}
-                    </span>
-                    <span className="block truncate text-[11px] text-[var(--text-muted)]">
-                      {command.hint}
-                    </span>
-                  </span>
+                  <Icon className="h-5 w-5 text-[var(--text-secondary)]" />
+                  {command.label.replace("Heading ", "H")}
                 </button>
               );
             })}
           </div>
-        )}
-      </main>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {[
+              {
+                label: "Bold",
+                icon: Bold,
+                run: () => editor?.chain().focus().toggleBold().run(),
+              },
+              {
+                label: "Italic",
+                icon: Italic,
+                run: () => editor?.chain().focus().toggleItalic().run(),
+              },
+              {
+                label: "Strike",
+                icon: Strikethrough,
+                run: () => editor?.chain().focus().toggleStrike().run(),
+              },
+              {
+                label: "Code",
+                icon: Code2,
+                run: () => editor?.chain().focus().toggleCode().run(),
+              },
+            ].map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  onClick={() => {
+                    action.run();
+                    setMobileFormatOpen(false);
+                  }}
+                  className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-[var(--control-radius)] border border-[var(--border-subtle)] text-xs"
+                >
+                  <Icon className="h-4 w-4" />
+                  {action.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {COMMANDS.filter((command) =>
+              ["bullet", "ordered", "checklist", "quote", "code"].includes(
+                command.id
+              )
+            ).map((command) => {
+              const Icon = command.icon;
+              return (
+                <button
+                  key={command.id}
+                  type="button"
+                  onClick={() => {
+                    applyCommand(command.id, false);
+                    setMobileFormatOpen(false);
+                  }}
+                  className="flex min-h-11 items-center gap-2.5 rounded-[var(--control-radius)] border border-[var(--border-subtle)] px-3 text-left text-sm"
+                >
+                  <Icon className="h-4 w-4 text-[var(--text-muted)]" />
+                  {command.label}
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheetContent>
+      </BottomSheet>
+
+      <BottomSheet open={mobileInsertOpen} onOpenChange={setMobileInsertOpen}>
+        <BottomSheetContent className="sm:hidden">
+          <BottomSheetTitle>Insert</BottomSheetTitle>
+          <BottomSheetDescription className="mt-1">
+            Add media, links and connected Needt blocks at the cursor.
+          </BottomSheetDescription>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {COMMANDS.filter((command) =>
+              [
+                "divider",
+                "CALLOUT",
+                "TOGGLE",
+                "LINK",
+                "BOOKMARK",
+                "IMAGE",
+                "FILE",
+                "TABLE",
+                "COLUMNS",
+                "PAGE_MENTION",
+                "TASK_REFERENCE",
+                "PROJECT_REFERENCE",
+                "DATE_MENTION",
+                "FORM",
+              ].includes(command.id)
+            ).map((command) => {
+              const Icon = command.icon;
+              return (
+                <button
+                  key={command.id}
+                  type="button"
+                  onClick={() => {
+                    applyCommand(command.id, false);
+                    setMobileInsertOpen(false);
+                  }}
+                  className="flex min-h-12 items-center gap-2.5 rounded-[var(--control-radius)] border border-[var(--border-subtle)] px-3 text-left text-sm"
+                >
+                  <Icon className="h-4 w-4 flex-none text-[var(--text-muted)]" />
+                  <span className="truncate">{command.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </BottomSheetContent>
+      </BottomSheet>
 
       <Dialog
         open={Boolean(pendingInsert)}
@@ -1068,6 +2308,29 @@ export function PageWorkspace({
                 Stored privately with this Page · 10 MB maximum.
               </p>
             </div>
+          ) : pendingInsert === "PAGE_MENTION" ? (
+            <div className="max-h-56 space-y-1 overflow-y-auto">
+              {mentionPages.length === 0 && (
+                <p className="py-3 text-center text-[12px] text-[var(--text-muted)]">
+                  No other Pages to mention.
+                </p>
+              )}
+              {mentionPages.map((candidate) => (
+                <button
+                  key={candidate.id}
+                  type="button"
+                  onClick={() => setPendingMentionId(candidate.id)}
+                  className={cn(
+                    "flex min-h-11 w-full items-center gap-2 rounded-[var(--control-radius)] px-3 text-left text-[13px] hover:bg-[var(--surface-hover)]",
+                    pendingMentionId === candidate.id &&
+                      "bg-[var(--surface-hover)]"
+                  )}
+                >
+                  <FileText className="h-4 w-4 text-[var(--text-muted)]" />
+                  <span className="truncate">{candidate.title}</span>
+                </button>
+              ))}
+            </div>
           ) : (
             <div className="space-y-2">
               <Label htmlFor="page-block-value">
@@ -1092,7 +2355,9 @@ export function PageWorkspace({
                 isUploading ||
                 (pendingInsert === "IMAGE" || pendingInsert === "FILE"
                   ? !pendingFile
-                  : !pendingValue.trim())
+                  : pendingInsert === "PAGE_MENTION"
+                    ? !pendingMentionId
+                    : !pendingValue.trim())
               }
             >
               {isUploading ? "Uploading…" : "Add block"}
@@ -1155,6 +2420,28 @@ export function PageWorkspace({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
+            <div className="flex flex-wrap gap-1.5" aria-label="AI page action">
+              {(
+                [
+                  ["rewrite", "Rewrite"],
+                  ["summarize", "Summarize"],
+                  ["critique", "Critique"],
+                ] as const
+              ).map(([action, label]) => (
+                <button
+                  key={action}
+                  type="button"
+                  onClick={() => setAiAction(action)}
+                  className={cn(
+                    "min-h-9 rounded-[var(--control-radius)] border border-[var(--border-control)] px-3 text-[12px] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]",
+                    aiAction === action &&
+                      "bg-[var(--text-primary)] text-[var(--surface-canvas)]"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <Textarea
               aria-label="New page comment"
               value={commentText}
@@ -1269,6 +2556,174 @@ export function PageWorkspace({
       </Dialog>
 
       <Dialog
+        open={toolOpen === "permissions"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Share &amp; permissions</DialogTitle>
+            <DialogDescription>
+              A direct Page role overrides the member&apos;s workspace role.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[420px] space-y-1 overflow-y-auto">
+            {workspaceMembers.length === 0 && (
+              <div className="rounded-[var(--control-radius)] border border-[var(--border-subtle)] px-3 py-4 text-[13px] text-[var(--text-secondary)]">
+                This personal Page is only available to its owner.
+              </div>
+            )}
+            {workspaceMembers.map((member) => {
+              const grant = permissionGrants.find(
+                (candidate) => candidate.userId === member.userId
+              );
+              const isOwner = member.userId === permissionOwnerId;
+              return (
+                <div
+                  key={member.userId}
+                  className="flex min-h-12 items-center gap-3 rounded-[var(--control-radius)] px-2.5 hover:bg-[var(--surface-hover)]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-medium">
+                      {member.user.name || member.user.email || "Member"}
+                    </div>
+                    <div className="truncate text-[11px] text-[var(--text-muted)]">
+                      {isOwner
+                        ? "Page owner"
+                        : `${member.role.toLowerCase()} in workspace`}
+                    </div>
+                  </div>
+                  {isOwner ? (
+                    <span className="text-[12px] text-[var(--text-secondary)]">
+                      Full access
+                    </span>
+                  ) : (
+                    <NeedtPicker
+                      ariaLabel={`Access for ${member.user.name || member.user.email || "member"}`}
+                      options={PAGE_PERMISSION_OPTIONS}
+                      value={grant?.role ?? "INHERITED"}
+                      onValueChange={(role) =>
+                        void setMemberPermission(member.userId, role)
+                      }
+                      align="end"
+                      triggerVariant="field"
+                      className="w-36"
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="border-t border-[var(--border-subtle)] pt-4">
+            <div className="mb-3">
+              <div className="text-[13px] font-medium">Public link</div>
+              <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                Anyone with this separate link can read the Page. They cannot
+                edit it or access the workspace.
+              </p>
+            </div>
+            {publication.published && publication.url ? (
+              <div className="space-y-2">
+                <Input
+                  aria-label="Published Page link"
+                  value={publication.url}
+                  readOnly
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => void unpublishPublicLink()}
+                  >
+                    Unpublish
+                  </Button>
+                  <Button onClick={() => void copyPublicLink()}>
+                    Copy link
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <Button onClick={() => void publishPublicLink()}>
+                  Publish Page
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={toolOpen === "history"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Version history</DialogTitle>
+            <DialogDescription>
+              Restoring a version keeps your current document as a new revision.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[360px] space-y-1 overflow-y-auto">
+            {revisions.length === 0 && (
+              <div className="py-6 text-center text-[12px] text-[var(--text-muted)]">
+                No saved versions yet.
+              </div>
+            )}
+            {revisions.map((revision) => (
+              <div
+                key={revision.id}
+                className="flex min-h-11 items-center gap-3 rounded-[var(--control-radius)] px-2.5 hover:bg-[var(--surface-hover)]"
+              >
+                <History className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="min-w-0 flex-1 text-[13px]">
+                  {new Date(revision.createdAt).toLocaleString()} ·{" "}
+                  {revision.createdBy === "AI" ? "AI" : "You"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void restoreRevision(revision.id)}
+                >
+                  Restore
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={toolOpen === "backlinks"}
+        onOpenChange={(open) => !open && setToolOpen(null)}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Backlinks</DialogTitle>
+            <DialogDescription>
+              Pages that reference this document.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[360px] space-y-1 overflow-y-auto">
+            {backlinks.length === 0 && (
+              <div className="py-6 text-center text-[12px] text-[var(--text-muted)]">
+                No Pages link here yet.
+              </div>
+            )}
+            {backlinks.map((backlink) => (
+              <button
+                key={backlink.id}
+                type="button"
+                onClick={() => router.push(`/pages/${backlink.id}`)}
+                className="flex min-h-11 w-full items-center gap-2 rounded-[var(--control-radius)] px-3 text-left text-[13px] hover:bg-[var(--surface-hover)]"
+              >
+                <FileText className="h-4 w-4 text-[var(--text-muted)]" />
+                <span className="truncate">{backlink.title}</span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={toolOpen === "ai"}
         onOpenChange={(open) => !open && setToolOpen(null)}
       >
@@ -1285,7 +2740,7 @@ export function PageWorkspace({
               aria-label="AI page request"
               value={aiPrompt}
               onChange={(event) => setAiPrompt(event.target.value)}
-              placeholder="Describe what should be added or rewritten…"
+              placeholder={`Describe what should be ${aiAction}…`}
               rows={3}
               disabled={page.isPrivate}
             />

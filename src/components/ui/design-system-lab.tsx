@@ -96,26 +96,16 @@ import {
 } from "@/components/ui/tooltip";
 
 import { APP_NAME } from "@/lib/app-config";
-import { ResolvedThemeMode, getThemeClassNames } from "@/lib/theme";
+import {
+  DESIGN_TOKEN_VARIABLES,
+  DESIGN_TOKENS_EVENT,
+  DesignTokens,
+  applyDesignTokens,
+  parseDesignTokens,
+} from "@/lib/design-tokens";
 import { cn } from "@/lib/utils";
 
-type ThemeDraft = {
-  name: string;
-  mode: ResolvedThemeMode;
-  canvas: string;
-  control: string;
-  controlHover: string;
-  hover: string;
-  borderSubtle: string;
-  border: string;
-  text: string;
-  textSecondary: string;
-  muted: string;
-  accent: string;
-  radius: number;
-};
-
-const PRESETS: Record<string, ThemeDraft> = {
+const PRESETS: Record<string, DesignTokens> = {
   light: {
     name: "Needt light",
     mode: "light",
@@ -174,85 +164,45 @@ const SECTIONS = [
   ["patterns", "Product patterns"],
 ] as const;
 
-const THEME_VARIABLES = [
-  "--surface-canvas",
-  "--surface-panel",
-  "--surface-raised",
-  "--surface-control",
-  "--surface-control-hover",
-  "--surface-input",
-  "--surface-hover",
-  "--border-subtle",
-  "--border-control",
-  "--text-primary",
-  "--text-secondary",
-  "--text-muted",
-  "--color-accent",
-  "--button-primary-bg",
-  "--button-primary-bg-hover",
-  "--button-primary-border",
-  "--switch-on-bg",
-  "--control-radius",
-  "--radius",
-] as const;
+async function fetchSavedDesignTokens(): Promise<DesignTokens | null> {
+  const response = await fetch("/api/customization");
+  if (!response.ok) return null;
+  return parseDesignTokens((await response.json()).designTokens);
+}
 
-const DRAFT_STORAGE_KEY = "needt:style-lab:draft";
-const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-const THEME_CLASS_NAMES = [
-  "light",
-  "dark",
-  "theme-gray",
-  "theme-graphite",
-  "theme-dark",
-];
-
-function parseThemeDraft(value: string): ThemeDraft | null {
-  try {
-    const draft = JSON.parse(value) as Partial<ThemeDraft>;
-    const colors = [
-      draft.canvas,
-      draft.control,
-      draft.controlHover,
-      draft.hover,
-      draft.borderSubtle,
-      draft.border,
-      draft.text,
-      draft.textSecondary,
-      draft.muted,
-      draft.accent,
-    ];
-    if (
-      typeof draft.name !== "string" ||
-      draft.name.trim().length === 0 ||
-      draft.name.length > 80 ||
-      !["light", "graphite", "dark"].includes(draft.mode ?? "") ||
-      !colors.every(
-        (color): color is string =>
-          typeof color === "string" && HEX_COLOR.test(color)
-      ) ||
-      typeof draft.radius !== "number" ||
-      !Number.isFinite(draft.radius) ||
-      draft.radius < 2 ||
-      draft.radius > 18
-    ) {
-      return null;
-    }
-    return draft as ThemeDraft;
-  } catch {
-    return null;
-  }
+function designTokensMatch(left: DesignTokens, right: DesignTokens) {
+  return (
+    left.name === right.name &&
+    left.mode === right.mode &&
+    left.canvas === right.canvas &&
+    left.control === right.control &&
+    left.controlHover === right.controlHover &&
+    left.hover === right.hover &&
+    left.borderSubtle === right.borderSubtle &&
+    left.border === right.border &&
+    left.text === right.text &&
+    left.textSecondary === right.textSecondary &&
+    left.muted === right.muted &&
+    left.accent === right.accent &&
+    left.radius === right.radius
+  );
 }
 
 export function DesignSystemLab() {
   const [preset, setPreset] = React.useState("dark");
-  const [draft, setDraft] = React.useState<ThemeDraft>(PRESETS.dark);
+  const [draft, setDraft] = React.useState<DesignTokens>(PRESETS.dark);
   const [copyState, setCopyState] = React.useState("Copy theme CSS");
   const [editorStatus, setEditorStatus] = React.useState("");
+  const [isSaving, setIsSaving] = React.useState(false);
+  const [savedDraft, setSavedDraft] = React.useState<DesignTokens | null>(
+    null
+  );
   const originalRootRef = React.useRef<{
     className: string;
     dataTheme: string | null;
     variables: Map<string, string>;
   } | null>(null);
+  const committedTokensRef = React.useRef<DesignTokens | null>(null);
 
   React.useEffect(() => {
     // The lab lives outside the (app) shell that normally sets this flag, so
@@ -267,12 +217,28 @@ export function DesignSystemLab() {
   }, []);
 
   React.useEffect(() => {
+    let cancelled = false;
+    fetchSavedDesignTokens()
+      .then((savedTokens) => {
+        if (!cancelled && savedTokens) {
+          setPreset("custom");
+          setDraft(savedTokens);
+          setSavedDraft(savedTokens);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  React.useEffect(() => {
     const root = document.documentElement;
     originalRootRef.current = {
       className: root.className,
       dataTheme: root.getAttribute("data-theme"),
       variables: new Map(
-        THEME_VARIABLES.map((variable) => [
+        DESIGN_TOKEN_VARIABLES.map((variable) => [
           variable,
           root.style.getPropertyValue(variable),
         ])
@@ -290,40 +256,19 @@ export function DesignSystemLab() {
         if (value) root.style.setProperty(variable, value);
         else root.style.removeProperty(variable);
       });
+      if (committedTokensRef.current) {
+        window.dispatchEvent(
+          new CustomEvent(DESIGN_TOKENS_EVENT, {
+            detail: committedTokensRef.current,
+          })
+        );
+      }
     };
   }, []);
 
   React.useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove(...THEME_CLASS_NAMES);
-    root.classList.add(...getThemeClassNames(draft.mode));
-    root.setAttribute("data-theme", draft.mode);
-
-    const values: Record<(typeof THEME_VARIABLES)[number], string> = {
-      "--surface-canvas": draft.canvas,
-      "--surface-panel": draft.canvas,
-      "--surface-raised": draft.canvas,
-      "--surface-control": draft.control,
-      "--surface-control-hover": draft.controlHover,
-      "--surface-input": draft.canvas,
-      "--surface-hover": draft.hover,
-      "--border-subtle": draft.borderSubtle,
-      "--border-control": draft.border,
-      "--text-primary": draft.text,
-      "--text-secondary": draft.textSecondary,
-      "--text-muted": draft.muted,
-      "--color-accent": draft.accent,
-      "--button-primary-bg": draft.accent,
-      "--button-primary-bg-hover": draft.accent,
-      "--button-primary-border": draft.accent,
-      "--switch-on-bg": draft.accent,
-      "--control-radius": `${draft.radius}px`,
-      "--radius": `${draft.radius}px`,
-    };
-
-    THEME_VARIABLES.forEach((variable) => {
-      root.style.setProperty(variable, values[variable]);
-    });
+    applyDesignTokens(root, draft);
   }, [draft]);
 
   const choosePreset = (value: string) => {
@@ -333,36 +278,60 @@ export function DesignSystemLab() {
     setDraft(next);
   };
 
-  const updateDraft = <Key extends keyof ThemeDraft>(
+  const updateDraft = <Key extends keyof DesignTokens>(
     key: Key,
-    value: ThemeDraft[Key]
+    value: DesignTokens[Key]
   ) => {
     setPreset("custom");
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
+    setIsSaving(true);
     try {
-      window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
-      setEditorStatus("Draft saved locally");
+      const [customization, userSettings] = await Promise.all([
+        fetch("/api/customization", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            designTokens: draft,
+            accentColor: draft.accent,
+            radius: draft.radius,
+          }),
+        }),
+        fetch("/api/user-settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ theme: draft.mode }),
+        }),
+      ]);
+      if (!customization.ok || !userSettings.ok) throw new Error("Save failed");
+      committedTokensRef.current = draft;
+      setSavedDraft(draft);
+      window.dispatchEvent(
+        new CustomEvent(DESIGN_TOKENS_EVENT, { detail: draft })
+      );
+      setEditorStatus("Theme applied across Needt");
     } catch {
-      setEditorStatus("Could not save this draft");
+      setEditorStatus("Could not apply this theme");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const loadDraft = () => {
+  const loadDraft = async () => {
     try {
-      const stored = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-      const parsed = stored ? parseThemeDraft(stored) : null;
+      const parsed = await fetchSavedDesignTokens();
       if (!parsed) {
-        setEditorStatus(stored ? "Saved draft is invalid" : "No saved draft");
+        setEditorStatus("No saved global theme");
         return;
       }
       setPreset("custom");
       setDraft(parsed);
-      setEditorStatus("Draft loaded");
+      setSavedDraft(parsed);
+      setEditorStatus("Saved global theme loaded");
     } catch {
-      setEditorStatus("Could not load this draft");
+      setEditorStatus("Could not load saved theme");
     }
   };
 
@@ -378,11 +347,13 @@ export function DesignSystemLab() {
     }
   };
 
+  const isDraftDirty = !savedDraft || !designTokensMatch(draft, savedDraft);
+
   return (
     <TooltipProvider>
       <main className="needt-page-depth min-h-screen text-[var(--text-primary)]">
-        <div className="mx-auto grid max-w-[1440px] lg:grid-cols-[216px_minmax(0,1fr)]">
-          <aside className="hidden border-r border-[var(--border-subtle)] px-5 py-8 lg:block">
+        <div className="mx-auto grid max-w-[1680px] lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside className="hidden border-r border-[var(--border-subtle)] px-6 py-8 lg:block">
             <div className="sticky top-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
                 {APP_NAME} UI
@@ -408,10 +379,11 @@ export function DesignSystemLab() {
           </aside>
 
           <div className="min-w-0 px-5 py-9 sm:px-8 lg:px-12 lg:py-12">
+            <div className="mx-auto max-w-[1240px]">
             <div className="pointer-events-none sticky top-3 z-40 mb-5 flex justify-end">
               <div
                 aria-label="Quick theme switcher"
-                className="pointer-events-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border-control)] bg-[var(--surface-canvas)] p-1 shadow-lg"
+                className="needt-overlay-shadow pointer-events-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border-control)] bg-[var(--surface-canvas)] p-1"
                 role="group"
               >
                 <QuickThemeButton
@@ -452,7 +424,7 @@ export function DesignSystemLab() {
               <SectionTitle
                 eyebrow="Foundation"
                 title="Theme sandbox"
-                description="Changes apply to this route, including portalled dialogs and menus. Save a local draft or copy a semantic-token block; product settings are not modified."
+                description="Changes preview on this route, including portalled dialogs and menus. Apply the token object to bind every shared product control, or copy it as CSS."
               />
               <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
                 <PreviewPanel
@@ -460,7 +432,7 @@ export function DesignSystemLab() {
                   description="Primitive values feed semantic roles."
                   reference="Theme / semantic-tokens"
                 >
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                       ["Canvas", "canvas", draft.canvas],
                       ["Control", "control", draft.control],
@@ -509,6 +481,29 @@ export function DesignSystemLab() {
                   <div className="flex items-center gap-2">
                     <Settings2 className="h-4 w-4 text-[var(--text-secondary)]" />
                     <h3 className="text-[14px] font-semibold">Theme editor</h3>
+                  </div>
+                  <div className="mt-4 flex items-start gap-2 border-y border-[var(--border-subtle)] py-3">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "mt-1.5 h-1.5 w-1.5 rounded-full",
+                        isDraftDirty
+                          ? "bg-[var(--color-warning)]"
+                          : "bg-[var(--color-success)]"
+                      )}
+                    />
+                    <div>
+                      <p className="text-[12px] font-medium">
+                        {isDraftDirty
+                          ? "Preview only"
+                          : "Applied across Needt"}
+                      </p>
+                      <p className="mt-0.5 text-[11px] leading-4 text-[var(--text-muted)]">
+                        {isDraftDirty
+                          ? "Review the shared components, then apply this draft everywhere."
+                          : "This saved token set is active on product screens."}
+                      </p>
+                    </div>
                   </div>
                   <div className="mt-4 space-y-4">
                     <Field label="Preset">
@@ -596,15 +591,29 @@ export function DesignSystemLab() {
                         aria-label="Component radius"
                       />
                     </Field>
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <Button size="sm" variant="outline" onClick={saveDraft}>
-                        <Save /> Save draft
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pt-1">
+                      <Button
+                        size="sm"
+                        onClick={saveDraft}
+                        disabled={isSaving}
+                      >
+                        <Save /> {isSaving ? "Applying" : "Apply globally"}
                       </Button>
-                      <Button size="sm" variant="outline" onClick={loadDraft}>
-                        <RotateCcw /> Load draft
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={loadDraft}
+                        disabled={isSaving}
+                      >
+                        <RotateCcw /> Load saved
                       </Button>
                     </div>
-                    <Button className="w-full" size="sm" onClick={copyThemeCss}>
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      variant="outline"
+                      onClick={copyThemeCss}
+                    >
                       <Copy /> {copyState}
                     </Button>
                     <p
@@ -1082,6 +1091,7 @@ export function DesignSystemLab() {
                 </Pattern>
               </div>
             </CatalogSection>
+            </div>
           </div>
         </div>
       </main>
@@ -1383,7 +1393,7 @@ function QuickThemeButton({
   return (
     <button
       aria-pressed={active}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] aria-pressed:bg-[var(--surface-control)] aria-pressed:text-[var(--text-primary)] max-sm:[&_span]:sr-only"
+      className="inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors [transition-duration:var(--motion-duration-fast)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] aria-pressed:bg-[var(--surface-control)] aria-pressed:text-[var(--text-primary)]"
       onClick={onClick}
       type="button"
     >
@@ -1433,7 +1443,7 @@ function Pattern({
   );
 }
 
-function toThemeCss(theme: ThemeDraft) {
+function toThemeCss(theme: DesignTokens) {
   const slug = theme.name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")

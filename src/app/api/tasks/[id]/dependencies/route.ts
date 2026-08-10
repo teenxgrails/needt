@@ -18,7 +18,9 @@ function dependencyError(error: TaskDependencyError) {
     error.code === "TASK_NOT_FOUND"
       ? 404
       : error.code === "DEPENDENCY_CYCLE" ||
-          error.code === "DUPLICATE_DEPENDENCY"
+          error.code === "DUPLICATE_DEPENDENCY" ||
+          error.code === "CROSS_PROJECT_DEPENDENCY" ||
+          error.code === "PROJECT_ARCHIVED"
         ? 409
         : 400;
   return NextResponse.json({ error: error.code }, { status });
@@ -30,7 +32,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
   try {
     const { id } = await params;
-    return NextResponse.json(await listTaskDependencies(auth.userId, id));
+    return NextResponse.json(
+      await listTaskDependencies(
+        { userId: auth.userId, workspace: auth.workspace },
+        id
+      )
+    );
   } catch (error) {
     if (error instanceof TaskDependencyError) return dependencyError(error);
     logger.error(
@@ -57,6 +64,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
     const dependency = await addTaskDependency({
       userId: auth.userId,
+      workspace: auth.workspace,
       blockerTaskId: body.blockerTaskId,
       blockedTaskId: id,
     });
@@ -84,7 +92,11 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       );
     }
-    await removeTaskDependency({ userId: auth.userId, dependencyId });
+    await removeTaskDependency({
+      userId: auth.userId,
+      workspace: auth.workspace,
+      dependencyId,
+    });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     if (error instanceof TaskDependencyError) return dependencyError(error);

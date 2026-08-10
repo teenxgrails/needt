@@ -21,8 +21,8 @@ describe("AI companion interaction contract", () => {
   it("supports keyboard movement and the requested responsive sizes", () => {
     expect(companionSource).toContain("ArrowLeft");
     expect(companionSource).toContain("event.shiftKey ? 24 : 8");
-    expect(companionSource).toContain("h-[88px] w-[88px]");
-    expect(companionSource).toContain("max-sm:h-16 max-sm:w-16");
+    expect(companionSource).toContain("h-[72px] w-[72px]");
+    expect(companionSource).toContain("max-sm:h-14 max-sm:w-14");
     expect(companionSource).not.toContain("h-[116px]");
     expect(companionSource).not.toContain("max-sm:h-[76px]");
   });

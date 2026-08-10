@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { TaskSyncManager } from "@/lib/task-sync/task-sync-manager";
 import { CalDAVFieldMapper } from "@/lib/task-sync/providers/caldav-field-mapper";
 import {
   ExternalTask,
   TaskProviderInterface,
 } from "@/lib/task-sync/providers/task-provider.interface";
+import { TaskSyncManager } from "@/lib/task-sync/task-sync-manager";
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -22,11 +22,26 @@ jest.mock("@/lib/prisma", () => ({
     taskChange: {
       findMany: jest.fn().mockResolvedValue([]),
     },
+    scheduledBlock: {
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+    },
+    project: {
+      findUnique: jest.fn().mockResolvedValue({ workspaceId: "workspace-1" }),
+    },
   },
 }));
 
+jest.mock("@/lib/task-block-push", () => ({
+  schedulePushTaskBlock: jest.fn(),
+}));
+
 jest.mock("@/lib/logger", () => ({
-  logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
 }));
 
 const mockPrisma = prisma as unknown as {
@@ -39,6 +54,8 @@ const mockPrisma = prisma as unknown as {
     delete: jest.Mock;
   };
   taskChange: { findMany: jest.Mock };
+  scheduledBlock: { deleteMany: jest.Mock };
+  project: { findUnique: jest.Mock };
 };
 
 const WRITE_NOT_SUPPORTED = "CalDAV task write-back is not supported";
@@ -107,6 +124,14 @@ describe("TaskSyncManager incoming-only sync for import-only providers (issue #1
 
     expect(result.success).toBe(true);
     expect(mockPrisma.task.create).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.task.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          workspaceId: "workspace-1",
+          assigneeId: "user-1",
+        }),
+      })
+    );
     // Crucially: no write-back to the CalDAV server is attempted.
     expect(provider.createTask).not.toHaveBeenCalled();
     expect(provider.updateTask).not.toHaveBeenCalled();
@@ -165,6 +190,38 @@ describe("TaskSyncManager incoming-only sync for import-only providers (issue #1
     expect(mockPrisma.task.create).not.toHaveBeenCalled();
   });
 
+  it("does not revive an archived task when the provider still returns it", async () => {
+    const external: ExternalTask = {
+      id: "uid-archived",
+      title: "Still on provider",
+      listId: "https://dav.example.com/cal/tasks/",
+    };
+    const provider = makeImportOnlyProvider([external]);
+    mockPrisma.task.findMany.mockResolvedValue([
+      {
+        id: "local-archived",
+        title: "Archived locally",
+        externalTaskId: external.id,
+        source: "CALDAV",
+        isArchived: true,
+        tags: [],
+        project: null,
+      },
+    ]);
+
+    const manager = new TaskSyncManager();
+    jest.spyOn(manager, "getProvider").mockResolvedValue(provider);
+    jest
+      .spyOn(manager, "getFieldMapper")
+      .mockReturnValue(new CalDAVFieldMapper());
+
+    const result = await manager.syncTaskList(mapping());
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.task.update).not.toHaveBeenCalled();
+    expect(mockPrisma.task.create).not.toHaveBeenCalled();
+  });
+
   it("does NOT delete a locally-linked task that is missing from the external read", async () => {
     // External read returns NOTHING (e.g. a transient/partial failure).
     const provider = makeImportOnlyProvider([]);
@@ -195,5 +252,54 @@ describe("TaskSyncManager incoming-only sync for import-only providers (issue #1
     expect(mockPrisma.task.delete).not.toHaveBeenCalled();
     // And no write-back was attempted.
     expect(provider.createTask).not.toHaveBeenCalled();
+  });
+
+  it("archives a linked task missing from a bidirectional provider", async () => {
+    const provider = {
+      ...makeImportOnlyProvider([]),
+      supportsWriteBack: () => true,
+      createTask: jest.fn(),
+      updateTask: jest.fn(),
+      deleteTask: jest.fn(),
+    } as unknown as TaskProviderInterface;
+    mockPrisma.task.findMany.mockResolvedValue([
+      {
+        id: "local-1",
+        title: "Removed remotely",
+        externalTaskId: "uid-1",
+        externalListId: "https://dav.example.com/cal/tasks/",
+        source: "CALDAV",
+        isArchived: false,
+        workspaceId: "workspace-1",
+        updatedAt: new Date(0),
+        tags: [],
+        project: null,
+      },
+    ]);
+    mockPrisma.taskChange.findMany.mockResolvedValue([]);
+
+    const manager = new TaskSyncManager();
+    jest.spyOn(manager, "getProvider").mockResolvedValue(provider);
+    jest
+      .spyOn(manager, "getFieldMapper")
+      .mockReturnValue(new CalDAVFieldMapper());
+
+    const result = await manager.syncTaskList(mapping());
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.task.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "local-1" },
+        data: expect.objectContaining({
+          isArchived: true,
+          archivedAt: expect.any(Date),
+        }),
+      })
+    );
+    expect(provider.deleteTask).not.toHaveBeenCalled();
+    expect(mockPrisma.task.delete).not.toHaveBeenCalled();
+    expect(mockPrisma.scheduledBlock.deleteMany).toHaveBeenCalledWith({
+      where: { taskId: "local-1", userId: "user-1" },
+    });
   });
 });

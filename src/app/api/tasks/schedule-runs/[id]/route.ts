@@ -10,7 +10,13 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   if ("response" in auth) return auth.response;
   const { id } = await params;
   const run = await prisma.schedulingRun.findFirst({
-    where: { id, userId: auth.userId },
+    where: {
+      id,
+      userId: auth.userId,
+      ...(auth.workspace?.dataScope.mode === "workspace"
+        ? { workspaceId: auth.workspace.workspaceId }
+        : {}),
+    },
     select: {
       id: true,
       status: true,

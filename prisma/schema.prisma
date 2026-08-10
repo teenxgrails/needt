@@ -75,6 +75,7 @@ model Session {
 
 model User {
   id                     String                  @id @default(cuid())
+  isActive               Boolean                 @default(true)
   name                   String?
   email                  String?                 @unique
   emailVerified          DateTime?
@@ -124,6 +125,12 @@ model User {
   aiPageProposals        AiPageChangeProposal[]
   pageAssets             PageAsset[]
   pageComments           PageComment[]
+  pageAccessGrants       PageAccessGrant[]       @relation("PageAccessGrantee")
+  pageAccessGrantsGiven  PageAccessGrant[]       @relation("PageAccessGrantor")
+  pagePublications       PagePublication[]       @relation("PagePublicationPublisher")
+  moodboardsCreated      Moodboard[]             @relation("MoodboardCreator")
+  moodboardAccessGrants  MoodboardAccessGrant[]  @relation("MoodboardAccessGrantee")
+  moodboardGrantsGiven   MoodboardAccessGrant[]  @relation("MoodboardAccessGrantor")
   pageTemplates          PageTemplate[]
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
@@ -138,6 +145,74 @@ model User {
   bookingPages           BookingPage[]
   bookings               Booking[]               @relation("BookingOwner")
   featureFlagOverrides   FeatureFlagOverride[]
+  personalWorkspace      Workspace?              @relation("PersonalWorkspaceOwner")
+  workspaceMemberships   WorkspaceMember[]
+  workspaceInvitesSent   WorkspaceInvite[]       @relation("WorkspaceInviteSender")
+  workspaceInvitesUsed   WorkspaceInvite[]       @relation("WorkspaceInviteAcceptor")
+  assignedTasks          Task[]                  @relation("TaskAssignee")
+  taskActivities         TaskActivity[]          @relation("TaskActivityActor")
+  projectTemplates       ProjectTemplate[]       @relation("ProjectTemplateCreator")
+  projectBlockersCreated ProjectBlocker[]        @relation("ProjectBlockerCreator")
+}
+
+model Workspace {
+  id               String            @id @default(cuid())
+  name             String
+  kind             WorkspaceKind     @default(PERSONAL)
+  personalOwnerId  String?           @unique
+  personalOwner    User?             @relation("PersonalWorkspaceOwner", fields: [personalOwnerId], references: [id], onDelete: SetNull)
+  members          WorkspaceMember[]
+  invites          WorkspaceInvite[]
+  projects         Project[]
+  tasks            Task[]
+  boards           Board[]
+  pages            Page[]
+  moodboards       Moodboard[]
+  taskActivities   TaskActivity[]
+  taskDependencies TaskDependency[]
+  projectTemplates ProjectTemplate[]
+  schedulingRuns   SchedulingRun[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([kind])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        WorkspaceRole
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId, role])
+}
+
+model WorkspaceInvite {
+  id           String        @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  email        String
+  role         WorkspaceRole
+  tokenHash    String        @unique
+  invitedById  String?
+  invitedBy    User?         @relation("WorkspaceInviteSender", fields: [invitedById], references: [id], onDelete: SetNull)
+  acceptedById String?
+  acceptedBy   User?         @relation("WorkspaceInviteAcceptor", fields: [acceptedById], references: [id], onDelete: SetNull)
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([workspaceId, email])
+  @@index([email, expiresAt])
+  @@index([invitedById])
+  @@index([acceptedById])
 }
 
 model VerificationToken {
@@ -216,6 +291,7 @@ model CalendarEvent {
   attendees       Json? // Stored as JSON array of { name?: string, email: string, status?: string }
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
+  archivedAt      DateTime?
 
   // New fields for hybrid approach
   isMaster         Boolean         @default(false) // True if this is a master event
@@ -225,6 +301,7 @@ model CalendarEvent {
   recurringEventId String? // Google Calendar's recurring event ID
 
   @@index([feedId])
+  @@index([feedId, archivedAt])
   @@index([start, end])
   @@index([externalEventId])
   @@index([masterEventId])
@@ -283,10 +360,18 @@ model Project {
   description      String?
   color            String?
   icon             String?
+  // Legacy rollback field. API responses derive progress from active tasks;
+  // remove this column only in a later contract migration.
   progress         Int               @default(0)
   status           String            @default("active") // enum: 'active', 'archived'
   tasks            Task[]
   taskListMappings TaskListMapping[]
+  stages           ProjectStage[]
+  blockers         ProjectBlocker[]
+  startDate        DateTime?
+  deadline         DateTime?
+  sourceTemplateId String?
+  sourceTemplate   ProjectTemplate?  @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
 
   // External sync fields
   externalId     String?
@@ -297,13 +382,180 @@ model Project {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([userId])
+  @@index([workspaceId])
+  @@index([sourceTemplateId])
   @@index([externalId, externalSource])
+}
+
+model ProjectStage {
+  id                   String           @id @default(cuid())
+  projectId            String
+  project              Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name                 String
+  color                String?
+  position             Float            @default(0)
+  startDate            DateTime?
+  deadline             DateTime?
+  expectedDurationDays Int?
+  tasks                Task[]
+  blockers             ProjectBlocker[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@unique([id, projectId])
+  @@index([projectId, position])
+}
+
+/// A project-scoped hold. Exactly one target (task or stage) and one source
+/// (blocker task or external title) are enforced by the migration checks.
+model ProjectBlocker {
+  id            String        @id @default(cuid())
+  projectId     String
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId        String?
+  task          Task?         @relation("ProjectBlockerTargetTask", fields: [taskId, projectId], references: [id, projectId], onDelete: Cascade, map: "ProjectBlocker_taskId_fkey")
+  stageId       String?
+  stage         ProjectStage? @relation(fields: [stageId, projectId], references: [id, projectId], onDelete: Cascade, map: "ProjectBlocker_stageId_fkey")
+  blockerTaskId String?
+  blockerTask   Task?         @relation("ProjectBlockerSourceTask", fields: [blockerTaskId, projectId], references: [id, projectId], onDelete: Cascade, map: "ProjectBlocker_blockerTaskId_fkey")
+  title         String?
+  resolvedAt    DateTime?
+  createdById   String?
+  createdBy     User?         @relation("ProjectBlockerCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([projectId, resolvedAt])
+  @@index([taskId])
+  @@index([stageId])
+  @@index([blockerTaskId])
+  @@index([createdById])
+}
+
+model ProjectTemplate {
+  id           String                      @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace                   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById  String?
+  createdBy    User?                       @relation("ProjectTemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  name         String
+  description  String?
+  color        String?
+  icon         String?
+  kind         ProjectTemplateKind         @default(REGULAR)
+  stages       ProjectTemplateStage[]
+  roles        ProjectTemplateRole[]
+  tasks        ProjectTemplateTask[]
+  dependencies ProjectTemplateDependency[]
+  projects     Project[]
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
+
+  @@index([workspaceId, kind])
+  @@index([createdById])
+}
+
+model ProjectTemplateStage {
+  id              String                @id @default(cuid())
+  templateId      String
+  template        ProjectTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name            String
+  color           String?
+  position        Float                 @default(0)
+  startOffsetDays Int                   @default(0)
+  durationDays    Int?
+  tasks           ProjectTemplateTask[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@unique([id, templateId])
+  @@index([templateId, position])
+}
+
+model ProjectTemplateRole {
+  id         String                @id @default(cuid())
+  templateId String
+  template   ProjectTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name       String
+  color      String?
+  position   Float                 @default(0)
+  tasks      ProjectTemplateTask[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  @@unique([templateId, name])
+  @@unique([id, templateId])
+  @@index([templateId, position])
+}
+
+model ProjectTemplateTask {
+  id                 String                      @id @default(cuid())
+  templateId         String
+  template           ProjectTemplate             @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  stageId            String?
+  stage              ProjectTemplateStage?       @relation(fields: [stageId, templateId], references: [id, templateId], onDelete: NoAction, map: "ProjectTemplateTask_stageId_fkey")
+  roleId             String?
+  role               ProjectTemplateRole?        @relation(fields: [roleId, templateId], references: [id, templateId], onDelete: NoAction, map: "ProjectTemplateTask_roleId_fkey")
+  title              String
+  description        String?
+  position           Float                       @default(0)
+  estimatedMinutes   Int?
+  priority           String?
+  energyRequired     SchedulingEnergyLevel       @default(MEDIUM)
+  startAnchor        ProjectRelativeDateAnchor?
+  startOffsetDays    Int?
+  deadlineAnchor     ProjectRelativeDateAnchor?
+  deadlineOffsetDays Int?
+  blocks             ProjectTemplateDependency[] @relation("ProjectTemplateDependencyBlocker")
+  blockedBy          ProjectTemplateDependency[] @relation("ProjectTemplateDependencyBlocked")
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+
+  @@unique([id, templateId])
+  @@index([templateId, position])
+  @@index([stageId])
+  @@index([roleId])
+}
+
+model ProjectTemplateDependency {
+  id            String              @id @default(cuid())
+  templateId    String
+  template      ProjectTemplate     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  blockerTaskId String
+  blockerTask   ProjectTemplateTask @relation("ProjectTemplateDependencyBlocker", fields: [blockerTaskId, templateId], references: [id, templateId], onDelete: Cascade, map: "ProjectTemplateDependency_blockerTaskId_fkey")
+  blockedTaskId String
+  blockedTask   ProjectTemplateTask @relation("ProjectTemplateDependencyBlocked", fields: [blockedTaskId, templateId], references: [id, templateId], onDelete: Cascade, map: "ProjectTemplateDependency_blockedTaskId_fkey")
+  createdAt     DateTime            @default(now())
+
+  @@unique([blockerTaskId, blockedTaskId])
+  @@index([templateId])
+  @@index([blockedTaskId])
+}
+
+model TaskActivity {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actorId     String?
+  actor       User?     @relation("TaskActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  action      String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([actorId])
 }
 
 /// A persistent, editable work journal for one local calendar day. Tasks stay
@@ -395,8 +647,8 @@ model Task {
   completedAt          DateTime? // When the task was marked as completed
   recurrenceMasterId   String?
   recurrenceInstanceAt DateTime?
-  recurrenceMaster     Task?      @relation("TaskRecurrenceInstances", fields: [recurrenceMasterId], references: [id], onDelete: Restrict)
-  recurrenceInstances  Task[]     @relation("TaskRecurrenceInstances")
+  recurrenceMaster     Task?     @relation("TaskRecurrenceInstances", fields: [recurrenceMasterId], references: [id], onDelete: Restrict)
+  recurrenceInstances  Task[]    @relation("TaskRecurrenceInstances")
 
   // External Integration
   externalTaskId String?
@@ -422,6 +674,17 @@ model Task {
   userId String?
   user   User?   @relation(fields: [userId], references: [id])
 
+  workspaceId             String?
+  workspace               Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  assigneeId              String?
+  assignee                User?            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  busyStatus              TaskBusyStatus   @default(BUSY)
+  stageId                 String?
+  stage                   ProjectStage?    @relation(fields: [stageId, projectId], references: [id, projectId], onDelete: NoAction, map: "Task_stageId_fkey")
+  activities              TaskActivity[]
+  projectBlockersTargeted ProjectBlocker[] @relation("ProjectBlockerTargetTask")
+  projectBlockersAsSource ProjectBlocker[] @relation("ProjectBlockerSourceTask")
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -440,6 +703,8 @@ model Task {
   boardPosition Float?
   properties    Json?
 
+  @@unique([recurrenceMasterId, recurrenceInstanceAt])
+  @@unique([id, projectId])
   @@index([status])
   @@index([dueDate])
   @@index([startDate])
@@ -449,7 +714,6 @@ model Task {
   @@index([boardColumnId])
   @@index([isRecurring])
   @@index([recurrenceMasterId])
-  @@unique([recurrenceMasterId, recurrenceInstanceAt])
   @@index([isAutoScheduled])
   @@index([scheduledStart, scheduledEnd])
   @@index([scheduleId])
@@ -466,6 +730,9 @@ model Task {
   @@index([dependsOnId])
   @@index([autoScheduled])
   @@index([userId])
+  @@index([workspaceId])
+  @@index([assigneeId])
+  @@index([stageId])
   @@index([externalTaskId, source])
   @@index([syncStatus])
   @@index([externalListId])
@@ -576,6 +843,8 @@ model SchedulingRun {
   id                 String              @id @default(cuid())
   userId             String
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId        String?
+  workspace          Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   source             SchedulingRunSource
   status             SchedulingRunStatus @default(QUEUED)
   dedupeKey          String
@@ -592,6 +861,7 @@ model SchedulingRun {
 
   @@unique([userId, dedupeKey])
   @@index([userId, status, createdAt])
+  @@index([workspaceId, status, createdAt])
   @@index([source, status, createdAt])
 }
 
@@ -623,18 +893,22 @@ model IdempotencyRecord {
 }
 
 model TaskDependency {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   userId        String
-  user          User     @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
   blockerTaskId String
-  blocker       Task     @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
+  blocker       Task      @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
   blockedTaskId String
-  blocked       Task     @relation("TaskDependencyBlocked", fields: [blockedTaskId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
+  blocked       Task      @relation("TaskDependencyBlocked", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  removedAt     DateTime?
 
   @@unique([blockerTaskId, blockedTaskId])
   @@index([userId, blockedTaskId])
   @@index([userId, blockerTaskId])
+  @@index([workspaceId, removedAt])
 }
 
 model TaskReminder {
@@ -764,21 +1038,24 @@ model Booking {
 }
 
 model Board {
-  id         String        @id @default(cuid())
-  userId     String
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name       String
-  icon       String? // emoji
-  position   Float         @default(0)
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String?
+  workspace   Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  name        String
+  icon        String? // emoji
+  position    Float         @default(0)
   // "manual" columns, or auto-group by status | priority | project | tag.
-  groupBy    String        @default("manual")
-  columns    BoardColumn[]
-  tasks      Task[]
-  savedViews SavedView[]
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  groupBy     String        @default("manual")
+  columns     BoardColumn[]
+  tasks       Task[]
+  savedViews  SavedView[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@index([userId])
+  @@index([workspaceId])
 }
 
 model BoardColumn {
@@ -820,21 +1097,23 @@ model SavedView {
 /// A personal, block-based document. Pages are deliberately independent from
 /// Task so notebooks and databases never become a parallel scheduling system.
 model Page {
-  id                    String                 @id @default(cuid())
+  id                    String                  @id @default(cuid())
   userId                String
-  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId           String?
+  workspace             Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   parentId              String?
-  parent                Page?                  @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children              Page[]                 @relation("PageTree")
-  title                 String                 @default("Untitled")
+  parent                Page?                   @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Page[]                  @relation("PageTree")
+  title                 String                  @default("Untitled")
   icon                  String?
   coverUrl              String?
-  isPrivate             Boolean                @default(false)
-  isFavorite            Boolean                @default(false)
-  createdBy             PageAuthor             @default(HUMAN)
+  isPrivate             Boolean                 @default(false)
+  isFavorite            Boolean                 @default(false)
+  createdBy             PageAuthor              @default(HUMAN)
   trashedAt             DateTime?
-  position              Float                  @default(0)
-  documentFormatVersion Int                    @default(1)
+  position              Float                   @default(0)
+  documentFormatVersion Int                     @default(1)
   blocks                PageBlock[]
   database              PageDatabase?
   record                DatabaseRecord?
@@ -843,10 +1122,14 @@ model Page {
   assets                PageAsset[]
   comments              PageComment[]
   forms                 PageForm[]
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  accessGrants          PageAccessGrant[]
+  collaborationState    PageCollaborationState?
+  publication           PagePublication?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
 
   @@index([userId, parentId, position])
+  @@index([workspaceId])
   @@index([userId, isFavorite])
   @@index([userId, trashedAt])
 }
@@ -1027,6 +1310,109 @@ model PageRevision {
 
   @@index([pageId, createdAt])
   @@index([userId, createdAt])
+}
+
+model PageAccessGrant {
+  id          String         @id @default(cuid())
+  pageId      String
+  page        Page           @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User           @relation("PageAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
+  role        PageAccessRole
+  grantedById String
+  grantedBy   User           @relation("PageAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([pageId, userId])
+  @@index([userId, role])
+  @@index([grantedById])
+}
+
+model PageCollaborationState {
+  id        String   @id @default(cuid())
+  pageId    String   @unique
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  state     Bytes
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt])
+}
+
+model PagePublication {
+  id            String    @id @default(cuid())
+  pageId        String    @unique
+  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  token         String    @unique
+  publishedById String?
+  publishedBy   User?     @relation("PagePublicationPublisher", fields: [publishedById], references: [id], onDelete: SetNull)
+  publishedAt   DateTime  @default(now())
+  revokedAt     DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  @@index([revokedAt])
+  @@index([publishedById])
+}
+
+/// A workspace-scoped collaborative visual board. Canvas behavior is added by
+/// plan 05.1; access and realtime state live here so authorization is never
+/// inferred from a room ID.
+model Moodboard {
+  id                 String                       @id @default(cuid())
+  workspaceId        String
+  workspace          Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdById        String
+  createdBy          User                         @relation("MoodboardCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  title              String                       @default("Untitled Moodboard")
+  archivedAt         DateTime?
+  accessGrants       MoodboardAccessGrant[]
+  collaborationState MoodboardCollaborationState?
+  snapshots          MoodboardSnapshot[]
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+
+  @@index([workspaceId, archivedAt])
+  @@index([createdById])
+}
+
+model MoodboardAccessGrant {
+  id          String              @id @default(cuid())
+  moodboardId String
+  moodboard   Moodboard           @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User                @relation("MoodboardAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
+  role        MoodboardAccessRole
+  grantedById String
+  grantedBy   User                @relation("MoodboardAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([moodboardId, userId])
+  @@index([userId, role])
+  @@index([grantedById])
+}
+
+model MoodboardCollaborationState {
+  id             String    @id @default(cuid())
+  moodboardId    String    @unique
+  moodboard      Moodboard @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
+  state          Bytes
+  lastSnapshotAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([updatedAt])
+}
+
+model MoodboardSnapshot {
+  id          String    @id @default(cuid())
+  moodboardId String
+  moodboard   Moodboard @relation(fields: [moodboardId], references: [id], onDelete: Cascade)
+  scene       Json
+  createdAt   DateTime  @default(now())
+
+  @@index([moodboardId, createdAt])
 }
 
 model AiPageChangeProposal {
@@ -1445,6 +1831,7 @@ model UserCustomization {
   eventChipStyle    String   @default("flat")
   animationsEnabled Boolean  @default(true)
   themePreset       String   @default("needt")
+  designTokens      Json?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -1770,6 +2157,44 @@ enum DatabasePropertyType {
   FORMULA
   RELATION
   ROLLUP
+}
+
+enum WorkspaceKind {
+  PERSONAL
+  SHARED
+}
+
+enum WorkspaceRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum PageAccessRole {
+  FULL_ACCESS
+  EDITOR
+  VIEWER
+}
+
+enum MoodboardAccessRole {
+  FULL_ACCESS
+  EDITOR
+  VIEWER
+}
+
+enum TaskBusyStatus {
+  BUSY
+  FREE
+}
+
+enum ProjectTemplateKind {
+  REGULAR
+  WORKFLOW
+}
+
+enum ProjectRelativeDateAnchor {
+  STAGE_START
+  STAGE_DEADLINE
 }
 
 enum DatabaseViewType {

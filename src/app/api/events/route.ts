@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { toWorkspaceBusyEvent } from "@/lib/calendar-privacy";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -22,8 +23,10 @@ export async function GET(request: NextRequest) {
     // Get events from feeds that belong to the current user
     const events = await prisma.calendarEvent.findMany({
       where: {
+        archivedAt: null,
         feed: {
           userId,
+          enabled: true,
         },
         OR: [
           { description: null },
@@ -40,8 +43,51 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    logger.debug(`Found ${events.length} events in database`, {}, LOG_SOURCE);
-    return NextResponse.json(events);
+    const otherMemberIds =
+      auth.workspace?.enabled && auth.workspace.workspaceKind === "SHARED"
+        ? (
+            await prisma.workspaceMember.findMany({
+              where: {
+                workspaceId: auth.workspace.workspaceId,
+                userId: { not: userId },
+              },
+              select: { userId: true },
+            })
+          ).map((member) => member.userId)
+        : [];
+    const otherMemberBusyEvents =
+      otherMemberIds.length > 0
+        ? await prisma.calendarEvent.findMany({
+            where: {
+              archivedAt: null,
+              feed: { userId: { in: otherMemberIds }, enabled: true },
+              OR: [
+                { description: null },
+                {
+                  NOT: {
+                    description: { startsWith: "[NEEDT_DAY_BLOCK]" },
+                  },
+                },
+              ],
+            },
+            select: {
+              id: true,
+              start: true,
+              end: true,
+              allDay: true,
+            },
+          })
+        : [];
+
+    logger.debug(
+      `Found ${events.length} personal events and ${otherMemberBusyEvents.length} shared busy intervals`,
+      {},
+      LOG_SOURCE
+    );
+    return NextResponse.json([
+      ...events,
+      ...otherMemberBusyEvents.map(toWorkspaceBusyEvent),
+    ]);
   } catch (error) {
     logger.error(
       "Failed to fetch events:",
@@ -158,6 +204,7 @@ export async function PATCH(request: NextRequest) {
       isRecurring,
       recurrenceRule,
       allDay,
+      restore,
     } = await request.json();
 
     if (!id) {
@@ -182,6 +229,13 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    if (existingEvent.archivedAt && restore !== true) {
+      return NextResponse.json(
+        { error: "Restore the event before editing it" },
+        { status: 409 }
+      );
+    }
+
     const event = await prisma.calendarEvent.update({
       where: { id },
       data: {
@@ -193,6 +247,7 @@ export async function PATCH(request: NextRequest) {
         isRecurring,
         recurrenceRule,
         allDay,
+        ...(restore === true ? { archivedAt: null } : {}),
       },
     });
 
@@ -246,11 +301,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.calendarEvent.delete({
+    await prisma.calendarEvent.update({
       where: { id },
+      data: { archivedAt: existingEvent.archivedAt ?? newDate() },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, archived: true });
   } catch (error) {
     logger.error(
       "Failed to delete calendar event:",

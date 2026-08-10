@@ -199,15 +199,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await prisma.calendarFeed.delete({
+    await prisma.calendarFeed.update({
       where: {
         id,
         // Ensure the feed belongs to the current user
         userId,
       },
+      data: { enabled: false },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, archived: true });
   } catch (error) {
     logger.error(
       "Failed to delete calendar feed:",

@@ -77,6 +77,9 @@ Viewer roles and invites). While that migration is in progress:
 
 ## Working method
 
+- **Start every session with `npm run agent:context`.** It reports the current
+  branch/dirty state, recent commits, local worktrees, and active handoffs.
+  Read the matching handoff before planning or editing.
 - **Plan before touching more than ~3 files.** Use plan mode. Skipping planning
   on hard tasks is the main cause of sessions where corrections compound instead
   of converging.
@@ -87,6 +90,36 @@ Viewer roles and invites). While that migration is in progress:
 - **Commit per completed unit of work**, with the gates green, and update
   `CHANGELOG.md` under `[unreleased]` for user-facing changes.
 - **Leave `//todo` comments in place**; add new ones for deferred work.
+
+### Shared work and session handoff
+
+This repository is used by multiple people and AI agents. Follow
+[`docs/AI-COLLABORATION.md`](docs/AI-COLLABORATION.md) for every change that
+continues beyond a short read-only investigation.
+
+- **One writer per worktree.** Concurrent writers must use separate Git
+  worktrees and separate branches. A shared checkout is safe for readers, not
+  for simultaneous edits, staging, or commits.
+- **One handoff per workstream.** Create it from
+  `.agents/handoffs/_TEMPLATE.md`; never reuse or overwrite another active
+  workstream's file. Keep `branch`, `status`, `updated`, verification, dirty
+  state, and the exact next action current.
+- **Checkpoint at durable boundaries:** after a completed unit/commit, before a
+  risky operation, when blocked, and before ending or transferring a session.
+  Do not log every conversational step.
+- **Inspect before writing.** Run `git status --short` immediately before edits
+  and commits. Treat unfamiliar changes as another user's work; do not modify,
+  stage, stash, revert, clean, or delete them. Stage explicit paths only.
+- **Make ownership visible.** List files currently being edited in the handoff.
+  If another active handoff overlaps, coordinate or choose a disjoint task
+  before changing those files.
+- **Preserve useful history.** Mark completed handoffs `complete`; do not delete
+  them in the same change. Handoffs contain decisions and progress, while Mulch
+  stores reusable project knowledge when its CLI is available.
+- **Never record secrets, credentials, tokens, personal data, or raw production
+  logs** in handoffs or Mulch.
+- Use `.agents/skills/handoff-project-work/SKILL.md` when starting, resuming,
+  pausing, or transferring a workstream.
 
 ### Automatic tool routing
 
@@ -102,6 +135,26 @@ Viewer roles and invites). While that migration is in progress:
   `docs/AI-TOOLING-SETUP.md` for a suitable task wave; never start an unattended
   run on an unreviewed plan, and handle small fixes directly in Codex.
 - Apply the decision workflow in `.agents/skills/route-ai-tools/SKILL.md`.
+
+### Design, copy, and critique skills
+
+- **Hallmark:** load the project-scoped skill from
+  `.codex/skills/hallmark/SKILL.md` for a new or redesigned user-facing surface,
+  or when auditing a screen for generic AI-looking design. The repository copy
+  is authoritative for every agent; do not depend on a personal installation.
+  It informs the visual direction but never overrides
+  `design-refs/ui-conventions.md`, accessibility, or the existing Needt
+  component system.
+- **humanize:** use for new user-facing product copy and when revising copy
+  that is generic, robotic, or over-polished. Preserve product facts, locale,
+  and the user's intended voice; never claim it bypasses AI detectors.
+- **ai-check:** use before publishing or shipping substantial user-facing copy
+  when an AI-tell audit is useful. Treat findings as editorial suggestions, not
+  a detector verdict.
+- **needt-critique:** load the project-scoped skill from
+  `.codex/skills/needt-critique/SKILL.md` to review a plan, diff, API, or UI
+  proposal before a risky or multi-step change. It is read-only: no sandbox
+  bypasses, external agents, raw diagnostics, or hidden automated changes.
 
 ---
 

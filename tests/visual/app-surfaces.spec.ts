@@ -18,15 +18,32 @@ async function useVisualTheme(
   page: import("@playwright/test").Page,
   theme: "dark" | "light"
 ) {
-  const response = await page.request.patch("/api/user-settings", {
+  await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+  const update = await page.request.patch("/api/user-settings", {
     data: { theme },
   });
-  expect(response.ok()).toBeTruthy();
-  await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+  expect(update.ok()).toBeTruthy();
+  const settingsResponses = Promise.all(
+    ["/api/user-settings", "/api/customization"].map((pathname) =>
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === pathname &&
+          response.request().method() === "GET"
+      )
+    )
+  );
   await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
+  await settingsResponses;
+  const themePicker = page.getByRole("combobox", { name: "Theme" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   await expect(page.getByText("Monday", { exact: true })).toBeVisible();
-  await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+  await expect(themePicker).toHaveText(theme === "dark" ? "Dark" : "Light");
+  await expect(
+    page
+      .getByText("Animations:", { exact: true })
+      .locator("..")
+      .getByRole("switch")
+  ).not.toBeChecked();
 }
 
 test("Calendar, Today, and Space stay visually stable", async ({ page }) => {

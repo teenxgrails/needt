@@ -2,6 +2,7 @@ import { CalendarEvent } from "@prisma/client";
 
 import { areIntervalsOverlapping } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
+import { activeProjectTaskWhere } from "@/lib/projects/archive";
 
 import { Conflict, TimeSlot } from "@/types/scheduling";
 
@@ -108,6 +109,7 @@ export class CalendarServiceImpl implements CalendarService {
         scheduledStart: { not: null },
         scheduledEnd: { not: null },
         isArchived: false,
+        AND: [activeProjectTaskWhere],
         id: excludeTaskId ? { not: excludeTaskId } : undefined,
         userId,
       },
@@ -162,6 +164,7 @@ export class CalendarServiceImpl implements CalendarService {
 
     const events = await prisma.calendarEvent.findMany({
       where: {
+        archivedAt: null,
         feedId: {
           in: selectedCalendarIds,
         },
@@ -234,6 +237,7 @@ export class CalendarServiceImpl implements CalendarService {
         scheduledStart: { not: null },
         scheduledEnd: { not: null },
         isArchived: false,
+        AND: [activeProjectTaskWhere],
         id: excludeTaskId ? { not: excludeTaskId } : undefined,
         userId,
       },
@@ -246,7 +250,12 @@ export class CalendarServiceImpl implements CalendarService {
     const pushedBlockIds = new Set(
       (
         await prisma.task.findMany({
-          where: { userId, isArchived: false, blockEventId: { not: null } },
+          where: {
+            userId,
+            isArchived: false,
+            blockEventId: { not: null },
+            AND: [activeProjectTaskWhere],
+          },
           select: { blockEventId: true },
         })
       ).map((t) => t.blockEventId)

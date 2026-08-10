@@ -1,4 +1,5 @@
 export const UNSCHEDULED_REASON_MESSAGES = {
+  NO_ASSIGNEE: "Assign the task before auto-scheduling it.",
   NO_WORKING_TIME: "No free time in the Work Schedule.",
   BEFORE_EARLIEST_START: "The task starts beyond the planning window.",
   DEPENDENCY_BLOCKED: "A dependency must be completed first.",

@@ -18,7 +18,6 @@ interface ProjectState {
   fetchProjects: () => Promise<void>;
   createProject: (project: NewProject) => Promise<Project>;
   updateProject: (id: string, updates: UpdateProject) => Promise<Project>;
-  deleteProject: (id: string) => Promise<void>;
   setActiveProject: (project: Project | null) => void;
   archiveProject: (id: string) => Promise<Project>;
   unarchiveProject: (id: string) => Promise<Project>;
@@ -86,35 +85,6 @@ export const useProjectStore = create<ProjectState>()(
                 : state.activeProject,
           }));
           return updatedProject;
-        } catch (error) {
-          set({ error: error as Error });
-          throw error;
-        } finally {
-          set({ loading: false });
-        }
-      },
-
-      deleteProject: async (id: string) => {
-        set({ loading: true, error: null });
-        try {
-          const response = await fetch(`/api/projects/${id}`, {
-            method: "DELETE",
-          });
-          if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error || "Failed to delete project");
-          }
-
-          const result = await response.json();
-
-          // Optimistically update the UI
-          set((state) => ({
-            projects: state.projects.filter((p) => p.id !== id),
-            activeProject:
-              state.activeProject?.id === id ? null : state.activeProject,
-          }));
-
-          return result;
         } catch (error) {
           set({ error: error as Error });
           throw error;
