@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made offline task, Page, and Today replays idempotent and revision-aware so
+  reconnecting cannot overwrite a newer server version; connector-triggered
+  scheduling now stays inside the authorized workspace, and production web
+  startup fails closed when its authentication secret is missing.
 - Simplified the AI companion into a compact, high-contrast draggable action
   and keep it clear of fixed mobile and editor controls across viewports.
 - Revalidated collaboration authorization for every live socket message and
