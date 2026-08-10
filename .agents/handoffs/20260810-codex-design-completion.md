@@ -23,6 +23,7 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - S5 blocker fixes: auth/workspace scheduling `b0dfa1c`, offline replay
   `2f32f4f`, stale T4 contract test `962d3eb`, and duplicate Yjs prevention
   `35f6a26`.
+- Visual production baselines and deterministic fixtures `a34f4b9`.
 
 ## Working state
 
@@ -33,7 +34,7 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - The production visual suite is deterministic after resetting settings for
   every fixture, suppressing the timed companion intro, sorting loose Space
   tasks by date/ID, and aligning stale Pages/theme assertions. Reviewed
-  production baselines are updated locally and ready to commit.
+  production baselines are committed in `a34f4b9`.
 - Preserve existing user changes in `docs/plans/README.md`,
   `src/app/layout.tsx`, `.playwright-mcp/`, `docs/plans/08-terra-high.md`, and
   `pages-mobile-slash-390.png`.
