@@ -1,3 +1,5 @@
+import { newDate } from "@/lib/date-utils";
+
 import { NewTask, Task, UpdateTask } from "@/types/task";
 
 const JSON_HEADERS = { "Content-Type": "application/json" } as const;
@@ -43,25 +45,41 @@ export async function createTaskRequest(task: NewTask): Promise<Task> {
 
 export async function updateTaskRequest(
   id: string,
-  updates: UpdateTask
-): Promise<Task> {
+  updates: UpdateTask,
+  baseRevision?: Date | string
+): Promise<Task | null> {
   const response = await fetch(`/api/tasks/${id}`, {
     method: "PUT",
-    headers: JSON_HEADERS,
+    headers: {
+      ...JSON_HEADERS,
+      ...(baseRevision
+        ? { "If-Match": newDate(baseRevision).toISOString() }
+        : {}),
+    },
     body: JSON.stringify(updates),
   });
 
   if (!response.ok) {
     throw await readError(response, "Failed to update task");
   }
+  if (response.status === 202) return null;
 
   return response.json() as Promise<Task>;
 }
 
-export async function deleteTaskRequest(id: string): Promise<void> {
-  const response = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+export async function deleteTaskRequest(
+  id: string,
+  baseRevision?: Date | string
+): Promise<boolean> {
+  const response = await fetch(`/api/tasks/${id}`, {
+    method: "DELETE",
+    headers: baseRevision
+      ? { "If-Match": newDate(baseRevision).toISOString() }
+      : undefined,
+  });
 
   if (!response.ok) {
     throw await readError(response, "Failed to archive task");
   }
+  return response.status === 202;
 }

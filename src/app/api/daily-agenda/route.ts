@@ -5,6 +5,13 @@ import { z } from "zod";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { sanitizeDailyAgendaContent } from "@/lib/daily-agenda-content";
 import { prisma } from "@/lib/prisma";
+import {
+  claimOfflineMutation,
+  completeOfflineMutation,
+  failOfflineMutation,
+  offlineRevisionConflict,
+  replayOfflineMutation,
+} from "@/lib/pwa/offline-mutation";
 
 const LOG_SOURCE = "daily-agenda-route";
 const dateKeySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -46,6 +53,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  let offlineRecordId: string | null = null;
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
 
@@ -56,26 +64,57 @@ export async function PUT(request: NextRequest) {
     return new NextResponse("Invalid agenda payload", { status: 400 });
   }
 
-  const content = sanitizeDailyAgendaContent(payload.data.content);
-  const agenda = await prisma.dailyAgenda.upsert({
-    where: { userId_date: { userId: auth.userId, date } },
-    create: {
+  try {
+    const current = await prisma.dailyAgenda.findUnique({
+      where: { userId_date: { userId: auth.userId, date } },
+      select: { updatedAt: true },
+    });
+    const operation = `SAVE_DAILY_AGENDA:${payload.data.date}`;
+    const replay = await replayOfflineMutation({
+      request,
       userId: auth.userId,
-      date,
-      content,
-      documentFormatVersion: payload.data.documentFormatVersion,
-    },
-    update: {
-      content,
-      documentFormatVersion: payload.data.documentFormatVersion,
-    },
-    select: { content: true, updatedAt: true, documentFormatVersion: true },
-  });
+      operation,
+    });
+    if (replay) return replay;
+    const conflict = offlineRevisionConflict(
+      request,
+      current?.updatedAt ?? null
+    );
+    if (conflict) return conflict;
+    const claim = await claimOfflineMutation({
+      request,
+      userId: auth.userId,
+      operation,
+    });
+    if (claim.response) return claim.response;
+    offlineRecordId = claim.recordId;
 
-  return NextResponse.json({
-    date: payload.data.date,
-    content: agenda.content,
-    updatedAt: agenda.updatedAt,
-    documentFormatVersion: agenda.documentFormatVersion,
-  });
+    const content = sanitizeDailyAgendaContent(payload.data.content);
+    const agenda = await prisma.dailyAgenda.upsert({
+      where: { userId_date: { userId: auth.userId, date } },
+      create: {
+        userId: auth.userId,
+        date,
+        content,
+        documentFormatVersion: payload.data.documentFormatVersion,
+      },
+      update: {
+        content,
+        documentFormatVersion: payload.data.documentFormatVersion,
+      },
+      select: { content: true, updatedAt: true, documentFormatVersion: true },
+    });
+
+    const result = {
+      date: payload.data.date,
+      content: agenda.content,
+      updatedAt: agenda.updatedAt,
+      documentFormatVersion: agenda.documentFormatVersion,
+    };
+    await completeOfflineMutation(offlineRecordId);
+    return NextResponse.json(result);
+  } catch (error) {
+    await failOfflineMutation(offlineRecordId);
+    throw error;
+  }
 }

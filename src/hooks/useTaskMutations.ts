@@ -45,6 +45,12 @@ interface CreateVariables {
 interface UpdateVariables {
   id: string;
   updates: UpdateTask;
+  baseRevision?: Date | string;
+}
+
+interface DeleteVariables {
+  id: string;
+  baseRevision?: Date | string;
 }
 
 function writeTasks(
@@ -154,9 +160,11 @@ export function useTaskMutations() {
   });
 
   const useUpdateMutation = (action: string) =>
-    useMutation<Task, unknown, UpdateVariables, MutationContext>({
-      mutationFn: ({ id, updates }) =>
-        enqueueTaskMutation(id, () => updateTaskRequest(id, updates)),
+    useMutation<Task | null, unknown, UpdateVariables, MutationContext>({
+      mutationFn: ({ id, updates, baseRevision }) =>
+        enqueueTaskMutation(id, () =>
+          updateTaskRequest(id, updates, baseRevision)
+        ),
       onMutate: async ({ id, updates }) => {
         await queryClient.cancelQueries({ queryKey: TASKS_QUERY_KEY });
         const state = useTaskStore.getState();
@@ -176,7 +184,11 @@ export function useTaskMutations() {
         reportMutationError(action, context.taskId, error);
       },
       onSuccess: (task, variables, context) => {
-        if (context && isLatestTaskMutation(context.taskId, context.version)) {
+        if (
+          task &&
+          context &&
+          isLatestTaskMutation(context.taskId, context.version)
+        ) {
           const tasks = useTaskStore.getState().tasks;
           writeTasks(
             queryClient,
@@ -185,7 +197,7 @@ export function useTaskMutations() {
               : reconcileOptimisticTask(tasks, task)
           );
         }
-        scheduleInBackground();
+        if (task) scheduleInBackground();
       },
     });
 
@@ -193,30 +205,36 @@ export function useTaskMutations() {
   const moveMutation = useUpdateMutation("move task");
   const completeMutation = useUpdateMutation("complete task");
 
-  const deleteMutation = useMutation<void, unknown, string, MutationContext>({
-    mutationFn: (id) => enqueueTaskMutation(id, () => deleteTaskRequest(id)),
-    onMutate: async (id) => {
+  const deleteMutation = useMutation<
+    boolean,
+    unknown,
+    DeleteVariables,
+    MutationContext
+  >({
+    mutationFn: ({ id, baseRevision }) =>
+      enqueueTaskMutation(id, () => deleteTaskRequest(id, baseRevision)),
+    onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: TASKS_QUERY_KEY });
       const previousTasks = useTaskStore.getState().tasks;
       const version = beginTaskMutation(id);
       writeTasks(queryClient, removeOptimisticTask(previousTasks, id));
       return { previousTasks, taskId: id, version };
     },
-    onError: (error, _id, context) => {
+    onError: (error, _variables, context) => {
       if (!context) return;
       if (isLatestTaskMutation(context.taskId, context.version)) {
         writeTasks(queryClient, context.previousTasks);
       }
       reportMutationError("archive task", context.taskId, error);
     },
-    onSuccess: (_result, _id, context) => {
+    onSuccess: (queued, _variables, context) => {
       if (context && isLatestTaskMutation(context.taskId, context.version)) {
         writeTasks(
           queryClient,
           removeOptimisticTask(useTaskStore.getState().tasks, context.taskId)
         );
       }
-      scheduleInBackground();
+      if (!queued) scheduleInBackground();
     },
   });
 
@@ -230,21 +248,45 @@ export function useTaskMutations() {
   );
   const updateTask = useCallback(
     (id: string, updates: UpdateTask) =>
-      updateMutation.mutateAsync({ id, updates }),
+      updateMutation.mutateAsync({
+        id,
+        updates,
+        baseRevision: useTaskStore
+          .getState()
+          .tasks.find((task) => task.id === id)?.updatedAt,
+      }),
     [updateMutation]
   );
   const moveTask = useCallback(
     (id: string, updates: UpdateTask) =>
-      moveMutation.mutateAsync({ id, updates }),
+      moveMutation.mutateAsync({
+        id,
+        updates,
+        baseRevision: useTaskStore
+          .getState()
+          .tasks.find((task) => task.id === id)?.updatedAt,
+      }),
     [moveMutation]
   );
   const completeTask = useCallback(
     (id: string, status: TaskStatus = TaskStatus.COMPLETED) =>
-      completeMutation.mutateAsync({ id, updates: { status } }),
+      completeMutation.mutateAsync({
+        id,
+        updates: { status },
+        baseRevision: useTaskStore
+          .getState()
+          .tasks.find((task) => task.id === id)?.updatedAt,
+      }),
     [completeMutation]
   );
   const deleteTask = useCallback(
-    (id: string) => deleteMutation.mutateAsync(id),
+    (id: string) =>
+      deleteMutation.mutateAsync({
+        id,
+        baseRevision: useTaskStore
+          .getState()
+          .tasks.find((task) => task.id === id)?.updatedAt,
+      }),
     [deleteMutation]
   );
 

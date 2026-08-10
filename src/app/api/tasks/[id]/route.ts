@@ -18,6 +18,13 @@ import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import {
+  claimOfflineMutation,
+  completeOfflineMutation,
+  failOfflineMutation,
+  offlineRevisionConflict,
+  replayOfflineMutation,
+} from "@/lib/pwa/offline-mutation";
+import {
   deleteTaskBlockEvent,
   schedulePushTaskBlock,
 } from "@/lib/task-block-push";
@@ -81,6 +88,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let offlineRecordId: string | null = null;
   try {
     const auth = await authenticateRequest(request, LOG_SOURCE, {
       requiredRole: WorkspaceRole.EDITOR,
@@ -109,6 +117,15 @@ export async function PUT(
       logger.warn(`Task not found: ${id}`, { userId }, LOG_SOURCE);
       return new NextResponse("Task not found", { status: 404 });
     }
+    const offlineOperation = `UPDATE_TASK:${auth.workspace?.workspaceId}:${id}`;
+    const replay = await replayOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (replay) return replay;
+    const revisionConflict = offlineRevisionConflict(request, task.updatedAt);
+    if (revisionConflict) return revisionConflict;
 
     if (task.project?.status === "archived") {
       return NextResponse.json({ error: "PROJECT_ARCHIVED" }, { status: 409 });
@@ -371,6 +388,14 @@ export async function PUT(
     // Save the old task for change tracking
     const oldTask = { ...task };
 
+    const claim = await claimOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (claim.response) return claim.response;
+    offlineRecordId = claim.recordId;
+
     const taskUpdate: Prisma.TaskUpdateArgs = {
       where: {
         id: id,
@@ -570,8 +595,10 @@ export async function PUT(
       });
     }
 
+    await completeOfflineMutation(offlineRecordId);
     return NextResponse.json(updatedTask);
   } catch (error) {
+    await failOfflineMutation(offlineRecordId);
     logger.error(
       "Error updating task:",
       {
@@ -587,6 +614,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let offlineRecordId: string | null = null;
   try {
     const auth = await authenticateRequest(request, LOG_SOURCE, {
       requiredRole: WorkspaceRole.EDITOR,
@@ -611,10 +639,27 @@ export async function DELETE(
     if (!task) {
       return new NextResponse("Task not found", { status: 404 });
     }
+    const offlineOperation = `ARCHIVE_TASK:${auth.workspace?.workspaceId}:${id}`;
+    const replay = await replayOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (replay) return replay;
+    const revisionConflict = offlineRevisionConflict(request, task.updatedAt);
+    if (revisionConflict) return revisionConflict;
 
     if (task.project?.status === "archived") {
       return NextResponse.json({ error: "PROJECT_ARCHIVED" }, { status: 409 });
     }
+
+    const claim = await claimOfflineMutation({
+      request,
+      userId,
+      operation: offlineOperation,
+    });
+    if (claim.response) return claim.response;
+    offlineRecordId = claim.recordId;
 
     if (!task.isArchived) {
       const schedulingUserId = task.assigneeId ?? userId;
@@ -646,8 +691,10 @@ export async function DELETE(
       schedulePushTaskBlock(schedulingUserId, id);
     }
 
+    await completeOfflineMutation(offlineRecordId);
     return new NextResponse(null, { status: 204 });
   } catch (error) {
+    await failOfflineMutation(offlineRecordId);
     logger.error(
       "Error deleting task:",
       {

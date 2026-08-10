@@ -434,6 +434,7 @@ export function PageWorkspace({
   const router = useRouter();
   const hostRef = useRef<HTMLDivElement>(null);
   const autosave = useRef<PageAutosave | null>(null);
+  const pageRevisionRef = useRef<string | null>(null);
   const hydrated = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressStart = useRef<{ x: number; y: number } | null>(null);
@@ -642,13 +643,25 @@ export function PageWorkspace({
       save: async (document) => {
         const response = await fetch(`/api/pages/${pageId}/blocks`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(pageRevisionRef.current
+              ? { "If-Match": pageRevisionRef.current }
+              : {}),
+          },
           body: JSON.stringify({
             blocks: pageBlocksFromDocument(document),
             documentFormatVersion,
           }),
         });
         if (!response.ok) throw new Error("Save failed");
+        if (response.status !== 202) {
+          const result = (await response.json()) as { page: PageDetail };
+          pageRevisionRef.current = result.page.updatedAt;
+          setPage((current) =>
+            current ? { ...current, updatedAt: result.page.updatedAt } : current
+          );
+        }
         window.dispatchEvent(new Event("pages-changed"));
       },
     });
@@ -832,6 +845,7 @@ export function PageWorkspace({
       }
       const { page: loaded } = (await response.json()) as { page: PageDetail };
       if (cancelled) return;
+      pageRevisionRef.current = loaded.updatedAt;
       setPage(loaded);
       const localDraft = localStorage.getItem(`needt-page-draft:${pageId}`);
 
@@ -874,9 +888,12 @@ export function PageWorkspace({
           editor.commands.updateUser(collaboration.user);
           if (localDraft) {
             try {
-              editor.commands.setContent(JSON.parse(localDraft) as JSONContent, {
-                emitUpdate: false,
-              });
+              editor.commands.setContent(
+                JSON.parse(localDraft) as JSONContent,
+                {
+                  emitUpdate: false,
+                }
+              );
               setSaveState("failed");
             } catch {
               localStorage.removeItem(`needt-page-draft:${pageId}`);

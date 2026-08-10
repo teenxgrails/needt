@@ -263,8 +263,19 @@ async function snapshotFirst(request) {
 }
 
 async function queueWhenOffline(request) {
+  const headers = new Headers(request.headers);
+  const idempotencyKey =
+    headers.get("x-idempotency-key") || crypto.randomUUID();
+  headers.set("x-idempotency-key", idempotencyKey);
+  if (activeScope) {
+    headers.set("x-needt-offline-scope", activeScope.key);
+    if (!headers.has("x-workspace-id")) {
+      headers.set("x-workspace-id", activeScope.workspaceId);
+    }
+  }
+  const scopedRequest = new Request(request, { headers });
   try {
-    return await fetch(request.clone());
+    return await fetch(scopedRequest.clone());
   } catch {
     if (!activeScope) {
       return offlineJson(
@@ -273,15 +284,7 @@ async function queueWhenOffline(request) {
         503
       );
     }
-    const body = await request.clone().text();
-    const headers = new Headers(request.headers);
-    const idempotencyKey =
-      headers.get("x-idempotency-key") || crypto.randomUUID();
-    headers.set("x-idempotency-key", idempotencyKey);
-    headers.set("x-needt-offline-scope", activeScope.key);
-    if (!headers.has("x-workspace-id")) {
-      headers.set("x-workspace-id", activeScope.workspaceId);
-    }
+    const body = await scopedRequest.clone().text();
     const parsedBody = parseJson(body);
     await enqueue({
       id: `${activeScope.key}:${idempotencyKey}`,
@@ -295,8 +298,8 @@ async function queueWhenOffline(request) {
         parsedBody?.baseRevision ||
         parsedBody?.revision ||
         null,
-      url: request.url,
-      method: request.method,
+      url: scopedRequest.url,
+      method: scopedRequest.method,
       headers: Array.from(headers.entries()),
       body,
       status: "pending",
@@ -341,13 +344,19 @@ async function flushQueue() {
         await deleteItem(db, STORE_QUEUE, item.id);
         continue;
       }
+      const responseBody =
+        response.status === 409
+          ? parseJson(await response.clone().text())
+          : null;
       const status =
         response.status === 401
           ? "sign_in_required"
           : response.status === 403
             ? "forbidden"
             : response.status === 409
-              ? "conflict"
+              ? responseBody?.error === "OFFLINE_REPLAY_PENDING"
+                ? "retry"
+                : "conflict"
               : response.status >= 500
                 ? "retry"
                 : "rejected";

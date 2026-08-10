@@ -56,9 +56,10 @@ describe("offline privacy and replay contract", () => {
     expect(serviceWorker).toContain("response.status === 401");
     expect(serviceWorker).toContain("response.status === 403");
     expect(serviceWorker).toContain("response.status === 409");
+    expect(serviceWorker).toContain('"OFFLINE_REPLAY_PENDING"');
     expect(serviceWorker).toContain("response.status >= 500");
     expect(serviceWorker).toContain('? "sign_in_required"');
-    expect(serviceWorker).toContain('? "conflict"');
+    expect(serviceWorker).toContain(': "conflict"');
     expect(serviceWorker).toContain(
       '["pending", "retry", "syncing", "sign_in_required"].includes'
     );
@@ -69,5 +70,12 @@ describe("offline privacy and replay contract", () => {
     expect(serviceWorker).toContain("idempotencyKey,");
     expect(serviceWorker).toContain("baseRevision:");
     expect(serviceWorker).toContain('headers.get("if-match")');
+    expect(serviceWorker).toContain("fetch(scopedRequest.clone())");
+    const offlineServer = readFileSync(
+      "src/lib/pwa/offline-mutation.ts",
+      "utf8"
+    );
+    expect(offlineServer).toContain("OFFLINE_REVISION_CONFLICT");
+    expect(offlineServer).toContain("IdempotencyStatus.SUCCEEDED");
   });
 });

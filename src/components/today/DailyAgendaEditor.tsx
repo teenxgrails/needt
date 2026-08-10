@@ -206,6 +206,7 @@ export function DailyAgendaEditor({
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<Editor | null>(null);
   const dateKeyRef = useRef(dateKey);
+  const revisionByDateRef = useRef(new Map<string, string | null>());
   const documentFormatVersionRef = useRef(documentFormatVersion);
   const hydratedKeyRef = useRef<string | null>(null);
   const createTaskRef = useRef(onCreateTask);
@@ -248,10 +249,17 @@ export function DailyAgendaEditor({
       save: async (entry) => {
         const response = await fetch("/api/daily-agenda", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "If-Match": revisionByDateRef.current.get(entry.date) ?? "none",
+          },
           body: JSON.stringify(entry),
         });
         if (!response.ok) throw new Error("Agenda save failed");
+        if (response.status !== 202) {
+          const saved = (await response.json()) as { updatedAt: string };
+          revisionByDateRef.current.set(entry.date, saved.updatedAt);
+        }
       },
     });
   }
@@ -441,8 +449,12 @@ export function DailyAgendaEditor({
           { signal: controller.signal }
         );
         if (!response.ok) throw new Error("Agenda load failed");
-        const agenda = (await response.json()) as { content?: string };
+        const agenda = (await response.json()) as {
+          content?: string;
+          updatedAt?: string | null;
+        };
         if (controller.signal.aborted) return;
+        revisionByDateRef.current.set(dateKey, agenda.updatedAt ?? null);
         const localDraft = localStorage.getItem(
           `needt-agenda-draft:${dateKey}`
         );

@@ -9,12 +9,21 @@ import { PageAccessRole, PageAuthor, PageBlockType } from "@prisma/client";
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { resolvePageAccess } from "@/lib/auth/page-auth";
+import { prisma } from "@/lib/prisma";
+import {
+  claimOfflineMutation,
+  completeOfflineMutation,
+  failOfflineMutation,
+  offlineRevisionConflict,
+  replayOfflineMutation,
+} from "@/lib/pwa/offline-mutation";
 
 const LOG_SOURCE = "PageBlocksAPI";
 type RouteContext = { params: Promise<{ id: string }> };
 const blockTypes = new Set(Object.values(PageBlockType));
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
+  let offlineRecordId: string | null = null;
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   const { id } = await params;
@@ -63,6 +72,28 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       };
     });
     const documentFormatVersion = body.documentFormatVersion === 2 ? 2 : 1;
+    const current = await prisma.page.findFirst({
+      where: { id, trashedAt: null },
+      select: { updatedAt: true },
+    });
+    if (!current)
+      return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    const operation = `SAVE_PAGE_BLOCKS:${auth.workspace?.workspaceId}:${id}`;
+    const replay = await replayOfflineMutation({
+      request,
+      userId: auth.userId,
+      operation,
+    });
+    if (replay) return replay;
+    const conflict = offlineRevisionConflict(request, current.updatedAt);
+    if (conflict) return conflict;
+    const claim = await claimOfflineMutation({
+      request,
+      userId: auth.userId,
+      operation,
+    });
+    if (claim.response) return claim.response;
+    offlineRecordId = claim.recordId;
     const page = await replacePageBlocks(
       auth,
       id,
@@ -72,8 +103,10 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     );
     if (!page)
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    await completeOfflineMutation(offlineRecordId);
     return NextResponse.json({ page });
   } catch (error) {
+    await failOfflineMutation(offlineRecordId);
     if (error instanceof PageBlockIdentityError) {
       return NextResponse.json(
         { error: error.code, message: error.message, repairable: true },
