@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T14:28:14Z
+updated: 2026-08-10T15:58:44Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -24,6 +24,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   `2f32f4f`, stale T4 contract test `962d3eb`, and duplicate Yjs prevention
   `35f6a26`.
 - Visual production baselines and deterministic fixtures `a34f4b9`.
+- Production image/runtime hardening `f2a6959`: auth initialization is deferred
+  to runtime, session-dependent pages are dynamic, and the entrypoint fails
+  immediately when environment validation or migrations fail.
 
 ## Working state
 
@@ -38,22 +41,30 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Preserve existing user changes in `docs/plans/README.md`,
   `src/app/layout.tsx`, `.playwright-mcp/`, `docs/plans/08-terra-high.md`, and
   `pages-mobile-slash-390.png`.
+- The local production image `needt:s5-smoke` builds without build-time auth
+  secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
+  started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
 
 ## Verification
 
 - Passed: `npx prisma validate`, `npm run type-check`, `npm run lint`, full
-  `npm run test:unit` (125 suites, 640 tests; one suite/test skipped),
+  `npm run test:unit` (125 suites, 641 tests; one suite/test skipped),
   `npm run check:branding`, `npm run check:ui-contracts`, `npm run build`,
   `npm run build:worker`, `npm run build:collaboration`, collaboration runtime
   check, and `git diff --check`.
 - Build caveat: Next completed successfully but logged that static generation
   could not reach the configured remote Neon database.
-- Passed: full E2E with one worker (24 passed, three credential-gated skips),
-  style (15 passed), and production visual (65 passed, four breakpoint-gated
-  skips). The visual suite passed again without updating snapshots.
+- Passed after production hardening: full unit (125 suites, 641 tests; one
+  suite/test skipped), full E2E with one worker (24 passed, three
+  credential-gated skips), type-check, lint, targeted Docker/auth tests, the
+  production Docker build, and the clean-database runtime smoke test.
+- Previously passed: style (15 passed) and production visual (65 passed, four
+  breakpoint-gated skips). The visual suite passed again without updating
+  snapshots.
 - Yjs duplicate-import warning found in E2E is fixed by externalizing Yjs from
   Next server route bundles; targeted Pages E2E passes without the warning.
-- Still required for S5 green: production Docker image build and deploy/smoke.
+- Still required before S6: deploy this hardening through the authorized
+  production workflow and run the production smoke/release gate.
 
 ## Decisions and constraints
 
@@ -66,12 +77,12 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 
 ## Blockers
 
-- Docker Desktop is running, but two production-image attempts failed before
-  reading project files because Docker Hub timed out loading metadata for
-  `node:22-alpine3.19` after 60 seconds (`DeadlineExceeded`).
+- External production deployment has not been authorized in this task. Per the
+  plan, S6 must not start until the hardening is deployed and smoke-tested in
+  production.
 
 ## Next action
 
-- Commit the visual hardening/baselines, retry the production Docker build when
-  Docker Hub is reachable, then deploy/smoke-test. Do not start S6 until S5 is
-  green and smoke-tested.
+- Push/review/deploy `f2a6959` through the authorized production workflow, run
+  the release smoke gate, then start S6 only after that production check is
+  green.
