@@ -200,7 +200,18 @@ test("Today exposes agenda and task-create failures with retry", async ({
   await editor.press("Enter");
   await expect(editor).toContainText(`/task ${retryTitle}`);
   failTaskCreate = false;
-  await editor.press("Control+End");
+  const restoredCommand = editor.getByText(`/task ${retryTitle}`, {
+    exact: true,
+  });
+  await restoredCommand.evaluate((element) => {
+    (element.closest('[contenteditable="true"]') as HTMLElement | null)?.focus();
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  });
   await editor.press("Enter");
   await expect(editor.getByText(retryTitle, { exact: true })).toHaveCount(1);
 });
