@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T19:11:36Z
+updated: 2026-08-10T20:14:23Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -37,11 +37,14 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - The Dockerfile now has a dedicated `collaboration` runtime target: it builds
   `dist/collaboration`, carries the Prisma runtime, and starts the Hocuspocus
   server through the shared entrypoint.
+- Dedicated collaboration target committed and pushed as `2f605b3`.
+- CI follow-up `a586279` updates the collaboration-aware Docker contract test
+  and runs all root Dockerfile runtime targets as the non-root `node` user.
 
 ## Working state
 
-- `Dockerfile` and this handoff have an uncommitted scoped collaboration-image
-  change; no user-owned dirty files are part of it.
+- CI follow-up `a586279` is pushed to PR #16. Both duplicate CI workflows
+  (`31427085570` and `31427077470`) completed successfully.
 - The S5 adversarial review is complete. Blockers found in S1/S3/T4 are
   committed: production auth now fails closed, scheduling runs and connector
   reschedules are workspace-scoped, offline replays are idempotent and
@@ -88,6 +91,11 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   collaboration --tag needt:collaboration-smoke .`, an isolated collaboration
   container smoke run with a temporary PostgreSQL dependency, and `npm run
   check:collaboration-runtime`.
+- Passed for `a586279`: local full unit (126 suites, 644 tests, one skipped),
+  type-check, lint, and targeted Docker contract tests. Both GitHub CI workflows
+  passed security, schema drift, quality gates, E2E, visual and style jobs.
+- Local Docker rebuild was not rerun because Docker Desktop did not answer its
+  API socket; GitHub's collaboration build/runtime and Semgrep gates passed.
 
 ## Decisions and constraints
 
@@ -100,13 +108,15 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 
 ## Blockers
 
-- GitHub repository and `production` environment currently expose no configured
-  secret names. Coolify web/worker/collaboration hooks, production health URL
-  and rollback hook must be configured before merge or the fail-closed deploy
-  job will stop. A current production backup must also be verified.
+- The `production` environment is still missing
+  `COOLIFY_COLLABORATION_WEBHOOK_URL` and `COOLIFY_ROLLBACK_WEBHOOK_URL`.
+  `COOLIFY_WEB_WEBHOOK_URL`, `COOLIFY_WORKER_WEBHOOK_URL`, and
+  `NEEDT_PRODUCTION_HEALTH_URL` are present. A current restorable production
+  backup still requires user confirmation.
 
 ## Next action
 
-- Commit and push the dedicated collaboration image target, wait for green CI,
-  then configure the required production secrets and verify a current backup
-  before merging and monitoring the production rollout/smoke.
+- Wait for the two missing production secret names and user confirmation of a
+  restorable production backup. Then merge PR #16 into `main`, monitor
+  `docker-publish.yml`, verify web/worker/collaboration use the merged SHA, and
+  complete the production smoke/release gate before starting S6.
