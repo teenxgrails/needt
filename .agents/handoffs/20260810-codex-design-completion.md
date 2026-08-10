@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T15:58:44Z
+updated: 2026-08-10T16:06:52Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -77,12 +77,11 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 
 ## Blockers
 
-- External production deployment has not been authorized in this task. Per the
-  plan, S6 must not start until the hardening is deployed and smoke-tested in
-  production.
+- None. The user explicitly authorized push, review, production deployment and
+  smoke for the completed hardening wave.
 
 ## Next action
 
-- Push/review/deploy `f2a6959` through the authorized production workflow, run
-  the release smoke gate, then start S6 only after that production check is
-  green.
+- Fetch both remotes, verify the branch base and target repository, then push,
+  review/merge to `main`, monitor the production workflow, and run the release
+  smoke gate before starting S6.
