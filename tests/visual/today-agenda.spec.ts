@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 
 import { VISUAL_TEST_NOW } from "./fixtures";
 import { signInVisualUser } from "./helpers";
@@ -22,6 +22,19 @@ async function hideDevOverlays(page: import("@playwright/test").Page) {
     .evaluateAll((elements) => elements.forEach((element) => element.remove()));
   await page.addStyleTag({
     content: "nextjs-portal, .tsqd-parent-container { display: none !important; }",
+  });
+}
+
+async function placeCaretAtEnd(target: Locator) {
+  await target.evaluate((element) => {
+    const editor = element.closest('[contenteditable="true"]') ?? element;
+    (editor as HTMLElement).focus();
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.collapse(false);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   });
 }
 
@@ -193,8 +206,7 @@ test("Today exposes agenda and task-create failures with retry", async ({
   });
   const editor = page.getByLabel("Daily agenda notes");
   const retryTitle = `Recovered task ${testInfo.project.name} ${Date.now()}`;
-  await editor.click();
-  await editor.press("Control+End");
+  await placeCaretAtEnd(editor);
   await editor.press("Enter");
   await editor.type(`/task ${retryTitle}`);
   await editor.press("Enter");
@@ -203,15 +215,7 @@ test("Today exposes agenda and task-create failures with retry", async ({
   const restoredCommand = editor.getByText(`/task ${retryTitle}`, {
     exact: true,
   });
-  await restoredCommand.evaluate((element) => {
-    (element.closest('[contenteditable="true"]') as HTMLElement | null)?.focus();
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    range.collapse(false);
-    const selection = window.getSelection();
-    selection?.removeAllRanges();
-    selection?.addRange(range);
-  });
+  await placeCaretAtEnd(restoredCommand);
   await editor.press("Enter");
   await expect(editor.getByText(retryTitle, { exact: true })).toHaveCount(1);
 });
