@@ -7,7 +7,8 @@ Run this after every wave and again after competitive features:
    visual/style (when applicable), app build, worker build, collaboration build,
    collaboration runtime check, and Docker build;
 3. review visual diffs rather than blindly accepting snapshots;
-4. deploy the exact green SHA to migration, web, worker, and collaboration services;
+4. deploy web from the exact green SHA, wait for its entrypoint migrations and
+   matching `/api/health` build SHA, then deploy worker and collaboration;
 5. verify feature flags and instant rollback;
 6. smoke signup, all entitlement fixtures, scheduling, Start Now, Focus,
    Today/Pages fallback, sync, booking, reminders, and 360px mobile;

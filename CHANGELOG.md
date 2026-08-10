@@ -39,7 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Kept authentication secrets runtime-only during production image builds,
   rendered session-dependent pages on demand, and made container startup stop
-  immediately when required environment validation or migrations fail.
+  immediately when required environment validation or migrations fail; rolling
+  dependency writes remain compatible during workspace migration, and release
+  automation waits for the exact healthy web SHA before dependent runtimes.
 - Kept unassigned Space task nodes in a stable date order instead of letting
   database response order move them between visits.
 - Made offline task, Page, and Today replays idempotent and revision-aware so

@@ -93,8 +93,10 @@ replay contract in [`docs/offline.md`](offline.md).
 Web and worker use expand/contract deployment:
 
 1. take/verify a database backup;
-2. deploy additive migrations;
-3. deploy web, worker and collaboration from the same SHA;
+2. deploy web from the exact green SHA; its fail-fast entrypoint applies the
+   additive migrations before accepting traffic;
+3. wait until `/api/health` reports that SHA and a healthy database, then deploy
+   worker and collaboration from the same SHA;
 4. run the release gate and inspect `/admin/operations`;
 5. enable feature flags only after the smoke test;
 6. contract/remove old fields only after at least one fallback release.
