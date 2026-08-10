@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T20:14:23Z
+updated: 2026-08-10T20:36:33Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -40,11 +40,15 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Dedicated collaboration target committed and pushed as `2f605b3`.
 - CI follow-up `a586279` updates the collaboration-aware Docker contract test
   and runs all root Dockerfile runtime targets as the non-root `node` user.
+- Coolify release contract fix `34f4f44` replaces the nonexistent rollback
+  webhook with documented authenticated GET deploy webhooks, records the prior
+  healthy SHA for manual native rollback, and maps Coolify `SOURCE_COMMIT` to
+  the runtime `NEEDT_BUILD_SHA` identity.
 
 ## Working state
 
-- CI follow-up `a586279` is pushed to PR #16. Both duplicate CI workflows
-  (`31427085570` and `31427077470`) completed successfully.
+- Release contract fix `34f4f44` is committed locally and ready to push to PR
+  #16. Both duplicate CI workflows for `a586279` completed successfully.
 - The S5 adversarial review is complete. Blockers found in S1/S3/T4 are
   committed: production auth now fails closed, scheduling runs and connector
   reschedules are workspace-scoped, offline replays are idempotent and
@@ -96,6 +100,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   passed security, schema drift, quality gates, E2E, visual and style jobs.
 - Local Docker rebuild was not rerun because Docker Desktop did not answer its
   API socket; GitHub's collaboration build/runtime and Semgrep gates passed.
+- Passed for `34f4f44`: targeted release/Docker contract tests (16 tests), full
+  unit (126 suites, 646 tests, one skipped), type-check, lint, branding,
+  collaboration build/runtime, Prettier and diff checks.
 
 ## Decisions and constraints
 
@@ -105,18 +112,20 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Keep milestones in separate commits and continue by dependency order.
 - Run visual regression with `NEEDT_VISUAL_PRODUCTION_SERVER=1`; the dev server
   exhausts memory during the full 69-test matrix.
+- Coolify v4 has no rollback webhook API. Deploy webhooks use
+  `COOLIFY_API_TOKEN`; rollback remains a guarded manual action against a
+  previous locally available image.
 
 ## Blockers
 
 - The `production` environment is still missing
-  `COOLIFY_COLLABORATION_WEBHOOK_URL` and `COOLIFY_ROLLBACK_WEBHOOK_URL`.
-  `COOLIFY_WEB_WEBHOOK_URL`, `COOLIFY_WORKER_WEBHOOK_URL`, and
-  `NEEDT_PRODUCTION_HEALTH_URL` are present. A current restorable production
-  backup still requires user confirmation.
+  `COOLIFY_COLLABORATION_WEBHOOK_URL`. Coolify must also have **Include Source
+  Commit in Build** enabled for web, worker and collaboration. A current
+  restorable production backup still requires user confirmation.
 
 ## Next action
 
-- Wait for the two missing production secret names and user confirmation of a
-  restorable production backup. Then merge PR #16 into `main`, monitor
-  `docker-publish.yml`, verify web/worker/collaboration use the merged SHA, and
-  complete the production smoke/release gate before starting S6.
+- Push `34f4f44` and this checkpoint, wait for green CI, then verify the
+  collaboration webhook name, Coolify source-commit setting, and user-confirmed
+  restorable backup. Merge PR #16 only after those gates; monitor deployment
+  and complete production smoke before starting S6.
