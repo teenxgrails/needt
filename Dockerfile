@@ -29,6 +29,7 @@ RUN npm ci --include=dev --legacy-peer-deps --ignore-scripts
 COPY . .
 RUN npm run prisma:generate
 RUN npm run build:worker
+RUN npm run build:collaboration
 RUN npm run build
 
 # Runtime dependencies are installed from package-lock.json so the entrypoint
@@ -56,6 +57,26 @@ RUN chmod +x /app/entrypoint.sh
 
 # entrypoint.sh runs `exec "$@"`, so this CMD becomes the worker process.
 CMD ["node", "dist/worker/index.js"]
+
+# Collaboration stage - same image, runs the Hocuspocus collaboration server.
+# Coolify: set this service's "Docker Build Stage Target" to `collaboration`.
+FROM base AS collaboration
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=runtime-deps /app/node_modules ./node_modules
+COPY --from=builder /app/dist/collaboration ./dist/collaboration
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/prisma ./prisma
+COPY entrypoint.sh .
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 1234
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["node", "dist/collaboration/index.js"]
 
 # Production stage
 FROM base AS production

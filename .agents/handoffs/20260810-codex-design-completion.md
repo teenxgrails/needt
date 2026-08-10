@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T17:42:00Z
+updated: 2026-08-10T19:11:36Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -34,9 +34,14 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - PR #16 CI follow-up is in progress: hard-coded collaboration test keys were
   replaced with ephemeral keys, restored `/task` commands now retry ahead of
   the slash menu, and visual snapshots are being split by host platform.
+- The Dockerfile now has a dedicated `collaboration` runtime target: it builds
+  `dist/collaboration`, carries the Prisma runtime, and starts the Hocuspocus
+  server through the shared entrypoint.
 
 ## Working state
 
+- `Dockerfile` and this handoff have an uncommitted scoped collaboration-image
+  change; no user-owned dirty files are part of it.
 - The S5 adversarial review is complete. Blockers found in S1/S3/T4 are
   committed: production auth now fails closed, scheduling runs and connector
   reschedules are workspace-scoped, offline replays are idempotent and
@@ -79,6 +84,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   production workflow and run the production smoke/release gate.
 - Targeted collaboration tests, type-check, lint, and the Today failed-create
   retry visual scenario pass after the CI follow-up changes.
+- Passed after the collaboration image change: `docker build --target
+  collaboration --tag needt:collaboration-smoke .`, an isolated collaboration
+  container smoke run with a temporary PostgreSQL dependency, and `npm run
+  check:collaboration-runtime`.
 
 ## Decisions and constraints
 
@@ -98,7 +107,6 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 
 ## Next action
 
-- Commit and push the CI follow-up to PR #16, collect the generated Linux
-  baselines, review and commit them, then wait for green CI. Configure the
-  required production secrets and verify a current backup before merging and
-  monitoring the production rollout/smoke.
+- Commit and push the dedicated collaboration image target, wait for green CI,
+  then configure the required production secrets and verify a current backup
+  before merging and monitoring the production rollout/smoke.
