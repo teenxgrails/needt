@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 const result = spawnSync(
   process.platform === "win32" ? "npm.cmd" : "npm",
@@ -29,4 +30,14 @@ if (yjs.length !== 1 || protocols.length !== 1) {
   process.exit(1);
 }
 
-process.stdout.write("Collaboration runtime uses one Yjs installation.\n");
+const nextConfig = readFileSync("next.config.js", "utf8");
+if (!nextConfig.includes('"yjs",')) {
+  process.stderr.write(
+    "Next server bundles must externalize Yjs to preserve one constructor identity.\n"
+  );
+  process.exit(1);
+}
+
+process.stdout.write(
+  "Collaboration runtime uses one Yjs installation and server module identity.\n"
+);

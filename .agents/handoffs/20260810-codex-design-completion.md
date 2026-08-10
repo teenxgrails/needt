@@ -43,6 +43,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Build caveat: Next completed successfully but logged that static generation
   could not reach the configured remote Neon database.
 - Still required for S5 green: E2E, style, visual and production Docker gates.
+- E2E follow-up: the full suite passes with one worker (24 passed, three
+  credential-gated skips). A Yjs duplicate-import warning found in that run is
+  fixed locally by externalizing Yjs from Next server route bundles; targeted
+  Pages E2E passes without the warning.
 
 ## Decisions and constraints
 

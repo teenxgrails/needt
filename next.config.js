@@ -44,6 +44,9 @@ const nextConfig = {
     "gaxios",
     "bullmq",
     "ioredis",
+    // Native require caching keeps one constructor identity across server
+    // route chunks; bundling Yjs per route triggers its duplicate-import guard.
+    "yjs",
   ],
 };
 
