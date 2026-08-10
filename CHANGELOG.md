@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Retrying a failed `/task` command in Today now creates the restored task
+  instead of reopening it as editor text; collaboration security tests also
+  generate ephemeral signing keys, and visual baselines are platform-specific.
 - Kept authentication secrets runtime-only during production image builds,
   rendered session-dependent pages on demand, and made container startup stop
   immediately when required environment validation or migrations fail; rolling

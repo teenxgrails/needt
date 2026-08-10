@@ -10,6 +10,7 @@ const useProductionServer =
 const productionServerCommand = `${JSON.stringify(
   process.execPath
 )} ./node_modules/next/dist/bin/next start`;
+const snapshotPlatformSuffix = process.platform === "darwin" ? "" : "-{platform}";
 
 export default defineConfig({
   testDir: "./tests/visual",
@@ -30,7 +31,7 @@ export default defineConfig({
   globalSetup: "./tests/visual/global-setup.ts",
   globalTeardown: "./tests/visual/global-teardown.ts",
   snapshotPathTemplate:
-    "{testDir}/{testFilePath}-snapshots/{arg}-{projectName}{ext}",
+    `{testDir}/{testFilePath}-snapshots/{arg}-{projectName}${snapshotPlatformSuffix}{ext}`,
   use: {
     baseURL,
     colorScheme: "dark",

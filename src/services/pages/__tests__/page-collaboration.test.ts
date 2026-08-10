@@ -8,7 +8,7 @@ import {
   verifyPageCollaborationToken,
 } from "@/services/pages/page-collaboration-token";
 import { PageAccessRole, WorkspaceKind, WorkspaceRole } from "@prisma/client";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import * as Y from "yjs";
 
 jest.mock("@/lib/prisma", () => ({ prisma: {} }));
@@ -26,6 +26,7 @@ const { resolvePageAccess } = jest.requireMock<
 const resolveWorkspaceAccessMock = resolveWorkspaceAccess as jest.Mock;
 const resolvePageAccessMock = resolvePageAccess as jest.Mock;
 const previousCollaborationSecret = process.env.COLLABORATION_SECRET;
+const collaborationSecret = randomBytes(32).toString("hex");
 
 function signedToken(overrides: Partial<PageCollaborationClaims> = {}) {
   const claims: PageCollaborationClaims = {
@@ -38,7 +39,7 @@ function signedToken(overrides: Partial<PageCollaborationClaims> = {}) {
     ...overrides,
   };
   const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
-  const signature = createHmac("sha256", "collaboration-test-secret")
+  const signature = createHmac("sha256", collaborationSecret)
     .update(payload)
     .digest("base64url");
   return `${payload}.${signature}`;
@@ -46,7 +47,7 @@ function signedToken(overrides: Partial<PageCollaborationClaims> = {}) {
 
 describe("Page collaboration security", () => {
   beforeAll(() => {
-    process.env.COLLABORATION_SECRET = "collaboration-test-secret";
+    process.env.COLLABORATION_SECRET = collaborationSecret;
   });
 
   afterAll(() => {

@@ -321,11 +321,6 @@ export function DailyAgendaEditor({
           });
           return true;
         }
-        if (slash && event.key === "Enter" && filteredItems[slashIndex]) {
-          event.preventDefault();
-          applyCommand(filteredItems[slashIndex].id);
-          return true;
-        }
         if (event.key === "Escape") {
           setSlash(null);
           return false;
@@ -380,6 +375,12 @@ export function DailyAgendaEditor({
               }
               notify.error("Could not create task. Your command was restored.");
             });
+          return true;
+        }
+
+        if (slash && event.key === "Enter" && filteredItems[slashIndex]) {
+          event.preventDefault();
+          applyCommand(filteredItems[slashIndex].id);
           return true;
         }
 

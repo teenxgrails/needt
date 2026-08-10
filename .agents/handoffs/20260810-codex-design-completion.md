@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T16:29:05Z
+updated: 2026-08-10T17:42:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -31,6 +31,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   the fallback writer working through the workspace dependency migration,
   Prisma schema drift is zero, and production deployment now fails closed and
   waits for the exact healthy web SHA before worker/collaboration rollout.
+- PR #16 CI follow-up is in progress: hard-coded collaboration test keys were
+  replaced with ephemeral keys, restored `/task` commands now retry ahead of
+  the slash menu, and visual snapshots are being split by host platform.
 
 ## Working state
 
@@ -74,6 +77,8 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   Next server route bundles; targeted Pages E2E passes without the warning.
 - Still required before S6: deploy this hardening through the authorized
   production workflow and run the production smoke/release gate.
+- Targeted collaboration tests, type-check, lint, and the Today failed-create
+  retry visual scenario pass after the CI follow-up changes.
 
 ## Decisions and constraints
 
@@ -93,6 +98,7 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 
 ## Next action
 
-- Push `d4a9fc9` to PR #16 and wait for CI. Then configure the required
-  production secrets and verify a current backup before merging and monitoring
-  the production rollout/smoke.
+- Commit and push the CI follow-up to PR #16, collect the generated Linux
+  baselines, review and commit them, then wait for green CI. Configure the
+  required production secrets and verify a current backup before merging and
+  monitoring the production rollout/smoke.

@@ -14,7 +14,7 @@ import {
   WorkspaceKind,
   WorkspaceRole,
 } from "@prisma/client";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -45,6 +45,7 @@ const stateFindUnique = prisma.moodboardCollaborationState
   .findUnique as jest.Mock;
 const stateCreate = prisma.moodboardCollaborationState.create as jest.Mock;
 const previousCollaborationSecret = process.env.COLLABORATION_SECRET;
+const collaborationSecret = randomBytes(32).toString("hex");
 
 function signedToken(overrides: Partial<MoodboardCollaborationClaims> = {}) {
   const claims: MoodboardCollaborationClaims = {
@@ -58,7 +59,7 @@ function signedToken(overrides: Partial<MoodboardCollaborationClaims> = {}) {
     ...overrides,
   };
   const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
-  const signature = createHmac("sha256", "collaboration-test-secret")
+  const signature = createHmac("sha256", collaborationSecret)
     .update(payload)
     .digest("base64url");
   return `${payload}.${signature}`;
@@ -66,7 +67,7 @@ function signedToken(overrides: Partial<MoodboardCollaborationClaims> = {}) {
 
 describe("Moodboard collaboration security", () => {
   beforeAll(() => {
-    process.env.COLLABORATION_SECRET = "collaboration-test-secret";
+    process.env.COLLABORATION_SECRET = collaborationSecret;
   });
 
   afterAll(() => {
