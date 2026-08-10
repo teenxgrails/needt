@@ -1,4 +1,5 @@
 #!/bin/sh
+set -eu
 
 case "$*" in
   *worker*|*collaboration*) ;;

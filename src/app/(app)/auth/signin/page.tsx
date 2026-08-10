@@ -6,6 +6,8 @@ import { SignInForm } from "@/components/auth/SignInForm";
 import { APP_NAME } from "@/lib/app-config";
 import { getAuthOptions } from "@/lib/auth/auth-options";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: `Sign In | ${APP_NAME}`,
   description: `Sign in to your ${APP_NAME} account`,

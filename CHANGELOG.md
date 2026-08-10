@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Kept authentication secrets runtime-only during production image builds,
+  rendered session-dependent pages on demand, and made container startup stop
+  immediately when required environment validation or migrations fail.
 - Kept unassigned Space task nodes in a stable date order instead of letting
   database response order move them between visits.
 - Made offline task, Page, and Today replays idempotent and revision-aware so

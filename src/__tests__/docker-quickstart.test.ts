@@ -146,6 +146,10 @@ describe("production migration tooling", () => {
     expect(entrypoint).not.toContain("prisma generate");
     expect(entrypoint).toContain('"$PRISMA_BIN" migrate deploy');
   });
+
+  it("fails the container when migrations or required environment fail", () => {
+    expect(entrypoint).toMatch(/^#!\/bin\/sh\nset -eu\n/);
+  });
 });
 
 describe("production root redirect", () => {
