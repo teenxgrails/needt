@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T16:06:52Z
+updated: 2026-08-10T16:29:05Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -27,6 +27,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Production image/runtime hardening `f2a6959`: auth initialization is deferred
   to runtime, session-dependent pages are dynamic, and the entrypoint fails
   immediately when environment validation or migrations fail.
+- PR #16 release review fix `d4a9fc9`: a pre-column compatibility trigger keeps
+  the fallback writer working through the workspace dependency migration,
+  Prisma schema drift is zero, and production deployment now fails closed and
+  waits for the exact healthy web SHA before worker/collaboration rollout.
 
 ## Working state
 
@@ -58,6 +62,11 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   suite/test skipped), full E2E with one worker (24 passed, three
   credential-gated skips), type-check, lint, targeted Docker/auth tests, the
   production Docker build, and the clean-database runtime smoke test.
+- Passed after PR #16 review fixes: Prisma validate/generate, zero schema drift,
+  86-migration clean-database deploy plus legacy-writer SQL smoke, type-check,
+  lint, branding/UI contracts, full unit (126 suites, 644 tests), full E2E (24
+  passed, three credential skips), app/worker/collaboration builds, runtime
+  identity check, and production Docker build.
 - Previously passed: style (15 passed) and production visual (65 passed, four
   breakpoint-gated skips). The visual suite passed again without updating
   snapshots.
@@ -77,11 +86,13 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 
 ## Blockers
 
-- None. The user explicitly authorized push, review, production deployment and
-  smoke for the completed hardening wave.
+- GitHub repository and `production` environment currently expose no configured
+  secret names. Coolify web/worker/collaboration hooks, production health URL
+  and rollback hook must be configured before merge or the fail-closed deploy
+  job will stop. A current production backup must also be verified.
 
 ## Next action
 
-- Fetch both remotes, verify the branch base and target repository, then push,
-  review/merge to `main`, monitor the production workflow, and run the release
-  smoke gate before starting S6.
+- Push `d4a9fc9` to PR #16 and wait for CI. Then configure the required
+  production secrets and verify a current backup before merging and monitoring
+  the production rollout/smoke.
