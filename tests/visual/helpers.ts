@@ -1,12 +1,16 @@
-import { expect } from "@playwright/test";
 import { encode } from "next-auth/jwt";
+
+import { expect } from "@playwright/test";
 
 import { prisma } from "@/lib/prisma";
 
 import { VISUAL_TEST_EMAIL, VISUAL_TEST_PAGE_ID } from "./fixtures";
-import { resetVisualTaskData } from "./global-setup";
+import { resetVisualSettings, resetVisualTaskData } from "./global-setup";
 
 export async function signInVisualUser(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    sessionStorage.setItem("needt-ai-companion-intro-seen", "1");
+  });
   const user = await prisma.user.findUnique({
     where: { email: VISUAL_TEST_EMAIL },
     select: { id: true },
@@ -23,6 +27,7 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
     prisma.page.deleteMany({
       where: { userId: user!.id, id: { not: VISUAL_TEST_PAGE_ID } },
     }),
+    resetVisualSettings(user!.id),
   ]);
   await resetVisualTaskData(user!.id, workspace!.id);
 
@@ -31,8 +36,7 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
   // production account limiter and make screenshot coverage order-dependent;
   // credentials/rate-limit behavior is covered by the API E2E suite.
   const token = await encode({
-    secret:
-      process.env.NEXTAUTH_SECRET ?? "needt-visual-regression-secret",
+    secret: process.env.NEXTAUTH_SECRET ?? "needt-visual-regression-secret",
     maxAge: 60 * 60,
     token: {
       sub: user!.id,

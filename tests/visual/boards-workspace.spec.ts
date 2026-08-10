@@ -24,7 +24,7 @@ test("Pages replaces legacy Boards with documents and databases", async ({
   await page.goto("/pages", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Pages" })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "New page" }).last()
+    page.getByRole("button", { name: "New note" }).last()
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /Database/ })).toBeVisible();
   await settle(page);

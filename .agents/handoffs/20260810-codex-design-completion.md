@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T01:10:00Z
+updated: 2026-08-10T14:28:14Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -21,7 +21,8 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Terra T1 `8760953`, T2 `71f7d79`, T3 `7411b53`, T4 `90d2720`.
 - Project Hallmark `4a79c58`; Needt critique skill `679af84`.
 - S5 blocker fixes: auth/workspace scheduling `b0dfa1c`, offline replay
-  `2f32f4f`, and stale T4 contract test `962d3eb`.
+  `2f32f4f`, stale T4 contract test `962d3eb`, and duplicate Yjs prevention
+  `35f6a26`.
 
 ## Working state
 
@@ -29,6 +30,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   committed: production auth now fails closed, scheduling runs and connector
   reschedules are workspace-scoped, offline replays are idempotent and
   revision-aware, and the stale companion contract test matches the shipped UI.
+- The production visual suite is deterministic after resetting settings for
+  every fixture, suppressing the timed companion intro, sorting loose Space
+  tasks by date/ID, and aligning stale Pages/theme assertions. Reviewed
+  production baselines are updated locally and ready to commit.
 - Preserve existing user changes in `docs/plans/README.md`,
   `src/app/layout.tsx`, `.playwright-mcp/`, `docs/plans/08-terra-high.md`, and
   `pages-mobile-slash-390.png`.
@@ -42,11 +47,12 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   check, and `git diff --check`.
 - Build caveat: Next completed successfully but logged that static generation
   could not reach the configured remote Neon database.
-- Still required for S5 green: E2E, style, visual and production Docker gates.
-- E2E follow-up: the full suite passes with one worker (24 passed, three
-  credential-gated skips). A Yjs duplicate-import warning found in that run is
-  fixed locally by externalizing Yjs from Next server route bundles; targeted
-  Pages E2E passes without the warning.
+- Passed: full E2E with one worker (24 passed, three credential-gated skips),
+  style (15 passed), and production visual (65 passed, four breakpoint-gated
+  skips). The visual suite passed again without updating snapshots.
+- Yjs duplicate-import warning found in E2E is fixed by externalizing Yjs from
+  Next server route bundles; targeted Pages E2E passes without the warning.
+- Still required for S5 green: production Docker image build and deploy/smoke.
 
 ## Decisions and constraints
 
@@ -54,15 +60,17 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - The project-scoped `needt-critique` review is complete; its actionable
   blockers were returned to S1/S3/T4 and addressed without unrelated polish.
 - Keep milestones in separate commits and continue by dependency order.
-- Do not use Docker for documentation/tooling validation; Docker Desktop was
-  stopped after excessive memory/disk use.
+- Run visual regression with `NEEDT_VISUAL_PRODUCTION_SERVER=1`; the dev server
+  exhausts memory during the full 69-test matrix.
 
 ## Blockers
 
-- Docker Desktop remains stopped after excessive memory/disk use, so the E2E,
-  style, visual and production-image gates cannot run yet.
+- Docker Desktop is running, but two production-image attempts failed before
+  reading project files because Docker Hub timed out loading metadata for
+  `node:22-alpine3.19` after 60 seconds (`DeadlineExceeded`).
 
 ## Next action
 
-- Commit the reviewed S1/S3/T4 hardening units, then run the remaining Docker
-  and browser gates. Do not start S6 until S5 is green and smoke-tested.
+- Commit the visual hardening/baselines, retry the production Docker build when
+  Docker Hub is reachable, then deploy/smoke-test. Do not start S6 until S5 is
+  green and smoke-tested.

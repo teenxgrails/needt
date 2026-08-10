@@ -354,7 +354,15 @@ export function SpaceView({
       };
     });
 
-    const looseTasks = visibleTasks.filter((task) => !task.projectId);
+    const looseTasks = visibleTasks
+      .filter((task) => !task.projectId)
+      .sort((left, right) => {
+        const leftDate =
+          getTaskStart(left)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+        const rightDate =
+          getTaskStart(right)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+        return leftDate - rightDate || left.id.localeCompare(right.id);
+      });
     const looseClusters = looseTasks.map((task, index) => {
       const seed = hashString(task.id);
       const center = looseTaskPosition(looseTasks.length, index, seed);

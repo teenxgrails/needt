@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Kept unassigned Space task nodes in a stable date order instead of letting
+  database response order move them between visits.
 - Made offline task, Page, and Today replays idempotent and revision-aware so
   reconnecting cannot overwrite a newer server version; connector-triggered
   scheduling now stays inside the authorized workspace, and production web

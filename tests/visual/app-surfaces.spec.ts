@@ -19,22 +19,31 @@ async function useVisualTheme(
   theme: "dark" | "light"
 ) {
   await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
-  const settingsResponse = page.waitForResponse(
-    (response) =>
-      new URL(response.url()).pathname === "/api/user-settings" &&
-      response.request().method() === "GET"
+  const update = await page.request.patch("/api/user-settings", {
+    data: { theme },
+  });
+  expect(update.ok()).toBeTruthy();
+  const settingsResponses = Promise.all(
+    ["/api/user-settings", "/api/customization"].map((pathname) =>
+      page.waitForResponse(
+        (response) =>
+          new URL(response.url()).pathname === pathname &&
+          response.request().method() === "GET"
+      )
+    )
   );
   await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
-  await settingsResponse;
+  await settingsResponses;
   const themePicker = page.getByRole("combobox", { name: "Theme" });
-  await expect(themePicker).toHaveText("Dark");
-  if (theme === "light") {
-    await themePicker.click();
-    await page.getByRole("option", { name: "Light" }).click();
-  }
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   await expect(page.getByText("Monday", { exact: true })).toBeVisible();
   await expect(themePicker).toHaveText(theme === "dark" ? "Dark" : "Light");
+  await expect(
+    page
+      .getByText("Animations:", { exact: true })
+      .locator("..")
+      .getByRole("switch")
+  ).not.toBeChecked();
 }
 
 test("Calendar, Today, and Space stay visually stable", async ({ page }) => {

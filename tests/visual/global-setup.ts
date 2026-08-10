@@ -1,10 +1,9 @@
-import { hash } from "bcryptjs";
 import { WorkspaceKind, WorkspaceRole } from "@prisma/client";
+import { hash } from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 
 import { prepareE2eEnvironment } from "../e2e/environment";
-
 import {
   VISUAL_TEST_BOARD_COLUMNS,
   VISUAL_TEST_BOARD_ID,
@@ -97,6 +96,59 @@ export async function resetVisualTaskData(userId: string, workspaceId: string) {
   });
 }
 
+export async function resetVisualSettings(userId: string) {
+  await Promise.all([
+    prisma.userSettings.upsert({
+      where: { userId },
+      update: {
+        theme: "dark",
+        defaultView: "week",
+        timeZone: "Europe/Zurich",
+        weekStartDay: "monday",
+        timeFormat: "12h",
+      },
+      create: {
+        userId,
+        theme: "dark",
+        defaultView: "week",
+        timeZone: "Europe/Zurich",
+        weekStartDay: "monday",
+        timeFormat: "12h",
+      },
+    }),
+    prisma.calendarSettings.upsert({
+      where: { userId },
+      update: {
+        workingHoursEnabled: true,
+        workingHoursStart: "09:00",
+        workingHoursEnd: "17:00",
+        workingHoursDays: "[1,2,3,4,5]",
+      },
+      create: {
+        userId,
+        workingHoursEnabled: true,
+        workingHoursStart: "09:00",
+        workingHoursEnd: "17:00",
+        workingHoursDays: "[1,2,3,4,5]",
+      },
+    }),
+    prisma.userCustomization.upsert({
+      where: { userId },
+      update: {
+        themePreset: "needt",
+        animationsEnabled: false,
+        sidebarWidth: 244,
+      },
+      create: {
+        userId,
+        themePreset: "needt",
+        animationsEnabled: false,
+        sidebarWidth: 244,
+      },
+    }),
+  ]);
+}
+
 export default async function globalSetup() {
   await prepareE2eEnvironment();
   const passwordHash = await hash(VISUAL_TEST_PASSWORD, 8);
@@ -122,9 +174,15 @@ export default async function globalSetup() {
     },
   });
   await prisma.workspaceMember.upsert({
-    where: { workspaceId_userId: { workspaceId: workspace.id, userId: user.id } },
+    where: {
+      workspaceId_userId: { workspaceId: workspace.id, userId: user.id },
+    },
     update: { role: WorkspaceRole.OWNER },
-    create: { workspaceId: workspace.id, userId: user.id, role: WorkspaceRole.OWNER },
+    create: {
+      workspaceId: workspace.id,
+      userId: user.id,
+      role: WorkspaceRole.OWNER,
+    },
   });
 
   await prisma.account.upsert({
@@ -148,54 +206,7 @@ export default async function globalSetup() {
   });
 
   await Promise.all([
-    prisma.userSettings.upsert({
-      where: { userId: user.id },
-      update: {
-        theme: "dark",
-        defaultView: "week",
-        timeZone: "Europe/Zurich",
-        weekStartDay: "monday",
-        timeFormat: "12h",
-      },
-      create: {
-        userId: user.id,
-        theme: "dark",
-        defaultView: "week",
-        timeZone: "Europe/Zurich",
-        weekStartDay: "monday",
-        timeFormat: "12h",
-      },
-    }),
-    prisma.calendarSettings.upsert({
-      where: { userId: user.id },
-      update: {
-        workingHoursEnabled: true,
-        workingHoursStart: "09:00",
-        workingHoursEnd: "17:00",
-        workingHoursDays: "[1,2,3,4,5]",
-      },
-      create: {
-        userId: user.id,
-        workingHoursEnabled: true,
-        workingHoursStart: "09:00",
-        workingHoursEnd: "17:00",
-        workingHoursDays: "[1,2,3,4,5]",
-      },
-    }),
-    prisma.userCustomization.upsert({
-      where: { userId: user.id },
-      update: {
-        themePreset: "needt",
-        animationsEnabled: false,
-        sidebarWidth: 244,
-      },
-      create: {
-        userId: user.id,
-        themePreset: "needt",
-        animationsEnabled: false,
-        sidebarWidth: 244,
-      },
-    }),
+    resetVisualSettings(user.id),
     prisma.systemSettings.upsert({
       where: { id: "default" },
       update: { disableHomepage: false, publicSignup: false },
