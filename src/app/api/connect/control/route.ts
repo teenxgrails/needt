@@ -161,7 +161,12 @@ export async function POST(request: NextRequest) {
     });
     if (!result.count)
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    await scheduleAllTasksForUser(userId);
+    await scheduleAllTasksForUser(userId, {
+      workspaceId:
+        workspace.dataScope.mode === "workspace"
+          ? workspace.workspaceId
+          : undefined,
+    });
     return NextResponse.json(
       await prisma.task.findFirst({
         where: { id: body.id, ...scope, isArchived: false },
@@ -429,7 +434,14 @@ export async function POST(request: NextRequest) {
     if (!result.count) {
       return NextResponse.json({ error: "Object not found" }, { status: 404 });
     }
-    if (action === "restore_task") await scheduleAllTasksForUser(userId);
+    if (action === "restore_task") {
+      await scheduleAllTasksForUser(userId, {
+        workspaceId:
+          workspace.dataScope.mode === "workspace"
+            ? workspace.workspaceId
+            : undefined,
+      });
+    }
     return NextResponse.json({ restored: true, id: body.id });
   }
 

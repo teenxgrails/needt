@@ -102,7 +102,12 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  await scheduleAllTasksForUser(userId);
+  await scheduleAllTasksForUser(userId, {
+    workspaceId:
+      workspace.dataScope.mode === "workspace"
+        ? workspace.workspaceId
+        : undefined,
+  });
 
   const scheduledTask = await prisma.task.findFirst({
     where: { id: task.id, ...workspaceDataScopeWhere(workspace, userId) },

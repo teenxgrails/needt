@@ -1,5 +1,15 @@
 #!/bin/sh
 
+case "$*" in
+  *worker*|*collaboration*) ;;
+  *)
+    if [ "${NODE_ENV:-}" = "production" ] && [ -z "${NEXTAUTH_SECRET:-}" ]; then
+      echo "NEXTAUTH_SECRET is required in production" >&2
+      exit 1
+    fi
+    ;;
+esac
+
 # Extract database connection details from DATABASE_URL
 PG_HOST=$(echo "$DATABASE_URL" | sed -E 's#.*@([^:/]+).*#\1#')
 PG_PORT=$(echo "$DATABASE_URL" | sed -E 's/.*:([0-9]*)\/.*/\1/')

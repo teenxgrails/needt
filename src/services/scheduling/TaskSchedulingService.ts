@@ -351,7 +351,7 @@ function summarizeSchedule(result: ScheduleResult) {
 
 export async function scheduleAllTasksForUserDetailed(
   userId: string,
-  options: { entitlementUserId?: string } = {}
+  options: { entitlementUserId?: string; workspaceId?: string } = {}
 ): Promise<{ tasks: TaskWithRelations[]; scheduleResult: ScheduleResult }> {
   try {
     logger.info("Starting task scheduling for user", { userId }, LOG_SOURCE);
@@ -417,6 +417,7 @@ export async function scheduleAllTasksForUserDetailed(
 
     let dbTasks = (await prisma.task.findMany({
       where: {
+        ...(options.workspaceId ? { workspaceId: options.workspaceId } : {}),
         OR: [{ isAutoScheduled: true }, { autoScheduled: true }],
         status: {
           not: {
@@ -596,6 +597,7 @@ export async function scheduleAllTasksForUserDetailed(
 
     const updatedDbTasks = (await prisma.task.findMany({
       where: {
+        ...(options.workspaceId ? { workspaceId: options.workspaceId } : {}),
         assigneeId: userId,
         isArchived: false,
         AND: [activeProjectTaskWhere],
@@ -636,7 +638,7 @@ export async function scheduleAllTasksForUserDetailed(
 
 export async function scheduleAllTasksForUser(
   userId: string,
-  options: { entitlementUserId?: string } = {}
+  options: { entitlementUserId?: string; workspaceId?: string } = {}
 ): Promise<TaskWithRelations[]> {
   const { tasks } = await scheduleAllTasksForUserDetailed(userId, options);
   return tasks;

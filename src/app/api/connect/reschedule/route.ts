@@ -15,7 +15,12 @@ export async function POST(request: NextRequest) {
   );
   if ("response" in auth) return auth.response;
 
-  await scheduleAllTasksForUser(auth.userId);
+  await scheduleAllTasksForUser(auth.userId, {
+    workspaceId:
+      auth.workspace.dataScope.mode === "workspace"
+        ? auth.workspace.workspaceId
+        : undefined,
+  });
   const tasks = await prisma.task.findMany({
     where: {
       ...workspaceDataScopeWhere(auth.workspace, auth.userId),

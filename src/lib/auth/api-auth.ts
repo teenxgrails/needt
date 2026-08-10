@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import type { WorkspaceRole } from "@prisma/client";
 
+import { authSecret } from "@/lib/auth/auth-secret";
 import {
   type WorkspaceAccess,
   WorkspaceAuthorizationError,
@@ -31,7 +32,7 @@ export async function authenticateRequest(
   // Get the user token from the request
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: authSecret(),
   });
 
   // If there's no token, return unauthorized
@@ -80,7 +81,7 @@ export async function requireAuth(
   req: NextRequest
 ): Promise<NextResponse | null> {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: authSecret() });
 
     if (!token?.sub) {
       logger.warn(
@@ -131,7 +132,7 @@ export async function requireAdmin(
   req: NextRequest
 ): Promise<NextResponse | null> {
   try {
-    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    const token = await getToken({ req, secret: authSecret() });
 
     if (!token?.sub) {
       logger.warn(

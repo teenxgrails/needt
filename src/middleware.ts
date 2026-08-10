@@ -2,6 +2,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { authSecret } from "@/lib/auth/auth-secret";
 import { publicAppUrl } from "@/lib/public-url";
 
 // List of public routes that don't require authentication
@@ -108,7 +109,7 @@ export async function middleware(request: NextRequest) {
   // Get the token from the request
   const token = await getToken({
     req: request,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: authSecret(),
   });
 
   // If there's no token, redirect to the sign-in page

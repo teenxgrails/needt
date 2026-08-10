@@ -2,6 +2,7 @@ import { scheduleAllTasksForUserDetailed } from "@/services/scheduling/TaskSched
 import { SchedulingRunSource, SchedulingRunStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { repushDirtyBlocks } from "@/lib/task-block-push";
 
 import { executeSchedulingRun } from "../runs";
 
@@ -33,6 +34,7 @@ describe("executeSchedulingRun", () => {
     runFindUnique.mockResolvedValue({
       id: "run-1",
       userId: "user-1",
+      workspaceId: "workspace-1",
       source: SchedulingRunSource.MANUAL,
       status: SchedulingRunStatus.QUEUED,
     });
@@ -68,6 +70,7 @@ describe("executeSchedulingRun", () => {
       expect.objectContaining({
         where: expect.objectContaining({
           assigneeId: "user-1",
+          workspaceId: "workspace-1",
           isArchived: false,
           AND: [
             {
@@ -80,5 +83,9 @@ describe("executeSchedulingRun", () => {
         }),
       })
     );
+    expect(scheduleAllTasksForUserDetailed).toHaveBeenCalledWith("user-1", {
+      workspaceId: "workspace-1",
+    });
+    expect(repushDirtyBlocks).toHaveBeenCalledWith("user-1", "workspace-1");
   });
 });

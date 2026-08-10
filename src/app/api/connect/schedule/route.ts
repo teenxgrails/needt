@@ -52,6 +52,11 @@ export async function POST(request: NextRequest) {
   );
   if ("response" in auth) return auth.response;
 
-  await scheduleAllTasksForUser(auth.userId);
+  await scheduleAllTasksForUser(auth.userId, {
+    workspaceId:
+      auth.workspace.dataScope.mode === "workspace"
+        ? auth.workspace.workspaceId
+        : undefined,
+  });
   return NextResponse.json(await readSchedule(auth.userId, auth.workspace));
 }

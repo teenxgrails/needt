@@ -637,7 +637,7 @@ export async function removeAllTaskBlocks(userId: string) {
  * Called after schedule-all completes to reconcile event state.
  * Covers: blockDirty=true (retries), newly scheduled (scheduledStart set but no event).
  */
-export async function repushDirtyBlocks(userId: string) {
+export async function repushDirtyBlocks(userId: string, workspaceId?: string) {
   try {
     logger.info(`Starting repush of dirty blocks`, { userId }, LOG_SOURCE);
 
@@ -647,6 +647,7 @@ export async function repushDirtyBlocks(userId: string) {
     const tasks = await prisma.task.findMany({
       where: {
         assigneeId: userId,
+        ...(workspaceId ? { workspaceId } : {}),
         OR: [
           { blockDirty: true },
           {

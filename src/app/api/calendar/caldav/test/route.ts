@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { DAVCalendar } from "tsdav";
 
+import { authSecret } from "@/lib/auth/auth-secret";
 import { logger } from "@/lib/logger";
 
 import {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Get the user token from the request
     const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET,
+      secret: authSecret(),
     });
 
     // If there's no token, return unauthorized

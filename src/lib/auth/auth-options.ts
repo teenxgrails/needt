@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 
 import { getGoogleCredentials, getOutlookCredentials } from "@/lib/auth";
+import { authSecret } from "@/lib/auth/auth-secret";
 import { authenticateUser } from "@/lib/auth/credentials-provider";
 import { logger } from "@/lib/logger";
 import { MICROSOFT_GRAPH_SCOPES } from "@/lib/outlook";
@@ -98,11 +99,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
 
   return {
     // Add secret for production - required for security
-    secret:
-      process.env.NEXTAUTH_SECRET ||
-      // Fallback secret - only used if NEXTAUTH_SECRET is not set
-      // In production, this should always be set via environment variable
-      "EM2RYkch0Uj+Qt2Cu0eDCmo/kv0MenNnHUaciNAjSrM=",
+    secret: authSecret(),
 
     providers,
     callbacks: {

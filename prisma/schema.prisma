@@ -171,6 +171,7 @@ model Workspace {
   taskActivities   TaskActivity[]
   taskDependencies TaskDependency[]
   projectTemplates ProjectTemplate[]
+  schedulingRuns   SchedulingRun[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -842,6 +843,8 @@ model SchedulingRun {
   id                 String              @id @default(cuid())
   userId             String
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId        String?
+  workspace          Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   source             SchedulingRunSource
   status             SchedulingRunStatus @default(QUEUED)
   dedupeKey          String
@@ -858,6 +861,7 @@ model SchedulingRun {
 
   @@unique([userId, dedupeKey])
   @@index([userId, status, createdAt])
+  @@index([workspaceId, status, createdAt])
   @@index([source, status, createdAt])
 }
 

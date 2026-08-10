@@ -158,4 +158,24 @@ describe("workspace-scoped API surfaces", () => {
     expect(preview).toContain("value.workspaceId !== workspaceId");
     expect(preview).toContain("where: { ...scope, isArchived: false }");
   });
+
+  it("keeps connector-triggered scheduling in the authorized workspace", () => {
+    const scheduler = readFileSync(
+      "src/services/scheduling/TaskSchedulingService.ts",
+      "utf8"
+    );
+    const connectorRoutes = [
+      "src/app/api/connect/control/route.ts",
+      "src/app/api/connect/reschedule/route.ts",
+      "src/app/api/connect/schedule/route.ts",
+      "src/app/api/connect/tasks/route.ts",
+    ].map((path) => readFileSync(path, "utf8"));
+
+    expect(scheduler).toContain("options.workspaceId");
+    expect(scheduler).toContain("{ workspaceId: options.workspaceId }");
+    for (const route of connectorRoutes) {
+      expect(route).toContain("scheduleAllTasksForUser");
+      expect(route).toContain("workspaceId:");
+    }
+  });
 });
