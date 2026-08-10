@@ -1,8 +1,10 @@
 # Base stage for both development and production
 FROM node:22-alpine3.19 AS base
 WORKDIR /app
+ARG SOURCE_COMMIT=local
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEEDT_BUILD_SHA=$SOURCE_COMMIT
 
 # Install netcat
 RUN apk add --no-cache netcat-openbsd

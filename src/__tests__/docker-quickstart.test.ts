@@ -138,7 +138,12 @@ describe("production migration tooling", () => {
       "npm ci --omit=dev --legacy-peer-deps --ignore-scripts"
     );
     expect(rootDockerfile.match(/COPY --from=runtime-deps/g)).toHaveLength(3);
-    expect(entrypoint).toContain('/app/node_modules/.bin/prisma');
+    expect(entrypoint).toContain("/app/node_modules/.bin/prisma");
+  });
+
+  it("exposes the Coolify source commit as the runtime build identity", () => {
+    expect(rootDockerfile).toContain("ARG SOURCE_COMMIT=local");
+    expect(rootDockerfile).toContain("ENV NEEDT_BUILD_SHA=$SOURCE_COMMIT");
   });
 
   it("never downloads a floating Prisma major during container startup", () => {
@@ -163,7 +168,9 @@ describe("production root redirect", () => {
   });
 
   it("leaves the auth-aware root redirect to the server page", () => {
-    expect(homePage).toContain('redirect(session ? "/calendar" : "/auth/signin")');
+    expect(homePage).toContain(
+      'redirect(session ? "/calendar" : "/auth/signin")'
+    );
     expect(middleware).toContain('if (pathname === "/")');
   });
 });
