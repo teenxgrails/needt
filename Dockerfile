@@ -54,6 +54,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
+USER node
 
 # entrypoint.sh runs `exec "$@"`, so this CMD becomes the worker process.
 CMD ["node", "dist/worker/index.js"]
@@ -72,6 +73,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
+USER node
 
 EXPOSE 1234
 
@@ -94,6 +96,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
 COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
+USER node
 
 EXPOSE 3000
 

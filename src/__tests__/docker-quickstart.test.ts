@@ -137,7 +137,7 @@ describe("production migration tooling", () => {
     expect(rootDockerfile).toContain(
       "npm ci --omit=dev --legacy-peer-deps --ignore-scripts"
     );
-    expect(rootDockerfile.match(/COPY --from=runtime-deps/g)).toHaveLength(2);
+    expect(rootDockerfile.match(/COPY --from=runtime-deps/g)).toHaveLength(3);
     expect(entrypoint).toContain('/app/node_modules/.bin/prisma');
   });
 
