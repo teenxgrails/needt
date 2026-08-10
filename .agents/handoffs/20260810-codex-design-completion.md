@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T20:36:33Z
+updated: 2026-08-10T23:18:55Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -44,11 +44,17 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   webhook with documented authenticated GET deploy webhooks, records the prior
   healthy SHA for manual native rollback, and maps Coolify `SOURCE_COMMIT` to
   the runtime `NEEDT_BUILD_SHA` identity.
+- Release checkpoint `560e621` is pushed and both CI workflows for that head
+  passed. All required production secret names are present.
+- The 2026-08-10 production backup was restored into the isolated
+  `needt_restore_drill` database. `pg_restore --exit-on-error` passed, restored
+  and live row counts matched (`User=6`, `Task=36`), 72 completed Prisma
+  migrations were present, and the scratch database was removed.
 
 ## Working state
 
-- Release contract fix `34f4f44` is committed locally and ready to push to PR
-  #16. Both duplicate CI workflows for `a586279` completed successfully.
+- Release contract fix `34f4f44` and checkpoint `560e621` are pushed to PR #16.
+  Both duplicate CI workflows for `560e621` completed successfully.
 - The S5 adversarial review is complete. Blockers found in S1/S3/T4 are
   committed: production auth now fails closed, scheduling runs and connector
   reschedules are workspace-scoped, offline replays are idempotent and
@@ -58,7 +64,8 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   tasks by date/ID, and aligning stale Pages/theme assertions. Reviewed
   production baselines are committed in `a34f4b9`.
 - Preserve existing user changes in `docs/plans/README.md`,
-  `src/app/layout.tsx`, `.playwright-mcp/`, `docs/plans/08-terra-high.md`, and
+  `src/app/layout.tsx`, `.codex/config.toml`, `.playwright-mcp/`,
+  `NEXT_AGENT.md`, `docs/plans/08-terra-high.md`, and
   `pages-mobile-slash-390.png`.
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
@@ -92,9 +99,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Targeted collaboration tests, type-check, lint, and the Today failed-create
   retry visual scenario pass after the CI follow-up changes.
 - Passed after the collaboration image change: `docker build --target
-  collaboration --tag needt:collaboration-smoke .`, an isolated collaboration
+collaboration --tag needt:collaboration-smoke .`, an isolated collaboration
   container smoke run with a temporary PostgreSQL dependency, and `npm run
-  check:collaboration-runtime`.
+check:collaboration-runtime`.
 - Passed for `a586279`: local full unit (126 suites, 644 tests, one skipped),
   type-check, lint, and targeted Docker contract tests. Both GitHub CI workflows
   passed security, schema drift, quality gates, E2E, visual and style jobs.
@@ -103,6 +110,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Passed for `34f4f44`: targeted release/Docker contract tests (16 tests), full
   unit (126 suites, 646 tests, one skipped), type-check, lint, branding,
   collaboration build/runtime, Prettier and diff checks.
+- Both GitHub CI workflows for `560e621` passed all required jobs. The fresh
+  2026-08-10 production backup restore drill also passed as recorded in
+  `docs/operations-runbook.md`.
 
 ## Decisions and constraints
 
@@ -118,14 +128,12 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 
 ## Blockers
 
-- The `production` environment is still missing
-  `COOLIFY_COLLABORATION_WEBHOOK_URL`. Coolify must also have **Include Source
-  Commit in Build** enabled for web, worker and collaboration. A current
-  restorable production backup still requires user confirmation.
+- None before the final documentation checkpoint. Required production secret
+  names are present, **Include Source Commit in Build** is enabled for web,
+  worker and collaboration, CI is green, and the fresh backup restore passed.
 
 ## Next action
 
-- Push `34f4f44` and this checkpoint, wait for green CI, then verify the
-  collaboration webhook name, Coolify source-commit setting, and user-confirmed
-  restorable backup. Merge PR #16 only after those gates; monitor deployment
-  and complete production smoke before starting S6.
+- Commit and push the backup drill record, wait for green CI on the new head,
+  then merge PR #16. Monitor deployment and complete production smoke before
+  starting S6.

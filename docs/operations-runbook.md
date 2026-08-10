@@ -39,7 +39,15 @@ Record the backup object, restore timestamp, row-count checks, migration
 status, operator, and outcome. A backup is not considered verified until this
 drill succeeds.
 
-### Latest verified drill
+### Verified drills
+
+- Date: 2026-08-10 (pre-release)
+- Backup: `needt-prod-backups/data/coolify/backups/databases/root-team-0/postgresql-database-ey10vc8l5lirk6wp7bhld62s-ey10vc8l5lirk6wp7bhld62s/pg-dump-postgres-1786403536.dmp` (326.62 KB in R2 and local storage)
+- Restore target: isolated `needt_restore_drill` database; no web or worker pointed at it
+- Row counts at backup restore: `User=6`, `Task=36`; live production had the same counts during the drill
+- Validation: `pg_restore --exit-on-error` passed and the restored database contained 72 completed Prisma migrations
+- Operator: release owner with Codex guidance
+- Outcome: passed; scratch database removed
 
 - Date: 2026-08-04 (pre-release)
 - Backup: `needt-prod-backups/data/coolify/backups/databases/root-team-0/postgresql-database-ey10vc8l5lirk6wp7bhld62s-ey10vc8l5lirk6wp7bhld62s/pg-dump-postgres-1785807621.dmp` (315.03 KB in R2)
