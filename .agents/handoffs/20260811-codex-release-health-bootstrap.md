@@ -3,7 +3,7 @@ id: 20260811-codex-release-health-bootstrap
 owner: codex
 branch: codex/release-health-bootstrap
 status: active
-updated: 2026-08-11T00:51:38Z
+updated: 2026-08-11T00:58:37Z
 objective: Make the production deployment bootstrap-safe when the previous web health endpoint is unavailable
 ---
 
@@ -25,6 +25,7 @@ objective: Make the production deployment bootstrap-safe when the previous web h
 - The pre-deploy snapshot now records `unavailable` and continues when the old
   web health endpoint cannot be reached. The post-deploy exact-SHA/database
   gate remains unchanged and strict.
+- Hotfix commit `32489a7` is pushed and PR #17 is open.
 
 ## Working state
 
@@ -39,7 +40,11 @@ objective: Make the production deployment bootstrap-safe when the previous web h
 - Passed: release gates and multi-architecture image publication for
   `328b60e07b262db711dbbaf38b76b90f669a7976`; targeted production workflow
   contract tests; type-check; lint; Prettier; `git diff --check`.
-- Not run / still required: CI, deploy, and production smoke.
+- PR-event security scanning passed. The first-branch push event had no baseline
+  commit and therefore surfaced pre-existing repository findings; a checkpoint
+  push will give the push scan the correct branch baseline.
+- Not run / still required: green CI on the checkpoint head, deploy, and
+  production smoke.
 
 ## Decisions and constraints
 
@@ -55,5 +60,5 @@ objective: Make the production deployment bootstrap-safe when the previous web h
 
 ## Next action
 
-- Commit and push the hotfix, open/merge its PR after green CI, then monitor the
-  production workflow through exact-SHA smoke.
+- Push this checkpoint, merge PR #17 after green CI, then monitor the production
+  workflow through exact-SHA smoke.
