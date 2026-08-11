@@ -105,9 +105,14 @@ jobs:
       - name: Record current healthy web SHA
         id: previous-production
         run: |
-          response=$(curl --fail --silent --show-error --max-time 30 "$HEALTH_URL")
-          previous_sha=$(printf '%s' "$response" | jq -er \
-            'if .ok == true and .db == "ok" then (.buildSha // empty) else empty end')
+          response=$(curl --fail --silent --show-error --max-time 30 "$HEALTH_URL" || true)
+          previous_sha=$(printf '%s' "$response" | jq -r \
+            'if .ok == true and .db == "ok" then (.buildSha // "") else "" end' \
+            2>/dev/null || true)
+          if [ -z "$previous_sha" ]; then
+            previous_sha="unavailable"
+            echo "::warning::Previous production health is unavailable; continuing with bootstrap deployment."
+          fi
           echo "sha=$previous_sha" >> "$GITHUB_OUTPUT"
       - name: Trigger web redeploy
         run: >-

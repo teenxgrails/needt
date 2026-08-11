@@ -24,6 +24,10 @@ describe("production deployment workflow", () => {
     expect(workflow).not.toContain("COOLIFY_ROLLBACK_WEBHOOK_URL");
     expect(workflow).not.toContain("?sha=$DEPLOY_SHA");
     expect(workflow).toContain("Record current healthy web SHA");
+    expect(workflow).toContain(
+      "Previous production health is unavailable; continuing with bootstrap deployment"
+    );
+    expect(workflow).toContain('previous_sha="unavailable"');
     expect(workflow).toContain("Record manual rollback instructions");
     expect(workflow).toContain(
       "use Coolify Deployments to restore the previous successful local image"
