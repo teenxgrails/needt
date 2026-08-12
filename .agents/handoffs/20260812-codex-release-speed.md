@@ -4,13 +4,13 @@ owner: codex
 branch: codex/release-speed
 status: active
 updated: 2026-08-12T02:11:00Z
-objective: Restore fast production releases by decoupling web deployment from image publishing and removing unused arm64 emulation
+objective: Restore fast and reliable production releases by decoupling web deployment, removing unused arm64 emulation, and hardening the first-push security scan
 ---
 
 ## Scope
 
 - Governing plan/spec: `docs/STACK.md` production release sequence.
-- In scope: `.github/workflows/docker-publish.yml` and its workflow contract test.
+- In scope: production/CI workflows and their contract tests.
 - Out of scope: application runtime behavior and Coolify resource topology.
 
 ## Completed
@@ -19,10 +19,11 @@ objective: Restore fast production releases by decoupling web deployment from im
 - Changed the workflow so web deploys after gates while the production image publishes in parallel.
 - Kept worker and collaboration deployment blocked on both the healthy exact-SHA web and the published image.
 - Removed unused QEMU setup and arm64 publishing.
+- Added an explicit all-zero baseline guard so a branch's first push runs a full Semgrep scan instead of failing before scanning.
 
 ## Working state
 
-- Files currently dirty or expected to change: `.github/workflows/docker-publish.yml`, `src/__tests__/production-deploy-workflow.test.ts`, and this handoff.
+- Files currently dirty or expected to change: `.github/workflows/docker-publish.yml`, `.github/workflows/ci.yml`, their workflow contract tests, and this handoff.
 - Foreign changes that must remain untouched: all work in the other listed worktrees and handoffs.
 
 ## Verification
