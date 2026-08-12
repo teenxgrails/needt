@@ -142,7 +142,7 @@ jobs:
           echo "::error::Production deployment failed; inspect Coolify and use its deployment rollback when required."
 
   deploy-runtimes:
-    needs: [publish, deploy-web]
+    needs: deploy-web
     runs-on: ubuntu-latest
     environment: production
     env:

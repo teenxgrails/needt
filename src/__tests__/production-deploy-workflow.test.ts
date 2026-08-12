@@ -59,8 +59,6 @@ describe("production deployment workflow", () => {
     expect(workflow).toContain("platforms: linux/amd64");
     expect(workflow).not.toContain("linux/arm64");
     expect(workflow).not.toContain("docker/setup-qemu-action");
-    expect(workflow).toContain(
-      "deploy-runtimes:\n    needs: [publish, deploy-web]"
-    );
+    expect(workflow).toContain("deploy-runtimes:\n    needs: deploy-web");
   });
 });

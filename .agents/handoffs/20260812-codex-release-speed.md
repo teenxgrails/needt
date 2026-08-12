@@ -17,7 +17,7 @@ objective: Restore fast and reliable production releases by decoupling web deplo
 
 - Confirmed the production host reports `x86_64`; the published image is consumed only by that amd64 Coolify host.
 - Changed the workflow so web deploys after gates while the production image publishes in parallel.
-- Kept worker and collaboration deployment blocked on both the healthy exact-SHA web and the published image.
+- Kept worker and collaboration deployment blocked on healthy exact-SHA web, not on image publication: current Coolify resources build directly from Git, so the GHCR image is not in their runtime path.
 - Removed unused QEMU setup and arm64 publishing.
 - Added an explicit all-zero baseline guard so a branch's first push runs a full Semgrep scan instead of failing before scanning.
 
