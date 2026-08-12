@@ -53,4 +53,14 @@ describe("production deployment workflow", () => {
     expect(workerIndex).toBeGreaterThan(healthIndex);
     expect(collaborationIndex).toBeGreaterThan(healthIndex);
   });
+
+  it("deploys web in parallel with an amd64-only image publish", () => {
+    expect(workflow).toContain("deploy-web:\n    needs: gates");
+    expect(workflow).toContain("platforms: linux/amd64");
+    expect(workflow).not.toContain("linux/arm64");
+    expect(workflow).not.toContain("docker/setup-qemu-action");
+    expect(workflow).toContain(
+      "deploy-runtimes:\n    needs: [publish, deploy-web]"
+    );
+  });
 });

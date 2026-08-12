@@ -54,7 +54,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -75,7 +74,7 @@ jobs:
           context: .
           file: docker/production/Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
@@ -83,13 +82,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    needs: publish
+  deploy-web:
+    needs: gates
     runs-on: ubuntu-latest
     environment: production
     env:
-      WORKER_HOOK: ${{ secrets.COOLIFY_WORKER_WEBHOOK_URL }}
-      COLLABORATION_HOOK: ${{ secrets.COOLIFY_COLLABORATION_WEBHOOK_URL }}
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
       HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
@@ -98,8 +95,6 @@ jobs:
       - name: Validate production deployment configuration
         run: |
           : "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"
-          : "${WORKER_HOOK:?COOLIFY_WORKER_WEBHOOK_URL is required}"
-          : "${COLLABORATION_HOOK:?COOLIFY_COLLABORATION_WEBHOOK_URL is required}"
           : "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
           : "${HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
       - name: Record current healthy web SHA
@@ -134,14 +129,6 @@ jobs:
           done
           echo "Production web did not reach expected SHA $DEPLOY_SHA" >&2
           exit 1
-      - name: Trigger worker redeploy
-        run: >-
-          curl --fail --silent --show-error --retry 3 --request GET
-          --header "Authorization: Bearer $COOLIFY_TOKEN" "$WORKER_HOOK"
-      - name: Trigger collaboration redeploy
-        run: >-
-          curl --fail --silent --show-error --retry 3 --request GET
-          --header "Authorization: Bearer $COOLIFY_TOKEN" "$COLLABORATION_HOOK"
       - name: Record manual rollback instructions
         if: ${{ failure() }}
         run: |
@@ -153,3 +140,26 @@ jobs:
             echo "If rollback is required, use Coolify Deployments to restore the previous successful local image."
           } >> "$GITHUB_STEP_SUMMARY"
           echo "::error::Production deployment failed; inspect Coolify and use its deployment rollback when required."
+
+  deploy-runtimes:
+    needs: [publish, deploy-web]
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      WORKER_HOOK: ${{ secrets.COOLIFY_WORKER_WEBHOOK_URL }}
+      COLLABORATION_HOOK: ${{ secrets.COOLIFY_COLLABORATION_WEBHOOK_URL }}
+      COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+    steps:
+      - name: Validate runtime deployment configuration
+        run: |
+          : "${WORKER_HOOK:?COOLIFY_WORKER_WEBHOOK_URL is required}"
+          : "${COLLABORATION_HOOK:?COOLIFY_COLLABORATION_WEBHOOK_URL is required}"
+          : "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
+      - name: Trigger worker redeploy
+        run: >-
+          curl --fail --silent --show-error --retry 3 --request GET
+          --header "Authorization: Bearer $COOLIFY_TOKEN" "$WORKER_HOOK"
+      - name: Trigger collaboration redeploy
+        run: >-
+          curl --fail --silent --show-error --retry 3 --request GET
+          --header "Authorization: Bearer $COOLIFY_TOKEN" "$COLLABORATION_HOOK"
