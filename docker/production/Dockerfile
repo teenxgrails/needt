@@ -46,6 +46,8 @@ COPY --chown=nextjs:nodejs --from=builder /app/public ./public
 COPY --chown=nextjs:nodejs --from=builder /app/dist ./dist
 COPY --chown=nextjs:nodejs --from=builder /app/prisma ./prisma
 COPY --chown=nextjs:nodejs --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+RUN test -x /app/node_modules/@prisma/engines/schema-engine-*
 COPY --chown=nextjs:nodejs --from=builder /app/entrypoint.sh ./entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 

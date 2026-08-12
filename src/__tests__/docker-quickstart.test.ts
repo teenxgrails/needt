@@ -127,6 +127,12 @@ describe("production migration tooling", () => {
     expect(packageJson.dependencies?.prisma).toBe("^6.3.1");
     expect(packageJson.devDependencies?.prisma).toBeUndefined();
     expect(dockerfile).toContain("npm ci --omit=dev --ignore-scripts");
+    expect(dockerfile).toContain(
+      "/app/node_modules/@prisma/engines ./node_modules/@prisma/engines"
+    );
+    expect(dockerfile).toContain(
+      "test -x /app/node_modules/@prisma/engines/schema-engine-*"
+    );
     expect(dockerfile).toContain("RUN npm run build:worker");
     expect(dockerfile).toContain("/app/dist ./dist");
     expect(entrypoint).toContain('"$PRISMA_BIN" migrate deploy');
@@ -136,6 +142,12 @@ describe("production migration tooling", () => {
     expect(rootDockerfile).toContain("FROM base AS runtime-deps");
     expect(rootDockerfile).toContain(
       "npm ci --omit=dev --legacy-peer-deps --ignore-scripts"
+    );
+    expect(rootDockerfile).toContain(
+      "/app/node_modules/@prisma/engines ./node_modules/@prisma/engines"
+    );
+    expect(rootDockerfile).toContain(
+      "test -x /app/node_modules/@prisma/engines/schema-engine-*"
     );
     expect(rootDockerfile.match(/COPY --from=runtime-deps/g)).toHaveLength(3);
     expect(entrypoint).toContain("/app/node_modules/.bin/prisma");
