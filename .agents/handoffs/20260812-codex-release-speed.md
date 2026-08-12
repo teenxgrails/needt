@@ -4,13 +4,13 @@ owner: codex
 branch: codex/release-speed
 status: active
 updated: 2026-08-12T02:11:00Z
-objective: Restore fast and reliable production releases by decoupling web deployment, removing unused arm64 emulation, and hardening the first-push security scan
+objective: Restore fast and reliable production releases by decoupling web deployment, removing unused arm64 emulation, hardening the first-push security scan, and fixing the collaboration Node 22 bundle
 ---
 
 ## Scope
 
 - Governing plan/spec: `docs/STACK.md` production release sequence.
-- In scope: production/CI workflows and their contract tests.
+- In scope: production/CI workflows, collaboration runtime bundle, and their contract tests.
 - Out of scope: application runtime behavior and Coolify resource topology.
 
 ## Completed
@@ -20,10 +20,11 @@ objective: Restore fast and reliable production releases by decoupling web deplo
 - Kept worker and collaboration deployment blocked on healthy exact-SHA web, not on image publication: current Coolify resources build directly from Git, so the GHCR image is not in their runtime path.
 - Removed unused QEMU setup and arm64 publishing.
 - Added an explicit all-zero baseline guard so a branch's first push runs a full Semgrep scan instead of failing before scanning.
+- Diagnosed the collaboration failure on production: esbuild's CJS bundle converts `crossws` `import.meta.url` into `undefined`, causing `createRequire(undefined)` at startup. The ESM bundle starts under Node 22 without duplicate Yjs imports.
 
 ## Working state
 
-- Files currently dirty or expected to change: `.github/workflows/docker-publish.yml`, `.github/workflows/ci.yml`, their workflow contract tests, and this handoff.
+- Files currently dirty or expected to change: production/CI workflows, collaboration package and Docker entrypoints, their contract tests, and this handoff.
 - Foreign changes that must remain untouched: all work in the other listed worktrees and handoffs.
 
 ## Verification

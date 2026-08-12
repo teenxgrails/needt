@@ -153,6 +153,24 @@ describe("production migration tooling", () => {
     expect(entrypoint).toContain("/app/node_modules/.bin/prisma");
   });
 
+  it("starts collaboration from its ESM bundle", () => {
+    const packageJson = JSON.parse(read("package.json")) as {
+      scripts?: Record<string, string>;
+    };
+    expect(packageJson.scripts?.["build:collaboration"]).toContain(
+      "--format=esm"
+    );
+    expect(packageJson.scripts?.["build:collaboration"]).toContain(
+      "dist/collaboration/index.mjs"
+    );
+    expect(packageJson.scripts?.["start:collaboration"]).toContain(
+      "dist/collaboration/index.mjs"
+    );
+    expect(rootDockerfile).toContain(
+      'CMD ["node", "dist/collaboration/index.mjs"]'
+    );
+  });
+
   it("exposes the Coolify source commit as the runtime build identity", () => {
     expect(rootDockerfile).toContain("ARG SOURCE_COMMIT=local");
     expect(rootDockerfile).toContain("ENV NEEDT_BUILD_SHA=$SOURCE_COMMIT");

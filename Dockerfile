@@ -86,7 +86,7 @@ USER node
 EXPOSE 1234
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["node", "dist/collaboration/index.js"]
+CMD ["node", "dist/collaboration/index.mjs"]
 
 # Production stage
 FROM base AS production
