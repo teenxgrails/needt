@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reversible schedule preview with unscheduled-task and stale-preview recovery.
 - Task List can save and apply personal or role-gated workspace views without
   changing the active workspace scope.
+- Projects now expose a versioned health journal and role-gated status-update
+  composer with concurrent-update recovery.
 - Account settings now include a data-derived setup checklist that guides users
   through account, calendar, workspace and first-task actions.
 - Mail messages can now snooze locally until tomorrow morning or create a

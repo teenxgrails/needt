@@ -3,7 +3,7 @@ id: 20260813-codex-terra-t8-product-ui
 owner: codex
 branch: codex/terra-t8-product-ui
 status: active
-updated: 2026-08-13T22:25:10Z
+updated: 2026-08-13T22:29:18Z
 objective: Deliver the Terra T8 product UI for the completed Sol S11 backend contracts as independent, scoped releases.
 ---
 
@@ -20,10 +20,12 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 - T8.1 implementation complete: Tasks renders seven-day capacity, schedule explanations, unscheduled tasks, typed notifications, and stale-preview recovery.
 - Committed T8.1 as `44d225f` (`feat(tasks): surface schedule capacity preview`).
 - T8.2 implementation complete: Task List can save/apply personal and role-gated workspace Saved Views through the existing workspace-scoped API.
+- Committed T8.2 as `51e8b76` (`feat(tasks): add workspace saved views`).
+- T8.3 implementation complete: Projects now show a versioned health history and role-gated update composer with stale-update recovery.
 
 ## Working state
 
-- Files currently dirty or expected to change: `src/components/tasks/TaskSavedViewsMenu.tsx`, `src/components/tasks/TaskList.tsx`, `src/store/taskListViewSettings.ts`, `CHANGELOG.md`, this handoff.
+- Files currently dirty or expected to change: `src/components/projects/ProjectHealthPanel.tsx`, `src/components/projects/ProjectWorkspace.tsx`, `CHANGELOG.md`, this handoff.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, `docs/plans/08-terra-high.md`, `pages-mobile-slash-390.png`.
 
 ## Verification
@@ -44,4 +46,4 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 
 ## Next action
 
-- Commit T8.2, then audit project health API and ProjectWorkspace for T8.3.
+- Commit T8.3, then audit habits/focus target APIs and existing Focus host for T8.4.

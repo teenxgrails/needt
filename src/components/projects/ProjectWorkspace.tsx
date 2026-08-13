@@ -19,6 +19,7 @@ import {
 
 import { ArchivedProjectsDialog } from "@/components/projects/ArchivedProjectsDialog";
 import { ProjectGanttView } from "@/components/projects/ProjectGanttView";
+import { ProjectHealthPanel } from "@/components/projects/ProjectHealthPanel";
 import {
   ProjectKanbanView,
   UNASSIGNED_STAGE_ID,
@@ -339,6 +340,9 @@ export function ProjectWorkspace() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {selectedProjectId && (
+            <ProjectHealthPanel projectId={selectedProjectId} />
+          )}
           <Button
             variant="outline"
             size="sm"
