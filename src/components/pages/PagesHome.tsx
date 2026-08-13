@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,10 +8,12 @@ import { useRouter } from "next/navigation";
 import {
   Database,
   FileText,
+  Folder,
   LockKeyhole,
   Plus,
   Search,
   Star,
+  Tag,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,28 @@ import { newDate } from "@/lib/date-utils";
 import { notify } from "@/lib/notifications";
 
 import type { PageSummary } from "./page-types";
+
+type PageMetadata = {
+  folders: Array<{ id: string; name: string; color: string | null }>;
+  tags: Array<{ id: string; name: string; color: string | null }>;
+  smartFolders: Array<{
+    id: string;
+    name: string;
+    query: {
+      folderId?: string;
+      tagIds?: string[];
+      favorites?: boolean;
+      privateOnly?: boolean;
+    };
+  }>;
+};
+
+type PageFilters = {
+  folderId?: string;
+  tagIds?: string[];
+  favorites?: boolean;
+  privateOnly?: boolean;
+};
 
 function editedLabel(value: string) {
   const edited = newDate(value);
@@ -40,11 +64,38 @@ function editedLabel(value: string) {
 export function PagesHome() {
   const router = useRouter();
   const [pages, setPages] = useState<PageSummary[]>([]);
+  const [metadata, setMetadata] = useState<PageMetadata>({
+    folders: [],
+    tags: [],
+    smartFolders: [],
+  });
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState<PageFilters>({});
   const [creating, setCreating] = useState<"page" | "database" | null>(null);
+  const [metadataName, setMetadataName] = useState("");
+  const [creatingMetadata, setCreatingMetadata] = useState<
+    "folder" | "tag" | "smart-folder" | null
+  >(null);
+
+  const loadMetadata = useCallback(() => {
+    void fetch("/api/pages/metadata")
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : { folders: [], tags: [], smartFolders: [] }
+      )
+      .then((data: PageMetadata) => setMetadata(data))
+      .catch(() => setMetadata({ folders: [], tags: [], smartFolders: [] }));
+  }, []);
 
   useEffect(() => {
-    void fetch("/api/pages")
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (filters.folderId) params.set("folderId", filters.folderId);
+    filters.tagIds?.forEach((tagId) => params.append("tagId", tagId));
+    if (filters.favorites) params.set("favorites", "true");
+    if (filters.privateOnly) params.set("privateOnly", "true");
+    void fetch(`/api/pages?${params.toString()}`)
       .then((response) => (response.ok ? response.json() : { pages: [] }))
       .then((data: { pages?: PageSummary[] }) =>
         setPages(Array.isArray(data.pages) ? data.pages : [])
@@ -53,15 +104,16 @@ export function PagesHome() {
         setPages([]);
         notify.error("Could not load Pages");
       });
-  }, []);
+  }, [filters, query]);
 
-  const visiblePages = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase();
-    if (!normalized) return pages;
-    return pages.filter((page) =>
-      page.title.toLocaleLowerCase().includes(normalized)
-    );
-  }, [pages, query]);
+  useEffect(() => {
+    loadMetadata();
+    window.addEventListener("pages-metadata-changed", loadMetadata);
+    return () =>
+      window.removeEventListener("pages-metadata-changed", loadMetadata);
+  }, [loadMetadata]);
+
+  const visiblePages = useMemo(() => pages, [pages]);
 
   const favorites = visiblePages.filter((page) => page.isFavorite);
 
@@ -95,6 +147,35 @@ export function PagesHome() {
     }
   };
 
+  const createMetadata = async (kind: "folder" | "tag" | "smart-folder") => {
+    const name = metadataName.trim();
+    if (!name) return;
+    try {
+      setCreatingMetadata(kind);
+      const response = await fetch("/api/pages/metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          kind === "smart-folder"
+            ? { kind, name, query: { version: 1, ...filters } }
+            : { kind, name }
+        ),
+      });
+      if (!response.ok) throw new Error("Create failed");
+      setMetadataName("");
+      loadMetadata();
+      notify.success(
+        kind === "smart-folder"
+          ? "Smart Folder saved"
+          : "Page organization created"
+      );
+    } catch {
+      notify.error("Could not create Page organization.");
+    } finally {
+      setCreatingMetadata(null);
+    }
+  };
+
   return (
     <div className="min-h-dvh bg-[var(--surface-canvas)] px-5 py-8 text-[var(--text-primary)] sm:px-8 sm:py-10 lg:px-12">
       <div className="mx-auto max-w-5xl">
@@ -123,6 +204,98 @@ export function PagesHome() {
             className="h-10 pl-9"
           />
         </div>
+
+        <div className="mb-5 flex max-w-xl flex-wrap gap-2">
+          <Input
+            value={metadataName}
+            onChange={(event) => setMetadataName(event.target.value)}
+            maxLength={80}
+            placeholder="New folder, tag or Smart Folder"
+            aria-label="New Page organization"
+            className="min-w-[220px] flex-1"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={creatingMetadata !== null || !metadataName.trim()}
+            onClick={() => void createMetadata("folder")}
+          >
+            <Folder /> Folder
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={creatingMetadata !== null || !metadataName.trim()}
+            onClick={() => void createMetadata("tag")}
+          >
+            <Tag /> Tag
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={creatingMetadata !== null || !metadataName.trim()}
+            onClick={() => void createMetadata("smart-folder")}
+          >
+            <Folder /> Save filter
+          </Button>
+        </div>
+
+        {(metadata.folders.length > 0 ||
+          metadata.tags.length > 0 ||
+          metadata.smartFolders.length > 0) && (
+          <div className="mb-7 flex flex-wrap gap-2" aria-label="Page filters">
+            <Button
+              type="button"
+              variant={
+                Object.keys(filters).length === 0 ? "secondary" : "outline"
+              }
+              size="sm"
+              onClick={() => setFilters({})}
+            >
+              All notes
+            </Button>
+            {metadata.folders.map((folder) => (
+              <Button
+                key={folder.id}
+                type="button"
+                variant={
+                  filters.folderId === folder.id ? "secondary" : "outline"
+                }
+                size="sm"
+                onClick={() => setFilters({ folderId: folder.id })}
+              >
+                <Folder /> {folder.name}
+              </Button>
+            ))}
+            {metadata.tags.map((tag) => (
+              <Button
+                key={tag.id}
+                type="button"
+                variant={
+                  filters.tagIds?.[0] === tag.id ? "secondary" : "outline"
+                }
+                size="sm"
+                onClick={() => setFilters({ tagIds: [tag.id] })}
+              >
+                <Tag /> {tag.name}
+              </Button>
+            ))}
+            {metadata.smartFolders.map((folder) => (
+              <Button
+                key={folder.id}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters(folder.query)}
+              >
+                <Folder /> {folder.name}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {!query && (
           <section aria-labelledby="quick-start-heading" className="mb-10">

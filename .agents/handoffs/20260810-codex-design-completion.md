@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T15:55:00Z
+updated: 2026-08-13T16:45:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -67,6 +67,15 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   accept/decline, member list, Owner role changes/removal, invitation revoke,
   member leave and final-Owner protection. Declined invitations are preserved
   through additive migration `20260813150000_workspace_invite_declined_at`.
+- S6/T5 checkpoint committed locally as `ba893f2` (`feat: complete workspace
+  lifecycle`). The next owned scope is S7/T6 Pages metadata: workspace-scoped
+  folders/tags and versioned Smart Folder query contracts, extending the
+  existing Pages architecture without a UI redesign.
+- Local S7/T6 Page metadata implementation is ready to commit: additive
+  PageFolder/PageTag/PageSmartFolder models and migration
+  `20260813170000_page_metadata`; strict v1 Smart Folder query parsing;
+  workspace-authorized metadata and Page-organization APIs; server-side Pages
+  filters; and minimal integration in the existing Pages home/editor controls.
 
 ## Working state
 
@@ -84,12 +93,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   `src/app/layout.tsx`, `.codex/config.toml`, `.playwright-mcp/`,
   `NEXT_AGENT.md`, `docs/plans/08-terra-high.md`, and
   `pages-mobile-slash-390.png`.
-- Preserve the protected foreign files above. The currently owned uncommitted
-  workspace scope consists of `CHANGELOG.md`, `prisma/schema.prisma`,
-  `prisma/migrations/20260813150000_workspace_invite_declined_at/`, workspace
-  service/routes/tests, provider/request-scope files, `UserMenu`, `PWARegister`,
-  `useRealtimeSync`, and Settings workspace files. `CLAUDE.md` has one owned
-  stale-schema-description correction, but it is unrelated to S6/T5.
+- Preserve the protected foreign files above. No S6/T5 code remains owned
+  dirty after `ba893f2`. `CLAUDE.md` has one owned stale-schema-description
+  correction, but it is unrelated to the active Pages scope.
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
@@ -150,6 +156,10 @@ check:collaboration-runtime`.
   running (`localhost:3000` refused the connection). Docker target build was
   attempted but Docker Desktop's daemon socket was unavailable. Neither is a
   source failure.
+- Passed for local S7/T6 Page metadata: Prisma validate/generate, targeted
+  Pages/service/migration unit tests (10 suites, 27 tests), type-check,
+  focused lint and diff check. The Pages performance benchmark remained below
+  budget (warm p95 30.0ms, keystroke p95 0.9ms).
 
 ## Decisions and constraints
 
@@ -172,8 +182,8 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Inspect/stage only the owned S6/T5 paths, commit the checkpoint, then run a
-  fresh `npm run build`. With Docker Desktop running, execute `docker build
-  --target collaboration -t needt-collaboration-s6:test .` and the existing
-  collaboration runtime smoke. Before production, deploy the exact same SHA for
-  web/worker/collaboration and complete the documented release smoke.
+- Stage only owned S7/T6 Page metadata paths and commit separately. Then audit
+  T7 route completion against actual code, starting with user-facing recovery
+  flows, before any visual redesign. Keep Docker, browser and production smoke
+  as final-validation backlog; they require local Docker Desktop, an
+  authenticated local app fixture and release authorization.

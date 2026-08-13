@@ -1,3 +1,4 @@
+import { pageBlocksToCollaborationState } from "@/services/pages/page-collaboration-document";
 import {
   AiProposalStatus,
   DatabasePropertyType,
@@ -11,7 +12,6 @@ import {
 import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
 import { type WorkspaceAccess } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
-import { pageBlocksToCollaborationState } from "@/services/pages/page-collaboration-document";
 
 export type PageActor =
   | string
@@ -57,6 +57,8 @@ export interface PageBlockInput {
 }
 
 const pageDetailInclude = {
+  folder: { select: { id: true, name: true, color: true } },
+  tags: { select: { id: true, name: true, color: true } },
   blocks: { orderBy: { position: "asc" as const } },
   children: {
     where: { trashedAt: null },
@@ -79,12 +81,27 @@ const pageDetailInclude = {
 
 export async function listPages(
   actor: PageActor,
-  options?: { search?: string }
+  options?: {
+    search?: string;
+    folderId?: string;
+    tagIds?: string[];
+    favorites?: boolean;
+    privateOnly?: boolean;
+  }
 ) {
+  const tagIds = [...new Set(options?.tagIds ?? [])];
   return prisma.page.findMany({
     where: {
       ...actorPageScope(actor),
       trashedAt: null,
+      ...(options?.folderId ? { folderId: options.folderId } : {}),
+      ...(options?.favorites ? { isFavorite: true } : {}),
+      ...(options?.privateOnly ? { isPrivate: true } : {}),
+      ...(tagIds.length
+        ? {
+            AND: tagIds.map((id) => ({ tags: { some: { id } } })),
+          }
+        : {}),
       ...(options?.search?.trim()
         ? {
             title: {
@@ -101,6 +118,9 @@ export async function listPages(
       icon: true,
       isPrivate: true,
       isFavorite: true,
+      folderId: true,
+      folder: { select: { id: true, name: true, color: true } },
+      tags: { select: { id: true, name: true, color: true } },
       createdBy: true,
       position: true,
       updatedAt: true,

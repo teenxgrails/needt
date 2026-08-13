@@ -5,6 +5,9 @@ export type PageSummary = {
   icon: string | null;
   isPrivate: boolean;
   isFavorite: boolean;
+  folderId?: string | null;
+  folder?: { id: string; name: string; color: string | null } | null;
+  tags?: Array<{ id: string; name: string; color: string | null }>;
   updatedAt: string;
   database: { id: string } | null;
 };

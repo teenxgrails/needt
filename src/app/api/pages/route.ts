@@ -12,7 +12,16 @@ export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   try {
-    const pages = await listPages(auth);
+    const tagIds = request.nextUrl.searchParams
+      .getAll("tagId")
+      .filter((tagId) => tagId.length > 0);
+    const pages = await listPages(auth, {
+      search: request.nextUrl.searchParams.get("q") ?? undefined,
+      folderId: request.nextUrl.searchParams.get("folderId") ?? undefined,
+      tagIds,
+      favorites: request.nextUrl.searchParams.get("favorites") === "true",
+      privateOnly: request.nextUrl.searchParams.get("privateOnly") === "true",
+    });
     return NextResponse.json({ pages });
   } catch (error) {
     return routeErrorResponse(

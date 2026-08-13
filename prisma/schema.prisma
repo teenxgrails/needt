@@ -121,6 +121,9 @@ model User {
   savedViews             SavedView[]
   dailyAgendas           DailyAgenda[]
   pages                  Page[]
+  pageFolders            PageFolder[]
+  pageTags               PageTag[]
+  pageSmartFolders       PageSmartFolder[]
   pageRevisions          PageRevision[]
   aiPageProposals        AiPageChangeProposal[]
   pageAssets             PageAsset[]
@@ -167,6 +170,9 @@ model Workspace {
   tasks            Task[]
   boards           Board[]
   pages            Page[]
+  pageFolders      PageFolder[]
+  pageTags         PageTag[]
+  pageSmartFolders PageSmartFolder[]
   moodboards       Moodboard[]
   taskActivities   TaskActivity[]
   taskDependencies TaskDependency[]
@@ -1107,6 +1113,9 @@ model Page {
   parentId              String?
   parent                Page?                   @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
   children              Page[]                  @relation("PageTree")
+  folderId              String?
+  folder                PageFolder?             @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  tags                  PageTag[]
   title                 String                  @default("Untitled")
   icon                  String?
   coverUrl              String?
@@ -1132,8 +1141,68 @@ model Page {
 
   @@index([userId, parentId, position])
   @@index([workspaceId])
+  @@index([folderId])
   @@index([userId, isFavorite])
   @@index([userId, trashedAt])
+}
+
+/// A workspace-scoped Page collection. Moving a Page never changes its
+/// permissions or document identity.
+model PageFolder {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  name        String
+  color       String?
+  position    Float      @default(0)
+  archivedAt  DateTime?
+  pages       Page[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([workspaceId, archivedAt, position])
+  @@index([userId, archivedAt])
+}
+
+/// Labels are workspace-scoped. Archiving a label never removes it from a
+/// historical Page record.
+model PageTag {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  name        String
+  color       String?
+  archivedAt  DateTime?
+  pages       Page[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([workspaceId, archivedAt])
+  @@index([userId, archivedAt])
+}
+
+/// A user-owned, workspace-bound saved Page query. queryVersion prevents a
+/// future filter change from silently reinterpreting an existing Smart Folder.
+model PageSmartFolder {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  name         String
+  queryVersion Int        @default(1)
+  query        Json
+  position     Float      @default(0)
+  archivedAt   DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([workspaceId, archivedAt, position])
+  @@index([userId, archivedAt])
 }
 
 model PageBlock {

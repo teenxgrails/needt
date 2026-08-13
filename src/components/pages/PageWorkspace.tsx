@@ -40,6 +40,7 @@ import {
   File,
   FilePlus,
   FileText,
+  Folder,
   FolderKanban,
   GripVertical,
   Heading1,
@@ -66,6 +67,7 @@ import {
   Star,
   Strikethrough,
   Table2,
+  Tag,
   Undo2,
 } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -150,6 +152,10 @@ type PageComment = {
   body: string;
   resolvedAt: string | null;
   createdAt: string;
+};
+type PageMetadata = {
+  folders: Array<{ id: string; name: string; color: string | null }>;
+  tags: Array<{ id: string; name: string; color: string | null }>;
 };
 type PageTemplate = {
   id: string;
@@ -445,6 +451,10 @@ export function PageWorkspace({
   } | null>(null);
   const pendingRange = useRef<{ from: number; to: number } | null>(null);
   const [page, setPage] = useState<PageDetail | null>(null);
+  const [pageMetadata, setPageMetadata] = useState<PageMetadata>({
+    folders: [],
+    tags: [],
+  });
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [slash, setSlash] = useState<{
     query: string;
@@ -942,6 +952,17 @@ export function PageWorkspace({
     router,
   ]);
 
+  useEffect(() => {
+    void fetch("/api/pages/metadata")
+      .then((response) =>
+        response.ok ? response.json() : { folders: [], tags: [] }
+      )
+      .then((data: PageMetadata) =>
+        setPageMetadata({ folders: data.folders ?? [], tags: data.tags ?? [] })
+      )
+      .catch(() => undefined);
+  }, [pageId]);
+
   useEffect(
     () => () => {
       collaborationProvider.destroy();
@@ -990,6 +1011,25 @@ export function PageWorkspace({
       body: JSON.stringify(values),
     });
     if (!response.ok) notify.error("Could not update page");
+    window.dispatchEvent(new Event("pages-changed"));
+  };
+
+  const patchOrganization = async (values: Record<string, unknown>) => {
+    const response = await fetch(`/api/pages/${pageId}/organization`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+    const data = (await response.json().catch(() => null)) as {
+      page?: Pick<PageDetail, "folderId" | "tags">;
+    } | null;
+    if (!response.ok || !data?.page) {
+      notify.error("Could not update Page organization.");
+      return;
+    }
+    setPage((current) =>
+      current ? ({ ...current, ...data.page } as PageDetail) : current
+    );
     window.dispatchEvent(new Event("pages-changed"));
   };
 
@@ -1684,6 +1724,64 @@ export function PageWorkspace({
                 }
               />
             </label>
+            {canEdit && pageMetadata.folders.length > 0 && (
+              <div className="mt-1 border-t border-[var(--border-subtle)] px-2.5 py-2">
+                <span className="mb-1 flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
+                  <Folder className="h-3.5 w-3.5" /> Folder
+                </span>
+                <NeedtPicker
+                  ariaLabel="Page folder"
+                  options={[
+                    { value: "__none__", label: "No folder" },
+                    ...pageMetadata.folders.map((folder) => ({
+                      value: folder.id,
+                      label: folder.name,
+                    })),
+                  ]}
+                  onValueChange={(folderId) =>
+                    void patchOrganization({
+                      folderId: folderId === "__none__" ? null : folderId,
+                    })
+                  }
+                  triggerVariant="field"
+                  value={page.folderId ?? "__none__"}
+                />
+              </div>
+            )}
+            {canEdit && pageMetadata.tags.length > 0 && (
+              <div className="border-t border-[var(--border-subtle)] px-2.5 py-2">
+                <span className="mb-1 flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
+                  <Tag className="h-3.5 w-3.5" /> Tags
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {pageMetadata.tags.map((tag) => {
+                    const selected = page.tags?.some(({ id }) => id === tag.id);
+                    return (
+                      <Button
+                        key={tag.id}
+                        size="sm"
+                        type="button"
+                        variant={selected ? "secondary" : "outline"}
+                        onClick={() =>
+                          void patchOrganization({
+                            tagIds: selected
+                              ? page.tags
+                                  ?.filter(({ id }) => id !== tag.id)
+                                  .map(({ id }) => id)
+                              : [
+                                  ...(page.tags?.map(({ id }) => id) ?? []),
+                                  tag.id,
+                                ],
+                          })
+                        }
+                      >
+                        {tag.name}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </PopoverContent>
         </Popover>
       </header>

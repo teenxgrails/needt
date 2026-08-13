@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Pages can now be organized with workspace-scoped folders and tags, and users
+  can save a versioned Smart Folder filter without exposing another workspace.
 - Workspace switching now clears prior Query and Zustand data, scopes browser
   API calls, realtime and offline replay to the selected membership, and lets
   members create, leave or decline shared-workspace invitations safely.
