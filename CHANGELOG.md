@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added workspace-safe capacity and reversible schedule previews, versioned
+  Saved Views, project-health history, flexible habits with weekly Focus
+  targets, and approval-only meeting-note task/schedule proposals.
 - Style: applying a theme token object in `/style` now persists it per user and
   updates shared product controls globally.
 
