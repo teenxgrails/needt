@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T19:05:00Z
+updated: 2026-08-13T19:15:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -216,6 +216,10 @@ check:collaboration-runtime`.
   zero-warning lint, app build (all 137 static pages generated), worker build,
   collaboration build/runtime identity check and diff check. The app build logs
   the known dynamic `/style` static-generation warning but exits successfully.
+- Final E2E did not start: its standard reset invokes Docker Compose, but the
+  local Docker daemon socket is unavailable. Style and visual suites share that
+  reset path, so they are blocked by the same local environment rather than a
+  failed assertion. Production smoke remains intentionally skipped by the user.
 
 ## Decisions and constraints
 
@@ -238,9 +242,9 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Run the final E2E/style/visual diagnostic gates. Do not run production smoke:
-  the user explicitly deferred it. If local App route discovery continues to
-  return 404 for unchanged authenticated routes, record that environment blocker
-  rather than treating it as a product regression. Keep Docker,
+- Start Docker Desktop, then rerun E2E/style/visual and Docker image gates if a
+  release owner wants full local evidence. Do not run production smoke: the user
+  explicitly deferred it. The persisted post-account onboarding guide also needs
+  a product-approved server-side progress contract before implementation.
   browser and production smoke as final-validation backlog; they require local
   Docker Desktop, an authenticated local app fixture and release authorization.
