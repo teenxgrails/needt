@@ -131,7 +131,7 @@ describe("AI archive confirmation", () => {
   });
 
   it("archives instead of deleting after confirmation", async () => {
-    await streamItems((await POST(request(true)))!);
+    const items = await streamItems((await POST(request(true)))!);
 
     expect(taskModel.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -147,6 +147,14 @@ describe("AI archive confirmation", () => {
       where: { id: "confirmation-1" },
       data: { requiresConfirm: false },
     });
+    expect(items[0]).toEqual(
+      expect.objectContaining({
+        toolPayload: expect.objectContaining({
+          taskId: "task-1",
+          href: "/tasks?taskId=task-1",
+        }),
+      })
+    );
   });
 
   it("rejects confirmation replay without a pending server record", async () => {

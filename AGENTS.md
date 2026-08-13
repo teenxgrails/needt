@@ -91,6 +91,31 @@ Viewer roles and invites). While that migration is in progress:
   `CHANGELOG.md` under `[unreleased]` for user-facing changes.
 - **Leave `//todo` comments in place**; add new ones for deferred work.
 
+### Autonomous Terra delivery
+
+When a user asks an agent to carry a Terra scope through implementation, the
+agent must:
+
+- Inspect the current worktree, active handoff, governing plans, TODOs and
+  existing code before editing. Preserve unfamiliar dirty files.
+- Maintain a concise, dependency-ordered implementation checklist. Prioritize
+  broken core flows, security and integration gaps ahead of visual polish.
+- Make and record reasonable assumptions when they do not alter product
+  architecture. Stop only for a decision, credential, approval or external
+  state that cannot be safely inferred or verified locally.
+- Reuse the existing architecture, shared components and dependencies. Do not
+  add placeholders, mock behavior, commented-out implementations or unrelated
+  refactors while completing a scoped feature.
+- Use targeted checks while actively implementing; run the complete Definition
+  of Done gates only at the final validation boundary or when the user requests
+  them.
+- Respect an explicitly local-only user request: do not browse, deploy,
+  publish, open PRs, push commits or contact external services. In that mode,
+  leave verified local changes and a current handoff for the release owner.
+- Before claiming a scope complete, compare every requested plan item with
+  current code and direct verification evidence. Treat missing or indirect
+  evidence as unfinished.
+
 ### Shared work and session handoff
 
 This repository is used by multiple people and AI agents. Follow

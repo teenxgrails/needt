@@ -89,6 +89,18 @@ function jsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+function taskHref(taskId: string) {
+  return `/tasks?taskId=${taskId}`;
+}
+
+function projectHref(projectId: string) {
+  return `/projects/${projectId}`;
+}
+
+function pageHref(pageId: string) {
+  return `/pages/${pageId}`;
+}
+
 async function publishAgentMutation(userId: string) {
   try {
     await publishRealtimeEvent(userId, "tasks-updated");
@@ -261,7 +273,11 @@ async function executeTool(
       return {
         text: `Created task "${task.title}".`,
         toolName: "create_task",
-        toolPayload: jsonValue({ taskId: task.id, title: task.title }),
+        toolPayload: jsonValue({
+          taskId: task.id,
+          title: task.title,
+          href: taskHref(task.id),
+        }),
         requiresConfirm: false,
       };
     }
@@ -303,7 +319,11 @@ async function executeTool(
       return {
         text: `Updated task "${updated.title}".`,
         toolName: "edit_task",
-        toolPayload: jsonValue({ taskId: updated.id, title: updated.title }),
+        toolPayload: jsonValue({
+          taskId: updated.id,
+          title: updated.title,
+          href: taskHref(updated.id),
+        }),
         requiresConfirm: false,
       };
     }
@@ -349,6 +369,7 @@ async function executeTool(
           taskId: task.id,
           title: task.title,
           archived: true,
+          href: taskHref(task.id),
         }),
         requiresConfirm: false,
       };
@@ -435,6 +456,7 @@ async function executeTool(
           pageId: proposal.pageId,
           summary: proposal.summary,
           status: proposal.status,
+          href: pageHref(proposal.pageId),
         }),
         requiresConfirm: false,
       };
@@ -608,7 +630,11 @@ async function executeTool(
       return {
         text: `Created task "${task.title}" from the email.`,
         toolName: call.name,
-        toolPayload: jsonValue({ taskId: task.id, messageId: message.id }),
+        toolPayload: jsonValue({
+          taskId: task.id,
+          messageId: message.id,
+          href: taskHref(task.id),
+        }),
         requiresConfirm: false,
       };
     }
@@ -819,6 +845,7 @@ async function executeTool(
             action,
             projectId: project.id,
             name: project.name,
+            href: projectHref(project.id),
           }),
           requiresConfirm: false,
         };
@@ -851,7 +878,11 @@ async function executeTool(
         return {
           text: `Archived project "${archived.name}".`,
           toolName: "manage_projects",
-          toolPayload: jsonValue({ action, projectId: archived.id }),
+          toolPayload: jsonValue({
+            action,
+            projectId: archived.id,
+            href: projectHref(archived.id),
+          }),
           requiresConfirm: false,
         };
       }
@@ -883,7 +914,11 @@ async function executeTool(
       return {
         text: `Updated project "${project.name}".`,
         toolName: "manage_projects",
-        toolPayload: jsonValue({ action, projectId: project.id }),
+        toolPayload: jsonValue({
+          action,
+          projectId: project.id,
+          href: projectHref(project.id),
+        }),
         requiresConfirm: false,
       };
     }

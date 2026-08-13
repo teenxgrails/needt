@@ -39,6 +39,10 @@ import { SyncResult, TaskWithSync } from "./types";
 
 const LOG_SOURCE = "TaskSyncManager";
 
+function externalTaskSyncKey(externalListId: string, externalTaskId: string) {
+  return `${externalListId}\u0000${externalTaskId}`;
+}
+
 /**
  * Options for conflict resolution
  */
@@ -356,13 +360,9 @@ export class TaskSyncManager {
     });
     const workspaceId = project?.workspaceId ?? null;
 
-    // Local tasks already linked to this provider, keyed by external id.
-    // todo: this keys by (projectId, source, externalTaskId) and ignores
-    // externalListId (matching the pre-existing bidirectional path). If two
-    // CalDAV collections that happen to share a VTODO UID are mapped into the
-    // SAME project, the second could update/skip the wrong local task. RFC 5545
-    // UIDs are meant to be globally unique so this is rare; include
-    // externalListId in the key if cross-list UID collisions become a problem.
+    // Local tasks already linked to this exact provider list. External task IDs
+    // are not globally unique across lists: CalDAV collections can contain the
+    // same VTODO UID, and other providers can reuse IDs per list.
     const localTasks = (await prisma.task.findMany({
       where: { projectId: mapping.projectId },
       include: { tags: true, project: true },
@@ -370,15 +370,28 @@ export class TaskSyncManager {
 
     const localTaskByExternalId = new Map(
       localTasks
-        .filter((t) => t.externalTaskId && t.source === mapping.provider.type)
-        .map((t) => [t.externalTaskId as string, t])
+        .filter(
+          (t) =>
+            t.externalTaskId &&
+            t.source === mapping.provider.type &&
+            t.externalListId === mapping.externalListId
+        )
+        .map((t) => [
+          externalTaskSyncKey(
+            mapping.externalListId,
+            t.externalTaskId as string
+          ),
+          t,
+        ])
     );
 
     const externalTasks = await provider.getTasks(mapping.externalListId);
 
     for (const externalTask of externalTasks) {
       try {
-        const localTask = localTaskByExternalId.get(externalTask.id);
+        const localTask = localTaskByExternalId.get(
+          externalTaskSyncKey(mapping.externalListId, externalTask.id)
+        );
 
         if (localTask) {
           if (localTask.isArchived) {
@@ -549,8 +562,19 @@ export class TaskSyncManager {
       // We'll use localTaskByExternalId to find local tasks by their external ID
       const localTaskByExternalId = new Map(
         localTasks
-          .filter((t) => t.externalTaskId && t.source === mapping.provider.type)
-          .map((t) => [t.externalTaskId as string, t])
+          .filter(
+            (t) =>
+              t.externalTaskId &&
+              t.source === mapping.provider.type &&
+              t.externalListId === mapping.externalListId
+          )
+          .map((t) => [
+            externalTaskSyncKey(
+              mapping.externalListId,
+              t.externalTaskId as string
+            ),
+            t,
+          ])
       );
 
       // Unlinked local tasks (tasks without external IDs that may need to be linked)
@@ -634,8 +658,15 @@ export class TaskSyncManager {
 
           // Update the localTaskByExternalId map with refreshed data
           for (const task of refreshedTasksWithSync) {
-            if (task.externalTaskId && task.source === mapping.provider.type) {
-              localTaskByExternalId.set(task.externalTaskId, task);
+            if (
+              task.externalTaskId &&
+              task.source === mapping.provider.type &&
+              task.externalListId === mapping.externalListId
+            ) {
+              localTaskByExternalId.set(
+                externalTaskSyncKey(mapping.externalListId, task.externalTaskId),
+                task
+              );
             }
           }
 
@@ -651,7 +682,9 @@ export class TaskSyncManager {
       for (const externalTask of externalTasks) {
         try {
           // Find corresponding local task
-          const localTask = localTaskByExternalId.get(externalTask.id);
+          const localTask = localTaskByExternalId.get(
+            externalTaskSyncKey(mapping.externalListId, externalTask.id)
+          );
 
           if (localTask) {
             if (localTask.isArchived) {
@@ -801,16 +834,20 @@ export class TaskSyncManager {
 
       // Step 5: Handle tasks that exist locally but have been deleted externally
       // Get all local tasks with external IDs from this provider
-      const localTaskIds = new Set(localTaskByExternalId.keys());
-      const externalTaskIds = new Set(externalTasks.map((task) => task.id));
-
-      // Find tasks that exist locally but not externally
-      const deletedTaskExternalIds = Array.from(localTaskIds).filter(
-        (id) => !externalTaskIds.has(id)
+      const localTaskKeys = new Set(localTaskByExternalId.keys());
+      const externalTaskKeys = new Set(
+        externalTasks.map((task) =>
+          externalTaskSyncKey(mapping.externalListId, task.id)
+        )
       );
 
-      for (const externalId of deletedTaskExternalIds) {
-        const localTask = localTaskByExternalId.get(externalId);
+      // Find tasks that exist locally but not externally
+      const deletedTaskKeys = Array.from(localTaskKeys).filter(
+        (key) => !externalTaskKeys.has(key)
+      );
+
+      for (const key of deletedTaskKeys) {
+        const localTask = localTaskByExternalId.get(key);
         if (!localTask) continue;
 
         try {

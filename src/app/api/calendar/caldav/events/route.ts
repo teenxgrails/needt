@@ -137,6 +137,12 @@ export async function PUT(request: NextRequest) {
     const userId = auth.userId;
 
     const { eventId, mode, ...updates } = await request.json();
+    if (mode !== undefined && mode !== "single" && mode !== "series") {
+      return NextResponse.json(
+        { error: "Invalid update mode" },
+        { status: 400 }
+      );
+    }
 
     logger.info(
       "Updating CalDAV event",
@@ -210,7 +216,7 @@ export async function PUT(request: NextRequest) {
         isRecurring: updates.isRecurring ?? validatedEvent.isRecurring,
         recurrenceRule: updates.recurrenceRule ?? validatedEvent.recurrenceRule,
       },
-      "series", //todo: implement editing a single instance correctly.
+      mode ?? "series",
       userId
     );
 

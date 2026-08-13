@@ -427,11 +427,11 @@ DELETE /api/tasks/mappings/:id - Delete a mapping
 ### Synchronization Operations
 
 ```
-POST /api/tasks/sync/provider/:providerId - Trigger sync for all lists in a provider
-POST /api/tasks/sync/mapping/:mappingId - Trigger sync for a specific mapping
-GET /api/tasks/sync/status/:jobId - Check status of a sync job
-POST /api/tasks/sync/resolve/:taskId - Resolve a sync conflict
+POST /api/task-sync/sync - Run synchronously for one provider or mapping
 ```
+
+Pass either `providerId` or `mappingId` in the JSON body. The response includes
+the completed sync result; there is no asynchronous job-status endpoint.
 
 ## Background Jobs
 

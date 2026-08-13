@@ -124,8 +124,13 @@ export class TimeSlotManagerImpl implements TimeSlotManager {
     // 3. Check calendar conflicts
     const availableSlots = await this.removeConflicts(workHourSlots, task);
 
-    // 4. Apply buffer times
-    const slotsWithBuffer = this.applyBufferTimes(availableSlots);
+    // 4. Reserve both sides of a task's configured buffer. A task may not be
+    // placed when either buffer overlaps a calendar event or another scheduled
+    // task; otherwise a later run could consume the transition time.
+    const slotsWithBuffer = await this.filterSlotsWithAvailableBuffers(
+      availableSlots,
+      userId
+    );
 
     // 5. Score slots
     const scoredSlots = this.scoreSlots(slotsWithBuffer, task);
@@ -150,6 +155,10 @@ export class TimeSlotManagerImpl implements TimeSlotManager {
 
     // Check for conflicts with in-memory scheduled tasks
     if (this.hasInMemoryConflict(slot)) {
+      return false;
+    }
+
+    if (!(await this.hasAvailableBuffers(slot, userId))) {
       return false;
     }
 
@@ -412,19 +421,41 @@ export class TimeSlotManagerImpl implements TimeSlotManager {
     return availableSlots;
   }
 
-  // TODO: Buffer time implementation needs improvement:
-  // 1. Currently only checks if buffers fit within work hours but doesn't prevent scheduling in buffer times
-  // 2. Should check for conflicts during buffer periods
-  // 3. Consider adjusting slot times to include the buffers
-  // 4. Could factor buffer availability into slot scoring
-  private applyBufferTimes(slots: TimeSlot[]): TimeSlot[] {
-    return slots.map((slot) => {
-      const { beforeBuffer, afterBuffer } = this.calculateBufferTimes(slot);
-      // Only mark as having buffer time if both buffers are within work hours
-      slot.hasBufferTime =
-        beforeBuffer.isWithinWorkHours && afterBuffer.isWithinWorkHours;
-      return slot;
-    });
+  private async filterSlotsWithAvailableBuffers(
+    slots: TimeSlot[],
+    userId: string
+  ): Promise<TimeSlot[]> {
+    const availableSlots: TimeSlot[] = [];
+
+    for (const slot of slots) {
+      if (await this.hasAvailableBuffers(slot, userId)) {
+        availableSlots.push({ ...slot, hasBufferTime: true });
+      }
+    }
+
+    return availableSlots;
+  }
+
+  private async hasAvailableBuffers(
+    slot: TimeSlot,
+    userId: string
+  ): Promise<boolean> {
+    if (this.settings.bufferMinutes <= 0) return true;
+
+    const { beforeBuffer, afterBuffer } = this.calculateBufferTimes(slot);
+    const buffers = [beforeBuffer, afterBuffer];
+
+    for (const buffer of buffers) {
+      if (!buffer.isWithinWorkHours || this.hasInMemoryConflict(buffer)) {
+        return false;
+      }
+
+      if ((await this.findCalendarConflicts(buffer, userId)).length > 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private scoreSlot(slot: TimeSlot): number {

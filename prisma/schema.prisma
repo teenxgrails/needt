@@ -289,6 +289,7 @@ model CalendarEvent {
   lastModified    DateTime?
   organizer       Json? // Stored as JSON { name?: string, email: string }
   attendees       Json? // Stored as JSON array of { name?: string, email: string, status?: string }
+  syncStatus      String? // 'PENDING', 'SYNCED' or 'ERROR' for provider reconciliation
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   archivedAt      DateTime?

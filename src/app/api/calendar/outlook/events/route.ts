@@ -19,8 +19,6 @@ import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "OutlookCalendarEventsAPI";
 
-// Helper function to write event to database
-
 // Create a new event
 export async function POST(request: NextRequest) {
   try {
@@ -72,28 +70,68 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to get event ID from Outlook Calendar");
     }
 
-    //todo this slows down the event creation significantly, we should just create the event in the database
-    // Get the Outlook client and sync the calendar
-    const client = await getOutlookClient(feed.accountId, userId);
-    await syncOutlookCalendar(
-      client,
-      { id: feed.id, url: feed.url },
-      feed.syncToken
-    );
-
-    // Get the created event from database
-    const createdEvent = await prisma.calendarEvent.findFirst({
+    const pendingEventData = {
+      title: eventData.title,
+      description: eventData.description ?? null,
+      location: eventData.location ?? null,
+      start: newDate(eventData.start),
+      end: newDate(eventData.end),
+      allDay: eventData.allDay ?? false,
+      isRecurring: eventData.isRecurring ?? false,
+      recurrenceRule: eventData.recurrenceRule ?? null,
+      isMaster: eventData.isRecurring ?? false,
+      status: "busy",
+      syncStatus: "PENDING",
+      archivedAt: null,
+    };
+    const existingEvent = await prisma.calendarEvent.findFirst({
       where: {
         feedId: feed.id,
         externalEventId: outlookEvent.id,
       },
     });
 
-    if (!createdEvent) {
-      throw new Error("Failed to find created event after sync");
-    }
+    const pendingEvent = existingEvent
+      ? await prisma.calendarEvent.update({
+          where: { id: existingEvent.id },
+          data: pendingEventData,
+        })
+      : await prisma.calendarEvent.create({
+          data: {
+            ...pendingEventData,
+            feedId: feed.id,
+            externalEventId: outlookEvent.id,
+          },
+        });
 
-    return NextResponse.json(createdEvent);
+    try {
+      const client = await getOutlookClient(feed.accountId, userId);
+      await syncOutlookCalendar(
+        client,
+        { id: feed.id, url: feed.url },
+        feed.syncToken
+      );
+
+      const synchronizedEvent = await prisma.calendarEvent.findFirst({
+        where: {
+          feedId: feed.id,
+          externalEventId: outlookEvent.id,
+        },
+      });
+      return NextResponse.json(synchronizedEvent ?? pendingEvent);
+    } catch (syncError) {
+      logger.warn(
+        "Outlook event created locally but refresh sync is pending",
+        {
+          eventId: pendingEvent.id,
+          feedId: feed.id,
+          error:
+            syncError instanceof Error ? syncError.message : "Unknown error",
+        },
+        LOG_SOURCE
+      );
+      return NextResponse.json(pendingEvent, { status: 202 });
+    }
   } catch (error) {
     logger.error(
       "Failed to create Outlook calendar event:",

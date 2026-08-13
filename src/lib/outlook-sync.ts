@@ -154,6 +154,10 @@ export async function saveEventToDatabase(
   externalEventId: string,
   isMaster: boolean = false
 ) {
+  const synchronizedEventData = {
+    ...eventData,
+    syncStatus: "SYNCED",
+  };
   const existingEvent = await prisma.calendarEvent.findFirst({
     where: {
       feedId,
@@ -166,12 +170,12 @@ export async function saveEventToDatabase(
     if (existingEvent.archivedAt) return existingEvent;
     return await prisma.calendarEvent.update({
       where: { id: existingEvent.id },
-      data: eventData as Prisma.CalendarEventUpdateInput,
+      data: synchronizedEventData as Prisma.CalendarEventUpdateInput,
     });
   }
 
   return await prisma.calendarEvent.create({
-    data: eventData as Prisma.CalendarEventCreateInput,
+    data: synchronizedEventData as Prisma.CalendarEventCreateInput,
   });
 }
 

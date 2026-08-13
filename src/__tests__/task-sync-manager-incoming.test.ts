@@ -202,6 +202,7 @@ describe("TaskSyncManager incoming-only sync for import-only providers (issue #1
         id: "local-archived",
         title: "Archived locally",
         externalTaskId: external.id,
+        externalListId: "https://dav.example.com/cal/tasks/",
         source: "CALDAV",
         isArchived: true,
         tags: [],
@@ -220,6 +221,46 @@ describe("TaskSyncManager incoming-only sync for import-only providers (issue #1
     expect(result.success).toBe(true);
     expect(mockPrisma.task.update).not.toHaveBeenCalled();
     expect(mockPrisma.task.create).not.toHaveBeenCalled();
+  });
+
+  it("does not update a same-UID task linked to another external list", async () => {
+    const external: ExternalTask = {
+      id: "shared-uid",
+      title: "Task from the current collection",
+      listId: "https://dav.example.com/cal/tasks/",
+    };
+    const provider = makeImportOnlyProvider([external]);
+    mockPrisma.task.findMany.mockResolvedValue([
+      {
+        id: "other-list-task",
+        title: "Task from another collection",
+        externalTaskId: external.id,
+        externalListId: "https://dav.example.com/cal/archive/",
+        source: "CALDAV",
+        isArchived: false,
+        tags: [],
+        project: null,
+      },
+    ]);
+
+    const manager = new TaskSyncManager();
+    jest.spyOn(manager, "getProvider").mockResolvedValue(provider);
+    jest
+      .spyOn(manager, "getFieldMapper")
+      .mockReturnValue(new CalDAVFieldMapper());
+
+    const result = await manager.syncTaskList(mapping());
+
+    expect(result.success).toBe(true);
+    expect(mockPrisma.task.update).not.toHaveBeenCalled();
+    expect(mockPrisma.task.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          externalListId: "https://dav.example.com/cal/tasks/",
+          externalTaskId: "shared-uid",
+        }),
+      })
+    );
   });
 
   it("does NOT delete a locally-linked task that is missing from the external read", async () => {
