@@ -23,6 +23,10 @@ import {
 
 import { CalendarTaskActionsMenu } from "@/components/calendar/CalendarTaskActionsMenu";
 import {
+  TaskSavedViewState,
+  TaskSavedViewsMenu,
+} from "@/components/tasks/TaskSavedViewsMenu";
+import {
   APP_TOOLBAR_BUTTON_CLASS,
   APP_TOOLBAR_SEGMENT_BUTTON_CLASS,
   APP_TOOLBAR_SEGMENT_CLASS,
@@ -329,6 +333,30 @@ export function TaskList({
     setActiveProject(null);
   };
 
+  const applySavedView = (view: TaskSavedViewState) => {
+    setGroupBy(view.groupBy);
+    setSortBy(view.sortBy);
+    setSortDirection(view.sortDirection);
+    setFilters({
+      status: view.status,
+      priority: view.priority,
+      energyLevel: undefined,
+      timePreference: undefined,
+      tagIds: undefined,
+      search: undefined,
+      hideUpcomingTasks: false,
+    });
+    if (view.projectId === "no-project") {
+      setActiveProject(NO_PROJECT);
+    } else if (view.projectId) {
+      setActiveProject(
+        projects.find((project) => project.id === view.projectId) ?? null
+      );
+    } else {
+      setActiveProject(null);
+    }
+  };
+
   return (
     <div className="needt-page-depth flex h-full min-h-0 flex-col">
       {!compact && (
@@ -425,6 +453,18 @@ export function TaskList({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <TaskSavedViewsMenu
+            currentView={{
+              groupBy,
+              priority,
+              projectId: activeProject?.id,
+              sortBy,
+              sortDirection,
+              status,
+            }}
+            onApply={applySavedView}
+          />
 
           <div className={APP_TOOLBAR_SEGMENT_CLASS}>
             <button
