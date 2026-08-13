@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Account settings now include a data-derived setup checklist that guides users
+  through account, calendar, workspace and first-task actions.
 - Mail messages can now snooze locally until tomorrow morning or create a
   workspace reminder task for that time without changing provider state.
 - Settings now filter their existing desktop and mobile navigation by name.

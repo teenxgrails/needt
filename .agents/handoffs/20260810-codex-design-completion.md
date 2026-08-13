@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T19:15:00Z
+updated: 2026-08-13T19:40:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -82,9 +82,6 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - T7 Moodboards list recovery committed as `2e31963`: the existing workspace gains
   a local title search, Recent/Other ordering, and a purposeful first-board
   empty state without changing the canvas or persistence contracts.
-- T7 Settings discovery is ready to commit: desktop and mobile settings
-  navigation both filter the established settings list by name; workspace and
-  billing remain existing functional panels.
 - T7 settings discovery committed as `114a71c`. Today and Focus already meet
   their route contracts in the existing implementation; Mail Snooze/Remind Me
   and a persisted post-account onboarding guide remain deliberately deferred
@@ -97,14 +94,11 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   collision handling, scheduling-buffer invariants, workspace-scoped AI reads
   and confirmation-bound mutations are implemented and pass their focused
   tests. The task-sync endpoint is implemented, not a stale `501` contract.
-- T7 Mail contract is ready to commit: additive `MailMessage.snoozedUntil`
-  keeps Snooze local until tomorrow morning, and Remind Me creates a current
-  workspace task with the existing zero-offset deadline reminder. Neither
-  action invents a Gmail/Outlook/IMAP provider mutation.
 - T7 Mail Snooze/Remind Me committed as `6e9ad32`. T7 is functionally complete
-  except for the intentionally deferred persisted post-account onboarding guide,
-  which needs an explicit server-side progress contract rather than another
-  client-only setup screen.
+  except for the data-derived post-account onboarding guide currently ready to
+  commit: its server route uses active workspace scope for the first-task state,
+  while the existing Account Settings tab guides calendar, workspace and task
+  actions without a new client-only persistence model.
 
 ## Working state
 
@@ -128,10 +122,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
-- Owned uncommitted Mail files are `prisma/schema.prisma`, additive migration
-  `20260813190000_mail_message_snooze`, `src/lib/mail-db.ts`,
-  `src/app/api/mail/messages/[id]/route.ts`, `src/components/mail/MailPage.tsx`
-  and `src/lib/mail/__tests__/mail-snooze-contract.test.ts`.
+- Owned uncommitted onboarding files are `src/app/api/onboarding/route.ts`,
+  `src/components/settings/OnboardingChecklist.tsx`,
+  `src/app/(app)/settings/page.tsx` and
+  `src/components/settings/__tests__/onboarding-checklist-contract.test.ts`.
 
 ## Verification
 
@@ -220,6 +214,8 @@ check:collaboration-runtime`.
   local Docker daemon socket is unavailable. Style and visual suites share that
   reset path, so they are blocked by the same local environment rather than a
   failed assertion. Production smoke remains intentionally skipped by the user.
+- Passed for T7 onboarding: focused server-scope/link contract test (2 tests),
+  type-check, focused lint, Prettier and diff check.
 
 ## Decisions and constraints
 
@@ -242,9 +238,7 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Start Docker Desktop, then rerun E2E/style/visual and Docker image gates if a
-  release owner wants full local evidence. Do not run production smoke: the user
-  explicitly deferred it. The persisted post-account onboarding guide also needs
-  a product-approved server-side progress contract before implementation.
-  browser and production smoke as final-validation backlog; they require local
-  Docker Desktop, an authenticated local app fixture and release authorization.
+- Commit the owned onboarding paths, then rerun the lightweight local unit/type
+  boundary and update the final handoff. Docker-gated E2E/style/visual and image
+  gates remain for a release owner; do not run production smoke because the user
+  explicitly deferred it.

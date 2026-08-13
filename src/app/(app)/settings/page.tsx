@@ -41,6 +41,7 @@ import { DesktopSettings } from "@/components/settings/DesktopSettings";
 import { ImportExportSettings } from "@/components/settings/ImportExportSettings";
 import { IntegrationSettings } from "@/components/settings/IntegrationSettings";
 import { NotificationSettings } from "@/components/settings/NotificationSettings";
+import { OnboardingChecklist } from "@/components/settings/OnboardingChecklist";
 import { ReportBugDialog } from "@/components/settings/ReportBugDialog";
 import { ScheduleSettings } from "@/components/settings/ScheduleSettings";
 import { SettingsPanelBoundary } from "@/components/settings/SettingsPanelBoundary";
@@ -337,7 +338,12 @@ export default function SettingsPage() {
       case "ai":
         return <AIAssistantSettings />;
       case "account":
-        return <AccountSettings />;
+        return (
+          <div className="space-y-9">
+            <OnboardingChecklist />
+            <AccountSettings />
+          </div>
+        );
       case "workspace":
         return <WorkspaceSettings />;
       case "billing":
