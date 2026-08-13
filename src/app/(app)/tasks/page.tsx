@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { AnimatePresence, motion } from "motion/react";
 import {
   Archive,
   Box,
@@ -17,9 +16,11 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 
 import { MailPage } from "@/components/mail/MailPage";
 import { ProjectModal } from "@/components/projects/ProjectModal";
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 import { BoardView } from "@/components/tasks/BoardView/BoardView";
 import { SpaceView } from "@/components/tasks/SpaceView";
 import { TaskList } from "@/components/tasks/TaskList";
@@ -41,8 +42,6 @@ import {
 
 import { logger } from "@/lib/logger";
 import { cn } from "@/lib/utils";
-
-import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 import { useUnreadMailCount } from "@/hooks/useUnreadMailCount";
@@ -563,6 +562,7 @@ export default function TasksPage() {
                 onOpenTask={openTask}
                 onStatusChange={handleStatusChange}
                 onCreateTask={openCreateTask}
+                onOpenFallbackView={setViewMode}
               />
             ) : viewMode === "mail" ? (
               <MailPage />

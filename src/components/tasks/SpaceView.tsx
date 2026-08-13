@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  PointerEvent,
-  WheelEvent,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { PointerEvent, WheelEvent, useMemo, useRef, useState } from "react";
 
 import {
   Box,
@@ -27,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 
+import { SpaceParticles } from "@/components/tasks/SpaceParticles";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +37,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-import { SpaceParticles } from "@/components/tasks/SpaceParticles";
 
 import {
   addDays,
@@ -67,6 +60,7 @@ interface SpaceViewProps {
   onOpenTask: (task: Task) => void;
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   onCreateTask: () => void;
+  onOpenFallbackView: (view: "list" | "board") => void;
 }
 
 interface SpacePoint {
@@ -240,6 +234,7 @@ export function SpaceView({
   onOpenTask,
   onStatusChange,
   onCreateTask,
+  onOpenFallbackView,
 }: SpaceViewProps) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [horizon, setHorizon] = useState<SpaceHorizon>(7);
@@ -469,8 +464,8 @@ export function SpaceView({
     setDraggingTaskId(null);
   };
 
-  // The Space canvas relies on pan/zoom and drag interactions that don't work
-  // well on a small touch screen; show a placeholder and point to desktop.
+  // The constellation canvas is desktop-first. Phones keep a real escape hatch
+  // into the existing task views instead of an inert placeholder.
   if (isMobile) {
     return (
       <section className="needt-page-depth flex h-full min-h-[540px] flex-col items-center justify-center gap-3 px-6 text-center">
@@ -480,9 +475,24 @@ export function SpaceView({
         </h2>
         <p className="max-w-xs text-sm text-[var(--text-secondary)]">
           The constellation view uses pan, zoom, and drag that need a larger
-          screen. Open Needt on desktop to explore Space, or use the Task List
-          and Board views here.
+          screen. Your tasks remain available in the compact list and board.
         </p>
+        <div className="flex w-full max-w-xs gap-2">
+          <button
+            type="button"
+            onClick={() => onOpenFallbackView("list")}
+            className="min-h-11 flex-1 rounded-[var(--control-radius)] border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] px-3 text-sm font-medium text-[var(--control-fg)]"
+          >
+            Open Task List
+          </button>
+          <button
+            type="button"
+            onClick={() => onOpenFallbackView("board")}
+            className="min-h-11 flex-1 rounded-[var(--control-radius)] border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] px-3 text-sm font-medium text-[var(--control-fg)]"
+          >
+            Open Board
+          </button>
+        </div>
       </section>
     );
   }

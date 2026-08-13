@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T16:45:00Z
+updated: 2026-08-13T17:05:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -71,11 +71,14 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   lifecycle`). The next owned scope is S7/T6 Pages metadata: workspace-scoped
   folders/tags and versioned Smart Folder query contracts, extending the
   existing Pages architecture without a UI redesign.
-- Local S7/T6 Page metadata implementation is ready to commit: additive
+- Local S7/T6 Page metadata implementation committed as `288acea`: additive
   PageFolder/PageTag/PageSmartFolder models and migration
   `20260813170000_page_metadata`; strict v1 Smart Folder query parsing;
   workspace-authorized metadata and Page-organization APIs; server-side Pages
   filters; and minimal integration in the existing Pages home/editor controls.
+- T7 Tasks/Projects/Space mobile recovery is ready to commit: the desktop-first
+  Space canvas now provides 44px controls that switch phone users to the
+  existing functional Task List or Board instead of an inert desktop notice.
 
 ## Working state
 
@@ -96,6 +99,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Preserve the protected foreign files above. No S6/T5 code remains owned
   dirty after `ba893f2`. `CLAUDE.md` has one owned stale-schema-description
   correction, but it is unrelated to the active Pages scope.
+- Owned uncommitted T7 files are `src/components/tasks/SpaceView.tsx`,
+  `src/app/(app)/tasks/page.tsx`, and
+  `src/components/tasks/__tests__/space-mobile-fallback.test.ts`.
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
@@ -160,6 +166,9 @@ check:collaboration-runtime`.
   Pages/service/migration unit tests (10 suites, 27 tests), type-check,
   focused lint and diff check. The Pages performance benchmark remained below
   budget (warm p95 30.0ms, keystroke p95 0.9ms).
+- Passed for the T7 Space fallback: focused mobile fallback test, type-check,
+  focused lint, Prettier and diff check. Browser verification remains blocked
+  by the absent authenticated local app fixture.
 
 ## Decisions and constraints
 
@@ -182,8 +191,8 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Stage only owned S7/T6 Page metadata paths and commit separately. Then audit
-  T7 route completion against actual code, starting with user-facing recovery
-  flows, before any visual redesign. Keep Docker, browser and production smoke
-  as final-validation backlog; they require local Docker Desktop, an
-  authenticated local app fixture and release authorization.
+- Commit the owned T7 Space mobile fallback paths, then audit Today and
+  Moodboards recovery/search flows against actual code before any visual
+  redesign. Keep Docker, browser and production smoke as final-validation
+  backlog; they require local Docker Desktop, an authenticated local app
+  fixture and release authorization.

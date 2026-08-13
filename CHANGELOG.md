@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- On phones, Space now offers working Task List and Board fallbacks instead of
+  directing people to a desktop-only canvas.
 - Pages can now be organized with workspace-scoped folders and tags, and users
   can save a versioned Smart Folder filter without exposing another workspace.
 - Workspace switching now clears prior Query and Zustand data, scopes browser
