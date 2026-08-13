@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T13:25:55Z
+updated: 2026-08-13T15:55:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -57,6 +57,16 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - CalDAV recurring-instance completion `2e5b261`: single edits/deletes update
   the master resource with `RECURRENCE-ID`/`EXDATE`; explicit exceptions and
   local RRULE expansion retain their original occurrence identity.
+- Local S6/T5 workspace lifecycle implementation is ready to commit: one
+  active-workspace provider scopes same-origin API requests, clears Query and
+  Zustand data on a switch, reconnects realtime with the selected workspace,
+  and passes that selection to the offline service worker. The existing profile
+  menu and Settings now provide functional switching and workspace management
+  without a visual redesign.
+- Shared-workspace lifecycle now also supports create, invite token copy,
+  accept/decline, member list, Owner role changes/removal, invitation revoke,
+  member leave and final-Owner protection. Declined invitations are preserved
+  through additive migration `20260813150000_workspace_invite_declined_at`.
 
 ## Working state
 
@@ -74,8 +84,12 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   `src/app/layout.tsx`, `.codex/config.toml`, `.playwright-mcp/`,
   `NEXT_AGENT.md`, `docs/plans/08-terra-high.md`, and
   `pages-mobile-slash-390.png`.
-- No owned code is dirty after `2e5b261`; the files above remain protected
-  foreign changes.
+- Preserve the protected foreign files above. The currently owned uncommitted
+  workspace scope consists of `CHANGELOG.md`, `prisma/schema.prisma`,
+  `prisma/migrations/20260813150000_workspace_invite_declined_at/`, workspace
+  service/routes/tests, provider/request-scope files, `UserMenu`, `PWARegister`,
+  `useRealtimeSync`, and Settings workspace files. `CLAUDE.md` has one owned
+  stale-schema-description correction, but it is unrelated to S6/T5.
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
@@ -125,6 +139,17 @@ check:collaboration-runtime`.
 - Passed for `2e5b261`: focused CalDAV unit tests (18 tests), type-check,
   focused lint, `git diff --check`, then the commit hook's full lint and
   type-check. No provider E2E ran because credentials are intentionally absent.
+- Passed for local S6/T5: Prisma validate/generate; type-check; zero-warning
+  lint; branding and UI-contract checks; full unit suite (131 suites passed,
+  664 tests passed, one skipped); worker and collaboration builds; collaboration
+  runtime identity check; targeted workspace API/request-scope tests (9 tests);
+  and diff check. Next production build compiled successfully; its final static
+  page generation output was not retained by the local runner, so rerun it at
+  the final commit boundary.
+- Browser visual verification was attempted but no local dev server was
+  running (`localhost:3000` refused the connection). Docker target build was
+  attempted but Docker Desktop's daemon socket was unavailable. Neither is a
+  source failure.
 
 ## Decisions and constraints
 
@@ -140,12 +165,15 @@ check:collaboration-runtime`.
 
 ## Blockers
 
-- S6/T5 and all dependent Pages/route work remain release-gated: the authorized
-  production deployment and smoke sequence have not been run in this local-only
-  workstream. Provider E2E remains credential-gated.
+- Production deployment/smoke remains intentionally deferred by the user;
+  provider E2E is credential-gated. Docker target verification is additionally
+  blocked until Docker Desktop is running. A local browser visual check needs a
+  running dev server and an authenticated fixture.
 
 ## Next action
 
-- Finish the local audit of remaining independent S10/T9 gaps. Then request the
-  release owner to deploy the exact web/worker/collaboration SHA and complete
-  production smoke before starting S6/T5.
+- Inspect/stage only the owned S6/T5 paths, commit the checkpoint, then run a
+  fresh `npm run build`. With Docker Desktop running, execute `docker build
+  --target collaboration -t needt-collaboration-s6:test .` and the existing
+  collaboration runtime smoke. Before production, deploy the exact same SHA for
+  web/worker/collaboration and complete the documented release smoke.

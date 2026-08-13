@@ -1,20 +1,19 @@
-import { createHash, randomBytes } from "crypto";
-
 import {
   Prisma,
   SubscriptionPlan,
   WorkspaceKind,
   WorkspaceRole,
 } from "@prisma/client";
+import { createHash, randomBytes } from "crypto";
 
+import {
+  WORKSPACES_FEATURE_FLAG,
+  resolveWorkspaceAccess,
+} from "@/lib/auth/workspace-auth";
 import { addDays, newDate } from "@/lib/date-utils";
 import { getPlan } from "@/lib/entitlements";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { prisma } from "@/lib/prisma";
-import {
-  resolveWorkspaceAccess,
-  WORKSPACES_FEATURE_FLAG,
-} from "@/lib/auth/workspace-auth";
 
 const INVITE_TTL_DAYS = 7;
 const SERIALIZABLE_RETRIES = 3;
@@ -34,7 +33,8 @@ export class WorkspaceServiceError extends Error {
       | "INVITE_NOT_FOUND"
       | "INVITE_EMAIL_MISMATCH"
       | "INVITE_EXPIRED"
-      | "INVITE_ALREADY_USED",
+      | "INVITE_ALREADY_USED"
+      | "INVITE_ALREADY_DECLINED",
     public readonly status: 403 | 404 | 409
   ) {
     super(code);
@@ -90,7 +90,10 @@ async function serializableTransaction<T>(
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       });
     } catch (error) {
-      if (!isRetryableTransaction(error) || attempt === SERIALIZABLE_RETRIES - 1) {
+      if (
+        !isRetryableTransaction(error) ||
+        attempt === SERIALIZABLE_RETRIES - 1
+      ) {
         throw error;
       }
     }
@@ -176,8 +179,14 @@ export async function listWorkspaceInvites(
   workspaceId: string
 ) {
   await requireSharedWorkspaceRole(userId, workspaceId, WorkspaceRole.OWNER);
+  const now = newDate();
   return prisma.workspaceInvite.findMany({
-    where: { workspaceId },
+    where: {
+      workspaceId,
+      acceptedAt: null,
+      declinedAt: null,
+      expiresAt: { gt: now },
+    },
     select: {
       id: true,
       email: true,
@@ -185,9 +194,43 @@ export async function listWorkspaceInvites(
       expiresAt: true,
       acceptedAt: true,
       acceptedById: true,
+      declinedAt: true,
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function revokeWorkspaceInvite(input: {
+  userId: string;
+  workspaceId: string;
+  inviteId: string;
+}) {
+  await requireSharedWorkspaceRole(
+    input.userId,
+    input.workspaceId,
+    WorkspaceRole.OWNER
+  );
+  return serializableTransaction(async (transaction) => {
+    await requireOwnerInsideTransaction(
+      transaction,
+      input.userId,
+      input.workspaceId
+    );
+    const now = newDate();
+    const revoked = await transaction.workspaceInvite.updateMany({
+      where: {
+        id: input.inviteId,
+        workspaceId: input.workspaceId,
+        acceptedAt: null,
+        declinedAt: null,
+        expiresAt: { gt: now },
+      },
+      data: { expiresAt: now },
+    });
+    if (revoked.count !== 1) {
+      throw new WorkspaceServiceError("INVITE_NOT_FOUND", 404);
+    }
   });
 }
 
@@ -288,6 +331,7 @@ export async function acceptWorkspaceInvite(userId: string, token: string) {
           role: true,
           expiresAt: true,
           acceptedAt: true,
+          declinedAt: true,
           workspace: { select: { name: true, kind: true } },
         },
       }),
@@ -302,6 +346,9 @@ export async function acceptWorkspaceInvite(userId: string, token: string) {
     if (invite.acceptedAt) {
       throw new WorkspaceServiceError("INVITE_ALREADY_USED", 409);
     }
+    if (invite.declinedAt) {
+      throw new WorkspaceServiceError("INVITE_ALREADY_DECLINED", 409);
+    }
     const now = newDate();
     if (invite.expiresAt <= now) {
       throw new WorkspaceServiceError("INVITE_EXPIRED", 409);
@@ -311,7 +358,12 @@ export async function acceptWorkspaceInvite(userId: string, token: string) {
     }
 
     const consumed = await transaction.workspaceInvite.updateMany({
-      where: { id: invite.id, acceptedAt: null, expiresAt: { gt: now } },
+      where: {
+        id: invite.id,
+        acceptedAt: null,
+        declinedAt: null,
+        expiresAt: { gt: now },
+      },
       data: { acceptedAt: now, acceptedById: userId },
     });
     if (consumed.count !== 1) {
@@ -334,6 +386,57 @@ export async function acceptWorkspaceInvite(userId: string, token: string) {
       workspaceName: invite.workspace.name,
       role: membership.role,
     };
+  });
+}
+
+export async function declineWorkspaceInvite(userId: string, token: string) {
+  await requireWorkspaceFeature(userId);
+  const tokenHash = hashInviteToken(token);
+
+  return serializableTransaction(async (transaction) => {
+    const [invite, user] = await Promise.all([
+      transaction.workspaceInvite.findUnique({
+        where: { tokenHash },
+        select: {
+          id: true,
+          email: true,
+          expiresAt: true,
+          acceptedAt: true,
+          declinedAt: true,
+        },
+      }),
+      transaction.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      }),
+    ]);
+    if (!invite) throw new WorkspaceServiceError("INVITE_NOT_FOUND", 404);
+    if (invite.acceptedAt) {
+      throw new WorkspaceServiceError("INVITE_ALREADY_USED", 409);
+    }
+    if (invite.declinedAt) {
+      throw new WorkspaceServiceError("INVITE_ALREADY_DECLINED", 409);
+    }
+    const now = newDate();
+    if (invite.expiresAt <= now) {
+      throw new WorkspaceServiceError("INVITE_EXPIRED", 409);
+    }
+    if (!user?.email || normalizeEmail(user.email) !== invite.email) {
+      throw new WorkspaceServiceError("INVITE_EMAIL_MISMATCH", 403);
+    }
+
+    const declined = await transaction.workspaceInvite.updateMany({
+      where: {
+        id: invite.id,
+        acceptedAt: null,
+        declinedAt: null,
+        expiresAt: { gt: now },
+      },
+      data: { declinedAt: now },
+    });
+    if (declined.count !== 1) {
+      throw new WorkspaceServiceError("INVITE_ALREADY_DECLINED", 409);
+    }
   });
 }
 
@@ -394,7 +497,10 @@ export async function updateWorkspaceMemberRole(input: {
     if (!target) {
       throw new WorkspaceServiceError("MEMBER_NOT_FOUND", 404);
     }
-    if (target.role === WorkspaceRole.OWNER && input.role !== WorkspaceRole.OWNER) {
+    if (
+      target.role === WorkspaceRole.OWNER &&
+      input.role !== WorkspaceRole.OWNER
+    ) {
       await assertNotLastOwner(transaction, input.workspaceId, target.role);
     }
     return transaction.workspaceMember.update({
@@ -447,5 +553,25 @@ export async function removeWorkspaceMember(input: {
         },
       },
     });
+  });
+}
+
+export async function leaveWorkspace(userId: string, workspaceId: string) {
+  const access = await requireSharedWorkspaceRole(
+    userId,
+    workspaceId,
+    WorkspaceRole.VIEWER
+  );
+  return serializableTransaction(async (transaction) => {
+    const membership = await transaction.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId } },
+      select: { role: true },
+    });
+    if (!membership) throw new WorkspaceServiceError("MEMBER_NOT_FOUND", 404);
+    await assertNotLastOwner(transaction, workspaceId, membership.role);
+    await transaction.workspaceMember.delete({
+      where: { workspaceId_userId: { workspaceId, userId } },
+    });
+    return access.workspaceId;
   });
 }

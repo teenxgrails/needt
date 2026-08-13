@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { WifiOff } from "lucide-react";
 
+import { useWorkspace } from "@/components/providers/WorkspaceProvider";
 import { useAppSession } from "@/components/providers/app-session-context";
 
 import {
@@ -23,6 +24,7 @@ type QueueState =
 
 export function PWARegister() {
   const { data: session, status } = useAppSession();
+  const { activeWorkspace } = useWorkspace();
   const [isOffline, setIsOffline] = useState(false);
   const [queueState, setQueueState] = useState<QueueState>("idle");
   const [queueCount, setQueueCount] = useState(0);
@@ -116,17 +118,7 @@ export function PWARegister() {
           await clearNeedtOfflineData();
         }
         localStorage.setItem("needt-offline-user-id", userId);
-        const response = await fetch("/api/workspaces");
-        if (!response.ok || cancelled) return;
-        const data = (await response.json()) as {
-          workspaces?: Array<{
-            workspace?: { id?: string; kind?: "PERSONAL" | "SHARED" };
-          }>;
-        };
-        const personal = data.workspaces?.find(
-          (membership) => membership.workspace?.kind === "PERSONAL"
-        );
-        const workspaceId = personal?.workspace?.id;
+        const workspaceId = activeWorkspace?.workspace.id;
         if (!workspaceId || cancelled) return;
         await setNeedtOfflineScope({ userId, workspaceId });
         navigator.serviceWorker.controller?.postMessage({
@@ -150,7 +142,7 @@ export function PWARegister() {
         configureScope
       );
     };
-  }, [session?.user?.id, status]);
+  }, [activeWorkspace?.workspace.id, session?.user?.id, status]);
 
   if (!isOffline && queueState === "idle") return null;
 

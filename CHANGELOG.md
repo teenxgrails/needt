@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Workspace switching now clears prior Query and Zustand data, scopes browser
+  API calls, realtime and offline replay to the selected membership, and lets
+  members create, leave or decline shared-workspace invitations safely.
 - CalDAV single-occurrence edits and deletions now modify the recurring master
   resource with `RECURRENCE-ID`/`EXDATE`, retain explicit overrides correctly,
   and no longer resurrect excluded occurrences during local sync.

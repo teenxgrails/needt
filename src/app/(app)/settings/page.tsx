@@ -7,8 +7,8 @@ import Link from "next/link";
 import {
   Bell,
   Bot,
-  CalendarDays,
   CalendarCheck2,
+  CalendarDays,
   CalendarRange,
   CheckCircle2,
   ChevronLeft,
@@ -23,6 +23,7 @@ import {
   Settings2,
   SlidersHorizontal,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
@@ -46,6 +47,7 @@ import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSe
 import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings";
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
+import { WorkspaceSettings } from "@/components/settings/WorkspaceSettings";
 
 import { cn } from "@/lib/utils";
 
@@ -66,7 +68,8 @@ type SettingsTab =
   | "ai"
   | "account"
   | "billing"
-  | "bookings";
+  | "bookings"
+  | "workspace";
 
 interface SettingsNavItem {
   id: SettingsTab;
@@ -96,6 +99,7 @@ const GENERAL_TABS: SettingsNavItem[] = [
 
 const ACCOUNT_TABS: SettingsNavItem[] = [
   { id: "account", label: "Account settings", icon: UserRound },
+  { id: "workspace", label: "Workspace", icon: UsersRound },
   { id: "billing", label: "Billing", icon: CreditCard },
 ];
 
@@ -308,6 +312,8 @@ export default function SettingsPage() {
         return <AIAssistantSettings />;
       case "account":
         return <AccountSettings />;
+      case "workspace":
+        return <WorkspaceSettings />;
       case "billing":
         return <BillingSettings />;
       default:

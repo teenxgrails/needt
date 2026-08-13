@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { useQueryClient } from "@tanstack/react-query";
 
+import { useWorkspace } from "@/components/providers/WorkspaceProvider";
 import { useAppSession } from "@/components/providers/app-session-context";
 
 import { logger } from "@/lib/logger";
@@ -20,9 +21,11 @@ const LOG_SOURCE = "RealtimeSyncHook";
 export function useRealtimeSync(): void {
   const queryClient = useQueryClient();
   const { status } = useAppSession();
+  const { activeWorkspace } = useWorkspace();
+  const workspaceId = activeWorkspace?.workspace.id;
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || !workspaceId) return;
 
     let eventSource: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -44,7 +47,9 @@ export function useRealtimeSync(): void {
 
     const connect = () => {
       if (stopped) return;
-      eventSource = new EventSource("/api/stream");
+      eventSource = new EventSource(
+        `/api/stream?workspaceId=${encodeURIComponent(workspaceId)}`
+      );
       eventSource.addEventListener("calendar-updated", refreshCalendar);
       eventSource.addEventListener("tasks-updated", refreshTasks);
       eventSource.onopen = () => {
@@ -78,5 +83,5 @@ export function useRealtimeSync(): void {
       eventSource?.close();
       if (reconnectTimer) clearTimeout(reconnectTimer);
     };
-  }, [queryClient, status]);
+  }, [queryClient, status, workspaceId]);
 }

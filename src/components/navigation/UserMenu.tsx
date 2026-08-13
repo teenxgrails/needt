@@ -6,6 +6,8 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 
 import {
+  Building2,
+  Check,
   CircleDot,
   HelpCircle,
   LogOut,
@@ -16,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { useWorkspace } from "@/components/providers/WorkspaceProvider";
 import { useAppSession } from "@/components/providers/app-session-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -29,12 +32,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { notify } from "@/lib/notifications";
 import { clearNeedtOfflineData } from "@/lib/pwa/offline-client";
 
 export function UserMenu() {
   const { data: session, status } = useAppSession();
   const { theme, setTheme } = useTheme();
+  const {
+    activeWorkspace,
+    isLoading: isLoadingWorkspaces,
+    selectWorkspace,
+    workspaces,
+  } = useWorkspace();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSwitchingWorkspace, setIsSwitchingWorkspace] = useState(false);
 
   // Keep the profile control's footprint while NextAuth resolves. Rendering a
   // sign-in CTA here briefly is both visually jarring and incorrect for an
@@ -61,6 +72,20 @@ export function UserMenu() {
     setIsLoggingOut(true);
     await clearNeedtOfflineData();
     await signOut({ callbackUrl: "/auth/signin" });
+  };
+
+  const handleWorkspaceSwitch = async (workspaceId: string) => {
+    try {
+      setIsSwitchingWorkspace(true);
+      await selectWorkspace(workspaceId);
+      notify.success("Workspace switched");
+    } catch (error) {
+      notify.error(
+        error instanceof Error ? error.message : "Could not switch workspace."
+      );
+    } finally {
+      setIsSwitchingWorkspace(false);
+    }
   };
 
   // Get user initials for avatar fallback
@@ -110,6 +135,37 @@ export function UserMenu() {
             </p>
           </div>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="px-2 py-1 text-xs font-medium text-[var(--text-secondary)]">
+          Workspace
+        </DropdownMenuLabel>
+        {isLoadingWorkspaces ? (
+          <DropdownMenuItem disabled>Loading workspaces…</DropdownMenuItem>
+        ) : (
+          workspaces.map((membership) => {
+            const isActive =
+              membership.workspace.id === activeWorkspace?.workspace.id;
+            return (
+              <DropdownMenuItem
+                key={membership.workspace.id}
+                className="cursor-pointer"
+                disabled={isSwitchingWorkspace || isActive}
+                onSelect={(event) => {
+                  event.preventDefault();
+                  void handleWorkspaceSwitch(membership.workspace.id);
+                }}
+              >
+                <Building2 className="mr-2 h-4 w-4" />
+                <span className="min-w-0 flex-1 truncate">
+                  {membership.workspace.name}
+                </span>
+                {isActive && (
+                  <Check className="h-4 w-4" aria-label="Active workspace" />
+                )}
+              </DropdownMenuItem>
+            );
+          })
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/settings" className="cursor-pointer">
