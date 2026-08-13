@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changing the active workspace scope.
 - Projects now expose a versioned health journal and role-gated status-update
   composer with concurrent-update recovery.
+- Focus now shows each member&apos;s workspace-scoped weekly target, progress and
+  editable minutes without exposing another member&apos;s focus data.
 - Account settings now include a data-derived setup checklist that guides users
   through account, calendar, workspace and first-task actions.
 - Mail messages can now snooze locally until tomorrow morning or create a

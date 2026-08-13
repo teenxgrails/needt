@@ -2,14 +2,9 @@
 
 import { type CSSProperties, useEffect, useState } from "react";
 
-import {
-  Check,
-  Flame,
-  Pause,
-  Play,
-  Square,
-} from "lucide-react";
+import { Check, Flame, Pause, Play, Square } from "lucide-react";
 
+import { WeeklyFocusTarget } from "@/components/focus/WeeklyFocusTarget";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -88,9 +83,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
     null;
   const suggestedMinutes = Math.max(
     5,
-    boundTask?.estimatedMinutes ??
-      boundTask?.duration ??
-      DEFAULT_FOCUS_MINUTES
+    boundTask?.estimatedMinutes ?? boundTask?.duration ?? DEFAULT_FOCUS_MINUTES
   );
   const plannedMinutes = timer.session?.plannedMinutes ?? duration;
   const totalSeconds = Math.max(1, plannedMinutes * 60);
@@ -249,7 +242,8 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
   const hasAnalytics = Boolean(report?.stats && report.weeklyReport);
   const nextTask = tasks.find(
     (candidate) =>
-      candidate.id !== boundTask?.id && candidate.status !== TaskStatus.COMPLETED
+      candidate.id !== boundTask?.id &&
+      candidate.status !== TaskStatus.COMPLETED
   );
   const modeLabel =
     strictness === "DEEP_FOCUS"
@@ -456,10 +450,13 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
       </section>
 
       <aside>
+        <WeeklyFocusTarget />
         <section className="border-b border-[var(--border-subtle)] py-8">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">Daily insight</p>
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
+                Daily insight
+              </p>
               <h2 className="mt-1 font-semibold">Your focus activity</h2>
             </div>
             {hasAnalytics && (
@@ -496,10 +493,26 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
 
         {hasAnalytics ? (
           <div className="grid grid-cols-2 border-b border-[var(--border-subtle)] sm:grid-cols-4">
-            <Insight label="Focus score" value={`${report?.stats?.focusScore}%`} />
-            <Insight label="This week" value={`${report?.weeklyReport?.focusMinutes ?? 0}m`} />
-            <Insight label="Sessions" value={String(report?.weeklyReport?.sessionsCompleted ?? 0)} />
-            <Insight label="Accuracy" value={report?.weeklyReport?.estimateAccuracyPercent ? `${report.weeklyReport.estimateAccuracyPercent}%` : "—"} />
+            <Insight
+              label="Focus score"
+              value={`${report?.stats?.focusScore}%`}
+            />
+            <Insight
+              label="This week"
+              value={`${report?.weeklyReport?.focusMinutes ?? 0}m`}
+            />
+            <Insight
+              label="Sessions"
+              value={String(report?.weeklyReport?.sessionsCompleted ?? 0)}
+            />
+            <Insight
+              label="Accuracy"
+              value={
+                report?.weeklyReport?.estimateAccuracyPercent
+                  ? `${report.weeklyReport.estimateAccuracyPercent}%`
+                  : "—"
+              }
+            />
           </div>
         ) : (
           <p className="border-b border-[var(--border-subtle)] py-5 text-sm text-[var(--text-muted)]">
@@ -510,13 +523,22 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
         <section className="border-b border-[var(--border-subtle)] py-7">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold">Daily streak</h2>
-            <span className="text-sm text-[var(--text-secondary)]">Best {report?.stats?.longestStreak ?? 0}</span>
+            <span className="text-sm text-[var(--text-secondary)]">
+              Best {report?.stats?.longestStreak ?? 0}
+            </span>
           </div>
           <div className="mt-4 flex justify-between gap-2">
             {bars.map((bar, index) => (
-              <div key={`${bar.label}-streak-${index}`} className="flex flex-col items-center gap-2">
-                <span className="text-[10px] text-[var(--text-muted)]">{bar.label}</span>
-                <span className={`grid h-8 w-8 place-items-center border text-xs ${bar.minutes >= 25 ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)]" : "border-[var(--border-subtle)] text-[var(--text-muted)]"}`}>
+              <div
+                key={`${bar.label}-streak-${index}`}
+                className="flex flex-col items-center gap-2"
+              >
+                <span className="text-[10px] text-[var(--text-muted)]">
+                  {bar.label}
+                </span>
+                <span
+                  className={`grid h-8 w-8 place-items-center border text-xs ${bar.minutes >= 25 ? "border-[var(--text-primary)] bg-[var(--text-primary)] text-[var(--surface-canvas)]" : "border-[var(--border-subtle)] text-[var(--text-muted)]"}`}
+                >
                   {bar.minutes >= 25 ? <Check className="h-4 w-4" /> : "·"}
                 </span>
               </div>
@@ -525,12 +547,17 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
         </section>
       </aside>
 
-      <Dialog open={Boolean(pendingCompletion)} onOpenChange={(open) => !open && void finishCompletion("done")}>
+      <Dialog
+        open={Boolean(pendingCompletion)}
+        onOpenChange={(open) => !open && void finishCompletion("done")}
+      >
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader><DialogTitle>Beautiful work.</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Beautiful work.</DialogTitle>
+          </DialogHeader>
           <p className="text-sm text-[var(--text-secondary)]">
-            Your focused time is saved. Take a breath before choosing what
-            comes next.
+            Your focused time is saved. Take a breath before choosing what comes
+            next.
           </p>
           {[3, 7, 14, 30, 60, 100].includes(streak) && (
             <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-hover)] p-3 text-sm">
@@ -538,13 +565,23 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
             </div>
           )}
           <DialogFooter className="flex-wrap">
-            <Button variant="outline" onClick={() => void finishCompletion("break")}>
+            <Button
+              variant="outline"
+              onClick={() => void finishCompletion("break")}
+            >
               {(report?.weeklyReport?.sessionsCompleted ?? 0) > 0 &&
               (report?.weeklyReport?.sessionsCompleted ?? 0) % 4 === 0
                 ? "15 min break"
                 : "5 min break"}
             </Button>
-            {pendingCompletion?.taskId && <Button variant="outline" onClick={() => void finishCompletion("task")}>Mark task done</Button>}
+            {pendingCompletion?.taskId && (
+              <Button
+                variant="outline"
+                onClick={() => void finishCompletion("task")}
+              >
+                Mark task done
+              </Button>
+            )}
             <Button onClick={() => void finishCompletion("done")}>Done</Button>
           </DialogFooter>
         </DialogContent>
@@ -553,13 +590,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
   );
 }
 
-function Insight({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function Insight({ label, value }: { label: string; value: string }) {
   return (
     <div className="border-l border-[var(--border-subtle)] py-5 text-center first:border-l-0">
       <p className="text-xl font-semibold tabular-nums">{value}</p>
