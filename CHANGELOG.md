@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Mail messages can now snooze locally until tomorrow morning or create a
+  workspace reminder task for that time without changing provider state.
 - Settings now filter their existing desktop and mobile navigation by name.
 - Moodboards now have a searchable recent-and-all list and a clear first-board
   state, while preserving the existing canvas workflow.

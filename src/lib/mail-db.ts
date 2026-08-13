@@ -8,13 +8,20 @@ const MAIL_RETENTION_DAYS = 90;
 const MAIL_MESSAGE_CAP = 2_000; //todo make this configurable per account.
 
 export async function listMailAccounts(userId: string) {
+  const now = newDate();
   return prisma.mailAccount.findMany({
     where: { userId },
     orderBy: [{ status: "asc" }, { address: "asc" }],
     include: {
       _count: {
         select: {
-          messages: { where: { isRead: false, isArchived: false } },
+          messages: {
+            where: {
+              isRead: false,
+              isArchived: false,
+              OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }],
+            },
+          },
         },
       },
     },
@@ -136,11 +143,13 @@ export async function listMailMessages(options: {
   cursor?: string | null;
 }) {
   const take = Math.min(Math.max(options.take ?? 60, 1), 100);
+  const now = newDate();
   return prisma.mailMessage.findMany({
     where: {
       account: { userId: options.userId },
       accountId: options.accountId || undefined,
       isArchived: false,
+      OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }],
     },
     include: {
       account: {

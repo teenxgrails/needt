@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { MailProvider } from "@prisma/client";
+import { MailProvider, TaskReminderKind, WorkspaceRole } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
@@ -15,6 +15,7 @@ import {
   mutateOutlookMessage,
 } from "@/lib/mail/providers";
 import { sanitizeMailHtml } from "@/lib/mail/sanitize";
+import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "MailMessageAPI";
 
@@ -80,24 +81,106 @@ export async function PATCH(
     const body = (await request.json().catch(() => ({}))) as {
       isRead?: boolean;
       archive?: boolean;
+      snoozedUntil?: string | null;
+      remindAt?: string;
     };
-    if (body.isRead === undefined && !body.archive) {
+    const snoozedUntil =
+      body.snoozedUntil === null
+        ? null
+        : typeof body.snoozedUntil === "string"
+          ? new Date(body.snoozedUntil)
+          : undefined;
+    if (snoozedUntil && Number.isNaN(snoozedUntil.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid snooze time." },
+        { status: 400 }
+      );
+    }
+    const remindAt =
+      typeof body.remindAt === "string" ? new Date(body.remindAt) : null;
+    if (remindAt && Number.isNaN(remindAt.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid reminder time." },
+        { status: 400 }
+      );
+    }
+    if (
+      body.isRead === undefined &&
+      !body.archive &&
+      snoozedUntil === undefined &&
+      !remindAt
+    ) {
       return NextResponse.json(
         { error: "No mail action supplied." },
         { status: 400 }
       );
     }
 
-    if (message.account.provider === MailProvider.GMAIL) {
-      await mutateGmailMessage(message.account, message.externalId, body);
-    } else if (message.account.provider === MailProvider.OUTLOOK) {
-      await mutateOutlookMessage(message.account, message.externalId, body);
+    if (remindAt) {
+      if (
+        auth.workspace?.role === WorkspaceRole.VIEWER ||
+        !auth.workspace?.workspaceId
+      ) {
+        return NextResponse.json(
+          {
+            error: "Workspace Editor access is required to create a reminder.",
+          },
+          { status: 403 }
+        );
+      }
+      const task = await prisma.task.create({
+        data: {
+          userId: auth.userId,
+          assigneeId: auth.userId,
+          workspaceId: auth.workspace.workspaceId,
+          title: message.subject || "Follow up on email",
+          description: `Created from email: /tasks?view=mail&message=${message.id}`,
+          status: "todo",
+          startDate: remindAt,
+          dueDate: remindAt,
+          reminders: {
+            create: {
+              userId: auth.userId,
+              kind: TaskReminderKind.BEFORE_DEADLINE,
+              offsetMinutes: 0,
+              channels: ["push", "email"],
+            },
+          },
+        },
+        select: { id: true, title: true, dueDate: true },
+      });
+      return NextResponse.json({ reminderTask: task }, { status: 201 });
+    }
+
+    const providerAction = {
+      ...(body.isRead !== undefined && { isRead: body.isRead }),
+      ...(body.archive && { archive: true }),
+    };
+    if (
+      (body.isRead !== undefined || body.archive) &&
+      message.account.provider === MailProvider.GMAIL
+    ) {
+      await mutateGmailMessage(
+        message.account,
+        message.externalId,
+        providerAction
+      );
+    } else if (
+      (body.isRead !== undefined || body.archive) &&
+      message.account.provider === MailProvider.OUTLOOK
+    ) {
+      await mutateOutlookMessage(
+        message.account,
+        message.externalId,
+        providerAction
+      );
     } else if (body.isRead !== undefined) {
       await mutateImapMessage(message.account, message.externalId, body);
     }
     const updated = await updateMailMessage(auth.userId, id, {
       ...(body.isRead !== undefined && { isRead: body.isRead }),
       ...(body.archive && { isArchived: true }),
+      ...(snoozedUntil !== undefined && { snoozedUntil }),
     });
     return NextResponse.json(updated);
   } catch (error) {

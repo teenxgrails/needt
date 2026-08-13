@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T18:20:00Z
+updated: 2026-08-13T18:40:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -97,6 +97,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   collision handling, scheduling-buffer invariants, workspace-scoped AI reads
   and confirmation-bound mutations are implemented and pass their focused
   tests. The task-sync endpoint is implemented, not a stale `501` contract.
+- T7 Mail contract is ready to commit: additive `MailMessage.snoozedUntil`
+  keeps Snooze local until tomorrow morning, and Remind Me creates a current
+  workspace task with the existing zero-offset deadline reminder. Neither
+  action invents a Gmail/Outlook/IMAP provider mutation.
 
 ## Working state
 
@@ -120,6 +124,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
+- Owned uncommitted Mail files are `prisma/schema.prisma`, additive migration
+  `20260813190000_mail_message_snooze`, `src/lib/mail-db.ts`,
+  `src/app/api/mail/messages/[id]/route.ts`, `src/components/mail/MailPage.tsx`
+  and `src/lib/mail/__tests__/mail-snooze-contract.test.ts`.
 
 ## Verification
 
@@ -197,6 +205,8 @@ check:collaboration-runtime`.
   because the local App route group cannot serve authenticated routes.
 - Passed for S9/S10: scheduling/AI/task-sync focused suite (7 suites, 46
   tests), branding, UI contracts, type-check, zero-warning lint and diff check.
+- Passed for T7 Mail: Prisma validate/generate, focused snooze/reminder
+  contract suite (2 tests), type-check, focused lint, Prettier and diff check.
 
 ## Decisions and constraints
 
@@ -219,8 +229,7 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Commit this S9/S10 checkpoint, then decide whether to introduce the reviewed
-  additive Mail Snooze/Remind Me backend contract; otherwise run final local
-  gates. Keep Docker,
+- Commit the owned T7 Mail paths, then evaluate final local gates and record
+  the intentionally deferred persisted onboarding guide. Keep Docker,
   browser and production smoke as final-validation backlog; they require local
   Docker Desktop, an authenticated local app fixture and release authorization.

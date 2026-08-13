@@ -352,6 +352,7 @@ model MailMessage {
   date        DateTime
   isRead      Boolean     @default(false)
   isArchived  Boolean     @default(false)
+  snoozedUntil DateTime?
   labels      Json
   bodyHtml    String?     @db.Text
   createdAt   DateTime    @default(now())
@@ -360,6 +361,7 @@ model MailMessage {
   @@unique([accountId, externalId])
   @@index([accountId, date])
   @@index([accountId, isRead, isArchived])
+  @@index([accountId, isArchived, snoozedUntil])
 }
 
 model Project {

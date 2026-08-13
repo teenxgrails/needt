@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Circle,
+  Clock3,
   ImageIcon,
   Inbox,
   Mail,
@@ -19,7 +20,6 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,7 @@ import { Switch } from "@/components/ui/switch";
 
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 const LOG_SOURCE = "MailPage";
@@ -64,6 +65,7 @@ interface MailMessageItem {
   date: string;
   isRead: boolean;
   isArchived: boolean;
+  snoozedUntil: string | null;
   bodyHtml: string | null;
   account: Pick<MailAccountItem, "id" | "provider" | "address" | "status">;
 }
@@ -208,7 +210,11 @@ export function MailPage() {
 
   const updateMessage = async (
     message: MailMessageItem,
-    action: { isRead?: boolean; archive?: boolean },
+    action: {
+      isRead?: boolean;
+      archive?: boolean;
+      snoozedUntil?: string | null;
+    },
     announce = true
   ) => {
     const response = await fetch(`/api/mail/messages/${message.id}`, {
@@ -221,7 +227,7 @@ export function MailPage() {
       return;
     }
     setMessages((current) =>
-      action.archive
+      action.archive || action.snoozedUntil
         ? current.filter((item) => item.id !== message.id)
         : current.map((item) =>
             item.id === message.id
@@ -238,17 +244,40 @@ export function MailPage() {
             ...current,
             ...(action.isRead !== undefined && { isRead: action.isRead }),
             ...(action.archive && { isArchived: true }),
+            ...(action.snoozedUntil && { snoozedUntil: action.snoozedUntil }),
           }
         : current
     );
     await loadAccounts();
     window.dispatchEvent(new Event("mail-unread-changed"));
-    if (action.archive) {
+    if (action.archive || action.snoozedUntil) {
       setSelectedId(null);
       setOpenMessage(null);
       setMobilePane("messages");
-      if (announce) notify.success("Message archived");
+      if (announce)
+        notify.success(action.archive ? "Message archived" : "Message snoozed");
     }
+  };
+
+  const tomorrowMorning = () => {
+    const date = newDate();
+    date.setDate(date.getDate() + 1);
+    date.setHours(9, 0, 0, 0);
+    return date;
+  };
+
+  const remindFromMail = async (message: MailMessageItem) => {
+    const remindAt = tomorrowMorning();
+    const response = await fetch(`/api/mail/messages/${message.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ remindAt: remindAt.toISOString() }),
+    });
+    if (!response.ok) {
+      notify.error("Could not create a reminder task");
+      return;
+    }
+    notify.success("Reminder task set for tomorrow morning");
   };
 
   const syncMail = async () => {
@@ -560,11 +589,33 @@ export function MailPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                className="h-11 gap-1.5 text-[12px] xl:h-8"
+                onClick={() =>
+                  void updateMessage(openMessage, {
+                    snoozedUntil: tomorrowMorning().toISOString(),
+                  })
+                }
+              >
+                <Clock3 className="h-3.5 w-3.5" />
+                <span className="max-sm:hidden">Snooze</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 className="ml-auto h-11 gap-1.5 text-[12px] xl:h-8"
                 onClick={() => void createTask(openMessage)}
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 Create task
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-11 gap-1.5 text-[12px] xl:h-8"
+                onClick={() => void remindFromMail(openMessage)}
+              >
+                <Clock3 className="h-3.5 w-3.5" />
+                <span className="max-sm:hidden">Remind me</span>
               </Button>
             </header>
             <ScrollArea className="min-h-0 flex-1">
