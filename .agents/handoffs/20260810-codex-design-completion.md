@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T18:40:00Z
+updated: 2026-08-13T19:05:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -101,6 +101,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   keeps Snooze local until tomorrow morning, and Remind Me creates a current
   workspace task with the existing zero-offset deadline reminder. Neither
   action invents a Gmail/Outlook/IMAP provider mutation.
+- T7 Mail Snooze/Remind Me committed as `6e9ad32`. T7 is functionally complete
+  except for the intentionally deferred persisted post-account onboarding guide,
+  which needs an explicit server-side progress contract rather than another
+  client-only setup screen.
 
 ## Working state
 
@@ -207,6 +211,11 @@ check:collaboration-runtime`.
   tests), branding, UI contracts, type-check, zero-warning lint and diff check.
 - Passed for T7 Mail: Prisma validate/generate, focused snooze/reminder
   contract suite (2 tests), type-check, focused lint, Prettier and diff check.
+- Passed at final local boundary: full unit suite (137 passed suites, 672 passed
+  tests, one suite/test skipped), branding, UI contracts, type-check,
+  zero-warning lint, app build (all 137 static pages generated), worker build,
+  collaboration build/runtime identity check and diff check. The app build logs
+  the known dynamic `/style` static-generation warning but exits successfully.
 
 ## Decisions and constraints
 
@@ -229,7 +238,9 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Commit the owned T7 Mail paths, then evaluate final local gates and record
-  the intentionally deferred persisted onboarding guide. Keep Docker,
+- Run the final E2E/style/visual diagnostic gates. Do not run production smoke:
+  the user explicitly deferred it. If local App route discovery continues to
+  return 404 for unchanged authenticated routes, record that environment blocker
+  rather than treating it as a product regression. Keep Docker,
   browser and production smoke as final-validation backlog; they require local
   Docker Desktop, an authenticated local app fixture and release authorization.
