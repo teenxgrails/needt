@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T18:05:00Z
+updated: 2026-08-13T18:20:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -93,6 +93,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   authenticate workspace membership and Page editor access before checking
   folder/tag scope, and the collaboration/publication/offline tests exercise
   the relevant security and recovery contracts.
+- S9/S10 audit is complete: CalDAV recurrence identity, task-sync list-aware
+  collision handling, scheduling-buffer invariants, workspace-scoped AI reads
+  and confirmation-bound mutations are implemented and pass their focused
+  tests. The task-sync endpoint is implemented, not a stale `501` contract.
 
 ## Working state
 
@@ -191,6 +195,8 @@ check:collaboration-runtime`.
   collaboration build and runtime identity check, type-check, zero-warning lint
   and diff check. Pages E2E/public-page E2E/visual remain a final-gate backlog
   because the local App route group cannot serve authenticated routes.
+- Passed for S9/S10: scheduling/AI/task-sync focused suite (7 suites, 46
+  tests), branding, UI contracts, type-check, zero-warning lint and diff check.
 
 ## Decisions and constraints
 
@@ -213,7 +219,8 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Commit this S8/T7 checkpoint, then audit S9/S10 implementation and test
-  evidence before final local gates. Keep Docker,
+- Commit this S9/S10 checkpoint, then decide whether to introduce the reviewed
+  additive Mail Snooze/Remind Me backend contract; otherwise run final local
+  gates. Keep Docker,
   browser and production smoke as final-validation backlog; they require local
   Docker Desktop, an authenticated local app fixture and release authorization.
