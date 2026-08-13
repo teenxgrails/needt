@@ -7,6 +7,7 @@ import { CalDAVCalendarService } from "@/lib/caldav-calendar";
 import { prisma } from "@/lib/prisma";
 
 const updateEvent = jest.fn();
+const deleteEvent = jest.fn();
 
 jest.mock("@/lib/auth/api-auth", () => ({
   authenticateRequest: jest.fn(),
@@ -16,7 +17,9 @@ jest.mock("@/lib/calendar-db", () => ({
   validateEvent: jest.fn(),
 }));
 jest.mock("@/lib/caldav-calendar", () => ({
-  CalDAVCalendarService: jest.fn().mockImplementation(() => ({ updateEvent })),
+  CalDAVCalendarService: jest
+    .fn()
+    .mockImplementation(() => ({ updateEvent, deleteEvent })),
 }));
 jest.mock("@/lib/logger", () => ({
   logger: { error: jest.fn(), info: jest.fn() },
@@ -89,6 +92,20 @@ describe("CalDAV event update route", () => {
     if (!response) throw new Error("Expected a response");
 
     expect(response.status).toBe(400);
+    expect(CalDAVCalendarService).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid delete mode before resolving the event", async () => {
+    const response = await route.DELETE(
+      new NextRequest("http://localhost/api/calendar/caldav/events", {
+        method: "DELETE",
+        body: JSON.stringify({ eventId: "event-1", mode: "future" }),
+      })
+    );
+    if (!response) throw new Error("Expected a response");
+
+    expect(response.status).toBe(400);
+    expect(getEvent).not.toHaveBeenCalled();
     expect(CalDAVCalendarService).not.toHaveBeenCalled();
   });
 });

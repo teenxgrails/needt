@@ -16,8 +16,8 @@ import { CalendarEventWithFeed } from "@/types/calendar";
  * `convertToICalendar` is private and side-effect free (no network/DB), so we
  * reach it through a typed cast on a service constructed with a stub account.
  * The single-instance RECURRENCE-ID / EXDATE paths are exercised through the
- * real `deleteEvent` method with prisma and fetch mocked, so we assert the
- * actual PUT body sent to the server.
+ * real service methods with prisma and fetch mocked, so we assert the actual
+ * PUT body sent to the master resource.
  */
 
 jest.mock("@/lib/prisma", () => ({
@@ -297,6 +297,7 @@ describe("CalDAV single-instance EXDATE value-type matching (issues #135/#100)",
     return {
       id: "instance-1",
       feedId: "feed-1",
+      externalEventId: "master-ext__2025-06-19T09:30:00.000Z",
       isRecurring: true,
       masterEventId: "master-1",
       start: instanceStart,
@@ -305,8 +306,8 @@ describe("CalDAV single-instance EXDATE value-type matching (issues #135/#100)",
   }
 
   /**
-   * Wire up the mocks so `deleteEvent` reaches the EXDATE block, and return a
-   * getter for the body PUT to the master event URL.
+ * Wire up the mocks so single-instance operations reach the master-resource
+ * PUT, and return a getter for that request body.
    *
    * @param masterDtstartLine the master VEVENT's DTSTART line (timed or DATE)
    */
@@ -332,9 +333,6 @@ describe("CalDAV single-instance EXDATE value-type matching (issues #135/#100)",
     const fetchMock = jest.fn(
       async (_url: string, init?: { method?: string; body?: string }) => {
         const method = init?.method ?? "GET";
-        if (method === "DELETE") {
-          return { ok: true, status: 200, statusText: "OK" } as Response;
-        }
         if (method === "PUT") {
           putBody = init?.body ?? "";
           return { ok: true, status: 200, statusText: "OK" } as Response;
@@ -462,5 +460,139 @@ describe("CalDAV single-instance EXDATE value-type matching (issues #135/#100)",
 
     const line = exdateLine(getBody());
     expect(line).toBe("EXDATE:20250619T093000Z");
+  });
+
+  it("updates one occurrence as a RECURRENCE-ID exception in the master resource", async () => {
+    const getBody = setup("DTSTART:20250619T093000Z");
+    const service = makeService();
+    (
+      service as unknown as { syncCalendar: jest.Mock }
+    ).syncCalendar.mockResolvedValue({
+      added: [
+        {
+          id: "instance-1",
+          externalEventId: "master-ext__2025-06-19T09:30:00.000Z",
+        },
+      ],
+      updated: [],
+      deleted: [],
+    });
+
+    const updated = await service.updateEvent(
+      makeInstance(),
+      "/calendars/user/cal",
+      "master-ext__2025-06-19T09:30:00.000Z",
+      {
+        title: "Rescheduled standup",
+        start: new Date("2025-06-19T10:30:00.000Z"),
+        end: new Date("2025-06-19T11:30:00.000Z"),
+        allDay: false,
+      },
+      "single",
+      "user-1"
+    );
+
+    expect(updated.externalEventId).toBe(
+      "master-ext__2025-06-19T09:30:00.000Z"
+    );
+    const calendar = new ICAL.Component(ICAL.parse(getBody()));
+    const exceptions = calendar
+      .getAllSubcomponents("vevent")
+      .filter((vevent) => vevent.hasProperty("recurrence-id"));
+    expect(exceptions).toHaveLength(1);
+    expect(exceptions[0].getFirstPropertyValue("uid")).toBe("master-ext");
+    expect(
+      (exceptions[0].getFirstPropertyValue("recurrence-id") as ICAL.Time).toString()
+    ).toBe("2025-06-19T09:30:00Z");
+    expect(exceptions[0].getFirstPropertyValue("summary")).toBe(
+      "Rescheduled standup"
+    );
+  });
+
+  it("removes a previous explicit exception when excluding that occurrence", async () => {
+    findFirstMock.mockResolvedValue({
+      id: "master-1",
+      externalEventId: "master-ext",
+      recurrenceRule: "FREQ=DAILY",
+    });
+    const masterIcs = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "BEGIN:VEVENT",
+      "UID:master-ext",
+      "DTSTART:20250619T093000Z",
+      "RRULE:FREQ=DAILY",
+      "END:VEVENT",
+      "BEGIN:VEVENT",
+      "UID:master-ext",
+      "RECURRENCE-ID:20250619T093000Z",
+      "DTSTART:20250619T103000Z",
+      "END:VEVENT",
+      "BEGIN:VEVENT",
+      "UID:master-ext",
+      "RECURRENCE-ID:20250620T093000Z",
+      "DTSTART:20250620T103000Z",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    let putBody = "";
+    global.fetch = jest.fn(async (_url, init?: { method?: string; body?: string }) => {
+      if (init?.method === "PUT") {
+        putBody = init.body ?? "";
+        return { ok: true, status: 200, statusText: "OK" } as Response;
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => masterIcs,
+      } as unknown as Response;
+    }) as unknown as typeof fetch;
+    const service = makeService();
+
+    await service.deleteEvent(
+      makeInstance(),
+      "/calendars/user/cal",
+      "master-ext__2025-06-19T09:30:00.000Z",
+      "single",
+      "user-1"
+    );
+
+    const calendar = new ICAL.Component(ICAL.parse(putBody));
+    const exceptions = calendar
+      .getAllSubcomponents("vevent")
+      .filter((vevent) => vevent.hasProperty("recurrence-id"));
+    expect(exceptions).toHaveLength(1);
+    expect(
+      (exceptions[0].getFirstPropertyValue("recurrence-id") as ICAL.Time).toString()
+    ).toBe("2025-06-20T09:30:00Z");
+    expect(exdateLine(putBody)).toBe("EXDATE:20250619T093000Z");
+  });
+
+  it("does not locally re-expand an EXDATE occurrence", async () => {
+    const service = new CalDAVCalendarService(stubAccount);
+    const master = {
+      id: "master-1",
+      externalEventId: "master-ext",
+      title: "Daily standup",
+      start: new Date("2026-08-19T09:30:00.000Z"),
+      end: new Date("2026-08-19T10:00:00.000Z"),
+      isRecurring: true,
+      recurrenceRule: "FREQ=DAILY;COUNT=3",
+      excludedInstanceStarts: [new Date("2026-08-20T09:30:00.000Z")],
+    } as unknown as CalendarEventWithFeed;
+
+    const instances = await (
+      service as unknown as {
+        expandMasterEvent(event: CalendarEventWithFeed): Promise<
+          CalendarEventWithFeed[]
+        >;
+      }
+    ).expandMasterEvent(master);
+
+    expect(instances.map((instance) => instance.start.toISOString())).toEqual([
+      "2026-08-19T09:30:00.000Z",
+      "2026-08-21T09:30:00.000Z",
+    ]);
   });
 });

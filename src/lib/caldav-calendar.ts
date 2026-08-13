@@ -25,6 +25,10 @@ import {
 
 const LOG_SOURCE = "CalDAVCalendar";
 
+type CalDAVEvent = CalendarEvent & {
+  excludedInstanceStarts?: Date[];
+};
+
 /**
  * Build a RECURRENCE-ID / EXDATE property that points at a single instance of a
  * recurring master, using the SAME value type as the master's DTSTART so the
@@ -81,6 +85,22 @@ function buildInstanceReference(
   }
 
   return property;
+}
+
+function localInstanceExternalEventId(masterExternalEventId: string, start: Date) {
+  return `${masterExternalEventId}__${start.toISOString()}`;
+}
+
+function occurrenceReferenceStart(
+  masterExternalEventId: string,
+  externalEventId: string | null | undefined,
+  fallback: Date
+): Date {
+  const prefix = `${masterExternalEventId}__`;
+  if (!externalEventId?.startsWith(prefix)) return fallback;
+
+  const referenceStart = new Date(externalEventId.slice(prefix.length));
+  return Number.isNaN(referenceStart.getTime()) ? fallback : referenceStart;
 }
 
 /**
@@ -175,7 +195,14 @@ export class CalDAVCalendarService {
       const rule = new RRule(options);
 
       // Get all occurrences between the start and end dates
-      const occurrences = rule.between(timeRange.start, timeRange.end, true);
+      const excludedStarts = new Set(
+        ((masterEvent as CalDAVEvent).excludedInstanceStarts ?? []).map((date) =>
+          date.toISOString()
+        )
+      );
+      const occurrences = rule
+        .between(timeRange.start, timeRange.end, true)
+        .filter((date) => !excludedStarts.has(date.toISOString()));
 
       // Create instance events for each occurrence
       const instanceEvents: CalendarEvent[] = occurrences
@@ -190,11 +217,16 @@ export class CalDAVCalendarService {
           // Create the instance event
           return {
             ...masterEvent,
-            externalEventId: masterEvent.externalEventId,
+            externalEventId: masterEvent.externalEventId
+              ? localInstanceExternalEventId(
+                  masterEvent.externalEventId,
+                  date
+                )
+              : null,
             start: date,
             end: endDate,
-            isRecurring: true,
-            recurrenceRule: masterEvent.recurrenceRule,
+            isRecurring: false,
+            recurrenceRule: null,
             isMaster: false,
             recurringEventId: masterEvent.externalEventId,
           };
@@ -243,7 +275,23 @@ export class CalDAVCalendarService {
 
       const instanceEvents = await this.expandRecurringEvents(masterEvents);
 
-      const allEvents = [...masterEvents, ...instanceEvents];
+      // A CalDAV resource can contain explicit RECURRENCE-ID exceptions as
+      // well as a master RRULE. Keep an exception authoritative over the
+      // locally expanded occurrence at the same instant.
+      const explicitInstanceKeys = new Set(
+        masterEvents
+          .filter((event) => !event.isMaster && event.externalEventId)
+          .map((event) => event.externalEventId as string)
+      );
+
+      const allEvents = [
+        ...masterEvents,
+        ...instanceEvents.filter(
+          (event) =>
+            !event.externalEventId ||
+            !explicitInstanceKeys.has(event.externalEventId)
+        ),
+      ];
       return allEvents;
     } catch (error) {
       logger.error(
@@ -381,11 +429,28 @@ export class CalDAVCalendarService {
         // Process each VEVENT component
         for (const vevent of vevents) {
           // Extract event properties
-          const { uid, hasRRule, hasRecurrenceId } =
+          const { uid, hasRRule, hasRecurrenceId, recurrenceIdStart } =
             this.extractEventProperties(vevent);
 
           // Convert VEVENT to CalendarEvent
           const event = convertVEventToCalendarEvent(vevent);
+          const excludedInstanceStarts = vevent
+            .getAllProperties("exdate")
+            .flatMap((property) => property.getValues())
+            .flatMap((value) => {
+              if (
+                typeof value === "object" &&
+                value !== null &&
+                "toJSDate" in value &&
+                typeof value.toJSDate === "function"
+              ) {
+                return [value.toJSDate()];
+              }
+              return [];
+            });
+          if (excludedInstanceStarts.length > 0) {
+            (event as CalDAVEvent).excludedInstanceStarts = excludedInstanceStarts;
+          }
 
           // Set event properties based on its type
           this.setEventTypeProperties(
@@ -393,6 +458,7 @@ export class CalDAVCalendarService {
             uid,
             hasRRule,
             hasRecurrenceId,
+            recurrenceIdStart,
             processedUids
           );
           events.push(event);
@@ -600,6 +666,18 @@ export class CalDAVCalendarService {
     userId: string
   ): Promise<CalendarEvent> {
     try {
+      if (mode === "single") {
+        if (!eventWithFeed.masterEventId) {
+          throw new Error("A recurring instance is required for a single update");
+        }
+        return await this.updateSingleOccurrence(
+          eventWithFeed,
+          calendarPath,
+          event,
+          userId
+        );
+      }
+
       // Get the CalDAV client
       const client = await this.getClient();
 
@@ -707,74 +785,6 @@ export class CalDAVCalendarService {
         throw updateError;
       }
 
-      // If updating a single instance of a recurring event
-      if (mode === "single" && event.isRecurring) {
-        // Get the master event
-        const masterEvent = await prisma.calendarEvent.findFirst({
-          where: {
-            externalEventId: externalEventId.split("_")[0],
-            feedId: eventWithFeed.feedId,
-            isMaster: true,
-          },
-        });
-
-        if (masterEvent && masterEvent.recurrenceRule) {
-          // Get the master event's iCalendar data
-          const masterEventUrl = `${normalizedCalendarPath}/${masterEvent.externalEventId}.ics`;
-          const masterEventResponse = await fetch(masterEventUrl, {
-            headers: {
-              Authorization:
-                "Basic " +
-                Buffer.from(
-                  `${this.account.caldavUsername || this.account.email}:${
-                    this.account.accessToken
-                  }`
-                ).toString("base64"),
-            },
-          });
-
-          if (masterEventResponse.ok) {
-            const icalData = await masterEventResponse.text();
-            const jcalData = ICAL.parse(icalData);
-            const vcalendar = new ICAL.Component(jcalData);
-            const vevent = vcalendar.getFirstSubcomponent("vevent");
-
-            if (vevent) {
-              // Create a RECURRENCE-ID for this instance, matching the master
-              // DTSTART's value type so the server can pair the exception with
-              // the right instance. For timed series use UTC (`...Z`) so it
-              // references the same absolute instant regardless of client
-              // timezone (GitHub issue #135); for all-day series keep the
-              // floating `VALUE=DATE` form the master uses (issue #100).
-              const recurrenceId = buildInstanceReference(
-                "recurrence-id",
-                vevent,
-                event.start
-              );
-
-              // Add the RECURRENCE-ID to the event
-              vevent.addProperty(recurrenceId);
-
-              // Update the event on the server
-              await fetch(masterEventUrl, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "text/calendar; charset=utf-8",
-                  Authorization:
-                    "Basic " +
-                    Buffer.from(
-                      `${this.account.caldavUsername || this.account.email}:${
-                        this.account.accessToken
-                      }`
-                    ).toString("base64"),
-                },
-                body: vcalendar.toString(),
-              });
-            }
-          }
-        }
-      }
-
       // Sync the calendar to get the updated event
       const syncResult = await this.syncCalendar(
         eventWithFeed.feedId,
@@ -809,6 +819,147 @@ export class CalDAVCalendarService {
   }
 
   /**
+   * Updates one occurrence by adding or replacing a RECURRENCE-ID exception in
+   * the master resource. Locally expanded occurrences are projections of that
+   * master, not separately addressable CalDAV resources.
+   */
+  private async updateSingleOccurrence(
+    eventWithFeed: CalendarEventWithFeed,
+    calendarPath: string,
+    event: CalendarEventInput,
+    userId: string
+  ): Promise<CalendarEvent> {
+    const masterEvent = await prisma.calendarEvent.findFirst({
+      where: {
+        id: eventWithFeed.masterEventId!,
+        feedId: eventWithFeed.feedId,
+        isMaster: true,
+      },
+    });
+
+    if (!masterEvent?.externalEventId) {
+      throw new Error("Recurring master event not found");
+    }
+
+    const normalizedCalendarPath = calendarPath.endsWith("/")
+      ? calendarPath.slice(0, -1)
+      : calendarPath;
+    const masterEventUrl = `${normalizedCalendarPath}/${masterEvent.externalEventId}.ics`;
+    const authorization =
+      "Basic " +
+      Buffer.from(
+        `${this.account.caldavUsername || this.account.email}:${
+          this.account.accessToken
+        }`
+      ).toString("base64");
+    const masterResponse = await fetch(masterEventUrl, {
+      headers: { Authorization: authorization },
+    });
+
+    if (!masterResponse.ok) {
+      throw new Error(
+        `Failed to retrieve recurring master event: ${
+          masterResponse.statusText || masterResponse.status
+        }`
+      );
+    }
+
+    const vcalendar = new ICAL.Component(
+      ICAL.parse(await masterResponse.text())
+    );
+    const masterVevent = vcalendar
+      .getAllSubcomponents("vevent")
+      .find((vevent) => !vevent.hasProperty("recurrence-id"));
+    if (!masterVevent) {
+      throw new Error("Recurring master VEVENT not found");
+    }
+
+    const occurrenceStart = occurrenceReferenceStart(
+      masterEvent.externalEventId ?? null,
+      eventWithFeed.externalEventId,
+      eventWithFeed.start
+    );
+    const instanceExternalEventId =
+      eventWithFeed.externalEventId ??
+      localInstanceExternalEventId(masterEvent.externalEventId, occurrenceStart);
+
+    const timeZone =
+      event.timeZone ?? (await this.resolveUserTimeZone(userId));
+    const exceptionCalendar = new ICAL.Component(
+      ICAL.parse(
+        this.convertToICalendar({
+          ...event,
+          id: masterEvent.externalEventId,
+          isRecurring: false,
+          recurrenceRule: undefined,
+          timeZone,
+        })
+      )
+    );
+    const exceptionVevent = exceptionCalendar.getFirstSubcomponent("vevent");
+    if (!exceptionVevent) {
+      throw new Error("Failed to create recurring event exception");
+    }
+
+    exceptionVevent.updatePropertyWithValue("uid", masterEvent.externalEventId);
+    exceptionVevent.removeAllProperties("rrule");
+    exceptionVevent.removeAllProperties("recurrence-id");
+    const recurrenceId = buildInstanceReference(
+      "recurrence-id",
+      masterVevent,
+      occurrenceStart
+    );
+    exceptionVevent.addProperty(recurrenceId);
+
+    const recurrenceIdValue = (recurrenceId.getFirstValue() as ICAL.Time).toString();
+    const recurrenceIdTzid = recurrenceId.getParameter("tzid");
+    for (const existingException of vcalendar.getAllSubcomponents("vevent")) {
+      const existingRecurrenceId = existingException.getFirstProperty(
+        "recurrence-id"
+      );
+      if (
+        existingRecurrenceId &&
+        (existingRecurrenceId.getFirstValue() as ICAL.Time).toString() ===
+          recurrenceIdValue &&
+        existingRecurrenceId.getParameter("tzid") === recurrenceIdTzid
+      ) {
+        vcalendar.removeSubcomponent(existingException);
+      }
+    }
+    vcalendar.addSubcomponent(exceptionVevent);
+
+    const updateResponse = await fetch(masterEventUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "text/calendar; charset=utf-8",
+        Authorization: authorization,
+      },
+      body: vcalendar.toString(),
+    });
+    if (!updateResponse.ok) {
+      throw new Error(
+        `Failed to update recurring instance: ${
+          updateResponse.statusText || updateResponse.status
+        }`
+      );
+    }
+
+    const syncResult = await this.syncCalendar(
+      eventWithFeed.feedId,
+      calendarPath,
+      userId
+    );
+    const updatedEvent = syncResult.added.find(
+      (candidate) => candidate.externalEventId === instanceExternalEventId
+    );
+    if (!updatedEvent) {
+      throw new Error("Updated recurring instance not found after sync");
+    }
+
+    return updatedEvent;
+  }
+
+  /**
    * Deletes an event from a CalDAV calendar
    * @param calendarPath Path to the calendar
    * @param eventId ID of the event to delete
@@ -822,6 +973,14 @@ export class CalDAVCalendarService {
     userId: string
   ): Promise<void> {
     try {
+      if (mode === "single") {
+        if (!event.masterEventId) {
+          throw new Error("A recurring instance is required for a single delete");
+        }
+        await this.deleteSingleOccurrence(event, calendarPath, userId);
+        return;
+      }
+
       // Get the CalDAV client
       const client = await this.getClient();
 
@@ -911,72 +1070,6 @@ export class CalDAVCalendarService {
         throw deleteError;
       }
 
-      // If deleting a single instance, we need to handle it differently
-      if (mode === "single" && event.isRecurring && event.masterEventId) {
-        // Get the master event
-        const masterEvent = await prisma.calendarEvent.findFirst({
-          where: {
-            id: event.masterEventId,
-            feedId: event.feedId,
-          },
-        });
-
-        if (masterEvent && masterEvent.recurrenceRule) {
-          // Get the master event's iCalendar data
-          const masterEventUrl = `${normalizedCalendarPath}/${masterEvent.externalEventId}.ics`;
-          const masterEventResponse = await fetch(masterEventUrl, {
-            headers: {
-              Authorization:
-                "Basic " +
-                Buffer.from(
-                  `${this.account.caldavUsername || this.account.email}:${
-                    this.account.accessToken
-                  }`
-                ).toString("base64"),
-            },
-          });
-
-          if (masterEventResponse.ok) {
-            const icalData = await masterEventResponse.text();
-            const jcalData = ICAL.parse(icalData);
-            const vcalendar = new ICAL.Component(jcalData);
-            const vevent = vcalendar.getFirstSubcomponent("vevent");
-
-            if (vevent) {
-              // Create an EXDATE for this instance, matching the master
-              // DTSTART's value type so the server excludes the right instance.
-              // For timed series use UTC (`...Z`) so it matches the master's
-              // instants regardless of client timezone (GitHub issue #135); for
-              // all-day series keep the floating `VALUE=DATE` form (issue #100).
-              const exdate = buildInstanceReference(
-                "exdate",
-                vevent,
-                event.start
-              );
-
-              // Add the EXDATE to the event
-              vevent.addProperty(exdate);
-
-              // Update the event on the server
-              await fetch(masterEventUrl, {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "text/calendar; charset=utf-8",
-                  Authorization:
-                    "Basic " +
-                    Buffer.from(
-                      `${this.account.caldavUsername || this.account.email}:${
-                        this.account.accessToken
-                      }`
-                    ).toString("base64"),
-                },
-                body: vcalendar.toString(),
-              });
-            }
-          }
-        }
-      }
-
       // Sync the calendar to update our local database
       await this.syncCalendar(event.feedId, calendarPath, userId);
     } catch (error) {
@@ -992,6 +1085,110 @@ export class CalDAVCalendarService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Deletes one occurrence by excluding it from the master resource. Any prior
+   * explicit override for that occurrence is removed as well, so it cannot win
+   * over the EXDATE during a subsequent sync.
+   */
+  private async deleteSingleOccurrence(
+    event: CalendarEventWithFeed,
+    calendarPath: string,
+    userId: string
+  ): Promise<void> {
+    const masterEvent = await prisma.calendarEvent.findFirst({
+      where: {
+        id: event.masterEventId!,
+        feedId: event.feedId,
+        isMaster: true,
+      },
+    });
+    if (!masterEvent?.externalEventId) {
+      throw new Error("Recurring master event not found");
+    }
+
+    const normalizedCalendarPath = calendarPath.endsWith("/")
+      ? calendarPath.slice(0, -1)
+      : calendarPath;
+    const masterEventUrl = `${normalizedCalendarPath}/${masterEvent.externalEventId}.ics`;
+    const authorization =
+      "Basic " +
+      Buffer.from(
+        `${this.account.caldavUsername || this.account.email}:${
+          this.account.accessToken
+        }`
+      ).toString("base64");
+    const masterResponse = await fetch(masterEventUrl, {
+      headers: { Authorization: authorization },
+    });
+    if (!masterResponse.ok) {
+      throw new Error(
+        `Failed to retrieve recurring master event: ${
+          masterResponse.statusText || masterResponse.status
+        }`
+      );
+    }
+
+    const vcalendar = new ICAL.Component(
+      ICAL.parse(await masterResponse.text())
+    );
+    const masterVevent = vcalendar
+      .getAllSubcomponents("vevent")
+      .find((vevent) => !vevent.hasProperty("recurrence-id"));
+    if (!masterVevent) {
+      throw new Error("Recurring master VEVENT not found");
+    }
+
+    const occurrenceStart = occurrenceReferenceStart(
+      masterEvent.externalEventId ?? null,
+      event.externalEventId,
+      event.start
+    );
+    const exdate = buildInstanceReference(
+      "exdate",
+      masterVevent,
+      occurrenceStart
+    );
+    masterVevent.addProperty(exdate);
+    const recurrenceId = buildInstanceReference(
+      "recurrence-id",
+      masterVevent,
+      occurrenceStart
+    );
+    const recurrenceIdValue = (recurrenceId.getFirstValue() as ICAL.Time).toString();
+    const recurrenceIdTzid = recurrenceId.getParameter("tzid");
+    for (const existingException of vcalendar.getAllSubcomponents("vevent")) {
+      const existingRecurrenceId = existingException.getFirstProperty(
+        "recurrence-id"
+      );
+      if (
+        existingRecurrenceId &&
+        (existingRecurrenceId.getFirstValue() as ICAL.Time).toString() ===
+          recurrenceIdValue &&
+        existingRecurrenceId.getParameter("tzid") === recurrenceIdTzid
+      ) {
+        vcalendar.removeSubcomponent(existingException);
+      }
+    }
+
+    const updateResponse = await fetch(masterEventUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "text/calendar; charset=utf-8",
+        Authorization: authorization,
+      },
+      body: vcalendar.toString(),
+    });
+    if (!updateResponse.ok) {
+      throw new Error(
+        `Failed to delete recurring instance: ${
+          updateResponse.statusText || updateResponse.status
+        }`
+      );
+    }
+
+    await this.syncCalendar(event.feedId, calendarPath, userId);
   }
 
   /**
@@ -1463,8 +1660,8 @@ export class CalDAVCalendarService {
           start: event.start,
           end: event.end,
           location: event.location,
-          isRecurring: event.isRecurring || false, // Instance events are not recurring themselves
-          recurrenceRule: event.recurrenceRule, // Instance events don't have recurrence rules
+          isRecurring: event.isRecurring || false,
+          recurrenceRule: event.recurrenceRule,
           allDay: event.allDay || false,
           status: event.status,
           isMaster: false,
@@ -1510,10 +1707,15 @@ export class CalDAVCalendarService {
     uid: string;
     hasRRule: boolean;
     hasRecurrenceId: boolean;
+    recurrenceIdStart?: Date;
     summary: string | null;
   } {
     const hasRRule = vevent.hasProperty("rrule");
     const hasRecurrenceId = vevent.hasProperty("recurrence-id");
+    const recurrenceIdValue = vevent.getFirstPropertyValue("recurrence-id") as
+      | ICAL.Time
+      | null;
+    const recurrenceIdStart = recurrenceIdValue?.toJSDate();
     const uidValue = vevent.getFirstPropertyValue("uid");
     const uid = uidValue ? String(uidValue) : crypto.randomUUID();
     const summary = vevent.getFirstPropertyValue("summary");
@@ -1522,6 +1724,7 @@ export class CalDAVCalendarService {
       uid,
       hasRRule,
       hasRecurrenceId,
+      recurrenceIdStart,
       summary: summary ? String(summary) : null,
     };
   }
@@ -1539,6 +1742,7 @@ export class CalDAVCalendarService {
     uid: string,
     hasRRule: boolean,
     hasRecurrenceId: boolean,
+    recurrenceIdStart: Date | undefined,
     processedUids: Set<string>
   ): void {
     // Set event properties based on its type
@@ -1555,11 +1759,13 @@ export class CalDAVCalendarService {
       event.isRecurring = false;
       // For instance events, we need to link to the master event
       // The master event's UID is the base part of the instance's UID (before any _date suffix)
-      const masterUid = uid.split("_")[0];
+      const masterUid = uid;
       event.masterEventId = masterUid;
-      // For instance events, we append the date to make the ID unique
-      const instanceDate = event.start.toISOString().split("T")[0];
-      event.externalEventId = `${masterUid}_${instanceDate}`;
+      event.recurringEventId = masterUid;
+      event.externalEventId = localInstanceExternalEventId(
+        masterUid,
+        recurrenceIdStart ?? event.start
+      );
       processedUids.add(event.externalEventId);
     } else {
       // Standalone event

@@ -259,6 +259,12 @@ export async function DELETE(request: NextRequest) {
     const userId = auth.userId;
 
     const { eventId, mode } = await request.json();
+    if (mode !== undefined && mode !== "single" && mode !== "series") {
+      return NextResponse.json(
+        { error: "Invalid delete mode" },
+        { status: 400 }
+      );
+    }
 
     logger.info(
       "Deleting CalDAV event",

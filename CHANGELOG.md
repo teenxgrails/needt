@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CalDAV single-occurrence edits and deletions now modify the recurring master
+  resource with `RECURRENCE-ID`/`EXDATE`, retain explicit overrides correctly,
+  and no longer resurrect excluded occurrences during local sync.
 - Retrying a failed `/task` command in Today now creates the restored task
   instead of reopening it as editor text; collaboration security tests also
   generate ephemeral signing keys, and visual baselines are platform-specific.
