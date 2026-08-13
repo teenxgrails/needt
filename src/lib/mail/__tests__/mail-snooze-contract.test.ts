@@ -23,5 +23,8 @@ describe("Mail snooze and reminder contract", () => {
     expect(route).not.toContain(
       "mutateGmailMessage(message.account, message.externalId, body)"
     );
+    expect(route).not.toContain(
+      "mutateImapMessage(message.account, message.externalId, body)"
+    );
   });
 });

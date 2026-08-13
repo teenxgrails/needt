@@ -4,6 +4,7 @@ import { MailProvider, TaskReminderKind, WorkspaceRole } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { getMailMessage, updateMailMessage } from "@/lib/mail-db";
 import {
@@ -88,7 +89,7 @@ export async function PATCH(
       body.snoozedUntil === null
         ? null
         : typeof body.snoozedUntil === "string"
-          ? new Date(body.snoozedUntil)
+          ? newDate(body.snoozedUntil)
           : undefined;
     if (snoozedUntil && Number.isNaN(snoozedUntil.getTime())) {
       return NextResponse.json(
@@ -97,7 +98,7 @@ export async function PATCH(
       );
     }
     const remindAt =
-      typeof body.remindAt === "string" ? new Date(body.remindAt) : null;
+      typeof body.remindAt === "string" ? newDate(body.remindAt) : null;
     if (remindAt && Number.isNaN(remindAt.getTime())) {
       return NextResponse.json(
         { error: "Invalid reminder time." },
@@ -175,7 +176,11 @@ export async function PATCH(
         providerAction
       );
     } else if (body.isRead !== undefined) {
-      await mutateImapMessage(message.account, message.externalId, body);
+      await mutateImapMessage(
+        message.account,
+        message.externalId,
+        providerAction
+      );
     }
     const updated = await updateMailMessage(auth.userId, id, {
       ...(body.isRead !== undefined && { isRead: body.isRead }),

@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T19:40:00Z
+updated: 2026-08-13T20:00:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -99,6 +99,10 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   commit: its server route uses active workspace scope for the first-task state,
   while the existing Account Settings tab guides calendar, workspace and task
   actions without a new client-only persistence model.
+- Final S12 local adversarial review found and corrected one provider boundary:
+  Mail Snooze stays local for IMAP as well as Gmail/Outlook, and incoming dates
+  use the shared date utility. No evidence-backed P0/P1 remains in the reviewed
+  tenancy, Pages, provider, AI, offline or migration paths.
 
 ## Working state
 
@@ -216,6 +220,8 @@ check:collaboration-runtime`.
   failed assertion. Production smoke remains intentionally skipped by the user.
 - Passed for T7 onboarding: focused server-scope/link contract test (2 tests),
   type-check, focused lint, Prettier and diff check.
+- Passed for final Mail review fix: focused contract test, type-check, focused
+  lint and diff check.
 
 ## Decisions and constraints
 
@@ -238,7 +244,6 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Commit the owned onboarding paths, then rerun the lightweight local unit/type
-  boundary and update the final handoff. Docker-gated E2E/style/visual and image
-  gates remain for a release owner; do not run production smoke because the user
-  explicitly deferred it.
+- Commit the owned final Mail review fix and complete the final local handoff.
+  Docker-gated E2E/style/visual and image gates remain for a release owner; do
+  not run production smoke because the user explicitly deferred it.
