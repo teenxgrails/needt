@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T17:25:00Z
+updated: 2026-08-13T17:45:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -76,12 +76,15 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   `20260813170000_page_metadata`; strict v1 Smart Folder query parsing;
   workspace-authorized metadata and Page-organization APIs; server-side Pages
   filters; and minimal integration in the existing Pages home/editor controls.
-- T7 Tasks/Projects/Space mobile recovery is ready to commit: the desktop-first
+- T7 Tasks/Projects/Space mobile recovery committed as `f7e34f0`: the desktop-first
   Space canvas now provides 44px controls that switch phone users to the
   existing functional Task List or Board instead of an inert desktop notice.
-- T7 Moodboards list recovery is ready to commit: the existing workspace gains
+- T7 Moodboards list recovery committed as `2e31963`: the existing workspace gains
   a local title search, Recent/Other ordering, and a purposeful first-board
   empty state without changing the canvas or persistence contracts.
+- T7 Settings discovery is ready to commit: desktop and mobile settings
+  navigation both filter the established settings list by name; workspace and
+  billing remain existing functional panels.
 
 ## Working state
 
@@ -102,9 +105,8 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Preserve the protected foreign files above. No S6/T5 code remains owned
   dirty after `ba893f2`. `CLAUDE.md` has one owned stale-schema-description
   correction, but it is unrelated to the active Pages scope.
-- Owned uncommitted Moodboards files are
-  `src/components/moodboards/MoodboardsHome.tsx` and
-  `src/components/moodboards/__tests__/moodboards-home-contract.test.ts`.
+- Owned uncommitted Settings files are `src/app/(app)/settings/page.tsx` and
+  `src/components/settings/__tests__/settings-search-contract.test.ts`.
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
@@ -177,6 +179,8 @@ check:collaboration-runtime`.
   404 for all routes under the App route group (including unchanged `/tasks`),
   so they cannot provide route screenshots; this is an environment/router
   discovery issue, not a Moodboards response.
+- Passed for T7 Settings search: focused contract test, type-check, focused
+  lint, Prettier and diff check. The local route-group 404 prevents screenshots.
 
 ## Decisions and constraints
 
@@ -199,7 +203,8 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Commit the owned T7 Moodboards paths, then audit Focus and Settings/onboarding
-  functional flows against actual code before any visual redesign. Keep Docker,
+- Commit the owned T7 Settings search paths, then audit the route completion
+  evidence and the remaining explicitly gated Mail Snooze/Remind Me contract
+  before any visual redesign. Keep Docker,
   browser and production smoke as final-validation backlog; they require local
   Docker Desktop, an authenticated local app fixture and release authorization.

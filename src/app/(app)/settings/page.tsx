@@ -20,6 +20,7 @@ import {
   Laptop,
   Palette,
   Plug,
+  Search,
   Settings2,
   SlidersHorizontal,
   UserRound,
@@ -48,6 +49,7 @@ import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings
 import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
 import { WorkspaceSettings } from "@/components/settings/WorkspaceSettings";
+import { Input } from "@/components/ui/input";
 
 import { cn } from "@/lib/utils";
 
@@ -206,11 +208,21 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("calendars");
   const [isHydrated, setIsHydrated] = useState(false);
   const [mobileOverview, setMobileOverview] = useState(true);
+  const [search, setSearch] = useState("");
   const initializeSettings = useSettingsStore(
     (state) => state.initializeSettings
   );
 
-  const desktopTabGroups = useMemo(() => MOBILE_TAB_GROUPS, []);
+  const filteredTabGroups = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    if (!query) return MOBILE_TAB_GROUPS;
+    return MOBILE_TAB_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        item.label.toLocaleLowerCase().includes(query)
+      ),
+    })).filter((group) => group.items.length > 0);
+  }, [search]);
   const activeLabel =
     [...GENERAL_TABS, ...ACCOUNT_TABS].find((tab) => tab.id === activeTab)
       ?.label ?? "Settings";
@@ -251,6 +263,20 @@ export default function SettingsPage() {
     setMobileOverview(false);
     window.history.replaceState(null, "", `#${tab}`);
   };
+
+  const searchField = (
+    <label className="flex min-h-11 items-center gap-2 rounded-[var(--control-radius)] border border-[var(--border-control)] bg-[var(--surface-raised)] px-3 text-[var(--text-muted)]">
+      <Search className="h-4 w-4 shrink-0" />
+      <Input
+        aria-label="Search settings"
+        className="h-auto border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Search settings"
+        type="search"
+        value={search}
+      />
+    </label>
+  );
 
   const showMobileOverview = () => {
     setMobileOverview(true);
@@ -333,7 +359,8 @@ export default function SettingsPage() {
             Back to Needt
           </Link>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-2 pb-3">
-            {desktopTabGroups.map((group) => (
+            {searchField}
+            {filteredTabGroups.map((group) => (
               <SettingsNavGroup
                 key={group.label}
                 label={group.label}
@@ -342,6 +369,11 @@ export default function SettingsPage() {
                 onSelect={selectTab}
               />
             ))}
+            {filteredTabGroups.length === 0 && (
+              <p className="px-2 text-xs text-[var(--text-muted)]">
+                No settings match &quot;{search.trim()}&quot;.
+              </p>
+            )}
           </div>
           <div className="shrink-0 border-t border-[var(--border-subtle)] p-2">
             <ReportBugDialog />
@@ -402,7 +434,8 @@ export default function SettingsPage() {
             )}
           >
             <div className="mx-auto max-w-xl space-y-7">
-              {MOBILE_TAB_GROUPS.map((group) => (
+              {searchField}
+              {filteredTabGroups.map((group) => (
                 <section
                   key={group.label}
                   aria-labelledby={`mobile-${group.label}`}
@@ -439,6 +472,11 @@ export default function SettingsPage() {
                   </div>
                 </section>
               ))}
+              {filteredTabGroups.length === 0 && (
+                <p className="rounded-[var(--panel-radius)] border border-dashed border-[var(--border-subtle)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
+                  No settings match &quot;{search.trim()}&quot;.
+                </p>
+              )}
               <ReportBugDialog mobile />
             </div>
           </div>

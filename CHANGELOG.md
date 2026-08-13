@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Settings now filter their existing desktop and mobile navigation by name.
 - Moodboards now have a searchable recent-and-all list and a clear first-board
   state, while preserving the existing canvas workflow.
 - Restricted the internal `/style` laboratory to administrators in production,
