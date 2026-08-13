@@ -3,7 +3,7 @@ id: 20260813-codex-terra-t8-product-ui
 owner: codex
 branch: codex/terra-t8-product-ui
 status: active
-updated: 2026-08-13T22:33:10Z
+updated: 2026-08-13T22:38:27Z
 objective: Deliver the Terra T8 product UI for the completed Sol S11 backend contracts as independent, scoped releases.
 ---
 
@@ -24,10 +24,12 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 - T8.3 implementation complete: Projects now show a versioned health history and role-gated update composer with stale-update recovery.
 - Committed T8.3 as `2524e26` (`feat(projects): add health update journal`).
 - T8.4a implementation complete: Focus shows and updates the current member&apos;s workspace-scoped weekly target.
+- Committed T8.4a as `a378305` (`feat(focus): add weekly target progress`).
+- T8.4b implementation complete: Focus now hosts flexible personal habits, with create/schedule/archive controls gated by workspace role.
 
 ## Working state
 
-- Files currently dirty or expected to change: `src/components/focus/WeeklyFocusTarget.tsx`, `src/components/focus/FocusTimerPanel.tsx`, `CHANGELOG.md`, this handoff.
+- Files currently dirty or expected to change: `src/components/focus/HabitPanel.tsx`, `src/components/focus/FocusTimerPanel.tsx`, `CHANGELOG.md`, this handoff.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, `docs/plans/08-terra-high.md`, `pages-mobile-slash-390.png`.
 
 ## Verification
@@ -48,4 +50,4 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 
 ## Next action
 
-- Commit weekly focus target, then add a dedicated Habits host for the existing workspace-scoped habit contract.
+- Commit habits, then audit Mail&apos;s Snooze/Remind Me and focused split UI for T8.5.

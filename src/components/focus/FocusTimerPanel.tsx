@@ -4,6 +4,7 @@ import { type CSSProperties, useEffect, useState } from "react";
 
 import { Check, Flame, Pause, Play, Square } from "lucide-react";
 
+import { HabitPanel } from "@/components/focus/HabitPanel";
 import { WeeklyFocusTarget } from "@/components/focus/WeeklyFocusTarget";
 import { Button } from "@/components/ui/button";
 import {
@@ -451,6 +452,7 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
 
       <aside>
         <WeeklyFocusTarget />
+        <HabitPanel />
         <section className="border-b border-[var(--border-subtle)] py-8">
           <div className="flex items-center justify-between">
             <div>
