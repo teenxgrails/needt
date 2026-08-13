@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-13T17:05:00Z
+updated: 2026-08-13T17:25:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -79,6 +79,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - T7 Tasks/Projects/Space mobile recovery is ready to commit: the desktop-first
   Space canvas now provides 44px controls that switch phone users to the
   existing functional Task List or Board instead of an inert desktop notice.
+- T7 Moodboards list recovery is ready to commit: the existing workspace gains
+  a local title search, Recent/Other ordering, and a purposeful first-board
+  empty state without changing the canvas or persistence contracts.
 
 ## Working state
 
@@ -99,9 +102,9 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
 - Preserve the protected foreign files above. No S6/T5 code remains owned
   dirty after `ba893f2`. `CLAUDE.md` has one owned stale-schema-description
   correction, but it is unrelated to the active Pages scope.
-- Owned uncommitted T7 files are `src/components/tasks/SpaceView.tsx`,
-  `src/app/(app)/tasks/page.tsx`, and
-  `src/components/tasks/__tests__/space-mobile-fallback.test.ts`.
+- Owned uncommitted Moodboards files are
+  `src/components/moodboards/MoodboardsHome.tsx` and
+  `src/components/moodboards/__tests__/moodboards-home-contract.test.ts`.
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
@@ -169,6 +172,11 @@ check:collaboration-runtime`.
 - Passed for the T7 Space fallback: focused mobile fallback test, type-check,
   focused lint, Prettier and diff check. Browser verification remains blocked
   by the absent authenticated local app fixture.
+- Passed for the T7 Moodboards list: focused contract test, type-check, focused
+  lint, Prettier and diff check. Two isolated local dev servers both returned
+  404 for all routes under the App route group (including unchanged `/tasks`),
+  so they cannot provide route screenshots; this is an environment/router
+  discovery issue, not a Moodboards response.
 
 ## Decisions and constraints
 
@@ -191,8 +199,7 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Commit the owned T7 Space mobile fallback paths, then audit Today and
-  Moodboards recovery/search flows against actual code before any visual
-  redesign. Keep Docker, browser and production smoke as final-validation
-  backlog; they require local Docker Desktop, an authenticated local app
-  fixture and release authorization.
+- Commit the owned T7 Moodboards paths, then audit Focus and Settings/onboarding
+  functional flows against actual code before any visual redesign. Keep Docker,
+  browser and production smoke as final-validation backlog; they require local
+  Docker Desktop, an authenticated local app fixture and release authorization.
