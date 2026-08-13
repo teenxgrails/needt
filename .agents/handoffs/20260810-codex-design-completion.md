@@ -3,7 +3,7 @@ id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-10T23:18:55Z
+updated: 2026-08-13T13:25:55Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -50,6 +50,13 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   `needt_restore_drill` database. `pg_restore --exit-on-error` passed, restored
   and live row counts matched (`User=6`, `Task=36`), 72 completed Prisma
   migrations were present, and the scratch database was removed.
+- Local provider/scheduling correctness sweep `36663a5`: scoped task-sync
+  collision identity, Outlook pending reconciliation, scheduler buffers,
+  CalDAV mode validation, AI action links, sync-status migration, and S9/S10/T9
+  documentation coverage.
+- CalDAV recurring-instance completion `2e5b261`: single edits/deletes update
+  the master resource with `RECURRENCE-ID`/`EXDATE`; explicit exceptions and
+  local RRULE expansion retain their original occurrence identity.
 
 ## Working state
 
@@ -67,6 +74,8 @@ objective: Complete the dependency-ordered design completion plan after Terra T1
   `src/app/layout.tsx`, `.codex/config.toml`, `.playwright-mcp/`,
   `NEXT_AGENT.md`, `docs/plans/08-terra-high.md`, and
   `pages-mobile-slash-390.png`.
+- No owned code is dirty after `2e5b261`; the files above remain protected
+  foreign changes.
 - The local production image `needt:s5-smoke` builds without build-time auth
   secrets. Against a clean PostgreSQL 16 container it applied all 85 migrations,
   started Next.js, and returned `{ok:true,db:"ok"}` from `/api/health`.
@@ -113,6 +122,9 @@ check:collaboration-runtime`.
 - Both GitHub CI workflows for `560e621` passed all required jobs. The fresh
   2026-08-10 production backup restore drill also passed as recorded in
   `docs/operations-runbook.md`.
+- Passed for `2e5b261`: focused CalDAV unit tests (18 tests), type-check,
+  focused lint, `git diff --check`, then the commit hook's full lint and
+  type-check. No provider E2E ran because credentials are intentionally absent.
 
 ## Decisions and constraints
 
@@ -128,12 +140,12 @@ check:collaboration-runtime`.
 
 ## Blockers
 
-- None before the final documentation checkpoint. Required production secret
-  names are present, **Include Source Commit in Build** is enabled for web,
-  worker and collaboration, CI is green, and the fresh backup restore passed.
+- S6/T5 and all dependent Pages/route work remain release-gated: the authorized
+  production deployment and smoke sequence have not been run in this local-only
+  workstream. Provider E2E remains credential-gated.
 
 ## Next action
 
-- Commit and push the backup drill record, wait for green CI on the new head,
-  then merge PR #16. Monitor deployment and complete production smoke before
-  starting S6.
+- Finish the local audit of remaining independent S10/T9 gaps. Then request the
+  release owner to deploy the exact web/worker/collaboration SHA and complete
+  production smoke before starting S6/T5.
