@@ -2,8 +2,8 @@
 id: 20260810-codex-design-completion
 owner: codex
 branch: codex/design-completion
-status: active
-updated: 2026-08-13T20:00:00Z
+status: complete
+updated: 2026-08-13T20:15:00Z
 objective: Complete the dependency-ordered design completion plan after Terra T1-T4
 ---
 
@@ -244,6 +244,7 @@ check:collaboration-runtime`.
 
 ## Next action
 
-- Commit the owned final Mail review fix and complete the final local handoff.
-  Docker-gated E2E/style/visual and image gates remain for a release owner; do
-  not run production smoke because the user explicitly deferred it.
+- Local implementation scope is complete. A release owner can start Docker
+  Desktop and rerun E2E/style/visual and image gates; production smoke remains
+  intentionally excluded by the user. Protected foreign changes remain
+  unstaged and untouched.
