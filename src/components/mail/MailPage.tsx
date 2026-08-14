@@ -42,6 +42,9 @@ import { cn } from "@/lib/utils";
 
 const LOG_SOURCE = "MailPage";
 
+// TODO: Add user-defined focused Mail splits after an approved,
+// workspace-scoped server contract exists.
+
 type MailProvider = "GMAIL" | "OUTLOOK" | "IMAP";
 type MailStatus = "ACTIVE" | "ERROR" | "DISCONNECTED";
 

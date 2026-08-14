@@ -100,7 +100,9 @@ export function ProjectHealthPanel({ projectId }: { projectId: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const canUpdate = activeWorkspace?.role !== "VIEWER";
+  const canUpdate = Boolean(
+    activeWorkspace && activeWorkspace.role !== "VIEWER"
+  );
 
   const loadHealth = useCallback(async () => {
     if (!projectId) return;

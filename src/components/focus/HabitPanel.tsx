@@ -39,7 +39,9 @@ export function HabitPanel() {
   const [saving, setSaving] = useState(false);
   const [schedulingId, setSchedulingId] = useState<string | null>(null);
 
-  const canManage = activeWorkspace?.role !== "VIEWER";
+  const canManage = Boolean(
+    activeWorkspace && activeWorkspace.role !== "VIEWER"
+  );
   const load = useCallback(async () => {
     try {
       const response = await fetch("/api/habits", { cache: "no-store" });
