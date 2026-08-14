@@ -3,7 +3,7 @@ id: 20260813-codex-terra-t8-product-ui
 owner: codex
 branch: codex/terra-t8-product-ui
 status: blocked
-updated: 2026-08-13T22:42:18Z
+updated: 2026-08-14T00:40:55Z
 objective: Deliver the Terra T8 product UI for the completed Sol S11 backend contracts as independent, scoped releases.
 ---
 
@@ -27,12 +27,13 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 - Committed T8.4a as `a378305` (`feat(focus): add weekly target progress`).
 - T8.4b implementation complete: Focus now hosts flexible personal habits, with create/schedule/archive controls gated by workspace role.
 - Committed T8.4b as `e0a1dc2` (`feat(focus): add flexible habits`).
+- Committed role-loading guard and Mail contract checkpoint as `bfaa3b6` (`fix(terra): guard role-gated product actions`).
 - Audited T8.5: Mail already provides Snooze and Remind Me; no focused-splits server contract, endpoint, or persistence model exists.
 - Audited T9: `docs/security-model.md`, `docs/STACK.md`, and `docs/release-gate.md` already cover the required access/threat models and collaboration release gate.
 
 ## Working state
 
-- Files currently dirty or expected to change: `src/components/projects/ProjectHealthPanel.tsx`, `src/components/focus/HabitPanel.tsx`, `src/components/mail/MailPage.tsx`, this handoff.
+- Files currently dirty or expected to change: none in this workstream.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, `docs/plans/08-terra-high.md`, `pages-mobile-slash-390.png`.
 
 ## Verification
