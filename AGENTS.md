@@ -204,7 +204,10 @@ continues beyond a short read-only investigation.
 - **Admin:** `requireAdmin` from `@/lib/auth/api-auth` on the server; `useAdmin`
   or `<AdminOnly>` in the UI.
 - **UI:** one picker only — `src/components/ui/needt-picker.tsx`. Token-based
-  colors, no glow, no backdrop blur. Add shadcn components with
+  colors. The old blanket "no glow / no backdrop blur" rule is retired
+  (2026-08-16, owner decision) — the Figma Make-led redesign allows soft
+  glow/blur. Match each screen's current Figma reference as it's
+  redesigned; see `design-refs/ui-conventions.md`. Add shadcn components with
   `npx shadcn@latest add`; icons from `react-icons`.
 - **JSX text:** escape quotes and apostrophes as `&quot;` / `&apos;`.
 - **Branding:** product copy and internal event names say Needt only. The

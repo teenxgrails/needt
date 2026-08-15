@@ -24,9 +24,15 @@ light/dark:
 | `--text-muted`      | low-emphasis and placeholder text        |
 | `--color-accent`    | configurable accent                      |
 
-**No glows.** Don't add `box-shadow` glows or bright accent focus borders
-rings to pickers/toggles. Focus is handled with `focus:outline-none` + a subtle
-border only.
+**Glow/blur rule retired (2026-08-16, owner decision).** The old blanket "no
+glow, no backdrop blur" rule no longer applies app-wide — it's superseded by
+the Figma Make-led redesign (first reference: the sign-in screen in the
+Figma capture file, node `30:49`). Match each screen's current Figma
+reference as it gets redesigned. Until a component documented below is
+actually redesigned, its existing no-glow/no-blur wording still describes
+what's live in the app today — don't add glow to untouched screens on spec,
+and don't assume the old rule still blocks a screen that has a newer Figma
+reference.
 
 The app uses one continuous canvas color per theme. Page, sidebar, panel,
 popover, and dialog surface tokens resolve to that same base. Depth comes from

@@ -31,6 +31,13 @@ The built-in Light, Graphite, and Dark previews use the same resolved theme
 classes as the product. A custom draft starts from one of those modes and then
 overrides semantic tokens only; malformed saved drafts are ignored.
 
+## Design direction (2026-08-16 update)
+
+The app-wide "no glow / no backdrop blur" rule is retired — see
+`ui-conventions.md` for the current wording. Screens keep their existing look
+until they're actually redesigned against a Figma reference; don't
+retrofit glow onto untouched screens speculatively.
+
 ## Token architecture
 
 Tokens have three layers:
