@@ -7,6 +7,12 @@ gates, UI contracts, deploy order. [`CLAUDE.md`](CLAUDE.md) — conventions and
 layout. [`design-refs/ui-conventions.md`](design-refs/ui-conventions.md) — the
 fixed UI house format. If this file ever disagrees with those, they win.
 
+**New chat with any bot (not just Codex/Claude Code)?** Paste
+[`BOOTSTRAP.md`](BOOTSTRAP.md) as your first message. It is the minimal
+prompt that forces any agent — including tools that do not auto-read this
+file — through the required reading order and the end-of-session handoff
+save, so a new chat never has to rediscover project state from scratch.
+
 ---
 
 ## Output rules (read first — applies to every response)

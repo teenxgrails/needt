@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: archived 34 superseded root-level planning/scratch files (Jul-dated,
+  predating the current `AGENTS.md`/`docs/plans/*` structure) into
+  `docs/_old/`; added `BOOTSTRAP.md` as a copy-paste first-message prompt for
+  any new agent chat, enforcing the required reading order and an
+  end-of-session handoff save before context/usage limits are hit.
 - Style: applying a theme token object in `/style` now persists it per user and
   updates shared product controls globally.
 
