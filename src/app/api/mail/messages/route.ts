@@ -11,10 +11,12 @@ export async function GET(request: NextRequest) {
   if ("response" in auth) return auth.response;
   try {
     const accountId = request.nextUrl.searchParams.get("accountId");
+    const focusedSplitId = request.nextUrl.searchParams.get("focusedSplitId");
     const cursor = request.nextUrl.searchParams.get("cursor");
     const result = await listMailMessages({
       userId: auth.userId,
       accountId,
+      focusedSplitId,
       cursor,
     });
     const hasMore = result.length > 60;

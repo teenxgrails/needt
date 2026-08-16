@@ -19,6 +19,7 @@ import {
   Settings2,
   ShieldCheck,
   Sparkles,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,12 @@ interface MailMessageItem {
   snoozedUntil: string | null;
   bodyHtml: string | null;
   account: Pick<MailAccountItem, "id" | "provider" | "address" | "status">;
+}
+
+interface MailFocusedSplit {
+  id: string;
+  name: string;
+  senderAddress: string;
 }
 
 interface OpenMailMessage extends MailMessageItem {
@@ -129,10 +136,17 @@ export function MailPage() {
   const [accounts, setAccounts] = useState<MailAccountItem[]>([]);
   const [messages, setMessages] = useState<MailMessageItem[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [focusedSplits, setFocusedSplits] = useState<MailFocusedSplit[]>([]);
+  const [selectedFocusedSplitId, setSelectedFocusedSplitId] = useState<
+    string | null
+  >(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openMessage, setOpenMessage] = useState<OpenMailMessage | null>(null);
   const [loadedImages, setLoadedImages] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [focusedSplitOpen, setFocusedSplitOpen] = useState(false);
+  const [focusedSplitMessage, setFocusedSplitMessage] =
+    useState<MailMessageItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [oauthAvailability, setOAuthAvailability] =
@@ -147,11 +161,20 @@ export function MailPage() {
     setAccounts((await response.json()) as MailAccountItem[]);
   }, []);
 
+  const loadFocusedSplits = useCallback(async () => {
+    const response = await fetch("/api/mail/focused-splits");
+    if (!response.ok) throw new Error("Could not load focused Mail splits.");
+    setFocusedSplits((await response.json()) as MailFocusedSplit[]);
+  }, []);
+
   const loadMessages = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (selectedAccount) params.set("accountId", selectedAccount);
+      if (selectedFocusedSplitId) {
+        params.set("focusedSplitId", selectedFocusedSplitId);
+      }
       const response = await fetch(`/api/mail/messages?${params}`);
       if (!response.ok) throw new Error("Could not load messages.");
       const data = (await response.json()) as {
@@ -168,10 +191,10 @@ export function MailPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedAccount, selectedId]);
+  }, [selectedAccount, selectedFocusedSplitId, selectedId]);
 
   useEffect(() => {
-    void Promise.all([loadAccounts(), loadMessages()]).catch((error) => {
+    void Promise.all([loadAccounts(), loadFocusedSplits(), loadMessages()]).catch((error) => {
       void logger.error(
         "Failed to load the inbox",
         { error: error instanceof Error ? error.message : String(error) },
@@ -179,7 +202,7 @@ export function MailPage() {
       );
       notify.error("Could not load Mail");
     });
-  }, [loadAccounts, loadMessages]);
+  }, [loadAccounts, loadFocusedSplits, loadMessages]);
 
   useEffect(() => {
     void fetch("/api/integration-status")
@@ -314,6 +337,49 @@ export function MailPage() {
     router.push(`/tasks?task=${task.id}`);
   };
 
+  const openFocusedSplit = (message: MailMessageItem) => {
+    if (!message.fromAddress) {
+      notify.error("This message has no sender address to focus.");
+      return;
+    }
+    setFocusedSplitMessage(message);
+    setFocusedSplitOpen(true);
+  };
+
+  const createFocusedSplit = async (name: string, senderAddress: string) => {
+    const response = await fetch("/api/mail/focused-splits", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, senderAddress }),
+    });
+    if (!response.ok) {
+      const data = (await response.json()) as { error?: string };
+      notify.error(data.error || "Could not create focused Mail split");
+      return false;
+    }
+    const split = (await response.json()) as MailFocusedSplit;
+    setFocusedSplits((current) => [...current, split]);
+    setSelectedAccount(null);
+    setSelectedFocusedSplitId(split.id);
+    setFocusedSplitOpen(false);
+    setFocusedSplitMessage(null);
+    notify.success(`Focused split ${split.name} created`);
+    return true;
+  };
+
+  const deleteFocusedSplit = async (split: MailFocusedSplit) => {
+    const response = await fetch(`/api/mail/focused-splits/${split.id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      notify.error("Could not remove focused Mail split");
+      return;
+    }
+    setFocusedSplits((current) => current.filter((item) => item.id !== split.id));
+    if (selectedFocusedSplitId === split.id) setSelectedFocusedSplitId(null);
+    notify.success(`Focused split ${split.name} removed`);
+  };
+
   const renderedBody = useMemo(() => {
     const body = openMessage?.bodyHtml || "";
     return loadedImages ? revealRemoteImages(body) : body;
@@ -346,11 +412,14 @@ export function MailPage() {
               type="button"
               onClick={() => {
                 setSelectedAccount(null);
+                setSelectedFocusedSplitId(null);
                 setMobilePane("messages");
               }}
               className={cn(
                 "flex min-h-11 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
-                !selectedAccount && "bg-[var(--surface-hover)]"
+                !selectedAccount &&
+                  !selectedFocusedSplitId &&
+                  "bg-[var(--surface-hover)]"
               )}
             >
               <Inbox className="h-4 w-4 text-[var(--text-secondary)]" />
@@ -362,12 +431,48 @@ export function MailPage() {
                 )}
               </span>
             </button>
+            {focusedSplits.length > 0 && (
+              <div className="pt-3" aria-label="Focused mail splits">
+                <p className="px-2.5 pb-1 text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
+                  Focused
+                </p>
+                {focusedSplits.map((split) => (
+                  <div key={split.id} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAccount(null);
+                        setSelectedFocusedSplitId(split.id);
+                        setMobilePane("messages");
+                      }}
+                      className={cn(
+                        "flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors duration-150 hover:bg-[var(--surface-hover)] xl:min-h-9",
+                        selectedFocusedSplitId === split.id &&
+                          "bg-[var(--surface-hover)]"
+                      )}
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-[var(--text-secondary)]" />
+                      <span className="truncate">{split.name}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void deleteFocusedSplit(split)}
+                      className="mr-1 grid h-11 w-8 flex-none place-items-center rounded-md text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] xl:h-8"
+                      aria-label={`Remove focused split ${split.name}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             {accounts.map((account) => (
               <button
                 key={account.id}
                 type="button"
                 onClick={() => {
                   setSelectedAccount(account.id);
+                  setSelectedFocusedSplitId(null);
                   setMobilePane("messages");
                 }}
                 className={cn(
@@ -437,6 +542,9 @@ export function MailPage() {
             {selectedAccount
               ? accounts.find((account) => account.id === selectedAccount)
                   ?.address
+              : selectedFocusedSplitId
+                ? focusedSplits.find((split) => split.id === selectedFocusedSplitId)
+                    ?.name
               : "All inboxes"}
           </span>
           <Button
@@ -602,6 +710,16 @@ export function MailPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                className="h-11 gap-1.5 text-[12px] xl:h-8"
+                onClick={() => openFocusedSplit(openMessage)}
+                disabled={!openMessage.fromAddress}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span className="max-sm:hidden">Focus sender</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 className="ml-auto h-11 gap-1.5 text-[12px] xl:h-8"
                 onClick={() => void createTask(openMessage)}
               >
@@ -686,7 +804,86 @@ export function MailPage() {
           setConnectOpen(false);
         }}
       />
+      <CreateFocusedSplitDialog
+        open={focusedSplitOpen}
+        onOpenChange={(open) => {
+          setFocusedSplitOpen(open);
+          if (!open) setFocusedSplitMessage(null);
+        }}
+        message={focusedSplitMessage}
+        onCreate={createFocusedSplit}
+      />
     </div>
+  );
+}
+
+function CreateFocusedSplitDialog({
+  open,
+  onOpenChange,
+  message,
+  onCreate,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  message: MailMessageItem | null;
+  onCreate: (name: string, senderAddress: string) => Promise<boolean>;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+
+  const createSplit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!message?.fromAddress) return;
+    const form = new FormData(event.currentTarget);
+    setSubmitting(true);
+    const created = await onCreate(
+      String(form.get("name") || "").trim(),
+      message.fromAddress
+    );
+    setSubmitting(false);
+    if (created) event.currentTarget.reset();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <form onSubmit={(event) => void createSplit(event)}>
+          <DialogHeader>
+            <DialogTitle>Focus this sender</DialogTitle>
+            <DialogDescription>
+              Messages from this address will appear in a private focused split.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="focused-split-name">Split name</Label>
+              <Input
+                id="focused-split-name"
+                name="name"
+                defaultValue={message?.fromName || message?.fromAddress || ""}
+                maxLength={80}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="focused-split-sender">Sender</Label>
+              <Input
+                id="focused-split-sender"
+                value={message?.fromAddress || ""}
+                readOnly
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting || !message?.fromAddress}>
+              {submitting ? "Creating..." : "Create split"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

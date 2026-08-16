@@ -112,6 +112,7 @@ model User {
   projects               Project[]
   connectedAccounts      ConnectedAccount[]
   mailAccounts           MailAccount[]
+  mailFocusedSplits      MailFocusedSplit[]
   tags                   Tag[]
   JobRecord              JobRecord[]
   taskProviders          TaskProvider[]
@@ -362,6 +363,22 @@ model MailMessage {
   @@index([accountId, date])
   @@index([accountId, isRead, isArchived])
   @@index([accountId, isArchived, snoozedUntil])
+}
+
+/// A private, user-owned sender rule for a focused Mail inbox. Focused splits
+/// deliberately have no workspace scope or sharing model.
+model MailFocusedSplit {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  senderAddress String
+  position      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, senderAddress])
+  @@index([userId, position])
 }
 
 model Project {

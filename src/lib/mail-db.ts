@@ -65,6 +65,38 @@ export async function createOAuthMailAccount(options: {
   });
 }
 
+export async function listMailFocusedSplits(userId: string) {
+  return prisma.mailFocusedSplit.findMany({
+    where: { userId },
+    orderBy: [{ position: "asc" }, { name: "asc" }, { id: "asc" }],
+  });
+}
+
+export async function createMailFocusedSplit(options: {
+  userId: string;
+  name: string;
+  senderAddress: string;
+}) {
+  const lastSplit = await prisma.mailFocusedSplit.findFirst({
+    where: { userId: options.userId },
+    orderBy: { position: "desc" },
+    select: { position: true },
+  });
+  return prisma.mailFocusedSplit.create({
+    data: {
+      ...options,
+      senderAddress: options.senderAddress.toLowerCase(),
+      position: (lastSplit?.position ?? -1) + 1,
+    },
+  });
+}
+
+export async function deleteMailFocusedSplit(userId: string, splitId: string) {
+  return prisma.mailFocusedSplit.deleteMany({
+    where: { id: splitId, userId },
+  });
+}
+
 export async function persistMailMessages(options: {
   accountId: string;
   messages: MailMessageSyncInput[];
@@ -139,15 +171,25 @@ export async function setMailAccountError(accountId: string) {
 export async function listMailMessages(options: {
   userId: string;
   accountId?: string | null;
+  focusedSplitId?: string | null;
   take?: number;
   cursor?: string | null;
 }) {
   const take = Math.min(Math.max(options.take ?? 60, 1), 100);
   const now = newDate();
+  const focusedSplit = options.focusedSplitId
+    ? await prisma.mailFocusedSplit.findFirst({
+        where: { id: options.focusedSplitId, userId: options.userId },
+        select: { senderAddress: true },
+      })
+    : null;
+  // A forged or deleted personal split must never fall back to the full inbox.
+  if (options.focusedSplitId && !focusedSplit) return [];
   return prisma.mailMessage.findMany({
     where: {
       account: { userId: options.userId },
       accountId: options.accountId || undefined,
+      ...(focusedSplit && { fromAddress: focusedSplit.senderAddress }),
       isArchived: false,
       OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }],
     },
