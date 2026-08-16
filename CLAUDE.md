@@ -97,7 +97,8 @@ server-controlled through `src/lib/feature-flags.ts`.
 - `src/store/` - Zustand stores
 - `src/components/` - feature-foldered UI (calendar, tasks, settings, auth, ...)
 - `src/app/api/` - route handlers
-- `prisma/schema.prisma` - Postgres schema (27 models; auth, calendar, tasks, settings, jobs, waitlist, subscriptions)
+- `prisma/schema.prisma` - Postgres schema for auth, workspaces, calendar,
+  tasks, Pages, collaboration, AI, settings, jobs, waitlist and subscriptions
 - `src/app/(app)/` - application pages using the shared navigation and provider shell
 
 <!-- mulch:start -->

@@ -3,42 +3,80 @@
 См. также [`BOOTSTRAP.md`](BOOTSTRAP.md) — вставляй его первым сообщением в
 любой новый чат/бот, это обязательно.
 
-## Текущее состояние — 2026-08-15 (codex закончил лимиты в процессе E2E-фикса)
+## Текущее состояние — 2026-08-16 (codex закончил лимиты после release-boundary audit)
 
 - Репозиторий: `/Users/lol/Needt`. Ветка/worktree: `codex/design-completion`.
-- Последний коммит: `049a92c` (docs cleanup + BOOTSTRAP.md, сделан claude-cowork).
-- Несохранённые изменения codex, ещё не закоммичены — **все проверены и
-  разрешены владельцем, не откатывать**:
-  - `playwright.config.ts` — `workers: 1` вместо `undefined`. Это фикс
-    флакового E2E: 4 параллельных воркера дрались за один общий
-    Postgres/Redis fixture при холодной компиляции. С `--workers=1` вручную
-    уже прогонялось: 24 passed, 3 credential-gated skips. **Не подтверждён
-    финальный прогон с этим конфигом без ручного override** — лимиты
-    кончились прямо перед этим шагом.
-  - `.codex/config.toml` (`sandbox_mode=workspace-write`, `network_access=true`)
-    и `src/app/layout.tsx` (Figma html-to-design capture script) —
-    **осознанное решение владельца**: он попросил не делать полноценный UI
-    сейчас, дизайн будет переделываться в Figma (вместе с claude-cowork,
-    отдельная сессия). Не реверти это.
-  - `docs/plans/README.md` — переписан в фазовую таблицу зависимостей
-    (S1→S2, S6→T5, S7→T6→S8, S9/S10 с T7, S11→T8, T9→T10→S12). Валидно, не
-    трогать без причины.
-  - `CLAUDE.md` — мелкая правка описания Prisma-схемы под реальность
-    (workspaces/Pages/collaboration/AI), безопасно.
-- Ранее (delivery audit, `20260815-codex-delivery-audit.md`): полный набор
-  non-Docker гейтов зелёный в изолированной копии — type-check, lint, 681
-  unit-тест, branding, UI-контракты, worker/collaboration build, prod build.
-  T8.1–T8.4 и S11–S12 подтверждены закрытыми.
+- Последний коммит: `031e5e1`. Всё, что было "в процессе" по состоянию на
+  предыдущую запись (E2E-фикс, T8.5, AI workspace scoping, T9/T10/S12) —
+  **закончено и закоммичено**. Коммиты после `ff4d284`, по порядку:
+  `c52be21` → `d9f3dbe` (E2E стабилизирован) → `2109bfc` (T8.5 Mail focused
+  splits) → `66fb242` → `b147a11` (AI workspace scoping) → `48711c5` (T9
+  coverage audit) → `9b7c641` → `9c8f26e` → `cb1f1dd` → `daa0888` → `031e5e1`.
+- **`20260816-codex-final-gates.md` (status: complete)**: T9/T10/S12 все
+  зелёные, включая E2E (24 passed, 3 credential-gated skip), полный visual
+  matrix на prod-сервере (65 passed, 4 intentional skip), unit, type-check,
+  lint, prod Docker build (`sha256:3dc3d7f2...`). **Нет P0/P1 находок.**
+  Текущий релиз готов к деплою и смоуку.
+- **Figma-капча Settings — завершена** (`20260816-codex-figma-settings-
+  capture.md`, status: complete): все 16 вкладок Settings + все safe-попапы
+  захвачены реальным `window.figma.captureForDesign`. Временный `?captureTab`
+  параметр не понадобился — в коде его нет (проверено, чисто). Ничего больше
+  делать по этому пункту не нужно.
 
-## Owner-решения, зафиксированные 2026-08-15 (не переспрашивать)
+## Что реально осталось (два независимых блокера)
 
-1. **T8.5 Focused Mail splits**: только личные, скоуп на `userId`. Никакой
-   видимости другим участникам workspace, никакой shared-модели — проще, чем
-   Pages permissions. Реализовывать напрямую этим контрактом, отдельный Sol
-   contract для ролей/грантов не нужен именно для этой фичи.
-2. **Figma-тулинг и `.codex/config.toml` network/workspace-write** — оставить,
-   осознанно. Полноценный UI-полиш сейчас не нужен, дизайн переезжает в
-   Figma.
+### 1. T8.5 Mail focused splits — фича готова, тест — нет
+
+Контракт выполнен (`userId`-only, без workspace/sharing), реализация
+закоммичена в `2109bfc`, unit-тесты и E2E прошли. Но
+`20260815-codex-mail-focused-splits.md` всё ещё `status: blocked`: точечный
+visual-тест `secondary-surfaces` таймаутится на навигации `/mail` **в dev-
+матрице** (известная нестабильность dev-сервера под этим sandbox mount, не
+баг продукта — prod build компилирует `/mail` нормально). Next action:
+разобраться с таймаутом на dev-матрице, перегнать `secondary-surfaces`,
+посмотреть diff перед обновлением baseline, закрыть handoff.
+
+### 2. Деплой + smoke test текущего релиза — единственное, что блокирует всё остальное
+
+`20260816-codex-release-boundary-audit.md` (status: blocked, последняя
+запись, 04:30): есть два **не влитых** и специально отложенных branch'а с
+готовой работой:
+
+- `codex/sol-s11-contracts` (коммит `a180003`) — S11 contract.
+- `codex/terra-t8-product-ui` (коммиты `44d225f`…`e0a1dc2`) — T8.1–T8.4 UI.
+
+По плану (`docs/plans/README.md`) их нельзя вливать раньше времени: **S11
+требует, чтобы S6–S10 были задеплоены и стабильны; T8 UI требует S11**.
+Read-only three-way merge уже нашёл конфликты в `CHANGELOG.md` и
+`playwright.config.ts`, плюс `prisma/schema.prisma` независимо менялся на
+обеих линиях (нужно вручную сохранить текущий AI workspace scope при
+интеграции). У отложенной ветки также тонкое покрытие — нет Playwright для
+Saved Views / reschedule-preview / health-journal.
+
+**Это решение не для агента** — нужен реальный деплой + smoke test текущего
+`codex/design-completion` (Docker недоступен внутри codex-sandbox в этой
+сессии). Как только владелец задеплоил и подтвердил, что всё ок:
+
+1. Создать изолированный worktree/branch для интеграции S11/T8.
+2. Вручную развести конфликты (`CHANGELOG.md`, `playwright.config.ts`,
+   `prisma/schema.prisma` — сохранить текущий `AiConversation`/`AiMessage`/
+   `AgentMemory` workspace-scope).
+3. Добавить E2E на каждый новый user journey S11/T8.
+4. Прогнать T10 → S12 гейты на интеграционном SHA.
+
+## Некоммиченное прямо сейчас (проверено, что можно/нельзя трогать)
+
+- `.codex/config.toml`, `src/app/layout.tsx` — осознанное решение владельца
+  (Figma capture + network access), **не трогать**.
+- `docs/plans/README.md` — актуальная фазовая таблица (S1→...→S12),
+  подтверждена аудитом, безопасно закоммитить.
+- `CLAUDE.md` — мелкая правка описания Prisma-схемы, безопасно закоммитить.
+- `AGENTS.md` — был оборванный незакрытый заголовок "## Imported Claude
+  Cowork project instructions" без содержимого (похоже на прерванный
+  импорт CLAUDE.md → AGENTS.md); claude-cowork убрал его 2026-08-16.
+- `.claude/settings.local.json`, `.playwright-mcp/`,
+  `pages-mobile-slash-390.png` — мусор от Playwright MCP/визуальных
+  прогонов, не деливерабл, можно игнорировать/добавить в `.gitignore`.
 
 ## Обязательно перед работой
 
@@ -47,49 +85,18 @@ npm run agent:context
 git status --short
 ```
 
-Прочитать `AGENTS.md`, `docs/AI-COLLABORATION.md`, оба handoff'а от
-2026-08-15 (`20260815-codex-delivery-audit.md`,
-`20260815-codex-e2e-reproducibility.md`) и нужный раздел
-`docs/plans/07-sol-high.md` / `docs/plans/08-terra-high.md`.
+Активных (`status: active`) handoff'ов сейчас нет — только `complete` и
+`blocked` (см. выше). Прочитать оба `blocked`-handoff'а перед стартом:
+`.agents/handoffs/20260815-codex-mail-focused-splits.md` и
+`.agents/handoffs/20260816-codex-release-boundary-audit.md`.
 
-Не выполнять `git add .`, `git stash`, `git clean`, `git reset` или
-`git checkout --`. Если `git` ругается на `index.lock`, который не создавал
-текущий процесс — это может быть FS-артефакт этого монтирования, а не живой
-писатель; см. `20260815-claude-docs-cleanup` контекст, не форсить вслепую.
+## Owner-решения, зафиксированные ранее (не переспрашивать)
 
-## Что делать в первую очередь (точный порядок)
-
-1. Прогнать `npm run test:e2e` без CLI-оverride (конфиг уже поправлен).
-   Если результат совпадает с ранее подтверждённым (24 passed, 3 skip) —
-   закоммитить только `playwright.config.ts` отдельным коммитом, закрыть
-   `20260815-codex-e2e-reproducibility.md` (`status: complete`).
-2. Реализовать T8.5 Mail focused splits контрактом "только личные,
-   `userId`-scope" (см. owner-решение выше). Обновить статус T8.5 в
-   `docs/plans/08-terra-high.md`.
-3. Продолжить по `docs/plans/README.md`: S9/S10 с T7, затем финальный гейт
-   T9→T10→S12.
-4. **AI safety до обучения пользователей (не начато)**:
-   - Workspace scope в `AiConversation`, `AiMessage`, `AgentMemory` через
-     additive expand/backfill/contract migration.
-   - Завершить S10: server-side membership, confirmations, idempotency,
-     entity links, quota/provider/partial-failure recovery.
-   - UI, BYOK, BullMQ и deterministic scheduler сохранить; Vercel AI SDK
-     только как feature-flagged adapter, DeepSeek V4 Pro primary, GPT-5.6
-     Terra fallback, Promptfoo evals, Sentry metadata-only monitoring.
-   - Будущий corpus: opt-out, encrypted raw retention 90 дней, только
-     personal workspace; exclude shared workspaces, mail, attachments,
-     provider payloads. Dataset export/training выключены до owner legal
-     review.
-
-## Текущие блокеры
-
-- E2E-фикс не подтверждён финальным прогоном (см. п.1 выше).
-- Docker Desktop статус на момент записи не проверен из этой сессии
-  (claude-cowork sandbox не имеет Docker вообще) — `20260815-codex-e2e-
-  reproducibility` сообщал, что на хосте Docker уже восстановлен; перепроверь
-  `docker info` перед тем как считать это блокером.
-- Реальное обучение/экспорт пользовательских данных требует owner legal
-  review — не начинать без явного запроса.
+1. **T8.5 Focused Mail splits**: только личные, скоуп на `userId`. Реализовано.
+2. **Figma-тулинг и `.codex/config.toml` network/workspace-write** — оставить,
+   осознанно.
+3. **Не сливать `sol-s11-contracts` / `terra-t8-product-ui` раньше деплоя**
+   текущего релиза — жёсткое требование плана, не обходить.
 
 ## Рабочие правила (без изменений)
 

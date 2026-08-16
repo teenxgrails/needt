@@ -1,9 +1,7 @@
-# Plans — Motion-compatible expansion
+# Plans — Needt delivery sequence
 
-Five sequential plans. Each is an independent release with its own migration,
-gates, and commit. **Do not start a later plan before the earlier one is
-deployed and smoke-tested** — every plan after 02 assumes workspace scoping
-exists.
+Plans are sequential releases with their own migrations and gates. **Do not
+start a later active plan before the earlier one is deployed and smoke-tested.**
 
 | # | Plan | Status | Model | Ships |
 |---|------|--------|-------|-------|
@@ -12,9 +10,24 @@ exists.
 | 03 | [Animation, notifications, Space](03-motion-ui.md) | Complete | Terra Medium | Visual only, no schema |
 | 04 | [Pages](04-pages.md) | Complete | Terra High | Extends the existing editor |
 | 05 | [Moodboard](05-moodboard.md) | Complete | Terra High | Excalidraw canvas |
+| 06 | [Product gap audit](06-product-gap-audit.md) | Backlog | Mixed | Audited opportunities, not implementation authorization |
+| 07 | [Sol High track](07-sol-high.md) | Ready | Sol High | Security, data, architecture, scheduling, adversarial review |
+| 08 | [Terra High track](08-terra-high.md) | Ready with gates | Terra High | UI, tests, CI, responsive quality, copy and docs |
 
-The implementation plans are complete. Remaining product opportunities and
-known debt are tracked in [06 — Product gap audit](06-product-gap-audit.md).
+Plans 01–05 are implemented. Plans 07 and 08 are model-specific tracks; execute
+their task IDs in this shared order. Plan 06 remains research input and does not
+independently authorize schema or product scope.
+
+| Phase | Tasks |
+|-------|-------|
+| Hardening contracts | S1 -> S2; T1 and T2 may run after file ownership is agreed |
+| Offline/realtime | S3 -> S4; then T3 and T4 |
+| Hardening gate | S5 |
+| Workspace | S6 -> T5 |
+| Pages | S7 -> T6 -> S8 |
+| Route completion | S9 and S10 may run with T7 |
+| Later product work | S11 contract -> matching T8 UI |
+| Final gate | T9 -> T10 -> S12 |
 
 A final security pass (Sol High) runs at the end of 02, 04, and 05 — not as a
 separate plan. It reviews only workspace isolation, invites, entitlement
