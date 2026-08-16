@@ -3,6 +3,8 @@ const { withSentryConfig } = require("@sentry/nextjs");
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
+    // Keep the production build within constrained Docker Desktop memory.
+    cpus: 1,
     viewTransition: true,
   },
 

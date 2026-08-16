@@ -2,8 +2,8 @@
 id: 20260816-codex-final-gates
 owner: codex
 branch: codex/design-completion
-status: active
-updated: 2026-08-16T04:14:26Z
+status: complete
+updated: 2026-08-16T04:25:29Z
 objective: Complete the remaining T9 documentation/accessibility work and prove the T10 then S12 final gates.
 ---
 
@@ -21,18 +21,18 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Working state
 
-- Files currently dirty or expected to change: reviewed visual snapshot baselines and this handoff before S12.
+- Files currently edited by this workstream: Docker build-memory configuration and this completed handoff.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `AGENTS.md`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, and `pages-mobile-slash-390.png`.
 
 ## Verification
 
-- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint; T9 branding/UI contracts/handoff checks; standard E2E (24 passed, 3 credential-gated skips); full production-server visual matrix (65 passed, 4 viewport skips); app, worker and collaboration builds.
-- Not run / still required: production Docker image build needs a Docker Desktop memory allocation above the current local ceiling; S12 critique and final review.
+- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint; T9 branding/UI contracts/handoff checks; standard E2E (24 passed, 3 credential-gated skips); full production-server visual matrix (65 passed, 4 viewport skips); app, worker and collaboration builds; production Docker image build (`sha256:3dc3d7f2ef9b649da6952b0d40c9f088945654045f3f090d4348d74964bbc3a2`).
+- S12 critique: no P0/P1 findings. AI conversation, message, and memory reads/writes are authenticated and scoped by both `userId` and `workspaceId`; focused mail splits intentionally remain personal and user-scoped only.
 
 ## Decisions and constraints
 
 - Preserve `src/app/layout.tsx` Figma capture script as directed by the owner. MotionRuntime owns the dynamic motion data attribute and observes only that attribute after hydration.
-- Final browser commands use `WATCHPACK_POLLING=true` and an elevated local process because native Watchpack/Chromium cannot run reliably inside the nested macOS sandbox.
+- Final browser commands use `WATCHPACK_POLLING=true` and an elevated local process because native Watchpack/Chromium cannot run reliably inside the nested macOS sandbox. The Docker build uses Next's documented `experimental.cpus: 1` and a 2560 MiB Node heap to fit this 3.8 GiB Docker Desktop VM.
 - The full visual suite's dev server aborts requests under this filesystem. The production-server path is stable after a fresh `npm run build`: `NEEDT_VISUAL_PRODUCTION_SERVER=1 npm run test:visual` passed 65 tests with four intentional viewport skips.
 
 ## Blockers
@@ -41,4 +41,4 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Next action
 
-- Commit the reviewed visual baseline refresh, then perform S12. Do not retry Docker unchanged: its `next build` was SIGKILLed by the local Docker Desktop memory ceiling.
+- Workstream complete. Preserve the scoped commits and leave the owner-maintained Figma files untouched.

@@ -15,7 +15,9 @@ RUN npx prisma generate
 COPY . .
 
 # Build application
-ENV NODE_OPTIONS=--max-old-space-size=4096
+# Leave headroom for Alpine, Next build workers, and Docker Desktop's
+# constrained Linux VM instead of reserving the whole configured memory limit.
+ENV NODE_OPTIONS=--max-old-space-size=2560
 RUN npm run build
 RUN npm run build:worker
 RUN npm run build:collaboration
