@@ -5,6 +5,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -76,10 +77,25 @@ export function MotionRuntime({ children }: PropsWithChildren) {
     prefersReducedMotion,
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    root.dataset.animations = policy.datasetValue;
-    root.dataset.needtMotion = policy.datasetValue;
+    const applyPolicy = () => {
+      root.dataset.animations = policy.datasetValue;
+      root.dataset.needtMotion = policy.datasetValue;
+    };
+
+    applyPolicy();
+    // The root layout has an SSR default for this attribute. Hydration may
+    // reconcile that static value after this client component commits, so keep
+    // the runtime policy authoritative without touching unrelated attributes.
+    const observer = new MutationObserver(() => {
+      if (root.dataset.needtMotion !== policy.datasetValue) applyPolicy();
+    });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-needt-motion"],
+    });
+    return () => observer.disconnect();
   }, [policy.datasetValue]);
 
   return (
