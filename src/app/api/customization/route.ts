@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { parseDesignTokens } from "@/lib/design-tokens";
@@ -118,14 +119,18 @@ export async function PATCH(request: NextRequest) {
     };
 
     if ("designTokens" in body) {
-      const designTokens = parseDesignTokens(body.designTokens);
-      if (!designTokens) {
-        return NextResponse.json(
-          { error: "Invalid design token object" },
-          { status: 400 }
-        );
+      if (body.designTokens === null) {
+        Object.assign(data, { designTokens: Prisma.DbNull });
+      } else {
+        const designTokens = parseDesignTokens(body.designTokens);
+        if (!designTokens) {
+          return NextResponse.json(
+            { error: "Invalid design token object" },
+            { status: 400 }
+          );
+        }
+        Object.assign(data, { designTokens });
       }
-      Object.assign(data, { designTokens });
     }
 
     const customization = await prisma.userCustomization.upsert({

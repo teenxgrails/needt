@@ -3,7 +3,7 @@ id: 20260816-codex-final-gates
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-16T03:47:36Z
+updated: 2026-08-16T03:59:52Z
 objective: Complete the remaining T9 documentation/accessibility work and prove the T10 then S12 final gates.
 ---
 
@@ -21,18 +21,19 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Working state
 
-- Files currently dirty or expected to change: `docs/plans/08-terra-high.md` and this handoff before the T10 gate.
+- Files currently dirty or expected to change: `src/app/api/customization/route.ts`, its unit test, and this handoff before the T10 gate.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `AGENTS.md`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, and `pages-mobile-slash-390.png`.
 
 ## Verification
 
-- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint.
-- Not run / still required: T9 static checks; T10 complete gates; S12 critique and remaining Sol gates.
+- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint; T9 branding/UI contracts/handoff checks.
+- Not run / still required: production visual rerun after the Settings repair; T10 remaining complete gates; S12 critique and remaining Sol gates.
 
 ## Decisions and constraints
 
 - Preserve `src/app/layout.tsx` Figma capture script as directed by the owner. MotionRuntime owns the dynamic motion data attribute and observes only that attribute after hydration.
 - Final browser commands use `WATCHPACK_POLLING=true` and an elevated local process because native Watchpack/Chromium cannot run reliably inside the nested macOS sandbox.
+- The full visual suite's dev server aborts requests under this filesystem. The targeted production-server visual rerun is stable; run it after a fresh `npm run build` using `NEEDT_VISUAL_PRODUCTION_SERVER=1`.
 
 ## Blockers
 
@@ -40,4 +41,4 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Next action
 
-- Commit the T9 documentation/audit status, then begin the T10 gate.
+- Commit the customization null-token repair, rebuild, and use production-server visual tests before continuing T10.
