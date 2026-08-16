@@ -3,7 +3,7 @@ id: 20260816-codex-final-gates
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-16T03:59:52Z
+updated: 2026-08-16T04:14:26Z
 objective: Complete the remaining T9 documentation/accessibility work and prove the T10 then S12 final gates.
 ---
 
@@ -21,19 +21,19 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Working state
 
-- Files currently dirty or expected to change: `src/app/api/customization/route.ts`, its unit test, and this handoff before the T10 gate.
+- Files currently dirty or expected to change: reviewed visual snapshot baselines and this handoff before S12.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `AGENTS.md`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, and `pages-mobile-slash-390.png`.
 
 ## Verification
 
-- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint; T9 branding/UI contracts/handoff checks.
-- Not run / still required: production visual rerun after the Settings repair; T10 remaining complete gates; S12 critique and remaining Sol gates.
+- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint; T9 branding/UI contracts/handoff checks; standard E2E (24 passed, 3 credential-gated skips); full production-server visual matrix (65 passed, 4 viewport skips); app, worker and collaboration builds.
+- Not run / still required: production Docker image build needs a Docker Desktop memory allocation above the current local ceiling; S12 critique and final review.
 
 ## Decisions and constraints
 
 - Preserve `src/app/layout.tsx` Figma capture script as directed by the owner. MotionRuntime owns the dynamic motion data attribute and observes only that attribute after hydration.
 - Final browser commands use `WATCHPACK_POLLING=true` and an elevated local process because native Watchpack/Chromium cannot run reliably inside the nested macOS sandbox.
-- The full visual suite's dev server aborts requests under this filesystem. The targeted production-server visual rerun is stable; run it after a fresh `npm run build` using `NEEDT_VISUAL_PRODUCTION_SERVER=1`.
+- The full visual suite's dev server aborts requests under this filesystem. The production-server path is stable after a fresh `npm run build`: `NEEDT_VISUAL_PRODUCTION_SERVER=1 npm run test:visual` passed 65 tests with four intentional viewport skips.
 
 ## Blockers
 
@@ -41,4 +41,4 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Next action
 
-- Commit the customization null-token repair, rebuild, and use production-server visual tests before continuing T10.
+- Commit the reviewed visual baseline refresh, then perform S12. Do not retry Docker unchanged: its `next build` was SIGKILLed by the local Docker Desktop memory ceiling.
