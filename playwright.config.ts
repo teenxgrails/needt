@@ -21,14 +21,14 @@ export default defineConfig({
   testDir: "./tests",
   testIgnore: ["**/visual/**"],
   globalSetup: "./tests/e2e/global-setup.ts",
-  /* Run tests in files in parallel */
+  /* Keep the shared local database and web-server fixture deterministic. */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* E2E reset/seed owns one PostgreSQL and Redis fixture per suite. */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -41,7 +41,9 @@ export default defineConfig({
     // Set viewport to a large size
     viewport: { width: 1920, height: 1080 },
     // Launch the browser maximized
-    launchOptions: {},
+    launchOptions: {
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    },
   },
 
   /* Configure projects for major browsers */
@@ -51,7 +53,9 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1920, height: 1080 },
-        launchOptions: {},
+        launchOptions: {
+          args: ["--no-sandbox", "--disable-dev-shm-usage"],
+        },
       },
     },
 
@@ -88,7 +92,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "npm run dev",
+    command: "WATCHPACK_POLLING=true next dev",
     url: testBaseUrl,
     // E2E resets its own database and Redis state before every run. Reusing a
     // previous dev server can retain a different environment or exit midway
