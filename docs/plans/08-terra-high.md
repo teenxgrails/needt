@@ -210,6 +210,10 @@ management, audio transcription or new integrations in this track.
 
 **Prerequisite:** update incrementally after each shipped task; finalize after T7.
 
+**Status:** documentation coverage is complete (2026-08-16). Dependency-based
+accessibility automation remains intentionally unstarted pending approval; the
+existing UI-contract, reduced-motion, style and visual gates remain required.
+
 - Mark old plans as implementation-complete but release-gated where accurate.
 - Add collaboration build/smoke to `docs/STACK.md` and correct stale schema facts
   in `CLAUDE.md`.

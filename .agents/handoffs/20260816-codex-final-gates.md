@@ -3,7 +3,7 @@ id: 20260816-codex-final-gates
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-16T03:46:12Z
+updated: 2026-08-16T03:47:36Z
 objective: Complete the remaining T9 documentation/accessibility work and prove the T10 then S12 final gates.
 ---
 
@@ -21,13 +21,13 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Working state
 
-- Files currently dirty or expected to change: AI workspace migration/schema/routes/tests, `docs/security-model.md`, and this handoff; T9 documentation may follow after audit.
+- Files currently dirty or expected to change: `docs/plans/08-terra-high.md` and this handoff before the T10 gate.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `AGENTS.md`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, and `pages-mobile-slash-390.png`.
 
 ## Verification
 
 - Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint.
-- Not run / still required: T9 documentation/accessibility audit; T10 complete gates; S12 critique and remaining Sol gates.
+- Not run / still required: T9 static checks; T10 complete gates; S12 critique and remaining Sol gates.
 
 ## Decisions and constraints
 
@@ -40,4 +40,4 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Next action
 
-- Commit the AI workspace-scope migration as its own unit, then close the T9 audit and begin the T10 gate.
+- Commit the T9 documentation/audit status, then begin the T10 gate.
