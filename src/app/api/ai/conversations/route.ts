@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   if ("response" in auth) return auth.response;
 
   const conversations = await prisma.aiConversation.findMany({
-    where: { userId: auth.userId },
+    where: { userId: auth.userId, workspaceId: auth.workspace!.workspaceId },
     orderBy: { updatedAt: "desc" },
     include: {
       messages: {
@@ -34,7 +34,11 @@ export async function POST(request: NextRequest) {
       : "New chat";
 
   const conversation = await prisma.aiConversation.create({
-    data: { userId: auth.userId, title },
+    data: {
+      userId: auth.userId,
+      workspaceId: auth.workspace!.workspaceId,
+      title,
+    },
     include: { messages: true },
   });
 

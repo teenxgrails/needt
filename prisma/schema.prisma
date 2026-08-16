@@ -179,6 +179,9 @@ model Workspace {
   taskDependencies TaskDependency[]
   projectTemplates ProjectTemplate[]
   schedulingRuns   SchedulingRun[]
+  aiConversations  AiConversation[]
+  aiMessages       AiMessage[]
+  agentMemories    AgentMemory[]
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
@@ -1693,18 +1696,20 @@ model AISettings {
 }
 
 model AgentMemory {
-  id         String            @id @default(cuid())
-  userId     String
-  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kind       AgentMemoryKind
-  content    String
-  source     AgentMemorySource @default(chat)
-  weight     Float             @default(1)
-  createdAt  DateTime          @default(now())
-  lastUsedAt DateTime          @default(now())
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  kind        AgentMemoryKind
+  content     String
+  source      AgentMemorySource @default(chat)
+  weight      Float             @default(1)
+  createdAt   DateTime          @default(now())
+  lastUsedAt  DateTime          @default(now())
 
-  @@index([userId, lastUsedAt])
-  @@index([userId, weight])
+  @@index([workspaceId, userId, lastUsedAt])
+  @@index([workspaceId, userId, weight])
 }
 
 model AiUsage {
@@ -1759,15 +1764,17 @@ model AIOAuthState {
 }
 
 model AiConversation {
-  id        String      @id @default(dbgenerated("gen_random_uuid()"))
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String      @default("New chat")
-  messages  AiMessage[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id          String      @id @default(dbgenerated("gen_random_uuid()"))
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  title       String      @default("New chat")
+  messages    AiMessage[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  @@index([userId, updatedAt])
+  @@index([workspaceId, userId, updatedAt])
 }
 
 model AiMessage {
@@ -1776,6 +1783,8 @@ model AiMessage {
   conversation    AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   userId          String
   user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId     String
+  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   role            String
   content         String
   toolName        String?
@@ -1783,8 +1792,8 @@ model AiMessage {
   requiresConfirm Boolean        @default(false)
   createdAt       DateTime       @default(now())
 
-  @@index([conversationId, createdAt])
-  @@index([userId, createdAt])
+  @@index([workspaceId, conversationId, createdAt])
+  @@index([workspaceId, userId, createdAt])
 }
 
 model ConnectorSettings {

@@ -31,9 +31,9 @@ export function rankMemories(memories: RankedMemory[], now = newDate()) {
   });
 }
 
-export async function listAgentMemories(userId: string) {
+export async function listAgentMemories(userId: string, workspaceId: string) {
   return prisma.agentMemory.findMany({
-    where: { userId },
+    where: { userId, workspaceId },
     orderBy: [{ weight: "desc" }, { lastUsedAt: "desc" }],
     take: AGENT_MEMORY_LIMIT,
   });
@@ -41,12 +41,14 @@ export async function listAgentMemories(userId: string) {
 
 export async function rememberForUser(
   userId: string,
+  workspaceId: string,
   input: z.input<typeof memoryInputSchema>
 ) {
   const data = memoryInputSchema.parse(input);
   const existing = await prisma.agentMemory.findFirst({
     where: {
       userId,
+      workspaceId,
       kind: data.kind,
       content: { equals: data.content, mode: "insensitive" },
     },
@@ -60,13 +62,17 @@ export async function rememberForUser(
           lastUsedAt: newDate(),
         },
       })
-    : await prisma.agentMemory.create({ data: { userId, ...data } });
+    : await prisma.agentMemory.create({
+        data: { userId, workspaceId, ...data },
+      });
 
-  const count = await prisma.agentMemory.count({ where: { userId } });
+  const count = await prisma.agentMemory.count({
+    where: { userId, workspaceId },
+  });
   const stale =
     count > AGENT_MEMORY_LIMIT
       ? await prisma.agentMemory.findMany({
-          where: { userId },
+          where: { userId, workspaceId },
           orderBy: [{ lastUsedAt: "asc" }, { weight: "asc" }],
           take: count - AGENT_MEMORY_LIMIT,
           select: { id: true },
@@ -74,27 +80,42 @@ export async function rememberForUser(
       : [];
   if (stale.length) {
     await prisma.agentMemory.deleteMany({
-      where: { userId, id: { in: stale.map((item) => item.id) } },
+      where: {
+        userId,
+        workspaceId,
+        id: { in: stale.map((item) => item.id) },
+      },
     });
   }
   return memory;
 }
 
-export async function forgetForUser(userId: string, memoryId: string) {
+export async function forgetForUser(
+  userId: string,
+  workspaceId: string,
+  memoryId: string
+) {
   const result = await prisma.agentMemory.deleteMany({
-    where: { id: memoryId, userId },
+    where: { id: memoryId, userId, workspaceId },
   });
   return result.count > 0;
 }
 
-export async function clearAgentMemories(userId: string) {
-  return prisma.agentMemory.deleteMany({ where: { userId } });
+export async function clearAgentMemories(
+  userId: string,
+  workspaceId: string
+) {
+  return prisma.agentMemory.deleteMany({ where: { userId, workspaceId } });
 }
 
-export async function touchMemories(userId: string, memoryIds: string[]) {
+export async function touchMemories(
+  userId: string,
+  workspaceId: string,
+  memoryIds: string[]
+) {
   if (!memoryIds.length) return;
   await prisma.agentMemory.updateMany({
-    where: { userId, id: { in: memoryIds } },
+    where: { userId, workspaceId, id: { in: memoryIds } },
     data: { lastUsedAt: newDate() },
   });
 }

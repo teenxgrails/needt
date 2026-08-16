@@ -26,12 +26,12 @@ jest.mock("@/lib/task-block-push", () => ({
 }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    aiConversation: { create: jest.fn(), update: jest.fn() },
+    aiConversation: { create: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn() },
     aiMessage: {
       create: jest.fn(),
       findFirst: jest.fn(),
       findMany: jest.fn(),
-      update: jest.fn(),
+      updateMany: jest.fn(),
     },
     task: { findFirst: jest.fn(), update: jest.fn() },
     scheduledBlock: { deleteMany: jest.fn() },
@@ -51,10 +51,14 @@ const workspace = {
   dataScope: { mode: "workspace" as const, workspaceId: "workspace-1" },
 };
 
-function request(confirmed = false) {
+function request(confirmed = false, conversationId?: string) {
   return new NextRequest("http://localhost/api/ai/chat", {
     method: "POST",
-    body: JSON.stringify({ message: "Archive the release task", confirmed }),
+    body: JSON.stringify({
+      message: "Archive the release task",
+      confirmed,
+      conversationId,
+    }),
   });
 }
 
@@ -91,7 +95,7 @@ describe("AI archive confirmation", () => {
     (prisma.aiConversation.create as jest.Mock).mockResolvedValue({
       id: "conversation-1",
     });
-    (prisma.aiConversation.update as jest.Mock).mockResolvedValue({});
+    (prisma.aiConversation.updateMany as jest.Mock).mockResolvedValue({});
     (prisma.aiMessage.create as jest.Mock).mockResolvedValue({});
     (prisma.aiMessage.findMany as jest.Mock).mockResolvedValue([]);
     (prisma.aiMessage.findFirst as jest.Mock).mockResolvedValue({
@@ -101,7 +105,7 @@ describe("AI archive confirmation", () => {
         arguments: { taskId: "task-1" },
       },
     });
-    (prisma.aiMessage.update as jest.Mock).mockResolvedValue({});
+    (prisma.aiMessage.updateMany as jest.Mock).mockResolvedValue({});
     taskModel.findFirst.mockResolvedValue({
       id: "task-1",
       title: "Ship release",
@@ -117,6 +121,12 @@ describe("AI archive confirmation", () => {
   it("names the exact task before changing it", async () => {
     const items = await streamItems((await POST(request()))!);
 
+    expect(prisma.aiConversation.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: "user-1",
+        workspaceId: "workspace-1",
+      }),
+    });
     expect(items[0]).toEqual(
       expect.objectContaining({
         type: "meta",
@@ -143,8 +153,13 @@ describe("AI archive confirmation", () => {
       })
     );
     expect(schedulePushTaskBlock).toHaveBeenCalledWith("user-1", "task-1");
-    expect(prisma.aiMessage.update).toHaveBeenCalledWith({
-      where: { id: "confirmation-1" },
+    expect(prisma.aiMessage.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "confirmation-1",
+        conversationId: "conversation-1",
+        userId: "user-1",
+        workspaceId: "workspace-1",
+      },
       data: { requiresConfirm: false },
     });
     expect(items[0]).toEqual(
@@ -164,5 +179,21 @@ describe("AI archive confirmation", () => {
 
     expect(response.status).toBe(409);
     expect(taskModel.update).not.toHaveBeenCalled();
+  });
+
+  it("does not reuse a conversation from another workspace", async () => {
+    (prisma.aiConversation.findFirst as jest.Mock).mockResolvedValue(null);
+
+    const response = (await POST(request(false, "other-workspace-chat")))!;
+
+    expect(response.status).toBe(404);
+    expect(prisma.aiConversation.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: "other-workspace-chat",
+        userId: "user-1",
+        workspaceId: "workspace-1",
+      },
+    });
+    expect(prisma.aiMessage.create).not.toHaveBeenCalled();
   });
 });

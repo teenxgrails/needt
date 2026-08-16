@@ -108,7 +108,7 @@ export async function buildAgentPromptForUser(
   workspace: WorkspaceAccess
 ) {
   const [memories, schedule] = await Promise.all([
-    listAgentMemories(userId),
+    listAgentMemories(userId, workspace.workspaceId),
     getTodayScheduleSummary(userId, workspace),
   ]);
   const result = assembleAgentSystemPrompt({
@@ -116,6 +116,6 @@ export async function buildAgentPromptForUser(
     memories,
     scheduleSummary: schedule.summary,
   });
-  await touchMemories(userId, result.usedMemoryIds);
+  await touchMemories(userId, workspace.workspaceId, result.usedMemoryIds);
   return result.prompt;
 }

@@ -12,8 +12,6 @@ export const WORKSPACE_HEADER = "x-workspace-id";
 // These resources intentionally follow the user across workspace switches.
 // Workspace-owned entities must use workspaceDataScopeWhere instead.
 export const ACCOUNT_GLOBAL_RESOURCES = [
-  "ai-conversations",
-  "ai-memories",
   "calendar-accounts",
   "connector-settings",
   "focus-history",

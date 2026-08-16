@@ -3,7 +3,7 @@ id: 20260816-codex-final-gates
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-08-16T03:37:21Z
+updated: 2026-08-16T03:46:12Z
 objective: Complete the remaining T9 documentation/accessibility work and prove the T10 then S12 final gates.
 ---
 
@@ -17,15 +17,16 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 - Confirmed the S9/S10 implementation commit `36663a5` is an ancestor of this branch: CalDAV update modes, list-aware task collisions, local scheduling-field preservation, pending Outlook persistence, supported task-sync route, scheduler buffer invariants, workspace-safe AI actions, confirmations, and entity links are present.
 - Fixed MotionRuntime hydration reversion of `data-needt-motion` without changing the owner-maintained Figma capture script; full `WATCHPACK_POLLING=true npm run test:style` passed (15 tests).
+- Added the owner-required AI record boundary: `AiConversation`, `AiMessage`, and `AgentMemory` now backfill to personal workspaces, require `workspaceId`, and are filtered and created through authenticated workspace scope.
 
 ## Working state
 
-- Files currently dirty or expected to change: `src/components/providers/MotionRuntime.tsx` and this handoff; T9 documentation may follow after audit.
+- Files currently dirty or expected to change: AI workspace migration/schema/routes/tests, `docs/security-model.md`, and this handoff; T9 documentation may follow after audit.
 - Foreign changes that must remain untouched: `.codex/config.toml`, `AGENTS.md`, `CLAUDE.md`, `docs/plans/README.md`, `src/app/layout.tsx`, `.playwright-mcp/`, `NEXT_AGENT.md`, and `pages-mobile-slash-390.png`.
 
 ## Verification
 
-- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed).
+- Passed: focused MotionRuntime Playwright regression (desktop/tablet/mobile); full style suite (15 passed); Prisma validation; AI workspace-scope Jest coverage (6 tests); type-check and lint.
 - Not run / still required: T9 documentation/accessibility audit; T10 complete gates; S12 critique and remaining Sol gates.
 
 ## Decisions and constraints
@@ -39,4 +40,4 @@ objective: Complete the remaining T9 documentation/accessibility work and prove 
 
 ## Next action
 
-- Audit T9 documentation/accessibility coverage against current code, then commit the scoped MotionRuntime fix and any required documentation updates before the T10 gate.
+- Commit the AI workspace-scope migration as its own unit, then close the T9 audit and begin the T10 gate.

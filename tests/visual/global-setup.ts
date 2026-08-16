@@ -377,6 +377,7 @@ export default async function globalSetup() {
     data: {
       id: "visual-ai-conversation",
       userId: user.id,
+      workspaceId: workspace.id,
       title: "Today’s priorities",
       createdAt: new Date("2026-07-16T08:00:00+02:00"),
       updatedAt: new Date("2026-07-16T08:05:00+02:00"),
@@ -385,6 +386,7 @@ export default async function globalSetup() {
           {
             id: "visual-ai-message-user",
             userId: user.id,
+            workspaceId: workspace.id,
             role: "user",
             content: "What should I focus on first?",
             createdAt: new Date("2026-07-16T08:00:00+02:00"),
@@ -392,6 +394,7 @@ export default async function globalSetup() {
           {
             id: "visual-ai-message-assistant",
             userId: user.id,
+            workspaceId: workspace.id,
             role: "assistant",
             content:
               "Start with Morning deep work while your energy window is high, then review calendar sync after lunch.",

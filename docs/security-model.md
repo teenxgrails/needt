@@ -14,7 +14,7 @@ release-review aid, not a replacement for server-side checks in each route.
 | Workspace lifecycle | Owner/Editor role resolved server-side | Requested workspace membership | Protect the last Owner and re-check entitlement on every transition |
 | Pages and Moodboards collaboration | Short-lived HMAC token plus live database reauthorization | Exact workspace, resource and room | Close revoked access with `4403`; never trust a room name alone |
 | Offline replay | Authenticated user, workspace header, idempotency key and base revision | User/workspace/versioned private cache namespace | Keep failed requests as recovery states; never replay into another workspace |
-| AI actions | Authenticated workspace access, tool schema and confirmation record | Workspace-scoped tasks/projects/pages; account-global resources stay user-owned | Require confirmation for dangerous mutations and reject confirmation replay |
+| AI actions | Authenticated workspace access, tool schema and confirmation record | Workspace-scoped conversations, messages, memories, tasks, projects and Pages; account-global resources stay user-owned | Require confirmation for dangerous mutations and reject confirmation replay |
 | Provider sync | Provider ownership, connected account ownership and workspace-scoped mapping | Provider account, selected list/feed and local mirror | Preserve local data on partial reads; expose `PENDING` or error state for retry |
 | Admin operations | `requireAdmin` | Administrative data only | Never use hidden UI as authorization |
 

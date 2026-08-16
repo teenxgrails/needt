@@ -714,7 +714,7 @@ async function executeTool(
           requiresConfirm: false,
         };
       }
-      const memory = await rememberForUser(userId, {
+      const memory = await rememberForUser(userId, workspaceId, {
         kind: stringArg(call.arguments, "kind") as
           | "preference"
           | "pattern"
@@ -734,7 +734,7 @@ async function executeTool(
 
     case "forget": {
       const memoryId = stringArg(call.arguments, "memoryId") || "";
-      const forgotten = await forgetForUser(userId, memoryId);
+      const forgotten = await forgetForUser(userId, workspaceId, memoryId);
       return {
         text: forgotten
           ? "Forgot that memory."
@@ -745,7 +745,7 @@ async function executeTool(
     }
 
     case "list_memories": {
-      const memories = await listAgentMemories(userId);
+      const memories = await listAgentMemories(userId, workspaceId);
       return {
         text: memories.length
           ? memories
@@ -955,10 +955,11 @@ async function executeTool(
 }
 
 async function recentMessages(
-  conversationId: string
+  conversationId: string,
+  workspaceId: string
 ): Promise<AIChatMessage[]> {
   const messages = await prisma.aiMessage.findMany({
-    where: { conversationId },
+    where: { conversationId, workspaceId },
     orderBy: { createdAt: "desc" },
     take: 16,
   });
@@ -1024,10 +1025,18 @@ export async function POST(request: NextRequest) {
   const conversation =
     typeof body.conversationId === "string" && body.conversationId
       ? await prisma.aiConversation.findFirst({
-          where: { id: body.conversationId, userId: auth.userId },
+          where: {
+            id: body.conversationId,
+            userId: auth.userId,
+            workspaceId: auth.workspace!.workspaceId,
+          },
         })
       : await prisma.aiConversation.create({
-          data: { userId: auth.userId, title: titleFromMessage(message) },
+          data: {
+            userId: auth.userId,
+            workspaceId: auth.workspace!.workspaceId,
+            title: titleFromMessage(message),
+          },
         });
 
   if (!conversation) {
@@ -1041,12 +1050,16 @@ export async function POST(request: NextRequest) {
     data: {
       conversationId: conversation.id,
       userId: auth.userId,
+      workspaceId: auth.workspace!.workspaceId,
       role: "user",
       content: message,
     },
   });
 
-  const history = await recentMessages(conversation.id);
+  const history = await recentMessages(
+    conversation.id,
+    auth.workspace!.workspaceId
+  );
   let confirmedTool: AIChatToolCall | null = null;
   let confirmationMessageId: string | null = null;
   if (confirmed) {
@@ -1054,6 +1067,7 @@ export async function POST(request: NextRequest) {
       where: {
         conversationId: conversation.id,
         userId: auth.userId,
+        workspaceId: auth.workspace!.workspaceId,
         role: "assistant",
         toolName: "confirmation_required",
         requiresConfirm: true,
@@ -1141,8 +1155,13 @@ export async function POST(request: NextRequest) {
       auth
     );
     if (confirmationMessageId && !toolResult.requiresConfirm) {
-      await prisma.aiMessage.update({
-        where: { id: confirmationMessageId },
+      await prisma.aiMessage.updateMany({
+        where: {
+          id: confirmationMessageId,
+          conversationId: conversation.id,
+          userId: auth.userId,
+          workspaceId: auth.workspace!.workspaceId,
+        },
         data: { requiresConfirm: false },
       });
     }
@@ -1210,6 +1229,7 @@ export async function POST(request: NextRequest) {
         data: {
           conversationId: conversation.id,
           userId: auth.userId,
+          workspaceId: auth.workspace!.workspaceId,
           role: "assistant",
           content: assistantText,
           toolName: toolResult?.toolName,
@@ -1217,8 +1237,12 @@ export async function POST(request: NextRequest) {
           requiresConfirm: toolResult?.requiresConfirm || false,
         },
       });
-      await prisma.aiConversation.update({
-        where: { id: conversation.id },
+      await prisma.aiConversation.updateMany({
+        where: {
+          id: conversation.id,
+          userId: auth.userId,
+          workspaceId: auth.workspace!.workspaceId,
+        },
         data: { updatedAt: newDate() },
       });
       controller.close();

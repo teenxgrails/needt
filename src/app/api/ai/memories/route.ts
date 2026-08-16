@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
   return NextResponse.json({
-    memories: await listAgentMemories(auth.userId),
+    memories: await listAgentMemories(
+      auth.userId,
+      auth.workspace!.workspaceId
+    ),
   });
 }
 
@@ -31,7 +34,10 @@ export async function DELETE(request: NextRequest) {
       })
       .parse(await request.json());
     if (input.all) {
-      const result = await clearAgentMemories(auth.userId);
+      const result = await clearAgentMemories(
+        auth.userId,
+        auth.workspace!.workspaceId
+      );
       return NextResponse.json({ deleted: result.count });
     }
     if (!input.memoryId) {
@@ -41,7 +47,15 @@ export async function DELETE(request: NextRequest) {
       );
     }
     return NextResponse.json({
-      deleted: (await forgetForUser(auth.userId, input.memoryId)) ? 1 : 0,
+      deleted: (
+        await forgetForUser(
+          auth.userId,
+          auth.workspace!.workspaceId,
+          input.memoryId
+        )
+      )
+        ? 1
+        : 0,
     });
   } catch (error) {
     logger.error(
