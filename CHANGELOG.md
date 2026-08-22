@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Docs: added `docs/plans/09-launch.md` as the governing plan through public
+  launch — release unblock (focused-Mail visual, non-production artifacts,
+  S11/T8 integration), production-readiness audit, billing lifecycle, first-run
+  experience, legal/account lifecycle, staging rehearsal, launch operations and
+  post-launch product work. Recorded the owner's expanded agent autonomy
+  (merge, push/PR, additive schema, reviewed baselines) in `AGENTS.md`.
+- Docs: added `docs/plans/10-design.md`, the design identity track — identity
+  spike as three live variants in `/style`, a semantic motion language replacing
+  raw durations, the schedule-reflow signature interaction paired with the
+  capacity/what-if feature, foundation retuning, navigation rebuild, flagged
+  screen rollout after launch, and a craft pass. Figma is out of the pipeline;
+  design happens in code. Recorded the explicit do-not list for decorative
+  effects in `AGENTS.md`.
 - Docs: archived 34 superseded root-level planning/scratch files (Jul-dated,
   predating the current `AGENTS.md`/`docs/plans/*` structure) into
   `docs/_old/`; added `BOOTSTRAP.md` as a copy-paste first-message prompt for

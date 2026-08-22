@@ -11,12 +11,20 @@ start a later active plan before the earlier one is deployed and smoke-tested.**
 | 04 | [Pages](04-pages.md) | Complete | Terra High | Extends the existing editor |
 | 05 | [Moodboard](05-moodboard.md) | Complete | Terra High | Excalidraw canvas |
 | 06 | [Product gap audit](06-product-gap-audit.md) | Backlog | Mixed | Audited opportunities, not implementation authorization |
-| 07 | [Sol High track](07-sol-high.md) | Ready | Sol High | Security, data, architecture, scheduling, adversarial review |
-| 08 | [Terra High track](08-terra-high.md) | Ready with gates | Terra High | UI, tests, CI, responsive quality, copy and docs |
+| 07 | [Sol High track](07-sol-high.md) | Complete except deferred S11 | Sol High | Security, data, architecture, scheduling, adversarial review |
+| 08 | [Terra High track](08-terra-high.md) | Complete except deferred T8 | Terra High | UI, tests, CI, responsive quality, copy and docs |
+| 09 | [Public launch track](09-launch.md) | **Active — governing plan** | Mixed | Release unblock, production readiness, billing, launch, post-launch |
+| 10 | [Design identity track](10-design.md) | Active — parallel | Terra High | Identity spike, motion language, signature reflow, foundations, navigation, rollout |
 
-Plans 01–05 are implemented. Plans 07 and 08 are model-specific tracks; execute
-their task IDs in this shared order. Plan 06 remains research input and does not
-independently authorize schema or product scope.
+Plans 01–05 are implemented. Plans 07 and 08 ran to their final gates; their
+deferred S11/T8 items are sequenced by plan 09, not by 07/08 directly. Plan 06
+remains research input and does not independently authorize schema or product
+scope.
+
+**Plan 09 is the governing plan.** Start there. **Plan 10 runs in parallel** and
+may never delay 09: D0–D3 are safe to run alongside the launch work, but the
+screen rollout waits until production is live and stable. The table below is the
+historical 07/08 execution order, retained for context.
 
 | Phase | Tasks |
 |-------|-------|
@@ -26,7 +34,7 @@ independently authorize schema or product scope.
 | Workspace | S6 -> T5 |
 | Pages | S7 -> T6 -> S8 |
 | Route completion | S9 and S10 may run with T7 |
-| Later product work | S11 contract -> matching T8 UI |
+| Later product work | S11 contract -> matching T8 UI (now sequenced by plan 09 L0.3 and L7) |
 | Final gate | T9 -> T10 -> S12 |
 
 A final security pass (Sol High) runs at the end of 02, 04, and 05 — not as a
@@ -66,4 +74,6 @@ workspace holds their own PRO/LIFETIME plan.
   contracts is a separate future contract release.
 - Verify third-party APIs, versions, peer dependencies and licenses through
   Context7 before installing anything.
-- No push, no deploy from the agent. Commit locally.
+- Pushing, opening PRs, merging branches, additive schema changes and reviewed
+  baseline updates are owner-authorized as of 2026-08-22; see the autonomy block
+  in `AGENTS.md`. The production deploy itself still belongs to the owner.

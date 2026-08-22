@@ -97,6 +97,31 @@ Viewer roles and invites). While that migration is in progress:
   `CHANGELOG.md` under `[unreleased]` for user-facing changes.
 - **Leave `//todo` comments in place**; add new ones for deferred work.
 
+### Owner-granted autonomy (2026-08-22)
+
+The owner has pre-authorized these actions. Do them without asking:
+
+- **Merge branches**, including resolving conflicts, once the gates are green.
+- **Push to the remote and open PRs.** The earlier local-only posture no longer
+  applies by default.
+- **Change the Prisma schema and add migrations** — additive expand/contract
+  only, never destructive.
+- **Update visual baselines**, after reviewing each diff by hand. A baseline
+  updated without looking at the diff is a defect, not a shortcut.
+
+Still requires the owner, every time:
+
+- The production deploy itself, and any production data operation.
+- Production secrets, credentials, and external account actions (Google domain
+  verification, Azure consent, Creem dashboard, DNS).
+- Final legal copy for `/terms` and `/privacy`.
+- Design direction.
+- Anything listed under Non-goals, and any destructive migration.
+
+The current governing plan is [`docs/plans/09-launch.md`](docs/plans/09-launch.md).
+[`docs/plans/10-design.md`](docs/plans/10-design.md) runs in parallel and must
+never delay it.
+
 ### Autonomous Terra delivery
 
 When a user asks an agent to carry a Terra scope through implementation, the
@@ -115,9 +140,11 @@ agent must:
 - Use targeted checks while actively implementing; run the complete Definition
   of Done gates only at the final validation boundary or when the user requests
   them.
-- Respect an explicitly local-only user request: do not browse, deploy,
-  publish, open PRs, push commits or contact external services. In that mode,
-  leave verified local changes and a current handoff for the release owner.
+- Respect an explicitly local-only user request when the owner makes one for a
+  given session: do not browse, deploy, publish, open PRs, push commits or
+  contact external services. In that mode, leave verified local changes and a
+  current handoff for the release owner. Absent such a request, the standing
+  permissions above apply.
 - Before claiming a scope complete, compare every requested plan item with
   current code and direct verification evidence. Treat missing or indirect
   evidence as unfinished.
@@ -204,11 +231,18 @@ continues beyond a short read-only investigation.
 - **Admin:** `requireAdmin` from `@/lib/auth/api-auth` on the server; `useAdmin`
   or `<AdminOnly>` in the UI.
 - **UI:** one picker only — `src/components/ui/needt-picker.tsx`. Token-based
-  colors. The old blanket "no glow / no backdrop blur" rule is retired
-  (2026-08-16, owner decision) — the Figma Make-led redesign allows soft
-  glow/blur. Match each screen's current Figma reference as it's
-  redesigned; see `design-refs/ui-conventions.md`. Add shadcn components with
-  `npx shadcn@latest add`; icons from `react-icons`.
+  colors, one three-layer semantic system — never revive the legacy shadcn HSL
+  set. The old blanket "no glow / no backdrop blur" rule is retired (2026-08-16,
+  owner decision), but that is not permission to decorate: see the explicit
+  do-not list in [`docs/plans/10-design.md`](docs/plans/10-design.md). Design
+  direction is decided in D0 and executed in code through `/style`, not Figma.
+  Until a screen is actually redesigned it keeps its current appearance — do not
+  retrofit effects speculatively. See `design-refs/ui-conventions.md`. Add
+  shadcn components with `npx shadcn@latest add`; icons from `react-icons`.
+- **Motion:** every transition goes through `src/lib/motion.ts` and
+  `MotionRuntime`, so OS/user/hidden-tab reduced motion always disables it.
+  Transform and opacity only on hot paths. 60fps on the reference device or the
+  effect does not ship.
 - **JSX text:** escape quotes and apostrophes as `&quot;` / `&apos;`.
 - **Branding:** product copy and internal event names say Needt only. The
   `@fullcalendar/*` package IDs and legal attribution are the only exceptions;
