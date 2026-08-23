@@ -62,6 +62,7 @@ jobs:
              git cat-file -e "${SEMGREP_BASELINE_COMMIT}^{commit}" 2>/dev/null; then
             semgrep --config=auto --error --baseline-commit "$SEMGREP_BASELINE_COMMIT"
           else
+            unset SEMGREP_BASELINE_COMMIT
             semgrep --config=auto --error
           fi
 
