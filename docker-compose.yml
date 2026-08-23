@@ -54,6 +54,7 @@ services:
           "CMD-SHELL",
           'node -e "fetch(''http://127.0.0.1:1235/health'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
         ]
+      start_period: 2m
       interval: 10s
       timeout: 5s
       retries: 12

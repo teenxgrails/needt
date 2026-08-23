@@ -19,7 +19,7 @@ interface ComposeService {
   depends_on?: Record<string, { condition?: string }>;
   environment?: string[] | Record<string, string | number | null>;
   env_file?: string | string[];
-  healthcheck?: { test?: string[] };
+  healthcheck?: { start_period?: string; test?: string[] };
   image?: string;
   ports?: Array<string | number | { target?: number; published?: number }>;
 }
@@ -97,6 +97,7 @@ describe("Docker quick-start (issue #151)", () => {
     expect(worker.command).toEqual(["node", "dist/worker/index.js"]);
     expect(worker.ports).toBeUndefined();
     expect(worker.healthcheck?.test?.join(" ")).toContain("127.0.0.1:1235");
+    expect(worker.healthcheck?.start_period).toBe("2m");
     expect(collaboration.healthcheck?.test?.join(" ")).toContain(
       "127.0.0.1:1234"
     );
