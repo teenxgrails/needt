@@ -3,7 +3,7 @@ id: 20260824-codex-ci-release-recovery
 owner: codex
 branch: codex/ci-release-recovery
 status: complete
-updated: 2026-08-23T23:51:57Z
+updated: 2026-08-23T23:54:17Z
 objective: Repair the post-push CI failures, OAuth scope contract, and release documentation with full local gates and no production action.
 ---
 
@@ -24,6 +24,7 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - Pushed the branch to authoritative `origin` and opened https://github.com/teenxgrails/needt/pull/20 into `main` without merging or touching Coolify.
 - `4c33d97 fix(ci): clear invalid Semgrep baseline` unsets GitHub's all-zero first-push baseline before the full Semgrep scan; its regression test, lint, and type-check passed locally.
 - `34aa380 fix(release): address PR review blockers` checks out the immutable release SHA throughout the privileged workflow (including Docker metadata identity), rejects disabled Google Tasks creation/list access and records mapping failures, removes three owner-identified tautological tests, and documents the migration/provenance changes in `CHANGELOG.md`.
+- `437141f fix(ci): keep release SHA valid in job env` restores the direct immutable event-SHA expression for job-level deploy environment variables, where GitHub does not allow the step-only `env` context; focused workflow tests, type-check, and lint passed afterward.
 
 ## Working state
 
@@ -49,8 +50,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 
 ## Blockers
 
-- None. PR #20 remains open and unmerged; merge is explicitly prohibited.
+- None. The invalid job-level context found by GitHub was corrected in `437141f`; PR #20 remains open and unmerged, and merge is explicitly prohibited.
 
 ## Next action
 
-- Push the completed review-fix checkpoints to PR #20, wait for branch CI, and stop without merge or Coolify action.
+- Push the corrected review-fix checkpoints to PR #20, wait for branch CI, and stop without merge or Coolify action.
