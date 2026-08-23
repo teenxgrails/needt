@@ -49,23 +49,75 @@ WebSocket domain, and set that public `wss://` URL on the web service as
 
 ## 3. Environment Variables
 
-Required:
+Set these runtime values on the three Coolify services unless a row says
+otherwise. Use the same value for every service that receives a given secret;
+rotating one independently breaks token verification or telemetry correlation.
+
+### Base runtime configuration (all services)
 
 ```bash
 DATABASE_URL="postgresql://postgres:...@postgres-resource:5432/postgres"
 DIRECT_URL="postgresql://postgres:...@postgres-resource:5432/postgres"
+REDIS_URL="redis://default:password@redis:6379"
+NEXTAUTH_SECRET="random-32-plus-character-secret"
+COLLABORATION_SECRET="separate-random-32-plus-character-secret"
+RATE_LIMIT_HASH_SECRET="separate-random-32-plus-character-secret"
+SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
+SENTRY_ENVIRONMENT="production"
+```
+
+`RATE_LIMIT_HASH_SECRET` is mandatory in production. It is a separate secret
+used only to HMAC rate-limit identifiers before Redis sees them. `SENTRY_DSN`
+and `SENTRY_ENVIRONMENT` configure server, edge, worker, and collaboration
+telemetry at runtime.
+
+### Web-service runtime configuration
+
+```bash
 NEXTAUTH_URL="https://use.needt.app"
 NEXT_PUBLIC_APP_URL="https://use.needt.app"
 NEXT_PUBLIC_SITE_URL="https://use.needt.app"
-NEXTAUTH_SECRET="random-32-plus-character-secret"
 CRON_SECRET="random-cron-secret"
-REDIS_URL="redis://default:password@redis:6379"
-COLLABORATION_SECRET="separate-random-32-plus-character-secret"
 COLLABORATION_PUBLIC_URL="wss://collaboration.use.needt.app"
-COLLABORATION_HOST="0.0.0.0"
-COLLABORATION_PORT="1234"
 WEBHOOK_BASE_URL="https://use.needt.app"
 ```
+
+`CRON_SECRET` protects the web cron endpoints. Keep `NEXTAUTH_URL`,
+`NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SITE_URL`, and `WEBHOOK_BASE_URL` on the
+same public HTTPS origin.
+
+### Collaboration-service runtime configuration
+
+```bash
+COLLABORATION_HOST="0.0.0.0"
+COLLABORATION_PORT="1234"
+```
+
+### Browser Sentry build-time configuration (public, not a Coolify secret)
+
+```bash
+NEXT_PUBLIC_SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
+NEXT_PUBLIC_SENTRY_ENVIRONMENT="production"
+```
+
+Next.js inlines `NEXT_PUBLIC_*` values when the image is built. The current
+`docker-publish` workflow provides only the non-secret `NEEDT_BUILD_SHA`, so
+setting these two values only in Coolify after publishing an image does not
+enable browser telemetry. Provision a reviewed follow-up CI build path for the
+two public values before requiring browser Sentry; do not substitute a secret
+or a Sentry auth token as a Docker build argument.
+
+### Build-only values (not Coolify runtime environment)
+
+- `NEEDT_BUILD_SHA` is supplied by CI as the sole production Docker build
+  argument and is baked into the image for `/api/health` and Sentry release
+  identity. The owner does not set it manually.
+- `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are for an explicitly
+  authorized future source-map upload only. They are not runtime variables.
+  The token must be a BuildKit secret and must never be a Docker build argument
+  or image `ENV` value.
+
+### Optional product integrations
 
 Calendar OAuth:
 
@@ -77,17 +129,27 @@ AZURE_AD_CLIENT_SECRET=""
 AZURE_AD_TENANT_ID="common"
 ```
 
-Optional AI and push:
+Optional AI:
 
 ```bash
 ANTHROPIC_API_KEY=""
 OPENAI_API_KEY=""
 AI_CUSTOM_URL=""
 AI_ENCRYPTION_KEY=""
+```
+
+### Web Push (optional; web and worker)
+
+```bash
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
 VAPID_PRIVATE_KEY=""
 VAPID_SUBJECT="mailto:you@example.com"
 ```
+
+Enable Web Push only when all three values are set. `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+is the public half exposed by the web API; `VAPID_PRIVATE_KEY` and
+`VAPID_SUBJECT` stay runtime-only. Supply the same trio to web and worker so
+subscriptions and reminder delivery use the same VAPID identity.
 
 Apple/iCloud CalDAV credentials are entered in the app at runtime and never stored in env.
 
