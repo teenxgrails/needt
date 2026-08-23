@@ -48,7 +48,138 @@ second or the effect does not ship.**
 
 ---
 
-## D0 — Identity spike (start here)
+## D-1 — Escaping Motion (the actual problem)
+
+**Owner assessment, 2026-08-22:** the current UI is close to a 1:1 copy of
+Motion. The owner named four things that read as copied, and authorized changing
+all of them, **including the set of sections**.
+
+This is not only an identity problem. A near-copy of a competitor's interface is
+a trade-dress risk, and it makes the product unusable as portfolio work — a
+viewer who knows Motion sees the copy, not the author.
+
+### The four copied elements
+
+1. Left sidebar with a mini-month calendar on top, then search, then a flat list
+   of sections. This is the single most recognizable Motion signature.
+2. Task appearance on the calendar — coloured left rail, title plus small time,
+   flat card.
+3. Palette: violet accent on near-black.
+4. The section set and its logic: Today / Tasks-with-tabs / Focus as peers.
+
+### The structural move
+
+Fixing 1–3 while keeping 4 produces a re-skinned Motion. The escape has to come
+from **structure derived from Needt's own thesis**, which Motion does not share:
+*the day plans itself, deterministically, and can explain why.*
+
+If that is the thesis, seven peer sections is the wrong shape. Proposed model:
+
+- **One primary surface — the time canvas.** Today and Calendar stop being two
+  destinations and become one continuous surface with a range switch (day /
+  week). This alone removes the most Motion-like pair of sections.
+- **The mini-month calendar leaves the sidebar entirely.** Range and date
+  navigation belong to the canvas that owns time, not to the app chrome. This is
+  the highest-signal single change in the whole redesign.
+- **Tasks and Projects become lenses over the same data**, not separate
+  destinations — a list view of the canvas, filtered. Not a parallel product.
+- **Pages and Moodboards merge into one "documents" place.** Two entries for
+  "things you write and draw" is Motion-style section inflation.
+- **Focus becomes a mode, not a section.** It is a state of the current day, not
+  a location you navigate to. Entering it is a transition, not a route change.
+- **Mail needs an honest decision.** It already sits awkwardly as a tab inside
+  Tasks. Either it is a first-class surface or it is cut. A compromise tab is the
+  worst of both.
+
+Result: roughly three destinations instead of seven, plus one capture action and
+one mode. The sidebar then genuinely becomes "the main object of the app" in the
+Arc sense — it holds identity, capture and places, not a directory of features.
+
+**Risk:** high, and the most expensive option available. It changes routes,
+navigation, E2E specs and visual baselines. It is authorized, but it must be
+sequenced as its own release with the old routes redirecting, never as a big-bang
+rewrite.
+
+### Owner decisions, 2026-08-22
+
+- **Today + Calendar merge into one time canvas — approved.** Own release, old
+  routes redirect.
+- **Mail becomes Inbox.** Container and naming only.
+- **Support chat — cut.** Email is sufficient at this scale.
+- **User-to-user chat — replaced** by a much safer idea: pin a person by their
+  email address and filter the Inbox to correspondence with them. No messaging
+  system, no moderation duty, no message retention obligations. Deferred, not
+  current scope.
+- **Third-party ads — do not build.** Upsell prompts and plan limits are fine;
+  an ad network inside a planner contradicts the privacy stance and destroys the
+  premium positioning this track exists to create.
+- **Themes stay** dark grey and light. The base goes neutral; colour appears only
+  on icons and category markers. **Colour must encode meaning** — a project or
+  block type keeps one colour permanently. Decorative colour is what makes dense
+  lists noisy, which is the exact failure Notion/Craft references avoid.
+
+### Primary action button
+
+The owner wants one deliberately premium control used on important actions
+(create task), not an "AI button" and not everywhere. Specification:
+
+- Press-in `scale(.98)` over 90ms, near-linear. Release springs back over 340ms
+  with slight overshoot. The asymmetry is what reads as mechanical travel.
+  Overshoot is acceptable here — a deliberate rare action, unlike moving
+  schedule blocks where it becomes irritating.
+- A 1px light line along the top edge. This imitates light falling on a raised
+  surface and reads as volume. **A glow around the button reads cheap; a light
+  edge on the button reads expensive.** No outer glow, no gradient fill.
+- **Scarcity is the mechanism:** exactly one filled action per screen. Everything
+  else is outline or ghost. Three filled buttons and none of them feel worth
+  pressing.
+- Show the keyboard equivalent inside the control.
+- **The reward matters more than the button.** Creating a task must visibly send
+  it to the slot the scheduler chose — the reflow in miniature. That is what
+  makes the action feel worth repeating.
+
+### Palette direction
+
+Recommended: **warm charcoal with a clay accent.** The category is split between
+cold black-plus-violet (Motion, Linear) and white (Things, Sunsama); warm
+neutrals are largely unoccupied, and warmth reads as expensive at low cost.
+Staying dark also preserves the owner's habit. Alternatives shown and available:
+light sand with a deep green accent (the sharpest break from Motion), and deep
+ink with teal (dark but clearly not violet).
+
+Whatever is chosen: **the violet accent goes**, and the neutral ramp must move
+off pure gray. Those two changes alone remove most of the palette-level
+resemblance.
+
+### Task appearance on the calendar
+
+Owner explicitly asked for this to be solved rather than guessed. It is the
+product's central screen. Constraints that are established practice, not taste:
+
+- Blocks under ~30 minutes cannot hold two lines — define a single-line variant
+  rather than clipping.
+- Overlap needs a defined rule (side-by-side, inset, or stacked with a count),
+  chosen once and applied everywhere.
+- Time must use tabular numerals or columns visibly misalign.
+- Scheduled-by-Needt blocks must be distinguishable from calendar events at a
+  glance — this is Needt's core value and currently reads as the same object.
+- Past, current and future blocks need distinct treatment; "now" is the most
+  important position on the screen.
+
+Design this as its own concept before touching the canvas layout.
+
+## D0 — Identity spike
+
+> **Narrowed by the owner on 2026-08-22.** After reviewing concept work, the
+> owner selected Arc (sidebar as the app's main object, content to the top of
+> the window) and Notion/Craft (quiet density, hover only on the hovered row),
+> and rejected the Linear/Raycast precision-instrument character outright.
+>
+> That resolves the choice: **Needt is a sidebar-forward, calm, quiet product** —
+> variant 3 (spatial canvas) crossed with variant 2 (calm editorial), definitively
+> not variant 1. Do not rebuild all three variants below. Build **one** Today
+> screen in that combined direction and use the spike only to settle open
+> questions: type, density, and how far the sidebar-as-main-object idea goes.
 
 **Prerequisite:** none. Runs immediately, in parallel with plan 09 L0.
 
@@ -183,6 +314,99 @@ npm run test:visual
 
 ---
 
+## D2b — Approved concept specs
+
+**Implementation reference with exact values:**
+[`design-refs/prototypes/README.md`](../../design-refs/prototypes/README.md).
+Read it before building any of this — it carries the palette, the easing curves,
+the durations and the calendar-block contract.
+
+**Prerequisite:** D1. These were reviewed and approved by the owner on
+2026-08-22. Build to these numbers; do not reinvent them.
+
+**Use what is already installed.** Motion 12 is in `package.json` and ships
+`layout` / `layoutId`, which is exactly the mechanism all four concepts need. It
+is currently used in only two calendar files. Do not add GSAP, react-spring or
+any other animation dependency.
+
+### Schedule reflow (the signature moment)
+
+- Only genuinely moved blocks animate. Unmoved blocks stay perfectly still —
+  stillness is what makes the movement readable. Never animate the whole day.
+- Stagger 45ms between moved blocks, `cubic-bezier(.22, 1, .32, 1)`, ~500ms for
+  a full traversal. Decelerating, **no overshoot** — bounce on a frequent action
+  becomes irritating by the third repetition.
+- The explanation names the cause, not the fact: "Moved 1 task to free 14:00 for
+  *Design review*" — never "Schedule updated".
+- Undo sits next to the explanation, always. The user must see that nothing
+  irreversible happened behind their back.
+- Under reduced motion: positions update instantly, explanation and undo remain.
+
+### Left sidebar
+
+- **One shared indicator that slides** between nav items (`layoutId`), never a
+  highlight that fades out on one row and in on another. The eye should track
+  one object.
+- **macOS window controls.** The desktop app is a PWA, not Electron/Tauri. Use
+  `display_override: ["window-controls-overlay"]` and reserve the top-left zone
+  with `env(titlebar-area-x)` / `env(titlebar-area-height)`. On macOS the
+  controls sit on the **left** — directly over the sidebar — so the wordmark
+  must start after that inset, not at x=0. Mark the strip `-webkit-app-region:
+  drag` and every control inside it `no-drag`.
+- Wordmark lives in that same strip, beside the controls.
+- **Collapse timing is asymmetric on purpose:** labels fade at 140ms while the
+  width animates at 320ms. Synchronous timing visually crushes the text against
+  the edge.
+- Collapsed state must stay usable — not a strip of ambiguous icons.
+- Hover feedback appears only on the row under the cursor; everything else stays
+  completely quiet.
+
+### Popovers and menus — one rule for all of them
+
+Every overlay in the product grows from the control that opened it:
+`transform-origin` set to the trigger corner, `translateY(4px) → 0`,
+`scale(.98) → 1`, 160ms. No centre fades, no viewport-origin overlays, no
+per-screen variations. This applies to the account menu, command palette,
+context menus, pickers and dialogs alike.
+
+### Settings toggles with live preview
+
+- Each toggle row carries a 124×76 preview window showing **the actual result**
+  in miniature — a slice of real UI, never an icon or illustration.
+- The preview reacts immediately when the toggle flips.
+- Animated previews run **only on row hover** and stop on leave. Thirty settings
+  animating at once is unusable.
+- Frozen under `prefers-reduced-motion`; the preview still shows the changed
+  end state.
+- Rows that cannot show a meaningful miniature get no preview box — do not fill
+  the space with decoration.
+
+### Reference techniques — owner-selected (2026-08-22)
+
+The owner reviewed five candidate references and kept exactly two. Build toward
+these; the rejected ones are not a fallback.
+
+**Arc — the sidebar is the main object of the app**, not a service panel. It
+carries identity, navigation and account, content runs to the very top of the
+window, and the app reads as "a sidebar with a canvas" rather than "a page with
+a nav strip". This is the strongest single signal about Needt's direction.
+
+**Notion / Craft — quiet density.** Hover state appears only on the row under
+the cursor; everything else stays completely still. A dense list must never look
+noisy. No hover effects that move, scale or glow — contrast change only.
+
+**Explicitly rejected as aesthetics:** Linear's precision-instrument density,
+Raycast's overlay language, Things' playful list mechanics. Do not reintroduce
+their visual character.
+
+**But two non-aesthetic rules survive that rejection**, because they are hygiene
+rather than style, and remain mandatory:
+
+- Every overlay shares one origin/size/timing contract (see the popover rule
+  above). Consistency of behavior is not a borrowed look.
+- Perceived speed — optimistic updates wherever a mutation is safe. Slow is not
+  a design direction.
+
 ## D3 — Foundations, re-tuned to the chosen direction
 
 **Prerequisite:** D0 decided. May run alongside D1.
@@ -311,6 +535,7 @@ npm run test:visual
 | D0 identity spike | nothing | plan 09 L0–L2 |
 | D1 motion language | D0 owner decision | plan 09 L1–L4 |
 | D2 signature reflow | D1 | pairs with 09 L7.1 |
+| D2b concept specs | D1 | sidebar/popovers safe pre-launch; reflow with L7.1 |
 | D3 foundations | D0 | alongside D1 |
 | D4 navigation | D3 | before launch only if trivially safe |
 | D5 screen rollout | D4 **and 09 L6 launched** | post-launch, flagged |

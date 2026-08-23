@@ -108,6 +108,14 @@ The owner has pre-authorized these actions. Do them without asking:
   only, never destructive.
 - **Update visual baselines**, after reviewing each diff by hand. A baseline
   updated without looking at the diff is a defect, not a shortcut.
+- **Reclaim local disk space when a gate fails on `ENOSPC` or a full disk.**
+  This machine has repeatedly run out of space and stalled entire sessions.
+  Regenerable artifacts may be deleted without asking: `.next` in any worktree,
+  `node_modules` in worktrees you are not actively using, `~/Library/Caches/ms-playwright`,
+  the npm cache, `docker system prune`, and `git worktree prune`. Report what was
+  freed. **Never** delete source, user data, `.env` files, the primary checkout's
+  working tree, or another workstream's dirty files — and never touch anything
+  under `~/Library` beyond the caches named here.
 
 Still requires the owner, every time:
 
@@ -287,5 +295,10 @@ always reads local data.
 `npm run test:e2e` · visual/style suites when UI changed, diffs reviewed by hand
 before updating baselines · `npm run build` · `npm run build:worker` ·
 production Docker build · docs updated · one scoped commit · green CI.
+
+**Production Docker build is satisfied by CI** (`.github/workflows/docker-publish.yml`
+on `ubuntu-latest`) on the same SHA. Do not block local work on a local
+`docker build`; see the retirement note in
+[`docs/plans/09-launch.md`](docs/plans/09-launch.md).
 
 Full deploy sequence and release gate: [`docs/STACK.md`](docs/STACK.md).
