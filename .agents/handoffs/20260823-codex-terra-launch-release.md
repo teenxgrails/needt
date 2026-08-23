@@ -2,8 +2,8 @@
 id: 20260823-codex-terra-launch-release
 owner: codex
 branch: codex/terra-launch-l0
-status: blocked
-updated: 2026-08-23T12:28:49Z
+status: active
+updated: 2026-08-23T14:20:00Z
 objective: Complete the Terra-owned CI gates, release documentation, task-model backlog, and the evidence-based /today error investigation on the Sol RC.
 ---
 
@@ -24,7 +24,7 @@ objective: Complete the Terra-owned CI gates, release documentation, task-model 
 
 ## Working state
 
-- Files currently dirty or expected to change: this final handoff checkpoint only.
+- Resumed against Sol `92093f8` to reconcile the private worker SHA contract. Expected Terra-owned changes: `.github/workflows/docker-publish.yml`, CI contract tests, `docs/**`, and this handoff. `/today` stays scoped to the already-landed `cca8fac` unless fresh local evidence finds a distinct cause.
 - Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; Sol-owned runtime/build paths above; `.agents/handoffs/20260823-codex-sol-runtime-release.md` is history, not an edit target.
 
 ## Verification
@@ -41,8 +41,8 @@ objective: Complete the Terra-owned CI gates, release documentation, task-model 
 
 ## Blockers
 
-- CI source-map upload and production verification require GitHub/Coolify execution and owner-managed secrets. The owner must add `NEEDT_PRODUCTION_WORKER_HEALTH_URL` and `NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL` as Production environment secrets before the new SHA gate can run, then execute `workflow_dispatch` and preserve the Sentry upload plus three-SHA convergence evidence.
+- CI source-map upload and production verification require GitHub/Coolify execution and owner-managed secrets. The owner must ensure the deployed image receives the exact 40-character source SHA, then execute `workflow_dispatch` and preserve Sentry-upload plus web/worker/collaboration convergence evidence. `NEEDT_PRODUCTION_WORKER_HEALTH_URL` is no longer valid because worker health is private; Terra must reconcile the workflow with Sol before a run.
 
 ## Next action
 
-- Owner/Terra release operator: configure the two runtime health URL environment secrets, run `docker-publish` for this branch's merged release SHA, and attach CI/Sentry/all-service-health evidence before deployment.
+- Merge Sol `92093f8`, then reconcile CI/documentation and rerun focused gates before handing the release operator the exact remaining external checklist.
