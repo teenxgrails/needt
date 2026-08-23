@@ -3,7 +3,7 @@ id: 20260823-codex-launch-l1-sentry
 owner: codex
 branch: codex/launch-l1-sentry
 status: active
-updated: 2026-08-23T02:44:44Z
+updated: 2026-08-23T02:45:12Z
 objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-map upload wiring without a local Docker build.
 ---
 
@@ -21,10 +21,11 @@ objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-
 - `2fa9524 fix(launch): scrub Sentry telemetry` records the completed privacy/runtime tagging unit.
 - `da64ba2 fix(launch): harden Sentry telemetry` merged that unit into `codex/launch-l0`.
 - Made the non-secret build SHA available to browser Sentry initialization before Next compiles, with a focused Dockerfile regression test.
+- `6559cf8 fix(launch): tag browser Sentry releases` records the unit; `869783b fix(launch): tag browser Sentry releases` merged it into `codex/launch-l0`.
 
 ## Working state
 
-- Files currently dirty or expected to change: production Dockerfile, browser release regression test, this handoff. CI source-map wiring and deployment documentation remain intentionally untouched pending explicit outbound-data authorization.
+- Files currently dirty or expected to change: this handoff. CI source-map wiring and deployment documentation remain intentionally untouched pending explicit outbound-data authorization.
 - Foreign changes that must remain untouched: all files in the primary and D0 worktrees; this worktree was clean at start.
 
 ## Verification
