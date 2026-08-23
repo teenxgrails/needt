@@ -30,11 +30,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/_old/`; added `BOOTSTRAP.md` as a copy-paste first-message prompt for
   any new agent chat, enforcing the required reading order and an
   end-of-session handoff save before context/usage limits are hit.
+- Added workspace-safe capacity and reversible schedule previews, versioned
+  Saved Views, project-health history, flexible habits with weekly Focus
+  targets, and approval-only meeting-note task/schedule proposals.
 - Style: applying a theme token object in `/style` now persists it per user and
   updates shared product controls globally.
 
 ### Changed
 
+- Tasks now show a private seven-day capacity summary and an explainable,
+  reversible schedule preview with unscheduled-task and stale-preview recovery.
+- Task List can save and apply personal or role-gated workspace views without
+  changing the active workspace scope.
+- Projects now expose a versioned health journal and role-gated status-update
+  composer with concurrent-update recovery.
+- Focus now shows each member&apos;s workspace-scoped weekly target, progress and
+  editable minutes without exposing another member&apos;s focus data.
+- Focus now includes flexible personal habits that can be created, placed into
+  the current week and archived through the workspace-scoped scheduler.
 - Account settings now include a data-derived setup checklist that guides users
   through account, calendar, workspace and first-task actions.
 - Mail messages can now snooze locally until tomorrow morning or create a

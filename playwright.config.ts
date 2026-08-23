@@ -5,6 +5,10 @@ import { configureE2eEnvironment } from "./tests/e2e/environment";
 configureE2eEnvironment();
 
 const testBaseUrl = process.env.TEST_BASE_URL || "http://localhost:3000";
+const useProductionServer = process.env.NEEDT_E2E_PRODUCTION_SERVER === "1";
+const productionServerCommand = `${JSON.stringify(
+  process.execPath
+)} ./node_modules/next/dist/bin/next start`;
 
 /**
  * Read environment variables from file.
@@ -92,12 +96,15 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "WATCHPACK_POLLING=true next dev",
+    command: useProductionServer
+      ? productionServerCommand
+      : "WATCHPACK_POLLING=true next dev",
     url: testBaseUrl,
     // E2E resets its own database and Redis state before every run. Reusing a
     // previous dev server can retain a different environment or exit midway
     // through the suite while Playwright still considers it ready.
     reuseExistingServer: false,
+    timeout: useProductionServer ? 60_000 : 120_000,
     env: {
       ...process.env,
       RATE_LIMIT_HASH_SECRET:

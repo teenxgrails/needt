@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   applyReschedulePreview,
   createReschedulePreview,
+  SchedulePreviewConflictError,
   undoReschedulePreview,
 } from "@/services/ai/reschedule-preview";
 import { z } from "zod";
@@ -37,6 +38,12 @@ export async function POST(request: NextRequest) {
       await undoReschedulePreview(auth.userId, auth.workspace!, input.token)
     );
   } catch (error) {
+    if (error instanceof SchedulePreviewConflictError) {
+      return NextResponse.json(
+        { error: error.message, code: "SCHEDULE_PREVIEW_STALE" },
+        { status: 409 }
+      );
+    }
     logger.error(
       "Schedule preview operation failed",
       { error: error instanceof Error ? error.message : String(error) },

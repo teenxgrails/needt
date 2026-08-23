@@ -157,33 +157,42 @@ model User {
   taskActivities         TaskActivity[]          @relation("TaskActivityActor")
   projectTemplates       ProjectTemplate[]       @relation("ProjectTemplateCreator")
   projectBlockersCreated ProjectBlocker[]        @relation("ProjectBlockerCreator")
+  projectHealthUpdates   ProjectHealthUpdate[]   @relation("ProjectHealthUpdateAuthor")
+  habits                 Habit[]
+  weeklyFocusTargets     WeeklyFocusTarget[]
+  meetingNoteProposals   MeetingNoteProposal[]   @relation("MeetingNoteProposalCreator")
 }
 
 model Workspace {
-  id               String            @id @default(cuid())
-  name             String
-  kind             WorkspaceKind     @default(PERSONAL)
-  personalOwnerId  String?           @unique
-  personalOwner    User?             @relation("PersonalWorkspaceOwner", fields: [personalOwnerId], references: [id], onDelete: SetNull)
-  members          WorkspaceMember[]
-  invites          WorkspaceInvite[]
-  projects         Project[]
-  tasks            Task[]
-  boards           Board[]
-  pages            Page[]
-  pageFolders      PageFolder[]
-  pageTags         PageTag[]
-  pageSmartFolders PageSmartFolder[]
-  moodboards       Moodboard[]
-  taskActivities   TaskActivity[]
-  taskDependencies TaskDependency[]
-  projectTemplates ProjectTemplate[]
-  schedulingRuns   SchedulingRun[]
-  aiConversations  AiConversation[]
-  aiMessages       AiMessage[]
-  agentMemories    AgentMemory[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                   String                @id @default(cuid())
+  name                 String
+  kind                 WorkspaceKind         @default(PERSONAL)
+  personalOwnerId      String?               @unique
+  personalOwner        User?                 @relation("PersonalWorkspaceOwner", fields: [personalOwnerId], references: [id], onDelete: SetNull)
+  members              WorkspaceMember[]
+  invites              WorkspaceInvite[]
+  projects             Project[]
+  tasks                Task[]
+  boards               Board[]
+  pages                Page[]
+  pageFolders          PageFolder[]
+  pageTags             PageTag[]
+  pageSmartFolders     PageSmartFolder[]
+  moodboards           Moodboard[]
+  taskActivities       TaskActivity[]
+  taskDependencies     TaskDependency[]
+  projectTemplates     ProjectTemplate[]
+  projectHealthUpdates ProjectHealthUpdate[]
+  habits               Habit[]
+  weeklyFocusTargets   WeeklyFocusTarget[]
+  meetingNoteProposals MeetingNoteProposal[]
+  savedViews           SavedView[]
+  schedulingRuns       SchedulingRun[]
+  aiConversations      AiConversation[]
+  aiMessages           AiMessage[]
+  agentMemories        AgentMemory[]
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
 
   @@index([kind])
 }
@@ -343,24 +352,24 @@ model MailAccount {
 }
 
 model MailMessage {
-  id          String      @id @default(cuid())
-  accountId   String
-  account     MailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  externalId  String
-  threadId    String?
-  fromName    String?
-  fromAddress String?
-  toAddresses Json
-  subject     String
-  snippet     String
-  date        DateTime
-  isRead      Boolean     @default(false)
-  isArchived  Boolean     @default(false)
+  id           String      @id @default(cuid())
+  accountId    String
+  account      MailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  externalId   String
+  threadId     String?
+  fromName     String?
+  fromAddress  String?
+  toAddresses  Json
+  subject      String
+  snippet      String
+  date         DateTime
+  isRead       Boolean     @default(false)
+  isArchived   Boolean     @default(false)
   snoozedUntil DateTime?
-  labels      Json
-  bodyHtml    String?     @db.Text
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  labels       Json
+  bodyHtml     String?     @db.Text
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   @@unique([accountId, externalId])
   @@index([accountId, date])
@@ -385,23 +394,27 @@ model MailFocusedSplit {
 }
 
 model Project {
-  id               String            @id @default(cuid())
+  id               String                @id @default(cuid())
   name             String
   description      String?
   color            String?
   icon             String?
   // Legacy rollback field. API responses derive progress from active tasks;
   // remove this column only in a later contract migration.
-  progress         Int               @default(0)
-  status           String            @default("active") // enum: 'active', 'archived'
+  progress         Int                   @default(0)
+  status           String                @default("active") // enum: 'active', 'archived'
   tasks            Task[]
   taskListMappings TaskListMapping[]
   stages           ProjectStage[]
   blockers         ProjectBlocker[]
+  healthStatus     ProjectHealthStatus   @default(UNKNOWN)
+  healthVersion    Int                   @default(0)
+  healthUpdatedAt  DateTime?
+  healthUpdates    ProjectHealthUpdate[]
   startDate        DateTime?
   deadline         DateTime?
   sourceTemplateId String?
-  sourceTemplate   ProjectTemplate?  @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+  sourceTemplate   ProjectTemplate?      @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
 
   // External sync fields
   externalId     String?
@@ -469,6 +482,26 @@ model ProjectBlocker {
   @@index([stageId])
   @@index([blockerTaskId])
   @@index([createdById])
+}
+
+model ProjectHealthUpdate {
+  id             String              @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  projectId      String
+  project        Project             @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  authorId       String?
+  author         User?               @relation("ProjectHealthUpdateAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  status         ProjectHealthStatus
+  previousStatus ProjectHealthStatus
+  summary        String
+  version        Int
+  createdAt      DateTime            @default(now())
+
+  @@unique([projectId, version])
+  @@index([workspaceId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([authorId])
 }
 
 model ProjectTemplate {
@@ -695,10 +728,13 @@ model Task {
   skipSync          Boolean   @default(false) // Flag to skip syncing this task
 
   // Change tracking relation
-  changes         TaskChange[]
-  timeEntries     TimeEntry[]
-  scheduledBlocks ScheduledBlock[]
-  focusSessions   FocusSession[]
+  changes           TaskChange[]
+  timeEntries       TimeEntry[]
+  scheduledBlocks   ScheduledBlock[]
+  focusSessions     FocusSession[]
+  habit             Habit?           @relation(fields: [habitId], references: [id], onDelete: Restrict)
+  habitId           String?
+  habitOccurrenceAt DateTime?
 
   // User relationship
   userId String?
@@ -734,6 +770,7 @@ model Task {
   properties    Json?
 
   @@unique([recurrenceMasterId, recurrenceInstanceAt])
+  @@unique([habitId, habitOccurrenceAt])
   @@unique([id, projectId])
   @@index([status])
   @@index([dueDate])
@@ -768,6 +805,48 @@ model Task {
   @@index([externalListId])
   @@index([blockDirty, userId])
   @@index([blockFeedId])
+  @@index([habitId, habitOccurrenceAt])
+}
+
+model Habit {
+  id                       String                 @id @default(cuid())
+  userId                   String
+  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId              String
+  workspace                Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  title                    String
+  description              String?
+  targetOccurrencesPerWeek Int                    @default(1)
+  daysOfWeek               Int[]                  @default([])
+  estimatedMinutes         Int                    @default(30)
+  energyRequired           SchedulingEnergyLevel  @default(MEDIUM)
+  priority                 SchedulingTaskPriority @default(MEDIUM)
+  scheduleId               String?
+  schedule                 WorkSchedule?          @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  isActive                 Boolean                @default(true)
+  archivedAt               DateTime?
+  tasks                    Task[]
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+
+  @@index([workspaceId, archivedAt, isActive])
+  @@index([userId, archivedAt])
+  @@index([scheduleId])
+}
+
+model WeeklyFocusTarget {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  targetMinutes Int       @default(300)
+  weekStartsOn  Int       @default(1)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
 }
 
 model TimeEntry {
@@ -1106,21 +1185,30 @@ model BoardColumn {
 }
 
 model SavedView {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  boardId   String?
-  board     Board?   @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId  String?
+  workspace    Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  boardId      String?
+  board        Board?              @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  name         String              @default("Saved view")
+  visibility   SavedViewVisibility @default(PERSONAL)
+  resource     SavedViewResource   @default(TASKS)
+  queryVersion Int                 @default(1)
   // table | board | list | timeline | calendar | gallery
-  type      String
-  groupBy   String?
-  filters   Json?
-  sort      Json?
-  position  Float    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  type         String
+  groupBy      String?
+  filters      Json?
+  sort         Json?
+  position     Float               @default(0)
+  archivedAt   DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
   @@index([userId])
+  @@index([workspaceId, resource, archivedAt, position])
+  @@index([workspaceId, visibility, archivedAt])
   @@index([boardId])
 }
 
@@ -1152,6 +1240,7 @@ model Page {
   record                DatabaseRecord?
   revisions             PageRevision[]
   aiProposals           AiPageChangeProposal[]
+  meetingNoteProposals  MeetingNoteProposal[]
   assets                PageAsset[]
   comments              PageComment[]
   forms                 PageForm[]
@@ -1525,6 +1614,30 @@ model AiPageChangeProposal {
   @@index([pageId, createdAt])
 }
 
+model MeetingNoteProposal {
+  id              String                @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  pageId          String
+  page            Page                  @relation(fields: [pageId], references: [id], onDelete: Restrict)
+  createdById     String?
+  createdBy       User?                 @relation("MeetingNoteProposalCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  summary         String
+  actions         Json
+  actionVersion   Int                   @default(1)
+  status          MeetingProposalStatus @default(PENDING)
+  pageUpdatedAt   DateTime
+  appliedAt       DateTime?
+  rejectedAt      DateTime?
+  schedulingRunId String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([workspaceId, status, createdAt])
+  @@index([pageId, createdAt])
+  @@index([createdById])
+}
+
 model BugReport {
   id                String                @id @default(cuid())
   userId            String
@@ -1626,6 +1739,7 @@ model WorkSchedule {
   isDefault Boolean              @default(false)
   windows   WorkScheduleWindow[]
   tasks     Task[]
+  habits    Habit[]
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
 
@@ -2291,6 +2405,13 @@ enum ProjectTemplateKind {
   WORKFLOW
 }
 
+enum ProjectHealthStatus {
+  UNKNOWN
+  ON_TRACK
+  AT_RISK
+  OFF_TRACK
+}
+
 enum ProjectRelativeDateAnchor {
   STAGE_START
   STAGE_DEADLINE
@@ -2305,7 +2426,24 @@ enum DatabaseViewType {
   GALLERY
 }
 
+enum SavedViewVisibility {
+  PERSONAL
+  WORKSPACE
+}
+
+enum SavedViewResource {
+  TASKS
+  PROJECTS
+  PAGES
+}
+
 enum AiProposalStatus {
+  PENDING
+  APPLIED
+  REJECTED
+}
+
+enum MeetingProposalStatus {
   PENDING
   APPLIED
   REJECTED
@@ -2362,6 +2500,7 @@ enum SchedulingRunSource {
   CALENDAR_SYNC
   CRON
   CONNECTOR
+  MEETING_PROPOSAL
 }
 
 enum SchedulingRunStatus {
