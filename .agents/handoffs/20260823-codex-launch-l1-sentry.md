@@ -3,7 +3,7 @@ id: 20260823-codex-launch-l1-sentry
 owner: codex
 branch: codex/launch-l1-sentry
 status: active
-updated: 2026-08-23T02:35:13Z
+updated: 2026-08-23T02:35:36Z
 objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-map upload wiring without a local Docker build.
 ---
 
@@ -18,10 +18,11 @@ objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-
 - Read-only audit confirmed Sentry v10.68.0 supports the required callbacks and that Docker source-map upload currently has no build-time SHA or authentication path.
 - Added shared privacy filtering that drops all breadcrumbs, request/user/extra payloads, exception values, trace names, and trace attributes while retaining release-level error classification.
 - Tagged web, worker, and collaboration Sentry events by service and build SHA; collaboration now captures startup failure.
+- `2fa9524 fix(launch): scrub Sentry telemetry` records the completed privacy/runtime tagging unit.
 
 ## Working state
 
-- Files currently dirty or expected to change: Sentry initializers, shared sanitizer and test, this handoff. CI source-map wiring and deployment documentation remain intentionally untouched pending explicit outbound-data authorization.
+- Files currently dirty or expected to change: this handoff. CI source-map wiring and deployment documentation remain intentionally untouched pending explicit outbound-data authorization.
 - Foreign changes that must remain untouched: all files in the primary and D0 worktrees; this worktree was clean at start.
 
 ## Verification
