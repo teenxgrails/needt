@@ -2,8 +2,8 @@
 id: 20260824-codex-ci-release-recovery
 owner: codex
 branch: codex/ci-release-recovery
-status: active
-updated: 2026-08-23T23:00:52Z
+status: blocked
+updated: 2026-08-23T23:01:36Z
 objective: Repair the post-push CI failures, OAuth scope contract, and release documentation with full local gates and no production action.
 ---
 
@@ -33,6 +33,7 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - First web-build attempt hit `ENOSPC`. Removed only four regenerable `.next` directories, freeing about 9.8 GiB; the clean retry passed.
 - Not run: E2E, visual, or any image build. The exact CI `prisma migrate diff --from-migrations ... --shadow-database-url ... --exit-code` remains unverified locally because no PostgreSQL server is listening.
 - Owner subsequently authorized a branch push/PR and a one-time PostgreSQL 16 container. Docker Desktop startup was rejected before any container existed; PR CI is the approved equivalent PostgreSQL 16 execution path and cannot pass the production workflow provenance gate from a PR branch.
+- The remote push was also rejected before creating external state because the safety reviewer requires the authorization as a direct user chat message rather than goal-continuation context.
 
 ## Decisions and constraints
 
@@ -42,8 +43,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 
 ## Blockers
 
-- Awaiting the PR CI schema-drift job; no local container exists or needs cleanup.
+- No remote branch or PR exists yet. Docker and push both require a direct user chat authorization accepted by the safety reviewer; no container exists or needs cleanup.
 
 ## Next action
 
-- Commit this checkpoint, push `codex/ci-release-recovery` to `origin`, open a PR into `main`, and wait for its PostgreSQL 16 schema-drift job. Do not merge or touch Coolify.
+- After the user repeats the push/PR authorization directly in chat, push `codex/ci-release-recovery` to `origin`, open a PR into `main`, and wait for its PostgreSQL 16 schema-drift job. Do not merge or touch Coolify.
