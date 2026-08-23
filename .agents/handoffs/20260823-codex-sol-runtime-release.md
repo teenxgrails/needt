@@ -2,8 +2,8 @@
 id: 20260823-codex-sol-runtime-release
 owner: codex
 branch: codex/launch-l0
-status: active
-updated: 2026-08-23T11:55:47Z
+status: blocked
+updated: 2026-08-23T11:58:16Z
 objective: Restore release-correct collaboration runtime and close the locally implementable Sol deployment-safety gaps on one verified release SHA.
 ---
 
@@ -27,10 +27,11 @@ objective: Restore release-correct collaboration runtime and close the locally i
 - `1b89362 fix(email): require verified sender config` records the local S4 sender unit.
 - Configured Sentry 10.68 with the actual supported client-map deletion glob (`sourcemaps.filesToDeleteAfterUpload`), explicit `NEEDT_BUILD_SHA` release identity, and fail-closed upload handling. The production Docker build receives token/org/project only through required BuildKit secret mounts scoped to `npm run build`; no Sentry secret is an ARG, image ENV, or build arg.
 - Extended the postbuild artifact gate to fail on any `.next/static/**/*.map`. A fresh Node 22 production build passed this gate and an explicit file listing found no client source maps.
+- `be2a0c7 fix(release): secure Sentry source maps` records S5. The locally green code SHA is tagged `v0.4.1-rc.2`; do not promote it to final until the workflow and external mail checks below pass.
 
 ## Working state
 
-- Files currently dirty or expected to change: S5 source-map files pending commit. Terra must reconcile the stale `.js` command in `docs/deploy.md`, wire both runtime checks into `.github/workflows/docker-publish.yml`, and pass `sentry_auth_token`, `sentry_org`, and `sentry_project` through the build action's `secrets:` input.
+- Files currently dirty or expected to change: this final handoff checkpoint only. Terra must reconcile the stale `.js` command in `docs/deploy.md`, wire both runtime checks into `.github/workflows/docker-publish.yml`, and pass `sentry_auth_token`, `sentry_org`, and `sentry_project` through the build action's `secrets:` input.
 - Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; all D0 files; Terra-owned `docs/**` and `.github/workflows/**` except the already-reviewed commits being merged unchanged from `codex/launch-l1-config`.
 
 ## Verification
@@ -40,7 +41,8 @@ objective: Restore release-correct collaboration runtime and close the locally i
 - Passed for S2/S3 on Node 22.16.0: type-check; lint; focused Docker/worker-health unit tests (2 suites / 17 tests); worker build; collaboration build and executable smoke; entrypoint shell syntax; runtime-SHA harness success when all three match and expected failure when worker is stale; `git diff --check`.
 - Passed for S4 on Node 22.16.0: mocked Resend sender tests (2 tests), type-check, lint, and `git diff --check`.
 - Passed for S5 on Node 22.16.0: focused environment/Sentry tests (2 suites / 7 tests); type-check; lint; fresh `npm run build` including postbuild artifact scan; explicit `.next/static` map listing empty; `git diff --check`.
-- Not run / still required: full unit suite and final runtime builds after all Sol changes; Docker/GHCR CI with real BuildKit secrets; actual Sentry upload/release inspection; Terra workflow integration.
+- Final Node 22.16.0 boundary passed at `be2a0c7`: `npm run type-check`; `npm run lint`; `npm run test:unit` (156 passed suites / 720 passed tests, 1 suite/test skipped); `npm run build`; `npm run build:worker`; `npm run build:collaboration`; `npm run check:collaboration-runtime`; `npm run check:branding`; `npm run check:ui-contracts`; `npm run check:agent-handoffs`; `git diff --check`.
+- Not run / still required: Docker/GHCR CI with real BuildKit secrets; actual Sentry upload/release inspection; Terra workflow integration; production deploy/data operations; D0, launch E2E, and visual waves excluded by the owner brief.
 
 ## Decisions and constraints
 
@@ -59,4 +61,4 @@ objective: Restore release-correct collaboration runtime and close the locally i
 
 ## Next action
 
-- Commit S5, run the full local Sol validation boundary, then update this handoff with final SHAs, remaining external blockers, and Terra's exact integration actions.
+- Terra: update `docs/deploy.md` and `.github/workflows/docker-publish.yml` for `.mjs`, required BuildKit Sentry secrets, executable collaboration smoke, worker/collaboration health URLs, and `npm run check:runtime-shas`; then run docker-publish on `v0.4.1-rc.2` and hand the CI/Sentry evidence back to this track.
