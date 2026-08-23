@@ -3,7 +3,7 @@ id: 20260823-codex-launch-l1-health
 owner: codex
 branch: codex/launch-l1-health
 status: complete
-updated: 2026-08-23T02:47:00Z
+updated: 2026-08-23T02:47:53Z
 objective: Make the production health endpoint fail closed when packaged Prisma migrations are pending and pin the deployment workflow's health URL guard.
 ---
 
@@ -20,10 +20,11 @@ objective: Make the production health endpoint fail closed when packaged Prisma 
 - `/api/health` now returns a non-sensitive `503` with `db: "migrations-pending"` for pending migrations and `db: "error"` for database/query errors; both retain only build identity and latency.
 - Added health route/helper regression tests and the missing static `HEALTH_URL` workflow assertion.
 - Committed the scoped implementation as `8aefd02 fix(launch): harden health migration checks`.
+- Merged the scoped unit into `codex/launch-l0` as `9fa8549 fix(launch): harden release health`.
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff checkpoint only; implementation worktree was clean immediately after `8aefd02`.
+- Files currently dirty or expected to change: None; implementation worktree is clean.
 - Foreign changes that must remain untouched: all primary-checkout and D0 worktree changes; the L1 logging and Sentry workstreams and their handoffs.
 
 ## Verification
@@ -42,4 +43,4 @@ objective: Make the production health endpoint fail closed when packaged Prisma 
 
 ## Next action
 
-- Merge the scoped health commit into the launch release worktree, then retain the workflow health URL guard as a release contract.
+- Resume the next L1 audit item from the launch release worktree.
