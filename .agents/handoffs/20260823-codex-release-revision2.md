@@ -2,16 +2,16 @@
 id: 20260823-codex-release-revision2
 owner: codex
 branch: codex/terra-launch-l0
-status: active
-updated: 2026-08-23T18:08:11Z
-objective: Close the revision-2 release correctness gaps before any main push or Coolify auto-deploy.
+status: blocked
+updated: 2026-08-23T18:29:49Z
+objective: Reconcile revision-2 release work with upstream/main before a separately approved production push.
 ---
 
 ## Scope
 
 - Governing plan/spec: owner-provided release revision 2 dated 2026-08-23; `docs/plans/09-launch.md`.
-- In scope: F1 unhealthy-production deploy recovery, F2 AMD64-only publish, F3 worker-heartbeat lifecycle, F4 bounded Redis health read, F5 self-host compose topology, regression tests, release documentation, fast-forward promotion to `main`, and this handoff.
-- Out of scope: production secrets, D0/E2E/visual waves, GHCR migration, and unrelated product work.
+- In scope: F1 unhealthy-production deploy recovery, F2 AMD64-only publish, F3 worker-heartbeat lifecycle, F4 bounded Redis health read, F5 self-host compose topology, merging `upstream/main` into this branch, the full release gate set on the merge result, release documentation, and this handoff.
+- Out of scope: any push or deploy until the reconciled branch has passed its gates; production secrets; D0/E2E/visual waves; GHCR migration; and unrelated product work.
 
 ## Completed
 
@@ -25,6 +25,7 @@ objective: Close the revision-2 release correctness gaps before any main push or
 ## Working state
 
 - Local implementation is committed on `codex/terra-launch-l0`: `4dc9994` (CI recovery/AMD64), `cf78082` (worker heartbeat health), `0b4084c` (Compose topology/docs), and `8405be0` (worker startup grace). No application source was changed outside the F1-F5 release scope.
+- An isolated local worktree has an unpushed `main` at `3ba2dc7` from the earlier, now superseded fast-forward direction. It is not a promotion source and must not be pushed. `upstream/main` is currently `db8f996d3ce26a3dc00a3a42e9ec6d23eedc5dca`.
 - Foreign changes that must remain untouched: dirty `/Users/lol/Needt`; completed Terra and Sol handoffs; no Coolify configuration is represented in this repository.
 
 ## Verification
@@ -43,8 +44,8 @@ objective: Close the revision-2 release correctness gaps before any main push or
 
 ## Blockers
 
-- No local blocker before push. After promotion, Coolify auto-deploy must complete web first and then worker/collaboration; initial collaboration TLS provisioning may take several polling attempts.
+- Owner instruction: do not push until `upstream/main` has been merged into this branch and the full release gate set passes on the resulting SHA. Push destination must be `upstream`, never `origin`. The fork remote requires a separate owner decision: rename it to make its purpose explicit or delete it only if no longer needed.
 
 ## Next action
 
-- Fast-forward this branch to `main`, push origin, then verify the deployed main SHA through web, worker heartbeat, and collaboration `/health` before marking the handoff complete.
+- Fetch `upstream/main`, merge it into `codex/terra-launch-l0`, resolve the known package/workflow conflicts, run the full gates on that merge SHA, and present the verified result for a separate production-push approval.
