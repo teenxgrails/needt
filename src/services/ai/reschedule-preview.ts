@@ -1,11 +1,13 @@
-import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { createHash } from "node:crypto";
+
+import { scheduleAllTasksForUserDetailed } from "@/services/scheduling/TaskSchedulingService";
 import { Prisma } from "@prisma/client";
 
 import {
   type WorkspaceAccess,
   workspaceDataScopeWhere,
 } from "@/lib/auth/workspace-auth";
-import { newDate } from "@/lib/date-utils";
+import { addCalendarDays, newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
@@ -24,6 +26,7 @@ type SnapshotTask = {
   lastScheduled: string | null;
   isAutoScheduled: boolean;
   autoScheduled: boolean;
+  updatedAt: string;
 };
 
 type SnapshotBlock = {
@@ -41,11 +44,12 @@ export type ScheduleSnapshot = {
 };
 
 type ScheduleToken = {
-  version: 1;
+  version: 2;
   kind: "preview" | "undo";
   userId: string;
   workspaceId: string;
   expiresAt: string;
+  contextVersion: string;
   before: ScheduleSnapshot;
   after: ScheduleSnapshot;
 };
@@ -57,7 +61,16 @@ export type RescheduleChange = {
   toStart: string | null;
   fromEnd: string | null;
   toEnd: string | null;
+  explanation: string;
+  score: number | null;
 };
+
+export class SchedulePreviewConflictError extends Error {
+  constructor() {
+    super("The schedule changed after this preview was created.");
+    this.name = "SchedulePreviewConflictError";
+  }
+}
 
 async function captureSnapshot(
   userId: string,
@@ -76,7 +89,9 @@ async function captureSnapshot(
         lastScheduled: true,
         isAutoScheduled: true,
         autoScheduled: true,
+        updatedAt: true,
       },
+      orderBy: { id: "asc" },
     }),
     prisma.scheduledBlock.findMany({
       where: { userId, task: scope },
@@ -88,6 +103,7 @@ async function captureSnapshot(
         chunkCount: true,
         isFrozen: true,
       },
+      orderBy: [{ taskId: "asc" }, { chunkIndex: "asc" }],
     }),
   ]);
   return {
@@ -96,6 +112,7 @@ async function captureSnapshot(
       scheduledStart: task.scheduledStart?.toISOString() ?? null,
       scheduledEnd: task.scheduledEnd?.toISOString() ?? null,
       lastScheduled: task.lastScheduled?.toISOString() ?? null,
+      updatedAt: task.updatedAt.toISOString(),
     })),
     blocks: blocks.map((block) => ({
       ...block,
@@ -109,7 +126,11 @@ async function computeStagedSnapshot(
   userId: string,
   workspace: WorkspaceAccess,
   before: ScheduleSnapshot
-): Promise<ScheduleSnapshot> {
+): Promise<{
+  snapshot: ScheduleSnapshot;
+  unscheduled: Array<{ taskId: string; title: string; reason: string }>;
+}> {
+  const now = newDate();
   const [legacy, preferences, energyWindows, sourceTasks] = await Promise.all([
     prisma.autoScheduleSettings.findUnique({ where: { userId } }),
     prisma.schedulingPreferences.findUnique({ where: { userId } }),
@@ -161,18 +182,55 @@ async function computeStagedSnapshot(
     throw new Error("Auto-schedule settings not found for user");
   }
 
+  const selectedCalendarIds = parseStringArray(legacy.selectedCalendars);
+  const sourceFeeds = await prisma.calendarFeed.findMany({
+    where: { id: { in: selectedCalendarIds }, userId, enabled: true },
+    select: {
+      id: true,
+      events: {
+        where: {
+          archivedAt: null,
+          start: { lt: addCalendarDays(now, 21) },
+          end: { gt: now },
+        },
+        select: { start: true, end: true, description: true },
+      },
+    },
+  });
+
   const stagingUser = await prisma.user.create({
     data: { name: "Schedule preview staging" },
     select: { id: true },
   });
   try {
+    const stagedFeeds = await Promise.all(
+      sourceFeeds.map((feed) =>
+        prisma.calendarFeed.create({
+          data: {
+            userId: stagingUser.id,
+            name: "Schedule preview busy time",
+            type: "LOCAL",
+            enabled: true,
+            events: {
+              create: feed.events.map((event) => ({
+                title: "Busy",
+                start: event.start,
+                end: event.end,
+                description: event.description,
+              })),
+            },
+          },
+          select: { id: true },
+        })
+      )
+    );
     await prisma.autoScheduleSettings.create({
       data: {
         userId: stagingUser.id,
         workDays: legacy.workDays,
         workHourStart: legacy.workHourStart,
         workHourEnd: legacy.workHourEnd,
-        selectedCalendars: legacy.selectedCalendars,
+        selectedCalendars: JSON.stringify(stagedFeeds.map((feed) => feed.id)),
         bufferMinutes: legacy.bufferMinutes,
         highEnergyStart: legacy.highEnergyStart,
         highEnergyEnd: legacy.highEnergyEnd,
@@ -248,9 +306,12 @@ async function computeStagedSnapshot(
       })
     );
 
-    await scheduleAllTasksForUser(stagingUser.id, {
+    const { scheduleResult } = await scheduleAllTasksForUserDetailed(
+      stagingUser.id,
+      {
       entitlementUserId: userId,
-    });
+      }
+    );
     const [stagedTasks, stagedBlocks] = await Promise.all([
       prisma.task.findMany({
         where: { userId: stagingUser.id },
@@ -284,7 +345,9 @@ async function computeStagedSnapshot(
     );
 
     return {
-      tasks: before.tasks.map((task) => {
+      unscheduled: scheduleResult.unscheduled,
+      snapshot: {
+        tasks: before.tasks.map((task) => {
         const staged = stagedByOriginal.get(task.id);
         return staged
           ? {
@@ -296,9 +359,9 @@ async function computeStagedSnapshot(
               isAutoScheduled: staged.isAutoScheduled,
               autoScheduled: staged.autoScheduled,
             }
-          : task;
-      }),
-      blocks: [
+            : task;
+        }),
+        blocks: [
         ...before.blocks.filter(
           (block) => !mutableOriginalIds.has(block.taskId)
         ),
@@ -317,11 +380,88 @@ async function computeStagedSnapshot(
               ]
             : [];
         }),
-      ],
+        ],
+      },
     };
   } finally {
+    await prisma.calendarFeed.deleteMany({ where: { userId: stagingUser.id } });
     await prisma.user.delete({ where: { id: stagingUser.id } });
   }
+}
+
+function parseStringArray(value: string) {
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+async function captureContextVersion(userId: string) {
+  const settings = await prisma.autoScheduleSettings.findUnique({
+    where: { userId },
+    select: { selectedCalendars: true, updatedAt: true },
+  });
+  const selectedCalendarIds = parseStringArray(
+    settings?.selectedCalendars ?? "[]"
+  );
+  const [preferences, energyWindows, workSchedules, overrides, events] =
+    await Promise.all([
+      prisma.schedulingPreferences.findUnique({
+        where: { userId },
+        select: { updatedAt: true },
+      }),
+      prisma.energyProfileWindow.findMany({
+        where: { userId },
+        select: { id: true, updatedAt: true },
+        orderBy: { id: "asc" },
+      }),
+      prisma.workSchedule.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          updatedAt: true,
+          windows: {
+            select: { id: true, updatedAt: true },
+            orderBy: { id: "asc" },
+          },
+        },
+        orderBy: { id: "asc" },
+      }),
+      prisma.flexibleHoursOverride.findMany({
+        where: { userId },
+        select: { id: true, updatedAt: true },
+        orderBy: { id: "asc" },
+      }),
+      prisma.calendarEvent.findMany({
+        where: {
+          feedId: { in: selectedCalendarIds },
+          feed: { userId, enabled: true },
+          archivedAt: null,
+        },
+        select: { id: true, updatedAt: true },
+        orderBy: { id: "asc" },
+      }),
+    ]);
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        settings,
+        preferences,
+        energyWindows,
+        workSchedules,
+        overrides,
+        events,
+      })
+    )
+    .digest("hex");
+}
+
+function snapshotsMatch(current: ScheduleSnapshot, expected: ScheduleSnapshot) {
+  return JSON.stringify(current) === JSON.stringify(expected);
 }
 
 async function restoreSnapshot(
@@ -398,6 +538,12 @@ export function diffScheduleSnapshots(
         toStart: task.scheduledStart,
         fromEnd: previous?.scheduledEnd ?? null,
         toEnd: task.scheduledEnd,
+        explanation: task.scheduledStart
+          ? previous?.scheduledStart
+            ? "Moved to the next deterministic available slot."
+            : "Placed in deterministic available working time."
+          : "No valid working-time slot is currently available.",
+        score: task.scheduleScore,
       },
     ];
   });
@@ -407,16 +553,18 @@ function encodeToken(
   kind: ScheduleToken["kind"],
   userId: string,
   workspaceId: string,
+  contextVersion: string,
   before: ScheduleSnapshot,
   after: ScheduleSnapshot
 ) {
   return encryptSecret(
     JSON.stringify({
-      version: 1,
+      version: 2,
       kind,
       userId,
       workspaceId,
       expiresAt: newDate(newDate().getTime() + TOKEN_TTL_MS).toISOString(),
+      contextVersion,
       before,
       after,
     } satisfies ScheduleToken)
@@ -433,7 +581,7 @@ function decodeToken(
   if (!decrypted) throw new Error("Invalid schedule token");
   const value = JSON.parse(decrypted) as ScheduleToken;
   if (
-    value.version !== 1 ||
+    value.version !== 2 ||
     value.kind !== kind ||
     value.userId !== userId ||
     value.workspaceId !== workspaceId ||
@@ -449,8 +597,9 @@ export async function createReschedulePreview(
   workspace: WorkspaceAccess
 ) {
   const before = await captureSnapshot(userId, workspace);
-  const after = await computeStagedSnapshot(userId, workspace, before);
-  const changes = diffScheduleSnapshots(before, after);
+  const contextVersion = await captureContextVersion(userId);
+  const staged = await computeStagedSnapshot(userId, workspace, before);
+  const changes = diffScheduleSnapshots(before, staged.snapshot);
   logger.info(
     "Created schedule preview",
     { userId, changes: changes.length },
@@ -458,12 +607,14 @@ export async function createReschedulePreview(
   );
   return {
     changes,
+    unscheduled: staged.unscheduled,
     previewToken: encodeToken(
       "preview",
       userId,
       workspace.workspaceId,
+      contextVersion,
       before,
-      after
+      staged.snapshot
     ),
   };
 }
@@ -474,17 +625,29 @@ export async function applyReschedulePreview(
   token: string
 ) {
   const value = decodeToken(token, userId, workspace.workspaceId, "preview");
+  const [current, contextVersion] = await Promise.all([
+    captureSnapshot(userId, workspace),
+    captureContextVersion(userId),
+  ]);
+  if (
+    !snapshotsMatch(current, value.before) ||
+    contextVersion !== value.contextVersion
+  ) {
+    throw new SchedulePreviewConflictError();
+  }
   await restoreSnapshot(userId, workspace, value.after);
+  const applied = await captureSnapshot(userId, workspace);
   await publishScheduleChange(userId);
   logger.info("Applied schedule preview", { userId }, LOG_SOURCE);
   return {
-    changes: diffScheduleSnapshots(value.before, value.after),
+    changes: diffScheduleSnapshots(value.before, applied),
     undoToken: encodeToken(
       "undo",
       userId,
       workspace.workspaceId,
+      await captureContextVersion(userId),
       value.before,
-      value.after
+      applied
     ),
   };
 }
@@ -495,6 +658,16 @@ export async function undoReschedulePreview(
   token: string
 ) {
   const value = decodeToken(token, userId, workspace.workspaceId, "undo");
+  const [current, contextVersion] = await Promise.all([
+    captureSnapshot(userId, workspace),
+    captureContextVersion(userId),
+  ]);
+  if (
+    !snapshotsMatch(current, value.after) ||
+    contextVersion !== value.contextVersion
+  ) {
+    throw new SchedulePreviewConflictError();
+  }
   await restoreSnapshot(userId, workspace, value.before);
   await publishScheduleChange(userId);
   logger.info("Undid schedule preview", { userId }, LOG_SOURCE);

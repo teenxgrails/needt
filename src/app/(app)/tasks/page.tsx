@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   Archive,
@@ -12,7 +12,6 @@ import {
   Mail,
   MoreHorizontal,
   Plus,
-  RotateCw,
   Search,
   Sparkles,
 } from "lucide-react";
@@ -41,6 +40,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
@@ -56,6 +56,35 @@ import { NewTask, Task, TaskStatus } from "@/types/task";
 const LOG_SOURCE = "TasksPage";
 const VIEW_BUTTON_CLASS =
   "flex h-[var(--calendar-toolbar-height)] items-center gap-1.5 rounded-md px-2 text-[length:var(--calendar-toolbar-font-size)] font-medium transition-colors duration-150";
+
+type ScheduleCapacity = {
+  availableMinutes: number;
+  calendarBusyMinutes: number;
+  demandMinutes: number;
+  overflowMinutes: number;
+  scheduledMinutes: number;
+  workingMinutes: number;
+};
+
+type ReflowPreview = {
+  previewToken: string;
+  changes: Array<{
+    taskId: string;
+    title: string;
+    fromStart: string | null;
+    toStart: string | null;
+    explanation: string;
+    score: number | null;
+  }>;
+  unscheduled: Array<{ taskId: string; title: string; reason: string }>;
+};
+
+function formatDuration(minutes: number) {
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+}
 
 const PRIMARY_VIEWS: Array<{
   id: ViewMode;
@@ -85,16 +114,15 @@ export default function TasksPage() {
   >(undefined);
   const [projectModalOpen, setProjectModalOpen] = useState(false);
   const [isReflowing, setIsReflowing] = useState(false);
-  const [reflowPreview, setReflowPreview] = useState<{
-    previewToken: string;
-    changes: Array<{
-      taskId: string;
-      title: string;
-      fromStart: string | null;
-      toStart: string | null;
-    }>;
-  } | null>(null);
+  const [reflowPreview, setReflowPreview] = useState<ReflowPreview | null>(
+    null
+  );
   const [reflowUndoToken, setReflowUndoToken] = useState<string | null>(null);
+  const [scheduleCapacity, setScheduleCapacity] =
+    useState<ScheduleCapacity | null>(null);
+  const [scheduleCapacityError, setScheduleCapacityError] = useState<
+    string | null
+  >(null);
   const [openedTaskParam, setOpenedTaskParam] = useState<string | null>(null);
   const [timelineQuery, setTimelineQuery] = useState("");
   const [timelineOptionsHidden, setTimelineOptionsHidden] = useState(false);
@@ -123,6 +151,44 @@ export default function TasksPage() {
     const view = new URLSearchParams(window.location.search).get("view");
     if (view === "mail") setViewMode("mail");
   }, [setViewMode]);
+
+  const refreshScheduleCapacity = useCallback(async () => {
+    try {
+      const response = await fetch("/api/tasks/capacity?days=7");
+      const data = (await response.json().catch(() => null)) as
+        | ScheduleCapacity
+        | { error?: string }
+        | null;
+      if (!response.ok) {
+        setScheduleCapacity(null);
+        setScheduleCapacityError(
+          data && "error" in data && data.error
+            ? data.error
+            : "Could not load schedule capacity."
+        );
+        return;
+      }
+      setScheduleCapacity(data as ScheduleCapacity);
+      setScheduleCapacityError(null);
+    } catch (capacityError) {
+      setScheduleCapacity(null);
+      setScheduleCapacityError("Could not load schedule capacity.");
+      void logger.error(
+        "Failed to load schedule capacity",
+        {
+          error:
+            capacityError instanceof Error
+              ? capacityError.message
+              : String(capacityError),
+        },
+        LOG_SOURCE
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshScheduleCapacity();
+  }, [refreshScheduleCapacity]);
 
   const deadlineTasks = useMemo(
     () => tasks.filter((task) => task.deadline || task.dueDate),
@@ -203,8 +269,18 @@ export default function TasksPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "preview" }),
       });
-      if (!response.ok) throw new Error("Failed to prepare schedule preview");
-      setReflowPreview(await response.json());
+      const data = (await response.json().catch(() => null)) as
+        | ReflowPreview
+        | { error?: string }
+        | null;
+      if (!response.ok) {
+        throw new Error(
+          data && "error" in data && data.error
+            ? data.error
+            : "Failed to prepare schedule preview"
+        );
+      }
+      setReflowPreview(data as ReflowPreview);
     } catch (scheduleError) {
       void logger.error(
         "Failed to reflow Workspace tasks",
@@ -216,6 +292,7 @@ export default function TasksPage() {
         },
         LOG_SOURCE
       );
+      notify.error("Could not prepare a schedule preview");
     } finally {
       setIsReflowing(false);
     }
@@ -233,11 +310,39 @@ export default function TasksPage() {
           token: reflowPreview.previewToken,
         }),
       });
-      if (!response.ok) throw new Error("Failed to apply schedule preview");
-      const data = (await response.json()) as { undoToken: string };
-      setReflowUndoToken(data.undoToken);
+      const data = (await response.json().catch(() => null)) as
+        | { undoToken: string }
+        | { code?: string; error?: string }
+        | null;
+      if (!response.ok) {
+        if (data && "code" in data && data.code === "SCHEDULE_PREVIEW_STALE") {
+          setReflowPreview(null);
+          await Promise.all([fetchTasks(), refreshScheduleCapacity()]);
+          notify.warning("The schedule changed. Review a new preview.");
+          return;
+        }
+        throw new Error(
+          data && "error" in data && data.error
+            ? data.error
+            : "Failed to apply schedule preview"
+        );
+      }
+      setReflowUndoToken((data as { undoToken: string }).undoToken);
       setReflowPreview(null);
-      await fetchTasks();
+      await Promise.all([fetchTasks(), refreshScheduleCapacity()]);
+      notify.success("Schedule updated");
+    } catch (scheduleError) {
+      void logger.error(
+        "Failed to apply schedule preview",
+        {
+          error:
+            scheduleError instanceof Error
+              ? scheduleError.message
+              : String(scheduleError),
+        },
+        LOG_SOURCE
+      );
+      notify.error("Could not apply this schedule preview");
     } finally {
       setIsReflowing(false);
     }
@@ -252,9 +357,27 @@ export default function TasksPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "undo", token: reflowUndoToken }),
       });
-      if (!response.ok) throw new Error("Failed to undo schedule changes");
+      const data = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(data?.error || "Failed to undo schedule changes");
+      }
       setReflowUndoToken(null);
-      await fetchTasks();
+      await Promise.all([fetchTasks(), refreshScheduleCapacity()]);
+      notify.success("Schedule changes undone");
+    } catch (scheduleError) {
+      void logger.error(
+        "Failed to undo schedule preview",
+        {
+          error:
+            scheduleError instanceof Error
+              ? scheduleError.message
+              : String(scheduleError),
+        },
+        LOG_SOURCE
+      );
+      notify.error("Could not undo schedule changes");
     } finally {
       setIsReflowing(false);
     }
@@ -273,17 +396,6 @@ export default function TasksPage() {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={handleReflow}
-            disabled={isReflowing}
-            className={APP_TOOLBAR_BUTTON_CLASS}
-          >
-            <RotateCw
-              className={cn("h-3.5 w-3.5", isReflowing && "animate-spin")}
-            />
-            {isReflowing ? "Reflowing..." : "Reflow schedule"}
-          </button>
           <DropdownMenu>
             <DropdownMenuTrigger className={APP_TOOLBAR_BUTTON_CLASS}>
               <Plus className="h-3.5 w-3.5" />
@@ -310,6 +422,45 @@ export default function TasksPage() {
         </div>
       </header>
 
+      {viewMode !== "mail" && (scheduleCapacity || scheduleCapacityError) && (
+        <div className="flex flex-none flex-wrap items-center gap-x-4 gap-y-1 border-b border-[var(--border-subtle)] px-3 py-2 text-xs">
+          {scheduleCapacity ? (
+            <>
+              <span className="font-medium text-[var(--text-primary)]">
+                Next 7 days
+              </span>
+              <span className="text-[var(--text-secondary)]">
+                {formatDuration(scheduleCapacity.availableMinutes)} available
+              </span>
+              <span className="text-[var(--text-secondary)]">
+                {formatDuration(scheduleCapacity.scheduledMinutes)} scheduled
+              </span>
+              {scheduleCapacity.overflowMinutes > 0 && (
+                <span className="text-[var(--color-danger)]">
+                  {formatDuration(scheduleCapacity.overflowMinutes)} over
+                  capacity
+                </span>
+              )}
+              <span className="text-[var(--text-muted)]">
+                Calendar details stay private
+              </span>
+            </>
+          ) : (
+            <span className="text-[var(--text-secondary)]">
+              {scheduleCapacityError}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={handleReflow}
+            disabled={isReflowing}
+            className={cn(APP_TOOLBAR_BUTTON_CLASS, "ml-auto")}
+          >
+            {isReflowing ? "Preparing..." : "Preview schedule"}
+          </button>
+        </div>
+      )}
+
       {(reflowPreview || reflowUndoToken) && (
         <div className="flex flex-none items-start justify-between gap-4 border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-xs">
           {reflowPreview ? (
@@ -318,12 +469,31 @@ export default function TasksPage() {
                 <div className="font-medium">
                   Preview: {reflowPreview.changes.length} schedule changes
                 </div>
-                <div className="mt-1 max-w-3xl truncate text-[var(--text-secondary)]">
-                  {reflowPreview.changes
-                    .slice(0, 4)
-                    .map((change) => change.title)
-                    .join(" · ") || "Your schedule is already up to date."}
-                </div>
+                {reflowPreview.changes.length > 0 ? (
+                  <ul className="mt-1 space-y-0.5 text-[var(--text-secondary)]">
+                    {reflowPreview.changes.slice(0, 3).map((change) => (
+                      <li key={change.taskId} className="truncate">
+                        <span className="font-medium text-[var(--text-primary)]">
+                          {change.title}
+                        </span>{" "}
+                        — {change.explanation}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-1 text-[var(--text-secondary)]">
+                    Your schedule is already up to date.
+                  </p>
+                )}
+                {reflowPreview.unscheduled.length > 0 && (
+                  <p className="mt-1 text-[var(--color-danger)]">
+                    Can&apos;t place:{" "}
+                    {reflowPreview.unscheduled
+                      .slice(0, 2)
+                      .map((task) => `${task.title} — ${task.reason}`)
+                      .join(" · ")}
+                  </p>
+                )}
               </div>
               <div className="flex flex-none gap-2">
                 <button
