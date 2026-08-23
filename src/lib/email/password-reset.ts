@@ -32,7 +32,6 @@ export async function sendPasswordResetEmail({
 
     // Send the email using the appropriate service
     const { jobId } = await EmailService.sendEmail({
-      from: EmailService.formatSender(APP_NAME),
       to: email,
       subject: `Reset Your ${APP_NAME} Password`,
       html,

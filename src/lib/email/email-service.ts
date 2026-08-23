@@ -6,7 +6,6 @@ import { logger } from "@/lib/logger";
 const LOG_SOURCE = "EmailService";
 
 export interface EmailJobData {
-  from?: string;
   to: string;
   subject: string;
   html: string;
@@ -102,9 +101,11 @@ export class EmailService {
    * @param email Optional custom email address
    * @returns Formatted email string
    */
-  static formatSender(displayName: string, email?: string): string {
-    const fromEmail =
-      email || process.env.RESEND_FROM_EMAIL || "noreply@localhost";
+  static formatSender(displayName: string): string {
+    const fromEmail = process.env.RESEND_FROM_EMAIL?.trim();
+    if (!fromEmail) {
+      throw new Error("RESEND_FROM_EMAIL is required to send email");
+    }
     return `${displayName} <${fromEmail}>`;
   }
 }
