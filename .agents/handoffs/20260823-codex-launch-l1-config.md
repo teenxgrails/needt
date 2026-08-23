@@ -3,7 +3,7 @@ id: 20260823-codex-launch-l1-config
 owner: codex
 branch: codex/launch-l1-config
 status: complete
-updated: 2026-08-23T02:52:28Z
+updated: 2026-08-23T02:52:59Z
 objective: Complete L1.4's exact production environment checklist and enforce that the production image build receives no secrets.
 ---
 
@@ -19,10 +19,11 @@ objective: Complete L1.4's exact production environment checklist and enforce th
 - Confirmed `NEXT_PUBLIC_SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_ENVIRONMENT` are browser-only configuration consumed by `instrumentation-client.ts`; Next 15 inlines `NEXT_PUBLIC_*` values during the image build.
 - Reconciled the base, rate-limit, server/browser Sentry, and VAPID checklists across `docs/deploy.md`, `ENV_TEMPLATE.md`, and `.env.example`.
 - Added static coverage that `.env*` is excluded from the production Docker context and that `docker-publish` passes only the non-secret build SHA, while the production Dockerfile declares no runtime secret as `ARG` or `ENV`.
+- `3004f13 docs(launch): document production environment contract` records the scoped L1.4 unit.
 
 ## Working state
 
-- Files currently dirty or expected to change: scoped files await commit; `node_modules` is an ignored symlink to the primary checkout solely for validation.
+- Files currently dirty or expected to change: this handoff checkpoint only; `node_modules` is an ignored symlink to the primary checkout solely for validation.
 - Foreign changes that must remain untouched: primary checkout and D0 worktree changes; all active L1 Sentry/logging worktrees; `docker/production/Dockerfile` and `.github/workflows/docker-publish.yml` except read-only static assertions.
 
 ## Verification
