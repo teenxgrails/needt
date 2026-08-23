@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fixed the production `/style` laboratory so its admin authorization runs per
+  request instead of being frozen as a build-time 404.
 - Docs: added `docs/plans/09-launch.md` as the governing plan through public
   launch — release unblock (focused-Mail visual, non-production artifacts,
   S11/T8 integration), production-readiness audit, billing lifecycle, first-run

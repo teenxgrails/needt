@@ -207,6 +207,7 @@ forbidText(appNavPath, 'label: "Boards"', appNav);
 
 const stylePagePath = "src/app/style/page.tsx";
 const stylePage = await source(stylePagePath);
+requireText(stylePagePath, 'dynamic = "force-dynamic"', stylePage);
 requireText(stylePagePath, 'process.env.NODE_ENV === "production"', stylePage);
 requireText(stylePagePath, "await isAdmin()", stylePage);
 requireText(stylePagePath, "notFound()", stylePage);

@@ -5,6 +5,8 @@ import { DesignSystemLab } from "@/components/ui/design-system-lab";
 import { isAdmin } from "@/lib/auth/is-admin";
 import { APP_NAME } from "@/lib/app-config";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: `${APP_NAME} UI system`,
 };
