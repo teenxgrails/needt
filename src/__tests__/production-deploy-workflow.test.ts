@@ -14,7 +14,13 @@ describe("production deployment workflow", () => {
       "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
     );
     expect(workflow).toContain(
-      "${HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
+      "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
+    );
+    expect(workflow).toContain(
+      "${WORKER_HEALTH_URL:?NEEDT_PRODUCTION_WORKER_HEALTH_URL is required}"
+    );
+    expect(workflow).toContain(
+      "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
     );
     expect(workflow).not.toContain("if: ${{ env.WEB_HOOK != '' }}");
   });
@@ -51,5 +57,27 @@ describe("production deployment workflow", () => {
     expect(healthIndex).toBeGreaterThan(-1);
     expect(workerIndex).toBeGreaterThan(healthIndex);
     expect(collaborationIndex).toBeGreaterThan(healthIndex);
+  });
+
+  it("checks every runtime service after their serialized redeploy", () => {
+    const workerIndex = workflow.indexOf("Trigger worker redeploy");
+    const collaborationIndex = workflow.indexOf(
+      "Trigger collaboration redeploy"
+    );
+    const parityIndex = workflow.indexOf("Wait for all runtime SHAs");
+
+    expect(workflow).toContain(
+      "WORKER_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_WORKER_HEALTH_URL }}"
+    );
+    expect(workflow).toContain(
+      "COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}"
+    );
+    expect(workflow).toContain("run: npm run check:runtime-shas");
+    expect(parityIndex).toBeGreaterThan(workerIndex);
+    expect(parityIndex).toBeGreaterThan(collaborationIndex);
+  });
+
+  it("bounds the executable collaboration smoke in the gates job", () => {
+    expect(workflow).toContain("timeout 30s npm run check:collaboration-runtime");
   });
 });

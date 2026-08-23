@@ -40,7 +40,8 @@ jobs:
       - run: npm run build
       - run: npm run build:worker
       - run: npm run build:collaboration
-      - run: npm run check:collaboration-runtime
+      - name: Verify executable collaboration runtime
+        run: timeout 30s npm run check:collaboration-runtime
 
   publish:
     needs: gates
@@ -80,6 +81,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NEEDT_BUILD_SHA=${{ github.event.workflow_run.head_sha || github.sha }}
+          secrets: |
+            sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
+            sentry_org=${{ secrets.SENTRY_ORG }}
+            sentry_project=${{ secrets.SENTRY_PROJECT }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -92,20 +97,30 @@ jobs:
       COLLABORATION_HOOK: ${{ secrets.COOLIFY_COLLABORATION_WEBHOOK_URL }}
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
-      HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
+      WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
+      WORKER_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_WORKER_HEALTH_URL }}
+      COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Validate production deployment configuration
         run: |
           : "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"
           : "${WORKER_HOOK:?COOLIFY_WORKER_WEBHOOK_URL is required}"
           : "${COLLABORATION_HOOK:?COOLIFY_COLLABORATION_WEBHOOK_URL is required}"
           : "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
-          : "${HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
+          : "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
+          : "${WORKER_HEALTH_URL:?NEEDT_PRODUCTION_WORKER_HEALTH_URL is required}"
+          : "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
       - name: Record current healthy web SHA
         id: previous-production
         run: |
-          response=$(curl --fail --silent --show-error --max-time 30 "$HEALTH_URL")
+          response=$(curl --fail --silent --show-error --max-time 30 "$WEB_HEALTH_URL")
           previous_sha=$(printf '%s' "$response" | jq -er \
             'if .ok == true and .db == "ok" then (.buildSha // empty) else empty end')
           echo "sha=$previous_sha" >> "$GITHUB_OUTPUT"
@@ -116,7 +131,7 @@ jobs:
       - name: Wait for the exact web SHA and database health
         run: |
           for attempt in $(seq 1 60); do
-            response=$(curl --fail --silent --show-error --max-time 30 "$HEALTH_URL" || true)
+            response=$(curl --fail --silent --show-error --max-time 30 "$WEB_HEALTH_URL" || true)
             healthy_sha=$(printf '%s' "$response" | jq -r \
               'if .ok == true and .db == "ok" then (.buildSha // "") else "" end' \
               2>/dev/null || true)
@@ -137,6 +152,11 @@ jobs:
         run: >-
           curl --fail --silent --show-error --retry 3 --request GET
           --header "Authorization: Bearer $COOLIFY_TOKEN" "$COLLABORATION_HOOK"
+      - name: Wait for all runtime SHAs
+        env:
+          RUNTIME_SHA_TIMEOUT_MS: "600000"
+          RUNTIME_SHA_POLL_INTERVAL_MS: "10000"
+        run: npm run check:runtime-shas
       - name: Record manual rollback instructions
         if: ${{ failure() }}
         run: |

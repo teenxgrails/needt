@@ -30,9 +30,9 @@ const runtimeSecrets = [
 
 function buildArgs(workflowText: string) {
   return (
-    workflowText
-      .split("          build-args: |\n", 2)[1]
-      ?.split("          cache-from:", 1)[0] ?? ""
+    workflowText.match(
+      /^          build-args: \|\n((?:            .*\n)*)/m
+    )?.[1] ?? ""
   );
 }
 
@@ -51,6 +51,14 @@ describe("production environment contract", () => {
     for (const secret of runtimeSecrets) {
       expect(args).not.toContain(`${secret}=`);
     }
+
+    expect(workflow).toContain(
+      "sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}"
+    );
+    expect(workflow).toContain("sentry_org=${{ secrets.SENTRY_ORG }}");
+    expect(workflow).toContain(
+      "sentry_project=${{ secrets.SENTRY_PROJECT }}"
+    );
   });
 
   it("does not declare runtime secrets as production-image arguments or environment", () => {
