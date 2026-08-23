@@ -193,20 +193,22 @@ describe("production migration tooling", () => {
     expect(compose).not.toContain("dist/collaboration/index.js");
   });
 
-  it("exposes service health and an all-service SHA gate", () => {
+  it("keeps worker health private and provides an all-service SHA gate", () => {
     const packageJsonText = read("package.json");
     const runtimeShaCheck = read("scripts/check-runtime-shas.mjs");
 
-    expect(dockerfile).toContain("EXPOSE 3000 1234 1235");
-    expect(rootDockerfile).toContain("EXPOSE 1235");
+    expect(dockerfile).toContain("EXPOSE 3000 1234");
+    expect(dockerfile).not.toContain("EXPOSE 3000 1234 1235");
+    expect(rootDockerfile).not.toContain("EXPOSE 1235");
     expect(packageJsonText).toContain(
       '"check:runtime-shas": "node scripts/check-runtime-shas.mjs"'
     );
     expect(runtimeShaCheck).toContain("WEB_HEALTH_URL");
-    expect(runtimeShaCheck).toContain("WORKER_HEALTH_URL");
+    expect(runtimeShaCheck).not.toContain("WORKER_HEALTH_URL");
+    expect(runtimeShaCheck).toContain("workerBuildSha");
     expect(runtimeShaCheck).toContain("COLLABORATION_HEALTH_URL");
     expect(runtimeShaCheck).toContain(
-      "shas.every((sha) => sha === EXPECTED_SHA)"
+      "Object.values(lastSeen).every((sha) => sha === EXPECTED_SHA)"
     );
   });
 });

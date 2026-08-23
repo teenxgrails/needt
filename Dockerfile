@@ -58,8 +58,6 @@ COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
 USER node
 
-EXPOSE 1235
-
 # entrypoint.sh runs `exec "$@"`, so this CMD becomes the worker process.
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["node", "dist/worker/index.js"]

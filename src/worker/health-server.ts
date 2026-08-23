@@ -10,7 +10,7 @@ export async function startWorkerHealthServer(
   options: WorkerHealthServerOptions = {}
 ): Promise<Server> {
   const buildSha = options.buildSha ?? process.env.NEEDT_BUILD_SHA ?? "local";
-  const host = options.host ?? process.env.WORKER_HEALTH_HOST ?? "0.0.0.0";
+  const host = options.host ?? process.env.WORKER_HEALTH_HOST ?? "127.0.0.1";
   const port = options.port ?? Number(process.env.WORKER_HEALTH_PORT ?? 1235);
   const server = createServer((request, response) => {
     if (

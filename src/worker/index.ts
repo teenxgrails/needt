@@ -22,6 +22,15 @@ import {
 import { renewCalendarWebhooks } from "@/lib/calendar-webhooks/renew";
 import { newDate } from "@/lib/date-utils";
 import { syncGoogleCalendar } from "@/lib/google-sync";
+import {
+  isGitBuildSha,
+  requireProductionBuildSha,
+} from "@/lib/health/build-sha";
+import {
+  type ReleaseHealthRedis,
+  WORKER_RELEASE_HEARTBEAT_INTERVAL_MS,
+  recordWorkerReleaseHeartbeat,
+} from "@/lib/health/worker-release";
 import { logger } from "@/lib/logger";
 import { listActiveMailAccountIds } from "@/lib/mail-db";
 import {
@@ -70,6 +79,8 @@ const WEBHOOK_RENEW_INTERVAL_MS = 6 * 60 * 60 * 1_000;
 let workerHealthServer: Awaited<
   ReturnType<typeof startWorkerHealthServer>
 > | null = null;
+let releaseHeartbeatInterval: ReturnType<typeof setInterval> | null = null;
+let releaseHeartbeatRefresh: Promise<void> | null = null;
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -85,6 +96,8 @@ if (process.env.SENTRY_DSN) {
     beforeSendSpan: scrubSentrySpan,
   });
 }
+
+const BUILD_SHA = requireProductionBuildSha();
 
 async function processCalendarSync(job: Job<CalendarSyncJobData>) {
   const feed = await getCalendarFeedForSync(job.data.feedId);
@@ -271,10 +284,30 @@ async function start(): Promise<void> {
     mailAccountIds.map((accountId) => ensureImapIdleWatcher(accountId))
   );
   workerHealthServer = await startWorkerHealthServer();
+  if (isGitBuildSha(BUILD_SHA)) {
+    const redis = getRedisConnection() as unknown as ReleaseHealthRedis;
+    await recordWorkerReleaseHeartbeat(redis, BUILD_SHA);
+    releaseHeartbeatInterval = setInterval(() => {
+      if (releaseHeartbeatRefresh) return;
+      releaseHeartbeatRefresh = recordWorkerReleaseHeartbeat(redis, BUILD_SHA)
+        .catch(async (error) => {
+          Sentry.captureException(error);
+          await logger.error(
+            "Worker release heartbeat failed",
+            { error: error instanceof Error ? error.message : String(error) },
+            LOG_SOURCE
+          );
+        })
+        .finally(() => {
+          releaseHeartbeatRefresh = null;
+        });
+    }, WORKER_RELEASE_HEARTBEAT_INTERVAL_MS);
+    releaseHeartbeatInterval.unref();
+  }
   await logger.info(
     "Needt background worker started",
     {
-      buildSha: process.env.NEEDT_BUILD_SHA || "local",
+      buildSha: BUILD_SHA,
       queues: workers.map((worker) => worker.name),
     },
     LOG_SOURCE
@@ -291,6 +324,8 @@ async function shutdown(signal: string): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
   clearInterval(healthInterval);
+  if (releaseHeartbeatInterval) clearInterval(releaseHeartbeatInterval);
+  releaseHeartbeatInterval = null;
   await logger.info("Needt background worker stopping", { signal }, LOG_SOURCE);
   await stopWorkerHealthServer(workerHealthServer);
   workerHealthServer = null;
