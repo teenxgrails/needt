@@ -15,8 +15,12 @@ const repoRoot = join(__dirname, "..", "..");
 const read = (rel: string) => readFileSync(join(repoRoot, rel), "utf8");
 
 interface ComposeService {
+  command?: string[];
+  depends_on?: Record<string, { condition?: string }>;
   environment?: string[] | Record<string, string | number | null>;
   env_file?: string | string[];
+  healthcheck?: { test?: string[] };
+  image?: string;
   ports?: Array<string | number | { target?: number; published?: number }>;
 }
 
@@ -27,8 +31,8 @@ describe("Docker quick-start (issue #151)", () => {
   const app = compose.services.app;
 
   // Normalize the app service `environment` (list or map form) to a plain map.
-  const appEnv: Record<string, string> = (() => {
-    const env = app.environment;
+  function environmentFor(service: ComposeService): Record<string, string> {
+    const env = service.environment;
     if (!env) return {};
     if (Array.isArray(env)) {
       return Object.fromEntries(
@@ -43,7 +47,9 @@ describe("Docker quick-start (issue #151)", () => {
     return Object.fromEntries(
       Object.entries(env).map(([k, v]) => [k, String(v ?? "")])
     );
-  })();
+  }
+
+  const appEnv = environmentFor(app);
 
   it("pins the container PORT to 3000 via environment (overrides any .env PORT)", () => {
     expect(appEnv.PORT).toBe("3000");
@@ -78,6 +84,40 @@ describe("Docker quick-start (issue #151)", () => {
         ? [envFile]
         : [];
     expect(envFiles).toContain(".env");
+  });
+
+  it("starts the complete private runtime topology", () => {
+    const worker = compose.services.worker;
+    const collaboration = compose.services.collaboration;
+    const redis = compose.services.redis;
+
+    expect(redis.image).toBe("redis:7-alpine");
+    expect(redis.healthcheck?.test?.join(" ")).toContain("redis-cli ping");
+    expect(worker.image).toBe(app.image);
+    expect(worker.command).toEqual(["node", "dist/worker/index.js"]);
+    expect(worker.ports).toBeUndefined();
+    expect(worker.healthcheck?.test?.join(" ")).toContain("127.0.0.1:1235");
+    expect(collaboration.healthcheck?.test?.join(" ")).toContain(
+      "127.0.0.1:1234"
+    );
+    expect(app.healthcheck?.test?.join(" ")).toContain("/api/health");
+  });
+
+  it("waits for web migrations and uses container DNS for stateful services", () => {
+    const worker = compose.services.worker;
+    const collaboration = compose.services.collaboration;
+    const workerEnv = environmentFor(worker);
+    const collaborationEnv = environmentFor(collaboration);
+
+    expect(worker.depends_on?.app?.condition).toBe("service_healthy");
+    expect(worker.depends_on?.redis?.condition).toBe("service_healthy");
+    expect(collaboration.depends_on?.app?.condition).toBe("service_healthy");
+    expect(collaboration.depends_on?.redis?.condition).toBe("service_healthy");
+    for (const env of [appEnv, workerEnv, collaborationEnv]) {
+      expect(env.DATABASE_URL).toContain("@db:5432");
+      expect(env.DIRECT_URL).toContain("@db:5432");
+      expect(env.REDIS_URL).toBe("redis://redis:6379");
+    }
   });
 
   describe("README quick-start docs", () => {

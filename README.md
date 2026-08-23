@@ -45,6 +45,12 @@ docker compose up -d
 
 Open [http://localhost:3000](http://localhost:3000).
 
+Compose starts web, the private BullMQ worker, collaboration, PostgreSQL, and
+Redis. Web applies migrations before the worker and collaboration start; the
+worker does not publish a port. The local collaboration URL is
+`ws://localhost:1234`; use the TLS WebSocket configuration in
+[docs/deploy.md](docs/deploy.md) for a real deployment.
+
 **Note on the port:** the container `PORT` is fixed at 3000. A `PORT` value in
 `.env` does not change the container listener. To publish another host port,
 change the `ports` mapping in `docker-compose.yml` and update `NEXTAUTH_URL` to
@@ -107,9 +113,10 @@ Generate a personal connector token in Settings → Connectors. See
 
 ## Deployment
 
-The production image is `ghcr.io/teenxgrails/needt:main`. Web and worker use the
-same image and receive secrets only at runtime. Apply additive Prisma migrations
-before deploying the matching web and worker SHA.
+The production image is `ghcr.io/teenxgrails/needt:main`. Web, worker, and
+collaboration use the same image and receive secrets only at runtime. Apply
+additive Prisma migrations through web before deploying matching worker and
+collaboration SHAs.
 
 Operational setup is documented in [docs/STACK.md](docs/STACK.md),
 [docs/operations-runbook.md](docs/operations-runbook.md), and

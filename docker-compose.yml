@@ -13,9 +13,50 @@ services:
     environment:
       - PORT=3000
       - HOSTNAME=0.0.0.0
+      - DATABASE_URL=postgresql://fluid:fluid@db:5432/fluid_calendar
+      - DIRECT_URL=postgresql://fluid:fluid@db:5432/fluid_calendar
+      - REDIS_URL=redis://redis:6379
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://127.0.0.1:3000/api/health'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  worker:
+    image: ghcr.io/teenxgrails/needt:main
+    command: ["node", "dist/worker/index.js"]
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://fluid:fluid@db:5432/fluid_calendar
+      - DIRECT_URL=postgresql://fluid:fluid@db:5432/fluid_calendar
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      app:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://127.0.0.1:1235/health'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
     restart: unless-stopped
 
   collaboration:
@@ -28,9 +69,36 @@ services:
     environment:
       - COLLABORATION_HOST=0.0.0.0
       - COLLABORATION_PORT=1234
+      - DATABASE_URL=postgresql://fluid:fluid@db:5432/fluid_calendar
+      - DIRECT_URL=postgresql://fluid:fluid@db:5432/fluid_calendar
+      - REDIS_URL=redis://redis:6379
     depends_on:
+      app:
+        condition: service_healthy
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "fetch(''http://127.0.0.1:1234/health'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   db:
@@ -40,7 +108,7 @@ services:
       - POSTGRES_PASSWORD=fluid
       - POSTGRES_DB=fluid_calendar
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
@@ -52,3 +120,4 @@ services:
 
 volumes:
   postgres_dev_data:
+  redis_data:
