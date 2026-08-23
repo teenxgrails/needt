@@ -15,11 +15,13 @@ start a later active plan before the earlier one is deployed and smoke-tested.**
 | 08 | [Terra High track](08-terra-high.md) | Complete except deferred T8 | Terra High | UI, tests, CI, responsive quality, copy and docs |
 | 09 | [Public launch track](09-launch.md) | **Active — governing plan** | Mixed | Release unblock, production readiness, billing, launch, post-launch |
 | 10 | [Design identity track](10-design.md) | Active — parallel | Terra High | Identity spike, motion language, signature reflow, foundations, navigation, rollout |
+| 11 | [Task shape and starting friction](11-task-model.md) | Backlog | Mixed | Progress counter, part-cut, mini-entry; streaks parked |
 
 Plans 01–05 are implemented. Plans 07 and 08 ran to their final gates; their
 deferred S11/T8 items are sequenced by plan 09, not by 07/08 directly. Plan 06
 remains research input and does not independently authorize schema or product
-scope.
+scope. Plan 11 is owner-captured product intent, also not an authorization —
+its items are sequenced by plan 09's L7 gate.
 
 **Plan 09 is the governing plan.** Start there. **Plan 10 runs in parallel** and
 may never delay 09: D0–D3 are safe to run alongside the launch work, but the

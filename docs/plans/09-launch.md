@@ -161,17 +161,33 @@ actually production-correct rather than merely present.
    unreachable, and that auth, billing-webhook and AI routes have distinct,
    sensible budgets. Add a test proving the fail-closed path.
 3. **Health and rollback.** `/api/health` returns `{ok, db, buildSha}` and fails
-   when migrations are pending. Confirm the GitHub workflow's deploy/health/
-   rollback hooks all exist and that a missing hook fails the job (documented
-   behavior in `docs/deploy.md` §8 — verify it actually does).
+   when migrations are pending. Confirm required web, worker, and collaboration
+   deployment hooks and health URLs fail the job when missing; the workflow
+   records the prior healthy web SHA, waits for all three services at the new
+   SHA, then provides manual Coolify rollback instructions on failure. There is
+   no rollback hook and no automatic rollback.
 4. **Secrets.** Confirm no secret reaches a Docker build arg or image layer.
    Produce the exact production env checklist for the owner from `docs/deploy.md`
    §3 plus `RATE_LIMIT_HASH_SECRET`, `SENTRY_DSN` and the VAPID trio.
 5. **Backups.** Execute the restore drill in `docs/operations-runbook.md` and
    record the date, duration and verified row counts. A launch without a proven
    restore is not a launch.
-6. **Logs.** Confirm log retention/cleanup runs and that no request log records
-   mail content, page content or tokens.
+6. **Logs.** Verified 2026-08-23: Docker json-file rotation is active at 10 MB
+   × 3 files, observed `.log.1` proves rotation, and container logs totalled
+   34 MB. Request-log sanitization and PII removal cover mail content, page
+   content, and tokens; retain the dated evidence in the launch handoff.
+
+### L1.8 — Registration email-verification policy
+
+The schema already has `User.emailVerified` and `VerificationToken`, but public
+registration does not issue a verification token, credentials login does not
+enforce the field, and the signup UI signs a new account in immediately.
+
+Before launch, the owner must choose one policy and scope it as a separate auth
+release: either implement verified credentials signup plus a compatibility
+backfill for existing credentials accounts, or consciously retain password-only
+signup and leave `emailVerified` unused. Do not ship a partial gate that locks
+out existing users.
 
 **Done when:** each of the six items has a dated verification line in the handoff
 and, where testable, an automated test.
@@ -317,7 +333,9 @@ that mirrors production, before touching production.
 - Execute the full smoke list: signup, every entitlement fixture, scheduling,
   Start Now, Focus, Today/Pages fallback, provider sync, booking, reminders,
   360px mobile.
-- Exercise instant rollback and confirm it works.
+- Rehearse the manual Coolify rollback with a timer; record the elapsed time in
+  this plan and the release handoff. Automatic rollback remains deliberately
+  unsupported.
 - Inspect Sentry, `/admin/operations`, cron cursors, queue age/depth, the
   scheduling reaper, log cleanup, backup retention and Web Push expiry.
 
@@ -356,6 +374,11 @@ its own contract-then-UI pair, in this order:
 3. Project health, update history and stale-update rules.
 4. Flexible habits and weekly focus targets on the deterministic scheduler.
 5. Meeting-note proposals requiring explicit approval before mutations.
+
+Plan [11 — Task shape and starting friction](11-task-model.md) queues here too:
+T-1 (progress counter and part-cut) is a self-contained release that may run
+alongside the list above; T-2 (mini-entry) is gated on T-1 plus a prompt-quality
+check; T-3 (streaks) is blocked on an open design question and does not ship.
 
 Still not authorized: a new AI scheduler, seat billing, cross-workspace views,
 third-party document storage, physical deletion of user content, read receipts,

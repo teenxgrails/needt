@@ -33,7 +33,7 @@ node dist/worker/index.js
    collaboration:
 
 ```bash
-node dist/collaboration/index.js
+node dist/collaboration/index.mjs
 ```
 
 Set `COLLABORATION_HOST=0.0.0.0`, expose port `1234` through a TLS-enabled
@@ -112,10 +112,10 @@ or a Sentry auth token as a Docker build argument.
 - `NEEDT_BUILD_SHA` is supplied by CI as the sole production Docker build
   argument and is baked into the image for `/api/health` and Sentry release
   identity. The owner does not set it manually.
-- `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are for an explicitly
-  authorized future source-map upload only. They are not runtime variables.
-  The token must be a BuildKit secret and must never be a Docker build argument
-  or image `ENV` value.
+- `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are required only by
+  CI while uploading source maps. They are Repository secrets passed to the
+  production Docker build as BuildKit secret mounts, never runtime variables,
+  Docker build arguments, or image `ENV` values.
 
 ### Optional product integrations
 
@@ -214,8 +214,9 @@ Expected result:
 ```
 
 The production image bakes the non-secret Git commit into
-`NEEDT_BUILD_SHA`. The health response and the worker startup log must report
-the same SHA before a release is accepted.
+`NEEDT_BUILD_SHA`. The web response, worker `/health`, and collaboration
+`/health` must report the same SHA before a release is accepted. The GitHub
+deploy job polls all three after their serialized redeploys.
 
 ## 8. Notes
 
@@ -227,5 +228,7 @@ the same SHA before a release is accepted.
   move, but it is not part of the current production topology.
 - Production deploys are triggered from `main` in Coolify. Verify web, worker,
   and collaboration run the same SHA before a release smoke.
-- The GitHub workflow fails when any required deployment hook, health URL or
-  rollback hook is missing; it must never report a successful no-op deploy.
+- The GitHub workflow fails when a required deployment hook or health URL is
+  missing. It records the prior healthy web SHA, verifies the new SHA across all
+  three services, and writes manual Coolify rollback instructions if deployment
+  fails; it has no rollback hook and never auto-rolls back.

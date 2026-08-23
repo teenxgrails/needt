@@ -118,4 +118,10 @@ describe("production environment contract", () => {
       expect(envExample).toContain(variable);
     }
   });
+
+  it("documents the deployed collaboration module and BuildKit-only Sentry upload", () => {
+    expect(deployGuide).toContain("node dist/collaboration/index.mjs");
+    expect(deployGuide).toContain("BuildKit secret mounts");
+    expect(deployGuide).not.toContain("node dist/collaboration/index.js");
+  });
 });
