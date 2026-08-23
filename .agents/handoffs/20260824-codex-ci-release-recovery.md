@@ -3,7 +3,7 @@ id: 20260824-codex-ci-release-recovery
 owner: codex
 branch: codex/ci-release-recovery
 status: complete
-updated: 2026-08-23T23:31:47Z
+updated: 2026-08-23T23:51:57Z
 objective: Repair the post-push CI failures, OAuth scope contract, and release documentation with full local gates and no production action.
 ---
 
@@ -23,10 +23,11 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - After clearing only regenerable caches, recovered a stale Docker Desktop backend, ran the exact Prisma migration drift check against an ephemeral PostgreSQL 16 database, and removed both the container and the downloaded image.
 - Pushed the branch to authoritative `origin` and opened https://github.com/teenxgrails/needt/pull/20 into `main` without merging or touching Coolify.
 - `4c33d97 fix(ci): clear invalid Semgrep baseline` unsets GitHub's all-zero first-push baseline before the full Semgrep scan; its regression test, lint, and type-check passed locally.
+- `34aa380 fix(release): address PR review blockers` checks out the immutable release SHA throughout the privileged workflow (including Docker metadata identity), rejects disabled Google Tasks creation/list access and records mapping failures, removes three owner-identified tautological tests, and documents the migration/provenance changes in `CHANGELOG.md`.
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff only; all implementation is committed locally in `c2d6a61` and `2b5a860`.
+- Implementation is committed in `34aa380`; only this handoff is expected to differ before its checkpoint commit.
 - Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; every other registered worktree and active handoff; Coolify and production configuration.
 
 ## Verification
@@ -36,6 +37,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - First web-build attempt hit `ENOSPC`. Removed only four regenerable `.next` directories, freeing about 9.8 GiB; the clean retry passed.
 - Passed the exact CI `npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url postgresql://needt:needt@127.0.0.1:55432/needt_shadow --exit-code` against `postgres:16-alpine`: exit 0, `No difference detected.` The disposable container `needt-schema-drift-20260824` and downloaded image were removed afterward.
 - GitHub Actions runs `32673445836` (`push`) and `32673448129` (`pull_request`) both passed on implementation SHA `4c33d970b8ed923496efadf6a9f36c37a1d24089`: changes, security, PostgreSQL 16 schema-drift, quality-gates, E2E, and visual-style all succeeded. Visual/style execution correctly skipped because no matching UI paths changed.
+- Review-fix verification on Node 22.16.0: focused workflow/Google suites 24/24; full `CI=true TZ=UTC` unit suite 162 suites passed, 1 skipped and 765 tests passed, 1 skipped (766 total); type-check; zero-warning lint; web build with 142 static pages and 1,390-file artifact check; worker build; collaboration build/runtime; branding; UI contracts; `git diff --check`; Semgrep 1.172.0 scanned 8 changed workflow/TypeScript files with 0 findings.
+- The privileged `docker-publish` workflow is intentionally gated to successful same-repository default-branch pushes, so its first executable validation remains after a future merge; PR #20 must not be merged without a separate owner instruction.
 - Not run locally: E2E, visual, or any Docker image build. GitHub Actions ran E2E successfully on both events; visual/style heavyweight steps were skipped by the path filter.
 
 ## Decisions and constraints
@@ -46,8 +49,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 
 ## Blockers
 
-- None. PR #20 is open and unmerged; merge remains prohibited.
+- None. PR #20 remains open and unmerged; merge is explicitly prohibited.
 
 ## Next action
 
-- Owner reviews PR #20 and separately decides whether to merge. Do not merge or touch Coolify without a new direct instruction.
+- Push the completed review-fix checkpoints to PR #20, wait for branch CI, and stop without merge or Coolify action.
