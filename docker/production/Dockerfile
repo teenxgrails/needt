@@ -2,6 +2,9 @@
 FROM node:22-alpine3.19 AS builder
 
 WORKDIR /app
+ARG NEEDT_BUILD_SHA=local
+ENV NEEDT_BUILD_SHA=$NEEDT_BUILD_SHA
+ENV NEXT_PUBLIC_NEEDT_BUILD_SHA=$NEEDT_BUILD_SHA
 
 # Install dependencies
 COPY package*.json .npmrc ./

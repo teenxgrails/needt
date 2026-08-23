@@ -3,7 +3,7 @@ id: 20260823-codex-launch-l1-sentry
 owner: codex
 branch: codex/launch-l1-sentry
 status: active
-updated: 2026-08-23T02:36:04Z
+updated: 2026-08-23T02:44:44Z
 objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-map upload wiring without a local Docker build.
 ---
 
@@ -20,15 +20,16 @@ objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-
 - Tagged web, worker, and collaboration Sentry events by service and build SHA; collaboration now captures startup failure.
 - `2fa9524 fix(launch): scrub Sentry telemetry` records the completed privacy/runtime tagging unit.
 - `da64ba2 fix(launch): harden Sentry telemetry` merged that unit into `codex/launch-l0`.
+- Made the non-secret build SHA available to browser Sentry initialization before Next compiles, with a focused Dockerfile regression test.
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff. CI source-map wiring and deployment documentation remain intentionally untouched pending explicit outbound-data authorization.
+- Files currently dirty or expected to change: production Dockerfile, browser release regression test, this handoff. CI source-map wiring and deployment documentation remain intentionally untouched pending explicit outbound-data authorization.
 - Foreign changes that must remain untouched: all files in the primary and D0 worktrees; this worktree was clean at start.
 
 ## Verification
 
-- Passed: npm run agent:context; git status --short (clean at start); `npm run type-check`; `npm run lint -- --quiet`; `npm run test:unit -- --runInBand src/lib/sentry/__tests__/privacy.test.ts`.
+- Passed: npm run agent:context; git status --short (clean at start); `npm run type-check`; `npm run lint -- --quiet`; `npm run test:unit -- --runInBand src/lib/sentry/__tests__/privacy.test.ts`; `npm run test:unit -- --runInBand src/__tests__/sentry-runtime-release.test.ts`.
 - Not run / still required: full unit suite, build-related static gates, CI docker-publish on the merged SHA.
 
 ## Decisions and constraints
@@ -43,4 +44,4 @@ objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-
 
 ## Next action
 
-- Commit the completed privacy/runtime tagging unit, then await explicit authorization to wire external Sentry source-map upload.
+- Commit and merge the non-secret browser release-identity unit, then await explicit authorization to wire external Sentry source-map upload.
