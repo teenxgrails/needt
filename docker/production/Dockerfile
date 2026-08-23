@@ -21,7 +21,13 @@ COPY . .
 # Leave headroom for Alpine, Next build workers, and Docker Desktop's
 # constrained Linux VM instead of reserving the whole configured memory limit.
 ENV NODE_OPTIONS=--max-old-space-size=2560
-RUN npm run build
+RUN --mount=type=secret,id=sentry_auth_token,required=true \
+    --mount=type=secret,id=sentry_org,required=true \
+    --mount=type=secret,id=sentry_project,required=true \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)" \
+    SENTRY_ORG="$(cat /run/secrets/sentry_org)" \
+    SENTRY_PROJECT="$(cat /run/secrets/sentry_project)" \
+    npm run build
 RUN npm run build:worker
 RUN npm run build:collaboration
 RUN npm run check:collaboration-runtime && test -s dist/collaboration/index.mjs

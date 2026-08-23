@@ -7,6 +7,8 @@ const workflow = read(".github/workflows/docker-publish.yml");
 const deployGuide = read("docs/deploy.md");
 const envTemplate = read("ENV_TEMPLATE.md");
 const envExample = read(".env.example");
+const nextConfig = read("next.config.js");
+const artifactCheck = read("scripts/check-production-artifacts.mjs");
 
 const runtimeSecrets = [
   "DATABASE_URL",
@@ -42,7 +44,9 @@ describe("production environment contract", () => {
   it("passes only the non-secret build identity to docker-publish", () => {
     const args = buildArgs(workflow);
 
-    expect(args).toContain("NEEDT_BUILD_SHA=${{ github.event.workflow_run.head_sha || github.sha }}");
+    expect(args).toContain(
+      "NEEDT_BUILD_SHA=${{ github.event.workflow_run.head_sha || github.sha }}"
+    );
     expect(args).not.toMatch(/secrets\./i);
     for (const secret of runtimeSecrets) {
       expect(args).not.toContain(`${secret}=`);
@@ -51,8 +55,41 @@ describe("production environment contract", () => {
 
   it("does not declare runtime secrets as production-image arguments or environment", () => {
     for (const secret of runtimeSecrets) {
-      expect(dockerfile).not.toMatch(new RegExp(`^(?:ARG|ENV)\\s+${secret}(?:=|\\s|$)`, "m"));
+      expect(dockerfile).not.toMatch(
+        new RegExp(`^(?:ARG|ENV)\\s+${secret}(?:=|\\s|$)`, "m")
+      );
     }
+  });
+
+  it("mounts Sentry upload configuration only for the build process", () => {
+    expect(dockerfile).toContain(
+      "--mount=type=secret,id=sentry_auth_token,required=true"
+    );
+    expect(dockerfile).toContain(
+      "--mount=type=secret,id=sentry_org,required=true"
+    );
+    expect(dockerfile).toContain(
+      "--mount=type=secret,id=sentry_project,required=true"
+    );
+    expect(dockerfile).toContain(
+      'SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)"'
+    );
+    expect(dockerfile).not.toMatch(
+      /^(?:ARG|ENV)\s+SENTRY_(?:AUTH_TOKEN|ORG|PROJECT)/m
+    );
+  });
+
+  it("uploads the exact release and removes client source maps", () => {
+    expect(nextConfig).toContain("name: process.env.NEEDT_BUILD_SHA");
+    expect(nextConfig).toContain(
+      'filesToDeleteAfterUpload: [".next/static/**/*.map"]'
+    );
+    expect(nextConfig).toContain("errorHandler(error)");
+    expect(nextConfig).toContain("throw error");
+    expect(artifactCheck).toContain(
+      "Production client source maps were not deleted after upload"
+    );
+    expect(artifactCheck).toContain('extname(file) === ".map"');
   });
 
   it("keeps the owner checklist aligned across deployment and local templates", () => {
