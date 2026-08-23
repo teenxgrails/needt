@@ -4,6 +4,23 @@ import { APP_NAME } from "@/lib/app-config";
 import { logger } from "@/lib/logger";
 
 const LOG_SOURCE = "EmailService";
+const EMAIL_LOCAL_PART =
+  "[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*";
+const DOMAIN_LABEL = "[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?";
+const EMAIL_ADDRESS_PATTERN = new RegExp(
+  `^(${EMAIL_LOCAL_PART})@(${DOMAIN_LABEL}(?:\\.${DOMAIN_LABEL})+)$`
+);
+const FORMATTED_MAILBOX_PATTERN = /^([^<>]+?)\s*<([^<>]+)>$/;
+
+function isValidEmailAddress(value: string): boolean {
+  if (value.length > 254) return false;
+  const match = EMAIL_ADDRESS_PATTERN.exec(value);
+  return !!match && match[1].length <= 64 && match[2].length <= 253;
+}
+
+function hasUnsafeMailboxCharacters(value: string): boolean {
+  return /[\r\n\0]/.test(value);
+}
 
 export interface EmailJobData {
   to: string;
@@ -102,10 +119,33 @@ export class EmailService {
    * @returns Formatted email string
    */
   static formatSender(displayName: string): string {
-    const fromEmail = process.env.RESEND_FROM_EMAIL?.trim();
-    if (!fromEmail) {
+    const configuredSender = process.env.RESEND_FROM_EMAIL?.trim();
+    if (!configuredSender) {
       throw new Error("RESEND_FROM_EMAIL is required to send email");
     }
-    return `${displayName} <${fromEmail}>`;
+    if (
+      hasUnsafeMailboxCharacters(configuredSender) ||
+      hasUnsafeMailboxCharacters(displayName) ||
+      displayName.trim().length === 0 ||
+      /[<>]/.test(displayName)
+    ) {
+      throw new Error("RESEND_FROM_EMAIL must contain one valid mailbox");
+    }
+
+    if (isValidEmailAddress(configuredSender)) {
+      return `${displayName} <${configuredSender}>`;
+    }
+
+    const formattedMailbox = FORMATTED_MAILBOX_PATTERN.exec(configuredSender);
+    if (
+      formattedMailbox &&
+      formattedMailbox[1].trim().length > 0 &&
+      !hasUnsafeMailboxCharacters(formattedMailbox[1]) &&
+      isValidEmailAddress(formattedMailbox[2].trim())
+    ) {
+      return `${formattedMailbox[1].trim()} <${formattedMailbox[2].trim()}>`;
+    }
+
+    throw new Error("RESEND_FROM_EMAIL must contain one valid mailbox");
   }
 }

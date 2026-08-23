@@ -56,6 +56,20 @@ describe("EmailService sender contract", () => {
     );
   });
 
+  it("preserves an already formatted sender mailbox", async () => {
+    process.env.RESEND_FROM_EMAIL = "  Needt <noreply@needt.app>  ";
+
+    await EmailService.sendEmail({
+      to: "recipient@example.com",
+      subject: "Test message",
+      html: "<p>Test</p>",
+    });
+
+    expect(mockSend).toHaveBeenCalledWith(
+      expect.objectContaining({ from: "Needt <noreply@needt.app>" })
+    );
+  });
+
   it("fails before calling Resend when the sender is missing", async () => {
     delete process.env.RESEND_FROM_EMAIL;
 
@@ -68,5 +82,35 @@ describe("EmailService sender contract", () => {
     ).rejects.toThrow("RESEND_FROM_EMAIL is required to send email");
     expect(Resend).not.toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    "Needt <Needt <noreply@needt.app>>",
+    "Needt <>",
+    "noreply@needt.app, other@needt.app",
+    "noreply@needt",
+    ".noreply@needt.app",
+    "noreply..mail@needt.app",
+    "Needt <noreply@-needt.app>",
+    "Needt <noreply@needt.app>\r\nBcc: attacker@example.com",
+    "noreply@needt.app\0",
+  ])("rejects an invalid sender before calling Resend: %s", async (sender) => {
+    process.env.RESEND_FROM_EMAIL = sender;
+
+    await expect(
+      EmailService.sendEmail({
+        to: "recipient@example.com",
+        subject: "Test message",
+        html: "<p>Test</p>",
+      })
+    ).rejects.toThrow("RESEND_FROM_EMAIL must contain one valid mailbox");
+    expect(Resend).not.toHaveBeenCalled();
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unsafe display name", () => {
+    expect(() =>
+      EmailService.formatSender("Needt\r\nBcc: attacker@example.com")
+    ).toThrow("RESEND_FROM_EMAIL must contain one valid mailbox");
   });
 });

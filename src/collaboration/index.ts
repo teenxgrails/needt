@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
 
+import { requireProductionBuildSha } from "@/lib/health/build-sha";
 import { logger } from "@/lib/logger";
 import {
   dropSentryBreadcrumb,
@@ -10,7 +11,8 @@ import {
 import { createCollaborationServer } from "./server";
 
 const LOG_SOURCE = "CollaborationServer";
-const server = createCollaborationServer();
+const buildSha = requireProductionBuildSha();
+const server = createCollaborationServer({ buildSha });
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -42,7 +44,7 @@ void server
       "Collaboration server started",
       {
         address: server.webSocketURL,
-        buildSha: process.env.NEEDT_BUILD_SHA || "local",
+        buildSha,
       },
       LOG_SOURCE
     )

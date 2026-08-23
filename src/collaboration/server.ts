@@ -18,6 +18,7 @@ import { PageAuthor, Prisma } from "@prisma/client";
 
 import { Yjs as Y } from "@/lib/collaboration/yjs";
 import { newDate } from "@/lib/date-utils";
+import { isBuildShaAllowed, resolveBuildSha } from "@/lib/health/build-sha";
 import { prisma } from "@/lib/prisma";
 
 import {
@@ -38,6 +39,7 @@ export type CollaborationServerOptions = {
   port?: number;
   useRedis?: boolean;
   authorizationRecheckIntervalMs?: number;
+  buildSha?: string;
 };
 
 class CollaborationAuthorizationError extends Error {
@@ -100,6 +102,7 @@ export function createCollaborationServer(
   const recheckInterval =
     options.authorizationRecheckIntervalMs ??
     DEFAULT_AUTHORIZATION_RECHECK_INTERVAL_MS;
+  const buildSha = options.buildSha ?? resolveBuildSha();
   const recheckTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   function cancelRecheck(socketId: string) {
@@ -141,12 +144,15 @@ export function createCollaborationServer(
     extensions: redisExtensions(options.useRedis ?? true),
     async onRequest({ request, response }) {
       if (request.url?.split("?", 1)[0] !== "/health") return;
-      response.writeHead(200, { "Content-Type": "application/json" });
+      const ok = isBuildShaAllowed(buildSha);
+      response.writeHead(ok ? 200 : 503, {
+        "Content-Type": "application/json",
+      });
       response.end(
         JSON.stringify({
-          ok: true,
+          ok,
           service: "collaboration",
-          buildSha: process.env.NEEDT_BUILD_SHA || "local",
+          buildSha,
         })
       );
       return Promise.reject();

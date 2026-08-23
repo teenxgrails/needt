@@ -1,29 +1,48 @@
 import { NextResponse } from "next/server";
 
+import { isBuildShaAllowed, resolveBuildSha } from "@/lib/health/build-sha";
 import { getMigrationStatus } from "@/lib/health/migrations";
+import { readWorkerReleaseBuildSha } from "@/lib/health/worker-release";
 
 export const runtime = "nodejs";
 
-function getBuildSha() {
-  return (
-    process.env.NEEDT_BUILD_SHA ||
-    process.env.VERCEL_GIT_COMMIT_SHA ||
-    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA ||
-    "local"
-  );
+async function getWorkerBuildSha(buildSha: string) {
+  try {
+    return await readWorkerReleaseBuildSha(buildSha);
+  } catch {
+    return null;
+  }
 }
 
 export async function GET() {
   const startedAt = Date.now();
+  const buildSha = resolveBuildSha();
+  if (!isBuildShaAllowed(buildSha)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        db: "unchecked",
+        buildSha,
+        workerBuildSha: null,
+        latencyMs: Date.now() - startedAt,
+      },
+      { status: 503 }
+    );
+  }
+
   try {
-    const { pending } = await getMigrationStatus();
+    const [{ pending }, workerBuildSha] = await Promise.all([
+      getMigrationStatus(),
+      getWorkerBuildSha(buildSha),
+    ]);
 
     if (pending.length > 0) {
       return NextResponse.json(
         {
           ok: false,
           db: "migrations-pending",
-          buildSha: getBuildSha(),
+          buildSha,
+          workerBuildSha,
           latencyMs: Date.now() - startedAt,
         },
         { status: 503 }
@@ -33,7 +52,8 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       db: "ok",
-      buildSha: getBuildSha(),
+      buildSha,
+      workerBuildSha,
       latencyMs: Date.now() - startedAt,
     });
   } catch {
@@ -41,7 +61,8 @@ export async function GET() {
       {
         ok: false,
         db: "error",
-        buildSha: getBuildSha(),
+        buildSha,
+        workerBuildSha: null,
         latencyMs: Date.now() - startedAt,
       },
       { status: 503 }

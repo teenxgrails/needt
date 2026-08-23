@@ -2,8 +2,8 @@
 id: 20260823-codex-sol-runtime-release
 owner: codex
 branch: codex/launch-l0
-status: blocked
-updated: 2026-08-23T11:58:16Z
+status: complete
+updated: 2026-08-23T14:03:47Z
 objective: Restore release-correct collaboration runtime and close the locally implementable Sol deployment-safety gaps on one verified release SHA.
 ---
 
@@ -28,10 +28,12 @@ objective: Restore release-correct collaboration runtime and close the locally i
 - Configured Sentry 10.68 with the actual supported client-map deletion glob (`sourcemaps.filesToDeleteAfterUpload`), explicit `NEEDT_BUILD_SHA` release identity, and fail-closed upload handling. The production Docker build receives token/org/project only through required BuildKit secret mounts scoped to `npm run build`; no Sentry secret is an ARG, image ENV, or build arg.
 - Extended the postbuild artifact gate to fail on any `.next/static/**/*.map`. A fresh Node 22 production build passed this gate and an explicit file listing found no client source maps.
 - `be2a0c7 fix(release): secure Sentry source maps` records S5. The locally green code SHA is tagged `v0.4.1-rc.2`; do not promote it to final until the workflow and external mail checks below pass.
+- `1e5a877 fix(email): accept configured sender mailbox` corrects S4: `RESEND_FROM_EMAIL` now accepts either one raw address or one preformatted mailbox, normalizes it once, and rejects malformed, double-wrapped, multi-address, or header-injection values before constructing Resend.
+- `e411e56 fix(release): keep worker health private` corrects S6/S7. Production web, worker, and collaboration reject a non-40-hex build identity. Worker release readiness is a per-SHA, short-TTL Redis heartbeat surfaced by web health as `workerBuildSha`; the final parity gate needs only public web and collaboration health URLs. Worker HTTP health is loopback-only and port 1235 is no longer exposed.
 
 ## Working state
 
-- Files currently dirty or expected to change: this final handoff checkpoint only. Terra must reconcile the stale `.js` command in `docs/deploy.md`, wire both runtime checks into `.github/workflows/docker-publish.yml`, and pass `sentry_auth_token`, `sentry_org`, and `sentry_project` through the build action's `secrets:` input.
+- Files currently dirty or expected to change: this final handoff checkpoint only. Terra-owned docs and workflows remain untouched.
 - Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; all D0 files; Terra-owned `docs/**` and `.github/workflows/**` except the already-reviewed commits being merged unchanged from `codex/launch-l1-config`.
 
 ## Verification
@@ -42,6 +44,8 @@ objective: Restore release-correct collaboration runtime and close the locally i
 - Passed for S4 on Node 22.16.0: mocked Resend sender tests (2 tests), type-check, lint, and `git diff --check`.
 - Passed for S5 on Node 22.16.0: focused environment/Sentry tests (2 suites / 7 tests); type-check; lint; fresh `npm run build` including postbuild artifact scan; explicit `.next/static` map listing empty; `git diff --check`.
 - Final Node 22.16.0 boundary passed at `be2a0c7`: `npm run type-check`; `npm run lint`; `npm run test:unit` (156 passed suites / 720 passed tests, 1 suite/test skipped); `npm run build`; `npm run build:worker`; `npm run build:collaboration`; `npm run check:collaboration-runtime`; `npm run check:branding`; `npm run check:ui-contracts`; `npm run check:agent-handoffs`; `git diff --check`.
+- S4/S6/S7 focused boundary passed: 6 suites / 41 tests, including sender, build-SHA, Redis heartbeat, web health, private worker health, and Docker/runtime contracts; type-check; lint; worker and collaboration builds; executable collaboration smoke; `git diff --check`.
+- Final S4/S6/S7 boundary passed on Node 22.16.0: full unit suite (158 passed suites / 739 passed tests, 1 suite/test skipped); production web build and artifact scan; worker and collaboration builds; type-check; lint; branding, UI-contract, and handoff checks. Local runtime harness converged with three matching 40-hex identities and failed as expected for a stale worker. Production-like worker and collaboration bundles both exited 1 for `NEEDT_BUILD_SHA=local`.
 - Not run / still required: Docker/GHCR CI with real BuildKit secrets; actual Sentry upload/release inspection; Terra workflow integration; production deploy/data operations; D0, launch E2E, and visual waves excluded by the owner brief.
 
 ## Decisions and constraints
@@ -50,7 +54,8 @@ objective: Restore release-correct collaboration runtime and close the locally i
 - Keep collaboration as ESM and bridge CommonJS dynamic requires with `createRequire`; do not silently revert the release-speed change to CommonJS.
 - Alias the banner import as `__createRequire`: the literal unaliased banner collides with a generated `createRequire` import later in the bundle. Runtime semantics are unchanged and the executable smoke covers the dynamic `util`, `crypto`, and other CommonJS paths reached during startup.
 - No source-map token in Docker build args or image layers; production/external operations remain owner-only.
-- Runtime SHA parity uses per-service health responses containing only service name and build SHA; it does not expose queue, user, or environment data. Worker health is ready on port 1235; collaboration health uses `/health` on its existing port 1234.
+- Runtime SHA parity exposes only release identity, not queue, user, or environment data. Worker stays private: it writes `needt:release-health:worker:<sha>` with a 45-second TTL every 15 seconds, and web reports only whether its own SHA has a live worker heartbeat. Missing worker readiness does not make web health fail during a serialized deploy; the final parity gate fails closed until web, worker, and collaboration all match.
+- A production source build that still resolves `SOURCE_COMMIT` to `local` will now intentionally fail health/startup. Coolify or the GHCR workflow must inject the exact 40-character commit SHA before rollout.
 - Production email remains externally blocked until the owner verifies the sender/domain in Resend and installs matching `RESEND_API_KEY` plus `RESEND_FROM_EMAIL` on web and worker. Registration currently creates credentials without sending or enforcing a verification token; that is a distinct launch product/auth gap, not hidden by this sender fix. The reminder worker/retry implementation exists; inspect the live job attempts/failure reason after correcting Resend rather than changing queue code from the single waiting-job warning.
 - The installed Sentry API does not support the brief's `deleteFilesAfterUpload` spelling; `filesToDeleteAfterUpload` is the typed 10.68 option. Required Docker secret mounts intentionally make GHCR publication fail until Terra wires all three secret inputs, preventing a silent build without the authorized upload.
 
@@ -61,4 +66,4 @@ objective: Restore release-correct collaboration runtime and close the locally i
 
 ## Next action
 
-- Terra: update `docs/deploy.md` and `.github/workflows/docker-publish.yml` for `.mjs`, required BuildKit Sentry secrets, executable collaboration smoke, worker/collaboration health URLs, and `npm run check:runtime-shas`; then run docker-publish on `v0.4.1-rc.2` and hand the CI/Sentry evidence back to this track.
+- Terra: rebase/cherry-pick through `e411e56`; remove `NEEDT_PRODUCTION_WORKER_HEALTH_URL` and every public-worker assertion introduced in `98c9a8c`; keep the web and collaboration URLs, BuildKit Sentry secrets, executable collaboration smoke, and `npm run check:runtime-shas`. Ensure the deployed image receives the exact 40-character SHA, then run docker-publish and return CI/Sentry evidence. External owner action remains required for matching Preview/Production Resend env values and live reset/reminder delivery inspection.

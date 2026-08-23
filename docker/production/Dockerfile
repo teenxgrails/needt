@@ -61,7 +61,7 @@ COPY --chown=nextjs:nodejs --from=builder /app/entrypoint.sh ./entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Expose port
-EXPOSE 3000 1234 1235
+EXPOSE 3000 1234
 
 # Set environment variables
 ENV NODE_ENV=production
