@@ -32,11 +32,8 @@ export class EmailService {
       const { to, subject } = emailData;
 
       logger.info(
-        `Sending email to ${to}`,
+        "Sending email",
         {
-          to,
-          subject,
-          from: emailData.from || "default",
           hasAttachments:
             !!emailData.attachments && emailData.attachments.length > 0,
         },
@@ -79,10 +76,8 @@ export class EmailService {
       }
 
       logger.info(
-        `Email sent successfully to ${to}`,
+        "Email sent successfully",
         {
-          to,
-          subject,
           resendId: data?.id || null,
         },
         LOG_SOURCE
@@ -93,9 +88,7 @@ export class EmailService {
       logger.error(
         `Failed to send email`,
         {
-          error: error instanceof Error ? error.message : "Unknown error",
-          to: emailData.to,
-          subject: emailData.subject,
+          errorType: error instanceof Error ? error.name : "UnknownError",
         },
         LOG_SOURCE
       );
