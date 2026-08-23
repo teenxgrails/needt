@@ -12,6 +12,11 @@ import {
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import {
+  accountRule,
+  enforceRateLimits,
+  ipRule,
+} from "@/lib/security/rate-limit";
 
 const LOG_SOURCE = "CreemCheckoutAPI";
 
@@ -39,6 +44,15 @@ function checkoutRequestId(
 export async function POST(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
+
+  const limited = await enforceRateLimits(
+    [
+      ipRule(request, "billing-checkout:ip", 10, 60 * 60),
+      accountRule(auth.userId, "billing-checkout:account", 5, 60 * 60),
+    ],
+    { route: "/api/billing/checkout", userId: auth.userId }
+  );
+  if (limited) return limited;
 
   if (!isCreemConfigured()) {
     return NextResponse.json(
