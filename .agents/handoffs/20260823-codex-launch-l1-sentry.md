@@ -3,7 +3,7 @@ id: 20260823-codex-launch-l1-sentry
 owner: codex
 branch: codex/launch-l1-sentry
 status: active
-updated: 2026-08-23T02:35:36Z
+updated: 2026-08-23T02:36:04Z
 objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-map upload wiring without a local Docker build.
 ---
 
@@ -19,6 +19,7 @@ objective: Complete L1.1 Sentry release identity, privacy scrubbing, and source-
 - Added shared privacy filtering that drops all breadcrumbs, request/user/extra payloads, exception values, trace names, and trace attributes while retaining release-level error classification.
 - Tagged web, worker, and collaboration Sentry events by service and build SHA; collaboration now captures startup failure.
 - `2fa9524 fix(launch): scrub Sentry telemetry` records the completed privacy/runtime tagging unit.
+- `da64ba2 fix(launch): harden Sentry telemetry` merged that unit into `codex/launch-l0`.
 
 ## Working state
 
