@@ -1,14 +1,18 @@
-import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
-import { executeSchedulingRun } from "@/services/scheduling/runs";
 import { syncBugReportToGithub } from "@/services/bug-reports/bug-report-service";
+import { generateProactiveNudges } from "@/services/nudges/proactive-assist";
+import { collectOperationsHealth } from "@/services/operations/health";
 import {
   deliverTaskReminder,
   findDueReminderIds,
 } from "@/services/reminders/reminder-delivery";
-import { generateProactiveNudges } from "@/services/nudges/proactive-assist";
-import { collectOperationsHealth } from "@/services/operations/health";
-import { ConnectionOptions, Job, Worker } from "bullmq";
+import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
+import { executeSchedulingRun } from "@/services/scheduling/runs";
+import {
+  startWorkerHealthServer,
+  stopWorkerHealthServer,
+} from "@/worker/health-server";
 import * as Sentry from "@sentry/node";
+import { ConnectionOptions, Job, Worker } from "bullmq";
 
 import { CalDAVCalendarService } from "@/lib/caldav-calendar";
 import {
@@ -19,11 +23,11 @@ import { renewCalendarWebhooks } from "@/lib/calendar-webhooks/renew";
 import { newDate } from "@/lib/date-utils";
 import { syncGoogleCalendar } from "@/lib/google-sync";
 import { logger } from "@/lib/logger";
+import { listActiveMailAccountIds } from "@/lib/mail-db";
 import {
   closeImapIdleWatchers,
   ensureImapIdleWatcher,
 } from "@/lib/mail/imap-idle";
-import { listActiveMailAccountIds } from "@/lib/mail-db";
 import { syncMailAccount } from "@/lib/mail/sync";
 import { getOutlookClient } from "@/lib/outlook-calendar";
 import { syncOutlookCalendar } from "@/lib/outlook-sync";
@@ -32,25 +36,25 @@ import {
   getRedisConnection,
 } from "@/lib/queue/connection";
 import {
+  enqueueReminderDelivery,
   enqueueReschedule,
   enqueueWebhookRenew,
   ensureMailSyncSchedule,
-  enqueueReminderDelivery,
 } from "@/lib/queue/enqueue";
 import {
   closeQueues,
   getBugReportSyncQueue,
-  getReminderQueue,
   getNudgeQueue,
+  getReminderQueue,
   getWebhookRenewQueue,
 } from "@/lib/queue/queues";
 import {
-  CalendarSyncJobData,
   BugReportSyncJobData,
+  CalendarSyncJobData,
   MailSyncJobData,
-  ReminderJobData,
   NudgeJobData,
   QUEUE_NAMES,
+  ReminderJobData,
   RescheduleJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";
@@ -63,6 +67,9 @@ import {
 
 const LOG_SOURCE = "NeedtWorker";
 const WEBHOOK_RENEW_INTERVAL_MS = 6 * 60 * 60 * 1_000;
+let workerHealthServer: Awaited<
+  ReturnType<typeof startWorkerHealthServer>
+> | null = null;
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -192,10 +199,14 @@ const workers = [
     connection,
     concurrency: 3,
   }),
-  new Worker<BugReportSyncJobData>(QUEUE_NAMES.bugReportSync, processBugReportSync, {
-    connection,
-    concurrency: 1,
-  }),
+  new Worker<BugReportSyncJobData>(
+    QUEUE_NAMES.bugReportSync,
+    processBugReportSync,
+    {
+      connection,
+      concurrency: 1,
+    }
+  ),
   new Worker<ReminderJobData>(QUEUE_NAMES.reminders, processReminder, {
     connection,
     concurrency: 5,
@@ -259,6 +270,7 @@ async function start(): Promise<void> {
   await Promise.all(
     mailAccountIds.map((accountId) => ensureImapIdleWatcher(accountId))
   );
+  workerHealthServer = await startWorkerHealthServer();
   await logger.info(
     "Needt background worker started",
     {
@@ -280,6 +292,8 @@ async function shutdown(signal: string): Promise<void> {
   shuttingDown = true;
   clearInterval(healthInterval);
   await logger.info("Needt background worker stopping", { signal }, LOG_SOURCE);
+  await stopWorkerHealthServer(workerHealthServer);
+  workerHealthServer = null;
   await closeImapIdleWatchers();
   await Promise.all(workers.map((worker) => worker.close()));
   await closeQueues();

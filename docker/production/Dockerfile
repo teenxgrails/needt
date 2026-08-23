@@ -24,7 +24,7 @@ ENV NODE_OPTIONS=--max-old-space-size=2560
 RUN npm run build
 RUN npm run build:worker
 RUN npm run build:collaboration
-RUN npm run check:collaboration-runtime && test -s dist/collaboration/index.js
+RUN npm run check:collaboration-runtime && test -s dist/collaboration/index.mjs
 
 # Production stage
 FROM node:22-alpine3.19 AS runner
@@ -55,7 +55,7 @@ COPY --chown=nextjs:nodejs --from=builder /app/entrypoint.sh ./entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Expose port
-EXPOSE 3000 1234
+EXPOSE 3000 1234 1235
 
 # Set environment variables
 ENV NODE_ENV=production

@@ -139,6 +139,18 @@ export function createCollaborationServer(
     timeout: 15_000,
     websocketOptions: { maxPayload: 2 * 1024 * 1024 },
     extensions: redisExtensions(options.useRedis ?? true),
+    async onRequest({ request, response }) {
+      if (request.url?.split("?", 1)[0] !== "/health") return;
+      response.writeHead(200, { "Content-Type": "application/json" });
+      response.end(
+        JSON.stringify({
+          ok: true,
+          service: "collaboration",
+          buildSha: process.env.NEEDT_BUILD_SHA || "local",
+        })
+      );
+      return Promise.reject();
+    },
     async onAuthenticate({ token, documentName, connectionConfig }) {
       const context = await authenticateCollaboration(token, documentName);
       connectionConfig.readOnly = isCollaborationReadOnly(context);

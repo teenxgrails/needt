@@ -20,7 +20,7 @@ services:
 
   collaboration:
     image: ghcr.io/teenxgrails/needt:main
-    command: ["node", "dist/collaboration/index.js"]
+    command: ["node", "dist/collaboration/index.mjs"]
     ports:
       - "1234:1234"
     env_file:

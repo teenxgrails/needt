@@ -155,6 +155,60 @@ describe("production migration tooling", () => {
   it("fails the container when migrations or required environment fail", () => {
     expect(entrypoint).toMatch(/^#!\/bin\/sh\nset -eu\n/);
   });
+
+  it("runs every production service through the shared entrypoint", () => {
+    const workerStage = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS worker"),
+      rootDockerfile.indexOf("FROM base AS collaboration")
+    );
+    const collaborationStage = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS collaboration"),
+      rootDockerfile.indexOf("FROM base AS production")
+    );
+
+    expect(dockerfile).toContain('ENTRYPOINT ["/app/entrypoint.sh"]');
+    expect(dockerfile).toContain('CMD ["node", "server.js"]');
+    expect(workerStage).toContain('ENTRYPOINT ["/app/entrypoint.sh"]');
+    expect(workerStage).toContain('CMD ["node", "dist/worker/index.js"]');
+    expect(collaborationStage).toContain('ENTRYPOINT ["/app/entrypoint.sh"]');
+    expect(collaborationStage).toContain(
+      'CMD ["node", "dist/collaboration/index.mjs"]'
+    );
+  });
+
+  it("ships and starts the ESM collaboration artifact consistently", () => {
+    const packageJsonText = read("package.json");
+    const compose = read("docker-compose.yml");
+
+    expect(packageJsonText).toContain(
+      '"start:collaboration": "node dist/collaboration/index.mjs"'
+    );
+    expect(dockerfile).toContain("test -s dist/collaboration/index.mjs");
+    expect(compose).toContain(
+      'command: ["node", "dist/collaboration/index.mjs"]'
+    );
+    expect(packageJsonText).not.toContain("dist/collaboration/index.js");
+    expect(dockerfile).not.toContain("dist/collaboration/index.js");
+    expect(rootDockerfile).not.toContain("dist/collaboration/index.js");
+    expect(compose).not.toContain("dist/collaboration/index.js");
+  });
+
+  it("exposes service health and an all-service SHA gate", () => {
+    const packageJsonText = read("package.json");
+    const runtimeShaCheck = read("scripts/check-runtime-shas.mjs");
+
+    expect(dockerfile).toContain("EXPOSE 3000 1234 1235");
+    expect(rootDockerfile).toContain("EXPOSE 1235");
+    expect(packageJsonText).toContain(
+      '"check:runtime-shas": "node scripts/check-runtime-shas.mjs"'
+    );
+    expect(runtimeShaCheck).toContain("WEB_HEALTH_URL");
+    expect(runtimeShaCheck).toContain("WORKER_HEALTH_URL");
+    expect(runtimeShaCheck).toContain("COLLABORATION_HEALTH_URL");
+    expect(runtimeShaCheck).toContain(
+      "shas.every((sha) => sha === EXPECTED_SHA)"
+    );
+  });
 });
 
 describe("production root redirect", () => {

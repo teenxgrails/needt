@@ -59,6 +59,23 @@ function canConnect() {
   });
 }
 
+async function hasExpectedHealth() {
+  try {
+    const response = await fetch(`http://${HOST}:${PORT}/health`, {
+      signal: AbortSignal.timeout(250),
+    });
+    const body = await response.json();
+    return (
+      response.ok &&
+      body?.ok === true &&
+      body?.service === "collaboration" &&
+      body?.buildSha === "collaboration-smoke-sha"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function waitForExit(child, timeoutMs) {
   return Promise.race([
     new Promise((resolve) =>
@@ -73,6 +90,7 @@ function spawnBundle() {
     env: {
       ...process.env,
       NODE_ENV: "test",
+      NEEDT_BUILD_SHA: "collaboration-smoke-sha",
       COLLABORATION_HOST: HOST,
       COLLABORATION_PORT: String(PORT),
       DATABASE_URL: "",
@@ -98,7 +116,7 @@ child.stderr.on("data", (chunk) => {
 const deadline = Date.now() + STARTUP_TIMEOUT_MS;
 let started = false;
 while (Date.now() < deadline && child.exitCode === null) {
-  if (await canConnect()) {
+  if ((await canConnect()) && (await hasExpectedHealth())) {
     started = true;
     break;
   }

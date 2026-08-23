@@ -58,7 +58,10 @@ COPY entrypoint.sh .
 RUN chmod +x /app/entrypoint.sh
 USER node
 
+EXPOSE 1235
+
 # entrypoint.sh runs `exec "$@"`, so this CMD becomes the worker process.
+ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["node", "dist/worker/index.js"]
 
 # Collaboration stage - same image, runs the Hocuspocus collaboration server.
@@ -80,7 +83,7 @@ USER node
 EXPOSE 1234
 
 ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["node", "dist/collaboration/index.js"]
+CMD ["node", "dist/collaboration/index.mjs"]
 
 # Production stage
 FROM base AS production

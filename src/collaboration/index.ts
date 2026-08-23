@@ -40,7 +40,10 @@ void server
   .then(() =>
     logger.info(
       "Collaboration server started",
-      { address: server.webSocketURL },
+      {
+        address: server.webSocketURL,
+        buildSha: process.env.NEEDT_BUILD_SHA || "local",
+      },
       LOG_SOURCE
     )
   )
