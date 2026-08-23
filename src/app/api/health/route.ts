@@ -5,12 +5,22 @@ import { getMigrationStatus } from "@/lib/health/migrations";
 import { readWorkerReleaseBuildSha } from "@/lib/health/worker-release";
 
 export const runtime = "nodejs";
+const WORKER_HEALTH_LOOKUP_TIMEOUT_MS = 1_000;
 
 async function getWorkerBuildSha(buildSha: string) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await readWorkerReleaseBuildSha(buildSha);
+    return await Promise.race([
+      readWorkerReleaseBuildSha(buildSha),
+      new Promise<null>((resolve) => {
+        timeout = setTimeout(resolve, WORKER_HEALTH_LOOKUP_TIMEOUT_MS, null);
+        timeout.unref();
+      }),
+    ]);
   } catch {
     return null;
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
 }
 

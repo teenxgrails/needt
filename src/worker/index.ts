@@ -13,6 +13,7 @@ import {
 } from "@/worker/health-server";
 import * as Sentry from "@sentry/node";
 import { ConnectionOptions, Job, Worker } from "bullmq";
+import { randomUUID } from "node:crypto";
 
 import { CalDAVCalendarService } from "@/lib/caldav-calendar";
 import {
@@ -30,6 +31,7 @@ import {
   type ReleaseHealthRedis,
   WORKER_RELEASE_HEARTBEAT_INTERVAL_MS,
   recordWorkerReleaseHeartbeat,
+  removeWorkerReleaseHeartbeat,
 } from "@/lib/health/worker-release";
 import { logger } from "@/lib/logger";
 import { listActiveMailAccountIds } from "@/lib/mail-db";
@@ -81,6 +83,7 @@ let workerHealthServer: Awaited<
 > | null = null;
 let releaseHeartbeatInterval: ReturnType<typeof setInterval> | null = null;
 let releaseHeartbeatRefresh: Promise<void> | null = null;
+let releaseHeartbeatRedis: ReleaseHealthRedis | null = null;
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -98,6 +101,7 @@ if (process.env.SENTRY_DSN) {
 }
 
 const BUILD_SHA = requireProductionBuildSha();
+const WORKER_RELEASE_HEARTBEAT_VALUE = `${newDate().toISOString()}:${randomUUID()}`;
 
 async function processCalendarSync(job: Job<CalendarSyncJobData>) {
   const feed = await getCalendarFeedForSync(job.data.feedId);
@@ -255,6 +259,35 @@ for (const worker of workers) {
 }
 
 async function start(): Promise<void> {
+  if (isGitBuildSha(BUILD_SHA)) {
+    releaseHeartbeatRedis =
+      getRedisConnection() as unknown as ReleaseHealthRedis;
+    await recordWorkerReleaseHeartbeat(
+      releaseHeartbeatRedis,
+      BUILD_SHA,
+      WORKER_RELEASE_HEARTBEAT_VALUE
+    );
+    releaseHeartbeatInterval = setInterval(() => {
+      if (releaseHeartbeatRefresh || !releaseHeartbeatRedis) return;
+      releaseHeartbeatRefresh = recordWorkerReleaseHeartbeat(
+        releaseHeartbeatRedis,
+        BUILD_SHA,
+        WORKER_RELEASE_HEARTBEAT_VALUE
+      )
+        .catch(async (error) => {
+          Sentry.captureException(error);
+          await logger.error(
+            "Worker release heartbeat failed",
+            { error: error instanceof Error ? error.message : String(error) },
+            LOG_SOURCE
+          );
+        })
+        .finally(() => {
+          releaseHeartbeatRefresh = null;
+        });
+    }, WORKER_RELEASE_HEARTBEAT_INTERVAL_MS);
+    releaseHeartbeatInterval.unref();
+  }
   await getWebhookRenewQueue().upsertJobScheduler(
     "calendar-webhook-renewal",
     { every: WEBHOOK_RENEW_INTERVAL_MS },
@@ -284,26 +317,6 @@ async function start(): Promise<void> {
     mailAccountIds.map((accountId) => ensureImapIdleWatcher(accountId))
   );
   workerHealthServer = await startWorkerHealthServer();
-  if (isGitBuildSha(BUILD_SHA)) {
-    const redis = getRedisConnection() as unknown as ReleaseHealthRedis;
-    await recordWorkerReleaseHeartbeat(redis, BUILD_SHA);
-    releaseHeartbeatInterval = setInterval(() => {
-      if (releaseHeartbeatRefresh) return;
-      releaseHeartbeatRefresh = recordWorkerReleaseHeartbeat(redis, BUILD_SHA)
-        .catch(async (error) => {
-          Sentry.captureException(error);
-          await logger.error(
-            "Worker release heartbeat failed",
-            { error: error instanceof Error ? error.message : String(error) },
-            LOG_SOURCE
-          );
-        })
-        .finally(() => {
-          releaseHeartbeatRefresh = null;
-        });
-    }, WORKER_RELEASE_HEARTBEAT_INTERVAL_MS);
-    releaseHeartbeatInterval.unref();
-  }
   await logger.info(
     "Needt background worker started",
     {
@@ -326,6 +339,21 @@ async function shutdown(signal: string): Promise<void> {
   clearInterval(healthInterval);
   if (releaseHeartbeatInterval) clearInterval(releaseHeartbeatInterval);
   releaseHeartbeatInterval = null;
+  if (releaseHeartbeatRedis) {
+    const redis = releaseHeartbeatRedis;
+    releaseHeartbeatRedis = null;
+    await Promise.race([
+      removeWorkerReleaseHeartbeat(
+        redis,
+        BUILD_SHA,
+        WORKER_RELEASE_HEARTBEAT_VALUE
+      ).catch(() => undefined),
+      new Promise<void>((resolve) => {
+        const timeout = setTimeout(resolve, 1_000);
+        timeout.unref();
+      }),
+    ]);
+  }
   await logger.info("Needt background worker stopping", { signal }, LOG_SOURCE);
   await stopWorkerHealthServer(workerHealthServer);
   workerHealthServer = null;
