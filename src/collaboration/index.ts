@@ -44,11 +44,13 @@ void server
       LOG_SOURCE
     )
   )
-  .catch((error: unknown) => {
+  .catch(async (error: unknown) => {
+    process.exitCode = 1;
     Sentry.captureException(error);
-    return logger.error(
+    await logger.error(
       "Collaboration server failed",
       { error: error instanceof Error ? error.message : "Unknown error" },
       LOG_SOURCE
     );
+    await Sentry.flush(2_000);
   });

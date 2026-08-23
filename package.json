@@ -12,7 +12,7 @@
     "build": "next build",
     "postbuild": "node scripts/check-production-artifacts.mjs",
     "build:worker": "esbuild src/worker/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/worker/index.js --external:@prisma/client --external:.prisma --external:@block65/webcrypto-web-push",
-    "build:collaboration": "esbuild src/collaboration/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/collaboration/index.js --external:@prisma/client --external:.prisma",
+    "build:collaboration": "esbuild src/collaboration/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/collaboration/index.mjs --external:@prisma/client --external:.prisma --banner:js=\"import{createRequire as __createRequire}from'node:module';const require=__createRequire(import.meta.url);\"",
     "vercel-build": "prisma generate && prisma migrate deploy && npm run build",
     "start": "next start",
     "start:worker": "node dist/worker/index.js",
