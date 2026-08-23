@@ -2,8 +2,8 @@
 id: 20260823-codex-launch-l0-consolidation
 owner: codex
 branch: codex/launch-l0
-status: active
-updated: 2026-08-23T04:40:00Z
+status: complete
+updated: 2026-08-23T04:46:00Z
 objective: Complete L0.4 by consolidating the verified L0.1–L0.3 release line into one release SHA and closing superseded handoffs.
 ---
 
@@ -20,6 +20,7 @@ objective: Complete L0.4 by consolidating the verified L0.1–L0.3 release line 
 - Merged `codex/launch-l0-integration` into this release line as the local
   merge commit created for L0.4 consolidation.
 - Adopted the owner-approved CI Docker gate retirement at `9a31eec`.
+- Tagged the verified L0 release SHA `70c1bc3` as annotated `v0.4.0`.
 
 ## Working state
 
@@ -33,8 +34,8 @@ objective: Complete L0.4 by consolidating the verified L0.1–L0.3 release line 
 - CI Docker equivalence verified: `.github/workflows/docker-publish.yml` gates
   then builds `docker/production/Dockerfile` on `ubuntu-latest`, checking out
   and passing the same SHA as `NEEDT_BUILD_SHA`.
-- Not run / still required: L0.4 release tag and topology audit; no local Docker
-  build is required.
+- Passed: L0.4 release-line topology audit; local annotated tag `v0.4.0` points
+  to `70c1bc3`. No local Docker build is required.
 
 ## Decisions and constraints
 
@@ -45,10 +46,9 @@ objective: Complete L0.4 by consolidating the verified L0.1–L0.3 release line 
 
 ## Blockers
 
-- None for L0.4. The local Docker Desktop failure is no longer a launch gate.
-  D0 runs its shared-Postgres validation separately from launch test waves.
+- None. D0 runs its shared-Postgres validation separately from launch test waves.
 
 ## Next action
 
-- Commit this checkpoint, tag the final L0 SHA as `v0.4.0`, record the SHA here,
-  mark L0 complete, then start L1 without waiting for D0.
+- Complete. Start L1.2 with a deterministic fail-closed rate-limit outage test;
+  do not wait for D0.
