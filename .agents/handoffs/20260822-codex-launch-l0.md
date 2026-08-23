@@ -2,8 +2,8 @@
 id: 20260822-codex-launch-l0
 owner: codex
 branch: codex/launch-l0
-status: active
-updated: 2026-08-23T00:48:03Z
+status: complete
+updated: 2026-08-23T04:18:00Z
 objective: Execute plan 09 launch work autonomously from L0.1 without depending on the parallel design track.
 ---
 
@@ -24,13 +24,12 @@ objective: Execute plan 09 launch work autonomously from L0.1 without depending 
 - Completed L0.2 implementation: Figma capture is dev-only and opt-in through
   `NEEDT_FIGMA_CAPTURE=1`; production builds run an emitted-artifact assertion;
   local browser-agent files and root mobile screenshots are ignored.
+- L0.2 committed as `b2079f8`; L0.3 continued in the dedicated integration
+  worktree and was subsequently merged into this release line at `eee3284`.
 
 ## Working state
 
-- Files currently dirty or expected to change for the L0.2 commit: `.gitignore`,
-  `src/app/layout.tsx`, `scripts/check-production-artifacts.mjs`,
-  `scripts/check-ui-contracts.mjs`, `package.json`, `CHANGELOG.md`, and this
-  handoff.
+- None. This handoff is historical; L0.4 consolidation owns the release line.
 - Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; `/private/tmp/needt-design-d0`; the design track handoff and files.
 
 ## Verification
@@ -46,7 +45,7 @@ objective: Execute plan 09 launch work autonomously from L0.1 without depending 
   zero-warning `npm run lint`; `npm run build` including the new postbuild scan
   (1,346 emitted files, no Figma capture URL); `git check-ignore` for all three
   local artifact classes; `git diff --check`.
-- Not run / still required for L0.2: handoff validation and scoped commit.
+- Passed for L0.2 finalization: handoff validation and scoped commit `b2079f8`.
 
 ## Decisions and constraints
 
@@ -56,10 +55,9 @@ objective: Execute plan 09 launch work autonomously from L0.1 without depending 
 
 ## Blockers
 
-- None for L0.1/L0.2. Production deployment remains owner-only but is not
-  needed for L0.3 under the governing plan.
+- None. Production deployment remains owner-only.
 
 ## Next action
 
-- Validate the handoff, commit L0.2, then begin the high-risk L0.3 integration
-  audit in a dedicated integration worktree/branch.
+- Complete; see `20260823-codex-launch-l0-consolidation.md` for the active
+  L0.4 checkpoint.

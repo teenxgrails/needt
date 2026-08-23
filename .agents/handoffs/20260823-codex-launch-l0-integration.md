@@ -2,8 +2,8 @@
 id: 20260823-codex-launch-l0-integration
 owner: codex
 branch: codex/launch-l0-integration
-status: active
-updated: 2026-08-23T04:08:00Z
+status: complete
+updated: 2026-08-23T04:18:00Z
 objective: Complete L0.3 by safely integrating the deferred Sol S11 and Terra T8 release lines, adding required browser coverage and release gates.
 ---
 
@@ -20,6 +20,8 @@ objective: Complete L0.3 by safely integrating the deferred Sol S11 and Terra T8
 - Merged `codex/terra-t8-product-ui` without commit and resolved `CHANGELOG.md`, `playwright.config.ts`, and `prisma/schema.prisma`; the resolved `Workspace` model retains `AiConversation`, `AiMessage`, and `AgentMemory` alongside the imported S11 relations.
 - Added browser coverage for capacity preview/apply/undo, saved task views, and versioned project-health updates. The mocks now model an authenticated workspace member rather than bypassing the tenancy boundary.
 - Committed the reconciled integration as `6f29e83 feat(launch): integrate workspace delivery`.
+- Amended handoff checkpoint as merge SHA `eee3284`, then L0.4 merged it into
+  `codex/launch-l0` without conflicts.
 
 ## Working state
 
@@ -42,8 +44,10 @@ objective: Complete L0.3 by safely integrating the deferred Sol S11 and Terra T8
 
 ## Blockers
 
-- Local Docker Desktop is unavailable after its BuildKit content-store I/O failure. No owner action is currently needed; retry when its local daemon is healthy. Shared E2E/visual database runs must remain serialized.
+- None for this completed integration scope. Docker recovery is carried by the
+  active L0.4 consolidation handoff; shared E2E/visual database runs remain
+  serialized.
 
 ## Next action
 
-- Read L0.4 requirements, reconcile the original launch handoff, and retry Docker when its local daemon is healthy.
+- Complete; see `20260823-codex-launch-l0-consolidation.md`.
