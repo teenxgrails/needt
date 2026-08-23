@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Release automation now permits a repair deployment when the currently live web health endpoint is unavailable, and publishes the native AMD64 image only. Local Compose starts the matching web, private worker, collaboration, PostgreSQL, and Redis topology.
 - Tasks now show a private seven-day capacity summary and an explainable,
   reversible schedule preview with unscheduled-task and stale-preview recovery.
 - Task List can save and apply personal or role-gated workspace views without
