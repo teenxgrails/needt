@@ -19,6 +19,11 @@ migrations and may point to the same internal PostgreSQL endpoint.
 
 ## 2. Create the Coolify services
 
+Coolify **Auto deploy is intentionally disabled**. Do not re-enable it while
+the VPS still performs source builds; three concurrent cold builds exhaust the
+host. Keep it disabled until CI publishes and Coolify deploys a verified GHCR
+image without rebuilding on the VPS.
+
 1. Connect the GitHub repository and deploy `main` with the root `Dockerfile`.
    Use its `production` stage for the web service.
 2. Keep the image default command for web startup.
@@ -40,11 +45,12 @@ Set `COLLABORATION_HOST=0.0.0.0`, expose port `1234` through a TLS-enabled
 WebSocket domain, and set that public `wss://` URL on the web service as
 `COLLABORATION_PUBLIC_URL`.
 
-5. Do not expose the worker publicly. Deploy web first and wait until
-   `/api/health` reports the expected 40-character commit and a healthy
-   database. Then deploy worker and collaboration. The worker records a private
-   Redis heartbeat; web reports it as `workerBuildSha`, and the release gate
-   accepts only matching web, worker, and collaboration identities.
+5. Do not expose the worker publicly. Deploy web first; wait for `/api/health`
+   to report the expected 40-character commit and a healthy database; only then
+   deploy worker and collaboration. Never start all three builds together. The
+   worker records a private Redis heartbeat; web reports it as `workerBuildSha`,
+   and the release gate accepts only matching web, worker, and collaboration
+   identities.
 6. The web entrypoint applies lockfile-pinned Prisma migrations before starting
    Next.js. A failed migration must fail the deployment instead of starting a
    mismatched application. Worker and collaboration processes skip migrations.
@@ -177,14 +183,14 @@ Google:
 
 ```text
 https://use.needt.app/api/auth/callback/google
-https://use.needt.app/api/calendar/google/auth
+https://use.needt.app/api/calendar/google
 ```
 
 Microsoft/Azure:
 
 ```text
 https://use.needt.app/api/auth/callback/azure-ad
-https://use.needt.app/api/calendar/outlook/auth
+https://use.needt.app/api/calendar/outlook
 ```
 
 Keep local redirect URIs for development if needed.
@@ -238,8 +244,9 @@ collaboration health URLs, then accepts a release only when `buildSha`,
   client path against the Coolify internal database endpoint.
 - Neon adapter support remains available for development or a future database
   move, but it is not part of the current production topology.
-- Production deploys are triggered from `main` in Coolify. Verify web, worker,
-  and collaboration run the same SHA before a release smoke.
+- A push to `main` must not trigger a Coolify source build. With Auto deploy
+  disabled, the owner starts each approved deployment in the sequence above.
+  Verify web, worker, and collaboration run the same SHA before a release smoke.
 - The GitHub workflow fails when any of the three deployment hooks or either
   public health URL (web and collaboration) is missing. It records the prior
   healthy web SHA, verifies the new SHA through web plus its private worker

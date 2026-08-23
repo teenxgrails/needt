@@ -1,8 +1,44 @@
 import { readFileSync } from "node:fs";
 
 const workflow = readFileSync(".github/workflows/docker-publish.yml", "utf8");
+const collaborationSmoke = readFileSync(
+  "scripts/check-collaboration-runtime.mjs",
+  "utf8"
+);
 
 describe("production deployment workflow", () => {
+  it("accepts privileged workflow runs only from a successful main push in this repository", () => {
+    expect(workflow).toContain("github.event.workflow_run.event == 'push'");
+    expect(workflow).toContain(
+      "github.event.workflow_run.head_repository.full_name == github.repository"
+    );
+    expect(workflow).toContain(
+      "github.event.workflow_run.head_branch == github.event.repository.default_branch"
+    );
+    expect(workflow).toContain(
+      "github.event.workflow_run.conclusion == 'success'"
+    );
+    expect(workflow).toContain(
+      "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
+    );
+    expect(workflow).not.toContain(
+      "ref: ${{ github.event.workflow_run.head_sha"
+    );
+    expect(workflow.match(/Verify checked-out release commit/g)).toHaveLength(
+      3
+    );
+  });
+
+  it("pins every third-party action to an immutable commit", () => {
+    const actionRefs = [
+      ...workflow.matchAll(/^\s*-?\s*uses:\s*([^\s]+)$/gm),
+    ].map(([, ref]) => ref);
+    expect(actionRefs.length).toBeGreaterThan(0);
+    for (const ref of actionRefs) {
+      expect(ref).toMatch(/^[^@]+@[0-9a-f]{40}$/);
+    }
+  });
+
   it("fails closed when required deployment configuration is missing", () => {
     expect(workflow).toContain(
       "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"
@@ -101,6 +137,17 @@ describe("production deployment workflow", () => {
   it("bounds the executable collaboration smoke in the gates job", () => {
     expect(workflow).toContain(
       "timeout 30s npm run check:collaboration-runtime"
+    );
+  });
+
+  it("documents the narrow Semgrep exception for fixed loopback health", () => {
+    expect(collaborationSmoke).toContain('const HOST = "127.0.0.1"');
+    expect(collaborationSmoke).toContain("const PORT = 1234");
+    expect(collaborationSmoke).toContain(
+      "Fixed loopback smoke carries no credentials and never leaves the runner."
+    );
+    expect(collaborationSmoke).toContain(
+      "nosemgrep: typescript.react.security.react-insecure-request.react-insecure-request"
     );
   });
 

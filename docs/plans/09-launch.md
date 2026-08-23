@@ -326,6 +326,11 @@ npm run test:e2e -- tests/legal-pages.spec.ts tests/account-lifecycle.spec.ts
 
 **Prerequisite:** L0–L4 green.
 
+Coolify **Auto deploy is intentionally disabled** and must not be re-enabled
+until CI publishes a verified GHCR image that Coolify can run without building
+on the VPS. Deploy web first; wait for `/api/health` to report the target SHA and
+healthy database; only then deploy worker and collaboration, sequentially.
+
 Run `docs/release-gate.md` end to end against a **staging** Coolify environment
 that mirrors production, before touching production.
 
