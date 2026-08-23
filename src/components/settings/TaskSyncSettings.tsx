@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { APP_NAME } from "@/lib/app-config";
 import { format } from "@/lib/date-utils";
+import { GOOGLE_TASKS_SYNC_ENABLED } from "@/lib/google-oauth-scopes";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notifications";
 
@@ -92,7 +93,7 @@ export function TaskSyncSettings() {
   const compatibleAccounts = accounts.filter(
     (acc) =>
       acc.provider === "OUTLOOK" ||
-      acc.provider === "GOOGLE" ||
+      (GOOGLE_TASKS_SYNC_ENABLED && acc.provider === "GOOGLE") ||
       acc.provider === "CALDAV"
   );
   // Fetch providers

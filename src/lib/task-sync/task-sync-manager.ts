@@ -180,9 +180,6 @@ export class TaskSyncManager {
       mapping = mappingId;
     }
 
-    const provider = await this.getProvider(mapping.providerId);
-    const fieldMapper = this.getFieldMapper(mapping.provider.type);
-
     // Initialize sync result
     const result: SyncResult = {
       mappingId: mapping.id,
@@ -206,6 +203,9 @@ export class TaskSyncManager {
           lastError: null,
         },
       });
+
+      const provider = await this.getProvider(mapping.providerId);
+      const fieldMapper = this.getFieldMapper(mapping.provider.type);
 
       // Get the tracker instance
       const tracker = new TaskChangeTracker();

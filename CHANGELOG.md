@@ -87,6 +87,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Restored Prisma migration/schema compatibility without rewriting user data:
+  retained five legacy AI indexes and promoted the existing Page–tag join
+  unique pair to Prisma's composite primary-key representation.
+- Restricted privileged publish/deploy workflow runs to successful default-
+  branch pushes from this repository, made source-consuming jobs verify the
+  exact immutable CI release SHA, and made deploys use that SHA.
 - On phones, Space now offers working Task List and Board fallbacks instead of
   directing people to a desktop-only canvas.
 - Pages can now be organized with workspace-scoped folders and tags, and users

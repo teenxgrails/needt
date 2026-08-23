@@ -30,7 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ env.RELEASE_SHA }}
       - name: Verify checked-out release commit
         run: test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -60,7 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ env.RELEASE_SHA }}
       - name: Verify checked-out release commit
         run: test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
@@ -82,10 +82,11 @@ jobs:
       - id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
+          context: git
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=sha,format=long
-            type=raw,value=main,enable={{is_default_branch}}
+            type=raw,value=main
       - id: build
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
@@ -96,7 +97,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEEDT_BUILD_SHA=${{ github.event.workflow_run.head_sha || github.sha }}
+            NEEDT_BUILD_SHA=${{ env.RELEASE_SHA }}
           secrets: |
             sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
             sentry_org=${{ secrets.SENTRY_ORG }}
@@ -114,7 +115,7 @@ jobs:
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
-      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_SHA: ${{ env.RELEASE_SHA }}
     steps:
       - name: Validate production deployment configuration
         run: |
@@ -177,11 +178,11 @@ jobs:
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
       COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}
-      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_SHA: ${{ env.RELEASE_SHA }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.repository.default_branch }}
+          ref: ${{ env.RELEASE_SHA }}
       - name: Verify checked-out release commit
         run: test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020

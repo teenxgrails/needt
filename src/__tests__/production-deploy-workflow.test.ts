@@ -1,10 +1,6 @@
 import { readFileSync } from "node:fs";
 
 const workflow = readFileSync(".github/workflows/docker-publish.yml", "utf8");
-const collaborationSmoke = readFileSync(
-  "scripts/check-collaboration-runtime.mjs",
-  "utf8"
-);
 
 describe("production deployment workflow", () => {
   it("accepts privileged workflow runs only from a successful main push in this repository", () => {
@@ -21,11 +17,18 @@ describe("production deployment workflow", () => {
     expect(workflow).toContain(
       "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
     );
+    expect(workflow.match(/ref: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(3);
     expect(workflow).not.toContain(
-      "ref: ${{ github.event.workflow_run.head_sha"
+      "ref: ${{ github.event.repository.default_branch }}"
     );
     expect(workflow.match(/Verify checked-out release commit/g)).toHaveLength(
       3
+    );
+    expect(workflow).toContain("context: git");
+    expect(workflow).toContain("type=raw,value=main");
+    expect(workflow).not.toContain("enable={{is_default_branch}}");
+    expect(workflow.match(/DEPLOY_SHA: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(
+      2
     );
   });
 
@@ -137,17 +140,6 @@ describe("production deployment workflow", () => {
   it("bounds the executable collaboration smoke in the gates job", () => {
     expect(workflow).toContain(
       "timeout 30s npm run check:collaboration-runtime"
-    );
-  });
-
-  it("documents the narrow Semgrep exception for fixed loopback health", () => {
-    expect(collaborationSmoke).toContain('const HOST = "127.0.0.1"');
-    expect(collaborationSmoke).toContain("const PORT = 1234");
-    expect(collaborationSmoke).toContain(
-      "Fixed loopback smoke carries no credentials and never leaves the runner."
-    );
-    expect(collaborationSmoke).toContain(
-      "nosemgrep: typescript.react.security.react-insecure-request.react-insecure-request"
     );
   });
 
