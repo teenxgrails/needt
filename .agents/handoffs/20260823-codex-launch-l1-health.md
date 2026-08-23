@@ -19,10 +19,11 @@ objective: Make the production health endpoint fail closed when packaged Prisma 
 - Added a Node-runtime migration status helper that compares packaged migration directories with successful, non-rolled-back `_prisma_migrations` rows.
 - `/api/health` now returns a non-sensitive `503` with `db: "migrations-pending"` for pending migrations and `db: "error"` for database/query errors; both retain only build identity and latency.
 - Added health route/helper regression tests and the missing static `HEALTH_URL` workflow assertion.
+- Committed the scoped implementation as `8aefd02 fix(launch): harden health migration checks`.
 
 ## Working state
 
-- Files currently dirty or expected to change: scoped health implementation, tests, workflow assertion, and this handoff; commit pending.
+- Files currently dirty or expected to change: this handoff checkpoint only; implementation worktree was clean immediately after `8aefd02`.
 - Foreign changes that must remain untouched: all primary-checkout and D0 worktree changes; the L1 logging and Sentry workstreams and their handoffs.
 
 ## Verification
