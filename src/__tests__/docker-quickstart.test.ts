@@ -168,6 +168,12 @@ describe("production migration tooling", () => {
     expect(packageJson.dependencies?.prisma).toBe("^6.3.1");
     expect(packageJson.devDependencies?.prisma).toBeUndefined();
     expect(dockerfile).toContain("npm ci --omit=dev --ignore-scripts");
+    expect(dockerfile).toContain(
+      "/app/node_modules/@prisma/engines ./node_modules/@prisma/engines"
+    );
+    expect(dockerfile).toContain(
+      "test -x /app/node_modules/@prisma/engines/schema-engine-*"
+    );
     expect(dockerfile).toContain("RUN npm run build:worker");
     expect(dockerfile).toContain("/app/dist ./dist");
     expect(entrypoint).toContain('"$PRISMA_BIN" migrate deploy');
@@ -178,8 +184,32 @@ describe("production migration tooling", () => {
     expect(rootDockerfile).toContain(
       "npm ci --omit=dev --legacy-peer-deps --ignore-scripts"
     );
+    expect(rootDockerfile).toContain(
+      "/app/node_modules/@prisma/engines ./node_modules/@prisma/engines"
+    );
+    expect(rootDockerfile).toContain(
+      "test -x /app/node_modules/@prisma/engines/schema-engine-*"
+    );
     expect(rootDockerfile.match(/COPY --from=runtime-deps/g)).toHaveLength(3);
     expect(entrypoint).toContain("/app/node_modules/.bin/prisma");
+  });
+
+  it("starts collaboration from its ESM bundle", () => {
+    const packageJson = JSON.parse(read("package.json")) as {
+      scripts?: Record<string, string>;
+    };
+    expect(packageJson.scripts?.["build:collaboration"]).toContain(
+      "--format=esm"
+    );
+    expect(packageJson.scripts?.["build:collaboration"]).toContain(
+      "dist/collaboration/index.mjs"
+    );
+    expect(packageJson.scripts?.["start:collaboration"]).toContain(
+      "dist/collaboration/index.mjs"
+    );
+    expect(rootDockerfile).toContain(
+      'CMD ["node", "dist/collaboration/index.mjs"]'
+    );
   });
 
   it("exposes the Coolify source commit as the runtime build identity", () => {

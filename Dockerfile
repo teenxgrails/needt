@@ -41,6 +41,12 @@ FROM base AS runtime-deps
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev --legacy-peer-deps --ignore-scripts
+# `prisma migrate deploy` needs the schema engine. Lifecycle scripts are
+# intentionally disabled above, so copy the engine downloaded by the builder's
+# explicit `prisma generate` step instead of downloading into a read-only
+# node_modules directory at container startup.
+COPY --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+RUN test -x /app/node_modules/@prisma/engines/schema-engine-*
 
 # Worker stage - same image, runs the BullMQ worker instead of the web server.
 # Coolify: set this service's "Docker Build Stage Target" to `worker`.

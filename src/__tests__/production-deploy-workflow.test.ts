@@ -31,6 +31,10 @@ describe("production deployment workflow", () => {
     expect(workflow).not.toContain("COOLIFY_ROLLBACK_WEBHOOK_URL");
     expect(workflow).not.toContain("?sha=$DEPLOY_SHA");
     expect(workflow).toContain("Record current healthy web SHA");
+    expect(workflow).toContain(
+      "Previous production health is unavailable; continuing with bootstrap deployment"
+    );
+    expect(workflow).toContain("previous_sha=unknown");
     expect(workflow).toContain("Record manual rollback instructions");
     expect(workflow).toContain(
       "use Coolify Deployments to restore the previous successful local image"
@@ -115,5 +119,13 @@ describe("production deployment workflow", () => {
     );
     expect(workflow).toContain("${SENTRY_ORG:?SENTRY_ORG is required}");
     expect(workflow).toContain("${SENTRY_PROJECT:?SENTRY_PROJECT is required}");
+  });
+
+  it("deploys web in parallel with an amd64-only image publish", () => {
+    expect(workflow).toContain("deploy-web:\n    needs: gates");
+    expect(workflow).toContain("platforms: linux/amd64");
+    expect(workflow).not.toContain("linux/arm64");
+    expect(workflow).not.toContain("docker/setup-qemu-action");
+    expect(workflow).toContain("deploy-runtimes:\n    needs: deploy-web");
   });
 });

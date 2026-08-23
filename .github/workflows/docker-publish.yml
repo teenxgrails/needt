@@ -96,33 +96,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    needs: publish
+  deploy-web:
+    needs: gates
     runs-on: ubuntu-latest
     environment: production
+    outputs:
+      previous_sha: ${{ steps.previous-production.outputs.sha }}
     env:
-      WORKER_HOOK: ${{ secrets.COOLIFY_WORKER_WEBHOOK_URL }}
-      COLLABORATION_HOOK: ${{ secrets.COOLIFY_COLLABORATION_WEBHOOK_URL }}
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
-      COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
       - name: Validate production deployment configuration
         run: |
           : "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"
-          : "${WORKER_HOOK:?COOLIFY_WORKER_WEBHOOK_URL is required}"
-          : "${COLLABORATION_HOOK:?COOLIFY_COLLABORATION_WEBHOOK_URL is required}"
           : "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
           : "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
-          : "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
       - name: Record current healthy web SHA
         id: previous-production
         run: |
@@ -133,6 +123,8 @@ jobs:
             2>/dev/null || true)
           if [[ "$candidate" =~ ^[0-9a-fA-F]{40}$ ]]; then
             previous_sha=$candidate
+          else
+            echo "::warning::Previous production health is unavailable; continuing with bootstrap deployment."
           fi
           echo "sha=$previous_sha" >> "$GITHUB_OUTPUT"
       - name: Trigger web redeploy
@@ -155,6 +147,43 @@ jobs:
           done
           echo "Production web did not reach expected SHA $DEPLOY_SHA" >&2
           exit 1
+      - name: Record manual rollback instructions
+        if: ${{ failure() }}
+        run: |
+          {
+            echo "## Production deployment failed"
+            echo
+            echo "Previous healthy web SHA: \`${{ steps.previous-production.outputs.sha || 'unknown' }}\`."
+            echo "Inspect the current production SHA before acting; a newer healthy release must not be rolled back."
+            echo "If rollback is required, use Coolify Deployments to restore the previous successful local image."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::Production deployment failed; inspect Coolify and use its deployment rollback when required."
+
+  deploy-runtimes:
+    needs: deploy-web
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      WORKER_HOOK: ${{ secrets.COOLIFY_WORKER_WEBHOOK_URL }}
+      COLLABORATION_HOOK: ${{ secrets.COOLIFY_COLLABORATION_WEBHOOK_URL }}
+      COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+      WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
+      COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate runtime deployment configuration
+        run: |
+          : "${WORKER_HOOK:?COOLIFY_WORKER_WEBHOOK_URL is required}"
+          : "${COLLABORATION_HOOK:?COOLIFY_COLLABORATION_WEBHOOK_URL is required}"
+          : "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
+          : "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
+          : "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
       - name: Trigger worker redeploy
         run: >-
           curl --fail --silent --show-error --retry 3 --request GET
@@ -172,10 +201,10 @@ jobs:
         if: ${{ failure() }}
         run: |
           {
-            echo "## Production deployment failed"
+            echo "## Runtime deployment failed"
             echo
-            echo "Previous healthy web SHA: \`${{ steps.previous-production.outputs.sha || 'unknown' }}\`."
-            echo "Inspect the current production SHA before acting; a newer healthy release must not be rolled back."
-            echo "If rollback is required, use Coolify Deployments to restore the previous successful local image."
+            echo "Previous healthy web SHA: \`${{ needs.deploy-web.outputs.previous_sha || 'unknown' }}\`."
+            echo "Inspect the current production SHAs before acting; a newer healthy release must not be rolled back."
+            echo "If rollback is required, use Coolify Deployments to restore the previous successful local images."
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::error::Production deployment failed; inspect Coolify and use its deployment rollback when required."
+          echo "::error::Runtime deployment failed; inspect Coolify and use its deployment rollback when required."

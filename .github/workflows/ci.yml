@@ -56,7 +56,10 @@ jobs:
         env:
           SEMGREP_BASELINE_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
-          if git cat-file -e "${SEMGREP_BASELINE_COMMIT}^{commit}" 2>/dev/null; then
+          zero_sha="0000000000000000000000000000000000000000"
+          if [ -n "$SEMGREP_BASELINE_COMMIT" ] && \
+             [ "$SEMGREP_BASELINE_COMMIT" != "$zero_sha" ] && \
+             git cat-file -e "${SEMGREP_BASELINE_COMMIT}^{commit}" 2>/dev/null; then
             semgrep --config=auto --error --baseline-commit "$SEMGREP_BASELINE_COMMIT"
           else
             semgrep --config=auto --error
