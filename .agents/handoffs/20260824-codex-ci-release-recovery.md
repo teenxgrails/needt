@@ -2,8 +2,8 @@
 id: 20260824-codex-ci-release-recovery
 owner: codex
 branch: codex/ci-release-recovery
-status: blocked
-updated: 2026-08-23T22:28:48Z
+status: active
+updated: 2026-08-23T23:00:52Z
 objective: Repair the post-push CI failures, OAuth scope contract, and release documentation with full local gates and no production action.
 ---
 
@@ -31,7 +31,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - Passed on Node 22.16.0: focused OAuth/task/doc tests (17); focused release/Prisma/deploy tests (22); scheduling buffer suite in both `TZ=UTC` and `TZ=Europe/Zurich` (3 each); Prisma format/generate/validate; `npm run type-check`; zero-warning `npm run lint`; full CI-env unit suite in `TZ=UTC` (164 suites passed, 1 skipped; 773 tests passed, 1 skipped, 774 total); `npm run build` (142 static pages and postbuild artifact check, 1,390 files); `npm run build:worker`; `npm run build:collaboration`; `npm run check:collaboration-runtime`; branding; UI contracts; handoff validation; `git diff --check`.
 - Semgrep 1.172.0 passed all 17 changed executable/test files with 0 blocking findings. PostgreSQL's documented `ADD CONSTRAINT ... PRIMARY KEY USING INDEX` contract was verified against the official docs; the migration contains no `DROP` and preserves immutable history.
 - First web-build attempt hit `ENOSPC`. Removed only four regenerable `.next` directories, freeing about 9.8 GiB; the clean retry passed.
-- Not run per owner instruction: Docker, E2E, and visual. The exact CI `prisma migrate diff --from-migrations ... --shadow-database-url ... --exit-code` remains unverified because no local PostgreSQL is listening and Docker/push are explicitly prohibited.
+- Not run: E2E, visual, or any image build. The exact CI `prisma migrate diff --from-migrations ... --shadow-database-url ... --exit-code` remains unverified locally because no PostgreSQL server is listening.
+- Owner subsequently authorized a branch push/PR and a one-time PostgreSQL 16 container. Docker Desktop startup was rejected before any container existed; PR CI is the approved equivalent PostgreSQL 16 execution path and cannot pass the production workflow provenance gate from a PR branch.
 
 ## Decisions and constraints
 
@@ -41,8 +42,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 
 ## Blockers
 
-- Exact schema-drift execution requires a disposable PostgreSQL 16 shadow database. The local machine has no PostgreSQL server, while Docker and push-triggered CI are excluded by the owner brief.
+- Awaiting the PR CI schema-drift job; no local container exists or needs cleanup.
 
 ## Next action
 
-- In an owner-approved disposable PostgreSQL 16 environment, run the CI schema-drift command against this branch; if it exits 0, update this handoff to complete. Do not push or touch Coolify.
+- Commit this checkpoint, push `codex/ci-release-recovery` to `origin`, open a PR into `main`, and wait for its PostgreSQL 16 schema-drift job. Do not merge or touch Coolify.
