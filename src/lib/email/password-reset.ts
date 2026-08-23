@@ -38,15 +38,14 @@ export async function sendPasswordResetEmail({
       html,
     });
 
-    logger.info("Password reset email sent", { email, jobId }, LOG_SOURCE);
+    logger.info("Password reset email sent", { jobId }, LOG_SOURCE);
 
     return { success: true, jobId };
   } catch (error) {
     logger.error(
       "Failed to send password reset email",
       {
-        error: error instanceof Error ? error.message : "Unknown error",
-        email,
+        errorType: error instanceof Error ? error.name : "UnknownError",
       },
       LOG_SOURCE
     );
