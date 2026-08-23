@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Kept the local Figma capture workflow opt-in for development while preventing
+  its third-party script from entering production builds, and ignored local
+  browser-agent artifacts and root mobile screenshots.
 - Fixed the production `/style` laboratory so its admin authorization runs per
   request instead of being frozen as a build-time 404.
 - Docs: added `docs/plans/09-launch.md` as the governing plan through public

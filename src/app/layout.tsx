@@ -36,6 +36,10 @@ const THEME_INIT_SCRIPT = `(function () {
   } catch (e) {}
 })();`;
 
+const FIGMA_CAPTURE_ENABLED =
+  process.env.NODE_ENV !== "production" &&
+  process.env.NEEDT_FIGMA_CAPTURE === "1";
+
 export default function RootLayout({
   children,
 }: {
@@ -55,6 +59,13 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
+        {FIGMA_CAPTURE_ENABLED ? (
+          <Script
+            id="figma-local-capture"
+            src="https://mcp.figma.com/mcp/html-to-design/capture.js"
+            strategy="afterInteractive"
+          />
+        ) : null}
       </head>
       <body className="flex h-full flex-col bg-[var(--surface-canvas)] antialiased">
         <AmbientBackdrop />

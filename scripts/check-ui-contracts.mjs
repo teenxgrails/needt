@@ -173,7 +173,11 @@ const companionStyles = globals.slice(companionStylesStart, companionStylesEnd);
 if (companionStylesStart < 0 || companionStylesEnd < 0) {
   failures.push(`${globalsPath}: missing companion style boundary`);
 } else {
-  requireText(globalsPath, "background: var(--surface-raised)", companionStyles);
+  requireText(
+    globalsPath,
+    "background: var(--surface-raised)",
+    companionStyles
+  );
   for (const prohibited of [
     "radial-gradient",
     "blur(",
@@ -186,11 +190,7 @@ if (companionStylesStart < 0 || companionStylesEnd < 0) {
 
 const pageWorkspacePath = "src/components/pages/PageWorkspace.tsx";
 const pageWorkspace = await source(pageWorkspacePath);
-requireText(
-  pageWorkspacePath,
-  "data-assistant-avoid",
-  pageWorkspace
-);
+requireText(pageWorkspacePath, "data-assistant-avoid", pageWorkspace);
 requireText(
   pageWorkspacePath,
   "h-12 items-center justify-around",
@@ -211,6 +211,20 @@ requireText(stylePagePath, 'dynamic = "force-dynamic"', stylePage);
 requireText(stylePagePath, 'process.env.NODE_ENV === "production"', stylePage);
 requireText(stylePagePath, "await isAdmin()", stylePage);
 requireText(stylePagePath, "notFound()", stylePage);
+
+const rootLayoutPath = "src/app/layout.tsx";
+const rootLayout = await source(rootLayoutPath);
+requireText(
+  rootLayoutPath,
+  'process.env.NODE_ENV !== "production"',
+  rootLayout
+);
+requireText(
+  rootLayoutPath,
+  'process.env.NEEDT_FIGMA_CAPTURE === "1"',
+  rootLayout
+);
+requireText(rootLayoutPath, "figma-local-capture", rootLayout);
 
 const packageJson = JSON.parse(await source("package.json"));
 if (packageJson.name !== "needt") {
