@@ -27,9 +27,11 @@ describe("production deployment workflow", () => {
     expect(workflow).toContain("context: git");
     expect(workflow).toContain("type=raw,value=main");
     expect(workflow).not.toContain("enable={{is_default_branch}}");
-    expect(workflow.match(/DEPLOY_SHA: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(
-      2
-    );
+    expect(
+      workflow.match(
+        /DEPLOY_SHA: \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}/g
+      )
+    ).toHaveLength(2);
   });
 
   it("pins every third-party action to an immutable commit", () => {

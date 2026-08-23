@@ -115,7 +115,7 @@ jobs:
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
-      DEPLOY_SHA: ${{ env.RELEASE_SHA }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Validate production deployment configuration
         run: |
@@ -178,7 +178,7 @@ jobs:
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
       COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}
-      DEPLOY_SHA: ${{ env.RELEASE_SHA }}
+      DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
