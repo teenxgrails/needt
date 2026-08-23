@@ -12,6 +12,28 @@ remains research input only.
 
 ---
 
+## The local Docker build gate is retired (2026-08-23)
+
+**Do not block any task in this plan on a local `docker build`.**
+
+`.github/workflows/docker-publish.yml` already builds the production image on
+`ubuntu-latest` from the same `docker/production/Dockerfile`, via
+`docker/build-push-action@v6`, passing `NEEDT_BUILD_SHA`. The local build is a
+duplicate of a gate that already runs on infrastructure that is not the owner's
+laptop.
+
+Context: the owner's Mac ran out of disk (1.7 GB free of 245 GB). Docker Desktop's
+BuildKit content store corrupted, its own "Clean up data" could not run because
+that repair path depends on the dead build backend, and a fresh `Docker.raw`
+immediately reserves ~18 GB. Two sessions were lost to this.
+
+**New rule:** where this plan or `AGENTS.md` lists "production Docker build" in a
+gate, that requirement is satisfied by a green `docker-publish` workflow run on
+the same SHA. Run it locally only if CI cannot, and never as a precondition for
+continuing local work.
+
+Everything else in the Definition of Done stays exactly as it is.
+
 ## Standing rules for this track
 
 - **One task, one reviewed commit.** Never bundle unrelated work.
