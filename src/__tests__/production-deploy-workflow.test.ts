@@ -42,6 +42,27 @@ describe("production deployment workflow", () => {
     expect(webDeployIndex).toBeGreaterThan(previousShaIndex);
   });
 
+  it("continues to a repair deploy when the previous web health is unavailable", () => {
+    const recordPreviousSha = workflow.slice(
+      workflow.indexOf("Record current healthy web SHA"),
+      workflow.indexOf("Trigger web redeploy")
+    );
+
+    expect(recordPreviousSha).toContain("previous_sha=unknown");
+    expect(recordPreviousSha).toContain(
+      'curl --silent --show-error --max-time 30 "$WEB_HEALTH_URL" || true'
+    );
+    expect(recordPreviousSha).toContain("jq -r");
+    expect(recordPreviousSha).toContain("2>/dev/null || true");
+    expect(recordPreviousSha).toContain(
+      '[[ "$candidate" =~ ^[0-9a-fA-F]{40}$ ]]'
+    );
+    expect(recordPreviousSha).not.toContain(
+      'curl --fail --silent --show-error --max-time 30 "$WEB_HEALTH_URL"'
+    );
+    expect(recordPreviousSha).not.toContain("jq -er");
+  });
+
   it("waits for the exact deployed web SHA before dependent runtimes", () => {
     const healthIndex = workflow.indexOf(
       "Wait for the exact web SHA and database health"
@@ -77,6 +98,12 @@ describe("production deployment workflow", () => {
     expect(workflow).toContain(
       "timeout 30s npm run check:collaboration-runtime"
     );
+  });
+
+  it("builds only the native AMD64 production image", () => {
+    expect(workflow).toContain("platforms: linux/amd64");
+    expect(workflow).not.toContain("linux/arm64");
+    expect(workflow).not.toContain("docker/setup-qemu-action@v3");
   });
 
   it("fails before publishing when Sentry source-map credentials are empty", () => {
