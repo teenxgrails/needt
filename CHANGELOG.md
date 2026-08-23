@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- L0 release line is tagged `v0.4.0`; production image verification is provided
+  by the required `docker-publish` CI workflow on the same SHA rather than a
+  local Docker Desktop build.
 - Kept the local Figma capture workflow opt-in for development while preventing
   its third-party script from entering production builds, and ignored local
   browser-agent artifacts and root mobile screenshots.
