@@ -2,8 +2,8 @@
 id: 20260823-codex-terra-launch-release
 owner: codex
 branch: codex/terra-launch-l0
-status: active
-updated: 2026-08-23T12:25:10Z
+status: blocked
+updated: 2026-08-23T12:28:49Z
 objective: Complete the Terra-owned CI gates, release documentation, task-model backlog, and the evidence-based /today error investigation on the Sol RC.
 ---
 
@@ -20,16 +20,17 @@ objective: Complete the Terra-owned CI gates, release documentation, task-model 
 - `98c9a8c ci(release): wire secure runtime gates` passes the three Sentry values through BuildKit `secrets:`, bounds the existing executable collaboration smoke, and polls all three service health endpoints after serialized redeploys. Focused workflow tests, full lint, and type-check passed.
 - Read-only `/today` audit identified the unhandled browser fetch rejection in `WorkspaceProvider` bootstrap. The current fix catches it at the effect boundary, logs only the error type, and prevents logger failure from becoming another rejection; focused tests, full lint, and type-check passed.
 - Ported the owner-approved Plan 11 task-model backlog from the dirty primary checkout into this isolated line. Documentation now records manual rollback policy, Sentry BuildKit upload, all-service SHA health, the `.mjs` collaboration command, L1.6 evidence, and the deferred email-verification policy choice.
+- `b73fe22 docs(plans): capture task shape backlog` records the Plan 11/documentation unit. `cca8fac fix(workspaces): contain bootstrap fetch failures` records the `/today` workspace-bootstrap rejection fix and regression test.
 
 ## Working state
 
-- Files currently dirty or expected to change: `docs/deploy.md`, `docs/plans/09-launch.md`, `docs/plans/README.md`, new `docs/plans/11-task-model.md`, the workspace bootstrap error handler/test, the updated production environment contract test, and this handoff.
+- Files currently dirty or expected to change: this final handoff checkpoint only.
 - Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; Sol-owned runtime/build paths above; `.agents/handoffs/20260823-codex-sol-runtime-release.md` is history, not an edit target.
 
 ## Verification
 
-- Passed: `npm run agent:context`; clean isolated worktree check; official Buildx secret-input documentation lookup; focused workflow, environment-contract, and workspace-provider tests (13 tests); Node 22 `npm run type-check`; Node 22 `npm run lint -- --max-warnings=0`; `git diff --check`.
-- Not run / still required: full unit/build gates; CI run with repository/environment secrets; production deploy/smoke; Docker-local gate excluded by plan.
+- Passed: `npm run agent:context`; clean isolated worktree check; official Buildx secret-input documentation lookup; focused workflow, environment-contract, and workspace-provider tests (13 tests); Node 22 `npm run type-check`; Node 22 `npm run lint -- --max-warnings=0`; full unit suite (157 passed suites / 724 tests, 1 suite/test skipped); `npm run build`; `npm run build:worker`; `npm run build:collaboration`; `npm run check:collaboration-runtime`; `npm run check:branding`; `npm run check:ui-contracts`; `npm run check:agent-handoffs`; `git diff --check`.
+- Not run / still required: CI run with repository/environment secrets; production deploy/smoke; Docker-local gate excluded by plan; D0/launch E2E/visual waves excluded while Docker is unavailable.
 
 ## Decisions and constraints
 
@@ -40,8 +41,8 @@ objective: Complete the Terra-owned CI gates, release documentation, task-model 
 
 ## Blockers
 
-- CI source-map upload and production verification require GitHub/Coolify execution and owner-managed secrets. The owner must add `NEEDT_PRODUCTION_WORKER_HEALTH_URL` and `NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL` as Production environment secrets before the new SHA gate can run.
+- CI source-map upload and production verification require GitHub/Coolify execution and owner-managed secrets. The owner must add `NEEDT_PRODUCTION_WORKER_HEALTH_URL` and `NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL` as Production environment secrets before the new SHA gate can run, then execute `workflow_dispatch` and preserve the Sentry upload plus three-SHA convergence evidence.
 
 ## Next action
 
-- Run the full relevant release gates, review the documentation/provider diff, then commit the owner-approved backlog/docs and the `/today` unhandled-rejection fix as separate scoped units.
+- Owner/Terra release operator: configure the two runtime health URL environment secrets, run `docker-publish` for this branch's merged release SHA, and attach CI/Sentry/all-service-health evidence before deployment.
