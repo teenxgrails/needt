@@ -13,6 +13,9 @@ describe("production deployment workflow", () => {
     expect(workflow).toContain(
       "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
     );
+    expect(workflow).toContain(
+      "${HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
+    );
     expect(workflow).not.toContain("if: ${{ env.WEB_HOOK != '' }}");
   });
 
