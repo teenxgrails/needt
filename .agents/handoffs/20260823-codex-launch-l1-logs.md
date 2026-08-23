@@ -3,7 +3,7 @@ id: 20260823-codex-launch-l1-logs
 owner: codex
 branch: codex/launch-l1-logs
 status: active
-updated: 2026-08-23T02:43:16Z
+updated: 2026-08-23T02:43:47Z
 objective: Close L1 logging persistence and privacy gaps without retaining user content in operational logs.
 ---
 
@@ -18,10 +18,11 @@ objective: Close L1 logging persistence and privacy gaps without retaining user 
 - Read-only audit found unauthenticated arbitrary batch persistence, a disabled-logging bypass, and direct caller PII that requires central sanitization.
 - Added server-side batch authentication and strict payload bounds, a central persisted-log sanitizer, and direct call-site removals for audited email, auth, route-error, and tag payloads.
 - Restored the full unit gate by mocking the new rate-limit boundary in the pre-existing AI archive confirmation test.
+- `360634d fix(security): harden log persistence` records the scoped unit; `33901a8 fix(security): harden launch logging` merged it into `codex/launch-l0`.
 
 ## Working state
 
-- Files currently dirty or expected to change: batch log route, server logger, log sanitizer and tests, audited call sites, AI archive test fixture, this handoff.
+- Files currently dirty or expected to change: this handoff only.
 - Foreign changes that must remain untouched: primary checkout and D0 worktree changes; this worktree was clean at start.
 
 ## Verification
@@ -41,4 +42,4 @@ objective: Close L1 logging persistence and privacy gaps without retaining user 
 
 ## Next action
 
-- Run handoff validation, commit this scoped L1 logging unit, then merge it into the launch release line.
+- Owner: run the documented Coolify log-cleanup schedule once and record the date/count in the operations evidence; then resume the remaining L1 audit items.
