@@ -17,11 +17,9 @@ describe("production deployment workflow", () => {
       "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
     );
     expect(workflow).toContain(
-      "${WORKER_HEALTH_URL:?NEEDT_PRODUCTION_WORKER_HEALTH_URL is required}"
-    );
-    expect(workflow).toContain(
       "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
     );
+    expect(workflow).not.toContain("NEEDT_PRODUCTION_WORKER_HEALTH_URL");
     expect(workflow).not.toContain("if: ${{ env.WEB_HOOK != '' }}");
   });
 
@@ -59,7 +57,7 @@ describe("production deployment workflow", () => {
     expect(collaborationIndex).toBeGreaterThan(healthIndex);
   });
 
-  it("checks every runtime service after their serialized redeploy", () => {
+  it("checks runtime parity through public web and collaboration health", () => {
     const workerIndex = workflow.indexOf("Trigger worker redeploy");
     const collaborationIndex = workflow.indexOf(
       "Trigger collaboration redeploy"
@@ -67,17 +65,28 @@ describe("production deployment workflow", () => {
     const parityIndex = workflow.indexOf("Wait for all runtime SHAs");
 
     expect(workflow).toContain(
-      "WORKER_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_WORKER_HEALTH_URL }}"
-    );
-    expect(workflow).toContain(
       "COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}"
     );
+    expect(workflow).not.toContain("WORKER_HEALTH_URL");
     expect(workflow).toContain("run: npm run check:runtime-shas");
     expect(parityIndex).toBeGreaterThan(workerIndex);
     expect(parityIndex).toBeGreaterThan(collaborationIndex);
   });
 
   it("bounds the executable collaboration smoke in the gates job", () => {
-    expect(workflow).toContain("timeout 30s npm run check:collaboration-runtime");
+    expect(workflow).toContain(
+      "timeout 30s npm run check:collaboration-runtime"
+    );
+  });
+
+  it("fails before publishing when Sentry source-map credentials are empty", () => {
+    expect(workflow).toContain(
+      "Validate Sentry source-map upload configuration"
+    );
+    expect(workflow).toContain(
+      "${SENTRY_AUTH_TOKEN:?SENTRY_AUTH_TOKEN is required}"
+    );
+    expect(workflow).toContain("${SENTRY_ORG:?SENTRY_ORG is required}");
+    expect(workflow).toContain("${SENTRY_PROJECT:?SENTRY_PROJECT is required}");
   });
 });

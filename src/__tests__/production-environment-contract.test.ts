@@ -56,9 +56,15 @@ describe("production environment contract", () => {
       "sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}"
     );
     expect(workflow).toContain("sentry_org=${{ secrets.SENTRY_ORG }}");
+    expect(workflow).toContain("sentry_project=${{ secrets.SENTRY_PROJECT }}");
+  });
+
+  it("fails closed on empty Sentry upload secrets before the Docker build", () => {
     expect(workflow).toContain(
-      "sentry_project=${{ secrets.SENTRY_PROJECT }}"
+      "${SENTRY_AUTH_TOKEN:?SENTRY_AUTH_TOKEN is required}"
     );
+    expect(workflow).toContain("${SENTRY_ORG:?SENTRY_ORG is required}");
+    expect(workflow).toContain("${SENTRY_PROJECT:?SENTRY_PROJECT is required}");
   });
 
   it("does not declare runtime secrets as production-image arguments or environment", () => {
@@ -123,5 +129,12 @@ describe("production environment contract", () => {
     expect(deployGuide).toContain("node dist/collaboration/index.mjs");
     expect(deployGuide).toContain("BuildKit secret mounts");
     expect(deployGuide).not.toContain("node dist/collaboration/index.js");
+  });
+
+  it("documents private worker release identity without a public health endpoint", () => {
+    expect(deployGuide).toContain("workerBuildSha");
+    expect(deployGuide).toContain("worker is not public");
+    expect(deployGuide).not.toContain("worker `/health`");
+    expect(deployGuide).toContain("40-character Git commit SHA");
   });
 });

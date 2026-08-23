@@ -76,7 +76,7 @@ The primary checkout carries changes that must never reach a production image.
 
 - **`src/app/layout.tsx` — the Figma capture script is a launch blocker.**
   `https://mcp.figma.com/mcp/html-to-design/capture.js` currently loads
-  `afterInteractive` on *every* page, including authenticated ones. Shipping a
+  `afterInteractive` on _every_ page, including authenticated ones. Shipping a
   third-party script into authenticated Needt sessions is unacceptable. Gate it
   behind an explicit dev-only condition (`process.env.NODE_ENV !== "production"`
   **and** an opt-in env flag such as `NEEDT_FIGMA_CAPTURE=1`), so the production
@@ -160,12 +160,14 @@ actually production-correct rather than merely present.
 2. **Rate limiting.** Confirm production is fail-closed when Redis is
    unreachable, and that auth, billing-webhook and AI routes have distinct,
    sensible budgets. Add a test proving the fail-closed path.
-3. **Health and rollback.** `/api/health` returns `{ok, db, buildSha}` and fails
-   when migrations are pending. Confirm required web, worker, and collaboration
-   deployment hooks and health URLs fail the job when missing; the workflow
-   records the prior healthy web SHA, waits for all three services at the new
-   SHA, then provides manual Coolify rollback instructions on failure. There is
-   no rollback hook and no automatic rollback.
+3. **Health and rollback.** `/api/health` returns `{ok, db, buildSha,
+workerBuildSha}` and fails when migrations are pending. Confirm the three
+   deployment hooks plus the two public health URLs (web and collaboration) fail
+   the job when missing; worker stays private and reports its SHA through web's
+   short-lived Redis heartbeat. The workflow records the prior healthy web SHA,
+   waits for all three identities at the exact new 40-character SHA, then
+   provides manual Coolify rollback instructions on failure. There is no rollback
+   hook and no automatic rollback.
 4. **Secrets.** Confirm no secret reaches a Docker build arg or image layer.
    Produce the exact production env checklist for the owner from `docs/deploy.md`
    §3 plus `RATE_LIMIT_HASH_SECRET`, `SENTRY_DSN` and the VAPID trio.
@@ -300,7 +302,7 @@ exist; T1 flagged that the copy needs owner review before release.
   controller identity, hosting jurisdiction, subprocessors (Coolify VPS, Resend,
   Sentry, Creem, Google, Microsoft, the AI provider), retention periods.
 - Implement account deletion and data export as a user-facing flow, honoring the
-  archive/tombstone semantics from S2 — deletion of an *account* must actually
+  archive/tombstone semantics from S2 — deletion of an _account_ must actually
   remove personal data even though object deletion is soft.
 - Confirm the AI corpus retention rules stated in `NEXT_AGENT.md` are enforced in
   code: opt-out respected, personal workspace only, shared workspaces/mail/
@@ -418,11 +420,11 @@ appearance — do not retrofit effects speculatively.
 
 ## Sequencing summary
 
-| Phase | Tasks | Gate to proceed |
-|-------|-------|-----------------|
-| Unblock | L0.1 → L0.2 → L0.3 → L0.4 | One green SHA, no open handoff |
-| Harden | L1 ∥ L2 ∥ L3 ∥ L4 | All four green; L1.7 checklist with the owner |
-| Rehearse | L5 | Staging rehearsal passed once, rollback proven |
-| Launch | owner deploys → L6 | Production stable, alerting live |
-| Grow | L7 | One week, no open P0/P1 |
-| Design | L8 | Owner decides direction |
+| Phase    | Tasks                     | Gate to proceed                                |
+| -------- | ------------------------- | ---------------------------------------------- |
+| Unblock  | L0.1 → L0.2 → L0.3 → L0.4 | One green SHA, no open handoff                 |
+| Harden   | L1 ∥ L2 ∥ L3 ∥ L4         | All four green; L1.7 checklist with the owner  |
+| Rehearse | L5                        | Staging rehearsal passed once, rollback proven |
+| Launch   | owner deploys → L6        | Production stable, alerting live               |
+| Grow     | L7                        | One week, no open P0/P1                        |
+| Design   | L8                        | Owner decides direction                        |

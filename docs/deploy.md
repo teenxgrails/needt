@@ -41,8 +41,10 @@ WebSocket domain, and set that public `wss://` URL on the web service as
 `COLLABORATION_PUBLIC_URL`.
 
 5. Do not expose the worker publicly. Deploy web first and wait until
-   `/api/health` reports the expected commit and a healthy database. Only then
-   deploy worker and collaboration, keeping all services on that commit.
+   `/api/health` reports the expected 40-character commit and a healthy
+   database. Then deploy worker and collaboration. The worker records a private
+   Redis heartbeat; web reports it as `workerBuildSha`, and the release gate
+   accepts only matching web, worker, and collaboration identities.
 6. The web entrypoint applies lockfile-pinned Prisma migrations before starting
    Next.js. A failed migration must fail the deployment instead of starting a
    mismatched application. Worker and collaboration processes skip migrations.
@@ -111,11 +113,14 @@ or a Sentry auth token as a Docker build argument.
 
 - `NEEDT_BUILD_SHA` is supplied by CI as the sole production Docker build
   argument and is baked into the image for `/api/health` and Sentry release
-  identity. The owner does not set it manually.
+  identity. It must be the exact 40-character Git commit SHA; `local` is
+  rejected in production. The owner does not set it manually.
 - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are required only by
   CI while uploading source maps. They are Repository secrets passed to the
   production Docker build as BuildKit secret mounts, never runtime variables,
-  Docker build arguments, or image `ENV` values.
+  Docker build arguments, or image `ENV` values. The publish job rejects an
+  empty value before the Docker build; ordinary CI gates build without them and
+  therefore do not upload source maps.
 
 ### Optional product integrations
 
@@ -210,13 +215,20 @@ curl https://use.needt.app/api/health
 Expected result:
 
 ```json
-{ "ok": true, "db": "ok", "buildSha": "..." }
+{
+  "ok": true,
+  "db": "ok",
+  "buildSha": "<40-hex-sha>",
+  "workerBuildSha": "<40-hex-sha>"
+}
 ```
 
 The production image bakes the non-secret Git commit into
-`NEEDT_BUILD_SHA`. The web response, worker `/health`, and collaboration
-`/health` must report the same SHA before a release is accepted. The GitHub
-deploy job polls all three after their serialized redeploys.
+`NEEDT_BUILD_SHA`. The worker is not public: after it starts, it writes a
+short-lived Redis heartbeat keyed by its SHA, and web exposes that value as
+`workerBuildSha`. The GitHub deploy job needs only the public web and
+collaboration health URLs, then accepts a release only when `buildSha`,
+`workerBuildSha`, and the collaboration SHA are the same 40-character commit.
 
 ## 8. Notes
 
@@ -228,7 +240,8 @@ deploy job polls all three after their serialized redeploys.
   move, but it is not part of the current production topology.
 - Production deploys are triggered from `main` in Coolify. Verify web, worker,
   and collaboration run the same SHA before a release smoke.
-- The GitHub workflow fails when a required deployment hook or health URL is
-  missing. It records the prior healthy web SHA, verifies the new SHA across all
-  three services, and writes manual Coolify rollback instructions if deployment
-  fails; it has no rollback hook and never auto-rolls back.
+- The GitHub workflow fails when any of the three deployment hooks or either
+  public health URL (web and collaboration) is missing. It records the prior
+  healthy web SHA, verifies the new SHA through web plus its private worker
+  heartbeat and collaboration, and writes manual Coolify rollback instructions
+  if deployment fails; it has no rollback hook and never auto-rolls back.

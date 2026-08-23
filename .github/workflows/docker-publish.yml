@@ -63,6 +63,15 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate Sentry source-map upload configuration
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+        run: |
+          : "${SENTRY_AUTH_TOKEN:?SENTRY_AUTH_TOKEN is required}"
+          : "${SENTRY_ORG:?SENTRY_ORG is required}"
+          : "${SENTRY_PROJECT:?SENTRY_PROJECT is required}"
       - id: meta
         uses: docker/metadata-action@v5
         with:
@@ -98,7 +107,6 @@ jobs:
       WEB_HOOK: ${{ secrets.COOLIFY_WEB_WEBHOOK_URL }}
       COOLIFY_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
-      WORKER_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_WORKER_HEALTH_URL }}
       COLLABORATION_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL }}
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
@@ -115,7 +123,6 @@ jobs:
           : "${COLLABORATION_HOOK:?COOLIFY_COLLABORATION_WEBHOOK_URL is required}"
           : "${COOLIFY_TOKEN:?COOLIFY_API_TOKEN is required}"
           : "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
-          : "${WORKER_HEALTH_URL:?NEEDT_PRODUCTION_WORKER_HEALTH_URL is required}"
           : "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
       - name: Record current healthy web SHA
         id: previous-production

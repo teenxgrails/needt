@@ -1,11 +1,12 @@
 # Plan 11 — Task shape and starting friction
 
 **Status:** Backlog. Owner ideas captured 2026-08-23. Not implementation
-authorization — nothing here starts before L6 is stable (see `09-launch.md`).
+authorization — nothing here starts before L7 opens after one stable production
+week with no P0/P1 (see `09-launch.md`).
 
 ## Origin
 
-The owner asked whether to port the logic of *Atomic Habits* (James Clear) into
+The owner asked whether to port the logic of _Atomic Habits_ (James Clear) into
 Needt. A critic pass on 2026-08-23 rejected porting the book as a system:
 its mechanics are the default in every competing planner, so copying them buys
 parity, not differentiation, and its most visible mechanic (streaks) conflicts
@@ -27,10 +28,10 @@ the most defensible behaviour, plus one parked on an unanswered design question.
 
 The owner's three proposed task types collapse to one model:
 
-| Proposed | Actually |
-|----------|----------|
-| Regular | a task |
-| Part-cut (split into several parts worked one by one) | named subtasks |
+| Proposed                                                  | Actually         |
+| --------------------------------------------------------- | ---------------- |
+| Regular                                                   | a task           |
+| Part-cut (split into several parts worked one by one)     | named subtasks   |
 | Part-updative (one task with `0/3`, incremented by click) | unnamed subtasks |
 
 `0/3` is three unnamed subtasks. There is no third shape.
@@ -116,8 +117,8 @@ per-increment scheduling, or any gamification surface beyond the above.
 
 ## Sequencing
 
-| Step | Gate to proceed |
-|------|-----------------|
-| T-1 | L6 stable, no open P0/P1 — runs as its own release inside L7 |
-| T-2 | T-1 shipped **and** the twenty-task prompt gate passed |
-| T-3 | Blocked on a non-farmable definition of a closed day |
+| Step | Gate to proceed                                                                  |
+| ---- | -------------------------------------------------------------------------------- |
+| T-1  | L7 open: one stable production week with no open P0/P1 — runs as its own release |
+| T-2  | T-1 shipped **and** the twenty-task prompt gate passed                           |
+| T-3  | Blocked on a non-farmable definition of a closed day                             |
