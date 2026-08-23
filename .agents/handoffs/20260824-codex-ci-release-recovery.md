@@ -2,8 +2,8 @@
 id: 20260824-codex-ci-release-recovery
 owner: codex
 branch: codex/ci-release-recovery
-status: active
-updated: 2026-08-23T23:17:41Z
+status: complete
+updated: 2026-08-23T23:31:47Z
 objective: Repair the post-push CI failures, OAuth scope contract, and release documentation with full local gates and no production action.
 ---
 
@@ -21,6 +21,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - `2b5a860 fix(auth): separate Google consent scopes` limits Google sign-in to `openid email profile`, requests Calendar scopes incrementally, defers Google Tasks behind one scope contract with an actionable error, centralizes runtime redirect construction, and pins deployment documentation to the actual callbacks.
 - Three parallel Terra audits independently confirmed the Semgrep, Prisma, and CI timezone root causes. The reported 756-versus-757 difference was passed tests versus total tests, not a missing test.
 - After clearing only regenerable caches, recovered a stale Docker Desktop backend, ran the exact Prisma migration drift check against an ephemeral PostgreSQL 16 database, and removed both the container and the downloaded image.
+- Pushed the branch to authoritative `origin` and opened https://github.com/teenxgrails/needt/pull/20 into `main` without merging or touching Coolify.
+- `4c33d97 fix(ci): clear invalid Semgrep baseline` unsets GitHub's all-zero first-push baseline before the full Semgrep scan; its regression test, lint, and type-check passed locally.
 
 ## Working state
 
@@ -33,7 +35,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - Semgrep 1.172.0 passed all 17 changed executable/test files with 0 blocking findings. PostgreSQL's documented `ADD CONSTRAINT ... PRIMARY KEY USING INDEX` contract was verified against the official docs; the migration contains no `DROP` and preserves immutable history.
 - First web-build attempt hit `ENOSPC`. Removed only four regenerable `.next` directories, freeing about 9.8 GiB; the clean retry passed.
 - Passed the exact CI `npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url postgresql://needt:needt@127.0.0.1:55432/needt_shadow --exit-code` against `postgres:16-alpine`: exit 0, `No difference detected.` The disposable container `needt-schema-drift-20260824` and downloaded image were removed afterward.
-- Not run: E2E, visual, or any Docker image build.
+- GitHub Actions runs `32673445836` (`push`) and `32673448129` (`pull_request`) both passed on implementation SHA `4c33d970b8ed923496efadf6a9f36c37a1d24089`: changes, security, PostgreSQL 16 schema-drift, quality-gates, E2E, and visual-style all succeeded. Visual/style execution correctly skipped because no matching UI paths changed.
+- Not run locally: E2E, visual, or any Docker image build. GitHub Actions ran E2E successfully on both events; visual/style heavyweight steps were skipped by the path filter.
 
 ## Decisions and constraints
 
@@ -43,8 +46,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 
 ## Blockers
 
-- None. Direct user authorization now covers the branch push and creation of a PR into `main`; merge remains prohibited.
+- None. PR #20 is open and unmerged; merge remains prohibited.
 
 ## Next action
 
-- Commit this checkpoint, push `codex/ci-release-recovery` to `origin`, open a PR into `main`, and wait for its CI jobs. Do not merge or touch Coolify.
+- Owner reviews PR #20 and separately decides whether to merge. Do not merge or touch Coolify without a new direct instruction.
