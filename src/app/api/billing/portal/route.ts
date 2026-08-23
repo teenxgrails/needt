@@ -5,12 +5,26 @@ import { getCreemClient } from "@/lib/creem/client";
 import { isCreemClientConfigured } from "@/lib/creem/config";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import {
+  accountRule,
+  enforceRateLimits,
+  ipRule,
+} from "@/lib/security/rate-limit";
 
 const LOG_SOURCE = "CreemPortalAPI";
 
 export async function POST(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
+
+  const limited = await enforceRateLimits(
+    [
+      ipRule(request, "billing-portal:ip", 20, 60 * 60),
+      accountRule(auth.userId, "billing-portal:account", 10, 60 * 60),
+    ],
+    { route: "/api/billing/portal", userId: auth.userId }
+  );
+  if (limited) return limited;
 
   if (!isCreemClientConfigured()) {
     return NextResponse.json(
