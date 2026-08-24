@@ -217,6 +217,25 @@ test.describe("recorded Creem billing lifecycle", () => {
     ).toBe(200);
 
     expect(
+      (
+        await sendWebhook(
+          recordedFixtures.equalTimeActiveAfterCancel,
+          proUserId
+        )
+      ).ok()
+    ).toBe(true);
+    expect(await subscription(proUserId)).toMatchObject({
+      status: SubscriptionStatus.CANCELED,
+      lastCreemEventId: recordedFixtures.proCanceled.id,
+    });
+    expect(
+      await prisma.creemWebhookEvent.findUniqueOrThrow({
+        where: { id: recordedFixtures.equalTimeActiveAfterCancel.id },
+        select: { outcome: true },
+      })
+    ).toEqual({ outcome: "equal_time_weaker_event" });
+
+    expect(
       (await sendWebhook(recordedFixtures.olderActive, proUserId)).ok()
     ).toBe(true);
     expect(await subscription(proUserId)).toMatchObject({

@@ -3,7 +3,7 @@ id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
 status: active
-updated: 2026-08-24T18:47:38Z
+updated: 2026-08-24T18:58:51Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -34,15 +34,18 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Added a no-network customer portal contract test and updated the changelog.
 - Fast-forwarded onto fresh `origin/main` `0483d2620d02` before the final verification boundary.
 - Committed the verified scope as `bf0c6ba` and opened non-merge PR #27: `https://github.com/teenxgrails/needt/pull/27`.
+- Root review found one remaining ordering divergence: events can share Creem's provider timestamp, so a late `active`/`paid` event at exactly the stored timestamp could still weaken a same-subscription scheduled-cancel, past-due, unpaid, canceled, or expired state. The processor now applies a fail-safe restriction ordering for equal timestamps only when the Creem subscription ID is unchanged. Equal-time events may preserve or strengthen the state; a weaker event is durably recorded without mutation. A different subscription ID bypasses this tie-break so a legitimate resubscribe is not blocked. Event IDs are never treated as temporal ordering.
+- Added focused coverage for every restrictive state against both equal-time `active` and `paid`, a stricter equal-time transition, a same-timestamp new-subscription resubscribe, and a signed recorded-fixture route/DB regression for equal-time active-after-cancel.
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff until its PR checkpoint commit; implementation is committed and the worktree is otherwise clean.
+- Files currently dirty or expected to change: equal-time ordering follow-up plus this handoff until its scoped commit.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
 
-- Passed after fresh main: `npx prisma validate`; `npm run type-check`; `npm run lint` (zero warnings); `npm run test:unit -- --runInBand src/lib/creem src/lib/entitlements` (3 suites / 19 tests); `PORT=3105 TEST_BASE_URL=http://127.0.0.1:3105 npm run test:e2e -- tests/entitlements.spec.ts tests/billing.spec.ts` (5/5); `npm run build`; `git diff --check`.
+- Passed after fresh main: `npx prisma validate`; `npm run type-check`; `npm run lint` (zero warnings); `npm run test:unit -- --runInBand src/lib/creem src/lib/entitlements`; `PORT=3105 TEST_BASE_URL=http://127.0.0.1:3105 npm run test:e2e -- tests/entitlements.spec.ts tests/billing.spec.ts` (5/5); `npm run build`; `git diff --check`.
+- Repeated after the equal-time ordering fix: `npx prisma validate` with the local test DB URLs (schema valid); `npm run type-check`; `npm run lint` (zero warnings); focused unit gates (3 suites / 26 tests); required Playwright lifecycle/entitlement gate (5/5); `npm run build` including production artifact checks.
 - A focused browser-backed billing run also rendered and asserted the retained-access warning before the stable lifecycle suite was narrowed to API/DB state; the notice text is now independently covered by focused unit tests.
 - The first build compiled successfully but failed during page-data collection on `ENOSPC`; deleting only this worktree's regenerable `.next` freed about 9.8 GiB, and the clean rerun passed including production artifact checks.
 - Not run / still required: PR #27 CI after the final handoff checkpoint push.

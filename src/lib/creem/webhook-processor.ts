@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type SubscriptionStatus } from "@prisma/client";
 
 import { mapCreemEventToSubscription } from "@/lib/creem/webhook-mapping";
 import { newDate } from "@/lib/date-utils";
@@ -7,6 +7,21 @@ import { prisma } from "@/lib/prisma";
 import type { CreemBillingEvent } from "./webhook-mapping";
 
 const SERIALIZABLE_RETRIES = 3;
+
+type SubscriptionState = {
+  status: SubscriptionStatus;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+};
+
+function restrictionLevel(state: SubscriptionState) {
+  if (state.status === "CANCELED") {
+    return state.currentPeriodEnd ? 4 : 5;
+  }
+  if (state.status === "PAYMENT_FAILED") return 3;
+  if (state.status === "PAST_DUE") return 2;
+  return state.cancelAtPeriodEnd ? 1 : 0;
+}
 
 function isRetryableTransaction(error: unknown) {
   return (
@@ -66,7 +81,10 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
             select: {
               userId: true,
               plan: true,
+              status: true,
+              creemSubscriptionId: true,
               currentPeriodEnd: true,
+              cancelAtPeriodEnd: true,
               lastCreemEventId: true,
               lastCreemEventAt: true,
             },
@@ -84,24 +102,39 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
         select: {
           userId: true,
           plan: true,
+          status: true,
+          creemSubscriptionId: true,
           currentPeriodEnd: true,
+          cancelAtPeriodEnd: true,
           lastCreemEventId: true,
           lastCreemEventAt: true,
         },
       }));
-    const stale = Boolean(
+    const olderThanAppliedEvent = Boolean(
       currentSubscription?.lastCreemEventAt &&
         currentSubscription.lastCreemEventAt > eventCreatedAt
+    );
+    const weakerAtSameTimestamp = Boolean(
+      currentSubscription?.lastCreemEventAt &&
+        currentSubscription.lastCreemEventAt.getTime() ===
+          eventCreatedAt.getTime() &&
+        currentSubscription.creemSubscriptionId &&
+        currentSubscription.creemSubscriptionId ===
+          mutation.creemSubscriptionId &&
+        restrictionLevel(mutation.data) <
+          restrictionLevel(currentSubscription)
     );
     const lifetimePreserved = Boolean(
       currentSubscription?.plan === "LIFETIME" &&
         mutation.data.plan !== "LIFETIME"
     );
-    const outcome = stale
+    const outcome = olderThanAppliedEvent
       ? "stale_event"
-      : lifetimePreserved
-        ? "lifetime_preserved"
-        : "processed";
+      : weakerAtSameTimestamp
+        ? "equal_time_weaker_event"
+        : lifetimePreserved
+          ? "lifetime_preserved"
+          : "processed";
 
     const user = await transaction.user.findUnique({
       where: { id: userId },
@@ -126,8 +159,11 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
     if (receipt.count === 0) {
       return { processed: false, reason: "replayed_event" as const };
     }
-    if (stale) {
+    if (olderThanAppliedEvent) {
       return { processed: false, reason: "stale_event" as const };
+    }
+    if (weakerAtSameTimestamp) {
+      return { processed: false, reason: "equal_time_weaker_event" as const };
     }
     if (lifetimePreserved) {
       return { processed: false, reason: "lifetime_preserved" as const };

@@ -267,6 +267,131 @@ describe("Creem webhook processing", () => {
     );
   });
 
+  it.each([
+    ["scheduled cancel", SubscriptionStatus.ACTIVE, true, true],
+    ["past due", SubscriptionStatus.PAST_DUE, false, true],
+    ["unpaid", SubscriptionStatus.PAYMENT_FAILED, false, true],
+    ["canceled", SubscriptionStatus.CANCELED, true, true],
+    ["expired", SubscriptionStatus.CANCELED, false, false],
+  ])(
+    "does not weaken %s at the same provider timestamp",
+    async (label, status, cancelAtPeriodEnd, hasPaidThroughDate) => {
+      const eventCreatedAt = 1_728_734_337_932;
+      (prisma.subscription.findFirst as jest.Mock).mockResolvedValue({
+        userId: "user_1",
+        plan: SubscriptionPlan.PRO,
+        status,
+        creemSubscriptionId: "sub_1",
+        currentPeriodEnd: hasPaidThroughDate
+          ? newDate("2099-08-01T00:00:00.000Z")
+          : null,
+        cancelAtPeriodEnd,
+        lastCreemEventId: `evt_${label}`,
+        lastCreemEventAt: newDate(eventCreatedAt),
+      });
+
+      for (const eventType of [
+        "subscription.active",
+        "subscription.paid",
+      ] as const) {
+        const result = await processCreemBillingEvent({
+          id: `evt_equal_${eventType}_${label}`,
+          createdAt: eventCreatedAt,
+          eventType,
+          object: {
+            id: "sub_1",
+            product: { id: products.proMonthly },
+            customer: { id: "cust_1" },
+          },
+        });
+
+        expect(result).toEqual({
+          processed: false,
+          reason: "equal_time_weaker_event",
+        });
+      }
+
+      expect(prisma.subscription.upsert).not.toHaveBeenCalled();
+      expect(prisma.creemWebhookEvent.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: [
+            expect.objectContaining({ outcome: "equal_time_weaker_event" }),
+          ],
+        })
+      );
+    }
+  );
+
+  it("allows a more restrictive event at the same provider timestamp", async () => {
+    const eventCreatedAt = 1_728_734_337_932;
+    (prisma.subscription.findFirst as jest.Mock).mockResolvedValue({
+      userId: "user_1",
+      plan: SubscriptionPlan.PRO,
+      status: SubscriptionStatus.PAST_DUE,
+      creemSubscriptionId: "sub_1",
+      currentPeriodEnd: newDate("2099-08-01T00:00:00.000Z"),
+      cancelAtPeriodEnd: false,
+      lastCreemEventId: "evt_past_due",
+      lastCreemEventAt: newDate(eventCreatedAt),
+    });
+
+    const result = await processCreemBillingEvent({
+      id: "evt_equal_expired",
+      createdAt: eventCreatedAt,
+      eventType: "subscription.expired",
+      object: {
+        id: "sub_1",
+        product: { id: products.proMonthly },
+        customer: { id: "cust_1" },
+      },
+    });
+
+    expect(result.processed).toBe(true);
+    expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          status: SubscriptionStatus.CANCELED,
+          currentPeriodEnd: null,
+        }),
+      })
+    );
+  });
+
+  it("allows an equal-time resubscribe with a new subscription id", async () => {
+    const eventCreatedAt = 1_728_734_337_932;
+    (prisma.subscription.findFirst as jest.Mock).mockResolvedValue({
+      userId: "user_1",
+      plan: SubscriptionPlan.PRO,
+      status: SubscriptionStatus.CANCELED,
+      creemSubscriptionId: "sub_old",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+      lastCreemEventId: "evt_expired",
+      lastCreemEventAt: newDate(eventCreatedAt),
+    });
+
+    const result = await processCreemBillingEvent({
+      id: "evt_equal_resubscribe",
+      createdAt: eventCreatedAt,
+      eventType: "subscription.active",
+      object: {
+        id: "sub_new",
+        product: { id: products.proMonthly },
+        customer: { id: "cust_1" },
+      },
+    });
+
+    expect(result.processed).toBe(true);
+    expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          status: SubscriptionStatus.ACTIVE,
+          creemSubscriptionId: "sub_new",
+        }),
+      })
+    );
+  });
+
   it("keeps the paid-through date when a retry event omits it", async () => {
     const paidThrough = newDate("2099-08-01T00:00:00.000Z");
     (prisma.subscription.findFirst as jest.Mock).mockResolvedValue({
