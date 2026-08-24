@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added an admin-only System settings route and account-menu links for system
+  credentials and operations, with a contract check preventing orphaned
+  admin-only settings components.
 - L0 release line is tagged `v0.4.0`; production image verification is provided
   by the required `docker-publish` CI workflow on the same SHA rather than a
   local Docker Desktop build.
