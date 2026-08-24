@@ -47,6 +47,7 @@ jobs:
               - "design-refs/**"
               - "tailwind.config.*"
               - "tests/visual/**"
+              - ".github/workflows/ci.yml"
 
   security:
     if: github.event_name != 'workflow_dispatch'

@@ -25,6 +25,10 @@ describe("visual baseline workflow authority", () => {
     expect(workflow).toContain("Baseline update touched forbidden path: $path");
   });
 
+  it("runs visual suites when the visual workflow changes", () => {
+    expect(workflow).toContain('- ".github/workflows/ci.yml"');
+  });
+
   it("fails closed when visual drift is detected", () => {
     const enforcementStep = workflow.slice(
       workflow.indexOf("- name: Enforce visual gate")
