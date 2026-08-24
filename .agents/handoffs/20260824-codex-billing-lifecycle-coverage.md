@@ -3,7 +3,7 @@ id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
 status: active
-updated: 2026-08-24T18:46:13Z
+updated: 2026-08-24T18:47:38Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -33,10 +33,11 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Added sanitized recorded official-payload fixtures and `tests/billing.spec.ts` for tamper rejection, checkout/active/cancel/grace/expiry/resubscribe, replay, out-of-order delivery, failed-payment recovery, immediate shared-workspace downgrade enforcement, and renewal-less LIFETIME.
 - Added a no-network customer portal contract test and updated the changelog.
 - Fast-forwarded onto fresh `origin/main` `0483d2620d02` before the final verification boundary.
+- Committed the verified scope as `bf0c6ba` and opened non-merge PR #27: `https://github.com/teenxgrails/needt/pull/27`.
 
 ## Working state
 
-- Files currently dirty or expected to change: `CHANGELOG.md`, `prisma/schema.prisma`, `prisma/migrations/20260824183000_creem_webhook_ordering/migration.sql`, billing webhook/mapping/processor/settings files, focused unit tests/helpers, `tests/billing.spec.ts`, `tests/fixtures/creem/billing-lifecycle.json`, `tests/e2e/environment.ts`, and this handoff.
+- Files currently dirty or expected to change: this handoff until its PR checkpoint commit; implementation is committed and the worktree is otherwise clean.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
@@ -44,7 +45,7 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Passed after fresh main: `npx prisma validate`; `npm run type-check`; `npm run lint` (zero warnings); `npm run test:unit -- --runInBand src/lib/creem src/lib/entitlements` (3 suites / 19 tests); `PORT=3105 TEST_BASE_URL=http://127.0.0.1:3105 npm run test:e2e -- tests/entitlements.spec.ts tests/billing.spec.ts` (5/5); `npm run build`; `git diff --check`.
 - A focused browser-backed billing run also rendered and asserted the retained-access warning before the stable lifecycle suite was narrowed to API/DB state; the notice text is now independently covered by focused unit tests.
 - The first build compiled successfully but failed during page-data collection on `ENOSPC`; deleting only this worktree's regenerable `.next` freed about 9.8 GiB, and the clean rerun passed including production artifact checks.
-- Not run / still required: PR CI after push.
+- Not run / still required: PR #27 CI after the final handoff checkpoint push.
 
 ## Decisions and constraints
 
@@ -59,4 +60,4 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 
 ## Next action
 
-- Commit the verified scoped change, push it, open the non-merge PR, and monitor required CI.
+- Commit and push this PR checkpoint, monitor PR #27 to green CI, then mark this handoff complete without merging.
