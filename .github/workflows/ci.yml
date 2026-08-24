@@ -366,6 +366,4 @@ jobs:
           path: tests/visual/*-snapshots
       - name: Enforce visual gate
         if: always() && steps.visual.outcome == 'failure'
-        # Restore `exit 1` after the CI-generated Linux baseline refresh is
-        # reviewed and an unchanged-source visual/style rerun passes against it.
-        run: echo "::warning::Visual/style drift is temporarily non-blocking; inspect the uploaded report and Linux candidates."
+        run: exit 1
