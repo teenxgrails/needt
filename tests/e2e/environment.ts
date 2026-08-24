@@ -1,7 +1,6 @@
+import { PrismaClient } from "@prisma/client";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-
-import { PrismaClient } from "@prisma/client";
 
 const execFileAsync = promisify(execFile);
 
@@ -13,6 +12,11 @@ const localE2eEnvironment = {
   NEXTAUTH_SECRET: "needt-e2e-only-secret-not-valid-outside-tests",
   RATE_LIMIT_HASH_SECRET: "needt-e2e-rate-limit-hash-secret",
   COLLABORATION_DISABLED: "1",
+  CREEM_API_KEY: "creem_test_key_for_local_e2e_only",
+  CREEM_WEBHOOK_SECRET: "creem_test_webhook_secret_for_local_e2e_only",
+  CREEM_PRODUCT_PRO_MONTHLY: "prod_test_pro_month",
+  CREEM_PRODUCT_PRO_YEARLY: "prod_test_pro_year",
+  CREEM_PRODUCT_LIFETIME: "prod_test_lifetime",
 } as const;
 
 const requiredColumns = [
@@ -53,7 +57,9 @@ async function assertRequiredSchema() {
       WHERE table_schema = current_schema()
     `;
     const present = new Set(
-      columns.map(({ table_name, column_name }) => `${table_name}.${column_name}`)
+      columns.map(
+        ({ table_name, column_name }) => `${table_name}.${column_name}`
+      )
     );
     const missing = requiredColumns.filter(
       ([table, column]) => !present.has(`${table}.${column}`)
