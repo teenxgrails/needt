@@ -3,7 +3,7 @@ id: 20260824-codex-admin-system-settings-route
 owner: codex
 branch: codex/admin-system-settings-route
 status: complete
-updated: 2026-08-24T19:04:22Z
+updated: 2026-08-24T21:13:11Z
 objective: Make the system credential settings reachable only to administrators and prevent admin-only settings components from becoming orphaned again.
 ---
 
@@ -30,6 +30,8 @@ objective: Make the system credential settings reachable only to administrators 
 
 ## Verification
 
+- Independent final verification on `f9c4e9b`: `npm run type-check`; `npm run lint`; `npm run test:unit` (165 passed suites, 777 passed tests); `npm run check:ui-contracts`; and `npm run build` (including the production artifact check) all passed. `npm run test:e2e` passed outside the macOS sandbox (27 passed, 3 credential-gated skipped); its first sandboxed attempt failed before browser execution because Chromium could not register a Mach port. The two `/admin/system` browser tests passed in the successful run.
+- Re-proved the UI-contract negative path locally: deleting only `src/app/(app)/admin/system/page.tsx` made `npm run check:ui-contracts` fail for `SystemSettings`, `UserManagement`, and `LogViewer`; immediately restoring the tracked page returned the gate to passing. No source change remains from that proof.
 - Passed on final base `origin/main` `0483d262`: `npm run type-check`; `npm run lint`; `npm run test:unit` (165 suites, 777 tests); `npm run check:ui-contracts`; `npm run check:branding`; `npm run check:agent-handoffs`; `npm run build`; `npm run build:worker`; `npm run build:collaboration`; `npm run test:e2e` (27 passed, 3 skipped); `npm run test:style` (15 passed).
 - Browser verification: seeded admin sees the Google/Outlook credential form; seeded FREE non-admin remains on `/admin/system`, sees the access-denied message, and has no form in the DOM.
 - `npm run test:visual` on final main reached the real Playwright suite and reproduced Darwin-only Space baseline drift in unchanged surfaces (`space.png` and `space-light.png`, 1% pixel ratio); stopped before unrelated remaining projects. No baseline was updated.
@@ -39,7 +41,7 @@ objective: Make the system credential settings reachable only to administrators 
 
 - Reuse the existing `/admin/operations` server and client authorization pattern and the existing shared settings/admin UI; do not add a second admin pattern or redesign the screen.
 - UI work routes through the project Playwright workflow; ralphex is unnecessary for this single scoped implementation plan.
-- The existing `requireAdmin` helper is request-shaped for API routes; the page uses the existing server-session `isAdmin()` helper, while `/api/system-settings` retains its unchanged `requireAdmin` boundary and each mounted settings component retains `AdminOnly`.
+- The existing `requireAdmin` helper is request-shaped for API routes; the page uses the existing server-session `isAdmin()` helper, while `/api/system-settings` retains its unchanged `requireAdmin` boundary and each mounted settings component retains `AdminOnly`. The page's explicit `AccessDeniedMessage` branch ensures a signed-in non-admin sees neither the form nor credential controls.
 - Hallmark informed a restraint-only pass: reuse the established admin shell and tokens, add no new styling system, decoration, or CSS.
 
 ## Blockers
