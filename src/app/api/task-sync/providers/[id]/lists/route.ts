@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
+import { GOOGLE_TASKS_SYNC_ENABLED } from "@/lib/google-oauth-scopes";
 import { logger } from "@/lib/logger";
 import { getMsGraphClient } from "@/lib/outlook-utils";
 import { prisma } from "@/lib/prisma";
@@ -45,6 +46,13 @@ export async function GET(
       return NextResponse.json(
         { error: "Provider not found" },
         { status: 404 }
+      );
+    }
+
+    if (provider.type === "GOOGLE" && !GOOGLE_TASKS_SYNC_ENABLED) {
+      return NextResponse.json(
+        { error: "Google Tasks sync is temporarily unavailable." },
+        { status: 503 }
       );
     }
 

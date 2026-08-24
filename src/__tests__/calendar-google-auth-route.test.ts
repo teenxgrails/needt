@@ -11,7 +11,8 @@ jest.mock("@/lib/entitlements");
 jest.mock("@/lib/google");
 
 describe("Calendar Google auth route", () => {
-  it("requests tasks scope when generating auth URL", async () => {
+  it("requests calendar access incrementally without Google Tasks", async () => {
+    process.env.NEXTAUTH_URL = "http://localhost";
     jest.mocked(authenticateRequest).mockResolvedValue({ userId: "user-1" });
     jest.mocked(canAddCalendar).mockResolvedValue({
       allowed: true,
@@ -35,6 +36,15 @@ describe("Calendar Google auth route", () => {
     expect(generateAuthUrl).toHaveBeenCalled();
     const arg = generateAuthUrl.mock.calls[0][0];
     expect(Array.isArray(arg.scope)).toBe(true);
-    expect(arg.scope).toContain("https://www.googleapis.com/auth/tasks");
+    expect(arg.scope).toEqual([
+      "https://www.googleapis.com/auth/calendar",
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/userinfo.email",
+    ]);
+    expect(arg.scope).not.toContain("https://www.googleapis.com/auth/tasks");
+    expect(arg.include_granted_scopes).toBe(true);
+    expect(googleModule.createGoogleOAuthClient).toHaveBeenCalledWith({
+      redirectUrl: "http://localhost/api/calendar/google",
+    });
   });
 });

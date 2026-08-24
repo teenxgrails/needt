@@ -1824,6 +1824,8 @@ model AgentMemory {
 
   @@index([workspaceId, userId, lastUsedAt])
   @@index([workspaceId, userId, weight])
+  @@index([userId, lastUsedAt])
+  @@index([userId, weight])
 }
 
 model AiUsage {
@@ -1889,6 +1891,7 @@ model AiConversation {
   updatedAt   DateTime    @updatedAt
 
   @@index([workspaceId, userId, updatedAt])
+  @@index([userId, updatedAt])
 }
 
 model AiMessage {
@@ -1908,6 +1911,8 @@ model AiMessage {
 
   @@index([workspaceId, conversationId, createdAt])
   @@index([workspaceId, userId, createdAt])
+  @@index([conversationId, createdAt])
+  @@index([userId, createdAt])
 }
 
 model ConnectorSettings {

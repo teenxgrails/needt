@@ -4,6 +4,7 @@ import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { canAddCalendar } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
+import { buildCalendarOAuthRedirectUrl } from "@/lib/oauth-redirects";
 import {
   MICROSOFT_GRAPH_AUTH_ENDPOINTS,
   MICROSOFT_GRAPH_SCOPES,
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { clientId } = await getOutlookCredentials();
-    const redirectUrl = `${process.env.NEXTAUTH_URL}/api/calendar/outlook`;
+    const redirectUrl = buildCalendarOAuthRedirectUrl("outlook");
 
     // Construct the authorization URL
     const params = new URLSearchParams({

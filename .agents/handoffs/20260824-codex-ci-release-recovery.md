@@ -1,0 +1,59 @@
+---
+id: 20260824-codex-ci-release-recovery
+owner: codex
+branch: codex/ci-release-recovery
+status: blocked
+updated: 2026-08-24T00:16:40Z
+objective: Repair the post-push CI failures, OAuth scope contract, and release documentation with full local gates and no production action.
+---
+
+## Scope
+
+- Governing plan/spec: owner brief dated 2026-08-24; `docs/plans/09-launch.md`; `docs/plans/README.md` additive migration rules.
+- In scope: Semgrep findings, Prisma schema drift, CI-only unit failure/count mismatch, Google sign-in/calendar/task scope separation, deferred Google Tasks failure behavior, OAuth redirect documentation contract, sequential manual deployment documentation, tests, and this handoff.
+- Out of scope: merge, Coolify changes, production operations, Docker image builds, E2E, visual tests, and unrelated product/design work. The owner directly authorized one ephemeral PostgreSQL 16 container, branch push, and a PR into `main`.
+
+## Completed
+
+- Created this isolated writer worktree from `origin/main` at `c80071676392bef8d08a5862225b8ab8f9b5c225`.
+- Completed a read-only release critique: preserve additive migration compatibility; harden workflow-run provenance as well as pinning actions; do not accept `-k` or test-result adjustment as release evidence.
+- `c2d6a61 fix(release): close CI environment blockers` hardens privileged workflow provenance, pins every production action, records the audited loopback-only Semgrep suppression, restores legacy Prisma indexes, adds an additive join-table PK migration, makes the scheduling fixture timezone-independent, and documents sequential deployment with Auto deploy disabled.
+- `2b5a860 fix(auth): separate Google consent scopes` limits Google sign-in to `openid email profile`, requests Calendar scopes incrementally, defers Google Tasks behind one scope contract with an actionable error, centralizes runtime redirect construction, and pins deployment documentation to the actual callbacks.
+- Three parallel Terra audits independently confirmed the Semgrep, Prisma, and CI timezone root causes. The reported 756-versus-757 difference was passed tests versus total tests, not a missing test.
+- After clearing only regenerable caches, recovered a stale Docker Desktop backend, ran the exact Prisma migration drift check against an ephemeral PostgreSQL 16 database, and removed both the container and the downloaded image.
+- Pushed the branch to authoritative `origin` and opened https://github.com/teenxgrails/needt/pull/20 into `main` without merging or touching Coolify.
+- `4c33d97 fix(ci): clear invalid Semgrep baseline` unsets GitHub's all-zero first-push baseline before the full Semgrep scan; its regression test, lint, and type-check passed locally.
+- `34aa380 fix(release): address PR review blockers` checks out the immutable release SHA throughout the privileged workflow (including Docker metadata identity), rejects disabled Google Tasks creation/list access and records mapping failures, removes three owner-identified tautological tests, and documents the migration/provenance changes in `CHANGELOG.md`.
+- `437141f fix(ci): keep release SHA valid in job env` restores the direct immutable event-SHA expression for job-level deploy environment variables, where GitHub does not allow the step-only `env` context; focused workflow tests, type-check, and lint passed afterward.
+- Main was merged with red `visual-style`, so visual baseline drift accumulated unnoticed; this is a process defect, not a code defect.
+
+## Working state
+
+- Implementation is committed in `34aa380`; only this handoff is expected to differ before its checkpoint commit.
+- Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; every other registered worktree and active handoff; Coolify and production configuration.
+
+## Verification
+
+- Passed on Node 22.16.0: focused OAuth/task/doc tests (17); focused release/Prisma/deploy tests (22); scheduling buffer suite in both `TZ=UTC` and `TZ=Europe/Zurich` (3 each); Prisma format/generate/validate; `npm run type-check`; zero-warning `npm run lint`; full CI-env unit suite in `TZ=UTC` (164 suites passed, 1 skipped; 773 tests passed, 1 skipped, 774 total); `npm run build` (142 static pages and postbuild artifact check, 1,390 files); `npm run build:worker`; `npm run build:collaboration`; `npm run check:collaboration-runtime`; branding; UI contracts; handoff validation; `git diff --check`.
+- Semgrep 1.172.0 passed all 17 changed executable/test files with 0 blocking findings. PostgreSQL's documented `ADD CONSTRAINT ... PRIMARY KEY USING INDEX` contract was verified against the official docs; the migration contains no `DROP` and preserves immutable history.
+- First web-build attempt hit `ENOSPC`. Removed only four regenerable `.next` directories, freeing about 9.8 GiB; the clean retry passed.
+- Passed the exact CI `npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url postgresql://needt:needt@127.0.0.1:55432/needt_shadow --exit-code` against `postgres:16-alpine`: exit 0, `No difference detected.` The disposable container `needt-schema-drift-20260824` and downloaded image were removed afterward.
+- GitHub Actions runs `32673445836` (`push`) and `32673448129` (`pull_request`) both passed on implementation SHA `4c33d970b8ed923496efadf6a9f36c37a1d24089`: changes, security, PostgreSQL 16 schema-drift, quality-gates, E2E, and visual-style all succeeded. Visual/style execution correctly skipped because no matching UI paths changed.
+- Review-fix verification on Node 22.16.0: focused workflow/Google suites 24/24; full `CI=true TZ=UTC` unit suite 162 suites passed, 1 skipped and 765 tests passed, 1 skipped (766 total); type-check; zero-warning lint; web build with 142 static pages and 1,390-file artifact check; worker build; collaboration build/runtime; branding; UI contracts; `git diff --check`; Semgrep 1.172.0 scanned 8 changed workflow/TypeScript files with 0 findings.
+- The privileged `docker-publish` workflow is intentionally gated to successful same-repository default-branch pushes, so its first executable validation remains after a future merge; PR #20 must not be merged without a separate owner instruction.
+- GitHub Actions runs `32675009171` and `32675011275` passed changes, security, schema-drift, quality-gates, and E2E on `e1ac173`; visual-style found 18 stale snapshots. Audit stopped before baseline acceptance because several Linux images predate `9c8f26e`: `settings-account` is onboarding from `86c3022`, Pages metadata controls are from `288acea`, and Space mobile escape controls are from `f7e34f04`.
+- Not run locally: E2E, visual, or any Docker image build. GitHub Actions ran E2E successfully on both events; visual/style heavyweight steps were skipped by the path filter.
+
+## Decisions and constraints
+
+- No merge and no Coolify changes. Auto deploy stays intentionally disabled until builds move off the VPS to a verified GHCR image.
+- Migrations remain additive expand/backfill only; never drop legacy indexes or rewrite existing migration history.
+- Each fix needs a regression test that would have failed before it.
+
+## Blockers
+
+- Baseline acceptance is blocked by the owner's attribution rule: at least `settings-account` tablet/mobile, Pages mobile, and Space mobile are explained by pre-`9c8f26e` UI, not `9c8f26e..c800716`. No candidate images were copied into the repository.
+
+## Next action
+
+- Owner decision: either accept the confirmed pre-existing Linux baseline drift alongside the 16-24 Aug UI refresh, or keep the current baselines and repair the visual-test process separately. PR #20 remains open and unmerged.

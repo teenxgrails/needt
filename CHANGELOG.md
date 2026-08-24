@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Google sign-in now requests only basic identity scopes; Calendar access is
+  requested separately when connecting a calendar, while Google Tasks sync is
+  explicitly deferred with an actionable connection error.
 - Release automation now permits a repair deployment when the currently live web health endpoint is unavailable, and publishes the native AMD64 image only. Local Compose starts the matching web, private worker, collaboration, PostgreSQL, and Redis topology.
 - Tasks now show a private seven-day capacity summary and an explainable,
   reversible schedule preview with unscheduled-task and stale-preview recovery.
@@ -84,6 +87,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Restored Prisma migration/schema compatibility without rewriting user data:
+  retained five legacy AI indexes and promoted the existing Page–tag join
+  unique pair to Prisma's composite primary-key representation.
+- Restricted privileged publish/deploy workflow runs to successful default-
+  branch pushes from this repository, made source-consuming jobs verify the
+  exact immutable CI release SHA, and made deploys use that SHA.
 - On phones, Space now offers working Task List and Board fallbacks instead of
   directing people to a desktop-only canvas.
 - Pages can now be organized with workspace-scoped folders and tags, and users

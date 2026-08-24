@@ -7,11 +7,18 @@ import { join } from "path";
 // from disk so the assertions track the shipped content.
 
 const repoRoot = join(__dirname, "..", "..");
-const read = (rel: string) => readFileSync(join(repoRoot, rel), "utf8");
+const readme = readFileSync(join(repoRoot, "README.md"), "utf8");
+const settings = readFileSync(
+  join(repoRoot, "src", "components", "settings", "SystemSettings.tsx"),
+  "utf8"
+);
+const checklist = readFileSync(
+  join(repoRoot, "docs", "self-hosting-setup-checklist.md"),
+  "utf8"
+);
 
 describe("Google OAuth setup docs (issue #76)", () => {
   describe("README", () => {
-    const readme = read("README.md");
     // Limit assertions to the Google Cloud Setup section so unrelated mentions
     // elsewhere in the README cannot mask a missing instruction.
     const googleSection = (() => {
@@ -32,7 +39,9 @@ describe("Google OAuth setup docs (issue #76)", () => {
     it("explains NEXTAUTH_URL drives the redirect and must match the public URL", () => {
       expect(googleSection).toContain("NEXTAUTH_URL");
       // It must not tell users that NEXT_PUBLIC_APP_URL is what controls the redirect.
-      expect(googleSection).toMatch(/NEXTAUTH_URL[^]*public URL|public URL[^]*NEXTAUTH_URL/);
+      expect(googleSection).toMatch(
+        /NEXTAUTH_URL[^]*public URL|public URL[^]*NEXTAUTH_URL/
+      );
     });
 
     it("warns that private IPs / .local hosts are rejected by Google", () => {
@@ -41,23 +50,23 @@ describe("Google OAuth setup docs (issue #76)", () => {
     });
 
     it("lists the OAuth consent scopes the app actually requests (canonical URLs)", () => {
-      // These are the scopes the runtime requests (auth route + NextAuth config),
-      // so the consent-screen instructions match what Google will be asked for.
+      // These are the sensitive scopes requested only by calendar connection.
       for (const scope of [
         "https://www.googleapis.com/auth/calendar",
         "https://www.googleapis.com/auth/calendar.events",
         "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/tasks",
       ]) {
         expect(googleSection).toContain(scope);
       }
+      expect(googleSection).not.toContain(
+        "https://www.googleapis.com/auth/tasks"
+      );
       // The malformed shorthand with a leading "./" should no longer be present.
       expect(googleSection).not.toContain("./auth/calendar");
     });
   });
 
   describe("In-app System Settings", () => {
-    const settings = read("src/components/settings/SystemSettings.tsx");
     const googleBlock = (() => {
       const idx = settings.indexOf("Google Calendar Integration");
       // capture up to the start of the Outlook block
@@ -94,8 +103,6 @@ describe("Google OAuth setup docs (issue #76)", () => {
   });
 
   describe("Self-hosting checklist", () => {
-    const checklist = read("docs/self-hosting-setup-checklist.md");
-
     it("lists the Google sign-in callback redirect URI", () => {
       expect(checklist).toContain("/api/auth/callback/google");
     });
