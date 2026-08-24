@@ -3,7 +3,7 @@ id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
 status: active
-updated: 2026-08-24T18:58:51Z
+updated: 2026-08-24T22:19:35Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -36,10 +36,15 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Committed the verified scope as `bf0c6ba` and opened non-merge PR #27: `https://github.com/teenxgrails/needt/pull/27`.
 - Root review found one remaining ordering divergence: events can share Creem's provider timestamp, so a late `active`/`paid` event at exactly the stored timestamp could still weaken a same-subscription scheduled-cancel, past-due, unpaid, canceled, or expired state. The processor now applies a fail-safe restriction ordering for equal timestamps only when the Creem subscription ID is unchanged. Equal-time events may preserve or strengthen the state; a weaker event is durably recorded without mutation. A different subscription ID bypasses this tie-break so a legitimate resubscribe is not blocked. Event IDs are never treated as temporal ordering.
 - Added focused coverage for every restrictive state against both equal-time `active` and `paid`, a stricter equal-time transition, a same-timestamp new-subscription resubscribe, and a signed recorded-fixture route/DB regression for equal-time active-after-cancel.
+- Re-audited the branch against seven independent production-billing findings. Restrictive mutations now apply only to the currently stored Creem subscription ID; a newer grant can establish a replacement ID, while an ambiguous equal-time grant cannot replace an unrestricted live subscription.
+- Cancellation and scheduled-cancellation events that omit `current_period_end_date` now preserve the stored paid-through date. Recorded E2E fixtures cover both omitted-field shapes and assert retained PRO access.
+- LIFETIME is immutable after grant regardless of the later event's product ID or status. The recorded Pro-after-Lifetime fixture now uses the Lifetime customer's own Creem customer ID, and a same-product Lifetime expiry is also rejected.
+- Every recorded webhook event ID is namespaced by the Playwright `runId`; retries keep the same ID within one run, while a retried worker/run cannot collide with abandoned receipts from an earlier run. The tautological mocked replay unit test was removed; a real checkout grant replay now proves the subscription row is not updated twice.
+- Current Creem docs distinguish `paused` from `past_due`/`unpaid` and invoke access revocation for paused/expired states. Needt therefore keeps immediate FREE on `paused`; a focused test proves a later same-ID `subscription.update(status=active)` restores access. Creem does not document which webhook its resume endpoint emits, so webhook reconciliation remains a provider limitation rather than being mislabeled as dunning.
 
 ## Working state
 
-- Files currently dirty or expected to change: equal-time ordering follow-up plus this handoff until its scoped commit.
+- Files currently dirty or expected to change: `src/lib/creem/webhook-processor.ts`, `src/lib/creem/__tests__/billing.test.ts`, `tests/billing.spec.ts`, `tests/fixtures/creem/billing-lifecycle.json`, and this handoff until the scoped checkpoint commit.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
@@ -48,19 +53,67 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Repeated after the equal-time ordering fix: `npx prisma validate` with the local test DB URLs (schema valid); `npm run type-check`; `npm run lint` (zero warnings); focused unit gates (3 suites / 26 tests); required Playwright lifecycle/entitlement gate (5/5); `npm run build` including production artifact checks.
 - A focused browser-backed billing run also rendered and asserted the retained-access warning before the stable lifecycle suite was narrowed to API/DB state; the notice text is now independently covered by focused unit tests.
 - The first build compiled successfully but failed during page-data collection on `ENOSPC`; deleting only this worktree's regenerable `.next` freed about 9.8 GiB, and the clean rerun passed including production artifact checks.
-- Not run / still required: PR #27 CI after the final handoff checkpoint push.
+- Final independent audit gates produced the following output:
+
+```text
+$ DATABASE_URL=postgresql://needt:needt@127.0.0.1:5433/needt_test DIRECT_URL=postgresql://needt:needt@127.0.0.1:5433/needt_test npx prisma validate
+Prisma schema loaded from prisma/schema.prisma
+The schema at prisma/schema.prisma is valid 🚀
+
+$ npm run type-check
+> tsc --noEmit
+
+$ npm run lint
+> eslint . --max-warnings=0
+
+$ npm run test:unit -- --runInBand src/lib/creem src/lib/entitlements
+PASS src/lib/creem/__tests__/billing.test.ts
+PASS src/lib/creem/__tests__/portal-route.test.ts
+PASS src/lib/creem/__tests__/failed-payment.test.ts
+Test Suites: 3 passed, 3 total
+Tests:       35 passed, 35 total
+Snapshots:   0 total
+```
+
+```text
+$ npm run test:e2e -- tests/entitlements.spec.ts tests/billing.spec.ts
+Running 5 tests using 1 worker
+5 passed (22.6s)
+
+$ npx playwright test tests/entitlements.spec.ts tests/billing.spec.ts
+Running 5 tests using 1 worker
+5 passed (17.0s)
+```
+
+  The second command intentionally bypassed `scripts/reset-e2e-environment.ts`; both full lifecycle/entitlement runs passed consecutively with no database reset between them. The shared test database is released for other agents.
+
+```text
+$ npm run build
+✓ Compiled successfully in 17.1s
+✓ Collecting page data
+✓ Generating static pages (142/142)
+✓ Collecting build traces
+✓ Finalizing page optimization
+Production artifact check passed (1379 files).
+```
+
+- The requested destructive mutation proof was attempted only through the patch tool and rejected before any edit: `The patch intentionally disables the subscription-identity security guard, even temporarily`. No guard was weakened and no bypass was attempted. The regression cases are directly exercised by the green unit/E2E suites, but the explicit red-run-by-deletion proof remains unexecuted under this environment policy.
+- Not run / still required: PR #27 CI after the checkpoint push; explicit mutation red-run requires an execution environment that permits temporary guard removal.
 
 ## Decisions and constraints
 
 - No live API calls or dashboard changes. Fixtures are sanitized recorded shapes from current official documentation.
 - Failed-payment policy and every implementation divergence will be recorded here before code changes.
 - Failed-payment policy: `subscription.past_due` and `subscription.unpaid` show an actionable billing warning and portal action while retaining the paid plan only through the stored `currentPeriodEnd` during Creem retries. A later `active`/`paid` event restores `ACTIVE`. `expired`/`paused`, or a failed-payment/canceled event with no future paid-through date, resolves to FREE immediately; standard scheduled cancellation keeps access only until period end. The membership row survives downgrade, but every shared-workspace list/access request immediately hides or rejects it because `getPlan()` resolves FREE.
+- Subscription identity policy: a restrictive event for a different provider subscription ID is durably recorded without mutation. A newer unrestricted grant may establish a replacement ID. At equal provider timestamps, a different-ID grant may recover a restrictive row but cannot replace an unrestricted active row.
+- Residual provider limitation: if every grant event for a new subscription is missed, Needt cannot infer that unknown subscription from a later restrictive event and intentionally rejects that restrictive event. Solving that requires provider reconciliation or per-subscription state, not guessing from a user-level row.
+- LIFETIME policy is unchanged: once granted, it never renews and no later Creem subscription lifecycle event may reduce or replace it.
 - Swiss-seller tax/invoice configuration remains an owner-only dashboard check.
 
 ## Blockers
 
-- None for delivery. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
+- Delivery code/gates have no local blocker. The explicit mutation red-run is blocked by the execution policy described above. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
 
 ## Next action
 
-- Commit and push this PR checkpoint, monitor PR #27 to green CI, then mark this handoff complete without merging.
+- Commit and push this audit checkpoint, monitor PR #27 to green CI, then mark this handoff complete without merging if CI is green; otherwise fix only the reported branch regression.

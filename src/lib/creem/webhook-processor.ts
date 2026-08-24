@@ -114,27 +114,40 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
       currentSubscription?.lastCreemEventAt &&
         currentSubscription.lastCreemEventAt > eventCreatedAt
     );
-    const weakerAtSameTimestamp = Boolean(
+    const differentSubscriptionId = Boolean(
+      currentSubscription?.creemSubscriptionId &&
+        mutation.creemSubscriptionId &&
+        currentSubscription.creemSubscriptionId !== mutation.creemSubscriptionId
+    );
+    const sameTimestamp = Boolean(
       currentSubscription?.lastCreemEventAt &&
         currentSubscription.lastCreemEventAt.getTime() ===
-          eventCreatedAt.getTime() &&
-        currentSubscription.creemSubscriptionId &&
+          eventCreatedAt.getTime()
+    );
+    const blockedSubscriptionIdentity = Boolean(
+      differentSubscriptionId &&
+        (restrictionLevel(mutation.data) > 0 ||
+          (sameTimestamp &&
+            currentSubscription &&
+            restrictionLevel(currentSubscription) === 0))
+    );
+    const weakerAtSameTimestamp = Boolean(
+      sameTimestamp &&
+        currentSubscription?.creemSubscriptionId &&
         currentSubscription.creemSubscriptionId ===
           mutation.creemSubscriptionId &&
-        restrictionLevel(mutation.data) <
-          restrictionLevel(currentSubscription)
+        restrictionLevel(mutation.data) < restrictionLevel(currentSubscription)
     );
-    const lifetimePreserved = Boolean(
-      currentSubscription?.plan === "LIFETIME" &&
-        mutation.data.plan !== "LIFETIME"
-    );
+    const lifetimePreserved = Boolean(currentSubscription?.plan === "LIFETIME");
     const outcome = olderThanAppliedEvent
       ? "stale_event"
-      : weakerAtSameTimestamp
-        ? "equal_time_weaker_event"
-        : lifetimePreserved
-          ? "lifetime_preserved"
-          : "processed";
+      : blockedSubscriptionIdentity
+        ? "subscription_identity_mismatch"
+        : weakerAtSameTimestamp
+          ? "equal_time_weaker_event"
+          : lifetimePreserved
+            ? "lifetime_preserved"
+            : "processed";
 
     const user = await transaction.user.findUnique({
       where: { id: userId },
@@ -162,6 +175,12 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
     if (olderThanAppliedEvent) {
       return { processed: false, reason: "stale_event" as const };
     }
+    if (blockedSubscriptionIdentity) {
+      return {
+        processed: false,
+        reason: "subscription_identity_mismatch" as const,
+      };
+    }
     if (weakerAtSameTimestamp) {
       return { processed: false, reason: "equal_time_weaker_event" as const };
     }
@@ -175,6 +194,8 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
       "subscription.paid",
       "subscription.past_due",
       "subscription.unpaid",
+      "subscription.canceled",
+      "subscription.scheduled_cancel",
       "subscription.update",
     ].includes(event.eventType);
     const subscriptionData =

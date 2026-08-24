@@ -33,11 +33,17 @@ let sharedWorkspaceId = "";
 let webhookRequest: APIRequestContext;
 
 function materializeFixture(fixture: RecordedFixture, userId: string) {
-  return JSON.parse(
+  const payload = JSON.parse(
     JSON.stringify(fixture)
       .replaceAll("{{USER_ID}}", userId)
       .replaceAll("{{PERIOD_END}}", periodEnd)
   ) as Record<string, unknown>;
+  payload.id = fixtureEventId(fixture);
+  return payload;
+}
+
+function fixtureEventId(fixture: RecordedFixture) {
+  return `${fixture.id}-${runId}`;
 }
 
 function sign(body: string) {
@@ -172,7 +178,7 @@ test.describe("recorded Creem billing lifecycle", () => {
     expect(response.status()).toBe(400);
     expect(
       await prisma.creemWebhookEvent.findUnique({
-        where: { id: recordedFixtures.proCheckout.id },
+        where: { id: fixtureEventId(recordedFixtures.proCheckout) },
       })
     ).toBeNull();
   });
@@ -188,18 +194,59 @@ test.describe("recorded Creem billing lifecycle", () => {
       status: SubscriptionStatus.ACTIVE,
     });
 
+    const beforeGrantReplay = await subscription(proUserId);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    expect(
+      (await sendWebhook(recordedFixtures.proCheckout, proUserId)).ok()
+    ).toBe(true);
+    const afterGrantReplay = await subscription(proUserId);
+    expect(afterGrantReplay.updatedAt.toISOString()).toBe(
+      beforeGrantReplay.updatedAt.toISOString()
+    );
+    expect(
+      await prisma.creemWebhookEvent.count({
+        where: { id: fixtureEventId(recordedFixtures.proCheckout) },
+      })
+    ).toBe(1);
+
     expect(
       (await sendWebhook(recordedFixtures.proActive, proUserId)).ok()
     ).toBe(true);
     expect(
-      (await sendWebhook(recordedFixtures.proCanceled, proUserId)).ok()
+      (
+        await sendWebhook(
+          recordedFixtures.proScheduledCancelWithoutPeriodEnd,
+          proUserId
+        )
+      ).ok()
+    ).toBe(true);
+    const scheduledCancel = await subscription(proUserId);
+    expect(scheduledCancel).toMatchObject({
+      plan: SubscriptionPlan.PRO,
+      status: SubscriptionStatus.ACTIVE,
+      cancelAtPeriodEnd: true,
+      lastCreemEventId: fixtureEventId(
+        recordedFixtures.proScheduledCancelWithoutPeriodEnd
+      ),
+    });
+    expect(scheduledCancel.currentPeriodEnd?.toISOString()).toBe(periodEnd);
+
+    expect(
+      (
+        await sendWebhook(
+          recordedFixtures.proCanceledWithoutPeriodEnd,
+          proUserId
+        )
+      ).ok()
     ).toBe(true);
     const canceled = await subscription(proUserId);
     expect(canceled).toMatchObject({
       plan: SubscriptionPlan.PRO,
       status: SubscriptionStatus.CANCELED,
       cancelAtPeriodEnd: true,
-      lastCreemEventId: recordedFixtures.proCanceled.id,
+      lastCreemEventId: fixtureEventId(
+        recordedFixtures.proCanceledWithoutPeriodEnd
+      ),
     });
     expect(canceled.currentPeriodEnd?.toISOString()).toBe(periodEnd);
 
@@ -226,11 +273,15 @@ test.describe("recorded Creem billing lifecycle", () => {
     ).toBe(true);
     expect(await subscription(proUserId)).toMatchObject({
       status: SubscriptionStatus.CANCELED,
-      lastCreemEventId: recordedFixtures.proCanceled.id,
+      lastCreemEventId: fixtureEventId(
+        recordedFixtures.proCanceledWithoutPeriodEnd
+      ),
     });
     expect(
       await prisma.creemWebhookEvent.findUniqueOrThrow({
-        where: { id: recordedFixtures.equalTimeActiveAfterCancel.id },
+        where: {
+          id: fixtureEventId(recordedFixtures.equalTimeActiveAfterCancel),
+        },
         select: { outcome: true },
       })
     ).toEqual({ outcome: "equal_time_weaker_event" });
@@ -240,11 +291,13 @@ test.describe("recorded Creem billing lifecycle", () => {
     ).toBe(true);
     expect(await subscription(proUserId)).toMatchObject({
       status: SubscriptionStatus.CANCELED,
-      lastCreemEventId: recordedFixtures.proCanceled.id,
+      lastCreemEventId: fixtureEventId(
+        recordedFixtures.proCanceledWithoutPeriodEnd
+      ),
     });
     expect(
       await prisma.creemWebhookEvent.findUniqueOrThrow({
-        where: { id: recordedFixtures.olderActive.id },
+        where: { id: fixtureEventId(recordedFixtures.olderActive) },
         select: { outcome: true },
       })
     ).toEqual({ outcome: "stale_event" });
@@ -252,7 +305,12 @@ test.describe("recorded Creem billing lifecycle", () => {
     const beforeReplay = await subscription(proUserId);
     await new Promise((resolve) => setTimeout(resolve, 25));
     expect(
-      (await sendWebhook(recordedFixtures.proCanceled, proUserId)).ok()
+      (
+        await sendWebhook(
+          recordedFixtures.proCanceledWithoutPeriodEnd,
+          proUserId
+        )
+      ).ok()
     ).toBe(true);
     const afterReplay = await subscription(proUserId);
     expect(afterReplay.updatedAt.toISOString()).toBe(
@@ -260,7 +318,9 @@ test.describe("recorded Creem billing lifecycle", () => {
     );
     expect(
       await prisma.creemWebhookEvent.count({
-        where: { id: recordedFixtures.proCanceled.id },
+        where: {
+          id: fixtureEventId(recordedFixtures.proCanceledWithoutPeriodEnd),
+        },
       })
     ).toBe(1);
 
@@ -296,6 +356,25 @@ test.describe("recorded Creem billing lifecycle", () => {
         })
       ).status()
     ).toBe(200);
+
+    for (const oldExpiry of [
+      recordedFixtures.equalTimeOldExpiryAfterResubscribe,
+      recordedFixtures.laterOldExpiryAfterResubscribe,
+    ]) {
+      expect((await sendWebhook(oldExpiry, proUserId)).ok()).toBe(true);
+      expect(await subscription(proUserId)).toMatchObject({
+        plan: SubscriptionPlan.PRO,
+        status: SubscriptionStatus.ACTIVE,
+        creemSubscriptionId: "sub_recorded_pro_2",
+        lastCreemEventId: fixtureEventId(recordedFixtures.proResubscribed),
+      });
+      expect(
+        await prisma.creemWebhookEvent.findUniqueOrThrow({
+          where: { id: fixtureEventId(oldExpiry) },
+          select: { outcome: true },
+        })
+      ).toEqual({ outcome: "subscription_identity_mismatch" });
+    }
 
     expect(
       (await sendWebhook(recordedFixtures.proPastDue, proUserId)).ok()
@@ -340,29 +419,25 @@ test.describe("recorded Creem billing lifecycle", () => {
       status: SubscriptionStatus.ACTIVE,
       creemSubscriptionId: null,
       interval: null,
-      lastCreemEventId: recordedFixtures.lifetimeCheckout.id,
+      lastCreemEventId: fixtureEventId(recordedFixtures.lifetimeCheckout),
     });
 
-    const unrelatedPro = materializeFixture(
-      recordedFixtures.proActive,
-      lifetimeUserId
-    );
-    unrelatedPro.id = "evt_recorded_pro_after_lifetime";
-    unrelatedPro.created_at =
-      recordedFixtures.lifetimeCheckout.created_at + 1_000;
-    const body = JSON.stringify(unrelatedPro);
-    const response = await webhookRequest.post("/api/billing/webhook", {
-      data: body,
-      headers: {
-        "content-type": "application/json",
-        "creem-signature": sign(body),
-      },
-    });
-    expect(response.ok()).toBe(true);
-    expect(await subscription(lifetimeUserId)).toMatchObject({
-      plan: SubscriptionPlan.LIFETIME,
-      status: SubscriptionStatus.ACTIVE,
-      lastCreemEventId: recordedFixtures.lifetimeCheckout.id,
-    });
+    for (const laterEvent of [
+      recordedFixtures.proAfterLifetime,
+      recordedFixtures.lifetimeExpired,
+    ]) {
+      expect((await sendWebhook(laterEvent, lifetimeUserId)).ok()).toBe(true);
+      expect(await subscription(lifetimeUserId)).toMatchObject({
+        plan: SubscriptionPlan.LIFETIME,
+        status: SubscriptionStatus.ACTIVE,
+        lastCreemEventId: fixtureEventId(recordedFixtures.lifetimeCheckout),
+      });
+      expect(
+        await prisma.creemWebhookEvent.findUniqueOrThrow({
+          where: { id: fixtureEventId(laterEvent) },
+          select: { outcome: true },
+        })
+      ).toEqual({ outcome: "lifetime_preserved" });
+    }
   });
 });
