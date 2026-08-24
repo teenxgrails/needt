@@ -3,7 +3,7 @@ id: 20260824-codex-push-config-visibility
 owner: codex
 branch: codex/push-config-visibility
 status: active
-updated: 2026-08-24T18:25:42Z
+updated: 2026-08-24T18:39:34Z
 objective: Make missing VAPID configuration observable once per process and prevent the settings UI from offering unavailable push delivery.
 ---
 
@@ -19,20 +19,20 @@ objective: Make missing VAPID configuration observable once per process and prev
 - Added a shared VAPID configuration reader, a once-per-process warning used at worker startup and delivery time, and secret-free availability responses from the notification settings API.
 - Disabled the existing browser-notification switch with an explanatory state when push delivery is unavailable, without persisting the server-derived boolean or clearing the saved preference during an outage.
 - Added configured/every-variable-missing tests, API/UI/worker startup contracts, deploy checklist guidance, and the unreleased changelog entry.
-- Rebased the single scoped implementation commit onto fresh `origin/main` at `40b9ecb` and reran every required local gate successfully.
+- Rebased the single scoped implementation commit onto `origin/main` at `40b9ecb`, then merged fresh `origin/main` at `0483d26` while preserving the prior PR head as an ancestor for the push-event security baseline.
 - Opened PR #24 and made its notification screenshot fixture explicitly model a configured deployment while retaining the real API response fields; unavailable behavior remains covered by focused API/UI unit tests.
 
 ## Working state
 
-- Files currently dirty or expected to change: `tests/visual/settings-tabs.spec.ts` and this handoff until the final commit amendment.
+- Files currently dirty or expected to change: this handoff until the fresh-main merge commit amendment.
 - Foreign changes that must remain untouched: every file in `/Users/lol/Needt` and every pre-existing worktree/handoff.
 
 ## Verification
 
 - Passed after the fresh `origin/main` rebase: `npm run type-check`; `npm run lint` with zero warnings; full `npm run test:unit -- --runInBand` (169 suites / 783 tests passed, 1 suite / 1 test skipped); `npm run build` (142 pages and 1,390 production artifacts); `npm run build:worker` (33.4 MB bundle).
 - Also passed: `npm run agent:context`; active-handoff overlap review; focused unit tests (5 suites / 10 tests); direct Playwright visual collection (69 tests); `npm run check:agent-handoffs` (24 handoffs); `git diff --check`.
-- Historical CI diagnosis: the first new-branch push had a zero baseline SHA, so Semgrep scanned pre-existing repository findings; the same commit's PR diff scan passed. The visual job found the expected unavailable-state delta in notification settings plus an unrelated flaky Today scroll assertion; no baseline was changed.
-- Not run / still required: force-push the rebased PR head and obtain green CI on that SHA.
+- Historical CI diagnosis: the first new-branch push had a zero baseline SHA, then the rebased force-push compared non-ancestor heads; both Semgrep runs surfaced unchanged repository findings while each corresponding PR diff scan passed. The visual job found the expected unavailable-state delta in notification settings plus an unrelated flaky Today scroll assertion; no baseline was changed.
+- Not run / still required: push the fresh-main merge commit and obtain green CI on that SHA.
 
 ## Decisions and constraints
 
@@ -47,4 +47,4 @@ objective: Make missing VAPID configuration observable once per process and prev
 
 ## Next action
 
-- Amend and force-push the rebased scoped commit, then monitor PR #24 to fully green CI.
+- Amend and push the fresh-main merge commit, then monitor PR #24 to fully green CI.

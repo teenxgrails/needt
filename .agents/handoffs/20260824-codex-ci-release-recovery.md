@@ -2,8 +2,8 @@
 id: 20260824-codex-ci-release-recovery
 owner: codex
 branch: codex/ci-release-recovery
-status: blocked
-updated: 2026-08-24T00:16:40Z
+status: complete
+updated: 2026-08-24T18:12:53Z
 objective: Repair the post-push CI failures, OAuth scope contract, and release documentation with full local gates and no production action.
 ---
 
@@ -26,10 +26,11 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - `34aa380 fix(release): address PR review blockers` checks out the immutable release SHA throughout the privileged workflow (including Docker metadata identity), rejects disabled Google Tasks creation/list access and records mapping failures, removes three owner-identified tautological tests, and documents the migration/provenance changes in `CHANGELOG.md`.
 - `437141f fix(ci): keep release SHA valid in job env` restores the direct immutable event-SHA expression for job-level deploy environment variables, where GitHub does not allow the step-only `env` context; focused workflow tests, type-check, and lint passed afterward.
 - Main was merged with red `visual-style`, so visual baseline drift accumulated unnoticed; this is a process defect, not a code defect.
+- Resolved: PR #20 merged as `e93d61a`; Linux baseline PR #22 merged as `c3e7a11`; CI-authority PR #21 merged as `eb81407` with the visual gate restored to fail closed.
 
 ## Working state
 
-- Implementation is committed in `34aa380`; only this handoff is expected to differ before its checkpoint commit.
+- Implementation is committed and merged; no files remain dirty for this completed workstream.
 - Foreign changes that must remain untouched: all dirty files in `/Users/lol/Needt`; every other registered worktree and active handoff; Coolify and production configuration.
 
 ## Verification
@@ -43,6 +44,7 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 - The privileged `docker-publish` workflow is intentionally gated to successful same-repository default-branch pushes, so its first executable validation remains after a future merge; PR #20 must not be merged without a separate owner instruction.
 - GitHub Actions runs `32675009171` and `32675011275` passed changes, security, schema-drift, quality-gates, and E2E on `e1ac173`; visual-style found 18 stale snapshots. Audit stopped before baseline acceptance because several Linux images predate `9c8f26e`: `settings-account` is onboarding from `86c3022`, Pages metadata controls are from `288acea`, and Space mobile escape controls are from `f7e34f04`.
 - Not run locally: E2E, visual, or any Docker image build. GitHub Actions ran E2E successfully on both events; visual/style heavyweight steps were skipped by the path filter.
+- Resolution evidence: GitHub Actions run `32759055915` passed E2E and `visual-style`; its production-server visual suite passed 65 tests with 4 intentional skips, including `secondary-surfaces` at desktop, tablet, and mobile, and its style suite passed 15/15.
 
 ## Decisions and constraints
 
@@ -52,8 +54,8 @@ objective: Repair the post-push CI failures, OAuth scope contract, and release d
 
 ## Blockers
 
-- Baseline acceptance is blocked by the owner's attribution rule: at least `settings-account` tablet/mobile, Pages mobile, and Space mobile are explained by pre-`9c8f26e` UI, not `9c8f26e..c800716`. No candidate images were copied into the repository.
+- None. The owner-approved Linux refresh and restored enforcing gate resolved the baseline-attribution blocker.
 
 ## Next action
 
-- Owner decision: either accept the confirmed pre-existing Linux baseline drift alongside the 16-24 Aug UI refresh, or keep the current baselines and repair the visual-test process separately. PR #20 remains open and unmerged.
+- None for this completed workstream.
