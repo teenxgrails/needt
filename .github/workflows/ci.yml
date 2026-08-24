@@ -3,6 +3,13 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: Branch to create from origin/main with Linux baselines only
+        required: true
+        default: codex/linux-visual-baselines
+        type: string
 
 concurrency:
   group: needt-ci-${{ github.ref }}
@@ -20,6 +27,7 @@ env:
 
 jobs:
   changes:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,8 +47,10 @@ jobs:
               - "design-refs/**"
               - "tailwind.config.*"
               - "tests/visual/**"
+              - ".github/workflows/ci.yml"
 
   security:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,6 +77,7 @@ jobs:
           fi
 
   quality-gates:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -110,6 +121,7 @@ jobs:
       - run: npm run check:collaboration-runtime
 
   schema-drift:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -144,6 +156,7 @@ jobs:
           --exit-code
 
   e2e:
+    if: github.event_name != 'workflow_dispatch'
     needs: [quality-gates, schema-drift]
     runs-on: ubuntu-latest
     services:
@@ -190,7 +203,104 @@ jobs:
             playwright-report
             test-results
 
+  update-linux-visual-baselines:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: needt
+          POSTGRES_PASSWORD: needt
+          POSTGRES_DB: needt_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U needt -d needt_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Verify the dispatch ref contains fresh main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor origin/main HEAD || {
+            echo "Dispatch ref is behind origin/main; rebase it before generating baselines." >&2
+            exit 1
+          }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx prisma generate && npx prisma migrate deploy
+      - name: Build visual test application
+        run: npm run build
+      - name: Update Linux visual baselines
+        env:
+          NEEDT_VISUAL_PRODUCTION_SERVER: "1"
+        run: npm run test:visual:update
+      - name: Commit Linux baselines on a clean main branch
+        env:
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+        run: |
+          set -euo pipefail
+          case "$TARGET_BRANCH" in
+            ""|main|master)
+              echo "Target must be a non-default codex/* branch." >&2
+              exit 1
+              ;;
+            codex/*) ;;
+            *)
+              echo "Target must use the codex/* prefix." >&2
+              exit 1
+              ;;
+          esac
+          git check-ref-format --branch "$TARGET_BRANCH" >/dev/null
+
+          if git ls-remote --exit-code --heads origin "refs/heads/$TARGET_BRANCH" >/dev/null 2>&1; then
+            echo "Remote branch $TARGET_BRANCH already exists; choose a new target_branch." >&2
+            exit 1
+          fi
+
+          git status --porcelain --untracked-files=all | while IFS= read -r entry; do
+            path="${entry:3}"
+            case "$path" in
+              tests/visual/*-snapshots/*-linux.png) ;;
+              *)
+                echo "Baseline update touched forbidden path: $path" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          git switch --create "$TARGET_BRANCH" origin/main
+          git add -- ':(glob)tests/visual/**/*-linux.png'
+
+          if git diff --cached --quiet; then
+            echo "Linux baselines already match; nothing to commit."
+            exit 0
+          fi
+
+          changed_count="$(git diff --cached --name-only | wc -l | tr -d ' ')"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(visual): refresh Linux baselines"
+          git push --set-upstream origin "$TARGET_BRANCH"
+          echo "Updated $changed_count CI-authoritative Linux baseline files." >> "$GITHUB_STEP_SUMMARY"
+
   visual-style:
+    if: github.event_name != 'workflow_dispatch'
     needs: [changes, quality-gates]
     runs-on: ubuntu-latest
     services:
@@ -212,7 +322,7 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - if: needs.changes.outputs.ui == 'true'
         uses: actions/setup-node@v4
         with:
