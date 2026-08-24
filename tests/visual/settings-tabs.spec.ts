@@ -51,6 +51,21 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
   expect(themeResponse.ok()).toBeTruthy();
 
   for (const [tab, label] of SETTINGS_TABS) {
+    if (tab === "notifications") {
+      // This baseline covers a configured deployment deterministically. The
+      // unavailable state has focused API and UI contract tests of its own.
+      await page.route("**/api/notification-settings", async (route) => {
+        const response = await route.fetch();
+        const settings = (await response.json()) as Record<string, unknown>;
+        expect(typeof settings.webPushConfigured).toBe("boolean");
+
+        await route.fulfill({
+          response,
+          json: { ...settings, webPushConfigured: true },
+        });
+      });
+    }
+
     await page.goto(`/settings#${tab}`, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(new RegExp(`#${tab}$`));
 
@@ -68,5 +83,9 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
 
     await settleSettings(page);
     await expect(page).toHaveScreenshot(`settings-${tab}.png`);
+
+    if (tab === "notifications") {
+      await page.unroute("**/api/notification-settings");
+    }
   }
 });

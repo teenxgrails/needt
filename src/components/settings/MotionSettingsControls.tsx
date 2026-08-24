@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 
 import { Switch } from "@/components/ui/switch";
+
 import { cn } from "@/lib/utils";
 
 export function MotionSwitchRow({
@@ -11,12 +12,14 @@ export function MotionSwitchRow({
   onCheckedChange,
   icon,
   indented = false,
+  disabled = false,
 }: {
   label: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   icon?: React.ReactNode;
   indented?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div
@@ -31,6 +34,7 @@ export function MotionSwitchRow({
       <Switch
         checked={checked}
         onCheckedChange={onCheckedChange}
+        disabled={disabled}
         className="h-[18px] w-[32px] [&>span]:h-3.5 [&>span]:w-3.5 [&>span]:data-[state=checked]:translate-x-3.5"
       />
     </div>

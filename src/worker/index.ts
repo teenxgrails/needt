@@ -4,6 +4,7 @@ import { collectOperationsHealth } from "@/services/operations/health";
 import {
   deliverTaskReminder,
   findDueReminderIds,
+  warnIfVapidConfigurationIsMissingOnce,
 } from "@/services/reminders/reminder-delivery";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 import { executeSchedulingRun } from "@/services/scheduling/runs";
@@ -259,6 +260,7 @@ for (const worker of workers) {
 }
 
 async function start(): Promise<void> {
+  await warnIfVapidConfigurationIsMissingOnce();
   if (isGitBuildSha(BUILD_SHA)) {
     releaseHeartbeatRedis =
       getRedisConnection() as unknown as ReleaseHealthRedis;

@@ -41,6 +41,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Notification settings now report when browser push delivery is unavailable,
+  while reminder workers warn once per process with the missing VAPID variable
+  names.
 - Google sign-in now requests only basic identity scopes; Calendar access is
   requested separately when connecting a calendar, while Google Tasks sync is
   explicitly deferred with an actionable connection error.
