@@ -25,16 +25,13 @@ describe("visual baseline workflow authority", () => {
     expect(workflow).toContain("Baseline update touched forbidden path: $path");
   });
 
-  it("keeps visual drift reported but temporarily non-blocking", () => {
+  it("fails closed when visual drift is detected", () => {
     const enforcementStep = workflow.slice(
       workflow.indexOf("- name: Enforce visual gate")
     );
 
-    expect(enforcementStep).toContain(
-      "Restore `exit 1` after the CI-generated Linux baseline refresh"
-    );
-    expect(enforcementStep).not.toContain("run: exit 1");
-    expect(enforcementStep).toContain(
+    expect(enforcementStep).toContain("run: exit 1");
+    expect(enforcementStep).not.toContain(
       "Visual/style drift is temporarily non-blocking"
     );
   });
