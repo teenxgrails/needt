@@ -2,8 +2,8 @@
 id: 20260824-codex-admin-system-settings-route
 owner: codex
 branch: codex/admin-system-settings-route
-status: active
-updated: 2026-08-24T18:51:33Z
+status: complete
+updated: 2026-08-24T19:04:22Z
 objective: Make the system credential settings reachable only to administrators and prevent admin-only settings components from becoming orphaned again.
 ---
 
@@ -25,15 +25,15 @@ objective: Make the system credential settings reachable only to administrators 
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff; the new admin page and browser spec; the existing admin navigation/middleware/settings component boundaries; UI-contract script; focused admin-page unit test; `CHANGELOG.md`.
+- Files currently dirty or expected to change: none after this completion checkpoint is committed.
 - Foreign changes that must remain untouched: every file in `/Users/lol/Needt` and every other registered worktree/handoff.
 
 ## Verification
 
 - Passed on final base `origin/main` `0483d262`: `npm run type-check`; `npm run lint`; `npm run test:unit` (165 suites, 777 tests); `npm run check:ui-contracts`; `npm run check:branding`; `npm run check:agent-handoffs`; `npm run build`; `npm run build:worker`; `npm run build:collaboration`; `npm run test:e2e` (27 passed, 3 skipped); `npm run test:style` (15 passed).
 - Browser verification: seeded admin sees the Google/Outlook credential form; seeded FREE non-admin remains on `/admin/system`, sees the access-denied message, and has no form in the DOM.
-- `npm run test:visual` on final main reached the real Playwright suite and reproduced Darwin-only Space baseline drift in unchanged surfaces (`space.png` and `space-light.png`, 1% pixel ratio); stopped before unrelated remaining projects. No baseline was updated. Linux snapshots are CI-authoritative per `.github/workflows/ci.yml` and will be verified on the PR SHA.
-- Still required: force-update PR #26 with the final rebase and pass required CI, including the authoritative Linux visual job.
+- `npm run test:visual` on final main reached the real Playwright suite and reproduced Darwin-only Space baseline drift in unchanged surfaces (`space.png` and `space-light.png`, 1% pixel ratio); stopped before unrelated remaining projects. No baseline was updated.
+- PR #26 (`https://github.com/teenxgrails/needt/pull/26`) implementation SHA `7c2c3455fb67f38304eb375108c4f0243199ded6` passed pull-request CI run `32764858150`: security, schema drift, quality gates, E2E, and authoritative Linux visual/style are green.
 
 ## Decisions and constraints
 
@@ -48,4 +48,4 @@ objective: Make the system credential settings reachable only to administrators 
 
 ## Next action
 
-- Amend this final-base checkpoint into the scoped commit, force-update PR #26, and monitor required CI without merging.
+- Reviewers may review and merge PR #26; this workstream must not merge or deploy it.
