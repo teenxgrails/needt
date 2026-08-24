@@ -62,7 +62,7 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
         expect(typeof settings.webPushEnabled).toBe("boolean");
 
         await route.fulfill({
-          response,
+          status: response.status(),
           json: {
             ...settings,
             webPushConfigured: true,

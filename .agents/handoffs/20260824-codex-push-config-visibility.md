@@ -3,7 +3,7 @@ id: 20260824-codex-push-config-visibility
 owner: codex
 branch: codex/push-config-visibility
 status: active
-updated: 2026-08-24T18:52:40Z
+updated: 2026-08-24T19:05:11Z
 objective: Make missing VAPID configuration observable once per process and prevent the settings UI from offering unavailable push delivery.
 ---
 
@@ -33,8 +33,9 @@ objective: Make missing VAPID configuration observable once per process and prev
 - Also passed: `npm run agent:context`; active-handoff overlap review; focused unit tests (5 suites / 10 tests); direct Playwright visual collection (69 tests); `npm run check:agent-handoffs` (24 handoffs); `git diff --check`.
 - Historical CI diagnosis: the first new-branch push had a zero baseline SHA, then the rebased force-push compared non-ancestor heads; both Semgrep runs surfaced unchanged repository findings while each corresponding PR diff scan passed. The visual job found the expected unavailable-state delta in notification settings plus an unrelated flaky Today scroll assertion; no baseline was changed.
 - Final-SHA CI on `8c58026` passed changes, schema drift, quality gates, security, and E2E for both push and PR events. Visual failed only the deterministic notification screenshots because the fixture set availability true but retained the API-masked false enabled preference.
-- Follow-up fixture assertions now require both server boolean fields and override only `webPushConfigured` and `webPushEnabled` to true; local `npm run lint`, `npm run type-check`, and `git diff --check` pass. No baseline changed.
-- Not run / still required: commit and push the scoped fixture correction, then obtain fully green CI on the new SHA.
+- Follow-up `f1eecc8` asserted both server boolean fields and attempted to override only `webPushConfigured` and `webPushEnabled`. Both CI events again passed changes, schema, quality, security, and E2E, but the received screenshots were byte-for-byte equivalent to the prior unavailable state: combining `response` with `json` in `route.fulfill` retained the fetched body instead of the JSON override.
+- The pending correction now fulfills with the fetched status plus the spread real JSON fields and the two explicit booleans, without passing the original response body. Local `npm run lint`, `npm run type-check`, and `git diff --check` pass. No baseline changed.
+- Not run / still required: commit and push the corrected fulfill call, then obtain fully green CI on the new SHA.
 
 ## Decisions and constraints
 
@@ -49,4 +50,4 @@ objective: Make missing VAPID configuration observable once per process and prev
 
 ## Next action
 
-- Commit and push the scoped visual-fixture correction, then monitor PR #24 to fully green CI.
+- Commit and push the corrected visual-fixture fulfill call, then monitor PR #24 to fully green CI.
