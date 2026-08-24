@@ -3,7 +3,7 @@ id: 20260824-codex-close-stale-handoffs
 owner: codex
 branch: codex/close-stale-handoffs
 status: complete
-updated: 2026-08-24T18:17:40Z
+updated: 2026-08-24T18:26:04Z
 objective: Close obsolete delivery handoffs using current Git ancestry and green visual CI evidence.
 ---
 
@@ -30,6 +30,7 @@ objective: Close obsolete delivery handoffs using current Git ancestry and green
 ## Verification
 
 - Passed on Node 22.16.0: `npm run check:agent-handoffs` (24 handoffs); `npm run lint` (zero warnings); scoped ancestry checks; current schema model checks; GitHub Actions job/log inspection; `git diff --check`.
+- PR run `32761594446` passed security, schema, quality, E2E, and visual/style. The first branch push run `32761557777` passed every non-security job; its zero `github.event.before` forced a full-repository Semgrep scan that reported 39 pre-existing findings instead of a scoped regression.
 - Not run / still required: none for this documentation-only workstream.
 
 ## Decisions and constraints
