@@ -52,16 +52,22 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
 
   for (const [tab, label] of SETTINGS_TABS) {
     if (tab === "notifications") {
-      // This baseline covers a configured deployment deterministically. The
-      // unavailable state has focused API and UI contract tests of its own.
+      // This baseline covers a configured deployment and its seeded enabled
+      // preference deterministically. Focused API/UI tests cover unavailable
+      // deployments; every other real settings field remains unchanged here.
       await page.route("**/api/notification-settings", async (route) => {
         const response = await route.fetch();
         const settings = (await response.json()) as Record<string, unknown>;
         expect(typeof settings.webPushConfigured).toBe("boolean");
+        expect(typeof settings.webPushEnabled).toBe("boolean");
 
         await route.fulfill({
           response,
-          json: { ...settings, webPushConfigured: true },
+          json: {
+            ...settings,
+            webPushConfigured: true,
+            webPushEnabled: true,
+          },
         });
       });
     }
