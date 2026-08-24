@@ -3,7 +3,7 @@ id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
 status: active
-updated: 2026-08-24T22:35:54Z
+updated: 2026-08-24T22:47:36Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -42,10 +42,11 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Every recorded webhook event ID is namespaced by the Playwright `runId`; retries keep the same ID within one run, while a retried worker/run cannot collide with abandoned receipts from an earlier run. The tautological mocked replay unit test was removed; a real checkout grant replay now proves the subscription row is not updated twice.
 - Current Creem docs distinguish `paused` from `past_due`/`unpaid` and invoke access revocation for paused/expired states. Needt therefore keeps immediate FREE on `paused`; a focused test proves a later same-ID `subscription.update(status=active)` restores access. Creem does not document which webhook its resume endpoint emits, so webhook reconciliation remains a provider limitation rather than being mislabeled as dunning.
 - PR CI run `32784182783` passed schema drift, quality gates, security, and the full E2E job. Its visual/style suites had 61 passes plus one unrelated `focus-dark` retry, but the gate correctly rejected three stable `settings-billing` Linux diffs caused by this PR enabling the Creem test configuration. The generated desktop/tablet/mobile candidates were reviewed individually: only the obsolete unconfigured warning disappeared and checkout controls became enabled, with correct layout at all three widths. Only those three Linux billing baselines were accepted; the flaky Focus candidate was byte-identical to the existing baseline and was not changed.
+- Committed the reviewed Linux billing baselines as `74a2d02`. Fresh PR CI run `32785468174` passed schema drift, quality gates, security, full E2E (`5m16s`), and visual/style (`8m1s`) on that SHA. PR #27 is green and remains unmerged.
 
 ## Working state
 
-- Files currently dirty or expected to change: the three reviewed Linux `settings-billing` snapshots and this handoff until the visual-baseline checkpoint commit.
+- Files currently dirty or expected to change: this handoff until the final CI-evidence checkpoint commit.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
@@ -99,7 +100,7 @@ Production artifact check passed (1379 files).
 ```
 
 - The requested destructive mutation proof was attempted only through the patch tool and rejected before any edit: `The patch intentionally disables the subscription-identity security guard, even temporarily`. No guard was weakened and no bypass was attempted. The regression cases are directly exercised by the green unit/E2E suites, but the explicit red-run-by-deletion proof remains unexecuted under this environment policy.
-- PR CI evidence before the reviewed baseline checkpoint: run `32784182783` passed every non-visual job; `visual-style` failed only because the three intentional Linux billing candidates had not yet been accepted. A fresh CI run is required after the baseline checkpoint push. The explicit mutation red-run still requires an execution environment that permits temporary guard removal.
+- PR CI evidence after the reviewed baseline checkpoint: run `32785468174` completed successfully on `74a2d027355aa5406d75fe9b89196e24dc85335a`; schema drift, quality gates, security, full E2E, and visual/style all passed. The explicit mutation red-run still requires an execution environment that permits temporary guard removal.
 
 ## Decisions and constraints
 
@@ -117,4 +118,4 @@ Production artifact check passed (1379 files).
 
 ## Next action
 
-- Commit and push the three reviewed Linux billing baselines, monitor the fresh PR #27 CI to green, then mark this handoff complete without merging if CI is green; otherwise fix only the reported branch regression.
+- In a policy-permitted environment, temporarily remove the subscription-identity guard, run the focused old-subscription expiry regressions to capture the required red result, restore the guard, rerun them green, and then mark this handoff complete. No code, CI, merge, deploy, dashboard, or shared-test-DB action otherwise remains.
