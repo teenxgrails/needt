@@ -2,8 +2,8 @@
 id: 20260823-codex-release-revision2
 owner: codex
 branch: codex/terra-launch-l0
-status: blocked
-updated: 2026-08-23T18:48:49Z
+status: complete
+updated: 2026-08-24T18:12:53Z
 objective: Reconcile revision-2 release work with origin/main before a separately approved production push.
 ---
 
@@ -23,6 +23,7 @@ objective: Reconcile revision-2 release work with origin/main before a separatel
 - Owner confirmed Source commit availability by redeploying web; its live health reports a valid 40-character SHA instead of `local`. Owner also created the DNS-only collaboration A record.
 - Reset the isolated local `main` from the superseded `3ba2dc7` direction to `origin/main` at `db8f996d`, then merged that production line into this branch as `77afc6d`.
 - Resolved the package/workflow conflicts manually: collaboration remains Node-compatible ESM with the `createRequire` banner; the release workflow keeps the parallel web/image path, Sentry secrets, repair-safe web bootstrap, private worker heartbeat, and three-runtime SHA parity.
+- Resolved: release checkpoint `c800716` is an ancestor of `origin/main`; plan 12 records the promoted production web and worker at SHA `e93d61a` with collaboration healthy.
 
 ## Working state
 
@@ -39,6 +40,7 @@ objective: Reconcile revision-2 release work with origin/main before a separatel
 - Promotion checkpoint: public resolver `1.1.1.1` resolves `collaboration.use.needt.app` to `95.216.213.174`; the local resolver has not propagated it yet, and collaboration is expected to remain unavailable until its exited container is redeployed from this branch.
 - Merge result `77afc6d`: focused workflow/Docker tests passed (3 suites, 29 tests); `npm run type-check`; `npm run lint`; full unit suite (160 suites, 756 passed, 1 skipped); `npm run build` plus production artifact verification (1,389 files); `npm run build:worker`; `npm run build:collaboration`; and `npm run check:collaboration-runtime` all passed.
 - Not run per owner instruction: Docker, E2E, and visual suites. Production health/parity remains a post-push verification.
+- Resolution evidence: `git merge-base --is-ancestor c800716 origin/main` exits 0; the production verification in plan 12 supersedes the former push-authorization blocker.
 
 ## Decisions and constraints
 
@@ -48,8 +50,8 @@ objective: Reconcile revision-2 release work with origin/main before a separatel
 
 ## Blockers
 
-- The merge and requested local gates are complete. The eventual target command remains separately gated by the owner: `git push origin main`. Never push to `fork-tlegros1`.
+- None. The separately authorized promotion and production health/parity verification have completed.
 
 ## Next action
 
-- Owner reviews the final gate report and explicitly authorizes the production push; then fast-forward the isolated local `main` to this release SHA and run `git push origin main`.
+- None for this completed workstream.
