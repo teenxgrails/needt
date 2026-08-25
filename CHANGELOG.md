@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added an admin-only System settings route and account-menu links for system
+  credentials and operations, with a contract check preventing orphaned
+  admin-only settings components.
 - L0 release line is tagged `v0.4.0`; production image verification is provided
   by the required `docker-publish` CI workflow on the same SHA rather than a
   local Docker Desktop build.
@@ -90,6 +93,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made the admin System settings page SSR-safe and restored its middleware and
+  database-backed authorization checks, including protection against stale
+  deactivated-admin sessions.
+- Made Creem webhook handling replay-safe and order-aware, preserved paid
+  access only through documented retry/grace periods, and surfaced actionable
+  failed-payment status in Billing settings.
 - Restored Prisma migration/schema compatibility without rewriting user data:
   retained five legacy AI indexes and promoted the existing Page–tag join
   unique pair to Prisma's composite primary-key representation.

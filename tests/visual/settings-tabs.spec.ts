@@ -16,7 +16,6 @@ const SETTINGS_TABS = [
   ["privacy", "Privacy"],
   ["ai", "AI Assistant"],
   ["account", "Account settings"],
-  ["billing", "Billing"],
 ] as const;
 
 async function settleSettings(page: import("@playwright/test").Page) {
@@ -49,6 +48,40 @@ async function prepareSettings(page: import("@playwright/test").Page) {
   expect(themeResponse.ok()).toBeTruthy();
 }
 
+test("Billing stays visually consistent", async ({ page }) => {
+  await page.route("**/api/billing", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        configured: true,
+        plan: "FREE",
+        status: "ACTIVE",
+        interval: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        canManageBilling: false,
+        usage: {
+          calendars: { used: 0, limit: 1 },
+          autoScheduledTasks: { used: 0, limit: 15 },
+          boards: { used: 1, limit: 1 },
+          mailboxes: { used: 1, limit: 0 },
+          aiActions: { used: 0, limit: 0 },
+        },
+      }),
+    });
+  });
+  await prepareSettings(page);
+  await page.goto("/settings#billing", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/#billing$/);
+  await expect(
+    page.getByRole("heading", { name: "Billing", level: 1 })
+  ).toBeVisible();
+  await expect(page.getByText("Choose a plan", { exact: true })).toBeVisible();
+  await settleSettings(page);
+  await expect(page).toHaveScreenshot("settings-billing.png");
+});
+
 test("every Settings tab stays visually consistent", async ({ page }) => {
   test.setTimeout(360_000);
   await prepareSettings(page);
@@ -60,14 +93,6 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
     await expect(
       page.getByRole("heading", { name: label, level: 1 })
     ).toBeVisible();
-
-    if (tab === "billing") {
-      await expect(
-        page
-          .getByText("Choose a plan", { exact: true })
-          .or(page.getByText("Billing details are temporarily unavailable"))
-      ).toBeVisible();
-    }
 
     await settleSettings(page);
     await expect(page).toHaveScreenshot(`settings-${tab}.png`);
@@ -96,4 +121,44 @@ test("unavailable browser push stays honest in Settings", async ({ page }) => {
 
   await settleSettings(page);
   await expect(page).toHaveScreenshot("settings-notifications.png");
+});
+
+test("Billing renders the failed-payment recovery path", async ({ page }) => {
+  await page.route("**/api/billing", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        configured: true,
+        plan: "PRO",
+        status: "PAYMENT_FAILED",
+        interval: "month",
+        currentPeriodEnd: "2099-09-01T00:00:00.000Z",
+        cancelAtPeriodEnd: false,
+        canManageBilling: true,
+        usage: {
+          calendars: { used: 2, limit: null },
+          autoScheduledTasks: { used: 4, limit: null },
+          boards: { used: 1, limit: null },
+          mailboxes: { used: 1, limit: 3 },
+          aiActions: { used: 3, limit: 250 },
+        },
+      }),
+    });
+  });
+  await signInVisualUser(page);
+  await page.goto("/settings#billing", { waitUntil: "domcontentloaded" });
+
+  const failedPaymentAlert = page
+    .getByRole("alert")
+    .filter({ hasText: "Creem could not collect this payment." });
+  await expect(failedPaymentAlert).toContainText(
+    "Creem could not collect this payment."
+  );
+  await expect(failedPaymentAlert).toContainText(
+    "Update your payment method in Manage billing."
+  );
+  await expect(
+    page.getByRole("button", { name: "Manage billing" })
+  ).toBeVisible();
 });

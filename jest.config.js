@@ -12,7 +12,7 @@ const config = {
     // `tsc --noEmit`, so tests only need transpilation.
     "^.+\\.tsx?$": [
       "ts-jest",
-      { isolatedModules: true, tsconfig: { jsx: "react-jsx" } },
+      { isolatedModules: true, tsconfig: "<rootDir>/tsconfig.jest.json" },
     ],
   },
 };

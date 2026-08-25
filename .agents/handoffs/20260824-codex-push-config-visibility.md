@@ -2,8 +2,8 @@
 id: 20260824-codex-push-config-visibility
 owner: codex
 branch: codex/push-config-visibility
-status: complete
-updated: 2026-08-25T23:25:11Z
+status: active
+updated: 2026-08-25T23:42:39Z
 objective: Preserve the saved push preference across missing server configuration, prove warning behavior by execution, and align visual coverage with real server state.
 ---
 
@@ -24,7 +24,7 @@ objective: Preserve the saved push preference across missing server configuratio
 
 ## Working state
 
-- Implementation, tests, darwin baselines, and reviewed Ubuntu baselines are committed through `5d1b732`; the worktree is clean apart from this final handoff checkpoint.
+- Implementation, tests, and reviewed darwin/Ubuntu baselines are committed through `00bcecf`. Fresh `origin/main` is being merged to restore PR mergeability; only `jest.config.js` and `tests/visual/settings-tabs.spec.ts` conflicted, and both are resolved without dropping either workstream.
 - Foreign changes that must remain untouched: every file in `/Users/lol/Needt` and every pre-existing worktree/handoff.
 
 ## Verification
@@ -48,6 +48,8 @@ objective: Preserve the saved push preference across missing server configuratio
 - Final Node 22 code gates at `f555aa2`: `npm run type-check` passed; `npm run lint` passed; full `npm run test:unit -- --runInBand` passed (170 suites / 792 tests, 1 suite / 1 test skipped); `npm run build` passed (142 pages / 1,390 artifacts); `npm run build:worker` passed (33.4 MB).
 - CI run `32907686297` for `66b3cba` passed quality, security, schema drift, and E2E. Visual failed only tablet/mobile notification screenshots; the official Ubuntu candidates were manually reviewed and imported. Desktop Linux was byte-identical and left unchanged.
 - Final CI run `32909210139` attempt 2 on `5d1b732` passed changes, quality gates, schema drift, security, E2E, visual (68 passed / 4 skipped), and style (15/15). Attempt 1 had one unrelated flaky `focus-dark.png` mismatch; its last-failed candidate rerun and the clean failed-job rerun both passed without a baseline change.
+- Current-head CI run `32910707598` on `00bcecf` also passed every required job. GitHub then reported three newer `main` commits and two content conflicts; the merge resolution keeps main's shared `tsconfig.jest.json`, both Billing visual cases, and this workstream's isolated Notifications visual case.
+- Post-resolution Node 22 checks pass: Prisma client regeneration plus `npm run type-check`; `npm run lint`; focused push tests (5 suites / 15 tests); full unit (174 suites / 826 tests, 1 suite / 1 test skipped); `npm run build` (142 pages / 1,393 artifacts); `npm run build:worker` (33.4 MB).
 
 ## Decisions and constraints
 
@@ -62,4 +64,4 @@ objective: Preserve the saved push preference across missing server configuratio
 
 ## Next action
 
-- Release owner can review and merge PR #24; production VAPID configuration remains a separate owner-controlled operation.
+- Commit/push the merge and confirm CI on the mergeable head; production VAPID configuration remains a separate owner-controlled operation.
