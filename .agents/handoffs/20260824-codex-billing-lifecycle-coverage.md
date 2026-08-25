@@ -2,8 +2,8 @@
 id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
-status: active
-updated: 2026-08-25T18:35:48Z
+status: complete
+updated: 2026-08-25T18:51:58Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -52,6 +52,7 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Independent adversarial review found no implementation showstopper. It confirmed one spec limitation: `paid(A) -> rejected paid(B) -> expired(A)` necessarily ends FREE without a later distinct B grant or new deferred-state architecture, because B is intentionally neither adopted nor stored in a cursor and its receipt prevents replay. The stateful test therefore proves no rejected B cursor, terminal A, then recovery from a distinct later B grant; no unrequested pending-subscription model was invented.
 - Optional Round 3 triage: local CREEM defaults now preserve explicitly exported values. `mailboxes: { used: 1, limit: 0 }` remains because the visual seed really creates a mailbox before a FREE/downgraded state and entitlement reporting permits over-limit legacy usage. Failed-payment rendered coverage remains at all three viewports to retain responsive proof.
 - The requested E2E gate passed 5/5 against healthy shared Postgres/Redis. The shared test database is released again for other agents.
+- Committed Round 3 as `8672da103545f268012bb4d4e3f0e69513d6279e` and pushed it to PR #27. Duplicate CI runs `32884954764` and `32884967661` both passed changes, schema drift, quality gates, security, full E2E (`5m10s` / `6m02s`), and visual/style (`10m44s` / `10m28s`). Linux baseline update jobs skipped as expected.
 - Follow-up review reproduced two remaining identity holes in `webhook-processor.ts`: a later unrestricted event from a foreign subscription can replace an active paid identity before a restrictive event revokes it, and null incoming/stored subscription IDs bypass the identity comparison. The current user-row cursor cannot order independent provider subscriptions.
 - Decision: add an additive per-user/per-Creem-subscription cursor. Round 3 supersedes the original projection rule: rejected foreign events are recorded as receipts but never advance a cursor, and a different-ID grant may establish identity only when the stored ID is absent or its own cursor is terminal level 5. Recurring mutations without an incoming subscription ID fail closed; a restrictive event cannot claim a legacy paid row whose stored ID is null. Lifetime checkout remains the intentional null-ID exception.
 - Visual decision: keep the local Creem environment injection because it deliberately matches CI and the configured product state; regenerate and hand-review the three Darwin Billing baselines. Add a browser-rendered failed-payment alert assertion without a new snapshot, so both Darwin and Linux exercise the state without duplicating baseline files.
@@ -64,7 +65,7 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Reclaimed host disk without touching source, `.env` files, user data, or anti-detect profiles: removed this worktree's `.next`, two other completed/regenerable worktree `.next` directories, npm/Puppeteer/uv/pip/Selenium caches, and AdsPower's verified `source/cache` directory while AdsPower was closed. Free space recovered from about 117 MiB to 18 GiB. GoLogin/Incogniton profile data and caches remain untouched.
 - Committed the follow-up as `123ac99403359ebba900a7c1bd88fa62c2db4e6e` and pushed it to PR #27. CI runs `32792517446` and `32792522560` both passed schema drift, quality gates, security, full E2E (`7m07s` / `5m11s`), and Linux visual/style (`8m24s` / `8m15s`).
 - After CI removed the no-longer-needed local Playwright browser cache (971 MiB) and this completed worktree's `.next` (3.1 GiB). Host free space is now 24 GiB. The healthy shared Postgres/Redis E2E stack is released for other agents.
-- Files currently dirty or expected to change: this handoff, `src/lib/creem/webhook-processor.ts`, `src/lib/creem/__tests__/billing.test.ts`, and zero-cost fixture corrections in `tests/e2e/environment.ts` / `tests/visual/settings-tabs.spec.ts` if they remain safely scoped.
+- Files currently dirty or expected to change: this handoff only for the completion checkpoint. The implementation commit is clean and pushed.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
@@ -172,7 +173,7 @@ Production artifact check passed (1379 files).
 ```
 
 - The requested destructive mutation proof was attempted only through the patch tool and rejected before any edit: `The patch intentionally disables the subscription-identity security guard, even temporarily`. No guard was weakened and no bypass was attempted. The regression cases are directly exercised by the green unit/E2E suites, but the explicit red-run-by-deletion proof remains unexecuted under this environment policy.
-- PR CI evidence after the reviewed baseline checkpoint: run `32785468174` completed successfully on `74a2d027355aa5406d75fe9b89196e24dc85335a`; schema drift, quality gates, security, full E2E, and visual/style all passed. The explicit mutation red-run still requires an execution environment that permits temporary guard removal.
+- PR CI evidence after the reviewed baseline checkpoint: run `32785468174` completed successfully on `74a2d027355aa5406d75fe9b89196e24dc85335a`; schema drift, quality gates, security, full E2E, and visual/style all passed. Round 3 CI runs `32884954764` and `32884967661` completed successfully on `8672da103545f268012bb4d4e3f0e69513d6279e`; both full E2E and both visual/style jobs passed. The explicit mutation red-run still requires an execution environment that permits temporary guard removal.
 
 ## Decisions and constraints
 
@@ -186,8 +187,8 @@ Production artifact check passed (1379 files).
 
 ## Blockers
 
-- No local code blocker remains; Round 3 CI has not yet run. The full local visual suite previously encountered unrelated shared-fixture failures, but Billing is green 6/6 on Darwin and the last two complete Linux visual/style CI jobs passed. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
+- No local code or CI blocker remains. The full local visual suite previously encountered unrelated shared-fixture failures, but Billing is green 6/6 on Darwin and both Round 3 Linux visual/style CI jobs passed. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
 
 ## Next action
 
-- Validate the handoff and final diff, commit the four owned files, push PR #27, and monitor its CI to green.
+- Review and merge PR #27. The shared test database is released; no production or Creem dashboard action was taken.
