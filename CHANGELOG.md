@@ -87,6 +87,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made Creem webhook handling replay-safe and order-aware, preserved paid
+  access only through documented retry/grace periods, and surfaced actionable
+  failed-payment status in Billing settings.
 - Restored Prisma migration/schema compatibility without rewriting user data:
   retained five legacy AI indexes and promoted the existing Page–tag join
   unique pair to Prisma's composite primary-key representation.

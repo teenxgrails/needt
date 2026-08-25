@@ -141,6 +141,8 @@ model User {
   externalIntegrations   ExternalIntegration[]
   schedulingRuns         SchedulingRun[]
   idempotencyRecords     IdempotencyRecord[]
+  creemWebhookEvents     CreemWebhookEvent[]
+  creemCursors           CreemSubscriptionCursor[]
   taskDependenciesOwned  TaskDependency[]        @relation("TaskDependencyOwner")
   focusPreferences       FocusPreferences?
   taskReminders          TaskReminder[]
@@ -2594,10 +2596,38 @@ model Subscription {
   stripePaymentIntentId String?            @unique // For one-time payments like lifetime access
   amount                Int? // Amount paid in cents
   discountApplied       Boolean            @default(false)
+  lastCreemEventId      String?
+  lastCreemEventAt      DateTime?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
   @@index([creemProductId])
   @@index([stripeCustomerId])
   @@index([stripePaymentIntentId])
+}
+
+model CreemWebhookEvent {
+  id             String   @id
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventType      String
+  eventCreatedAt DateTime
+  outcome        String
+  receivedAt     DateTime @default(now())
+
+  @@index([userId, eventCreatedAt])
+}
+
+model CreemSubscriptionCursor {
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creemSubscriptionId String
+  lastEventId         String
+  lastEventAt         DateTime
+  restrictionLevel    Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@id([userId, creemSubscriptionId])
+  @@index([userId, lastEventAt])
 }
