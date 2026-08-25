@@ -83,8 +83,9 @@ describe("Google OAuth setup docs (issue #76)", () => {
       expect(googleBlock).toContain("/api/auth/callback/google");
     });
 
-    it("builds the redirect URIs from window.location.origin (no hardcoded host)", () => {
-      expect(googleBlock).toContain("window.location.origin");
+    it("builds the redirect URIs from the browser origin without a hardcoded host", () => {
+      expect(settings).toContain("setOrigin(window.location.origin)");
+      expect(googleBlock).toContain("{origin}/api/auth/callback/google");
       expect(googleBlock).not.toContain("http://localhost:3000");
     });
 
