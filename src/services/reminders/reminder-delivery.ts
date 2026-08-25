@@ -8,18 +8,27 @@ import { VapidVariableName, getVapidConfiguration } from "@/lib/push-config";
 const LOG_SOURCE = "ReminderDelivery";
 const RETRY_AFTER_MS = 5 * 60_000;
 let hasWarnedAboutMissingVapidConfiguration = false;
+let missingVapidWarning: Promise<void> | null = null;
 
 export async function warnAboutMissingVapidConfigurationOnce(
   missingVariables: VapidVariableName[]
 ) {
   if (hasWarnedAboutMissingVapidConfiguration) return;
-  hasWarnedAboutMissingVapidConfiguration = true;
-
-  await logger.warn(
-    `Web Push delivery is unavailable; missing environment variables: ${missingVariables.join(", ")}`,
-    { missingVariables },
-    LOG_SOURCE
-  );
+  if (!missingVapidWarning) {
+    missingVapidWarning = logger
+      .warn(
+        `Web Push delivery is unavailable; missing environment variables: ${missingVariables.join(", ")}`,
+        { missingVariables },
+        LOG_SOURCE
+      )
+      .then(() => {
+        hasWarnedAboutMissingVapidConfiguration = true;
+      })
+      .finally(() => {
+        missingVapidWarning = null;
+      });
+  }
+  await missingVapidWarning;
 }
 
 export async function warnIfVapidConfigurationIsMissingOnce() {
@@ -98,7 +107,7 @@ export async function findDueReminderIds(now = new Date()) {
     .map((reminder) => reminder.id);
 }
 
-async function deliverPush(
+export async function deliverPush(
   subscription: {
     id: string;
     endpoint: string;

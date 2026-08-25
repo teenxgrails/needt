@@ -3,14 +3,14 @@ id: 20260824-codex-push-config-visibility
 owner: codex
 branch: codex/push-config-visibility
 status: active
-updated: 2026-08-24T19:05:11Z
-objective: Make missing VAPID configuration observable once per process and prevent the settings UI from offering unavailable push delivery.
+updated: 2026-08-25T22:40:42Z
+objective: Preserve the saved push preference across missing server configuration, prove warning behavior by execution, and align visual coverage with real server state.
 ---
 
 ## Scope
 
 - Governing plan/spec: `docs/plans/12-remaining-work.md` P0.3 and prompt 3 in `docs/plans/12-codex-prompts.md`.
-- In scope: reminder-delivery warning, notification-settings server boolean/UI state, focused tests, deploy checklist, changelog, required local gates, push, and PR.
+- In scope: notification-settings preference round trips, reminder-delivery warning behavior, execution/render tests, honest visual fixtures and reviewed baselines, changelog, required local gates, push, and PR.
 - Out of scope: VAPID key generation, service-worker or payload changes, production/Coolify operations, deployment, and merge.
 
 ## Completed
@@ -24,7 +24,7 @@ objective: Make missing VAPID configuration observable once per process and prev
 
 ## Working state
 
-- Files currently dirty or expected to change: `tests/visual/settings-tabs.spec.ts` and this handoff until the scoped visual-fixture follow-up commit.
+- Files currently dirty or expected to change: `src/app/api/notification-settings/route.ts`, its route test, `src/store/settings.ts` and focused store coverage, `src/services/reminders/reminder-delivery.ts` and its tests, worker startup wiring/tests, the Notification Settings render test and JSX-capable Jest transform, `tests/visual/settings-tabs.spec.ts`, reviewed notification baseline PNGs, `CHANGELOG.md`, and this handoff.
 - Foreign changes that must remain untouched: every file in `/Users/lol/Needt` and every pre-existing worktree/handoff.
 
 ## Verification
@@ -35,7 +35,15 @@ objective: Make missing VAPID configuration observable once per process and prev
 - Final-SHA CI on `8c58026` passed changes, schema drift, quality gates, security, and E2E for both push and PR events. Visual failed only the deterministic notification screenshots because the fixture set availability true but retained the API-masked false enabled preference.
 - Follow-up `f1eecc8` asserted both server boolean fields and attempted to override only `webPushConfigured` and `webPushEnabled`. Both CI events again passed changes, schema, quality, security, and E2E, but the received screenshots were byte-for-byte equivalent to the prior unavailable state: combining `response` with `json` in `route.fulfill` retained the fetched body instead of the JSON override.
 - The pending correction now fulfills with the fetched status plus the spread real JSON fields and the two explicit booleans, without passing the original response body. Local `npm run lint`, `npm run type-check`, and `git diff --check` pass. No baseline changed.
-- Not run / still required: commit and push the corrected fulfill call, then obtain fully green CI on the new SHA.
+- Audit follow-up returns the saved push preference unmasked alongside the independent server-availability boolean, sends reminder timing as an array, and covers all five unrelated notification switches with a stateful GET-to-PATCH round trip.
+- `deliverPush` now has direct behavior coverage; a temporary removal of its warning made 3/4 focused tests fail before the call was restored. Failed logger writes retry, concurrent calls coalesce, and the once flag is committed only after successful logging.
+- Replaced the JSX/source and worker/source tests with component rendering and executed startup-preflight tests. The honest visual case uses the real unconfigured API and no route override.
+- Manually reviewed desktop/tablet/mobile darwin captures before updating their three baselines: Browser notifications is disabled/off with the unavailable explanation, and all four seeded Calendar alerts remain on.
+- Passed on Node 22: focused unit suite (5 suites / 15 tests); `npm run type-check`; `npm run lint`; full `npm run test:unit` (170 passed suites / 792 passed tests, 1 skipped); `npm run build` (142 pages / 1,390 artifacts); `npm run build:worker` (33.4 MB); focused visual unavailable-state run (3/3).
+- Recorded pre-fix failure: the stateful round trip failed all five unrelated-toggle cases because unconfigured GET returned `webPushEnabled: false` and the full PATCH persisted it.
+- Full `npm run test:visual` reached unrelated pre-existing snapshot failures and then the dev server restarted at its memory threshold; no unrelated baseline was accepted. Linux notification baselines still require CI-authoritative candidates after push.
+- Shared test database is currently held by this workstream and will be released after final visual verification.
+- Not run / still required: final type/lint after the checkpoint, Linux candidate review/import, full visual rerun, commit/push, and green CI.
 
 ## Decisions and constraints
 
@@ -50,4 +58,4 @@ objective: Make missing VAPID configuration observable once per process and prev
 
 ## Next action
 
-- Commit and push the corrected visual-fixture fulfill call, then monitor PR #24 to fully green CI.
+- Commit and push the audited implementation plus reviewed darwin baselines, then download and review the CI-authoritative Linux notification candidates.

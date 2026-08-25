@@ -97,25 +97,59 @@ describe("notification settings Web Push availability", () => {
     expect(body).not.toHaveProperty("VAPID_PRIVATE_KEY");
   });
 
-  it("reports Web Push unavailable without clearing the saved preference", async () => {
-    delete process.env.VAPID_PRIVATE_KEY;
+  it.each([
+    ["daily plan email", "dailyEmailEnabled"],
+    ["new invitations", "eventInvites"],
+    ["event changes", "eventUpdates"],
+    ["cancellations", "eventCancellations"],
+    ["upcoming events", "eventReminders"],
+  ] as const)(
+    "preserves the saved Web Push preference when toggling %s without VAPID configuration",
+    async (_label, toggledField) => {
+      delete process.env.VAPID_PRIVATE_KEY;
+      const stored = notificationSettings();
+      mockUpsert.mockImplementation(((args: {
+        update: Record<string, unknown>;
+      }) => {
+        for (const [key, value] of Object.entries(args.update)) {
+          if (value !== undefined) {
+            (stored as Record<string, unknown>)[key] = value;
+          }
+        }
+        return Promise.resolve(stored);
+      }) as never);
 
-    const response = assertResponse(
-      await PATCH(
-        new NextRequest("http://localhost/api/notification-settings", {
-          method: "PATCH",
-          body: JSON.stringify({ webPushEnabled: true }),
-        })
-      )
-    );
-    const body = await response.json();
+      const getResponse = assertResponse(
+        await GET(new NextRequest("http://localhost/api/notification-settings"))
+      );
+      const hydrated = await getResponse.json();
+      const patchPayload: Record<string, unknown> = {
+        emailNotifications: hydrated.emailNotifications,
+        dailyEmailEnabled: hydrated.dailyEmailEnabled,
+        eventInvites: hydrated.notifyFor.eventInvites,
+        eventUpdates: hydrated.notifyFor.eventUpdates,
+        eventCancellations: hydrated.notifyFor.eventCancellations,
+        eventReminders: hydrated.notifyFor.eventReminders,
+        defaultReminderTiming: hydrated.defaultReminderTiming,
+        webPushEnabled: hydrated.webPushEnabled,
+        webPushSubscription: hydrated.webPushSubscription,
+      };
+      patchPayload[toggledField] = !patchPayload[toggledField];
 
-    expect(body.webPushConfigured).toBe(false);
-    expect(body.webPushEnabled).toBe(false);
-    expect(mockUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({ webPushEnabled: true }),
-      })
-    );
-  });
+      const patchResponse = assertResponse(
+        await PATCH(
+          new NextRequest("http://localhost/api/notification-settings", {
+            method: "PATCH",
+            body: JSON.stringify(patchPayload),
+          })
+        )
+      );
+      const body = await patchResponse.json();
+
+      expect(body.webPushConfigured).toBe(false);
+      expect(body.webPushEnabled).toBe(true);
+      expect(stored.webPushEnabled).toBe(true);
+      expect(stored[toggledField]).toBe(false);
+    }
+  );
 });

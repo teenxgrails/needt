@@ -4,7 +4,6 @@ import { collectOperationsHealth } from "@/services/operations/health";
 import {
   deliverTaskReminder,
   findDueReminderIds,
-  warnIfVapidConfigurationIsMissingOnce,
 } from "@/services/reminders/reminder-delivery";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 import { executeSchedulingRun } from "@/services/scheduling/runs";
@@ -12,6 +11,7 @@ import {
   startWorkerHealthServer,
   stopWorkerHealthServer,
 } from "@/worker/health-server";
+import { runWorkerStartupChecks } from "@/worker/startup";
 import * as Sentry from "@sentry/node";
 import { ConnectionOptions, Job, Worker } from "bullmq";
 import { randomUUID } from "node:crypto";
@@ -260,7 +260,7 @@ for (const worker of workers) {
 }
 
 async function start(): Promise<void> {
-  await warnIfVapidConfigurationIsMissingOnce();
+  await runWorkerStartupChecks();
   if (isGitBuildSha(BUILD_SHA)) {
     releaseHeartbeatRedis =
       getRedisConnection() as unknown as ReleaseHealthRedis;

@@ -1,15 +1,18 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { warnIfVapidConfigurationIsMissingOnce } from "@/services/reminders/reminder-delivery";
+import { runWorkerStartupChecks } from "@/worker/startup";
+
+jest.mock("@/services/reminders/reminder-delivery", () => ({
+  warnIfVapidConfigurationIsMissingOnce: jest.fn(),
+}));
+
+const mockWarnIfVapidConfigurationIsMissingOnce = jest.mocked(
+  warnIfVapidConfigurationIsMissingOnce
+);
 
 describe("worker VAPID startup warning", () => {
-  const source = readFileSync(
-    join(process.cwd(), "src/worker/index.ts"),
-    "utf8"
-  );
+  it("executes the VAPID configuration check before worker startup", async () => {
+    await runWorkerStartupChecks();
 
-  it("checks VAPID configuration when the worker starts", () => {
-    expect(source).toContain(
-      "async function start(): Promise<void> {\n  await warnIfVapidConfigurationIsMissingOnce();"
-    );
+    expect(mockWarnIfVapidConfigurationIsMissingOnce).toHaveBeenCalledTimes(1);
   });
 });

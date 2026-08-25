@@ -10,7 +10,10 @@ const config = {
   transform: {
     // isolatedModules keeps jest memory bounded: type-checking is covered by
     // `tsc --noEmit`, so tests only need transpilation.
-    "^.+\\.tsx?$": ["ts-jest", { isolatedModules: true }],
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      { isolatedModules: true, tsconfig: { jsx: "react-jsx" } },
+    ],
   },
 };
 

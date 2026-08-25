@@ -9,7 +9,6 @@ const SETTINGS_TABS = [
   ["task-defaults", "Task defaults"],
   ["theme", "Appearance"],
   ["timezone", "Timezone"],
-  ["notifications", "Notifications"],
   ["schedules", "Schedules"],
   ["desktop", "Desktop app"],
   ["integrations", "Integrations"],
@@ -34,8 +33,7 @@ async function settleSettings(page: import("@playwright/test").Page) {
   await page.waitForTimeout(350);
 }
 
-test("every Settings tab stays visually consistent", async ({ page }) => {
-  test.setTimeout(360_000);
+async function prepareSettings(page: import("@playwright/test").Page) {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await page.addInitScript(() => {
     // Keep the delayed command-palette hint out of long screenshot matrices.
@@ -49,29 +47,13 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
     data: { theme: "dark" },
   });
   expect(themeResponse.ok()).toBeTruthy();
+}
+
+test("every Settings tab stays visually consistent", async ({ page }) => {
+  test.setTimeout(360_000);
+  await prepareSettings(page);
 
   for (const [tab, label] of SETTINGS_TABS) {
-    if (tab === "notifications") {
-      // This baseline covers a configured deployment and its seeded enabled
-      // preference deterministically. Focused API/UI tests cover unavailable
-      // deployments; every other real settings field remains unchanged here.
-      await page.route("**/api/notification-settings", async (route) => {
-        const response = await route.fetch();
-        const settings = (await response.json()) as Record<string, unknown>;
-        expect(typeof settings.webPushConfigured).toBe("boolean");
-        expect(typeof settings.webPushEnabled).toBe("boolean");
-
-        await route.fulfill({
-          status: response.status(),
-          json: {
-            ...settings,
-            webPushConfigured: true,
-            webPushEnabled: true,
-          },
-        });
-      });
-    }
-
     await page.goto(`/settings#${tab}`, { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(new RegExp(`#${tab}$`));
 
@@ -89,9 +71,29 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
 
     await settleSettings(page);
     await expect(page).toHaveScreenshot(`settings-${tab}.png`);
-
-    if (tab === "notifications") {
-      await page.unroute("**/api/notification-settings");
-    }
   }
+});
+
+test("unavailable browser push stays honest in Settings", async ({ page }) => {
+  await prepareSettings(page);
+  await page.goto("/settings#notifications", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/#notifications$/);
+  await expect(
+    page.getByRole("heading", { name: "Notifications", level: 1 })
+  ).toBeVisible();
+
+  const browserNotifications = page
+    .getByText("Browser notifications:", { exact: true })
+    .locator("..")
+    .getByRole("switch");
+  await expect(browserNotifications).toBeDisabled();
+  await expect(browserNotifications).toHaveAttribute("aria-checked", "false");
+  await expect(
+    page.getByText(
+      "Push delivery setup is incomplete on this Needt server. Browser notifications are unavailable. Email reminders still work."
+    )
+  ).toBeVisible();
+
+  await settleSettings(page);
+  await expect(page).toHaveScreenshot("settings-notifications.png");
 });

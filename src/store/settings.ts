@@ -217,9 +217,7 @@ export const useSettingsStore = create<SettingsStore>()(
               eventUpdates: newSettings.notifyFor.eventUpdates,
               eventCancellations: newSettings.notifyFor.eventCancellations,
               eventReminders: newSettings.notifyFor.eventReminders,
-              defaultReminderTiming: JSON.stringify(
-                newSettings.defaultReminderTiming
-              ),
+              defaultReminderTiming: newSettings.defaultReminderTiming,
               webPushEnabled: newSettings.webPushEnabled,
               webPushSubscription: newSettings.webPushSubscription,
             }),

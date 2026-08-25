@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       },
       defaultReminderTiming: JSON.parse(settings.defaultReminderTiming),
       webPushConfigured,
-      webPushEnabled: webPushConfigured && settings.webPushEnabled,
+      webPushEnabled: settings.webPushEnabled,
       webPushSubscription: settings.webPushSubscription,
     });
   } catch (error) {
@@ -109,7 +109,7 @@ export async function PATCH(request: NextRequest) {
       },
       defaultReminderTiming: JSON.parse(settings.defaultReminderTiming),
       webPushConfigured,
-      webPushEnabled: webPushConfigured && settings.webPushEnabled,
+      webPushEnabled: settings.webPushEnabled,
       webPushSubscription: settings.webPushSubscription,
     });
   } catch (error) {
