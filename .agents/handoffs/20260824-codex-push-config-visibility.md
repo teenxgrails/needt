@@ -3,7 +3,7 @@ id: 20260824-codex-push-config-visibility
 owner: codex
 branch: codex/push-config-visibility
 status: active
-updated: 2026-08-25T22:45:32Z
+updated: 2026-08-25T23:05:13Z
 objective: Preserve the saved push preference across missing server configuration, prove warning behavior by execution, and align visual coverage with real server state.
 ---
 
@@ -20,11 +20,11 @@ objective: Preserve the saved push preference across missing server configuratio
 - Disabled the existing browser-notification switch with an explanatory state when push delivery is unavailable, without persisting the server-derived boolean or clearing the saved preference during an outage.
 - Added configured/every-variable-missing tests, API/UI/worker startup contracts, deploy checklist guidance, and the unreleased changelog entry.
 - Rebased the single scoped implementation commit onto `origin/main` at `40b9ecb`, then merged fresh `origin/main` at `0483d26` while preserving the prior PR head as an ancestor for the push-event security baseline.
-- Opened PR #24 and made its notification screenshot fixture explicitly model a configured deployment with the seeded enabled preference while retaining every other real API response field; unavailable behavior remains covered by focused API/UI unit tests.
+- Opened PR #24, removed the fabricated configured-push visual fixture, and added a real unavailable-state visual case backed by the unmodified API response.
 
 ## Working state
 
-- Files currently dirty or expected to change: `src/app/api/notification-settings/route.ts`, its route test, `src/store/settings.ts` and focused store coverage, `src/services/reminders/reminder-delivery.ts` and its tests, worker startup wiring/tests, the Notification Settings render test and JSX-capable Jest transform, `tests/visual/settings-tabs.spec.ts`, reviewed notification baseline PNGs, `CHANGELOG.md`, and this handoff.
+- Current dirty files are the two reviewed Linux notification baselines and this handoff. All implementation/test changes are committed through `f555aa2`.
 - Foreign changes that must remain untouched: every file in `/Users/lol/Needt` and every pre-existing worktree/handoff.
 
 ## Verification
@@ -39,12 +39,15 @@ objective: Preserve the saved push preference across missing server configuratio
 - `deliverPush` now has direct behavior coverage; a temporary removal of its warning made 3/4 focused tests fail before the call was restored. Failed logger writes retry, concurrent calls coalesce, and the once flag is committed only after successful logging.
 - Replaced the JSX/source and worker/source tests with component rendering and executed startup-preflight tests. The honest visual case uses the real unconfigured API and no route override.
 - Adversarial follow-up made the store test execute one hydration-to-mutation flow and assert the complete outgoing payload, including saved push preference, flattened alerts, and array reminder timing. The worker test now imports the real entrypoint and executes exported `start()` with isolated runtime mocks; temporarily deleting its preflight call made the test fail before restoration.
+- A final audit added direct execution coverage for `runWorkerStartupChecks`; temporarily removing its body produced the expected exact warning failure before restoration.
 - Manually reviewed desktop/tablet/mobile darwin captures before updating their three baselines: Browser notifications is disabled/off with the unavailable explanation, and all four seeded Calendar alerts remain on.
 - Passed on Node 22: focused unit suite (5 suites / 15 tests); `npm run type-check`; `npm run lint`; full `npm run test:unit` (170 passed suites / 792 passed tests, 1 skipped); `npm run build` (142 pages / 1,390 artifacts); `npm run build:worker` (33.4 MB); focused visual unavailable-state run (3/3).
 - Recorded pre-fix failure: the stateful round trip failed all five unrelated-toggle cases because unconfigured GET returned `webPushEnabled: false` and the full PATCH persisted it.
-- Full `npm run test:visual` reached unrelated pre-existing snapshot failures and then the dev server restarted at its memory threshold; no unrelated baseline was accepted. Linux notification baselines still require CI-authoritative candidates after push.
-- Shared test database was released after the reviewed darwin visual run; the final visual gate will acquire and release it again.
-- Not run / still required: final type/lint after the checkpoint, Linux candidate review/import, full visual rerun, commit/push, and green CI.
+- Full local `npm run test:visual` was attempted again. It failed before the notification cases on unrelated existing dev-mode regressions in `app-surfaces`, `boards-workspace`, and `pages-block-editor`; the run was stopped after 4 failures / 4 passes because its result was already determined. No unrelated baseline was accepted.
+- Shared test database was acquired at 2026-08-25T23:00:58Z and released at 2026-08-25T23:05:13Z with `docker compose -f docker-compose.e2e.yml down --volumes`; no workstream owns it now.
+- Final Node 22 code gates at `f555aa2`: `npm run type-check` passed; `npm run lint` passed; full `npm run test:unit -- --runInBand` passed (170 suites / 792 tests, 1 suite / 1 test skipped); `npm run build` passed (142 pages / 1,390 artifacts); `npm run build:worker` passed (33.4 MB).
+- CI run `32907686297` for `66b3cba` passed quality, security, schema drift, and E2E. Visual failed only tablet/mobile notification screenshots; the official Ubuntu candidates were manually reviewed and imported. Desktop Linux was byte-identical and left unchanged.
+- Still required: baseline/handoff commit, push, and green CI visual confirmation.
 
 ## Decisions and constraints
 
@@ -59,4 +62,4 @@ objective: Preserve the saved push preference across missing server configuratio
 
 ## Next action
 
-- Commit and push the audited implementation plus reviewed darwin baselines, then download and review the CI-authoritative Linux notification candidates.
+- Commit and push the reviewed Ubuntu baselines and handoff, then confirm the full CI visual gate.
