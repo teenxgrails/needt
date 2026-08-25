@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>calendar task block two variants — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">06 · calendar task block two variants</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Два варианта отображения задач на календаре Needt: сплошная заливка против условного пунктира для запланированных задач</h2>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+  <div id="vA"></div><div id="vB"></div>
+</div>
+
+<script>
+(function(){
+  var P={bg:'#17150F',panel:'#211E17',line:'#332E24',txt:'#EDE7DA',dim:'#9A9184',acc:'#C96442',accbg:'#2A1F19',now:'#D8734F'};
+  var H=26, START=9;
+
+  var items=[
+    {t:'Стендап',        s:9,    d:0.5, k:'ev'},
+    {t:'Обзор макетов',  s:9.75, d:1.25,k:'task'},
+    {t:'Звонок с Аней',  s:10.5, d:0.75,k:'ev', ov:1},
+    {t:'Правки биллинга',s:11.5, d:0.25,k:'task'},
+    {t:'Обед',           s:12,   d:1,   k:'ev'},
+    {t:'Глубокая работа',s:13,   d:1.5, k:'task'}
+  ];
+
+  function build(el,mode,title,note){
+    var h='<div style="background:'+P.bg+';border:0.5px solid '+P.line+';border-radius:10px;padding:11px;">';
+    h+='<div style="font-size:12px;color:'+P.txt+';">'+title+'</div>';
+    h+='<div style="font-size:11px;color:'+P.dim+';margin:2px 0 10px;line-height:1.4;">'+note+'</div>';
+    h+='<div style="position:relative;height:'+(5.5*H)+'px;">';
+
+    for(var g=0;g<6;g++){
+      h+='<div style="position:absolute;left:0;right:0;top:'+(g*H)+'px;border-top:0.5px solid '+P.line+';"></div>';
+      h+='<div style="position:absolute;left:0;top:'+(g*H+3)+'px;font-size:9px;font-variant-numeric:tabular-nums;color:'+P.dim+';">'+(START+g)+':00</div>';
+    }
+
+    items.forEach(function(b){
+      var top=(b.s-START)*H+1, hh=b.d*H-3;
+      var one = hh<20;
+      var past = b.s<10.5;
+      var L=32, R=6;
+      if(b.ov){ L=32+ (100-32-R)*0.42; }
+      var w = b.ov? 'left:'+L+'px;right:'+R+'px;' : 'left:32px;right:'+(items.some(function(x){return x.ov&&Math.abs(x.s-b.s)<1;})&&b.k==='task'?'46%':R+'px')+';';
+
+      var css='position:absolute;'+w+'top:'+top+'px;height:'+hh+'px;box-sizing:border-box;padding:'+(one?'0 6px':'3px 6px')+';overflow:hidden;';
+      var isTask=b.k==='task';
+
+      if(mode==='A'){
+        css+='background:'+(isTask?P.accbg:P.panel)+';border:0.5px solid '+P.line+';border-left:2px solid '+(isTask?P.acc:P.dim)+';';
+      } else {
+        if(isTask){
+          css+='background:transparent;border:1px dashed '+P.acc+';border-radius:4px;';
+        } else {
+          css+='background:'+P.panel+';border:0.5px solid '+P.line+';border-left:2px solid '+P.dim+';';
+        }
+      }
+      if(past) css+='opacity:.45;';
+
+      var body = one
+        ? '<div style="display:flex;align-items:center;height:100%;gap:5px;"><span style="font-size:9.5px;color:'+P.txt+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+b.t+'</span><span style="font-size:9px;font-variant-numeric:tabular-nums;color:'+P.dim+';margin-left:auto;">15м</span></div>'
+        : '<div style="font-size:10px;line-height:1.25;color:'+P.txt+';">'+b.t+'</div><div style="font-size:9px;font-variant-numeric:tabular-nums;color:'+P.dim+';margin-top:1px;">'+(Math.floor(b.s))+':'+((b.s%1)*60<10?'0':'')+((b.s%1)*60)+'</div>';
+
+      h+='<div style="'+css+'">'+body+'</div>';
+    });
+
+    var ny=(11.35-START)*H;
+    h+='<div style="position:absolute;left:26px;right:0;top:'+ny+'px;height:1px;background:'+P.now+';"></div>';
+    h+='<div style="position:absolute;left:26px;top:'+(ny-2.5)+'px;width:6px;height:6px;border-radius:50%;background:'+P.now+';"></div>';
+
+    h+='</div></div>';
+    el.innerHTML=h;
+  }
+
+  build(document.getElementById('vA'),'A','A · Заливка',
+    'Задача — тёплая заливка, событие — нейтральная. Плотно, привычно.');
+  build(document.getElementById('vB'),'B','B · Условный пунктир',
+    'Задача обведена пунктиром: она подвижна. Событие сплошное: оно зафиксировано.');
+})();
+</script>
+</div></body></html>

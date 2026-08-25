@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>inbox with pinned people — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">10 · inbox with pinned people</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Needt Inbox concept: pinned people filter correspondence and show shared schedule context, with mail convertible to scheduled work</h2>
+
+<div style="background:var(--surface-1);border-radius:12px;padding:10px;">
+<div style="background:#17150F;border:0.5px solid #332E24;border-radius:8px;padding:12px 14px;">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+    <div style="font-size:15px;color:#EDE7DA;">Inbox</div>
+    <div style="margin-left:auto;display:flex;border:0.5px solid #332E24;border-radius:6px;overflow:hidden;">
+      <span style="font-size:11px;padding:4px 11px;background:#C96442;color:#1A0F0A;">Focused</span>
+      <span style="font-size:11px;padding:4px 11px;color:#9A9184;">Other</span>
+      <span style="font-size:11px;padding:4px 11px;color:#9A9184;">Snoozed</span>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:14px;">
+
+    <div style="width:132px;flex:none;">
+      <div style="font-size:10px;letter-spacing:.05em;color:#6F675B;margin-bottom:7px;">PINNED</div>
+      <div id="people"></div>
+      <div style="font-size:11px;color:#6F675B;margin-top:10px;cursor:pointer;">+ Pin someone</div>
+    </div>
+
+    <div style="flex:1;min-width:0;border-left:0.5px solid #332E24;padding-left:14px;">
+      <div id="ctx" style="margin-bottom:10px;"></div>
+      <div id="msgs"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+  var people=[
+    {n:'Anna Weber',i:'AW',c:'#7FA6C9',next:'Design review · Tue 14:00'},
+    {n:'Marc Roth',i:'MR',c:'#C9A87F',next:'No shared time booked'},
+    {n:'Lea Frei',i:'LF',c:'#8FC99B',next:'Retro · Fri 16:00'}
+  ];
+
+  var all=[
+    {p:0,s:'Re: pricing page copy',t:'09:24',u:1,task:1},
+    {p:1,s:'Invoice for August batch',t:'08:10',u:1,task:1},
+    {p:0,s:'Figma link for the new header',t:'Yesterday',u:0,task:0},
+    {p:2,s:'Retro agenda',t:'Yesterday',u:0,task:1},
+    {p:1,s:'Shipping delay — 3 days',t:'Mon',u:0,task:0},
+    {p:0,s:'Approved, ship it',t:'Mon',u:0,task:0}
+  ];
+
+  var sel=-1;
+  var pc=document.getElementById('people'), mc=document.getElementById('msgs'), cx=document.getElementById('ctx');
+
+  function drawPeople(){
+    pc.innerHTML='';
+    people.forEach(function(p,i){
+      var on=i===sel;
+      var e=document.createElement('div');
+      e.style.cssText='display:flex;align-items:center;gap:8px;height:30px;padding:0 7px;border-radius:6px;cursor:pointer;'+
+        'background:'+(on?'#241F18':'transparent')+';transition:background 140ms ease;';
+      e.innerHTML='<span style="width:19px;height:19px;border-radius:50%;background:'+p.c+'22;color:'+p.c+';font-size:8.5px;display:flex;align-items:center;justify-content:center;flex:none;">'+p.i+'</span>'+
+        '<span style="font-size:11.5px;color:'+(on?'#EDE7DA':'#9A9184')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+p.n+'</span>';
+      e.onclick=function(){ sel = on? -1 : i; drawPeople(); drawCtx(); drawMsgs(); };
+      pc.appendChild(e);
+    });
+  }
+
+  function drawCtx(){
+    if(sel<0){ cx.innerHTML=''; return; }
+    var p=people[sel];
+    cx.innerHTML='<div style="display:flex;align-items:center;gap:9px;padding:8px 10px;border:0.5px solid #332E24;border-radius:6px;">'+
+      '<span style="width:22px;height:22px;border-radius:50%;background:'+p.c+'22;color:'+p.c+';font-size:9px;display:flex;align-items:center;justify-content:center;">'+p.i+'</span>'+
+      '<div style="min-width:0;"><div style="font-size:12px;color:#EDE7DA;">'+p.n+'</div>'+
+      '<div style="font-size:10.5px;color:#6F675B;">'+p.next+'</div></div>'+
+      '<span style="margin-left:auto;font-size:10.5px;color:#C96442;cursor:pointer;white-space:nowrap;">Book time</span></div>';
+  }
+
+  function drawMsgs(){
+    var rows = sel<0 ? all : all.filter(function(m){return m.p===sel;});
+    var h='';
+    rows.forEach(function(m){
+      var p=people[m.p];
+      h+='<div class="m" style="display:flex;align-items:center;gap:9px;height:36px;padding:0 8px;border-bottom:0.5px solid #241F18;transition:background 120ms ease;">'+
+        '<span style="width:5px;height:5px;border-radius:50%;background:'+(m.u?'#C96442':'transparent')+';flex:none;"></span>'+
+        (sel<0?'<span style="font-size:11px;color:'+p.c+';width:64px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+p.n.split(' ')[0]+'</span>':'')+
+        '<span style="font-size:12px;color:'+(m.u?'#EDE7DA':'#9A9184')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+m.s+'</span>'+
+        (m.task?'<span class="mk" style="font-size:10px;color:#C96442;border:1px dashed #C96442;border-radius:4px;padding:1px 6px;flex:none;opacity:0;transition:opacity 140ms ease;cursor:pointer;">Schedule</span>':'')+
+        '<span style="margin-left:auto;font-size:10.5px;color:#6F675B;flex:none;font-variant-numeric:tabular-nums;">'+m.t+'</span></div>';
+    });
+    mc.innerHTML=h;
+    Array.prototype.forEach.call(mc.querySelectorAll('.m'),function(r){
+      var mk=r.querySelector('.mk');
+      r.onmouseenter=function(){ r.style.background='#1E1B15'; if(mk) mk.style.opacity='1'; };
+      r.onmouseleave=function(){ r.style.background='transparent'; if(mk) mk.style.opacity='0'; };
+    });
+  }
+
+  drawPeople(); drawMsgs();
+})();
+</script>
+</div></body></html>

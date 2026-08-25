@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>today full screen new direction — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">12 · today full screen new direction</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Needt Today screen in the new direction: sidebar with four places, merged day canvas with dashed scheduled tasks, and a writable agenda panel</h2>
+
+<div style="background:var(--surface-1);border-radius:12px;padding:9px;">
+<div style="display:flex;height:452px;background:#17150F;border:0.5px solid #332E24;border-radius:9px;overflow:hidden;font-size:12px;">
+
+  <div style="width:176px;flex:none;border-right:0.5px solid #332E24;display:flex;flex-direction:column;">
+    <div style="height:34px;display:flex;align-items:center;padding-left:11px;gap:6px;">
+      <span style="width:9px;height:9px;border-radius:50%;background:#ED9A93;"></span>
+      <span style="width:9px;height:9px;border-radius:50%;background:#EBC06B;"></span>
+      <span style="width:9px;height:9px;border-radius:50%;background:#9BC97F;"></span>
+      <span style="margin-left:8px;font-size:12.5px;color:#EDE7DA;letter-spacing:-.01em;">Needt</span>
+    </div>
+
+    <div style="padding:4px 9px 9px;">
+      <button id="cap" style="width:100%;height:31px;border:none;border-radius:7px;position:relative;overflow:hidden;background:#C96442;color:#1A0F0A;font-size:12px;padding:0;display:flex;align-items:center;justify-content:center;gap:5px;transition:transform 90ms cubic-bezier(.4,0,.2,1);">
+        <span style="position:absolute;left:0;right:0;top:0;height:1px;background:rgba(255,255,255,.28);"></span>
+        <i class="ti ti-plus" style="font-size:13px;" aria-hidden="true"></i>Create
+        <span style="font-size:9.5px;opacity:.55;">⌘N</span>
+      </button>
+    </div>
+
+    <div style="position:relative;padding:0 7px;flex:1;">
+      <div id="pill" style="position:absolute;left:7px;right:7px;height:28px;background:#241F18;border-radius:6px;transition:transform 320ms cubic-bezier(.22,1,.32,1);"></div>
+      <div id="nav" style="position:relative;"></div>
+      <div style="margin:13px 4px 5px;font-size:9.5px;letter-spacing:.06em;color:#6F675B;">PROJECTS</div>
+      <div id="proj"></div>
+    </div>
+
+    <div style="padding:7px 9px;border-top:0.5px solid #332E24;">
+      <div style="display:flex;align-items:center;gap:7px;height:28px;padding:0 7px;border:0.5px solid #332E24;border-radius:6px;">
+        <i class="ti ti-target" style="font-size:14px;color:#9A9184;" aria-hidden="true"></i>
+        <span style="font-size:11.5px;color:#9A9184;">Focus</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;margin-top:7px;padding:0 2px;">
+        <span style="width:18px;height:18px;border-radius:50%;background:#2A1F19;color:#C96442;font-size:8px;display:flex;align-items:center;justify-content:center;">MX</span>
+        <span style="font-size:11.5px;color:#EDE7DA;">Maxim</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:0;padding:10px 12px;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:13.5px;color:#EDE7DA;">Tuesday, 25 August</span>
+      <span style="margin-left:auto;display:flex;border:0.5px solid #332E24;border-radius:6px;overflow:hidden;">
+        <span style="font-size:10.5px;padding:3px 9px;background:#C96442;color:#1A0F0A;">Day</span>
+        <span style="font-size:10.5px;padding:3px 9px;color:#9A9184;">Week</span>
+      </span>
+    </div>
+    <div id="strip" style="display:flex;gap:2px;padding-left:30px;margin-bottom:6px;"></div>
+    <div id="cv" style="position:relative;flex:1;"></div>
+  </div>
+
+  <div style="width:168px;flex:none;border-left:0.5px solid #332E24;padding:10px 11px;">
+    <div style="font-size:9.5px;letter-spacing:.06em;color:#6F675B;margin-bottom:7px;">AGENDA</div>
+    <div style="font-size:11.5px;color:#EDE7DA;line-height:1.55;">Ship the pricing page.<br>Everything else can slip.</div>
+    <div style="margin-top:9px;font-size:11.5px;line-height:1.8;">
+      <div style="color:#9A9184;">— call Anna re: copy</div>
+      <div style="color:#EDE7DA;border-left:1px dashed #C96442;padding-left:6px;margin:3px 0;">Design review <span style="color:#6F675B;font-variant-numeric:tabular-nums;">9:45</span></div>
+      <div style="color:#9A9184;">— check invoice</div>
+    </div>
+    <div style="margin-top:14px;font-size:9.5px;letter-spacing:.06em;color:#C96442;margin-bottom:5px;">NEEDS A SLOT</div>
+    <div style="font-size:11px;color:#9A9184;line-height:1.75;">Rewrite onboarding copy<br>Call accountant</div>
+  </div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  var items=[['ti-layout-rows','Day'],['ti-checkbox','Work','4'],['ti-inbox','Inbox','2'],['ti-file-text','Docs']];
+  var nav=document.getElementById('nav'),pill=document.getElementById('pill');
+  items.forEach(function(it,ix){
+    var r=document.createElement('div');
+    r.style.cssText='position:relative;display:flex;align-items:center;gap:8px;height:28px;padding:0 7px;border-radius:6px;cursor:pointer;color:'+(ix?'#9A9184':'#EDE7DA')+';transition:color 150ms ease;';
+    r.innerHTML='<i class="ti '+it[0]+'" style="font-size:14px;" aria-hidden="true"></i><span style="font-size:11.5px;">'+it[1]+'</span>'+
+      (it[2]?'<span style="margin-left:auto;font-size:9.5px;font-variant-numeric:tabular-nums;color:#6F675B;">'+it[2]+'</span>':'');
+    r.onclick=function(){
+      pill.style.transform='translateY('+(ix*30)+'px)';
+      Array.prototype.forEach.call(nav.children,function(c,ci){ if(c.style.height) c.style.color= ci===ix?'#EDE7DA':'#9A9184'; });
+    };
+    nav.appendChild(r); var s=document.createElement('div'); s.style.height='2px'; nav.appendChild(s);
+  });
+
+  var pj=[['#7FA6C9','Needt v1'],['#C9A87F','Resale'],['#8FC99B','Beats']];
+  var pc=document.getElementById('proj');
+  pj.forEach(function(p){
+    var e=document.createElement('div');
+    e.style.cssText='display:flex;align-items:center;gap:8px;height:24px;padding:0 7px;border-radius:6px;color:#9A9184;cursor:pointer;';
+    e.innerHTML='<span style="width:6px;height:6px;border-radius:2px;background:'+p[0]+';flex:none;"></span><span style="font-size:11px;">'+p[1]+'</span>';
+    e.onmouseenter=function(){e.style.background='#1E1B15';e.style.color='#EDE7DA';};
+    e.onmouseleave=function(){e.style.background='transparent';e.style.color='#9A9184';};
+    pc.appendChild(e);
+  });
+
+  var days=[['M','24'],['T','25'],['W','26'],['T','27'],['F','28'],['S','29'],['S','30']];
+  var strip=document.getElementById('strip');
+  days.forEach(function(d,i){
+    var on=i===1;
+    var e=document.createElement('div');
+    e.style.cssText='flex:1;text-align:center;padding:3px 0;border-radius:5px;cursor:pointer;background:'+(on?'#241F18':'transparent')+';';
+    e.innerHTML='<div style="font-size:8.5px;color:#6F675B;">'+d[0]+'</div><div style="font-size:11px;font-variant-numeric:tabular-nums;color:'+(on?'#EDE7DA':'#9A9184')+';">'+d[1]+'</div>';
+    strip.appendChild(e);
+  });
+
+  var H=30,cv=document.getElementById('cv'),h='';
+  for(var g=0;g<10;g++){
+    h+='<div style="position:absolute;left:0;right:0;top:'+(g*H)+'px;border-top:0.5px solid #332E24;"></div>';
+    h+='<div style="position:absolute;left:0;top:'+(g*H+3)+'px;font-size:8.5px;font-variant-numeric:tabular-nums;color:#6F675B;">'+(9+g)+':00</div>';
+  }
+  [['Standup',0,.5,0],['Design review',.75,1.25,1],['Lunch',3,1,0],['Deep work',4.25,1.75,1],['Retro',7,1,0]].forEach(function(x){
+    var one=x[2]*H-3<20;
+    h+='<div style="position:absolute;left:30px;right:4px;top:'+(x[1]*H+1)+'px;height:'+(x[2]*H-3)+'px;box-sizing:border-box;padding:'+(one?'0 6px':'3px 6px')+';overflow:hidden;'+
+      (x[3]?'background:transparent;border:1px dashed #C96442;border-radius:4px;':'background:#211E17;border:0.5px solid #332E24;border-left:2px solid #9A9184;')+'">'+
+      (one?'<div style="display:flex;align-items:center;height:100%;gap:5px;"><span style="font-size:9.5px;color:#EDE7DA;">'+x[0]+'</span><span style="margin-left:auto;font-size:8.5px;color:#6F675B;font-variant-numeric:tabular-nums;">30m</span></div>'
+          :'<div style="font-size:10px;color:#EDE7DA;line-height:1.2;">'+x[0]+'</div><div style="font-size:8.5px;font-variant-numeric:tabular-nums;color:#6F675B;margin-top:1px;">'+(9+Math.floor(x[1]))+':'+((x[1]%1)*60<10?'0':'')+((x[1]%1)*60)+'</div>')+
+      '</div>';
+  });
+  h+='<div style="position:absolute;left:24px;right:0;top:'+(2.4*H)+'px;height:1px;background:#D8734F;"></div>';
+  h+='<div style="position:absolute;left:24px;top:'+(2.4*H-2.5)+'px;width:6px;height:6px;border-radius:50%;background:#D8734F;"></div>';
+  cv.innerHTML=h;
+
+  var b=document.getElementById('cap');
+  b.addEventListener('pointerdown',function(){b.style.transition='transform 90ms cubic-bezier(.4,0,.2,1)';b.style.transform='scale(.98)';});
+  ['pointerup','pointerleave'].forEach(function(e){b.addEventListener(e,function(){b.style.transition='transform 340ms cubic-bezier(.34,1.4,.5,1)';b.style.transform='scale(1)';});});
+})();
+</script>
+</div></body></html>

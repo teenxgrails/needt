@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>settings toggle live preview — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">03 · settings toggle live preview</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Концепт настроек Needt: рядом с каждым переключателем окно предпросмотра, показывающее реальный результат</h2>
+
+<div style="background: var(--surface-1); border-radius: 12px; padding: 1.25rem;">
+  <div id="rows"></div>
+</div>
+
+<script>
+(function(){
+  var rows=document.getElementById('rows');
+
+  var defs=[
+    {k:'shade', t:'Затенять нерабочие часы', d:'Вечер и ночь уходят на второй план', on:true},
+    {k:'anim',  t:'Анимации',                d:'Плавные переходы между состояниями', on:true},
+    {k:'dense', t:'Плотный режим',           d:'Больше строк на экране', on:false}
+  ];
+
+  function preview(k,on){
+    var w='<div style="position:absolute;inset:0;overflow:hidden;">';
+    if(k==='shade'){
+      for(var i=0;i<5;i++){
+        var dim = on && i>2;
+        w+='<div style="position:absolute;left:0;right:0;top:'+(i*14+2)+'px;height:12px;'+
+           'background:'+(dim?'var(--surface-0)':'var(--surface-2)')+';border-top:0.5px solid var(--border);'+
+           'transition:background 380ms ease;"></div>';
+      }
+      w+='<div style="position:absolute;left:9px;width:44px;top:18px;height:11px;background:var(--bg-accent);border-left:2px solid var(--border-accent);"></div>';
+    }
+    if(k==='anim'){
+      w+='<div class="pv-a" style="position:absolute;left:8px;top:12px;width:52px;height:13px;background:var(--surface-2);border:0.5px solid var(--border);border-left:2px solid var(--border-accent);"></div>'+
+         '<div class="pv-b" style="position:absolute;left:8px;top:40px;width:52px;height:13px;background:var(--surface-2);border:0.5px solid var(--border);border-left:2px solid var(--border-accent);"></div>';
+    }
+    if(k==='dense'){
+      var n = on?6:4, h = on?9:14;
+      for(var j=0;j<n;j++){
+        w+='<div style="position:absolute;left:8px;right:8px;top:'+(j*(h+3)+4)+'px;height:'+h+'px;'+
+           'background:var(--surface-2);border:0.5px solid var(--border);transition:all 320ms cubic-bezier(.22,1,.32,1);"></div>';
+      }
+    }
+    return w+'</div>';
+  }
+
+  defs.forEach(function(d){
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:0.5px solid var(--border);';
+
+    var box=document.createElement('div');
+    box.style.cssText='width:124px;height:76px;flex:none;position:relative;background:var(--surface-0);border:0.5px solid var(--border);border-radius:6px;overflow:hidden;';
+    box.innerHTML=preview(d.k,d.on);
+
+    var mid=document.createElement('div');
+    mid.style.cssText='flex:1;min-width:0;';
+    mid.innerHTML='<div style="font-size:14px;color:var(--text-primary);">'+d.t+'</div>'+
+      '<div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">'+d.d+'</div>';
+
+    var sw=document.createElement('button');
+    sw.setAttribute('role','switch');
+    sw.setAttribute('aria-label',d.t);
+    sw.style.cssText='flex:none;width:38px;height:22px;border-radius:11px;padding:0;border:0.5px solid var(--border);position:relative;cursor:pointer;'+
+      'background:'+(d.on?'var(--fill-accent, var(--text-accent))':'var(--surface-1)')+';transition:background 200ms ease;';
+    sw.innerHTML='<span style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--surface-2);'+
+      'transform:translateX('+(d.on?'16px':'0')+');transition:transform 240ms cubic-bezier(.22,1,.32,1);"></span>';
+
+    var anim=null;
+    function loop(){
+      var a=box.querySelector('.pv-a'), b=box.querySelector('.pv-b');
+      if(!a||!b) return;
+      var on=d.on, i=0;
+      anim=setInterval(function(){
+        i=1-i;
+        var dur = on?'420ms':'0ms';
+        a.style.transition='transform '+dur+' cubic-bezier(.22,1,.32,1)';
+        b.style.transition='transform '+dur+' cubic-bezier(.22,1,.32,1)';
+        a.style.transform='translateY('+(i?28:0)+'px)';
+        b.style.transform='translateY('+(i?-28:0)+'px)';
+      },900);
+    }
+    function stop(){ if(anim){clearInterval(anim);anim=null;} }
+
+    if(d.k==='anim'){
+      row.addEventListener('mouseenter',function(){ stop(); loop(); });
+      row.addEventListener('mouseleave',stop);
+    }
+
+    sw.addEventListener('click',function(){
+      d.on=!d.on;
+      sw.style.background=d.on?'var(--fill-accent, var(--text-accent))':'var(--surface-1)';
+      sw.firstElementChild.style.transform='translateX('+(d.on?'16px':'0')+')';
+      stop();
+      box.innerHTML=preview(d.k,d.on);
+    });
+
+    row.appendChild(box); row.appendChild(mid); row.appendChild(sw);
+    rows.appendChild(row);
+  });
+})();
+</script>
+</div></body></html>
