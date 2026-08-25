@@ -31,11 +31,26 @@ this work, and do not trust `09-launch.md` where it contradicts this table.
 **Consequence:** `09-launch.md` L0.1, L0.2, L0.3, L0.4 are done. L1.2 and L1.5
 are done in part. Close them; stop scheduling them.
 
+## Status, 2026-08-25
+
+| Item                       | State                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| P1.1 visual baselines      | merged (`c3e7a11`, `eb81407`); `Enforce visual gate` back to `run: exit 1` on `main` |
+| P1.3 stale handoffs        | merged (`0483d26`)                                                                   |
+| P0.2 billing               | PR #27, `bc255a6`, four audit rounds, three closed — see P0.5 for what is left       |
+| P0.1 admin route           | `codex/admin-system-settings-route`, audited, fix round pending                      |
+| P0.3 push config           | `codex/push-config-visibility`, audited, fix round pending                           |
+| P0.4, P1.2, P1.4, P1.5, P2 | not started                                                                          |
+
+**Creem has taken zero live payments** (dashboard, week of 2026-08-25: 0
+deliveries, 0 successful, 0 failed). Nothing in P0.2 or P0.5 has cost money yet.
+That is why the checkout stays open instead of being disabled.
+
 ---
 
 ## P0 — Needt is currently broken or dangerous for a real user
 
-These four are not "launch phase" items. Each is a live defect on a system that
+These are not "launch phase" items. Each is a live defect on a system that
 already accepts traffic.
 
 ### P0.1 — Google and Outlook credentials cannot be entered at all
@@ -128,6 +143,55 @@ legal exposure rather than a product gap.
 - Implement full data export (not just tasks).
 - Create `tests/account-lifecycle.spec.ts` covering both flows.
 - Re-read `privacy/page.tsx` afterwards and make it match what the code does.
+
+### P0.5 — The subscription state model, and the two events nobody handles
+
+Opened 2026-08-25, after four audit rounds on PR #27. Do **not** schedule this
+as another patch to `webhook-processor.ts` — the patching is finished, and this
+entry exists to say why.
+
+**Stop patching the identity guard.** Rounds 1 through 4 each found a defect of
+the same shape, and each fix closed the named sequence while opening the
+adjacent one:
+
+| round | what let a foreign subscription win                                                                                                                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1     | subscription identity was never compared outside the equal-timestamp tie-break                                                                                                 |
+| 2     | the guard only blocked events with `restrictionLevel > 0`, so a foreign `paid` adopted the row and the next `expired` was no longer foreign                                    |
+| 3     | adoption was allowed whenever the stored row had `restrictionLevel > 0` — which includes `cancelAtPeriodEnd`, `PAST_DUE` and `PAYMENT_FAILED`, all of which still grant access |
+| 4     | adoption now requires the stored cursor at level 5, which a normal cancellation never reaches, so a genuine resubscribe during grace is refused                                |
+
+The root cause is the model, not any one condition. `Subscription` holds **one**
+`creemSubscriptionId` per user, so every webhook must decide whether the row
+"belongs" to the subscription that sent it. A user can legitimately have two
+subscriptions in flight — resubscribe during grace, an accidental double
+purchase, an upgrade — and one row cannot represent that.
+
+The agent reached the same conclusion independently and recorded it as a
+limitation rather than fixing it: `paid(A) → rejected paid(B) → expired(A)`
+leaves the user FREE, because B was refused and never got a cursor.
+
+- Model each Creem subscription as its own row, keyed `(userId,
+creemSubscriptionId)`, carrying its own status, period end and cursor. The
+  `CreemSubscriptionCursor` table added in PR #27 is already half of this.
+- Derive entitlement from the **set**: a user has PRO if any of their
+  subscriptions currently grants it. No row then needs to win an argument with
+  another.
+- Keep the existing `Subscription` row as a derived projection during the
+  expand phase so nothing that reads it breaks. Additive migrations only.
+- Delete `billing.test.ts:726` and rewrite it. It mocks the `sub_old` cursor at
+  `restrictionLevel: 5` while the row is `CANCELED` with a future
+  `currentPeriodEnd` — a state the processor cannot produce, because the cursor
+  is written from `restrictionLevel(mutation.data)` and `CANCELED` with a date
+  is level 4. The test is green over a broken grace-resubscribe path.
+
+**`refund.created` and `dispute.created` are enabled in Creem and handled
+nowhere.** The endpoint `https://use.needt.app/api/billing/webhook` has 13 event
+types enabled; `webhook-mapping.ts` maps 11, and `src/app/api/billing/webhook/route.ts`
+registers a handler for each of those 11. Neither refund nor dispute is among
+them. A customer who charges back or takes a refund keeps PRO, silently and
+with no record. Handle both, decide what a partial refund does, and cover them
+with recorded fixtures like the rest.
 
 ---
 
