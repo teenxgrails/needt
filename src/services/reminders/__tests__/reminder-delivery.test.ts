@@ -63,6 +63,24 @@ describe("missing VAPID configuration warning", () => {
     });
   });
 
+  it("warns once during worker startup when the private key is missing", async () => {
+    delete process.env.VAPID_PRIVATE_KEY;
+    await jest.isolateModulesAsync(async () => {
+      const { logger } = await import("@/lib/logger");
+      const { runWorkerStartupChecks } = await import("@/worker/startup");
+
+      await runWorkerStartupChecks();
+      await runWorkerStartupChecks();
+
+      expect(logger.warn).toHaveBeenCalledTimes(1);
+      expect(logger.warn).toHaveBeenCalledWith(
+        "Web Push delivery is unavailable; missing environment variables: VAPID_PRIVATE_KEY",
+        { missingVariables: ["VAPID_PRIVATE_KEY"] },
+        "ReminderDelivery"
+      );
+    });
+  });
+
   it("returns false and warns when deliverPush cannot load VAPID configuration", async () => {
     delete process.env.VAPID_PRIVATE_KEY;
     await jest.isolateModulesAsync(async () => {
