@@ -2,8 +2,8 @@
 id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
-status: active
-updated: 2026-08-25T00:35:00Z
+status: complete
+updated: 2026-08-25T00:21:35Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -56,7 +56,9 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Made the Billing visual contract independent of shared fixture state by intercepting `/api/billing` with a deterministic configured response. The dedicated Billing screenshot and rendered `PAYMENT_FAILED` recovery path both run at desktop, tablet, and mobile widths.
 - Recovered the shared Docker E2E stack after host disk exhaustion corrupted the disposable Postgres/Redis images: restarted Docker Desktop, removed only the `needt-e2e` compose volumes and corrupted regenerable images, pruned 470.1 MB, and rebuilt a healthy stack. The required entitlement/billing E2E gate then passed 5/5 again.
 - Reclaimed host disk without touching source, `.env` files, user data, or anti-detect profiles: removed this worktree's `.next`, two other completed/regenerable worktree `.next` directories, npm/Puppeteer/uv/pip/Selenium caches, and AdsPower's verified `source/cache` directory while AdsPower was closed. Free space recovered from about 117 MiB to 18 GiB. GoLogin/Incogniton profile data and caches remain untouched.
-- Files currently dirty or expected to change: this handoff, `prisma/schema.prisma`, a new additive migration, `src/lib/creem/webhook-processor.ts`, `src/lib/creem/__tests__/billing.test.ts`, `tests/fixtures/creem/billing-lifecycle.json`, `tests/billing.spec.ts`, `tests/visual/settings-tabs.spec.ts`, and the three Darwin `settings-billing` baselines until final verification/CI checkpoint.
+- Committed the follow-up as `123ac99403359ebba900a7c1bd88fa62c2db4e6e` and pushed it to PR #27. CI runs `32792517446` and `32792522560` both passed schema drift, quality gates, security, full E2E (`7m07s` / `5m11s`), and Linux visual/style (`8m24s` / `8m15s`).
+- After CI removed the no-longer-needed local Playwright browser cache (971 MiB) and this completed worktree's `.next` (3.1 GiB). Host free space is now 24 GiB. The healthy shared Postgres/Redis E2E stack is released for other agents.
+- Files currently dirty or expected to change: this handoff only, for the final CI/database-release checkpoint after commit `123ac99`.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
@@ -127,8 +129,8 @@ Production artifact check passed (1379 files).
 
 ## Blockers
 
-- The full local visual suite is not green because unrelated shared fixtures fail before/around non-Billing screenshots. Billing itself is green 6/6 on Darwin after manual review; Linux confirmation is pending PR CI. The explicit mutation red-run is blocked by the execution policy described above. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
+- No code or CI blocker remains. The full local visual suite encountered unrelated shared-fixture failures, but Billing is green 6/6 on Darwin and both complete Linux visual/style CI jobs passed. The explicit mutation red-run remains blocked by the execution policy described above. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
 
 ## Next action
 
-- Commit and push the focused follow-up, monitor PR #27 through Linux visual/full E2E CI, then record the resulting SHA/run and explicitly release the healthy shared test database.
+- Review and merge green PR #27; the shared test database is released.
