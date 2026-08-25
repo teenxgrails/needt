@@ -2,8 +2,8 @@
 id: 20260824-codex-push-config-visibility
 owner: codex
 branch: codex/push-config-visibility
-status: active
-updated: 2026-08-25T23:05:13Z
+status: complete
+updated: 2026-08-25T23:25:11Z
 objective: Preserve the saved push preference across missing server configuration, prove warning behavior by execution, and align visual coverage with real server state.
 ---
 
@@ -24,7 +24,7 @@ objective: Preserve the saved push preference across missing server configuratio
 
 ## Working state
 
-- Current dirty files are the two reviewed Linux notification baselines and this handoff. All implementation/test changes are committed through `f555aa2`.
+- Implementation, tests, darwin baselines, and reviewed Ubuntu baselines are committed through `5d1b732`; the worktree is clean apart from this final handoff checkpoint.
 - Foreign changes that must remain untouched: every file in `/Users/lol/Needt` and every pre-existing worktree/handoff.
 
 ## Verification
@@ -47,7 +47,7 @@ objective: Preserve the saved push preference across missing server configuratio
 - Shared test database was acquired at 2026-08-25T23:00:58Z and released at 2026-08-25T23:05:13Z with `docker compose -f docker-compose.e2e.yml down --volumes`; no workstream owns it now.
 - Final Node 22 code gates at `f555aa2`: `npm run type-check` passed; `npm run lint` passed; full `npm run test:unit -- --runInBand` passed (170 suites / 792 tests, 1 suite / 1 test skipped); `npm run build` passed (142 pages / 1,390 artifacts); `npm run build:worker` passed (33.4 MB).
 - CI run `32907686297` for `66b3cba` passed quality, security, schema drift, and E2E. Visual failed only tablet/mobile notification screenshots; the official Ubuntu candidates were manually reviewed and imported. Desktop Linux was byte-identical and left unchanged.
-- Still required: baseline/handoff commit, push, and green CI visual confirmation.
+- Final CI run `32909210139` attempt 2 on `5d1b732` passed changes, quality gates, schema drift, security, E2E, visual (68 passed / 4 skipped), and style (15/15). Attempt 1 had one unrelated flaky `focus-dark.png` mismatch; its last-failed candidate rerun and the clean failed-job rerun both passed without a baseline change.
 
 ## Decisions and constraints
 
@@ -62,4 +62,4 @@ objective: Preserve the saved push preference across missing server configuratio
 
 ## Next action
 
-- Commit and push the reviewed Ubuntu baselines and handoff, then confirm the full CI visual gate.
+- Release owner can review and merge PR #24; production VAPID configuration remains a separate owner-controlled operation.
