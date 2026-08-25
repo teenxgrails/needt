@@ -1,7 +1,15 @@
 # 09 — Public launch track
 
-**Status:** active. This is the governing plan until Needt serves real users on
-`use.needt.app`.
+> **Superseded for sequencing (2026-08-24.)** The governing plan is now
+> [12 — Remaining work to the first paying user](12-remaining-work.md).
+> L0.1–L0.4 are done: `codex/sol-s11-contracts` and
+> `codex/terra-t8-product-ui` are merged into `origin/main`, the Figma capture
+> script is out of `src/app/layout.tsx`, and web, worker and collaboration all
+> report `e93d61a`. L1.2 (fail-closed rate limiting) and L1.5 (backups) are done
+> in part. Read this file for what a phase _means_; read plan 12 for what is
+> left.
+
+**Status:** reference. This was the governing plan until 2026-08-24.
 
 **Goal:** take the current green release from "locally verified" to "real paying
 users signing up on production", then resume feature work.
