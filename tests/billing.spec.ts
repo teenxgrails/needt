@@ -357,20 +357,51 @@ test.describe("recorded Creem billing lifecycle", () => {
       ).status()
     ).toBe(200);
 
-    for (const oldExpiry of [
-      recordedFixtures.equalTimeOldExpiryAfterResubscribe,
+    expect(
+      (
+        await sendWebhook(
+          recordedFixtures.equalTimeOldExpiryAfterResubscribe,
+          proUserId
+        )
+      ).ok()
+    ).toBe(true);
+    expect(await subscription(proUserId)).toMatchObject({
+      plan: SubscriptionPlan.PRO,
+      status: SubscriptionStatus.ACTIVE,
+      creemSubscriptionId: "sub_recorded_pro_2",
+      lastCreemEventId: fixtureEventId(recordedFixtures.proResubscribed),
+    });
+
+    expect(
+      (
+        await sendWebhook(
+          recordedFixtures.laterOldPaidAfterResubscribe,
+          proUserId
+        )
+      ).ok()
+    ).toBe(true);
+    expect(
+      (
+        await sendWebhook(
+          recordedFixtures.laterOldExpiryAfterResubscribe,
+          proUserId
+        )
+      ).ok()
+    ).toBe(true);
+    expect(await subscription(proUserId)).toMatchObject({
+      plan: SubscriptionPlan.PRO,
+      status: SubscriptionStatus.ACTIVE,
+      creemSubscriptionId: "sub_recorded_pro_2",
+      currentPeriodEnd: newDate(periodEnd),
+      lastCreemEventId: fixtureEventId(recordedFixtures.proResubscribed),
+    });
+    for (const oldEvent of [
+      recordedFixtures.laterOldPaidAfterResubscribe,
       recordedFixtures.laterOldExpiryAfterResubscribe,
     ]) {
-      expect((await sendWebhook(oldExpiry, proUserId)).ok()).toBe(true);
-      expect(await subscription(proUserId)).toMatchObject({
-        plan: SubscriptionPlan.PRO,
-        status: SubscriptionStatus.ACTIVE,
-        creemSubscriptionId: "sub_recorded_pro_2",
-        lastCreemEventId: fixtureEventId(recordedFixtures.proResubscribed),
-      });
       expect(
         await prisma.creemWebhookEvent.findUniqueOrThrow({
-          where: { id: fixtureEventId(oldExpiry) },
+          where: { id: fixtureEventId(oldEvent) },
           select: { outcome: true },
         })
       ).toEqual({ outcome: "subscription_identity_mismatch" });

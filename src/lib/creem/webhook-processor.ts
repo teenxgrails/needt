@@ -1,7 +1,12 @@
-import { Prisma, type SubscriptionStatus } from "@prisma/client";
+import {
+  Prisma,
+  SubscriptionPlan,
+  type SubscriptionStatus,
+} from "@prisma/client";
 
 import { mapCreemEventToSubscription } from "@/lib/creem/webhook-mapping";
 import { newDate } from "@/lib/date-utils";
+import { effectiveSubscriptionPlan } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 
 import type { CreemBillingEvent } from "./webhook-mapping";
@@ -110,44 +115,83 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
           lastCreemEventAt: true,
         },
       }));
-    const olderThanAppliedEvent = Boolean(
-      currentSubscription?.lastCreemEventAt &&
-        currentSubscription.lastCreemEventAt > eventCreatedAt
-    );
-    const differentSubscriptionId = Boolean(
-      currentSubscription?.creemSubscriptionId &&
+    const subscriptionCursor = mutation.creemSubscriptionId
+      ? await transaction.creemSubscriptionCursor.findUnique({
+          where: {
+            userId_creemSubscriptionId: {
+              userId,
+              creemSubscriptionId: mutation.creemSubscriptionId,
+            },
+          },
+        })
+      : null;
+    const legacyCurrentCursor =
+      !subscriptionCursor &&
+      currentSubscription?.creemSubscriptionId ===
         mutation.creemSubscriptionId &&
-        currentSubscription.creemSubscriptionId !== mutation.creemSubscriptionId
+      currentSubscription.lastCreemEventAt
+        ? {
+            lastEventAt: currentSubscription.lastCreemEventAt,
+            restrictionLevel: restrictionLevel(currentSubscription),
+          }
+        : null;
+    const claimedSubscriptionCursor =
+      subscriptionCursor ?? legacyCurrentCursor;
+    const olderThanClaimedSubscription = Boolean(
+      claimedSubscriptionCursor?.lastEventAt &&
+        claimedSubscriptionCursor.lastEventAt > eventCreatedAt
     );
-    const sameTimestamp = Boolean(
-      currentSubscription?.lastCreemEventAt &&
-        currentSubscription.lastCreemEventAt.getTime() ===
+    const sameClaimedSubscriptionTimestamp = Boolean(
+      claimedSubscriptionCursor?.lastEventAt &&
+        claimedSubscriptionCursor.lastEventAt.getTime() ===
           eventCreatedAt.getTime()
     );
-    const blockedSubscriptionIdentity = Boolean(
-      differentSubscriptionId &&
-        (restrictionLevel(mutation.data) > 0 ||
-          (sameTimestamp &&
-            currentSubscription &&
-            restrictionLevel(currentSubscription) === 0))
-    );
     const weakerAtSameTimestamp = Boolean(
-      sameTimestamp &&
-        currentSubscription?.creemSubscriptionId &&
-        currentSubscription.creemSubscriptionId ===
-          mutation.creemSubscriptionId &&
-        restrictionLevel(mutation.data) < restrictionLevel(currentSubscription)
+      sameClaimedSubscriptionTimestamp &&
+        claimedSubscriptionCursor &&
+        restrictionLevel(mutation.data) <
+          claimedSubscriptionCursor.restrictionLevel
+    );
+    const isRecurringMutation = mutation.data.plan !== SubscriptionPlan.LIFETIME;
+    const missingSubscriptionIdentity = Boolean(
+      isRecurringMutation && !mutation.creemSubscriptionId
+    );
+    const differentSubscriptionId = Boolean(
+      isRecurringMutation &&
+        currentSubscription &&
+        currentSubscription.creemSubscriptionId !== mutation.creemSubscriptionId
+    );
+    const incomingGrantsAccess = restrictionLevel(mutation.data) === 0;
+    const currentGrantsAccess =
+      effectiveSubscriptionPlan(currentSubscription) !== SubscriptionPlan.FREE;
+    const canEstablishSubscriptionIdentity = Boolean(
+      mutation.creemSubscriptionId &&
+        incomingGrantsAccess &&
+        (!currentGrantsAccess ||
+          (currentSubscription && restrictionLevel(currentSubscription) > 0))
+    );
+    const blockedSubscriptionIdentity = Boolean(
+      differentSubscriptionId && !canEstablishSubscriptionIdentity
+    );
+    const restrictiveEventWithoutEstablishedIdentity = Boolean(
+      isRecurringMutation &&
+        restrictionLevel(mutation.data) > 0 &&
+        currentSubscription?.creemSubscriptionId !==
+          mutation.creemSubscriptionId
     );
     const lifetimePreserved = Boolean(currentSubscription?.plan === "LIFETIME");
-    const outcome = olderThanAppliedEvent
+    const outcome = olderThanClaimedSubscription
       ? "stale_event"
-      : blockedSubscriptionIdentity
-        ? "subscription_identity_mismatch"
-        : weakerAtSameTimestamp
+      : weakerAtSameTimestamp
           ? "equal_time_weaker_event"
           : lifetimePreserved
             ? "lifetime_preserved"
-            : "processed";
+            : missingSubscriptionIdentity
+              ? "missing_subscription_identity"
+              : blockedSubscriptionIdentity ||
+                  restrictiveEventWithoutEstablishedIdentity
+                ? "subscription_identity_mismatch"
+                : "processed";
 
     const user = await transaction.user.findUnique({
       where: { id: userId },
@@ -172,20 +216,55 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
     if (receipt.count === 0) {
       return { processed: false, reason: "replayed_event" as const };
     }
-    if (olderThanAppliedEvent) {
-      return { processed: false, reason: "stale_event" as const };
+    if (
+      mutation.creemSubscriptionId &&
+      !olderThanClaimedSubscription &&
+      !weakerAtSameTimestamp
+    ) {
+      await transaction.creemSubscriptionCursor.upsert({
+        where: {
+          userId_creemSubscriptionId: {
+            userId,
+            creemSubscriptionId: mutation.creemSubscriptionId,
+          },
+        },
+        create: {
+          userId,
+          creemSubscriptionId: mutation.creemSubscriptionId,
+          lastEventId: eventId,
+          lastEventAt: eventCreatedAt,
+          restrictionLevel: restrictionLevel(mutation.data),
+        },
+        update: {
+          lastEventId: eventId,
+          lastEventAt: eventCreatedAt,
+          restrictionLevel: restrictionLevel(mutation.data),
+        },
+      });
     }
-    if (blockedSubscriptionIdentity) {
-      return {
-        processed: false,
-        reason: "subscription_identity_mismatch" as const,
-      };
+    if (olderThanClaimedSubscription) {
+      return { processed: false, reason: "stale_event" as const };
     }
     if (weakerAtSameTimestamp) {
       return { processed: false, reason: "equal_time_weaker_event" as const };
     }
     if (lifetimePreserved) {
       return { processed: false, reason: "lifetime_preserved" as const };
+    }
+    if (missingSubscriptionIdentity) {
+      return {
+        processed: false,
+        reason: "missing_subscription_identity" as const,
+      };
+    }
+    if (
+      blockedSubscriptionIdentity ||
+      restrictiveEventWithoutEstablishedIdentity
+    ) {
+      return {
+        processed: false,
+        reason: "subscription_identity_mismatch" as const,
+      };
     }
 
     const keepsPaidThroughDate = [

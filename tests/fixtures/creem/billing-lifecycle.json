@@ -240,7 +240,7 @@
   "laterOldExpiryAfterResubscribe": {
     "id": "evt_recorded_later_old_expiry_after_resubscribe",
     "eventType": "subscription.expired",
-    "created_at": 1728734330027,
+    "created_at": 1728734330127,
     "object": {
       "id": "sub_recorded_pro",
       "object": "subscription",
@@ -256,6 +256,31 @@
         "email": "billing-fixture@needt.local"
       },
       "status": "expired",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "laterOldPaidAfterResubscribe": {
+    "id": "evt_recorded_later_old_paid_after_resubscribe",
+    "eventType": "subscription.paid",
+    "created_at": 1728734330027,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "2020-01-01T00:00:00.000Z",
       "metadata": {
         "referenceId": "{{USER_ID}}"
       }

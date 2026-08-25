@@ -142,6 +142,7 @@ model User {
   schedulingRuns         SchedulingRun[]
   idempotencyRecords     IdempotencyRecord[]
   creemWebhookEvents     CreemWebhookEvent[]
+  creemCursors           CreemSubscriptionCursor[]
   taskDependenciesOwned  TaskDependency[]        @relation("TaskDependencyOwner")
   focusPreferences       FocusPreferences?
   taskReminders          TaskReminder[]
@@ -2615,4 +2616,18 @@ model CreemWebhookEvent {
   receivedAt     DateTime @default(now())
 
   @@index([userId, eventCreatedAt])
+}
+
+model CreemSubscriptionCursor {
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creemSubscriptionId String
+  lastEventId         String
+  lastEventAt         DateTime
+  restrictionLevel    Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@id([userId, creemSubscriptionId])
+  @@index([userId, lastEventAt])
 }

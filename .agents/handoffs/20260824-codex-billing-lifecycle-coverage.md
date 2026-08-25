@@ -3,7 +3,7 @@ id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
 status: active
-updated: 2026-08-24T22:47:36Z
+updated: 2026-08-25T00:35:00Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -46,10 +46,23 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff until the final CI-evidence checkpoint commit.
+- Follow-up review reproduced two remaining identity holes in `webhook-processor.ts`: a later unrestricted event from a foreign subscription can replace an active paid identity before a restrictive event revokes it, and null incoming/stored subscription IDs bypass the identity comparison. The current user-row cursor cannot order independent provider subscriptions.
+- Decision: add an additive per-user/per-Creem-subscription cursor and advance it even for foreign events that are recorded but not projected onto the user subscription. A grant for a different ID may establish identity only when the current row is FREE/no longer grants access or is already restrictive (including cancellation grace); an unrestricted active paid identity cannot be replaced. Recurring mutations without an incoming subscription ID fail closed; a restrictive event cannot claim a legacy paid row whose stored ID is null. Lifetime checkout remains the intentional null-ID exception.
+- Visual decision: keep the local Creem environment injection because it deliberately matches CI and the configured product state; regenerate and hand-review the three Darwin Billing baselines. Add a browser-rendered failed-payment alert assertion without a new snapshot, so both Darwin and Linux exercise the state without duplicating baseline files.
+- Added the recorded two-delivery regression before changing the processor. Its pre-fix run failed exactly as reported: expected `sub_recorded_pro_2`, `ACTIVE`, future paid-through and the resubscribe event cursor; received `sub_recorded_pro`, `CANCELED`, `currentPeriodEnd: null`, and the later old-expiry event cursor (`1 failed, 1 passed, 1 did not run`). After the per-subscription cursor/null policy fix, the same lifecycle suite passed 3/3.
+- Added an additive `CreemSubscriptionCursor` keyed by `(userId, creemSubscriptionId)`, including migration backfill from every existing non-null subscription cursor. Rejected foreign events still advance only their claimed subscription cursor; equal-time weaker grants remain blocked per claimed subscription. A foreign grant cannot replace an unrestricted active paid identity, while a grant can establish a new identity from FREE or an already restrictive/grace state.
+- Defined/tested null behavior: a recurring event with no incoming subscription ID is recorded as `missing_subscription_identity` without mutation; a restrictive event with a valid ID cannot claim/revoke a paid row whose stored subscription ID is null. Trusted Lifetime checkout remains unchanged.
+- Split Billing out of the long Settings screenshot matrix so an earlier flaky tab cannot skip this billing contract. The pre-update targeted Darwin run produced exactly three `settings-billing` diffs while all three failed-payment rendered cases passed. Reviewed desktop/tablet/mobile actual+diff images by hand; each change only removed the obsolete unconfigured warning and enabled the configured checkout controls. Accepted only the three unsuffixed Darwin Billing PNGs. The post-update targeted run passed 6/6; existing `-linux` PNGs were untouched.
+- Made the Billing visual contract independent of shared fixture state by intercepting `/api/billing` with a deterministic configured response. The dedicated Billing screenshot and rendered `PAYMENT_FAILED` recovery path both run at desktop, tablet, and mobile widths.
+- Recovered the shared Docker E2E stack after host disk exhaustion corrupted the disposable Postgres/Redis images: restarted Docker Desktop, removed only the `needt-e2e` compose volumes and corrupted regenerable images, pruned 470.1 MB, and rebuilt a healthy stack. The required entitlement/billing E2E gate then passed 5/5 again.
+- Reclaimed host disk without touching source, `.env` files, user data, or anti-detect profiles: removed this worktree's `.next`, two other completed/regenerable worktree `.next` directories, npm/Puppeteer/uv/pip/Selenium caches, and AdsPower's verified `source/cache` directory while AdsPower was closed. Free space recovered from about 117 MiB to 18 GiB. GoLogin/Incogniton profile data and caches remain untouched.
+- Files currently dirty or expected to change: this handoff, `prisma/schema.prisma`, a new additive migration, `src/lib/creem/webhook-processor.ts`, `src/lib/creem/__tests__/billing.test.ts`, `tests/fixtures/creem/billing-lifecycle.json`, `tests/billing.spec.ts`, `tests/visual/settings-tabs.spec.ts`, and the three Darwin `settings-billing` baselines until final verification/CI checkpoint.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
+
+- Follow-up focused evidence: processor unit suite passed 38/38 including both null defaults, foreign unrestricted grant rejection, and resubscribe during cancellation grace. Recorded billing E2E passed 3/3 after the pre-fix red above. `npm run type-check`, `npm run lint`, and `git diff --check` passed. Targeted Darwin Billing visual run passed 6/6 after manual baseline review. The first sandboxed full visual attempt was invalid infrastructure evidence (`EMFILE` plus Chromium Mach-port permission denial, 72 browser-launch failures); Chromium visual checks are now run outside that sandbox boundary.
+- A full unsandboxed `npm run test:visual` reached unrelated pre-existing shared-fixture failures outside Billing (`Review calendar sync` missing, Today baseline diff, and `Launch review notes` missing) and was stopped after about six minutes. No unrelated baseline was accepted. The deterministic Billing-only Darwin contract remains green 6/6; Linux must be confirmed by PR CI against the unchanged reviewed `-linux` baselines.
 
 - Passed after fresh main: `npx prisma validate`; `npm run type-check`; `npm run lint` (zero warnings); `npm run test:unit -- --runInBand src/lib/creem src/lib/entitlements`; `PORT=3105 TEST_BASE_URL=http://127.0.0.1:3105 npm run test:e2e -- tests/entitlements.spec.ts tests/billing.spec.ts` (5/5); `npm run build`; `git diff --check`.
 - Repeated after the equal-time ordering fix: `npx prisma validate` with the local test DB URLs (schema valid); `npm run type-check`; `npm run lint` (zero warnings); focused unit gates (3 suites / 26 tests); required Playwright lifecycle/entitlement gate (5/5); `npm run build` including production artifact checks.
@@ -73,7 +86,7 @@ PASS src/lib/creem/__tests__/billing.test.ts
 PASS src/lib/creem/__tests__/portal-route.test.ts
 PASS src/lib/creem/__tests__/failed-payment.test.ts
 Test Suites: 3 passed, 3 total
-Tests:       35 passed, 35 total
+Tests:       38 passed, 38 total
 Snapshots:   0 total
 ```
 
@@ -87,7 +100,7 @@ Running 5 tests using 1 worker
 5 passed (17.0s)
 ```
 
-  The second command intentionally bypassed `scripts/reset-e2e-environment.ts`; both full lifecycle/entitlement runs passed consecutively with no database reset between them. The shared test database is released for other agents.
+  The second command intentionally bypassed `scripts/reset-e2e-environment.ts`; both full lifecycle/entitlement runs passed consecutively with no database reset between them. After Docker recovery, the requested command passed 5/5 again in 29.0s.
 
 ```text
 $ npm run build
@@ -114,8 +127,8 @@ Production artifact check passed (1379 files).
 
 ## Blockers
 
-- Delivery code/gates have no local blocker. The explicit mutation red-run is blocked by the execution policy described above. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
+- The full local visual suite is not green because unrelated shared fixtures fail before/around non-Billing screenshots. Billing itself is green 6/6 on Darwin after manual review; Linux confirmation is pending PR CI. The explicit mutation red-run is blocked by the execution policy described above. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
 
 ## Next action
 
-- In a policy-permitted environment, temporarily remove the subscription-identity guard, run the focused old-subscription expiry regressions to capture the required red result, restore the guard, rerun them green, and then mark this handoff complete. No code, CI, merge, deploy, dashboard, or shared-test-DB action otherwise remains.
+- Commit and push the focused follow-up, monitor PR #27 through Linux visual/full E2E CI, then record the resulting SHA/run and explicitly release the healthy shared test database.
