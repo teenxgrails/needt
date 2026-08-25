@@ -90,6 +90,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made the admin System settings page SSR-safe and restored its middleware and
+  database-backed authorization checks, including protection against stale
+  deactivated-admin sessions.
 - Restored Prisma migration/schema compatibility without rewriting user data:
   retained five legacy AI indexes and promoted the existing Page–tag join
   unique pair to Prisma's composite primary-key representation.

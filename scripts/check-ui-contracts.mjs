@@ -1,6 +1,8 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import { extname, join, relative } from "node:path";
 
+import { checkAdminSettingsReachability } from "./ui-contracts/admin-settings-reachability.mjs";
+
 const ROOT = process.cwd();
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
 const failures = [];
@@ -116,40 +118,7 @@ for (const file of productSources) {
   }
 }
 
-const settingsRoot = join(ROOT, "src/components/settings");
-const pageFiles = (await collect(join(ROOT, "src/app"))).filter((file) =>
-  file.endsWith("page.tsx")
-);
-const pageSources = await Promise.all(
-  pageFiles.map(async (file) => ({
-    contents: await readFile(file, "utf8"),
-    name: relative(ROOT, file),
-  }))
-);
-for (const file of await collect(settingsRoot)) {
-  const contents = await readFile(file, "utf8");
-  if (
-    !contents.includes("@/components/auth/AdminOnly") ||
-    !contents.includes("<AdminOnly")
-  ) {
-    continue;
-  }
-
-  const relativeSettingsPath = relative(settingsRoot, file)
-    .replace(/\.(?:ts|tsx)$/, "")
-    .replace(/\/index$/, "");
-  const importPath = `@/components/settings/${relativeSettingsPath}`;
-  const importingPage = pageSources.find(
-    ({ contents: pageContents }) =>
-      pageContents.includes(`from "${importPath}"`) ||
-      pageContents.includes(`from '${importPath}'`)
-  );
-  if (!importingPage) {
-    failures.push(
-      `${relative(ROOT, file)}: AdminOnly settings component has no page importing ${JSON.stringify(importPath)}`
-    );
-  }
-}
+failures.push(...(await checkAdminSettingsReachability(ROOT)));
 
 for (const integrationPath of ["src/app/globals.css", "tailwind.config.ts"]) {
   const contents = await source(integrationPath);

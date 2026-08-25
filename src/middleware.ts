@@ -24,7 +24,6 @@ const publicRoutes = [
 
 // Routes that only admins can access
 const adminRoutes = ["/admin", "/logs", "/settings/system"];
-const serverGuardedAdminRoutes = ["/admin/system"];
 
 // Static file extensions that should bypass authentication
 const staticFileExtensions = [
@@ -127,13 +126,6 @@ export async function middleware(request: NextRequest) {
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
     // If the user is not an admin, redirect to the home page
     if (token.role !== "admin") {
-      if (
-        serverGuardedAdminRoutes.some(
-          (route) => pathname === route || pathname.startsWith(`${route}/`)
-        )
-      ) {
-        return NextResponse.next();
-      }
       return NextResponse.redirect(publicAppUrl("/", request));
     }
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import AccessDeniedMessage from "@/components/auth/AccessDeniedMessage";
 import AdminOnly from "@/components/auth/AdminOnly";
@@ -24,6 +24,11 @@ const LOG_SOURCE = "SystemSettings";
  */
 export function SystemSettings() {
   const { system, updateSystemSettings } = useSettingsStore();
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   useEffect(() => {
     // Load settings from API
@@ -112,8 +117,8 @@ export function SystemSettings() {
                     Add both authorized redirect URIs (one for sign-in, one for
                     connecting a calendar):
                     <ul className="ml-4 mt-1 list-disc">
-                      <li>{window.location.origin}/api/auth/callback/google</li>
-                      <li>{window.location.origin}/api/calendar/google</li>
+                      <li>{origin}/api/auth/callback/google</li>
+                      <li>{origin}/api/calendar/google</li>
                     </ul>
                     <span className="mt-1 block text-xs">
                       These use the URL shown in your browser. The server sends
@@ -186,7 +191,7 @@ export function SystemSettings() {
                   <li>Go to Authentication</li>
                   <li>Add platform and configure OAuth settings</li>
                   <li>
-                    Add redirect URI: {window.location.origin}
+                    Add redirect URI: {origin}
                     /api/calendar/outlook
                   </li>
                   <li>

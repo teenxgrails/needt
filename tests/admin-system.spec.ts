@@ -52,15 +52,13 @@ test("an admin can reach the system credential form", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("a non-admin sees access denied instead of system credentials", async ({
+test("a non-admin is redirected away from system credentials", async ({
   page,
 }) => {
   await useSeededSession(page, "ci-free@needt.local");
 
   await page.goto("/admin/system");
 
-  await expect(page.getByTestId("admin-system-access-denied")).toContainText(
-    "You do not have permission to access system settings."
-  );
+  await expect(page).toHaveURL(/\/calendar$/);
   await expect(page.getByTestId("admin-system-form")).toHaveCount(0);
 });
