@@ -135,6 +135,7 @@ describe("notification settings Web Push availability", () => {
         webPushSubscription: hydrated.webPushSubscription,
       };
       patchPayload[toggledField] = !patchPayload[toggledField];
+      patchPayload.defaultReminderTiming = [15, 45];
 
       const patchResponse = assertResponse(
         await PATCH(
@@ -148,7 +149,9 @@ describe("notification settings Web Push availability", () => {
 
       expect(body.webPushConfigured).toBe(false);
       expect(body.webPushEnabled).toBe(true);
+      expect(body.defaultReminderTiming).toEqual([15, 45]);
       expect(stored.webPushEnabled).toBe(true);
+      expect(stored.defaultReminderTiming).toBe("[15,45]");
       expect(stored[toggledField]).toBe(false);
     }
   );

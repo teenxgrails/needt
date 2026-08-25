@@ -90,7 +90,23 @@ const apiResponses: Record<string, unknown> = {
 describe("notification settings store contract", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    useSettingsStore.setState({ initialized: false });
+    useSettingsStore.setState({
+      initialized: false,
+      notifications: {
+        emailNotifications: true,
+        dailyEmailEnabled: true,
+        notifyFor: {
+          eventInvites: true,
+          eventUpdates: true,
+          eventCancellations: true,
+          eventReminders: true,
+        },
+        defaultReminderTiming: [30],
+        webPushConfigured: false,
+        webPushEnabled: false,
+        webPushSubscription: null,
+      },
+    });
     global.fetch = jest.fn(async (input) => {
       const url =
         typeof input === "string"
@@ -104,7 +120,7 @@ describe("notification settings store contract", () => {
     });
   });
 
-  it("hydrates nested alert preferences and keeps reminder timing as an array", async () => {
+  it("preserves the saved push preference in an unrelated GET-to-PATCH round trip", async () => {
     await useSettingsStore.getState().initializeSettings();
 
     expect(useSettingsStore.getState().notifications).toMatchObject({
@@ -118,16 +134,6 @@ describe("notification settings store contract", () => {
       webPushConfigured: false,
       webPushEnabled: true,
     });
-    expect(logger.error).not.toHaveBeenCalled();
-  });
-
-  it("PATCHes reminder timing as an array instead of double-encoding JSON", async () => {
-    useSettingsStore.setState((state) => ({
-      notifications: {
-        ...state.notifications,
-        defaultReminderTiming: [15, 45],
-      },
-    }));
 
     useSettingsStore
       .getState()
@@ -141,6 +147,15 @@ describe("notification settings store contract", () => {
       );
     expect(notificationPatch).toBeDefined();
     const body = JSON.parse(String(notificationPatch?.[1]?.body));
-    expect(body.defaultReminderTiming).toEqual([15, 45]);
+    expect(body).toMatchObject({
+      dailyEmailEnabled: false,
+      eventInvites: false,
+      eventUpdates: true,
+      eventCancellations: false,
+      eventReminders: true,
+      defaultReminderTiming: [15, 45],
+      webPushEnabled: true,
+    });
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });
