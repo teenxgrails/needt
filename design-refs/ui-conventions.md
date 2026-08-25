@@ -113,13 +113,20 @@ non-scrolling route root. The timeline header stays fixed. On tablet and phone
 the document returns to normal page scrolling and the timeline lives in a
 bottom sheet whose 24-hour grid is the only scrolling child.
 
-Focus uses one flat canvas across idle, active, paused, break, exit-delay, and
-completion states. Task, mode, streak, timer, scrubber/progress, activity,
-score, and weekly metrics stay in one geometry separated by hairline dividers.
-Do not wrap those sections in cards, metric tiles, rounded panels, or decorative
-glows. Activity visualization may use color; selection and primary actions use
-the standard monochrome inversion. When analytics are empty, render one compact
-status line instead of empty tiles.
+**Flat-canvas rule retired (2026-08-26, owner decision).** Focus previously used
+one flat canvas with no cards, metric tiles, or rounded panels. That rule no
+longer applies: the new visual base in `design-refs/board-tokens.md` is
+card-based, with five distinct surfaces and `14 / 10 / 8` radii. Cards, panels,
+and chips are allowed across the app, Focus included.
+
+What still holds from the old paragraph: Focus keeps one geometry across idle,
+active, paused, break, exit-delay, and completion states — the layout must not
+reflow between them. Activity visualization may use color; selection and primary
+actions use the standard monochrome inversion. When analytics are empty, render
+one compact status line instead of empty tiles.
+
+Until a screen is actually redesigned against `board-tokens.md`, its current
+implementation stands — don't retrofit cards onto untouched screens on spec.
 
 ## Toggle (Switch)
 
