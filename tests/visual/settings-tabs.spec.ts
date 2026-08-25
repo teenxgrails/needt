@@ -9,7 +9,6 @@ const SETTINGS_TABS = [
   ["task-defaults", "Task defaults"],
   ["theme", "Appearance"],
   ["timezone", "Timezone"],
-  ["notifications", "Notifications"],
   ["schedules", "Schedules"],
   ["desktop", "Desktop app"],
   ["integrations", "Integrations"],
@@ -33,8 +32,23 @@ async function settleSettings(page: import("@playwright/test").Page) {
   await page.waitForTimeout(350);
 }
 
-test("Billing stays visually consistent", async ({ page }) => {
+async function prepareSettings(page: import("@playwright/test").Page) {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
+  await page.addInitScript(() => {
+    // Keep the delayed command-palette hint out of long screenshot matrices.
+    // A far-future value remains valid across Playwright's fixed clock setup.
+    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
+    localStorage.setItem("needt-visit-count", "0");
+  });
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await signInVisualUser(page);
+  const themeResponse = await page.request.patch("/api/user-settings", {
+    data: { theme: "dark" },
+  });
+  expect(themeResponse.ok()).toBeTruthy();
+}
+
+test("Billing stays visually consistent", async ({ page }) => {
   await page.route("**/api/billing", async (route) => {
     await route.fulfill({
       status: 200,
@@ -57,16 +71,7 @@ test("Billing stays visually consistent", async ({ page }) => {
       }),
     });
   });
-  await page.addInitScript(() => {
-    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
-    localStorage.setItem("needt-visit-count", "0");
-  });
-  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
-  await signInVisualUser(page);
-  const themeResponse = await page.request.patch("/api/user-settings", {
-    data: { theme: "dark" },
-  });
-  expect(themeResponse.ok()).toBeTruthy();
+  await prepareSettings(page);
   await page.goto("/settings#billing", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/#billing$/);
   await expect(
@@ -79,19 +84,7 @@ test("Billing stays visually consistent", async ({ page }) => {
 
 test("every Settings tab stays visually consistent", async ({ page }) => {
   test.setTimeout(360_000);
-  await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
-  await page.addInitScript(() => {
-    // Keep the delayed command-palette hint out of long screenshot matrices.
-    // A far-future value remains valid across Playwright's fixed clock setup.
-    localStorage.setItem("needt:quick-tip:last-shown-at", "9999999999999");
-    localStorage.setItem("needt-visit-count", "0");
-  });
-  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
-  await signInVisualUser(page);
-  const themeResponse = await page.request.patch("/api/user-settings", {
-    data: { theme: "dark" },
-  });
-  expect(themeResponse.ok()).toBeTruthy();
+  await prepareSettings(page);
 
   for (const [tab, label] of SETTINGS_TABS) {
     await page.goto(`/settings#${tab}`, { waitUntil: "domcontentloaded" });
@@ -104,6 +97,30 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
     await settleSettings(page);
     await expect(page).toHaveScreenshot(`settings-${tab}.png`);
   }
+});
+
+test("unavailable browser push stays honest in Settings", async ({ page }) => {
+  await prepareSettings(page);
+  await page.goto("/settings#notifications", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(/#notifications$/);
+  await expect(
+    page.getByRole("heading", { name: "Notifications", level: 1 })
+  ).toBeVisible();
+
+  const browserNotifications = page
+    .getByText("Browser notifications:", { exact: true })
+    .locator("..")
+    .getByRole("switch");
+  await expect(browserNotifications).toBeDisabled();
+  await expect(browserNotifications).toHaveAttribute("aria-checked", "false");
+  await expect(
+    page.getByText(
+      "Push delivery setup is incomplete on this Needt server. Browser notifications are unavailable. Email reminders still work."
+    )
+  ).toBeVisible();
+
+  await settleSettings(page);
+  await expect(page).toHaveScreenshot("settings-notifications.png");
 });
 
 test("Billing renders the failed-payment recovery path", async ({ page }) => {

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { getVapidConfiguration } from "@/lib/push-config";
 
 const LOG_SOURCE = "NotificationSettingsAPI";
 
@@ -14,6 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = auth.userId;
+    const webPushConfigured = getVapidConfiguration().configured;
 
     // Get the notification settings or create default ones if they don't exist
     const settings = await prisma.notificationSettings.upsert({
@@ -43,6 +45,7 @@ export async function GET(request: NextRequest) {
         eventReminders: settings.eventReminders,
       },
       defaultReminderTiming: JSON.parse(settings.defaultReminderTiming),
+      webPushConfigured,
       webPushEnabled: settings.webPushEnabled,
       webPushSubscription: settings.webPushSubscription,
     });
@@ -68,6 +71,7 @@ export async function PATCH(request: NextRequest) {
 
     const userId = auth.userId;
     const updates = await request.json();
+    const webPushConfigured = getVapidConfiguration().configured;
 
     // Transform the updates to match the database schema
     const dbUpdates = {
@@ -104,6 +108,7 @@ export async function PATCH(request: NextRequest) {
         eventReminders: settings.eventReminders,
       },
       defaultReminderTiming: JSON.parse(settings.defaultReminderTiming),
+      webPushConfigured,
       webPushEnabled: settings.webPushEnabled,
       webPushSubscription: settings.webPushSubscription,
     });
