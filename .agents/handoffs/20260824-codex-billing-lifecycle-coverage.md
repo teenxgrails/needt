@@ -2,8 +2,8 @@
 id: 20260824-codex-billing-lifecycle-coverage
 owner: codex
 branch: codex/billing-lifecycle-coverage
-status: complete
-updated: 2026-08-25T00:21:35Z
+status: active
+updated: 2026-08-25T18:35:48Z
 objective: Prove and harden the complete Creem billing lifecycle with recorded fixtures, ordering safety, idempotency, and server-side entitlement enforcement.
 ---
 
@@ -36,7 +36,7 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Committed the verified scope as `bf0c6ba` and opened non-merge PR #27: `https://github.com/teenxgrails/needt/pull/27`.
 - Root review found one remaining ordering divergence: events can share Creem's provider timestamp, so a late `active`/`paid` event at exactly the stored timestamp could still weaken a same-subscription scheduled-cancel, past-due, unpaid, canceled, or expired state. The processor now applies a fail-safe restriction ordering for equal timestamps only when the Creem subscription ID is unchanged. Equal-time events may preserve or strengthen the state; a weaker event is durably recorded without mutation. A different subscription ID bypasses this tie-break so a legitimate resubscribe is not blocked. Event IDs are never treated as temporal ordering.
 - Added focused coverage for every restrictive state against both equal-time `active` and `paid`, a stricter equal-time transition, a same-timestamp new-subscription resubscribe, and a signed recorded-fixture route/DB regression for equal-time active-after-cancel.
-- Re-audited the branch against seven independent production-billing findings. Restrictive mutations now apply only to the currently stored Creem subscription ID; a newer grant can establish a replacement ID, while an ambiguous equal-time grant cannot replace an unrestricted live subscription.
+- Re-audited the branch against seven independent production-billing findings. Restrictive mutations now apply only to the currently stored Creem subscription ID; a foreign grant can establish a replacement only when the stored ID is absent or its own cursor is terminal, while an ambiguous equal-time grant cannot replace a live subscription.
 - Cancellation and scheduled-cancellation events that omit `current_period_end_date` now preserve the stored paid-through date. Recorded E2E fixtures cover both omitted-field shapes and assert retained PRO access.
 - LIFETIME is immutable after grant regardless of the later event's product ID or status. The recorded Pro-after-Lifetime fixture now uses the Lifetime customer's own Creem customer ID, and a same-product Lifetime expiry is also rejected.
 - Every recorded webhook event ID is namespaced by the Playwright `runId`; retries keep the same ID within one run, while a retried worker/run cannot collide with abandoned receipts from an earlier run. The tautological mocked replay unit test was removed; a real checkout grant replay now proves the subscription row is not updated twice.
@@ -46,11 +46,17 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 
 ## Working state
 
+- Round 3 reopened the workstream at `83e295f`: foreign grants must be adoptable only when the stored identity is absent or its own durable cursor is terminal (`restrictionLevel = 5`), and rejected events must never advance a cursor. Required pre-fix reds are the past-due three-step takeover, two-live-subscriptions takeover, and rejected-scheduled-cancel then earlier-paid sequence.
+- Round 3 pre-fix red captured with a stateful subscription/cursor/receipt mock: `billing.test.ts` ran 38 tests with exactly 3 failures. The dunning sequence processed foreign `paid(sub_A)` and returned an ACTIVE sub_A/2020 row instead of `subscription_identity_mismatch`; the two-live sequence wrote a rejected sub_B cursor; the future scheduled-cancel sequence wrote sub_A at T+9, which would make paid at T+1 stale (`3 failed, 35 passed`). No processor code had changed for this run.
+- Round 3 implementation now loads the stored subscription identity's own cursor separately and permits a foreign grant only when the stored ID is absent or that cursor is terminal level 5. Every rejection return occurs before the cursor upsert. The same focused suite is green 38/38, including both cursor-negative sequences and grace/equal-time resubscribe with explicit stored level-5 cursors.
+- Independent adversarial review found no implementation showstopper. It confirmed one spec limitation: `paid(A) -> rejected paid(B) -> expired(A)` necessarily ends FREE without a later distinct B grant or new deferred-state architecture, because B is intentionally neither adopted nor stored in a cursor and its receipt prevents replay. The stateful test therefore proves no rejected B cursor, terminal A, then recovery from a distinct later B grant; no unrequested pending-subscription model was invented.
+- Optional Round 3 triage: local CREEM defaults now preserve explicitly exported values. `mailboxes: { used: 1, limit: 0 }` remains because the visual seed really creates a mailbox before a FREE/downgraded state and entitlement reporting permits over-limit legacy usage. Failed-payment rendered coverage remains at all three viewports to retain responsive proof.
+- The requested E2E gate passed 5/5 against healthy shared Postgres/Redis. The shared test database is released again for other agents.
 - Follow-up review reproduced two remaining identity holes in `webhook-processor.ts`: a later unrestricted event from a foreign subscription can replace an active paid identity before a restrictive event revokes it, and null incoming/stored subscription IDs bypass the identity comparison. The current user-row cursor cannot order independent provider subscriptions.
-- Decision: add an additive per-user/per-Creem-subscription cursor and advance it even for foreign events that are recorded but not projected onto the user subscription. A grant for a different ID may establish identity only when the current row is FREE/no longer grants access or is already restrictive (including cancellation grace); an unrestricted active paid identity cannot be replaced. Recurring mutations without an incoming subscription ID fail closed; a restrictive event cannot claim a legacy paid row whose stored ID is null. Lifetime checkout remains the intentional null-ID exception.
+- Decision: add an additive per-user/per-Creem-subscription cursor. Round 3 supersedes the original projection rule: rejected foreign events are recorded as receipts but never advance a cursor, and a different-ID grant may establish identity only when the stored ID is absent or its own cursor is terminal level 5. Recurring mutations without an incoming subscription ID fail closed; a restrictive event cannot claim a legacy paid row whose stored ID is null. Lifetime checkout remains the intentional null-ID exception.
 - Visual decision: keep the local Creem environment injection because it deliberately matches CI and the configured product state; regenerate and hand-review the three Darwin Billing baselines. Add a browser-rendered failed-payment alert assertion without a new snapshot, so both Darwin and Linux exercise the state without duplicating baseline files.
 - Added the recorded two-delivery regression before changing the processor. Its pre-fix run failed exactly as reported: expected `sub_recorded_pro_2`, `ACTIVE`, future paid-through and the resubscribe event cursor; received `sub_recorded_pro`, `CANCELED`, `currentPeriodEnd: null`, and the later old-expiry event cursor (`1 failed, 1 passed, 1 did not run`). After the per-subscription cursor/null policy fix, the same lifecycle suite passed 3/3.
-- Added an additive `CreemSubscriptionCursor` keyed by `(userId, creemSubscriptionId)`, including migration backfill from every existing non-null subscription cursor. Rejected foreign events still advance only their claimed subscription cursor; equal-time weaker grants remain blocked per claimed subscription. A foreign grant cannot replace an unrestricted active paid identity, while a grant can establish a new identity from FREE or an already restrictive/grace state.
+- Added an additive `CreemSubscriptionCursor` keyed by `(userId, creemSubscriptionId)`, including migration backfill from every existing non-null subscription cursor. Round 3 corrected the initial behavior: only processed events advance their claimed cursor; equal-time weaker grants remain blocked per claimed subscription. A foreign grant cannot replace any stored identity unless that identity's own cursor is terminal level 5.
 - Defined/tested null behavior: a recurring event with no incoming subscription ID is recorded as `missing_subscription_identity` without mutation; a restrictive event with a valid ID cannot claim/revoke a paid row whose stored subscription ID is null. Trusted Lifetime checkout remains unchanged.
 - Split Billing out of the long Settings screenshot matrix so an earlier flaky tab cannot skip this billing contract. The pre-update targeted Darwin run produced exactly three `settings-billing` diffs while all three failed-payment rendered cases passed. Reviewed desktop/tablet/mobile actual+diff images by hand; each change only removed the obsolete unconfigured warning and enabled the configured checkout controls. Accepted only the three unsuffixed Darwin Billing PNGs. The post-update targeted run passed 6/6; existing `-linux` PNGs were untouched.
 - Made the Billing visual contract independent of shared fixture state by intercepting `/api/billing` with a deterministic configured response. The dedicated Billing screenshot and rendered `PAYMENT_FAILED` recovery path both run at desktop, tablet, and mobile widths.
@@ -58,10 +64,61 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 - Reclaimed host disk without touching source, `.env` files, user data, or anti-detect profiles: removed this worktree's `.next`, two other completed/regenerable worktree `.next` directories, npm/Puppeteer/uv/pip/Selenium caches, and AdsPower's verified `source/cache` directory while AdsPower was closed. Free space recovered from about 117 MiB to 18 GiB. GoLogin/Incogniton profile data and caches remain untouched.
 - Committed the follow-up as `123ac99403359ebba900a7c1bd88fa62c2db4e6e` and pushed it to PR #27. CI runs `32792517446` and `32792522560` both passed schema drift, quality gates, security, full E2E (`7m07s` / `5m11s`), and Linux visual/style (`8m24s` / `8m15s`).
 - After CI removed the no-longer-needed local Playwright browser cache (971 MiB) and this completed worktree's `.next` (3.1 GiB). Host free space is now 24 GiB. The healthy shared Postgres/Redis E2E stack is released for other agents.
-- Files currently dirty or expected to change: this handoff only, for the final CI/database-release checkpoint after commit `123ac99`.
+- Files currently dirty or expected to change: this handoff, `src/lib/creem/webhook-processor.ts`, `src/lib/creem/__tests__/billing.test.ts`, and zero-cost fixture corrections in `tests/e2e/environment.ts` / `tests/visual/settings-tabs.spec.ts` if they remain safely scoped.
 - Foreign changes that must remain untouched: all files in `/Users/lol/Needt`, every other registered worktree, and every other active handoff.
 
 ## Verification
+
+- Round 3 exact evidence:
+
+```text
+$ npm run test:unit -- --runInBand src/lib/creem/__tests__/billing.test.ts  # before processor change
+FAIL src/lib/creem/__tests__/billing.test.ts
+keeps a dunning subscription protected from a foreign paid-expired pair:
+  expected subscription_identity_mismatch; received processed=true, sub_A ACTIVE, currentPeriodEnd 2020-01-01
+keeps rejected concurrent grants unclaimed until the stored id ends:
+  expected sub_B cursor undefined; received evt_paid_B_rejected cursor
+does not let a rejected future restriction make an earlier grant stale:
+  expected sub_A cursor undefined; received evt_future_cancel_A cursor at T+9
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 35 passed, 38 total
+
+$ npm run test:unit -- --runInBand src/lib/creem/__tests__/billing.test.ts  # after processor change
+PASS src/lib/creem/__tests__/billing.test.ts
+Test Suites: 1 passed, 1 total
+Tests:       38 passed, 38 total
+```
+
+```text
+$ npx prisma validate
+Error code: P1012
+Environment variable not found: DIRECT_URL.
+
+$ DATABASE_URL=postgresql://needt:needt@127.0.0.1:5433/needt_test DIRECT_URL=postgresql://needt:needt@127.0.0.1:5433/needt_test npx prisma validate
+The schema at prisma/schema.prisma is valid 🚀
+
+$ npm run type-check
+> tsc --noEmit
+
+$ npm run lint
+> eslint . --max-warnings=0
+
+$ npm run test:unit -- --runInBand src/lib/creem src/lib/entitlements
+Test Suites: 3 passed, 3 total
+Tests:       41 passed, 41 total
+
+$ npm run test:e2e -- tests/entitlements.spec.ts tests/billing.spec.ts
+Running 5 tests using 1 worker
+5 passed (21.8s)
+
+$ npm run build
+✓ Compiled successfully in 51s
+✓ Generating static pages (142/142)
+Production artifact check passed (1379 files).
+
+$ npx tsx -e '<CREEM env preservation assertion>'
+CREEM env preserved
+```
 
 - Follow-up focused evidence: processor unit suite passed 38/38 including both null defaults, foreign unrestricted grant rejection, and resubscribe during cancellation grace. Recorded billing E2E passed 3/3 after the pre-fix red above. `npm run type-check`, `npm run lint`, and `git diff --check` passed. Targeted Darwin Billing visual run passed 6/6 after manual baseline review. The first sandboxed full visual attempt was invalid infrastructure evidence (`EMFILE` plus Chromium Mach-port permission denial, 72 browser-launch failures); Chromium visual checks are now run outside that sandbox boundary.
 - A full unsandboxed `npm run test:visual` reached unrelated pre-existing shared-fixture failures outside Billing (`Review calendar sync` missing, Today baseline diff, and `Launch review notes` missing) and was stopped after about six minutes. No unrelated baseline was accepted. The deterministic Billing-only Darwin contract remains green 6/6; Linux must be confirmed by PR CI against the unchanged reviewed `-linux` baselines.
@@ -102,7 +159,7 @@ Running 5 tests using 1 worker
 5 passed (17.0s)
 ```
 
-  The second command intentionally bypassed `scripts/reset-e2e-environment.ts`; both full lifecycle/entitlement runs passed consecutively with no database reset between them. After Docker recovery, the requested command passed 5/5 again in 29.0s.
+The second command intentionally bypassed `scripts/reset-e2e-environment.ts`; both full lifecycle/entitlement runs passed consecutively with no database reset between them. After Docker recovery, the requested command passed 5/5 again in 29.0s.
 
 ```text
 $ npm run build
@@ -122,15 +179,15 @@ Production artifact check passed (1379 files).
 - No live API calls or dashboard changes. Fixtures are sanitized recorded shapes from current official documentation.
 - Failed-payment policy and every implementation divergence will be recorded here before code changes.
 - Failed-payment policy: `subscription.past_due` and `subscription.unpaid` show an actionable billing warning and portal action while retaining the paid plan only through the stored `currentPeriodEnd` during Creem retries. A later `active`/`paid` event restores `ACTIVE`. `expired`/`paused`, or a failed-payment/canceled event with no future paid-through date, resolves to FREE immediately; standard scheduled cancellation keeps access only until period end. The membership row survives downgrade, but every shared-workspace list/access request immediately hides or rejects it because `getPlan()` resolves FREE.
-- Subscription identity policy: a restrictive event for a different provider subscription ID is durably recorded without mutation. A newer unrestricted grant may establish a replacement ID. At equal provider timestamps, a different-ID grant may recover a restrictive row but cannot replace an unrestricted active row.
+- Subscription identity policy: any event rejected for a different provider subscription ID is durably receipted without mutation or cursor advancement. A foreign unrestricted grant may establish a replacement only when the stored ID is absent or the stored ID's own cursor is terminal level 5; levels 1–4 remain protected regardless of row status or equal provider timestamps.
 - Residual provider limitation: if every grant event for a new subscription is missed, Needt cannot infer that unknown subscription from a later restrictive event and intentionally rejects that restrictive event. Solving that requires provider reconciliation or per-subscription state, not guessing from a user-level row.
 - LIFETIME policy is unchanged: once granted, it never renews and no later Creem subscription lifecycle event may reduce or replace it.
 - Swiss-seller tax/invoice configuration remains an owner-only dashboard check.
 
 ## Blockers
 
-- No code or CI blocker remains. The full local visual suite encountered unrelated shared-fixture failures, but Billing is green 6/6 on Darwin and both complete Linux visual/style CI jobs passed. The explicit mutation red-run remains blocked by the execution policy described above. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
+- No local code blocker remains; Round 3 CI has not yet run. The full local visual suite previously encountered unrelated shared-fixture failures, but Billing is green 6/6 on Darwin and the last two complete Linux visual/style CI jobs passed. Owner follow-up: confirm Swiss-seller tax/invoice fields in the Creem dashboard; no dashboard action was taken here.
 
 ## Next action
 
-- Review and merge green PR #27; the shared test database is released.
+- Validate the handoff and final diff, commit the four owned files, push PR #27, and monitor its CI to green.

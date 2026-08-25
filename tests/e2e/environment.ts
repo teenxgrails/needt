@@ -12,6 +12,9 @@ const localE2eEnvironment = {
   NEXTAUTH_SECRET: "needt-e2e-only-secret-not-valid-outside-tests",
   RATE_LIMIT_HASH_SECRET: "needt-e2e-rate-limit-hash-secret",
   COLLABORATION_DISABLED: "1",
+} as const;
+
+const localCreemEnvironment = {
   CREEM_API_KEY: "creem_test_key_for_local_e2e_only",
   CREEM_WEBHOOK_SECRET: "creem_test_webhook_secret_for_local_e2e_only",
   CREEM_PRODUCT_PRO_MONTHLY: "prod_test_pro_month",
@@ -31,10 +34,13 @@ const requiredColumns = [
 export function configureE2eEnvironment() {
   if (!process.env.CI) {
     Object.assign(process.env, localE2eEnvironment);
-    return;
+  } else {
+    for (const [key, value] of Object.entries(localE2eEnvironment)) {
+      if (!process.env[key]) process.env[key] = value;
+    }
   }
 
-  for (const [key, value] of Object.entries(localE2eEnvironment)) {
+  for (const [key, value] of Object.entries(localCreemEnvironment)) {
     if (!process.env[key]) process.env[key] = value;
   }
 }

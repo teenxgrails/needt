@@ -35,6 +35,74 @@ const products = {
   lifetime: "prod_lifetime",
 };
 
+type ProcessorSubscriptionState = {
+  userId: string;
+  plan: SubscriptionPlan;
+  status: SubscriptionStatus;
+  creemSubscriptionId: string | null;
+  currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
+  lastCreemEventId: string;
+  lastCreemEventAt: Date;
+};
+
+type ProcessorCursorState = {
+  lastEventId: string;
+  lastEventAt: Date;
+  restrictionLevel: number;
+};
+
+function installStatefulProcessorState(
+  initialSubscription: ProcessorSubscriptionState | null,
+  initialCursors: Record<string, ProcessorCursorState> = {}
+) {
+  let subscription = initialSubscription;
+  const cursors = new Map(Object.entries(initialCursors));
+  const receipts = new Set<string>();
+
+  (prisma.subscription.findFirst as jest.Mock).mockImplementation(
+    async () => subscription
+  );
+  (prisma.subscription.findUnique as jest.Mock).mockImplementation(
+    async () => subscription
+  );
+  (prisma.subscription.upsert as jest.Mock).mockImplementation(
+    async ({ create, update }) => {
+      subscription = {
+        ...(subscription ?? create),
+        ...(subscription ? update : create),
+      } as ProcessorSubscriptionState;
+      return subscription;
+    }
+  );
+  (prisma.creemSubscriptionCursor.findUnique as jest.Mock).mockImplementation(
+    async ({ where }) =>
+      cursors.get(where.userId_creemSubscriptionId.creemSubscriptionId) ?? null
+  );
+  (prisma.creemSubscriptionCursor.upsert as jest.Mock).mockImplementation(
+    async ({ where, create, update }) => {
+      const subscriptionId =
+        where.userId_creemSubscriptionId.creemSubscriptionId;
+      const cursor = cursors.has(subscriptionId) ? update : create;
+      cursors.set(subscriptionId, cursor);
+      return cursor;
+    }
+  );
+  (prisma.creemWebhookEvent.createMany as jest.Mock).mockImplementation(
+    async ({ data }) => {
+      const eventId = data[0].id;
+      if (receipts.has(eventId)) return { count: 0 };
+      receipts.add(eventId);
+      return { count: 1 };
+    }
+  );
+
+  return {
+    cursor: (subscriptionId: string) => cursors.get(subscriptionId),
+    subscription: () => subscription,
+  };
+}
+
 describe("Creem checkout selection", () => {
   it("maps each trusted checkout mode to its configured product", () => {
     expect(
@@ -353,6 +421,16 @@ describe("Creem webhook processing", () => {
       lastCreemEventId: "evt_expired",
       lastCreemEventAt: newDate(eventCreatedAt),
     });
+    (prisma.creemSubscriptionCursor.findUnique as jest.Mock).mockImplementation(
+      async ({ where }) =>
+        where.userId_creemSubscriptionId.creemSubscriptionId === "sub_old"
+          ? {
+              lastEventId: "evt_expired",
+              lastEventAt: newDate(eventCreatedAt),
+              restrictionLevel: 5,
+            }
+          : null
+    );
 
     const result = await processCreemBillingEvent({
       id: "evt_equal_resubscribe",
@@ -445,14 +523,204 @@ describe("Creem webhook processing", () => {
       reason: "subscription_identity_mismatch",
     });
     expect(prisma.subscription.upsert).not.toHaveBeenCalled();
-    expect(prisma.creemSubscriptionCursor.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        create: expect.objectContaining({
-          creemSubscriptionId: "sub_new",
-          lastEventId: "evt_new_active",
-        }),
-      })
+    expect(prisma.creemSubscriptionCursor.upsert).not.toHaveBeenCalled();
+  });
+
+  it("keeps a dunning subscription protected from a foreign paid-expired pair", async () => {
+    const paidThrough = newDate("2099-08-01T00:00:00.000Z");
+    const baseTime = 1_728_734_337_932;
+    const state = installStatefulProcessorState(
+      {
+        userId: "user_1",
+        plan: SubscriptionPlan.PRO,
+        status: SubscriptionStatus.ACTIVE,
+        creemSubscriptionId: "sub_B",
+        currentPeriodEnd: paidThrough,
+        cancelAtPeriodEnd: false,
+        lastCreemEventId: "evt_paid_B",
+        lastCreemEventAt: newDate(baseTime),
+      },
+      {
+        sub_B: {
+          lastEventId: "evt_paid_B",
+          lastEventAt: newDate(baseTime),
+          restrictionLevel: 0,
+        },
+      }
     );
+
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_past_due_B",
+        createdAt: baseTime + 1_000,
+        eventType: "subscription.past_due",
+        object: {
+          id: "sub_B",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+        },
+      })
+    ).resolves.toMatchObject({ processed: true });
+
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_old_paid_A",
+        createdAt: baseTime + 2_000,
+        eventType: "subscription.paid",
+        object: {
+          id: "sub_A",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+          current_period_end_date: "2020-01-01T00:00:00.000Z",
+        },
+      })
+    ).resolves.toEqual({
+      processed: false,
+      reason: "subscription_identity_mismatch",
+    });
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_old_expired_A",
+        createdAt: baseTime + 3_000,
+        eventType: "subscription.expired",
+        object: {
+          id: "sub_A",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+        },
+      })
+    ).resolves.toEqual({
+      processed: false,
+      reason: "subscription_identity_mismatch",
+    });
+
+    expect(state.subscription()).toMatchObject({
+      creemSubscriptionId: "sub_B",
+      status: SubscriptionStatus.PAST_DUE,
+      currentPeriodEnd: paidThrough,
+    });
+    expect(effectiveSubscriptionPlan(state.subscription())).toBe(
+      SubscriptionPlan.PRO
+    );
+    expect(state.cursor("sub_A")).toBeUndefined();
+  });
+
+  it("keeps rejected concurrent grants unclaimed until the stored id ends", async () => {
+    const baseTime = 1_728_734_337_932;
+    const state = installStatefulProcessorState(null);
+
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_paid_A",
+        createdAt: baseTime + 1_000,
+        eventType: "subscription.paid",
+        object: {
+          id: "sub_A",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+          current_period_end_date: "2099-08-01T00:00:00.000Z",
+          metadata: { referenceId: "user_1" },
+        },
+      })
+    ).resolves.toMatchObject({ processed: true });
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_paid_B_rejected",
+        createdAt: baseTime + 2_000,
+        eventType: "subscription.paid",
+        object: {
+          id: "sub_B",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+          current_period_end_date: "2099-09-01T00:00:00.000Z",
+        },
+      })
+    ).resolves.toEqual({
+      processed: false,
+      reason: "subscription_identity_mismatch",
+    });
+    expect(state.cursor("sub_B")).toBeUndefined();
+
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_expired_A",
+        createdAt: baseTime + 3_000,
+        eventType: "subscription.expired",
+        object: {
+          id: "sub_A",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+        },
+      })
+    ).resolves.toMatchObject({ processed: true });
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_paid_B_after_A_ended",
+        createdAt: baseTime + 4_000,
+        eventType: "subscription.paid",
+        object: {
+          id: "sub_B",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+          current_period_end_date: "2099-09-01T00:00:00.000Z",
+        },
+      })
+    ).resolves.toMatchObject({ processed: true });
+    expect(state.subscription()).toMatchObject({
+      creemSubscriptionId: "sub_B",
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodEnd: newDate("2099-09-01T00:00:00.000Z"),
+    });
+    expect(effectiveSubscriptionPlan(state.subscription())).toBe(
+      SubscriptionPlan.PRO
+    );
+  });
+
+  it("does not let a rejected future restriction make an earlier grant stale", async () => {
+    const baseTime = 1_728_734_337_932;
+    const state = installStatefulProcessorState(null);
+
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_future_cancel_A",
+        createdAt: baseTime + 9_000,
+        eventType: "subscription.scheduled_cancel",
+        object: {
+          id: "sub_A",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+          metadata: { referenceId: "user_1" },
+        },
+      })
+    ).resolves.toEqual({
+      processed: false,
+      reason: "subscription_identity_mismatch",
+    });
+    expect(state.cursor("sub_A")).toBeUndefined();
+
+    await expect(
+      processCreemBillingEvent({
+        id: "evt_earlier_paid_A",
+        createdAt: baseTime + 1_000,
+        eventType: "subscription.paid",
+        object: {
+          id: "sub_A",
+          product: { id: products.proMonthly },
+          customer: { id: "cust_1" },
+          current_period_end_date: "2099-08-01T00:00:00.000Z",
+          metadata: { referenceId: "user_1" },
+        },
+      })
+    ).resolves.toMatchObject({ processed: true });
+    expect(state.subscription()).toMatchObject({
+      creemSubscriptionId: "sub_A",
+      status: SubscriptionStatus.ACTIVE,
+    });
+    expect(state.cursor("sub_A")).toMatchObject({
+      lastEventId: "evt_earlier_paid_A",
+      lastEventAt: newDate(baseTime + 1_000),
+      restrictionLevel: 0,
+    });
   });
 
   it("allows a new grant to replace a subscription already in cancellation grace", async () => {
@@ -466,6 +734,16 @@ describe("Creem webhook processing", () => {
       lastCreemEventId: "evt_canceled",
       lastCreemEventAt: newDate(1_728_734_327_355),
     });
+    (prisma.creemSubscriptionCursor.findUnique as jest.Mock).mockImplementation(
+      async ({ where }) =>
+        where.userId_creemSubscriptionId.creemSubscriptionId === "sub_old"
+          ? {
+              lastEventId: "evt_expired",
+              lastEventAt: newDate(1_728_734_327_355),
+              restrictionLevel: 5,
+            }
+          : null
+    );
 
     const result = await processCreemBillingEvent({
       id: "evt_new_paid",
@@ -548,7 +826,7 @@ describe("Creem webhook processing", () => {
       reason: "subscription_identity_mismatch",
     });
     expect(prisma.subscription.upsert).not.toHaveBeenCalled();
-    expect(prisma.creemSubscriptionCursor.upsert).toHaveBeenCalled();
+    expect(prisma.creemSubscriptionCursor.upsert).not.toHaveBeenCalled();
   });
 
   it("preserves an active subscription against an equal-time grant with another id", async () => {
