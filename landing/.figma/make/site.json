@@ -1,0 +1,10 @@
+{
+  "description": "Enhance your web designs effortlessly with tools for adjusting positions, buttons, and shadows, perfect for designers seeking polished, professional results.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
