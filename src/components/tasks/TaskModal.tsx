@@ -818,8 +818,14 @@ export function TaskModal({
                 <Layers3 className="h-4 w-4 text-[var(--text-muted)]" /> My
                 Workspace
               </div>
+              {/* A static "No folder" line that cannot be changed from here and
+                  reads as an empty field. Shown only with the other rare fields
+                  so the column fits without scrolling. */}
               <div
-                className="flex min-h-11 w-full items-center gap-2 px-1 text-left text-[14px] text-[var(--text-muted)] sm:h-[28px] sm:min-h-0"
+                className={cn(
+                  "flex min-h-11 w-full items-center gap-2 px-1 text-left text-[14px] text-[var(--text-muted)] sm:h-[28px] sm:min-h-0",
+                  !isAdvancedOpen && "hidden"
+                )}
                 aria-label="No folder"
               >
                 <Folder className="h-4 w-4" /> No folder
@@ -879,10 +885,10 @@ export function TaskModal({
               says nothing about what it does. One line, always visible, because
               it changes whether the task keeps the time you gave it.
             */}
-            <p className="px-5 pb-2 pt-1.5 text-[12px] leading-4 text-[var(--text-secondary)]">
+            <p className="px-5 pb-2 pt-1 text-[12px] leading-4 text-[var(--text-secondary)]">
               {isAutoScheduled
-                ? "Needt picks a time inside your work hours and may move it as things change."
-                : "Stays exactly where you put it. Needt will not move it."}
+                ? "Needt picks a time in your work hours."
+                : "Stays exactly where you put it."}
             </p>
 
             <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
@@ -949,23 +955,31 @@ export function TaskModal({
                 />
                 <span className="text-[var(--text-secondary)]">min</span>
               </div>
-              <div
-                className="flex min-h-11 items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0"
-                title="Split long work into pieces no shorter than this. Leave empty to keep the task in one block."
-              >
-                <span className="w-[88px] text-[var(--text-secondary)]">
-                  └ Min chunk:
-                </span>
-                <Input
-                  id="minChunkMinutes"
-                  type="number"
-                  min="0"
-                  value={minChunkMinutes}
-                  onChange={(event) => setMinChunkMinutes(event.target.value)}
-                  placeholder="No Chunks"
-                  className="h-11 flex-1 border-0 bg-transparent px-0 text-[16px] shadow-none focus-visible:ring-0 sm:h-[28px] sm:text-[13px]"
-                />
-              </div>
+              {/*
+                Behind the disclosure: splitting work into chunks is a decision
+                people make for a handful of tasks, not on every one. The column
+                is only 620px tall now, and four rows of rarely-touched fields
+                pushed Category and Advanced settings off the bottom edge.
+              */}
+              {isAdvancedOpen && (
+                <div
+                  className="flex min-h-11 items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0"
+                  title="Split long work into pieces no shorter than this. Leave empty to keep the task in one block."
+                >
+                  <span className="w-[88px] text-[var(--text-secondary)]">
+                    └ Min chunk:
+                  </span>
+                  <Input
+                    id="minChunkMinutes"
+                    type="number"
+                    min="0"
+                    value={minChunkMinutes}
+                    onChange={(event) => setMinChunkMinutes(event.target.value)}
+                    placeholder="No Chunks"
+                    className="h-11 flex-1 border-0 bg-transparent px-0 text-[16px] shadow-none focus-visible:ring-0 sm:h-[28px] sm:text-[13px]"
+                  />
+                </div>
+              )}
               <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <CalendarDays className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
@@ -1020,8 +1034,13 @@ export function TaskModal({
                   className="h-4 w-[26px] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
                 />
               </label>
+              {/* Most people have one set of working hours and never change
+                  this. Behind the disclosure with the other rare fields. */}
               <div
-                className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0"
+                className={cn(
+                  "flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0",
+                  !isAdvancedOpen && "hidden"
+                )}
                 title="Which set of working hours this task is planned against."
               >
                 <CalendarDays className="h-4 w-4 text-[var(--text-muted)]" />
