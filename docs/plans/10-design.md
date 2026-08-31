@@ -20,17 +20,17 @@ Three things are true at once, and the plan has to respect all three.
 2. **The identity is borrowed.** The IA, the sidebar, the density, the calendar
    language all read as Motion. That is not a polish problem, and no amount of
    spacing fixes it.
-3. **"Wow" in a daily tool cannot come from decoration.** Needt is something a
-   person sits inside for eight hours. Glow, gradients and spectacle read as
-   premium for one session and as noise by the third. Every tool that actually
-   feels expensive — Linear, Things, Raycast, Arc — earns it through **speed,
-   motion that carries meaning, and typographic craft**. That is where this
-   track spends its budget.
+3. **Speed, meaningful motion and typographic craft carry the most weight.**
+   Needt is something a person sits inside for eight hours, and the tools that
+   feel expensive — Linear, Things, Raycast, Arc — earn it there first. This is
+   where the track spends its budget. It is an argument about priority, not a
+   ban: glow, gradients and decorative surfaces are available (2026-08-31,
+   owner decision) and are judged by how the screen reads.
 
 **The current motion tokens are deliberately invisible.** `fastFade` is 140ms,
 `panel` is 180ms, offsets are 4–6px. That is a correct calibration for "do not
 distract" and the exact reason nothing feels alive. Invisible is not the same as
-calm. This track moves the system from *invisible* to *intentional*: still fast,
+calm. This track moves the system from _invisible_ to _intentional_: still fast,
 still respectful, but things now come from somewhere and go somewhere.
 
 ### What this track will not do
@@ -71,7 +71,7 @@ viewer who knows Motion sees the copy, not the author.
 
 Fixing 1–3 while keeping 4 produces a re-skinned Motion. The escape has to come
 from **structure derived from Needt's own thesis**, which Motion does not share:
-*the day plans itself, deterministically, and can explain why.*
+_the day plans itself, deterministically, and can explain why._
 
 If that is the thesis, seven peer sections is the wrong shape. Proposed model:
 
@@ -128,8 +128,9 @@ The owner wants one deliberately premium control used on important actions
   Overshoot is acceptable here — a deliberate rare action, unlike moving
   schedule blocks where it becomes irritating.
 - A 1px light line along the top edge. This imitates light falling on a raised
-  surface and reads as volume. **A glow around the button reads cheap; a light
-  edge on the button reads expensive.** No outer glow, no gradient fill.
+  surface and reads as volume. Glow and gradient fills are available too
+  (the ban was lifted 2026-08-31); the light edge is simply the cheapest way
+  to get volume without one.
 - **Scarcity is the mechanism:** exactly one filled action per screen. Everything
   else is outline or ghost. Three filled buttons and none of them feel worth
   pressing.
@@ -147,9 +148,12 @@ Staying dark also preserves the owner's habit. Alternatives shown and available:
 light sand with a deep green accent (the sharpest break from Motion), and deep
 ink with teal (dark but clearly not violet).
 
-Whatever is chosen: **the violet accent goes**, and the neutral ramp must move
-off pure gray. Those two changes alone remove most of the palette-level
-resemblance.
+**Superseded 2026-08-31 (owner decision).** This section is a recommendation,
+not a constraint. The requirement to drop the violet accent is lifted, as are
+the bans on glow, blur and shadow elsewhere in this plan — they were blocking
+the direction the owner wants. The reasoning above still holds as an argument
+about the category, and warm neutrals are still the least occupied ground; but
+the palette is now chosen by what the owner likes when he sees it, not by rule.
 
 ### Task appearance on the calendar
 
@@ -280,7 +284,7 @@ in this category animates it.
   spring, rather than disappearing and reappearing.
 - Blocks that did not move stay perfectly still. Stillness is what makes the
   movement readable.
-- The trigger is named in plain language — "Moved 3 tasks to fit *Design review*".
+- The trigger is named in plain language — "Moved 3 tasks to fit _Design review_".
 - One affordance to undo the reflow, one to ask why.
 
 This connects directly to plan 09 L7.1 (capacity, schedule explanation,
@@ -337,7 +341,7 @@ any other animation dependency.
   a full traversal. Decelerating, **no overshoot** — bounce on a frequent action
   becomes irritating by the third repetition.
 - The explanation names the cause, not the fact: "Moved 1 task to free 14:00 for
-  *Design review*" — never "Schedule updated".
+  _Design review_" — never "Schedule updated".
 - Undo sits next to the explanation, always. The user must see that nothing
   irreversible happened behind their back.
 - Under reduced motion: positions update instantly, explanation and undo remain.
@@ -352,7 +356,7 @@ any other animation dependency.
   with `env(titlebar-area-x)` / `env(titlebar-area-height)`. On macOS the
   controls sit on the **left** — directly over the sidebar — so the wordmark
   must start after that inset, not at x=0. Mark the strip `-webkit-app-region:
-  drag` and every control inside it `no-drag`.
+drag` and every control inside it `no-drag`.
 - Wordmark lives in that same strip, beside the controls.
 - **Collapse timing is asymmetric on purpose:** labels fade at 140ms while the
   width animates at 320ms. Synchronous timing visually crushes the text against
@@ -393,7 +397,8 @@ a nav strip". This is the strongest single signal about Needt's direction.
 
 **Notion / Craft — quiet density.** Hover state appears only on the row under
 the cursor; everything else stays completely still. A dense list must never look
-noisy. No hover effects that move, scale or glow — contrast change only.
+noisy. The point is that one row responds and the rest do not — the earlier
+"contrast change only" wording was part of the lifted restrictions.
 
 **Explicitly rejected as aesthetics:** Linear's precision-instrument density,
 Raycast's overlay language, Things' playful list mechanics. Do not reintroduce
@@ -491,8 +496,8 @@ Each screen: real data, all three themes, 360/390/768/desktop, empty state,
 loading state, error state, reduced motion. Review every visual diff by hand.
 
 **Captured Figma baselines** for eight primary screens and all sixteen Settings
-panels exist in file `8AWth2ENxFUbIfa0rV9D4o`. They document *where Needt is
-today*, which is useful as a before/after record. They are not the target.
+panels exist in file `8AWth2ENxFUbIfa0rV9D4o`. They document _where Needt is
+today_, which is useful as a before/after record. They are not the target.
 Two captures failed and are empty black frames — Mail `55:2`, Boards `59:2`. Redo
 them only if the before/after record matters to the owner.
 
@@ -530,16 +535,116 @@ npm run test:visual
 
 ## Sequencing
 
-| Phase | Blocks on | Runs during |
-|-------|-----------|-------------|
-| D0 identity spike | nothing | plan 09 L0–L2 |
-| D1 motion language | D0 owner decision | plan 09 L1–L4 |
-| D2 signature reflow | D1 | pairs with 09 L7.1 |
-| D2b concept specs | D1 | sidebar/popovers safe pre-launch; reflow with L7.1 |
-| D3 foundations | D0 | alongside D1 |
-| D4 navigation | D3 | before launch only if trivially safe |
-| D5 screen rollout | D4 **and 09 L6 launched** | post-launch, flagged |
-| D6 craft pass | D5 | post-launch |
+| Phase               | Blocks on                 | Runs during                                        |
+| ------------------- | ------------------------- | -------------------------------------------------- |
+| D0 identity spike   | nothing                   | plan 09 L0–L2                                      |
+| D1 motion language  | D0 owner decision         | plan 09 L1–L4                                      |
+| D2 signature reflow | D1                        | pairs with 09 L7.1                                 |
+| D2b concept specs   | D1                        | sidebar/popovers safe pre-launch; reflow with L7.1 |
+| D3 foundations      | D0                        | alongside D1                                       |
+| D4 navigation       | D3                        | before launch only if trivially safe               |
+| D5 screen rollout   | D4 **and 09 L6 launched** | post-launch, flagged                               |
+| D6 craft pass       | D5                        | post-launch                                        |
 
 **Hard rule:** nothing in D4–D6 may delay plan 09. Launch ships the current UI.
 The redesign is a deliberate, visible release of its own.
+
+---
+
+## D7 — Owner-accepted concepts, 2026-08-26
+
+Four concepts accepted on 2026-08-26. Each names the outside mechanism it came
+from, because the point of each is a technique this product category does not
+use. None replaces D2's signature moment; they are additions to the vocabulary.
+
+Prototypes go in `design-refs/prototypes/`, numbered from 18, and are reviewed
+by hand before anything reaches a screen.
+
+### D7.1 — Margin marks after a reschedule
+
+When the scheduler moves the day, the change is recorded as a persistent mark in
+the left margin of the list, not as a re-animation of the block. The day is then
+readable by scanning the margin instead of re-reading task names.
+
+Taken from letterpress proof correction: the corrector puts a sign in the line
+and a second symbol in the margin, so the compositor finds the place without
+reading the page. Source: BS 5261 part 2.
+
+Three marks minimum — moved, compressed, displaced. A mark persists until the
+user has seen the day; it is not a toast.
+
+**Prototype:** `18-margin-marks-after-reschedule.html` — eight tasks, three moved.
+**Kill condition:** the margin needs a legend. If the marks are not readable
+without one, this is a second column of noise.
+
+### D7.2 — Three states of slack, and "you will make it" is drawn
+
+A deadline gets three states, not two, and the safe state carries its own mark
+rather than being the absence of a mark.
+
+Taken from hydrographic charts, which mark safe water explicitly with its own
+symbol alongside the hazard symbols, and which encode steepness through contour
+spacing. Applied here: hatch density rises as slack is consumed, the way isobaths
+converge at a drop-off. Source: NOAA Nautical Charts Tutorial.
+
+This is the one that changes a decision the user makes today — "abandon or push"
+is a question the current UI does not answer at all.
+
+**Prototype:** one task in three states — slack above double the estimate, slack
+below the estimate, no slack.
+**Kill condition:** the third state reads as the first. Then two states are the
+honest answer.
+
+### D7.3 — A Marey chart for the day
+
+Horizontal axis is time of day, vertical axis is cumulative completed work. Plan
+is a straight line, actual is a broken one. Falling behind appears as an angle
+rather than as a number.
+
+Taken from the 1878 graphical train schedule, where the slope of a line is the
+speed of the train. Source: Marey's Trains (Observable / D3).
+
+**Prototype:** a ten-task day, two lines, the band between them is debt or slack.
+**Kill condition:** at a typical five- or six-task day the line is too short to
+have a slope.
+
+### D7.4 — Calendar without a clock axis (a mode, not a replacement)
+
+**Owner decision, 2026-08-26:** this ships as a **second calendar mode**,
+switchable in settings, not as a replacement for the timed view. The sidebar
+changes with the mode.
+
+The day becomes a sequence of slots with durations and no absolute time. Meetings
+stay as anchors and keep their times; everything else simply follows in order.
+The reasoning: under auto-scheduling the exact time is an output of the system,
+not a decision of the user, and showing clock times invites the user to fight the
+scheduler over minutes that were never theirs to set.
+
+Taken from heijunka production levelling, where the board carries a repeating
+sequence and a takt rather than clock times. Source: Toyota Production System /
+Kanban Zone.
+
+Shipping it as a mode is what makes it testable: the timed view stays for whoever
+needs it, and the sequence view is settled by use rather than by argument.
+
+**Prototype:** `today-no-clock.html`, the same day as `14-today-target.html`,
+without the time axis.
+**Kill condition:** without clock times there is no way to see whether the day
+fits inside working hours. Then the axis carries information, not habit.
+
+**Open, to decide during the prototype:**
+
+- The name of the mode in settings. Working title: Sequence.
+- What the sidebar does — whether the mini-calendar disappears or becomes a slot
+  count.
+- Whether the switch is global or per-day.
+- What happens to meeting blocks whose times are fixed.
+
+### Considered, no verdict yet
+
+**Workspace staves.** Each workspace holds a fixed vertical position in the day
+and stays visible when empty, like a silent instrument in an orchestral score —
+the conductor finds an instrument peripherally because it is always in the same
+place. Source: MOLA music preparation guidelines. Not accepted, not rejected.
+Kill condition if picked up: an empty stave costs height and the day stops
+fitting on screen.

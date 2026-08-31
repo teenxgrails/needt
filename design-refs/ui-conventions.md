@@ -24,21 +24,18 @@ light/dark:
 | `--text-muted`      | low-emphasis and placeholder text        |
 | `--color-accent`    | configurable accent                      |
 
-**Glow/blur rule retired (2026-08-16, owner decision).** The old blanket "no
-glow, no backdrop blur" rule no longer applies app-wide — it's superseded by
-the Figma Make-led redesign (first reference: the sign-in screen in the
-Figma capture file, node `30:49`). Match each screen's current Figma
-reference as it gets redesigned. Until a component documented below is
-actually redesigned, its existing no-glow/no-blur wording still describes
-what's live in the app today — don't add glow to untouched screens on spec,
-and don't assume the old rule still blocks a screen that has a newer Figma
-reference.
+**Visual restrictions lifted (2026-08-31, owner decision).** The former bans on
+glow, backdrop blur, shadows and a violet accent no longer apply anywhere — not
+app-wide, and not as leftover wording on individual components. They were
+blocking the direction the owner wants. Shadow, glow, blur, gradient and any
+accent hue are all available; judge each by whether the screen reads well, not
+against a rule. Descriptions of individual components below record what is
+currently built, not what is permitted.
 
-The app uses one continuous canvas color per theme. Page, sidebar, panel,
-popover, and dialog surface tokens resolve to that same base. Depth comes from
-the shared `--ambient-background`: a subtle vertical top light that settles
-into the base at 40% of the surface, plus hairline borders — never from separate
-surface colors or glow.
+Surface tokens are no longer collapsed onto one canvas colour: `--surface-canvas`,
+`--surface-panel` and `--surface-raised` are three distinct levels per theme
+(2026-08-31), so panels and cards can sit above the page. `--ambient-background`
+still provides the vertical top light.
 
 ## Popup / options panel (e.g. Calendar options — screen 3/4)
 
@@ -64,8 +61,7 @@ Reference implementation: the Calendar options panel in
 - sticky search/header, `36–40px` option rows;
 - selected option uses full monochrome inversion;
 - category icons may retain semantic color;
-- mobile uses a bottom sheet, safe-area padding, and at least `44px` targets;
-- no backdrop blur or colored glow.
+- mobile uses a bottom sheet, safe-area padding, and at least `44px` targets.
 
 Sonner notifications are top-center and must go through the typed
 `src/lib/notifications.ts` facade. The shared animated queue shows at most
@@ -113,24 +109,31 @@ non-scrolling route root. The timeline header stays fixed. On tablet and phone
 the document returns to normal page scrolling and the timeline lives in a
 bottom sheet whose 24-hour grid is the only scrolling child.
 
-Focus uses one flat canvas across idle, active, paused, break, exit-delay, and
-completion states. Task, mode, streak, timer, scrubber/progress, activity,
-score, and weekly metrics stay in one geometry separated by hairline dividers.
-Do not wrap those sections in cards, metric tiles, rounded panels, or decorative
-glows. Activity visualization may use color; selection and primary actions use
-the standard monochrome inversion. When analytics are empty, render one compact
-status line instead of empty tiles.
+**Flat-canvas rule retired (2026-08-26, owner decision).** Focus previously used
+one flat canvas with no cards, metric tiles, or rounded panels. That rule no
+longer applies: the new visual base in `design-refs/board-tokens.md` is
+card-based, with five distinct surfaces and `14 / 10 / 8` radii. Cards, panels,
+and chips are allowed across the app, Focus included.
+
+What still holds from the old paragraph: Focus keeps one geometry across idle,
+active, paused, break, exit-delay, and completion states — the layout must not
+reflow between them. Activity visualization may use color; selection and primary
+actions use the standard monochrome inversion. When analytics are empty, render
+one compact status line instead of empty tiles.
+
+Until a screen is actually redesigned against `board-tokens.md`, its current
+implementation stands — don't retrofit cards onto untouched screens on spec.
 
 ## Toggle (Switch)
 
-Shared `@/components/ui/switch`. Flat white thumb (`shadow-sm`, **no glow**),
+Shared `@/components/ui/switch`. Flat white thumb (`shadow-sm`),
 `--switch-on-bg` when checked, no focus ring. Use for boolean options.
 
 ## Modal / dialog (screen 5)
 
 Shared `@/components/ui/dialog`:
 
-- Overlay is `bg-black/55` with **no backdrop blur**.
+- Overlay is `bg-black/55` (blur is available if a redesign calls for it).
 - Content animates in with **fade + subtle slide-up** (`slide-in-from-bottom-2`),
   never a zoom.
 - Header pattern: title (`text-base`/`text-lg`), optional description in
