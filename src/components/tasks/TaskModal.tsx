@@ -715,9 +715,10 @@ export function TaskModal({
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="flex min-h-10 items-center gap-1.5 rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-[25px] sm:min-h-0"
+                          className="flex min-h-10 items-center gap-1.5 whitespace-nowrap rounded-md px-2 hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] sm:h-[25px] sm:min-h-0"
                         >
-                          <BookTemplate className="h-4 w-4" /> Use template
+                          <BookTemplate className="h-4 w-4 flex-none" /> Use
+                          template
                         </button>
                       </PopoverTrigger>
                       <PopoverContent
@@ -783,7 +784,7 @@ export function TaskModal({
               onChange={(event) => setTitle(event.target.value)}
               required
               placeholder="Task name"
-              className="mt-1 h-[42px] border-0 bg-transparent px-0 text-[22px] font-semibold text-[var(--text-primary)] shadow-none placeholder:text-[var(--text-muted)] focus-visible:border-0 focus-visible:ring-0"
+              className="mt-2.5 h-[40px] border-0 bg-transparent px-0 text-[22px] font-semibold leading-tight text-[var(--text-primary)] shadow-none placeholder:text-[var(--text-muted)] focus-visible:border-0 focus-visible:ring-0"
             />
           </DialogHeader>
 
@@ -855,12 +856,19 @@ export function TaskModal({
               </div>
             </div>
 
+            {/*
+              A full-width band of 18% accent with accent-coloured text read as
+              a warning rather than as an enabled setting — the loudest thing in
+              a dialog where it is not the most important thing. The state now
+              lives in the tick and a faint wash; the words stay in normal text
+              colour, as everywhere else in the form.
+            */}
             <label
               className={cn(
-                "flex h-[48px] cursor-pointer items-center gap-2 px-5 text-[13px]",
+                "flex h-[42px] cursor-pointer items-center gap-2 px-5 text-[13px] text-[var(--text-primary)] transition-colors duration-150",
                 isAutoScheduled
-                  ? "bg-[color-mix(in_srgb,var(--color-accent)_18%,var(--surface-panel))] text-[var(--color-accent)]"
-                  : "bg-[var(--surface-hover)] text-[var(--text-primary)]"
+                  ? "bg-[color-mix(in_srgb,var(--color-accent)_7%,var(--surface-panel))]"
+                  : "bg-[var(--surface-hover)]"
               )}
             >
               <Switch
@@ -868,16 +876,23 @@ export function TaskModal({
                 onCheckedChange={setIsAutoScheduled}
                 className="sr-only"
               />
-              <span className="grid h-5 w-5 place-items-center rounded-full border border-current">
+              <span
+                className={cn(
+                  "grid h-[18px] w-[18px] place-items-center rounded-full border transition-colors duration-150",
+                  isAutoScheduled
+                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-accent-contrast)]"
+                    : "border-[var(--border-control)] text-transparent"
+                )}
+              >
                 <Check className="h-3 w-3" />
               </span>
               <span className="font-medium">Auto-scheduled</span>
-              <span className="text-current/80">
+              <span className="text-[var(--text-secondary)]">
                 {!isAutoScheduled
-                  ? "(Off)"
+                  ? "Off"
                   : task?.scheduledStart
                     ? format(newDate(task.scheduledStart), "EEE MMM d, h:mm a")
-                    : "(Pending)"}
+                    : "Pending"}
               </span>
             </label>
             {/*
@@ -891,7 +906,7 @@ export function TaskModal({
                 : "Stays exactly where you put it."}
             </p>
 
-            <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
+            <div className="space-y-1.5 border-b border-[var(--border-subtle)] px-5 py-2.5 text-[13px]">
               <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <UserRound className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
@@ -939,7 +954,7 @@ export function TaskModal({
               </div>
             </div>
 
-            <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
+            <div className="space-y-1.5 border-b border-[var(--border-subtle)] px-5 py-2.5 text-[13px]">
               <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
                 <span className="w-[100px] text-[var(--text-secondary)]">
                   Duration:
@@ -1022,10 +1037,12 @@ export function TaskModal({
                 <Bell className="h-4 w-4 text-[var(--color-accent)]" />
               </div>
               <label
-                className="flex min-h-11 cursor-pointer items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0"
+                className="flex min-h-11 cursor-pointer items-center gap-2 pl-3 sm:h-[26px] sm:min-h-0"
                 title="A hard deadline outranks your work schedule: to meet it, Needt may place this task outside working hours (never at night)."
               >
-                <span className="w-[88px] text-[var(--text-secondary)]">
+                {/* "Hard deadline:" wrapped onto a second line inside an 88px
+                    label, which alone opened a 52px hole above Category. */}
+                <span className="w-[104px] whitespace-nowrap text-[var(--text-secondary)]">
                   └ Hard deadline:
                 </span>
                 <Switch
@@ -1078,7 +1095,7 @@ export function TaskModal({
               </div>
             </div>
 
-            <div className="px-5 py-3 text-[13px]">
+            <div className="space-y-1.5 px-5 py-2.5 text-[13px]">
               {/*
                 The first selected label is the task's category: the calendar
                 derives the block's colour from it, and the month view groups by
