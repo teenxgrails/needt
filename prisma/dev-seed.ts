@@ -535,6 +535,11 @@ async function main() {
         title: task.title,
         status,
         userId: user.id,
+        // Without an assignee a task is invisible to auto-scheduling (it selects
+        // on assigneeId, not userId) and the calendar refuses to drag it —
+        // "Assign the task before scheduling it". Seeded data must behave like
+        // data a real person created.
+        assigneeId: user.id,
         priority: task.priority ?? "medium",
         duration: task.minutes ?? 60,
         dueDate: new Date(year, month, task.day, 12, 0, 0, 0),
