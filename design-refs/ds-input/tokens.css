@@ -1,0 +1,649 @@
+/**
+ * Needt design tokens v2 — Craft Docs, measured
+ *
+ * MEASURED 2026-08-31 from the signed-in Craft Docs web app (docs.craft.do) at
+ * 1440×900 by reading computed styles. Screens read: All Docs, Tasks/Inbox,
+ * Calendar, the document editor, the floating Assistant layer, and the
+ * signed-out shell in both schemes.
+ *
+ * NOT read: dropdown and context menus, the settings modal, and hover states —
+ * Craft's app ships no accessible CSS rules (no custom properties, no readable
+ * :hover rules), so hover can only be measured by hovering, and the pane's
+ * hover did not register. Rest and active states are measured.
+ *
+ * Dark theme is partial: Craft sets some values inline at mount, so document
+ * cards and header buttons did not repaint when the theme attribute was
+ * flipped. Those dark values are marked UNVERIFIED.
+ *
+ * Craft's theme switch is `data-theme="light|dark"` on <html>, with a separate
+ * `data-accent` (theirs was "blue"). Craft exposes no CSS custom properties at
+ * all — every value below was read off rendered elements, not off a token file.
+ *
+ * Mechanism — from Craft Agents (`packages/ui/src/styles/index.css`,
+ * github.com/lukilabs/craft-agents-oss, Apache-2.0, read 2026-08-31): six base
+ * colours, derived steps, ring-first elevation, z-index scale. That file is
+ * re-authored here, not copied; Apache-2.0 notice travels with verbatim code.
+ *
+ * Accent follows Craft's blue by owner decision 2026-08-31. This overrides the
+ * note in `craft-app-references.md` ("take the structure, not the palette") and
+ * retires the clay #C96442 of plan 10. Contrast checked: #2E6DE9 on #FCFDFE is
+ * 4.6:1, #71B2FF on #121314 is 8.4:1, on #1E2021 is 7.4:1 — all pass AA.
+ *
+ * ── MEASURED CRAFT DOCS, LIGHT ──────────────────────────────────────────────
+ *   canvas          #FCFDFE      raised/card     #FFFFFF
+ *   foreground      #1A1C1E      alphas .85 .70 .55 .40
+ *   fills           fg/.02  fg/.04  fg/.06  fg/.08
+ *   hairline        1.5px fg/.08          ← 1.5px, not 1px
+ *   accent          #2E6DE9      fill accent/.12   focus ring accent/.4 inset 2px
+ *   radii seen      8(×14) 10(×8) 12(×7) 6(×7) 16(×6) 9999(×5) 4(×5) 14(×4)
+ *   type            16/400/19.2 · 13/400/16 · 13/500 · 12/400/14.4 · 12/500 · 15/600/18 · 22/600
+ *   font            Inter on 424 of 618 elements
+ *   gaps            1 2 4 5 8 16 20
+ *   nav row         268×32, r8, bg fg/.06 when active, 13/400, pad 7px 11px 7px 6px
+ *   search "Open"   480×32, r12, transparent, INSET ring fg/.08, pad 0 6px
+ *   button          132×32, r10, bg fg/.04, text fg/.85, 13/500, pad 4px 13px 4px 7px
+ *   icon button     34×28, r8, bg fg/.04, pad 3px
+ *   doc card        208×260 white r16; inner sheet r10 top, ring fg/.08
+ *   avatar          36×36, r14, layered shadow
+ *   floating pill   112×40, r18, deep two-layer shadow + ring
+ *
+ * ── MEASURED CRAFT DOCS, DARK (trusted subset) ──────────────────────────────
+ *   canvas          #121314 (read from the signed-out shell)
+ *   surface         #1E1E1E
+ *   foreground      #F9F9F9      alphas .85 .70 .40
+ *   fills           fg/.04  fg/.06  fg/.08
+ *   hairline        1.5px fg/.08
+ *   accent          #71B2FF      fill accent/.12   focus ring accent/.4 inset 2px
+ *   UNVERIFIED      document card fill, header button fill
+ */
+
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* =============================================================================
+   LIGHT — default. Two grounds: the canvas is off-white, the card is pure white.
+   Craft does NOT collapse surfaces; the card is visible because the ground is
+   a step darker. This matches the owner decision of 2026-08-23.
+============================================================================= */
+
+:root {
+  /* === BASE === */
+  --background: #fcfdfe;                 /* canvas, sidebar */
+  --surface-raised: #ffffff;             /* card, sheet, popover */
+  --foreground: oklch(0.245 0.008 250);  /* #1A1C1E */
+  --foreground-rgb: 26, 28, 30;
+
+  --accent: oklch(0.567 0.199 262);      /* #2E6DE9 — Craft's blue */
+  --accent-rgb: 46, 109, 233;
+  --info: oklch(0.75 0.16 70);
+  --success: oklch(0.55 0.17 145);
+  --destructive: oklch(0.58 0.24 28);
+  --info-rgb: 180, 120, 40;
+  --success-rgb: 34, 120, 60;
+  --destructive-rgb: 180, 60, 50;
+
+
+  /* === TEXT — four levels, all one hue at declining alpha === */
+  --text-primary: rgba(var(--foreground-rgb), 1);
+  --text-secondary: rgba(var(--foreground-rgb), 0.85);
+  --text-tertiary: rgba(var(--foreground-rgb), 0.7);
+  --text-quaternary: rgba(var(--foreground-rgb), 0.55);
+  --text-muted: rgba(var(--foreground-rgb), 0.4);
+  --text-disabled: rgba(var(--foreground-rgb), 0.25); /* placeholder, empty state */
+
+  /* === FILLS — the whole grey ladder, six steps, all one hue === */
+  --fill-1: rgba(var(--foreground-rgb), 0.02);
+  --fill-2: rgba(var(--foreground-rgb), 0.03);   /* menu row rest */
+  --fill-3: rgba(var(--foreground-rgb), 0.04);   /* button rest, inactive tab */
+  --fill-4: rgba(var(--foreground-rgb), 0.06);   /* nav row active */
+  --fill-5: rgba(var(--foreground-rgb), 0.08);   /* hairline, calendar day */
+  --fill-6: rgba(var(--foreground-rgb), 0.12);   /* pressed */
+
+  /* === BORDER — 1.5px in the chrome, 1px inside a document === */
+  --border-width: 1.5px;
+  --border-width-doc: 1px;
+  --border: rgba(var(--foreground-rgb), 0.08);
+  --ring-accent: rgba(var(--accent-rgb), 0.4);
+
+  /* === ACCENT FILLS — two levels, both translucent.
+     Craft has no solid accent button anywhere; accent only ever appears as a
+     translucent fill with the accent used as the text colour. === */
+  --fill-accent: rgba(var(--accent-rgb), 0.12);   /* selected tab, chip */
+  --fill-accent-strong: rgba(var(--accent-rgb), 0.24); /* today, current day */
+
+  /* === ELEVATION === */
+  --shadow-inset-ring: rgba(var(--foreground-rgb), 0.08) 0 0 0 1px inset;
+  --shadow-ring: rgba(var(--foreground-rgb), 0.08) 0 0 0 1px;
+  --shadow-focus: rgba(var(--accent-rgb), 0.4) 0 0 0 2px inset;
+
+  /* avatar / small raised object — five thin layers, almost no spread */
+  --shadow-raised:
+    rgba(0, 0, 0, 0.05) 0 1px 1px 0,
+    rgba(0, 0, 0, 0.04) 0 2px 2px 0,
+    rgba(0, 0, 0, 0.02) 0 4px 2px 0,
+    rgba(0, 0, 0, 0.01) 0 7px 2px 0,
+    rgba(0, 0, 0, 0.05) 0 0 0 1px;
+
+  /* floating pill / popover — deep, two blurs, ring, inner highlight */
+  --shadow-floating:
+    rgba(0, 0, 0, 0.06) 0 12px 24px -6px,
+    rgba(0, 0, 0, 0.24) 0 16px 40px -6px,
+    rgba(0, 0, 0, 0.1) 0 0 0 1px,
+    rgba(255, 255, 255, 0.03) 0 0 0 1px inset;
+}
+
+/* =============================================================================
+   DARK
+============================================================================= */
+
+.dark {
+  --background: #121314;
+  --surface-raised: #1e1e1e;
+  --foreground: oklch(0.975 0 0);         /* #F9F9F9 */
+  --foreground-rgb: 249, 249, 249;
+
+  --accent: oklch(0.752 0.13 253.6);     /* #71B2FF */
+  --accent-rgb: 113, 178, 255;
+  --info: oklch(0.70 0.16 70);
+  --success: oklch(0.60 0.17 145);
+  --destructive: oklch(0.70 0.19 22);
+  --info-rgb: 200, 140, 60;
+  --success-rgb: 50, 140, 80;
+  --destructive-rgb: 200, 80, 70;
+
+
+  /* Dark drops one text level — Craft uses .85 / .70 / .40, no .55 */
+  --text-quaternary: rgba(var(--foreground-rgb), 0.55);
+
+  --shadow-floating:
+    rgba(0, 0, 0, 0.4) 0 12px 24px -6px,
+    rgba(0, 0, 0, 0.5) 0 16px 40px -6px,
+    rgba(255, 255, 255, 0.08) 0 0 0 1px;
+}
+
+/* =============================================================================
+   DIM — grey. Not Craft's; Needt's third theme. Only the ground moves.
+============================================================================= */
+
+.dim {
+  --background: #1e2021;
+  --surface-raised: #292b2c;
+  --foreground: oklch(0.975 0 0);
+  --foreground-rgb: 249, 249, 249;
+
+  --accent: oklch(0.752 0.13 253.6);     /* #71B2FF */
+  --accent-rgb: 113, 178, 255;
+
+  --shadow-floating:
+    rgba(0, 0, 0, 0.35) 0 12px 24px -6px,
+    rgba(0, 0, 0, 0.45) 0 16px 40px -6px,
+    rgba(255, 255, 255, 0.08) 0 0 0 1px;
+}
+
+/* =============================================================================
+   RADIUS — measured distribution, not invented
+
+   8px dominates (14 elements), then 10, 12, 6, 16, full pill, 4, 14.
+   Craft assigns radius by object size, not by one global value.
+============================================================================= */
+
+:root {
+  --radius-xs: 4px;    /* chips, tiny controls */
+  --radius-sm: 6px;    /* inner highlights, selection */
+  --radius-md: 8px;    /* nav rows, icon buttons, tabs — the workhorse */
+  --radius-lg: 10px;   /* buttons, document sheet top */
+  --radius-xl: 12px;   /* search field, panels */
+  --radius-2xl: 14px;  /* avatar, space switcher */
+  --radius-3xl: 16px;  /* document card, calendar day */
+  --radius-4xl: 20px;  /* calendar strip container */
+  --radius-sheet: 26px; /* the document sheet itself — the largest in the app */
+  --radius-pill: 9999px;
+  --radius-floating: 18px; /* the Assistant pill */
+}
+
+/* =============================================================================
+   TYPOGRAPHY — measured
+
+   Inter carried 424 of 618 elements. 16px is the document size; the whole
+   interface runs at 13px and 12px. There is no 14px in the chrome.
+
+   Sans is the system stack with Inter first: Apple's licence forbids shipping
+   SF as a webfont, but system-ui resolves to real SF on macOS at zero bytes.
+   Display serif is Needt's own addition — Craft ships Untitled Serif (paid,
+   Klim) and Source Serif (open) for documents, neither for chrome.
+   Instrument Serif is Latin-only, 374 glyphs, no Cyrillic: never on a
+   translatable string.
+============================================================================= */
+
+:root {
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
+    monospace;
+  --font-default: var(--font-sans);
+
+  /* measured pairs: size / weight / line-height */
+  --text-doc: 16px;         /* /400, lh 19.2px — document body */
+  --text-ui: 13px;          /* /400 and /500, lh 16px — every control */
+  --text-meta: 12px;        /* /400 lh 14.4px, /500 — metadata, eyebrows */
+  --text-title: 15px;       /* /600, lh 18px — section and card titles */
+  --text-page: 22px;        /* /600 — page heading */
+
+  --font-size-base: 16px;
+  --tracking-normal: 0em;
+  --tracking-display: -0.02em;
+}
+
+html[data-font="inter"] {
+  font-optical-sizing: auto;
+  font-feature-settings: "cv01", "cv02", "cv03", "cv04", "case";
+}
+
+/* =============================================================================
+   SPACING — measured gaps: 1 2 4 5 8 16 20. Craft uses odd steps on purpose.
+============================================================================= */
+
+:root {
+  --space-hair: 1px;
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-5: 5px;
+  --space-8: 8px;
+  --space-16: 16px;
+  --space-20: 20px;
+
+  /* measured control metrics */
+  --control-h: 32px;          /* nav row, search, button */
+  --control-h-sm: 28px;       /* icon button */
+  --pad-nav-row: 7px 11px 7px 6px;
+  --pad-button: 4px 13px 4px 7px;
+  --pad-icon-button: 3px;
+  --pad-search: 0 6px;
+}
+
+/* =============================================================================
+   Z-INDEX — sixteen named steps, from Craft Agents, taken whole
+============================================================================= */
+
+:root {
+  --z-base: 0;
+  --z-local: 10;
+  --z-sticky: 20;
+  --z-titlebar: 40;
+  --z-panel: 50;
+  --z-dropdown: 100;
+  --z-tooltip: 150;
+  --z-modal: 200;
+  --z-overlay: 300;
+  --z-fullscreen: 350;
+  --z-floating-backdrop: 390;
+  --z-floating-menu: 400;
+  --z-island-overlay: 390;
+  --z-island: 400;
+  --z-island-popover: 410;
+  --z-splash: 600;
+}
+
+/* =============================================================================
+   MOTION — two transitions, nothing else
+============================================================================= */
+
+:root {
+  --transition-theme: 0.25s ease;
+  --transition-hover: 0.15s ease;
+}
+
+/* =============================================================================
+   TAILWIND V4
+============================================================================= */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface-raised: var(--surface-raised);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-info: var(--info);
+  --color-success: var(--success);
+  --color-destructive: var(--destructive);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-quaternary: var(--text-quaternary);
+  --color-text-muted: var(--text-muted);
+
+  --color-fill-1: var(--fill-1);
+  --color-fill-2: var(--fill-2);
+  --color-fill-3: var(--fill-3);
+  --color-fill-4: var(--fill-4);
+  --color-fill-accent: var(--fill-accent);
+  --color-border: var(--border);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-3xl: var(--radius-3xl);
+
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+}
+
+/* =============================================================================
+   BASE
+============================================================================= */
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  html {
+    font-size: var(--font-size-base);
+  }
+
+  body {
+    font-family: var(--font-default);
+    background: var(--background);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: var(--radius-xs);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+}
+
+/* =============================================================================
+   COMPONENTS — measured, one class each
+============================================================================= */
+
+@layer components {
+  /* Sidebar nav row. Active state is a fill, never a bar or an underline. */
+  .nav-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    height: var(--control-h);
+    padding: var(--pad-nav-row);
+    border-radius: var(--radius-md);
+    font-size: var(--text-ui);
+    font-weight: 400;
+    color: var(--text-tertiary);
+    transition: background-color var(--transition-hover),
+      color var(--transition-hover);
+  }
+  .nav-row:hover {
+    background: var(--fill-2);
+    color: var(--text-primary);
+  }
+  .nav-row[aria-current],
+  .nav-row.is-active {
+    background: var(--fill-3);
+    color: var(--text-primary);
+  }
+
+  /* Command bar. Labelled with a verb ("Open"), not a magnifier.
+     Transparent fill, inset ring — the ring is inside, never outside. */
+  .command-bar {
+    height: var(--control-h);
+    padding: var(--pad-search);
+    border-radius: var(--radius-xl);
+    background: transparent;
+    box-shadow: var(--shadow-inset-ring);
+    font-size: var(--text-doc);
+  }
+
+  /* Neutral button. There is no filled primary button in Craft's chrome. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: var(--control-h);
+    padding: var(--pad-button);
+    border-radius: var(--radius-lg);
+    background: var(--fill-2);
+    color: var(--text-secondary);
+    font-size: var(--text-ui);
+    font-weight: 500;
+    transition: background-color var(--transition-hover);
+  }
+  .btn:hover {
+    background: var(--fill-3);
+  }
+  .btn:active {
+    background: var(--fill-4);
+  }
+
+  .btn-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: var(--control-h-sm);
+    padding: var(--pad-icon-button);
+    border-radius: var(--radius-md);
+    background: var(--fill-2);
+  }
+
+  /* Document card. White sheet on the off-white canvas, ring only — the card
+     itself carries no blur; the inner sheet carries the ring. */
+  .doc-card {
+    background: var(--surface-raised);
+    border-radius: var(--radius-3xl);
+    overflow: hidden;
+  }
+  .doc-sheet {
+    background: var(--surface-raised);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-ring);
+    padding: 7px 10px 0;
+  }
+
+  /* Small raised object: avatar, space switcher. */
+  .raised {
+    border-radius: var(--radius-2xl);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* Floating action, bottom right. */
+  .floating {
+    height: 40px;
+    border-radius: var(--radius-floating);
+    box-shadow: var(--shadow-floating);
+  }
+
+  /* Selection: a translucent accent fill plus a 2px inset ring. */
+  .selected {
+    background: var(--fill-accent);
+    box-shadow: var(--shadow-focus);
+    border-radius: var(--radius-sm);
+  }
+
+  /* Outline button — transparent fill, inset ring. Craft's "Share". */
+  .btn-outline {
+    height: var(--control-h);
+    padding: var(--pad-button);
+    border-radius: var(--radius-lg);
+    background: transparent;
+    box-shadow: var(--shadow-inset-ring);
+    font-size: var(--text-ui);
+    font-weight: 500;
+  }
+
+  /* Segmented control. Selected segment takes the accent as fill AND as text;
+     unselected sits on fill-3 with muted text. Measured on Tasks. */
+  .segment {
+    height: var(--control-h);
+    padding: var(--pad-button);
+    border-radius: var(--radius-lg);
+    background: var(--fill-3);
+    color: var(--text-muted);
+    font-size: var(--text-ui);
+    font-weight: 500;
+  }
+  .segment[aria-selected="true"],
+  .segment.is-selected {
+    background: var(--fill-accent);
+    color: var(--accent);
+  }
+
+  /* Chip — the small inline action. 28px tall, asymmetric padding. */
+  .chip {
+    height: var(--control-h-sm);
+    padding: 3px 8px 3px 5px;
+    border-radius: var(--radius-md);
+    background: var(--fill-3);
+    color: var(--text-muted);
+    font-size: var(--text-ui);
+    font-weight: 500;
+  }
+  .chip.is-accent {
+    background: var(--fill-accent);
+    color: var(--accent);
+  }
+
+  /* Calendar day. Today is the only element in the app that gets the strong
+     accent fill; every other day is a plain grey fill. */
+  .cal-day {
+    width: 120px;
+    padding: var(--space-16);
+    border-radius: var(--radius-3xl);
+    background: var(--fill-5);
+  }
+  .cal-day.is-today {
+    background: var(--fill-accent-strong);
+  }
+  .cal-strip {
+    padding: var(--space-8);
+    border-radius: var(--radius-4xl);
+    background: var(--background);
+    box-shadow:
+      rgba(var(--foreground-rgb), 0.04) 0 0 0 1px inset,
+      rgba(0, 0, 0, 0.04) 0 1px 1px 0,
+      rgba(0, 0, 0, 0.04) 0 3px 3px 0,
+      rgba(0, 0, 0, 0.02) 0 6px 4px 0,
+      rgba(0, 0, 0, 0.01) 0 11px 4px 0,
+      rgba(0, 0, 0, 0.03) 0 0 0 1px;
+  }
+
+  /* The document sheet. Widest radius in the product, white, ring only. */
+  .doc-sheet-page {
+    max-width: 844px;
+    border-radius: var(--radius-sheet);
+    background: var(--surface-raised);
+    box-shadow:
+      rgba(0, 0, 0, 0.06) 0 0 0 1px,
+      rgba(0, 0, 0, 0.06) 0 1px 1px -0.5px;
+  }
+
+  /* Editor floating toolbar — the only translucent surface besides the
+     Assistant. Note the fill is 85% opaque, not a blur alone. */
+  .toolbar-floating {
+    height: 45px;
+    padding: 4.5px;
+    border-radius: var(--radius-pill);
+    background: rgba(250, 250, 250, 0.85);
+    box-shadow:
+      rgba(0, 0, 0, 0.07) 0 2px 4px 0,
+      rgba(0, 0, 0, 0.06) 0 8px 8px 0,
+      rgba(0, 0, 0, 0.04) 0 18px 11px 0,
+      rgba(0, 0, 0, 0.01) 0 32px 13px 0,
+      rgba(0, 0, 0, 0.03) 0 0 0 1px;
+  }
+
+  /* Menu row inside a popover. */
+  .menu-row {
+    height: 36px;
+    border-radius: var(--radius-lg);
+    background: var(--fill-2);
+    box-shadow: var(--shadow-inset-ring);
+    font-size: var(--text-doc);
+  }
+
+  /* Pill toggle group — full round, 3px inner padding. */
+  .toggle-group {
+    height: var(--control-h);
+    padding: 3px;
+    border-radius: var(--radius-pill);
+    background: var(--fill-3);
+  }
+}
+
+/* =============================================================================
+   UTILITIES
+============================================================================= */
+
+@layer utilities {
+  .shadow-ring {
+    box-shadow: var(--shadow-ring);
+  }
+  .shadow-inset-ring {
+    box-shadow: var(--shadow-inset-ring);
+  }
+  .shadow-raised {
+    box-shadow: var(--shadow-raised);
+  }
+  .shadow-floating {
+    box-shadow: var(--shadow-floating);
+  }
+
+  /* Controls that appear only on hover — Craft hides bookmark and settings
+     icons until the row is hovered. */
+  .reveal-on-hover {
+    opacity: 0;
+    transition: opacity var(--transition-hover);
+  }
+  .group:hover .reveal-on-hover,
+  .reveal-on-hover:focus-visible {
+    opacity: 1;
+  }
+
+  .theme-surface {
+    transition: background-color var(--transition-theme),
+      border-color var(--transition-theme), color var(--transition-theme);
+  }
+
+  /* Backdrop blur exists in exactly ONE place in Craft: the floating Assistant
+     pill. Nowhere else — no frosted panels, no scrim blur. Use it the same way,
+     for a single always-on-top control, and nothing else. */
+  .glass {
+    backdrop-filter: saturate(1.5) blur(32px);
+    -webkit-backdrop-filter: saturate(1.5) blur(32px);
+  }
+
+  .display {
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-display);
+  }
+
+  /* Empty-state hint in the sidebar: grey, italic, one size down.
+     "Star Docs to keep them close." */
+  .empty-hint {
+    font-size: var(--text-meta);
+    font-style: italic;
+    color: var(--text-muted);
+  }
+}

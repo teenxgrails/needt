@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15 — Today, light base — Needt prototype</title>
+<style>
+/* ── Base ─────────────────────────────────────────────────────────────────
+   Light ground, per owner 2026-08-23. References: Dia, Poke, Craft — all
+   off-white, never pure white, colour comes from content not chrome.
+   Sand #F5F2EA is the light option already listed in prototypes/README.md.
+   One continuous canvas (ui-conventions.md): sidebar, canvas and rail share
+   the ground and are separated by hairlines only.
+   All sans in the app — serif stays on needt.app.
+   ──────────────────────────────────────────────────────────────────────── */
+:root{
+  --canvas:#EFEBE1;            /* ground — the card sits on this */
+  --raised:#FAF8F3;            /* document card — Craft treatment, 2026-08-23 */
+  --ambient:linear-gradient(to bottom, rgba(255,255,255,.45) 0%, transparent 40%);
+  --control:#E7E1D4;
+  --control-hover:#E6E0D2;
+  --hover:rgba(31,29,24,.045);
+  --line:#E2DCCD;
+  --line-strong:#CFC7B4;
+  --text:#1F1D18;
+  --secondary:#5F5849;
+  --muted:#8F8878;
+  --accent:#B4543A;            /* clay, darkened for contrast on sand */
+  --accent-wash:rgba(180,84,58,.12);
+  --now:#C2603F;
+  --cal-launch:#B4543A; --cal-deep:#4A7A68; --cal-admin:#8A6A2F;
+  --radius:8px; --card:4px;
+  --press-in:90ms cubic-bezier(.4,0,.2,1);
+  --press-out:340ms cubic-bezier(.34,1.4,.5,1);
+  --reposition:480ms cubic-bezier(.22,1,.32,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--canvas);background-image:var(--ambient);
+  background-repeat:no-repeat;color:var(--text);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;
+  overflow:hidden;-webkit-font-smoothing:antialiased;
+}
+.app{display:grid;grid-template-columns:184px minmax(0,1fr) 296px;height:100vh}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────── */
+.side{border-right:1px solid var(--line);display:flex;flex-direction:column;
+  padding:12px 0;min-height:0}
+.lights{display:flex;gap:8px;padding:4px 14px 20px}
+.lights i{width:11px;height:11px;border-radius:50%;background:var(--line-strong)}
+.nav{padding:0 8px;display:flex;flex-direction:column;gap:1px}
+.nav a{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;
+  border-radius:7px;color:var(--secondary);text-decoration:none;font-size:13.5px;
+  transition:background 140ms ease,color 140ms ease}
+.nav a:hover{background:var(--hover);color:var(--text)}
+.nav a[aria-current]{background:var(--control);color:var(--text);font-weight:500}
+.nav svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.nav a[aria-current] svg{opacity:1}
+.nav .n{margin-left:auto;font-size:11.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+/* Section headers readable, not micro-caps — Craft, 2026-08-23 */
+.sec{padding:24px 18px 7px;font-size:13px;font-weight:600;color:var(--text)}
+/* Craft never leaves a sidebar section blank — it says what would go there */
+.hint{padding:0 18px 4px;font-size:12.5px;font-style:italic;color:var(--muted)}
+.proj{display:flex;align-items:center;gap:10px;height:26px;padding:0 18px;
+  font-size:13px;color:var(--secondary);cursor:default;
+  transition:color 140ms ease}
+.proj:hover{color:var(--text)}
+.proj i{width:7px;height:7px;border-radius:2px;flex:none}
+.proj b{margin-left:auto;font-weight:400;font-size:11.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+.foot{margin-top:auto;padding:12px 12px 2px}
+.ask{display:flex;align-items:center;gap:8px;width:100%;background:none;
+  border:1px solid var(--line-strong);border-radius:var(--radius);
+  color:var(--secondary);font:inherit;font-size:13px;padding:8px 11px;
+  cursor:pointer;transition:background 160ms ease,color 160ms ease}
+.ask:hover{background:var(--control);color:var(--text)}
+.ask kbd{margin-left:auto;font:inherit;font-size:11px;color:var(--muted)}
+
+/* ── Canvas ───────────────────────────────────────────────────────────── */
+.canvas{display:flex;flex-direction:column;min-width:0;min-height:0}
+.strip{display:flex;align-items:center;gap:1px;padding:13px 28px 11px;
+  border-bottom:1px solid var(--line);flex:none}
+.d{min-width:42px;text-align:center;padding:5px 0;border-radius:7px;
+  font-size:13px;color:var(--secondary);cursor:pointer;
+  font-variant-numeric:tabular-nums;transition:background 160ms ease}
+.d small{display:block;font-size:10.5px;color:var(--muted);margin-bottom:1px}
+.d:hover{background:var(--hover)}
+.d[aria-current]{background:var(--control);color:var(--text);font-weight:500}
+.d[aria-current] small{color:var(--accent)}
+.seg{margin-left:auto;display:flex;border:1px solid var(--line);
+  border-radius:var(--radius);padding:2px;background:var(--canvas)}
+.seg button{background:none;border:0;color:var(--secondary);font:inherit;
+  font-size:12.5px;padding:4px 13px;border-radius:6px;cursor:pointer;
+  transition:background 160ms ease}
+.seg button[aria-pressed="true"]{background:var(--control);color:var(--text)}
+/* The document is a card on the ground — Craft treatment. Scoped to document
+   surfaces only; the timeline and sidebar stay on the one canvas. */
+.doc{padding:24px 24px 32px;overflow-y:auto;overscroll-behavior:contain;
+  flex:1;min-height:0}
+.wrap{max-width:660px;margin:0 auto;background:var(--raised);
+  border:1px solid var(--line);border-radius:10px;padding:40px 44px 48px;
+  min-height:calc(100% - 8px)}
+h1{font-size:20px;line-height:26px;font-weight:600;letter-spacing:-.012em}
+.sub{color:var(--muted);font-size:12.5px;margin-bottom:26px;
+  font-variant-numeric:tabular-nums}
+.prose{color:var(--text);font-size:15px;line-height:24px;margin-bottom:8px}
+.prose+.prose{color:var(--secondary);margin-bottom:26px}
+/* what the scheduler did, and why — the signature moment, in text */
+.moved{display:flex;align-items:baseline;gap:10px;padding:11px 13px;
+  border:1px solid var(--line);border-left:2px solid var(--accent);
+  border-radius:var(--card);background:var(--control);margin-bottom:28px;
+  font-size:13px;color:var(--secondary)}
+.moved b{font-weight:500;color:var(--text)}
+.moved button{margin-left:auto;background:none;border:0;font:inherit;
+  font-size:13px;color:var(--accent);cursor:pointer;padding:0}
+.moved button:hover{text-decoration:underline}
+.h2{font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 10px}
+/* only what is NOT on the timeline lives here — no duplication */
+.row{display:flex;align-items:center;gap:12px;padding:9px 10px;margin:0 -10px;
+  border-radius:var(--card);transition:background 160ms ease}
+.row:hover{background:var(--hover)}
+.box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line-strong);
+  flex:none;cursor:pointer;transition:border-color 140ms ease}
+.box.launch{border-color:var(--cal-launch)}
+.box.deep{border-color:var(--cal-deep)}
+.box.admin{border-color:var(--cal-admin)}
+.row .t{flex:1;font-size:14.5px}
+.row .m{color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.row .place{background:none;border:1px solid var(--line-strong);border-radius:6px;
+  font:inherit;font-size:12px;color:var(--secondary);padding:3px 9px;
+  cursor:pointer;transition:background 160ms ease,color 160ms ease}
+.row .place:hover{background:var(--accent);border-color:var(--accent);color:#F5F2EA}
+.new{color:var(--muted);font-size:14.5px;padding:9px 0 0 28px}
+
+/* ── Timeline ─────────────────────────────────────────────────────────── */
+.rail{border-left:1px solid var(--line);display:flex;flex-direction:column;
+  min-width:0;min-height:0}
+.rhead{display:flex;align-items:baseline;padding:14px 16px 11px;
+  border-bottom:1px solid var(--line);flex:none}
+.rhead b{font-size:13px;font-weight:600}
+.rhead span{margin-left:auto;color:var(--muted);font-size:11.5px;
+  font-variant-numeric:tabular-nums}
+.grid{position:relative;flex:1;min-height:0;overflow-y:auto;
+  overscroll-behavior:contain;padding:0 12px 28px}
+.hr{height:48px;border-top:1px solid var(--line);position:relative}
+.hr b{position:absolute;left:0;top:-7px;font-size:10.5px;color:var(--muted);
+  font-weight:400;font-variant-numeric:tabular-nums;background:var(--canvas);
+  padding-right:6px}
+.ev{position:absolute;left:42px;right:6px;border-radius:var(--card);
+  padding:5px 9px;font-size:12px;line-height:16px;border:1px solid var(--line);
+  background:var(--control);transition:transform var(--reposition),
+  background 160ms ease}
+.ev:hover{background:var(--control-hover)}
+.ev:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  border-radius:var(--card) 0 0 var(--card)}
+/* rail = MOVABILITY (owner decision 2026-08-23, overrides the source coding
+   in ui-conventions.md — do not restore dashed/solid by source) */
+.ev[data-move="fixed"]:before{background:var(--line-strong)}
+.ev[data-move="auto"][data-cal="launch"]:before{background:var(--cal-launch)}
+.ev[data-move="auto"][data-cal="deep"]:before{background:var(--cal-deep)}
+.ev[data-move="auto"][data-cal="admin"]:before{background:var(--cal-admin)}
+.ev .w{color:var(--muted);font-variant-numeric:tabular-nums}
+.ev[data-slim]{padding:2px 9px}
+.ev[data-slim] .w{display:none}
+.ev[data-past]{opacity:.42}
+.now{position:absolute;left:36px;right:6px;height:1px;background:var(--now);z-index:3}
+.now:before{content:"";position:absolute;left:-3px;top:-2.5px;width:6px;height:6px;
+  border-radius:50%;background:var(--now)}
+.legend{padding:9px 16px;border-top:1px solid var(--line);font-size:11.5px;
+  color:var(--muted);display:flex;align-items:center;gap:7px;flex:none}
+.legend i{width:3px;height:11px;background:var(--line-strong);border-radius:1px;flex:none}
+.cta{padding:11px 12px 14px;border-top:1px solid var(--line);flex:none;
+  display:flex;justify-content:flex-end}
+/* one filled button, sized to its job — not a banner */
+.plan{background:var(--accent);color:#F7F4EC;border:0;border-radius:var(--radius);
+  font:inherit;font-weight:500;font-size:13px;padding:8px 16px;cursor:pointer;
+  position:relative;transition:transform var(--press-out)}
+.plan:before{content:"";position:absolute;inset:0 0 auto;height:1px;
+  border-radius:var(--radius) var(--radius) 0 0;background:rgba(255,255,255,.30)}
+.plan:active{transform:scale(.98);transition:transform var(--press-in)}
+@media (prefers-reduced-motion:reduce){*{transition-duration:1ms!important}}
+</style></head><body>
+<div class="app">
+
+  <aside class="side">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <nav class="nav">
+      <a href="#" aria-current="page">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
+        Day</a>
+      <a href="#">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
+        Work<span class="n">3</span></a>
+      <a href="#">
+        <svg viewBox="0 0 24 24"><path d="M3 12h5l2 3h4l2-3h5M3 12l2.5-7h13L21 12v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>
+        Inbox<span class="n">5</span></a>
+      <a href="#">
+        <svg viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4"/></svg>
+        Docs</a>
+    </nav>
+    <div class="sec">Projects</div>
+    <div class="proj"><i style="background:var(--cal-launch)"></i>Launch<b>4</b></div>
+    <div class="proj"><i style="background:var(--cal-deep)"></i>Deep work<b>2</b></div>
+    <div class="proj"><i style="background:var(--cal-admin)"></i>Admin<b>7</b></div>
+    <div class="sec">Pinned</div>
+    <div class="hint">Pin a project to keep it on top.</div>
+    <div class="sec">Focus</div>
+    <div class="hint">No session yet today.</div>
+    <div class="foot">
+      <button class="ask">Open<kbd>⌘K</kbd></button>
+    </div>
+  </aside>
+
+  <main class="canvas">
+    <div class="strip">
+      <div class="d"><small>Mon</small>18</div>
+      <div class="d"><small>Tue</small>19</div>
+      <div class="d"><small>Wed</small>20</div>
+      <div class="d" aria-current="date"><small>Thu</small>21</div>
+      <div class="d"><small>Fri</small>22</div>
+      <div class="d"><small>Sat</small>23</div>
+      <div class="d"><small>Sun</small>24</div>
+      <div class="seg"><button aria-pressed="true">Day</button><button aria-pressed="false">Week</button></div>
+    </div>
+
+    <div class="doc"><div class="wrap">
+      <h1>Thursday</h1>
+      <div class="sub">21 August 2026</div>
+
+      <p class="prose">Close the factory contract. That is the day.</p>
+      <p class="prose">Everything under it can move, and two things still have
+      nowhere to go.</p>
+
+      <div class="moved">
+        <span>Moved <b>Deep work</b> to 09:00 to free 11:00 for the factory call.</span>
+        <button>Undo</button>
+      </div>
+
+      <p class="h2">Needs a slot</p>
+      <div class="row">
+        <span class="box launch"></span>
+        <span class="t">Write the seeding pitch</span>
+        <span class="m">30m</span>
+        <button class="place">Place</button>
+      </div>
+      <div class="row">
+        <span class="box admin"></span>
+        <span class="t">Renew the domain</span>
+        <span class="m">10m</span>
+        <button class="place">Place</button>
+      </div>
+      <div class="new">Write another line…</div>
+    </div></div>
+  </main>
+
+  <aside class="rail">
+    <div class="rhead"><b>Today</b><span>GMT+2</span></div>
+    <div class="grid" id="grid"><div class="now" id="now"></div></div>
+    <div class="legend"><i></i>Grey rail — fixed, cannot move</div>
+    <div class="cta"><button class="plan">Plan the day</button></div>
+  </aside>
+
+</div>
+<script>
+(function(){
+  var H0=7,H1=20,PX=48,g=document.getElementById('grid');
+  var f=document.createDocumentFragment();
+  for(var h=H0;h<=H1;h++){
+    var r=document.createElement('div'); r.className='hr';
+    var b=document.createElement('b'); b.textContent=(h<10?'0':'')+h+':00';
+    r.appendChild(b); f.appendChild(r);
+  }
+  g.insertBefore(f,g.firstChild);
+  var ev=[
+    {t:'Reply to the factory',  s:8.50,e:8.83, cal:'admin', move:'auto', past:1},
+    {t:'Deep work — tech pack', s:9.00,e:10.00,cal:'deep',  move:'auto', past:1},
+    {t:'Factory call',          s:11.00,e:11.50,cal:'none', move:'fixed'},
+    {t:'Shortlist creators',    s:14.00,e:14.75,cal:'launch',move:'auto'},
+    {t:'Dentist',               s:16.00,e:17.00,cal:'none', move:'fixed'},
+    {t:'Evening shutdown',      s:18.33,e:18.66,cal:'admin',move:'auto'}
+  ];
+  function p2(n){return (n<10?'0':'')+n}
+  function fmt(v){return p2(Math.floor(v))+':'+p2(Math.round((v%1)*60))}
+  ev.forEach(function(e){
+    var el=document.createElement('div'), h=(e.e-e.s)*PX;
+    el.className='ev'; el.dataset.cal=e.cal; el.dataset.move=e.move;
+    if(e.past) el.dataset.past='';
+    if(h<22) el.dataset.slim='';
+    el.style.top=((e.s-H0)*PX)+'px'; el.style.height=(h-3)+'px';
+    el.innerHTML='<div>'+e.t+'</div><div class="w">'+fmt(e.s)+'–'+fmt(e.e)+'</div>';
+    g.appendChild(el);
+  });
+  var nowV=12.6, n=document.getElementById('now');
+  n.style.top=((nowV-H0)*PX)+'px';
+  requestAnimationFrame(function(){
+    g.scrollTop=Math.max(0,n.offsetTop-g.clientHeight*0.30);
+  });
+})();
+</script>
+</body></html>
