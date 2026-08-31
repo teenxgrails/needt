@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Scheduling: energy windows no longer decide where a task lands. They narrowed
+  the day to a few hours, so tasks piled into those hours or found no slot at
+  all — and anything carrying a hard deadline then fell through to the overflow
+  path, which ignores work hours entirely and could place a block at three in
+  the morning. Auto-scheduling now runs against work hours only.
+  `EnergyProfileWindow` rows are left untouched so an assistant can still read
+  them as a stated preference.
+- Settings: removed the "Energy & focus" panel, whose profile no longer affects
+  scheduling, and the "Deadline colors" thresholds. "Break between tasks" is
+  unaffected.
 - Calendar: a task's colour again means its category. The store derives the
   colour from the task's first tag, but `CalendarEventContent` overwrote it with
   a priority colour, so every medium-priority task looked identical and
