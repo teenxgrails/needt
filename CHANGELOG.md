@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Calendar: a task's colour again means its category. The store derives the
+  colour from the task's first tag, but `CalendarEventContent` overwrote it with
+  a priority colour, so every medium-priority task looked identical and
+  categories were invisible. Priority now shows as rail weight instead, and
+  overdue — a state rather than a belonging — is the only thing that overrides
+  the rail.
+- Calendar: inside a day, month-view items group by category rather than
+  interleaving by clock time, so the colours read as bands. Timed items show
+  their time inline with the title in month cells instead of on a second line,
+  which halves the height each task costs in a crowded cell.
+- Calendar: a dragged item keeps its own colour and category rail. A rule was
+  flooding the drag mirror with `--surface-selected` through `!important`, so
+  the card in hand read as a grey placeholder. It now lifts, tilts slightly and
+  shows a `grab` cursor only on items that can actually be moved.
+- Design: `--surface-panel` and `--surface-raised` are no longer aliased to
+  `--surface-canvas`, restoring three distinct elevation levels in both themes;
+  menus, popovers and dialogs sit on the raised level.
+- Build: `tsconfig.json` and the ESLint config no longer pull the self-contained
+  `landing`, `landing from figma` and `New ui ` sub-projects, or the design
+  reference kit, into the root gates. Each carries its own tsconfig and
+  dependency set, so the root run resolved their imports against a
+  `node_modules` they do not share — 907 reported problems, none actionable.
+- Dev: added `prisma/dev-seed.ts`, which fills a month with deliberately uneven
+  load — empty days, ordinary days and one day carrying eleven tasks — because a
+  month view only breaks on edge cases.
+- Docs: added `docs/plans/12-remaining-work.md` as the governing plan, written
+  against verified production state on 2026-08-24, and demoted
+  `docs/plans/09-launch.md` to reference — its L0 sequencing described merged
+  work as blocking. Records four live P0 defects: the admin credentials screen
+  has no route rendering it, the Creem checkout is enabled in production with no
+  lifecycle test, push reminders fail silently without `VAPID_PRIVATE_KEY`, and
+  account deletion and data export do not exist.
+- Ops: `needt-collaboration` restored — Coolify published port 3000 while
+  Hocuspocus listens on 1234, leaving the service down from 2026-08-13 to
+  2026-08-24.
+- Ops: `www.needt.app` now 301-redirects to the apex domain with the query
+  string preserved, via a Cloudflare redirect rule on a proxied CNAME.
 - Docs: added `docs/plans/09-launch.md` as the governing plan through public
   launch — release unblock (focused-Mail visual, non-production artifacts,
   S11/T8 integration), production-readiness audit, billing lifecycle, first-run

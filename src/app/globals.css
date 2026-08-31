@@ -57,8 +57,8 @@
 
     /* Semantic layer: light mode. */
     --surface-canvas: var(--primitive-neutral-025);
-    --surface-panel: var(--surface-canvas);
-    --surface-raised: var(--surface-canvas);
+    --surface-panel: #fcfcfe;
+    --surface-raised: var(--primitive-white);
     --surface-control: #eef1f8;
     --surface-control-hover: #e4e8f1;
     --surface-input: var(--surface-canvas);
@@ -146,14 +146,14 @@
       var(--color-danger) 45%,
       transparent
     );
-    --menu-bg: var(--surface-panel);
+    --menu-bg: var(--surface-raised);
     --menu-border: var(--border-control);
     --menu-item-hover: var(--surface-hover);
     --menu-radius: 8px;
-    --popover-bg: var(--surface-panel);
+    --popover-bg: var(--surface-raised);
     --popover-border: var(--border-control);
     --popover-radius: 8px;
-    --dialog-bg: var(--surface-panel);
+    --dialog-bg: var(--surface-raised);
     --dialog-border: var(--border-control);
     --dialog-radius: 8px;
     /* Motion overlay depth: a hairline border plus Tailwind's two-layer
@@ -292,8 +292,8 @@
     color-scheme: dark;
     /* Semantic layer: the finished Calendar is the dark-theme reference. */
     --surface-canvas: #1a1d1e;
-    --surface-panel: var(--surface-canvas);
-    --surface-raised: var(--surface-canvas);
+    --surface-panel: #1f2224;
+    --surface-raised: #24282a;
     --surface-control: #262627;
     --surface-control-hover: #2b2f31;
     --surface-input: var(--surface-canvas);
@@ -311,9 +311,9 @@
     --color-accent-contrast: var(--primitive-white);
     --color-danger: var(--primitive-red-500);
     --color-success: var(--primitive-green-500);
-    --menu-bg: var(--surface-canvas);
-    --popover-bg: var(--surface-canvas);
-    --dialog-bg: var(--surface-canvas);
+    --menu-bg: var(--surface-raised);
+    --popover-bg: var(--surface-raised);
+    --dialog-bg: var(--surface-raised);
     /* Keep the same measured geometry while preserving visible separation
        against Needt's dark canvas. */
     --menu-shadow:
@@ -1114,6 +1114,13 @@ html[data-needt-motion="on"] .fc .fc-event {
   }
 }
 
+/* Affordance before the drag: only items the calendar will actually let you
+   move say so. Read-only feed events keep the default cursor rather than
+   promising a gesture that gets reverted. */
+.fc .fc-event.fc-event-draggable:not(.fc-event-dragging) {
+  cursor: grab;
+}
+
 @keyframes needt-check-in {
   from {
     opacity: 0;
@@ -1473,10 +1480,14 @@ html[data-needt-motion="off"] .needt-aurora-blob {
   background: var(--surface-selected) !important;
 }
 
+/* The mirror is the card in your hand, so it keeps its own identity: category
+   rail and colour stay, and only the outline is strengthened to mark it as the
+   thing being carried. It used to be flooded with --surface-selected through
+   !important, which erased the colour and made the dragged item read as a dead
+   placeholder rather than the task you picked up. */
 .fc .fc-event.fc-event-mirror {
   border: 1px solid var(--text-primary) !important;
-  background: var(--surface-selected) !important;
-  opacity: 0.7;
+  background: var(--surface-raised) !important;
 }
 
 .fc .fc-daygrid-day-events {
@@ -2590,8 +2601,12 @@ html[data-needt-motion="off"] .needt-aurora-blob {
 .fc .fc-event.fc-event-dragging,
 .fc .fc-event.fc-event-mirror {
   z-index: 80;
+  cursor: grabbing;
   opacity: 0.96;
-  transform: scale(1.03);
+  /* The slight rotation is what makes it feel held rather than slid: a picked-up
+     object is never perfectly square to the grid. Kept under two degrees so the
+     title stays comfortably readable while it moves. */
+  transform: scale(1.03) rotate(-1.2deg);
   box-shadow: 0 12px 30px rgb(0 0 0 / 32%);
   transition:
     transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -2599,10 +2614,22 @@ html[data-needt-motion="off"] .needt-aurora-blob {
     opacity 180ms ease-out;
 }
 
+/* Where it will land, shown on the grid itself rather than only under the
+   cursor, so the drop target is readable without watching the mirror. */
+.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame,
+.fc .fc-highlight {
+  transition: background-color 140ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fc .fc-event.fc-event-dragging,
   .fc .fc-event.fc-event-mirror {
     transform: none;
+    transition: none;
+  }
+
+  .fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-frame,
+  .fc .fc-highlight {
     transition: none;
   }
 }

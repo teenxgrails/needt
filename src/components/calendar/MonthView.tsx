@@ -108,6 +108,18 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
           durationEditable: false,
           extendedProps: {
             ...item,
+            // Owner decision: inside one day, items of the same category sit
+            // together instead of interleaving by clock time. A month cell is
+            // read by scanning, not by reading a schedule — grouping turns the
+            // category colours into readable bands rather than confetti.
+            // Sorted on below via eventOrder; external events group under their
+            // calendar name so they behave the same way.
+            categoryName:
+              (
+                item.extendedProps?.tags as Array<{ name: string }> | undefined
+              )?.[0]?.name ??
+              feeds.find((f) => f.id === item.feedId)?.name ??
+              "",
             isTask: item.extendedProps?.isTask,
             isRecurring: item.isRecurring,
             status: item.extendedProps?.status,
@@ -238,6 +250,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
         initialDate={currentDate}
         events={events}
         dayMaxEvents={true}
+        eventOrder="categoryName,start,title"
         expandRows={true}
         stickyHeaderDates={true}
         timeZone="local"
