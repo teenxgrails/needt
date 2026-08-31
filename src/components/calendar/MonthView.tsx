@@ -72,6 +72,10 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
   >([]);
   const calendarRef = useRef<CalendarEngine>(null);
   const tasks = useTaskStore((state) => state.tasks);
+  // Subscribed, not read once. `useTaskStore.getState().tags` evaluates during
+  // render and never re-renders when tags arrive, so the task editor opened
+  // with an empty label list and showed no category.
+  const storeTags = useTaskStore((state) => state.tags);
   const eventModalStore = useEventModalStore();
   const { handleEventDrop } = useCalendarDragHandlers();
 
@@ -294,7 +298,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
           isOpen={isTaskModalOpen}
           onClose={handleTaskModalClose}
           task={selectedTask}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           onSave={async (updates) => {
             await updateTask(selectedTask.id, updates);
             handleTaskModalClose();
@@ -309,7 +313,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
         <TaskModal
           isOpen={isNewTaskModalOpen}
           onClose={handleTaskModalClose}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           initialStart={selectedDate}
           initialEnd={selectedEndDate}
           onItemTypeChange={() => {

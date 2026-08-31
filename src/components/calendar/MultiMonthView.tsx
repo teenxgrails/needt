@@ -71,6 +71,8 @@ export function MultiMonthView({
   >([]);
   const calendarRef = useRef<CalendarEngine>(null);
   const tasks = useTaskStore((state) => state.tasks);
+  // Subscribed, not read once: getState() never re-renders when tags arrive.
+  const storeTags = useTaskStore((state) => state.tags);
   const eventModalStore = useEventModalStore();
 
   // Update events when the calendar view changes
@@ -275,7 +277,7 @@ export function MultiMonthView({
           isOpen={isTaskModalOpen}
           onClose={handleTaskModalClose}
           task={selectedTask}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           onSave={async (updates) => {
             await updateTask(selectedTask.id, updates);
             handleTaskModalClose();
@@ -290,7 +292,7 @@ export function MultiMonthView({
         <TaskModal
           isOpen={isNewTaskModalOpen}
           onClose={handleTaskModalClose}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           initialStart={selectedDate}
           initialEnd={selectedEndDate}
           onItemTypeChange={() => {

@@ -29,6 +29,10 @@ import { NeedtPicker } from "@/components/ui/needt-picker";
 import { Switch } from "@/components/ui/switch";
 
 import { APP_NAME } from "@/lib/app-config";
+import {
+  readFreshCalendarDraft,
+  useEventModalStore,
+} from "@/lib/commands/groups/calendar";
 import { newDate } from "@/lib/date-utils";
 
 import { useCalendarStore } from "@/store/calendar";
@@ -221,6 +225,18 @@ export function EventModal({
       setEditMode("series");
     }
   }, [isOpen, event?.isRecurring, editMode, showRecurrenceDialog]);
+
+  // Arriving from the task editor with something already typed. Declared after
+  // the reset effect so it always has the last word: the reset path is guarded
+  // by a ref that survives a cancelled edit, and a stale ref must never be able
+  // to swallow a fresh draft.
+  useEffect(() => {
+    if (!isOpen || event?.id) return;
+    const carried = readFreshCalendarDraft(useEventModalStore.getState().draft);
+    if (!carried) return;
+    if (carried.title) setTitle(carried.title);
+    if (carried.description) setDescription(carried.description);
+  }, [isOpen, event?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -427,6 +443,11 @@ export function EventModal({
                       locked={Boolean(event?.id)}
                       onValueChange={(type) => {
                         preserveDraftRef.current = true;
+                        // Carry the typed title and description across to the
+                        // task editor, the same way it carries them back.
+                        useEventModalStore
+                          .getState()
+                          .setDraft({ title, description, at: Date.now() });
                         onItemTypeChange?.(type);
                       }}
                     />

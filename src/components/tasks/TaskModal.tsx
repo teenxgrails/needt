@@ -54,6 +54,10 @@ import {
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 
+import {
+  readFreshCalendarDraft,
+  useEventModalStore,
+} from "@/lib/commands/groups/calendar";
 import { format, formatToLocalISOString, newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notifications";
@@ -405,6 +409,18 @@ export function TaskModal({
     }
   }, [task, isOpen, initialProjectId, initialStart, initialEnd, resetForm]);
 
+  // Arriving from the event editor with something already typed. This runs as
+  // its own effect, declared after the reset above, so it cannot be undone by
+  // whichever reset happens to fire on the same open — the draft is the last
+  // word.
+  useEffect(() => {
+    if (!isOpen || task) return;
+    const carried = readFreshCalendarDraft(useEventModalStore.getState().draft);
+    if (!carried) return;
+    if (carried.title) setTitle(carried.title);
+    if (carried.description) setDescription(carried.description);
+  }, [isOpen, task]);
+
   useEffect(() => {
     if (!isOpen) return;
     const frame = window.requestAnimationFrame(() => {
@@ -643,6 +659,13 @@ export function TaskModal({
                     locked={Boolean(task)}
                     onValueChange={(type) => {
                       preserveDraftRef.current = true;
+                      // Carry what has already been typed across to the event
+                      // editor. Title and description mean the same thing on
+                      // both sides; everything else is type-specific and is
+                      // deliberately left behind.
+                      useEventModalStore
+                        .getState()
+                        .setDraft({ title, description, at: Date.now() });
                       onItemTypeChange?.(type);
                     }}
                   />
@@ -851,6 +874,16 @@ export function TaskModal({
                     : "(Pending)"}
               </span>
             </label>
+            {/*
+              The single most consequential switch in this form, and its label
+              says nothing about what it does. One line, always visible, because
+              it changes whether the task keeps the time you gave it.
+            */}
+            <p className="px-5 pb-2 pt-1.5 text-[12px] leading-4 text-[var(--text-secondary)]">
+              {isAutoScheduled
+                ? "Needt picks a time inside your work hours and may move it as things change."
+                : "Stays exactly where you put it. Needt will not move it."}
+            </p>
 
             <div className="space-y-0.5 border-b border-[var(--border-subtle)] px-5 py-3 text-[13px]">
               <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
@@ -916,7 +949,10 @@ export function TaskModal({
                 />
                 <span className="text-[var(--text-secondary)]">min</span>
               </div>
-              <div className="flex min-h-11 items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0">
+              <div
+                className="flex min-h-11 items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0"
+                title="Split long work into pieces no shorter than this. Leave empty to keep the task in one block."
+              >
                 <span className="w-[88px] text-[var(--text-secondary)]">
                   └ Min chunk:
                 </span>
@@ -971,7 +1007,10 @@ export function TaskModal({
                 />
                 <Bell className="h-4 w-4 text-[var(--color-accent)]" />
               </div>
-              <label className="flex min-h-11 cursor-pointer items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0">
+              <label
+                className="flex min-h-11 cursor-pointer items-center gap-2 pl-3 sm:h-[30px] sm:min-h-0"
+                title="A hard deadline outranks your work schedule: to meet it, Needt may place this task outside working hours (never at night)."
+              >
                 <span className="w-[88px] text-[var(--text-secondary)]">
                   └ Hard deadline:
                 </span>
@@ -981,7 +1020,10 @@ export function TaskModal({
                   className="h-4 w-[26px] [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-[12px]"
                 />
               </label>
-              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
+              <div
+                className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0"
+                title="Which set of working hours this task is planned against."
+              >
                 <CalendarDays className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
                   Schedule:
@@ -1018,19 +1060,53 @@ export function TaskModal({
             </div>
 
             <div className="px-5 py-3 text-[13px]">
-              <div className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0">
+              {/*
+                The first selected label is the task's category: the calendar
+                derives the block's colour from it, and the month view groups by
+                it. That was invisible here — labels rendered as a plain comma
+                list, so nothing explained why one task was gold and another
+                teal. The category now shows its own colour, with any remaining
+                labels listed after it as secondary.
+              */}
+              <div
+                className="flex min-h-11 items-center gap-2 sm:h-[30px] sm:min-h-0"
+                title="The first label is the category: it sets the task's colour in the calendar and groups it in the month view."
+              >
                 <TagIcon className="h-4 w-4 text-[var(--text-muted)]" />
                 <span className="w-[76px] text-[var(--text-secondary)]">
-                  Labels:
+                  Category:
                 </span>
-                <span className="truncate">
-                  {selectedTagIds.length
-                    ? tags
-                        .filter((tag) => selectedTagIds.includes(tag.id))
-                        .map((tag) => tag.name)
-                        .join(", ")
-                    : "None"}
-                </span>
+                {(() => {
+                  const selected = tags.filter((tag) =>
+                    selectedTagIds.includes(tag.id)
+                  );
+                  const [primary, ...rest] = selected;
+                  if (!primary) {
+                    return (
+                      <span className="text-[var(--text-muted)]">None</span>
+                    );
+                  }
+                  return (
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span
+                        aria-hidden="true"
+                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor:
+                            primary.color || "var(--color-accent)",
+                        }}
+                      />
+                      <span className="truncate font-medium">
+                        {primary.name}
+                      </span>
+                      {rest.length > 0 && (
+                        <span className="truncate text-[var(--text-secondary)]">
+                          +{rest.length}
+                        </span>
+                      )}
+                    </span>
+                  );
+                })()}
               </div>
               <button
                 type="button"

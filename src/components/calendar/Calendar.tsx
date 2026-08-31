@@ -10,11 +10,7 @@ import {
   MoreHorizontal,
   Settings,
 } from "lucide-react";
-import {
-  AnimatePresence,
-  LayoutGroup,
-  motion,
-} from "motion/react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import {
   IoAddOutline,
   IoChevronDown,
@@ -26,6 +22,7 @@ import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { MultiMonthView } from "@/components/calendar/MultiMonthView";
 import { WeekView } from "@/components/calendar/WeekView";
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import {
   APP_TOOLBAR_BUTTON_CLASS,
@@ -58,8 +55,6 @@ import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notifications";
 import { summarizeUnscheduledReasons } from "@/lib/scheduling-reasons";
 import { cn } from "@/lib/utils";
-
-import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useCalendarHorizontalNavigation } from "@/hooks/useCalendarHorizontalNavigation";
@@ -131,6 +126,11 @@ export function Calendar({
 
     // Always fetch tasks since they're not pre-loaded
     useTaskStore.getState().fetchTasks();
+    // Tags too: the calendar's task editor lists them, and the month view reads
+    // the first one as the task's category. Only /tasks, /today and /projects
+    // were loading them, so opening a task from the calendar showed an empty
+    // label list and no category at all.
+    void useTaskStore.getState().fetchTags();
   }, [initialFeeds, initialEvents, setFeeds, setEvents]);
 
   const handleAutoSchedule = async () => {

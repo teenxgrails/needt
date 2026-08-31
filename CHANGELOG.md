@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Task editor: the dialog is 840x620 instead of 960x767, and its header row is
+  shorter. The old size was set by the screen rather than by the content — the
+  field column ran out well before the bottom edge and the description area held
+  a half-window of blank space.
+- Task editor: switching between Task and Event keeps the title and description
+  you have already typed, in both directions. Previously the switch closed one
+  editor and opened the other, and everything typed was lost.
+- Task editor: the selected half of the Task/Event switch is now clearly the
+  selected one — it sat on `--surface-selected`, nearly the same tone as its own
+  track in the light theme. Both halves say what they mean on hover: a task can
+  be moved by the planner, an event stays where you put it.
+- Task editor: the first label is shown as the task's Category, with its colour,
+  because that is what the calendar paints the block with and what the month view
+  groups by. It used to render as a plain comma-separated list.
+- Calendar: tags are now loaded on the calendar page. They were fetched only on
+  /tasks, /today and /projects, and the calendar's task editor read them through
+  a non-reactive `getState()` snapshot — so opening a task from the calendar
+  showed an empty label list and no category at all, no matter what was set.
+- Task editor: plain-language hints on the fields nobody can guess —
+  Auto-scheduled, Min chunk, Hard deadline and Schedule.
 - Auth: a server error during sign-in no longer counts against the account. The
   credentials route treated any `status >= 400` as a wrong password, so a 5xx
   from the rate limiter — Redis unreachable, or `RATE_LIMIT_HASH_SECRET` unset —
