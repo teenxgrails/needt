@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Auth: a server error during sign-in no longer counts against the account. The
+  credentials route treated any `status >= 400` as a wrong password, so a 5xx
+  from the rate limiter — Redis unreachable, or `RATE_LIMIT_HASH_SECRET` unset —
+  accumulated brute-force strikes and locked people out after five attempts they
+  never made. Server errors now leave the counter untouched: they neither add a
+  strike nor clear existing ones, so an attacker cannot reset their own count by
+  provoking errors.
+- Scheduling: hard-deadline overflow no longer reaches into the night. Meeting a
+  hard deadline may still use time outside the work schedule — that is
+  deliberate — but the search is now bounded by 07:00 and the configured hard
+  stop, instead of walking the clock and returning 03:00.
 - Scheduling: energy windows no longer decide where a task lands. They narrowed
   the day to a few hours, so tasks piled into those hours or found no slot at
   all — and anything carrying a hard deadline then fell through to the overflow
