@@ -1,0 +1,106 @@
+# Token map — old app tokens → new design system
+
+Written 2026-09-01. Read this before migrating any screen.
+
+The app runs on `src/app/globals.css`: **222 unique tokens across two themes.**
+The new system is `Needt Design System/tokens/`: about forty across three. This
+file maps one to the other, ordered by how often each old token is actually read
+in `src/components/**` — so the first ten rows cover most of the work.
+
+## The nine names that collide — read this first
+
+These names exist in **both** systems with **different values**. Dropping the new
+tokens in without renaming silently changes every screen at once while the other
+213 keep the old system alive. That hybrid is the single most likely way this
+migration goes wrong.
+
+`--background` · `--foreground` · `--border` · `--destructive` ·
+`--surface-canvas` · `--surface-raised` · `--text-primary` · `--text-secondary` ·
+`--text-muted`
+
+Concretely: old `--text-secondary` is the flat hex `#5d6478`; new is
+`rgba(var(--foreground-rgb), 0.85)`, which recomputes per theme. Old
+`--text-muted` is `#737a80`; new is the same foreground at 40%. They look close
+in light and diverge completely in dark.
+
+**Rule: migrate a screen's tokens in one commit, never partially.** A screen is
+either fully on the new system or fully on the old one.
+
+## The map
+
+Usage counts are `var(--token)` occurrences across `src/components/**/*.tsx`.
+
+| Old token | Uses | New token | Note |
+|---|---|---|---|
+| `--text-secondary` | 350 | `--text-secondary` | same name, new value — recomputes per theme |
+| `--text-muted` | 334 | `--text-muted` | same name, 40% not `#737a80` |
+| `--text-primary` | 310 | `--text-primary` | same name, alpha 1 on foreground |
+| `--border-subtle` | 256 | `--border` | one hairline for the whole system, 8% |
+| `--surface-hover` | 151 | `--fill-3` | 4% — button and row hover |
+| `--control-radius` | 99 | `--radius-md` | 8px, the workhorse |
+| `--border-control` | 90 | `--border` | the old split between subtle and control collapses |
+| `--color-accent` | 70 | `--accent` | Craft blue; **never as a solid button fill** |
+| `--surface-raised` | 66 | `--surface-raised` | same name, `#FFFFFF` |
+| `--surface-control` | 61 | `--fill-3` | control chrome at rest |
+| `--menu-item-hover` | 61 | `--fill-3` | was an alias of `--surface-hover`, stays one |
+| `--surface-canvas` | 60 | `--background` | `#FCFDFE`, a step below white on purpose |
+| `--color-success` | 35 | `--success` | |
+| `--color-danger` | 33 | `--destructive` | |
+| `--control-border` | 31 | `--border` | alias of `--border-control`, collapses too |
+| `--color-warning` | 25 | `--info` | the system calls this level "info" |
+| `--surface-panel` | 20 | `--surface-raised` | `#fcfcfe` and `#ffffff` merge |
+| `--control-bg` | 17 | `--fill-3` | alias of `--surface-control` |
+| `--panel-radius` | 16 | `--radius-xl` | 12px — panels and the command bar |
+| `--menu-border` | 13 | `--border` | |
+| `--popover-border` | 12 | `--border` | |
+| `--surface-input` | 11 | `--fill-2` | 3% — inputs sit one step below controls |
+| `--popover-bg` | 11 | `--surface-raised` | |
+| `--button-primary-bg` | 9 | — | **no equivalent, and that is the point** |
+| `--button-primary-fg` | 9 | — | see below |
+
+## The one that has no replacement
+
+`--button-primary-bg` / `--button-primary-fg` describe a solid accent button
+with contrasting text. **That component does not exist in the new system.** The
+accent appears only as a translucent fill at 12% or 24% with the accent itself as
+the text colour; solid accent is permitted on marks only — the switch knob, the
+radio centre, a status dot, the now-line.
+
+Nine call sites use it. Each becomes `.btn` with the accent variant. If a screen
+genuinely needs a louder primary action, the answer is hierarchy — size, position,
+isolation — not saturation.
+
+## What collapses
+
+The old system separated `--border-subtle` / `--border-control` /
+`--control-border` / `--menu-border` / `--popover-border` — five names, and in
+practice two values. The new system has one hairline. Do not preserve the
+distinction; it never carried meaning.
+
+Same for `--surface-control` / `--control-bg` / `--menu-item-hover` /
+`--surface-hover`: four names, one fill step.
+
+## Groups not mapped here
+
+`globals.css` also carries `--primitive-*` (40 tokens, the raw palette the old
+semantic layer was built on), `--fc-*` (24, FullCalendar overrides), `--calendar-*`
+(23), `--space-*` (20, the Pages/space surfaces), `--chart-*` and `--aurora-*`.
+
+- **`--primitive-*` dies with the semantic layer.** Nothing outside `globals.css`
+  should read it.
+- **`--fc-*` and `--calendar-*` stay for now.** FullCalendar needs its own
+  variables; retarget them at the new tokens rather than deleting them.
+- **`--space-*` is a separate surface** (Pages). Migrate with that screen, not
+  before.
+
+## How to apply, per screen
+
+1. List every `var(--…)` the screen reads. `grep -o "var(--[a-z0-9-]*)" <file> | sort | uniq -c`
+2. Replace using the table above, in **one commit for the whole screen**.
+3. Anything not in the table gets decided and added here — never guessed at the
+   call site.
+4. Run the screen in all three themes and read the computed styles, not the
+   declarations. A token that is declared but frozen looks correct in the source
+   and wrong on screen; this has already shipped twice in this project.
+5. Gates: `npm run type-check`, `npm run lint`, `npm run test:unit`. They cover
+   logic, not layout — passing them does not mean the screen is right.

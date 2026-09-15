@@ -1,3 +1,12 @@
+> **SUPERSEDED — 2026-09-11.** The design was replaced wholesale. The
+> authority is now `needt-app/HANDOFF.md` inside the Claude Design project
+> `Content height and label fixes`
+> (`260768ff-eb30-4609-b2f7-d75b353033ed`), mirrored locally under
+> `needt-app-design/` once the bundle is downloaded. See
+> `docs/handoff/design-reconciliation-2026-09-11.md` for what changed.
+> Nothing below decides anything. It is kept as the record of how the product
+> got here, and for measurements that the new design does not restate.
+
 # Craft — application references
 
 Fifteen screens of the Craft web app, reviewed 2026-08-23. Owner picked Craft

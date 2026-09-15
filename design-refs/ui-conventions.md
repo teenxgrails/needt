@@ -1,8 +1,34 @@
+> **SUPERSEDED — 2026-09-11.** The design was replaced wholesale. The
+> authority is now `needt-app/HANDOFF.md` inside the Claude Design project
+> `Content height and label fixes`
+> (`260768ff-eb30-4609-b2f7-d75b353033ed`), mirrored locally under
+> `needt-app-design/` once the bundle is downloaded. See
+> `docs/handoff/design-reconciliation-2026-09-11.md` for what changed.
+> Nothing below decides anything. It is kept as the record of how the product
+> got here, and for measurements that the new design does not restate.
+
 # Needt UI conventions
 
+> **Authority, set 2026-08-31.** This file is **subordinate to `/DESIGN.md`**.
+>
+> - Values — colour, typography, radius, spacing, states — come from `/DESIGN.md`.
+> - Runtime truth is `src/app/globals.css`.
+> - This file keeps **component behaviour**: which primitive to use, how a
+>   popover is composed, `NeedtPicker` as the only picker. Where it still quotes
+>   a value, `/DESIGN.md` wins and the line here should be edited.
+> - `app-design-system.md` and `board-tokens.md` are superseded; they are kept
+>   for their measurements, not their authority. The Figma Make kit that used to
+>   sit at `needt-design-system/` was archived out of the project on 2026-08-31.
+>
+> **How this squares with the lifted bans (`2ff09c9`).** Nothing is forbidden by
+> category any more — shadow, blur, glow, gradient and any accent hue are all
+> available. That is about *permission*. `/DESIGN.md` is about *consistency*:
+> once the product uses a shadow, it uses **that** shadow. Judge whether an
+> effect belongs on a screen; do not invent a second value for one that already
+> exists.
+
 The finished Calendar is the canonical style for popups, pickers, toggles, and
-modals in this app. Reuse these patterns and the shared controls. The complete
-token and theme contract is in `design-refs/app-design-system.md`.
+modals in this app. Reuse these patterns and the shared controls.
 
 ## Color tokens (never hardcode hex)
 

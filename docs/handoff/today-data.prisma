@@ -1,0 +1,346 @@
+// Needt — data behind the Today screen.
+// Extracted from prisma/schema.prisma on 2026-09-01. Relations to auth, sync,
+// billing and provider models are cut; what remains is what a screen can show.
+
+model Task {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  status      String // enum: 'todo', 'in_progress', 'completed'
+
+  // Time Management
+  dueDate       DateTime?
+  startDate     DateTime? // When the task becomes active
+  duration      Int? // estimated duration in minutes
+  priority      String? // enum: 'high', 'medium', 'low', 'none'
+  energyLevel   String? // enum: 'high', 'medium', 'low'
+  preferredTime String? // enum: 'morning', 'afternoon', 'evening'
+
+  // Smart scheduling fields
+  energyRequired        SchedulingEnergyLevel  @default(MEDIUM)
+  estimatedMinutes      Int?
+  estOptimistic         Int?
+  estLikely             Int?
+  estPessimistic        Int?
+  actualMinutes         Int?
+  actualFocusedMinutes  Int                    @default(0)
+  estimateDelta         Int?
+  optimisticDelta       Int?
+  likelyDelta           Int?
+  pessimisticDelta      Int?
+  minChunkMinutes       Int?
+  maxChunkMinutes       Int?
+  deadline              DateTime?
+  hardDeadline          Boolean                @default(false)
+  priorityLevel         SchedulingTaskPriority @default(MEDIUM)
+  contextTag            String?
+  isFrozen              Boolean                @default(false)
+  dependsOnId           String?
+  dependsOn             Task?                  @relation("TaskDependencies", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  dependents            Task[]                 @relation("TaskDependencies")
+  blockingDependencies  TaskDependency[]       @relation("TaskDependencyBlocker")
+  blockedByDependencies TaskDependency[]       @relation("TaskDependencyBlocked")
+  reminders             TaskReminder[]
+  proactiveNudges       ProactiveNudge[]
+  autoScheduled         Boolean                @default(false)
+
+  // Auto-scheduling
+  isAutoScheduled Boolean       @default(false)
+  scheduleLocked  Boolean       @default(false)
+  scheduledStart  DateTime?
+  scheduledEnd    DateTime?
+  scheduleId      String?
+  schedule        WorkSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  scheduleScore   Float?
+  lastScheduled   DateTime?
+  // Earliest explicit scheduling boundary. The scheduler also respects
+  // startDate and postponedUntil and uses the latest of all three.
+  availableFrom   DateTime?
+  postponedUntil  DateTime?
+  isArchived      Boolean       @default(false)
+  archivedAt      DateTime?
+
+  // Calendar block push
+  blockEventId String? // Google Calendar event ID of the pushed block
+  blockFeedId  String? // Calendar feed ID where event is stored
+  blockDirty   Boolean @default(false) // Push failed, needs retry
+
+  // Organization
+  tags Tag[]
+
+  // Recurrence
+  isRecurring          Boolean   @default(false)
+  recurrenceRule       String?
+  lastCompletedDate    DateTime?
+  completedAt          DateTime? // When the task was marked as completed
+  recurrenceMasterId   String?
+  recurrenceInstanceAt DateTime?
+  recurrenceMaster     Task?     @relation("TaskRecurrenceInstances", fields: [recurrenceMasterId], references: [id], onDelete: Restrict)
+  recurrenceInstances  Task[]    @relation("TaskRecurrenceInstances")
+
+  // External Integration
+  externalTaskId String?
+  source         String?
+
+  // Enhanced sync fields
+  externalListId    String? // The external list/folder ID this task belongs to
+  externalCreatedAt DateTime? // When the task was created in the external system
+  externalUpdatedAt DateTime? // When the task was last updated in the external system
+  syncError         String? // Error message if sync failed
+  syncHash          String? // Hash of task data for detecting changes
+  skipSync          Boolean   @default(false) // Flag to skip syncing this task
+
+  // Change tracking relation
+  changes         TaskChange[]
+  timeEntries     TimeEntry[]
+  scheduledBlocks ScheduledBlock[]
+  focusSessions   FocusSession[]
+
+  // User relationship
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  workspaceId             String?
+  workspace               Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  assigneeId              String?
+  assignee                User?            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  busyStatus              TaskBusyStatus   @default(BUSY)
+  stageId                 String?
+  stage                   ProjectStage?    @relation(fields: [stageId, projectId], references: [id, projectId], onDelete: NoAction, map: "Task_stageId_fkey")
+  activities              TaskActivity[]
+  projectBlockersTargeted ProjectBlocker[] @relation("ProjectBlockerTargetTask")
+  projectBlockersAsSource ProjectBlocker[] @relation("ProjectBlockerSourceTask")
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  // Boards: a task can live on one board in one column. These are additive and
+  // do NOT affect the scheduling engine — a board task is the same task the
+  // auto-scheduler works with. `properties` is reserved for future custom
+  // fields. boardPosition is a fractional index (see @/lib/board-position).
+  boardId       String?
+  board         Board?       @relation(fields: [boardId], references: [id], onDelete: SetNull)
+  boardColumnId String?
+  boardColumn   BoardColumn? @relation(fields: [boardColumnId], references: [id], onDelete: SetNull)
+  boardPosition Float?
+  properties    Json?
+
+}
+
+model Tag {
+  id    String  @id @default(cuid())
+  name  String
+  color String?
+  tasks Task[]
+
+  // User relationship
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+}
+
+model Project {
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  color            String?
+  icon             String?
+  // Legacy rollback field. API responses derive progress from active tasks;
+  // remove this column only in a later contract migration.
+  progress         Int               @default(0)
+  status           String            @default("active") // enum: 'active', 'archived'
+  tasks            Task[]
+  taskListMappings TaskListMapping[]
+  stages           ProjectStage[]
+  blockers         ProjectBlocker[]
+  startDate        DateTime?
+  deadline         DateTime?
+  sourceTemplateId String?
+  sourceTemplate   ProjectTemplate?  @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+
+  // External sync fields
+  externalSource String?
+
+  // User relationship
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+}
+
+model CalendarEvent {
+  id              String       @id @default(uuid())
+  feedId          String
+  feed            CalendarFeed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  externalEventId String? // External Calendar Event ID (Google, Outlook, etc.)
+  title           String
+  description     String?
+  start           DateTime
+  end             DateTime
+  location        String?
+  isRecurring     Boolean      @default(false)
+  recurrenceRule  String?
+  allDay          Boolean      @default(false)
+  status          String?
+  sequence        Int?
+  created         DateTime?
+  lastModified    DateTime?
+  organizer       Json? // Stored as JSON { name?: string, email: string }
+  attendees       Json? // Stored as JSON array of { name?: string, email: string, status?: string }
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  archivedAt      DateTime?
+
+  // New fields for hybrid approach
+  isMaster         Boolean         @default(false) // True if this is a master event
+  masterEventId    String? // Reference to the master event for instances
+  masterEvent      CalendarEvent?  @relation("EventInstances", fields: [masterEventId], references: [id], onDelete: Cascade)
+  instances        CalendarEvent[] @relation("EventInstances")
+  recurringEventId String? // Google Calendar's recurring event ID
+
+}
+
+model TaskDependency {
+  id            String    @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  userId        String
+  user          User      @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
+  blockerTaskId String
+  blocker       Task      @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
+  blockedTaskId String
+  blocked       Task      @relation("TaskDependencyBlocked", fields: [blockedTaskId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  removedAt     DateTime?
+
+}
+
+model FocusSession {
+  id                 String              @id @default(cuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId             String?
+  task               Task?               @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  mode               FocusSessionMode
+  plannedMinutes     Int?
+  elapsedMinutes     Int                 @default(0)
+  completed          Boolean             @default(false)
+  abandoned          Boolean             @default(false)
+  // Server-truth timing. An active session has endedAt = null. pausedTotalSeconds
+  // accumulates completed pause spans; pausedAt is set while currently paused.
+  startedAt          DateTime
+  endedAt            DateTime?
+  pausedAt           DateTime?
+  pausedTotalSeconds Int                 @default(0)
+  source             String              @default("web")
+  phase              FocusSessionPhase   @default(FOCUS)
+  strictness         FocusStrictnessMode @default(NORMAL)
+  intention          String?
+  stopRequestedAt    DateTime?
+  exitAttemptCount   Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+}
+
+model WorkSchedule {
+  id        String               @id @default(dbgenerated("gen_random_uuid()"))
+  userId    String
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  timeZone  String
+  isDefault Boolean              @default(false)
+  windows   WorkScheduleWindow[]
+  tasks     Task[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+}
+
+model WorkScheduleWindow {
+  id         String       @id @default(dbgenerated("gen_random_uuid()"))
+  scheduleId String
+  schedule   WorkSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  sortOrder  Int          @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+}
+
+model TaskReminder {
+  id             String                 @id @default(cuid())
+  userId         String
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId         String
+  task           Task                   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  kind           TaskReminderKind
+  offsetMinutes  Int
+  channels       Json
+  deliveryStatus ReminderDeliveryStatus @default(PENDING)
+  lastAttemptAt  DateTime?
+  attemptCount   Int                    @default(0)
+  lastError      String?
+  deliveredAt    DateTime?
+  canceledAt     DateTime?
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+}
+
+model ProjectStage {
+  id                   String           @id @default(cuid())
+  projectId            String
+  project              Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name                 String
+  color                String?
+  position             Float            @default(0)
+  startDate            DateTime?
+  deadline             DateTime?
+  expectedDurationDays Int?
+  tasks                Task[]
+  blockers             ProjectBlocker[]
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+}
+
+enum SchedulingEnergyLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SchedulingTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum SchedulingRunSource {
+  MANUAL
+  TASK_MUTATION
+  CALENDAR_SYNC
+  CRON
+  CONNECTOR
+}
+
+enum SchedulingRunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}

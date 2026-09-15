@@ -1,4 +1,22 @@
+> **SUPERSEDED — 2026-09-11.** The design was replaced wholesale. The
+> authority is now `needt-app/HANDOFF.md` inside the Claude Design project
+> `Content height and label fixes`
+> (`260768ff-eb30-4609-b2f7-d75b353033ed`), mirrored locally under
+> `needt-app-design/` once the bundle is downloaded. See
+> `docs/handoff/design-reconciliation-2026-09-11.md` for what changed.
+> Nothing below decides anything. It is kept as the record of how the product
+> got here, and for measurements that the new design does not restate.
+
 # Board design tokens (Codia base)
+
+> **SUPERSEDED 2026-08-31 by `/DESIGN.md`.** This was declared "the new visual
+> base" on 2026-08-26. It is not the base any more: the system is now measured
+> from Craft Docs, light-first, with a different surface model and a different
+> accent. Two specific values here were overtaken — the card radius is **16px**,
+> not 14, and the ground is the light `#FCFDFE` canvas, not `#0d0e10`.
+>
+> Kept for the measurements themselves, which are real, and for the caveats
+> about the Codia capture. Do not use it to settle a question.
 
 Extracted 2026-08-26 from the Figma file `SCnzoCdZw8qJ0Gq6Hg9tsr`, frame `App`
 (node `2:7`), 1441×1024 dark board screen. This is the new visual base for the

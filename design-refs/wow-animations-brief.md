@@ -1,4 +1,30 @@
+> **SUPERSEDED — 2026-09-11.** The design was replaced wholesale. The
+> authority is now `needt-app/HANDOFF.md` inside the Claude Design project
+> `Content height and label fixes`
+> (`260768ff-eb30-4609-b2f7-d75b353033ed`), mirrored locally under
+> `needt-app-design/` once the bundle is downloaded. See
+> `docs/handoff/design-reconciliation-2026-09-11.md` for what changed.
+> Nothing below decides anything. It is kept as the record of how the product
+> got here, and for measurements that the new design does not restate.
+
 # Wow-animations — implementation brief (for coding agent)
+
+> **PARTLY SUPERSEDED 2026-08-31 by `/DESIGN.md`.**
+>
+> **Still valid, and it is the good half:** motion is functional or it does not
+> ship — it shows what happened, never idle decoration. The libraries
+> (`motion`, `@formkit/auto-animate`, `@number-flow/react`), the spring presets,
+> the 150–250ms window and `prefers-reduced-motion` all stand.
+>
+> **Dead:** every reference to *Mina Liquid Glass*, glass surfaces, glow on
+> event chips, the `#07070d` canvas and the 16/20/24 radii. The product is
+> light-first, elevation is a hairline ring, and exactly one element in the
+> whole app carries a backdrop blur. Take the timing and the discipline from
+> this file; take the surfaces from `/DESIGN.md`.
+>
+> **Where the animation budget goes:** the schedule re-flowing. That is the one
+> moment no competitor makes visible, and it is worth more than motion spread
+> across eight screens.
 
 > Goal: add premium micro-interactions to the **main app** (not just the landing).
 > "Wow" here = smooth motion + physics + optimistic speed, NOT decorative glitz.
