@@ -24,6 +24,11 @@ jest.mock("@/lib/realtime/publish", () => ({
 jest.mock("@/lib/task-block-push", () => ({
   schedulePushTaskBlock: jest.fn(),
 }));
+jest.mock("@/lib/security/rate-limit", () => ({
+  enforceRateLimits: jest.fn().mockResolvedValue(null),
+  ipRule: jest.fn(),
+  accountRule: jest.fn(),
+}));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     aiConversation: { create: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn() },

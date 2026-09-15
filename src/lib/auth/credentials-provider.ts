@@ -36,7 +36,7 @@ export async function authenticateUser(email: string, password: string) {
     ) {
       logger.warn(
         "Authentication failed: User not found",
-        { email },
+        {},
         LOG_SOURCE
       );
       return null;
@@ -51,7 +51,7 @@ export async function authenticateUser(email: string, password: string) {
     if (!credentialsAccount || !credentialsAccount.id_token) {
       logger.warn(
         "Authentication failed: No credentials account found",
-        { email },
+        {},
         LOG_SOURCE
       );
       return null;
@@ -63,7 +63,7 @@ export async function authenticateUser(email: string, password: string) {
     if (!passwordMatch) {
       logger.warn(
         "Authentication failed: Invalid password",
-        { email },
+        {},
         LOG_SOURCE
       );
       return null;
@@ -83,8 +83,7 @@ export async function authenticateUser(email: string, password: string) {
     logger.error(
       "Error authenticating user",
       {
-        error: error instanceof Error ? error.message : "Unknown error",
-        email,
+        errorType: error instanceof Error ? error.name : "UnknownError",
       },
       LOG_SOURCE
     );

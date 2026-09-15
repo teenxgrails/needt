@@ -70,6 +70,8 @@ const baseRow: NeedtTaskRow = {
   completedAt: null,
   recurrenceMasterId: null,
   recurrenceInstanceAt: null,
+  habitId: null,
+  habitOccurrenceAt: null,
   externalTaskId: null,
   source: null,
   lastSyncedAt: null,

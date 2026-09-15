@@ -43,6 +43,11 @@ import { logger } from "@/lib/logger";
 import { getMailMessage } from "@/lib/mail-db";
 import { prisma } from "@/lib/prisma";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
+import {
+  accountRule,
+  enforceRateLimits,
+  ipRule,
+} from "@/lib/security/rate-limit";
 import { schedulePushTaskBlock } from "@/lib/task-block-push";
 
 const LOG_SOURCE = "ai-chat";
@@ -990,6 +995,15 @@ function streamText(
 export async function POST(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
+
+  const limited = await enforceRateLimits(
+    [
+      ipRule(request, "ai-chat:ip", 60, 60),
+      accountRule(auth.userId, "ai-chat:account", 30, 60),
+    ],
+    { route: "/api/ai/chat", userId: auth.userId }
+  );
+  if (limited) return limited;
 
   const { settings, ai, source, usage } = await getConfiguredSchedulerAI(
     auth.userId

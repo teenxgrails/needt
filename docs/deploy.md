@@ -19,6 +19,11 @@ migrations and may point to the same internal PostgreSQL endpoint.
 
 ## 2. Create the Coolify services
 
+Coolify **Auto deploy is intentionally disabled**. Do not re-enable it while
+the VPS still performs source builds; three concurrent cold builds exhaust the
+host. Keep it disabled until CI publishes and Coolify deploys a verified GHCR
+image without rebuilding on the VPS.
+
 1. Connect the GitHub repository and deploy `main` with the root `Dockerfile`.
    Use its `production` stage for the web service.
 2. Keep the image default command for web startup.
@@ -33,39 +38,97 @@ node dist/worker/index.js
    collaboration:
 
 ```bash
-node dist/collaboration/index.js
+node dist/collaboration/index.mjs
 ```
 
 Set `COLLABORATION_HOST=0.0.0.0`, expose port `1234` through a TLS-enabled
 WebSocket domain, and set that public `wss://` URL on the web service as
 `COLLABORATION_PUBLIC_URL`.
 
-5. Do not expose the worker publicly. Deploy web first and wait until
-   `/api/health` reports the expected commit and a healthy database. Only then
-   deploy worker and collaboration, keeping all services on that commit.
+5. Do not expose the worker publicly. Deploy web first; wait for `/api/health`
+   to report the expected 40-character commit and a healthy database; only then
+   deploy worker and collaboration. Never start all three builds together. The
+   worker records a private Redis heartbeat; web reports it as `workerBuildSha`,
+   and the release gate accepts only matching web, worker, and collaboration
+   identities.
 6. The web entrypoint applies lockfile-pinned Prisma migrations before starting
    Next.js. A failed migration must fail the deployment instead of starting a
    mismatched application. Worker and collaboration processes skip migrations.
 
 ## 3. Environment Variables
 
-Required:
+Set these runtime values on the three Coolify services unless a row says
+otherwise. Use the same value for every service that receives a given secret;
+rotating one independently breaks token verification or telemetry correlation.
+
+### Base runtime configuration (all services)
 
 ```bash
 DATABASE_URL="postgresql://postgres:...@postgres-resource:5432/postgres"
 DIRECT_URL="postgresql://postgres:...@postgres-resource:5432/postgres"
+REDIS_URL="redis://default:password@redis:6379"
+NEXTAUTH_SECRET="random-32-plus-character-secret"
+COLLABORATION_SECRET="separate-random-32-plus-character-secret"
+RATE_LIMIT_HASH_SECRET="separate-random-32-plus-character-secret"
+SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
+SENTRY_ENVIRONMENT="production"
+```
+
+`RATE_LIMIT_HASH_SECRET` is mandatory in production. It is a separate secret
+used only to HMAC rate-limit identifiers before Redis sees them. `SENTRY_DSN`
+and `SENTRY_ENVIRONMENT` configure server, edge, worker, and collaboration
+telemetry at runtime.
+
+### Web-service runtime configuration
+
+```bash
 NEXTAUTH_URL="https://use.needt.app"
 NEXT_PUBLIC_APP_URL="https://use.needt.app"
 NEXT_PUBLIC_SITE_URL="https://use.needt.app"
-NEXTAUTH_SECRET="random-32-plus-character-secret"
 CRON_SECRET="random-cron-secret"
-REDIS_URL="redis://default:password@redis:6379"
-COLLABORATION_SECRET="separate-random-32-plus-character-secret"
 COLLABORATION_PUBLIC_URL="wss://collaboration.use.needt.app"
-COLLABORATION_HOST="0.0.0.0"
-COLLABORATION_PORT="1234"
 WEBHOOK_BASE_URL="https://use.needt.app"
 ```
+
+`CRON_SECRET` protects the web cron endpoints. Keep `NEXTAUTH_URL`,
+`NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SITE_URL`, and `WEBHOOK_BASE_URL` on the
+same public HTTPS origin.
+
+### Collaboration-service runtime configuration
+
+```bash
+COLLABORATION_HOST="0.0.0.0"
+COLLABORATION_PORT="1234"
+```
+
+### Browser Sentry build-time configuration (public, not a Coolify secret)
+
+```bash
+NEXT_PUBLIC_SENTRY_DSN="https://examplePublicKey@o0.ingest.sentry.io/0"
+NEXT_PUBLIC_SENTRY_ENVIRONMENT="production"
+```
+
+Next.js inlines `NEXT_PUBLIC_*` values when the image is built. The current
+`docker-publish` workflow provides only the non-secret `NEEDT_BUILD_SHA`, so
+setting these two values only in Coolify after publishing an image does not
+enable browser telemetry. Provision a reviewed follow-up CI build path for the
+two public values before requiring browser Sentry; do not substitute a secret
+or a Sentry auth token as a Docker build argument.
+
+### Build-only values (not Coolify runtime environment)
+
+- `NEEDT_BUILD_SHA` is supplied by CI as the sole production Docker build
+  argument and is baked into the image for `/api/health` and Sentry release
+  identity. It must be the exact 40-character Git commit SHA; `local` is
+  rejected in production. The owner does not set it manually.
+- `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are required only by
+  CI while uploading source maps. They are Repository secrets passed to the
+  production Docker build as BuildKit secret mounts, never runtime variables,
+  Docker build arguments, or image `ENV` values. The publish job rejects an
+  empty value before the Docker build; ordinary CI gates build without them and
+  therefore do not upload source maps.
+
+### Optional product integrations
 
 Calendar OAuth:
 
@@ -77,17 +140,27 @@ AZURE_AD_CLIENT_SECRET=""
 AZURE_AD_TENANT_ID="common"
 ```
 
-Optional AI and push:
+Optional AI:
 
 ```bash
 ANTHROPIC_API_KEY=""
 OPENAI_API_KEY=""
 AI_CUSTOM_URL=""
 AI_ENCRYPTION_KEY=""
+```
+
+### Web Push (optional; web and worker)
+
+```bash
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
 VAPID_PRIVATE_KEY=""
 VAPID_SUBJECT="mailto:you@example.com"
 ```
+
+Enable Web Push only when all three values are set. `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+is the public half exposed by the web API; `VAPID_PRIVATE_KEY` and
+`VAPID_SUBJECT` stay runtime-only. Supply the same trio to web and worker so
+subscriptions and reminder delivery use the same VAPID identity.
 
 Apple/iCloud CalDAV credentials are entered in the app at runtime and never stored in env.
 
@@ -110,14 +183,14 @@ Google:
 
 ```text
 https://use.needt.app/api/auth/callback/google
-https://use.needt.app/api/calendar/google/auth
+https://use.needt.app/api/calendar/google
 ```
 
 Microsoft/Azure:
 
 ```text
 https://use.needt.app/api/auth/callback/azure-ad
-https://use.needt.app/api/calendar/outlook/auth
+https://use.needt.app/api/calendar/outlook
 ```
 
 Keep local redirect URIs for development if needed.
@@ -148,12 +221,20 @@ curl https://use.needt.app/api/health
 Expected result:
 
 ```json
-{ "ok": true, "db": "ok", "buildSha": "..." }
+{
+  "ok": true,
+  "db": "ok",
+  "buildSha": "<40-hex-sha>",
+  "workerBuildSha": "<40-hex-sha>"
+}
 ```
 
 The production image bakes the non-secret Git commit into
-`NEEDT_BUILD_SHA`. The health response and the worker startup log must report
-the same SHA before a release is accepted.
+`NEEDT_BUILD_SHA`. The worker is not public: after it starts, it writes a
+short-lived Redis heartbeat keyed by its SHA, and web exposes that value as
+`workerBuildSha`. The GitHub deploy job needs only the public web and
+collaboration health URLs, then accepts a release only when `buildSha`,
+`workerBuildSha`, and the collaboration SHA are the same 40-character commit.
 
 ## 8. Notes
 
@@ -163,7 +244,11 @@ the same SHA before a release is accepted.
   client path against the Coolify internal database endpoint.
 - Neon adapter support remains available for development or a future database
   move, but it is not part of the current production topology.
-- Production deploys are triggered from `main` in Coolify. Verify web, worker,
-  and collaboration run the same SHA before a release smoke.
-- The GitHub workflow fails when any required deployment hook, health URL or
-  rollback hook is missing; it must never report a successful no-op deploy.
+- A push to `main` must not trigger a Coolify source build. With Auto deploy
+  disabled, the owner starts each approved deployment in the sequence above.
+  Verify web, worker, and collaboration run the same SHA before a release smoke.
+- The GitHub workflow fails when any of the three deployment hooks or either
+  public health URL (web and collaboration) is missing. It records the prior
+  healthy web SHA, verifies the new SHA through web plus its private worker
+  heartbeat and collaboration, and writes manual Coolify rollback instructions
+  if deployment fails; it has no rollback hook and never auto-rolls back.

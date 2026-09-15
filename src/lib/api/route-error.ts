@@ -10,7 +10,7 @@ export async function routeErrorResponse(
 ) {
   await logger.error(
     message,
-    { error: error instanceof Error ? error.message : String(error) },
+    { errorType: error instanceof Error ? error.name : "UnknownError" },
     source
   );
   return NextResponse.json({ error: publicMessage }, { status: 500 });

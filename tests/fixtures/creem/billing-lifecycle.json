@@ -1,0 +1,466 @@
+{
+  "proCheckout": {
+    "id": "evt_recorded_pro_checkout",
+    "eventType": "checkout.completed",
+    "created_at": 1728734325927,
+    "object": {
+      "id": "ch_recorded_pro",
+      "object": "checkout",
+      "order": {
+        "id": "ord_recorded_pro",
+        "object": "order",
+        "amount": 600,
+        "status": "paid",
+        "type": "recurring"
+      },
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "name": "Needt Pro Monthly",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "subscription": {
+        "id": "sub_recorded_pro",
+        "object": "subscription",
+        "product": "prod_test_pro_month",
+        "customer": "cust_recorded_pro",
+        "status": "active"
+      },
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      },
+      "status": "completed"
+    }
+  },
+  "proActive": {
+    "id": "evt_recorded_pro_active",
+    "eventType": "subscription.active",
+    "created_at": 1728734326927,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "name": "Needt Pro Monthly",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "{{PERIOD_END}}",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proScheduledCancelWithoutPeriodEnd": {
+    "id": "evt_recorded_pro_scheduled_cancel_without_period_end",
+    "eventType": "subscription.scheduled_cancel",
+    "created_at": 1728734327427,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "scheduled_cancel",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proCanceledWithoutPeriodEnd": {
+    "id": "evt_recorded_pro_canceled_without_period_end",
+    "eventType": "subscription.canceled",
+    "created_at": 1728734327927,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "canceled",
+      "canceled_at": "2024-10-12T11:58:57.813Z",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proCanceled": {
+    "id": "evt_recorded_pro_canceled",
+    "eventType": "subscription.canceled",
+    "created_at": 1728734327927,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "canceled",
+      "current_period_end_date": "{{PERIOD_END}}",
+      "canceled_at": "2024-10-12T11:58:57.813Z",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "equalTimeActiveAfterCancel": {
+    "id": "evt_recorded_equal_time_active_after_cancel",
+    "eventType": "subscription.active",
+    "created_at": 1728734327927,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "{{PERIOD_END}}",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proExpired": {
+    "id": "evt_recorded_pro_expired",
+    "eventType": "subscription.expired",
+    "created_at": 1728734328927,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "expired",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proResubscribed": {
+    "id": "evt_recorded_pro_resubscribed",
+    "eventType": "subscription.active",
+    "created_at": 1728734329927,
+    "object": {
+      "id": "sub_recorded_pro_2",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_year",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-year"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "{{PERIOD_END}}",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "equalTimeOldExpiryAfterResubscribe": {
+    "id": "evt_recorded_equal_time_old_expiry_after_resubscribe",
+    "eventType": "subscription.expired",
+    "created_at": 1728734329927,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "expired",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "laterOldExpiryAfterResubscribe": {
+    "id": "evt_recorded_later_old_expiry_after_resubscribe",
+    "eventType": "subscription.expired",
+    "created_at": 1728734330127,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "expired",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "laterOldPaidAfterResubscribe": {
+    "id": "evt_recorded_later_old_paid_after_resubscribe",
+    "eventType": "subscription.paid",
+    "created_at": 1728734330027,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "2020-01-01T00:00:00.000Z",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proPastDue": {
+    "id": "evt_recorded_pro_past_due",
+    "eventType": "subscription.past_due",
+    "created_at": 1728734330927,
+    "object": {
+      "id": "sub_recorded_pro_2",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_year",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-year"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "past_due",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proUnpaid": {
+    "id": "evt_recorded_pro_unpaid",
+    "eventType": "subscription.unpaid",
+    "created_at": 1728734331927,
+    "object": {
+      "id": "sub_recorded_pro_2",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_year",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-year"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "unpaid",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "proRecovered": {
+    "id": "evt_recorded_pro_recovered",
+    "eventType": "subscription.paid",
+    "created_at": 1728734332927,
+    "object": {
+      "id": "sub_recorded_pro_2",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_year",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-year"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "{{PERIOD_END}}",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "olderActive": {
+    "id": "evt_recorded_older_active",
+    "eventType": "subscription.active",
+    "created_at": 1728734327427,
+    "object": {
+      "id": "sub_recorded_pro",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_pro",
+        "object": "customer",
+        "email": "billing-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "{{PERIOD_END}}",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "lifetimeCheckout": {
+    "id": "evt_recorded_lifetime_checkout",
+    "eventType": "checkout.completed",
+    "created_at": 1728734333927,
+    "object": {
+      "id": "ch_recorded_lifetime",
+      "object": "checkout",
+      "order": {
+        "id": "ord_recorded_lifetime",
+        "object": "order",
+        "amount": 7900,
+        "status": "paid",
+        "type": "one_time"
+      },
+      "product": {
+        "id": "prod_test_lifetime",
+        "object": "product",
+        "name": "Needt Lifetime",
+        "billing_type": "one-time"
+      },
+      "customer": {
+        "id": "cust_recorded_lifetime",
+        "object": "customer",
+        "email": "billing-lifetime-fixture@needt.local"
+      },
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      },
+      "status": "completed"
+    }
+  },
+  "proAfterLifetime": {
+    "id": "evt_recorded_pro_after_lifetime",
+    "eventType": "subscription.active",
+    "created_at": 1728734334927,
+    "object": {
+      "id": "sub_recorded_pro_after_lifetime",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_pro_month",
+        "object": "product",
+        "billing_type": "recurring",
+        "billing_period": "every-month"
+      },
+      "customer": {
+        "id": "cust_recorded_lifetime",
+        "object": "customer",
+        "email": "billing-lifetime-fixture@needt.local"
+      },
+      "status": "active",
+      "current_period_end_date": "{{PERIOD_END}}",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  },
+  "lifetimeExpired": {
+    "id": "evt_recorded_lifetime_expired",
+    "eventType": "subscription.expired",
+    "created_at": 1728734335927,
+    "object": {
+      "id": "sub_recorded_lifetime_stray",
+      "object": "subscription",
+      "product": {
+        "id": "prod_test_lifetime",
+        "object": "product",
+        "billing_type": "one-time"
+      },
+      "customer": {
+        "id": "cust_recorded_lifetime",
+        "object": "customer",
+        "email": "billing-lifetime-fixture@needt.local"
+      },
+      "status": "expired",
+      "metadata": {
+        "referenceId": "{{USER_ID}}"
+      }
+    }
+  }
+}

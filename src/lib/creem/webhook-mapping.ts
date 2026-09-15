@@ -6,6 +6,7 @@ import { newDate } from "@/lib/date-utils";
 export type CreemBillingEventType =
   | "checkout.completed"
   | "subscription.active"
+  | "subscription.trialing"
   | "subscription.paid"
   | "subscription.canceled"
   | "subscription.scheduled_cancel"
@@ -16,6 +17,8 @@ export type CreemBillingEventType =
   | "subscription.update";
 
 export type CreemBillingEvent = {
+  id: string;
+  createdAt: number;
   eventType: CreemBillingEventType;
   object: Record<string, unknown>;
 };
@@ -108,12 +111,10 @@ function statusForEvent(
   eventType: CreemBillingEventType,
   object: Record<string, unknown>
 ): SubscriptionStatus {
-  if (
-    eventType === "subscription.past_due" ||
-    eventType === "subscription.unpaid"
-  ) {
+  if (eventType === "subscription.past_due") {
     return "PAST_DUE";
   }
+  if (eventType === "subscription.unpaid") return "PAYMENT_FAILED";
   if (
     eventType === "subscription.canceled" ||
     eventType === "subscription.expired" ||
@@ -123,7 +124,8 @@ function statusForEvent(
   }
   if (eventType === "subscription.update") {
     const status = stringValue(object.status);
-    if (status === "past_due" || status === "unpaid") return "PAST_DUE";
+    if (status === "past_due") return "PAST_DUE";
+    if (status === "unpaid") return "PAYMENT_FAILED";
     if (status === "canceled" || status === "expired" || status === "paused") {
       return "CANCELED";
     }

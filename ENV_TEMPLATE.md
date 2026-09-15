@@ -17,6 +17,8 @@ RATE_LIMIT_HASH_SECRET="replace-with-a-separate-random-secret"
 WEBHOOK_BASE_URL="http://localhost:3000"
 SENTRY_DSN=""
 SENTRY_ENVIRONMENT="development"
+NEXT_PUBLIC_SENTRY_DSN=""
+NEXT_PUBLIC_SENTRY_ENVIRONMENT="development"
 ```
 
 Notes:
@@ -27,7 +29,10 @@ Notes:
 - `NEXTAUTH_SECRET` has a local fallback in code, but it should always be set explicitly.
 - `CRON_SECRET` protects Vercel Cron endpoints and must be supplied as the `x-cron-secret` header when testing manually.
 - `REDIS_URL` is shared by the web process and the separate BullMQ worker. In Docker/Coolify, point both services at the same Redis instance.
+- `RATE_LIMIT_HASH_SECRET` is required in production and must be a distinct random value. It hashes rate-limit identifiers before Redis receives them.
 - `WEBHOOK_BASE_URL` is the public HTTPS origin providers call for calendar change notifications. It defaults to `NEXTAUTH_URL`; set it explicitly when the public webhook origin differs.
+- `SENTRY_DSN` and `SENTRY_ENVIRONMENT` configure server, edge, worker, and collaboration telemetry at runtime. `NEXT_PUBLIC_SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_ENVIRONMENT` are public browser configuration: Next.js inlines them during `npm run build`, so changing them after an image is built does not enable browser telemetry for that image.
+- `NEEDT_BUILD_SHA` is injected by the production CI image build. Do not set it manually in Coolify. Sentry source-map settings (`SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT`) are build-only and are intentionally not configured here; a later authorized pipeline must use a BuildKit secret for the token, never a build argument or runtime image environment variable.
 
 ## Human-Supplied Calendar OAuth
 

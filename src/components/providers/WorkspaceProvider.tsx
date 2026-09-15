@@ -22,6 +22,8 @@ import { useCalendarStore } from "@/store/calendar";
 import { useProjectStore } from "@/store/project";
 import { useTaskStore } from "@/store/task";
 
+import { reportWorkspaceBootstrapFailure } from "./workspace-bootstrap";
+
 const ACTIVE_WORKSPACE_STORAGE_KEY = "needt-active-workspace-id";
 
 export type WorkspaceRole = "OWNER" | "EDITOR" | "VIEWER";
@@ -119,7 +121,7 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
   }, [status]);
 
   useEffect(() => {
-    void refreshWorkspaces();
+    void refreshWorkspaces().catch(reportWorkspaceBootstrapFailure);
   }, [refreshWorkspaces]);
 
   useLayoutEffect(() => {

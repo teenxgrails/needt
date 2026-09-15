@@ -2,6 +2,9 @@
 FROM node:22-alpine3.19 AS builder
 
 WORKDIR /app
+ARG NEEDT_BUILD_SHA=local
+ENV NEEDT_BUILD_SHA=$NEEDT_BUILD_SHA
+ENV NEXT_PUBLIC_NEEDT_BUILD_SHA=$NEEDT_BUILD_SHA
 
 # Install dependencies
 COPY package*.json .npmrc ./
@@ -18,10 +21,16 @@ COPY . .
 # Leave headroom for Alpine, Next build workers, and Docker Desktop's
 # constrained Linux VM instead of reserving the whole configured memory limit.
 ENV NODE_OPTIONS=--max-old-space-size=2560
-RUN npm run build
+RUN --mount=type=secret,id=sentry_auth_token,required=true \
+    --mount=type=secret,id=sentry_org,required=true \
+    --mount=type=secret,id=sentry_project,required=true \
+    SENTRY_AUTH_TOKEN="$(cat /run/secrets/sentry_auth_token)" \
+    SENTRY_ORG="$(cat /run/secrets/sentry_org)" \
+    SENTRY_PROJECT="$(cat /run/secrets/sentry_project)" \
+    npm run build
 RUN npm run build:worker
 RUN npm run build:collaboration
-RUN npm run check:collaboration-runtime && test -s dist/collaboration/index.js
+RUN npm run check:collaboration-runtime && test -s dist/collaboration/index.mjs
 
 # Production stage
 FROM node:22-alpine3.19 AS runner
@@ -48,6 +57,8 @@ COPY --chown=nextjs:nodejs --from=builder /app/public ./public
 COPY --chown=nextjs:nodejs --from=builder /app/dist ./dist
 COPY --chown=nextjs:nodejs --from=builder /app/prisma ./prisma
 COPY --chown=nextjs:nodejs --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --chown=nextjs:nodejs --from=builder /app/node_modules/@prisma/engines ./node_modules/@prisma/engines
+RUN test -x /app/node_modules/@prisma/engines/schema-engine-*
 COPY --chown=nextjs:nodejs --from=builder /app/entrypoint.sh ./entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 

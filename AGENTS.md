@@ -126,9 +126,13 @@ Still requires the owner, every time:
 - Design direction.
 - Anything listed under Non-goals, and any destructive migration.
 
-The current governing plan is [`docs/plans/09-launch.md`](docs/plans/09-launch.md).
+The current governing plan is
+[`docs/plans/12-remaining-work.md`](docs/plans/12-remaining-work.md), written
+2026-08-24 against verified production state.
+[`docs/plans/09-launch.md`](docs/plans/09-launch.md) is now reference only — its
+L0–L5 sequencing lists merged work as blocking.
 [`docs/plans/10-design.md`](docs/plans/10-design.md) runs in parallel and must
-never delay it.
+never delay the launch queue.
 
 ### Autonomous Terra delivery
 

@@ -101,9 +101,12 @@ Web and worker use expand/contract deployment:
 5. enable feature flags only after the smoke test;
 6. contract/remove old fields only after at least one fallback release.
 
-For Coolify Dockerfile deployments, enable **Include Source Commit in Build**
-for the web, worker and collaboration resources. The root `Dockerfile` maps
-Coolify's `SOURCE_COMMIT` build argument to `NEEDT_BUILD_SHA`, which is the
-identity checked by `/api/health`. Deployment webhooks use `COOLIFY_API_TOKEN`;
-Coolify rollback is a manual action from the resource's Deployments view and is
-available only while the previous image remains local.
+Before pushing a release that may auto-deploy, set **Source commit availability**
+to **Available during build** for the web, worker, and collaboration Coolify
+resources. (Older Coolify versions label this **Include Source Commit in
+Build**.) The root `Dockerfile` maps Coolify's `SOURCE_COMMIT` build argument to
+`NEEDT_BUILD_SHA`, which is the identity checked by `/api/health`; redeploy web
+and verify it reports a 40-character Git SHA before promoting a new commit.
+Deployment webhooks use `COOLIFY_API_TOKEN`; Coolify rollback is a manual action
+from the resource's Deployments view and is available only while the previous
+image remains local.

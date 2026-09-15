@@ -1,6 +1,6 @@
 /* ========================================================================
    Needt motion layer — VENDORED, DO NOT EDIT BY HAND.
-   Extracted from needt-app/index.html on 2026-09-11.
+   Extracted from needt-app/index.html on 2026-09-15.
    Regenerate with: npm run tokens:sync
    
    The prototype's living layer: entrance, landing, menu cascade, the close
@@ -616,8 +616,8 @@
 .needt-v2 [data-depth="lifted"] .card { box-shadow: var(--shadow-raised); }
 .needt-v2 [data-depth="lifted"] .cal-day { box-shadow: var(--shadow-raised); }
 /* The timeline sets its blocks' ring inline, so this one needs the weight. */
-.needt-v2 [data-depth="lifted"] .nt-timeline .nt-block { box-shadow: var(--shadow-raised) !important; }.needt-v2 . */
-.nt-block[data-compact="true"] .nt-block-title { flex: 0 1 auto; }
+.needt-v2 [data-depth="lifted"] .nt-timeline .nt-block { box-shadow: var(--shadow-raised) !important; }
+.needt-v2 .nt-block[data-compact="true"] .nt-block-title { flex: 0 1 auto; }
 
 /* Hours outside the working window: drawn, not hidden — an evening event has
    to be able to land there. One hairline at 45°, no fill. */

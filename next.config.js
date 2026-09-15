@@ -57,6 +57,15 @@ module.exports = withSentryConfig(nextConfig, {
   authToken: process.env.SENTRY_AUTH_TOKEN,
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
+  release: {
+    name: process.env.NEEDT_BUILD_SHA,
+  },
+  sourcemaps: {
+    filesToDeleteAfterUpload: [".next/static/**/*.map"],
+  },
+  errorHandler(error) {
+    throw error;
+  },
   webpack: {
     treeshake: {
       removeDebugLogging: true,

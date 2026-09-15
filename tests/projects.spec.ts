@@ -95,6 +95,7 @@ test("Projects switch between List, Kanban, Gantt, and templates", async ({
   page,
 }) => {
   let archivedStatus = "archived";
+  let healthUpdatePayload: unknown;
   const secret = process.env.NEXTAUTH_SECRET;
   expect(secret, "NEXTAUTH_SECRET is required for projects E2E").toBeTruthy();
   const token = await encode({
@@ -118,6 +119,33 @@ test("Projects switch between List, Kanban, Gantt, and templates", async ({
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
+    if (url.pathname === "/api/auth/session") {
+      await route.fulfill({
+        json: {
+          user: { id: "project-e2e-user", email: "project-e2e@needt.local", role: "admin" },
+          expires: "2026-08-24T00:00:00.000Z",
+        },
+      });
+      return;
+    }
+    if (url.pathname === "/api/workspaces") {
+      await route.fulfill({
+        json: {
+          workspaces: [
+            {
+              role: "OWNER",
+              workspace: {
+                id: project.workspaceId,
+                name: "Project workspace",
+                kind: "PERSONAL",
+                createdAt: "2026-08-01T00:00:00.000Z",
+              },
+            },
+          ],
+        },
+      });
+      return;
+    }
     if (url.pathname === "/api/projects") {
       await route.fulfill({
         json: [
@@ -168,6 +196,22 @@ test("Projects switch between List, Kanban, Gantt, and templates", async ({
       });
       return;
     }
+    if (url.pathname === `/api/projects/${project.id}/health`) {
+      if (route.request().method() === "POST") {
+        healthUpdatePayload = JSON.parse(route.request().postData() ?? "{}");
+      }
+      await route.fulfill({
+        json: {
+          healthStatus: "AT_RISK",
+          healthVersion: healthUpdatePayload ? 2 : 1,
+          healthUpdatedAt: "2026-08-05T10:00:00.000Z",
+          healthUpdates: healthUpdatePayload
+            ? [{ id: "health-e2e", status: "AT_RISK", summary: "Waiting for launch approval", version: 2, createdAt: "2026-08-05T10:00:00.000Z", author: { id: "project-e2e-user", name: "Project owner", image: null } }]
+            : [],
+        },
+      });
+      return;
+    }
     if (url.pathname === "/api/project-templates") {
       await route.fulfill({ json: { templates: [] } });
       return;
@@ -181,6 +225,17 @@ test("Projects switch between List, Kanban, Gantt, and templates", async ({
     page.getByRole("progressbar", { name: "Project progress" })
   ).toHaveAttribute("aria-valuenow", "50");
   await expect(page.getByText("Approve launch brief")).toBeVisible();
+
+  await page.getByRole("button", { name: "At risk" }).click();
+  await expect(page.getByRole("heading", { name: "Project health" })).toBeVisible();
+  await page.getByLabel("Update").fill("Waiting for launch approval");
+  await page.getByRole("button", { name: "Post update" }).click();
+  await expect.poll(() => healthUpdatePayload).toEqual({
+    status: "AT_RISK",
+    summary: "Waiting for launch approval",
+    expectedVersion: 1,
+  });
+  await expect(page.getByText("Waiting for launch approval")).toBeVisible();
 
   await page.getByRole("tab", { name: "Kanban" }).click();
   await expect(page.getByRole("heading", { name: "Planning" })).toBeVisible();

@@ -101,7 +101,8 @@ export function effectiveSubscriptionPlan(
   }
   if (
     (subscription.status === SubscriptionStatus.CANCELED ||
-      subscription.status === SubscriptionStatus.PAST_DUE) &&
+      subscription.status === SubscriptionStatus.PAST_DUE ||
+      subscription.status === SubscriptionStatus.PAYMENT_FAILED) &&
     subscription.currentPeriodEnd &&
     subscription.currentPeriodEnd > newDate()
   ) {

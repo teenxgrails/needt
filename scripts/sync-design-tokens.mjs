@@ -191,6 +191,16 @@ function stripFontFaces(css, label) {
   );
 }
 
+/**
+ * The captured prototype contains one stray dot-and-comment-terminator suffix
+ * before the compact timeline-title rule. Browsers ignore the damaged selector in development,
+ * but Next's production CSS minimizer correctly rejects it. Remove only that
+ * known capture artifact before scoping; the vendored output stays generated.
+ */
+function stripCaptureArtifacts(css) {
+  return css.replace(/}\.[ \t]+\*\/(?=\s*\.nt-block\[data-compact=)/g, "}");
+}
+
 function header(lines) {
   return ["/* " + "=".repeat(72), ...lines.map((l) => "   " + l),
           "   " + "=".repeat(72) + " */", ""].join("\n");
@@ -272,7 +282,9 @@ let motion = header([
   "the focus aura and the composer glow. All of it off under",
   "prefers-reduced-motion, which is part of what is vendored.",
 ]);
-for (const block of styleBlocks) motion += scopeSheet(stripFontFaces(block, "index.html")) + "\n";
+for (const block of styleBlocks) {
+  motion += scopeSheet(stripCaptureArtifacts(stripFontFaces(block, "index.html"))) + "\n";
+}
 
 /* Component stylesheets that belong with the components rather than the kit. */
 for (const name of ["composer", "exposure-wordmark"]) {

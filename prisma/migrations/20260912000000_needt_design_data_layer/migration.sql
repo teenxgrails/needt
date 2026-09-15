@@ -39,20 +39,10 @@ CREATE TABLE "TaskWait" (
     CONSTRAINT "TaskWait_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "Habit" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "at" TEXT,
-    "projectId" TEXT,
-    "quota" INTEGER,
-    "archivedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "Habit_pkey" PRIMARY KEY ("id")
-);
+-- AlterTable
+ALTER TABLE "Habit" ADD COLUMN     "at" TEXT,
+ADD COLUMN     "projectId" TEXT,
+ADD COLUMN     "quota" INTEGER;
 
 -- CreateTable
 CREATE TABLE "HabitCompletion" (
@@ -84,9 +74,6 @@ CREATE INDEX "TaskWait_taskId_resolvedAt_idx" ON "TaskWait"("taskId", "resolvedA
 CREATE INDEX "TaskWait_waitingOnUserId_resolvedAt_idx" ON "TaskWait"("waitingOnUserId", "resolvedAt");
 
 -- CreateIndex
-CREATE INDEX "Habit_userId_archivedAt_idx" ON "Habit"("userId", "archivedAt");
-
--- CreateIndex
 CREATE INDEX "Habit_projectId_idx" ON "Habit"("projectId");
 
 -- CreateIndex
@@ -108,9 +95,6 @@ ALTER TABLE "TaskWait" ADD CONSTRAINT "TaskWait_taskId_fkey" FOREIGN KEY ("taskI
 ALTER TABLE "TaskWait" ADD CONSTRAINT "TaskWait_waitingOnUserId_fkey" FOREIGN KEY ("waitingOnUserId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Habit" ADD CONSTRAINT "Habit_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Habit" ADD CONSTRAINT "Habit_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -118,4 +102,3 @@ ALTER TABLE "HabitCompletion" ADD CONSTRAINT "HabitCompletion_habitId_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "ClosedDay" ADD CONSTRAINT "ClosedDay_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-

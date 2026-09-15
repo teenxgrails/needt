@@ -32,21 +32,19 @@ export async function sendPasswordResetEmail({
 
     // Send the email using the appropriate service
     const { jobId } = await EmailService.sendEmail({
-      from: EmailService.formatSender(APP_NAME),
       to: email,
       subject: `Reset Your ${APP_NAME} Password`,
       html,
     });
 
-    logger.info("Password reset email sent", { email, jobId }, LOG_SOURCE);
+    logger.info("Password reset email sent", { jobId }, LOG_SOURCE);
 
     return { success: true, jobId };
   } catch (error) {
     logger.error(
       "Failed to send password reset email",
       {
-        error: error instanceof Error ? error.message : "Unknown error",
-        email,
+        errorType: error instanceof Error ? error.name : "UnknownError",
       },
       LOG_SOURCE
     );

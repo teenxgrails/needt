@@ -100,6 +100,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   2026-08-24.
 - Ops: `www.needt.app` now 301-redirects to the apex domain with the query
   string preserved, via a Cloudflare redirect rule on a proxied CNAME.
+- Added an admin-only System settings route and account-menu links for system
+  credentials and operations, with a contract check preventing orphaned
+  admin-only settings components.
+- L0 release line is tagged `v0.4.0`; production image verification is provided
+  by the required `docker-publish` CI workflow on the same SHA rather than a
+  local Docker Desktop build.
+- Kept the local Figma capture workflow opt-in for development while preventing
+  its third-party script from entering production builds, and ignored local
+  browser-agent artifacts and root mobile screenshots.
+- Fixed the production `/style` laboratory so its admin authorization runs per
+  request instead of being frozen as a build-time 404.
 - Docs: added `docs/plans/09-launch.md` as the governing plan through public
   launch — release unblock (focused-Mail visual, non-production artifacts,
   S11/T8 integration), production-readiness audit, billing lifecycle, first-run
@@ -118,11 +129,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/_old/`; added `BOOTSTRAP.md` as a copy-paste first-message prompt for
   any new agent chat, enforcing the required reading order and an
   end-of-session handoff save before context/usage limits are hit.
+- Added workspace-safe capacity and reversible schedule previews, versioned
+  Saved Views, project-health history, flexible habits with weekly Focus
+  targets, and approval-only meeting-note task/schedule proposals.
 - Style: applying a theme token object in `/style` now persists it per user and
   updates shared product controls globally.
 
 ### Changed
 
+- Google sign-in now requests only basic identity scopes; Calendar access is
+  requested separately when connecting a calendar, while Google Tasks sync is
+  explicitly deferred with an actionable connection error.
+- Release automation now permits a repair deployment when the currently live web health endpoint is unavailable, and publishes the native AMD64 image only. Local Compose starts the matching web, private worker, collaboration, PostgreSQL, and Redis topology.
+- Tasks now show a private seven-day capacity summary and an explainable,
+  reversible schedule preview with unscheduled-task and stale-preview recovery.
+- Task List can save and apply personal or role-gated workspace views without
+  changing the active workspace scope.
+- Projects now expose a versioned health journal and role-gated status-update
+  composer with concurrent-update recovery.
+- Focus now shows each member&apos;s workspace-scoped weekly target, progress and
+  editable minutes without exposing another member&apos;s focus data.
+- Focus now includes flexible personal habits that can be created, placed into
+  the current week and archived through the workspace-scoped scheduler.
 - Account settings now include a data-derived setup checklist that guides users
   through account, calendar, workspace and first-task actions.
 - Mail messages can now snooze locally until tomorrow morning or create a
@@ -155,6 +183,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made the admin System settings page SSR-safe and restored its middleware and
+  database-backed authorization checks, including protection against stale
+  deactivated-admin sessions.
+- Made Creem webhook handling replay-safe and order-aware, preserved paid
+  access only through documented retry/grace periods, and surfaced actionable
+  failed-payment status in Billing settings.
+- Restored Prisma migration/schema compatibility without rewriting user data:
+  retained five legacy AI indexes and promoted the existing Page–tag join
+  unique pair to Prisma's composite primary-key representation.
+- Restricted privileged publish/deploy workflow runs to successful default-
+  branch pushes from this repository, made source-consuming jobs verify the
+  exact immutable CI release SHA, and made deploys use that SHA.
 - On phones, Space now offers working Task List and Board fallbacks instead of
   directing people to a desktop-only canvas.
 - Pages can now be organized with workspace-scoped folders and tags, and users

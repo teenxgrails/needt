@@ -13,6 +13,7 @@ describe("reschedule preview staging", () => {
           lastScheduled: null,
           isAutoScheduled: true,
           autoScheduled: true,
+          updatedAt: "2026-07-18T08:00:00.000Z",
         },
       ],
       blocks: [],
@@ -28,5 +29,10 @@ describe("reschedule preview staging", () => {
       ],
     };
     expect(diffScheduleSnapshots(before, after)).toHaveLength(1);
+    expect(diffScheduleSnapshots(before, after)[0]).toEqual(
+      expect.objectContaining({
+        explanation: "Placed in deterministic available working time.",
+      })
+    );
   });
 });

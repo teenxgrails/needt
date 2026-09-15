@@ -15,8 +15,12 @@ const repoRoot = join(__dirname, "..", "..");
 const read = (rel: string) => readFileSync(join(repoRoot, rel), "utf8");
 
 interface ComposeService {
+  command?: string[];
+  depends_on?: Record<string, { condition?: string }>;
   environment?: string[] | Record<string, string | number | null>;
   env_file?: string | string[];
+  healthcheck?: { start_period?: string; test?: string[] };
+  image?: string;
   ports?: Array<string | number | { target?: number; published?: number }>;
 }
 
@@ -27,8 +31,8 @@ describe("Docker quick-start (issue #151)", () => {
   const app = compose.services.app;
 
   // Normalize the app service `environment` (list or map form) to a plain map.
-  const appEnv: Record<string, string> = (() => {
-    const env = app.environment;
+  function environmentFor(service: ComposeService): Record<string, string> {
+    const env = service.environment;
     if (!env) return {};
     if (Array.isArray(env)) {
       return Object.fromEntries(
@@ -43,7 +47,9 @@ describe("Docker quick-start (issue #151)", () => {
     return Object.fromEntries(
       Object.entries(env).map(([k, v]) => [k, String(v ?? "")])
     );
-  })();
+  }
+
+  const appEnv = environmentFor(app);
 
   it("pins the container PORT to 3000 via environment (overrides any .env PORT)", () => {
     expect(appEnv.PORT).toBe("3000");
@@ -78,6 +84,41 @@ describe("Docker quick-start (issue #151)", () => {
         ? [envFile]
         : [];
     expect(envFiles).toContain(".env");
+  });
+
+  it("starts the complete private runtime topology", () => {
+    const worker = compose.services.worker;
+    const collaboration = compose.services.collaboration;
+    const redis = compose.services.redis;
+
+    expect(redis.image).toBe("redis:7-alpine");
+    expect(redis.healthcheck?.test?.join(" ")).toContain("redis-cli ping");
+    expect(worker.image).toBe(app.image);
+    expect(worker.command).toEqual(["node", "dist/worker/index.js"]);
+    expect(worker.ports).toBeUndefined();
+    expect(worker.healthcheck?.test?.join(" ")).toContain("127.0.0.1:1235");
+    expect(worker.healthcheck?.start_period).toBe("2m");
+    expect(collaboration.healthcheck?.test?.join(" ")).toContain(
+      "127.0.0.1:1234"
+    );
+    expect(app.healthcheck?.test?.join(" ")).toContain("/api/health");
+  });
+
+  it("waits for web migrations and uses container DNS for stateful services", () => {
+    const worker = compose.services.worker;
+    const collaboration = compose.services.collaboration;
+    const workerEnv = environmentFor(worker);
+    const collaborationEnv = environmentFor(collaboration);
+
+    expect(worker.depends_on?.app?.condition).toBe("service_healthy");
+    expect(worker.depends_on?.redis?.condition).toBe("service_healthy");
+    expect(collaboration.depends_on?.app?.condition).toBe("service_healthy");
+    expect(collaboration.depends_on?.redis?.condition).toBe("service_healthy");
+    for (const env of [appEnv, workerEnv, collaborationEnv]) {
+      expect(env.DATABASE_URL).toContain("@db:5432");
+      expect(env.DIRECT_URL).toContain("@db:5432");
+      expect(env.REDIS_URL).toBe("redis://redis:6379");
+    }
   });
 
   describe("README quick-start docs", () => {
@@ -127,6 +168,12 @@ describe("production migration tooling", () => {
     expect(packageJson.dependencies?.prisma).toBe("^6.3.1");
     expect(packageJson.devDependencies?.prisma).toBeUndefined();
     expect(dockerfile).toContain("npm ci --omit=dev --ignore-scripts");
+    expect(dockerfile).toContain(
+      "/app/node_modules/@prisma/engines ./node_modules/@prisma/engines"
+    );
+    expect(dockerfile).toContain(
+      "test -x /app/node_modules/@prisma/engines/schema-engine-*"
+    );
     expect(dockerfile).toContain("RUN npm run build:worker");
     expect(dockerfile).toContain("/app/dist ./dist");
     expect(entrypoint).toContain('"$PRISMA_BIN" migrate deploy');
@@ -137,8 +184,32 @@ describe("production migration tooling", () => {
     expect(rootDockerfile).toContain(
       "npm ci --omit=dev --legacy-peer-deps --ignore-scripts"
     );
+    expect(rootDockerfile).toContain(
+      "/app/node_modules/@prisma/engines ./node_modules/@prisma/engines"
+    );
+    expect(rootDockerfile).toContain(
+      "test -x /app/node_modules/@prisma/engines/schema-engine-*"
+    );
     expect(rootDockerfile.match(/COPY --from=runtime-deps/g)).toHaveLength(3);
     expect(entrypoint).toContain("/app/node_modules/.bin/prisma");
+  });
+
+  it("starts collaboration from its ESM bundle", () => {
+    const packageJson = JSON.parse(read("package.json")) as {
+      scripts?: Record<string, string>;
+    };
+    expect(packageJson.scripts?.["build:collaboration"]).toContain(
+      "--format=esm"
+    );
+    expect(packageJson.scripts?.["build:collaboration"]).toContain(
+      "dist/collaboration/index.mjs"
+    );
+    expect(packageJson.scripts?.["start:collaboration"]).toContain(
+      "dist/collaboration/index.mjs"
+    );
+    expect(rootDockerfile).toContain(
+      'CMD ["node", "dist/collaboration/index.mjs"]'
+    );
   });
 
   it("exposes the Coolify source commit as the runtime build identity", () => {
@@ -154,6 +225,62 @@ describe("production migration tooling", () => {
 
   it("fails the container when migrations or required environment fail", () => {
     expect(entrypoint).toMatch(/^#!\/bin\/sh\nset -eu\n/);
+  });
+
+  it("runs every production service through the shared entrypoint", () => {
+    const workerStage = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS worker"),
+      rootDockerfile.indexOf("FROM base AS collaboration")
+    );
+    const collaborationStage = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS collaboration"),
+      rootDockerfile.indexOf("FROM base AS production")
+    );
+
+    expect(dockerfile).toContain('ENTRYPOINT ["/app/entrypoint.sh"]');
+    expect(dockerfile).toContain('CMD ["node", "server.js"]');
+    expect(workerStage).toContain('ENTRYPOINT ["/app/entrypoint.sh"]');
+    expect(workerStage).toContain('CMD ["node", "dist/worker/index.js"]');
+    expect(collaborationStage).toContain('ENTRYPOINT ["/app/entrypoint.sh"]');
+    expect(collaborationStage).toContain(
+      'CMD ["node", "dist/collaboration/index.mjs"]'
+    );
+  });
+
+  it("ships and starts the ESM collaboration artifact consistently", () => {
+    const packageJsonText = read("package.json");
+    const compose = read("docker-compose.yml");
+
+    expect(packageJsonText).toContain(
+      '"start:collaboration": "node dist/collaboration/index.mjs"'
+    );
+    expect(dockerfile).toContain("test -s dist/collaboration/index.mjs");
+    expect(compose).toContain(
+      'command: ["node", "dist/collaboration/index.mjs"]'
+    );
+    expect(packageJsonText).not.toContain("dist/collaboration/index.js");
+    expect(dockerfile).not.toContain("dist/collaboration/index.js");
+    expect(rootDockerfile).not.toContain("dist/collaboration/index.js");
+    expect(compose).not.toContain("dist/collaboration/index.js");
+  });
+
+  it("keeps worker health private and provides an all-service SHA gate", () => {
+    const packageJsonText = read("package.json");
+    const runtimeShaCheck = read("scripts/check-runtime-shas.mjs");
+
+    expect(dockerfile).toContain("EXPOSE 3000 1234");
+    expect(dockerfile).not.toContain("EXPOSE 3000 1234 1235");
+    expect(rootDockerfile).not.toContain("EXPOSE 1235");
+    expect(packageJsonText).toContain(
+      '"check:runtime-shas": "node scripts/check-runtime-shas.mjs"'
+    );
+    expect(runtimeShaCheck).toContain("WEB_HEALTH_URL");
+    expect(runtimeShaCheck).not.toContain("WORKER_HEALTH_URL");
+    expect(runtimeShaCheck).toContain("workerBuildSha");
+    expect(runtimeShaCheck).toContain("COLLABORATION_HEALTH_URL");
+    expect(runtimeShaCheck).toContain(
+      "Object.values(lastSeen).every((sha) => sha === EXPECTED_SHA)"
+    );
   });
 });
 

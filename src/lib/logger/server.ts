@@ -1,6 +1,8 @@
 import { addDays, newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
+import { sanitizeLogEntry } from "./sanitize";
+
 import {
   LogBatchResponse,
   LogDestination,
@@ -60,8 +62,8 @@ export class ServerLogger {
         logDestination: (settings?.logDestination as LogDestination) || "db",
         logRetention: parseRetention(settings?.logRetention),
       };
-    } catch (error) {
-      console.error("Failed to get system settings:", error);
+    } catch {
+      console.error("Failed to get system settings");
       return DISABLED_LOG_SETTINGS;
     }
   }
@@ -86,26 +88,25 @@ export class ServerLogger {
         return false;
       }
 
+      const sanitizedEntry = sanitizeLogEntry(entry);
       const now = newDate();
       await prisma.log.create({
         data: {
-          level: entry.level,
-          message: entry.message,
-          metadata: entry.metadata || {},
-          timestamp: entry.timestamp,
-          source: entry.source,
+          level: sanitizedEntry.level,
+          message: sanitizedEntry.message,
+          metadata: sanitizedEntry.metadata || {},
+          timestamp: sanitizedEntry.timestamp,
+          source: sanitizedEntry.source,
           expiresAt: addDays(
             now,
-            getRetentionDays(entry.level, settings.logRetention)
+            getRetentionDays(sanitizedEntry.level, settings.logRetention)
           ),
         },
       });
 
-      console.log("Log written:", entry);
-
       return true;
-    } catch (error) {
-      console.error("Failed to write log:", error);
+    } catch {
+      console.error("Failed to write log");
       return false;
     }
   }
@@ -116,12 +117,19 @@ export class ServerLogger {
   async writeBatch(entries: LogEntry[]): Promise<LogBatchResponse> {
     try {
       const settings = await this.getLogSettings();
+      if (settings.logLevel === "none") {
+        return { success: true, count: 0 };
+      }
       const now = newDate();
 
       // Filter entries based on log level
-      const validEntries = entries.filter((entry) =>
-        this.shouldLog(entry.level, settings.logLevel)
-      );
+      const validEntries = entries
+        .filter(
+          (entry) =>
+            entry.level !== "none" &&
+            this.shouldLog(entry.level, settings.logLevel)
+        )
+        .map(sanitizeLogEntry);
 
       if (validEntries.length === 0) {
         return { success: true, count: 0 };
@@ -145,12 +153,12 @@ export class ServerLogger {
         success: true,
         count: result.count,
       };
-    } catch (error) {
-      console.error("Failed to write batch logs:", error);
+    } catch {
+      console.error("Failed to write batch logs");
       return {
         success: false,
         count: 0,
-        errors: [(error as Error).message],
+        errors: ["Log batch write failed"],
       };
     }
   }

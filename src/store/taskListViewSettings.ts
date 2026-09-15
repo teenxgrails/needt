@@ -10,7 +10,12 @@ import {
 
 export type TaskListGroupBy = "project" | "status" | "none";
 export type TaskListColumn =
-  "project" | "deadline" | "duration" | "priority" | "status" | "energy";
+  | "project"
+  | "deadline"
+  | "duration"
+  | "priority"
+  | "status"
+  | "energy";
 
 interface TaskListViewSettings {
   // Sort settings

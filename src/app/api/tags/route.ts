@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
     const userId = auth.userId;
 
     const body = await request.json();
-    logger.debug("Received tag creation request", { body }, LOG_SOURCE);
+    logger.debug(
+      "Received tag creation request",
+      { hasColor: typeof body?.color === "string" },
+      LOG_SOURCE
+    );
 
     if (!body || typeof body.name !== "string" || !body.name.trim()) {
       logger.warn(
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
         {
           hasBody: !!body,
           nameType: typeof body?.name,
-          nameTrimmed: body?.name?.trim?.(),
+          hasName: Boolean(body?.name?.trim?.()),
         },
         LOG_SOURCE
       );
