@@ -1,7 +1,7 @@
 # Plan 11 — Task shape and starting friction
 
 **Status:** Backlog. Owner ideas captured 2026-08-23. Not implementation
-authorization — nothing here starts before L6 is stable (see `09-launch.md`).
+authorization — nothing here starts before L6 is stable (see `docs/_old/09-launch.md`).
 
 ## Origin
 
@@ -18,7 +18,7 @@ the most defensible behaviour, plus one parked on an unanswered design question.
 
 - Habits as a first-class entity — **not now**. The deferred L7 item "flexible
   habits and weekly focus targets" is unchanged and still deferred.
-- Streaks — **parked** behind the blocking question in T-3.
+- Streaks — **not built.** Habits count kept days out of the last 14 instead (T-3).
 - Progress counter and mini-entry — **accepted into backlog**, sequenced below.
 
 ---
@@ -80,6 +80,10 @@ prompt, not on the code.
 ---
 
 ## T-3 — Streaks (parked, one blocking question)
+
+> **Settled 2026-09-11 by the design port.** Habits ship as kept days out of the
+> last 14, never as a streak (`docs/handoff/design-reconciliation-2026-09-11.md`
+> item 8). The streak below stays unbuilt.
 
 Reference behaviour, 2026: Duolingo spends a streak freeze silently while the
 user is away; the user discovers the snowflake retroactively on the next open.
@@ -163,7 +167,7 @@ against real data, not in advance.
 
 **3. The bans are reopened — deliberately, and narrowly. Owner decision.**
 
-`docs/plans/10-design.md:38-43` bans "any effect that exists only to be seen",
+`docs/_old/10-design.md:38-43` bans "any effect that exists only to be seen",
 and this plan's Not-authorized list bans gamification surfaces. Both stand, with
 one carved exception, stated precisely so it cannot spread:
 
@@ -174,6 +178,11 @@ one carved exception, stated precisely so it cannot spread:
 > also called the sale flash "the only animated surface in the app"; that is no
 > longer true — see the wordmark exception in `/DESIGN.md`. Kept as the record of
 > why the exception was drawn this narrowly, not as a live permission.
+
+> **Reversed in part 2026-09-11.** The Claude Design port ships a category flame
+> driven by a `heat` field (`docs/handoff/design-reconciliation-2026-09-11.md`
+> item 7). Where that ruling and this section disagree, the ruling wins. The ban
+> on points, badges, leaderboards and streak UI still stands.
 
 - **Permitted:** a single transient animation fired by one event — an item
   actually sold and money booked. It plays once, it is short, it is the only

@@ -34,7 +34,7 @@ five days visible rather than seven.
 
 **5. Columns is the default calendar view, not Day.** Seven day columns of
 cards, sortable by AI, time or priority, with Overdue and No date pinned left.
-This is the clock-less mode that `docs/plans/10-design.md` lists as an
+This is the clock-less mode that `docs/_old/10-design.md` lists as an
 unbuilt D7 concept. It is built.
 
 **6. There are five themes and a drift.** Paper, Warm, Dim, Dark and System,
