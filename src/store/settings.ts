@@ -2,7 +2,11 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { logger } from "@/lib/logger";
-import { normalizeThemeMode } from "@/lib/theme";
+import {
+  DEFAULT_SYSTEM_THEME_PAIR,
+  normalizeSystemThemePair,
+  normalizeThemeMode,
+} from "@/lib/theme";
 
 import { Settings } from "@/types/settings";
 
@@ -57,6 +61,7 @@ interface SettingsStore extends Settings {
 const defaultSettings: Settings & { accounts: ConnectedAccount[] } = {
   user: {
     theme: "dark",
+    systemTheme: DEFAULT_SYSTEM_THEME_PAIR,
     defaultView: "week",
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     secondaryTimeZone: null,
@@ -145,13 +150,18 @@ export const useSettingsStore = create<SettingsStore>()(
           // Update local state
           const newSettings = { ...state.user, ...settings };
 
+          // The System pair is a client-only preference: UserSettings has no
+          // column for it, and PATCHing an unknown field fails the whole save.
+          const remoteSettings = { ...newSettings };
+          delete remoteSettings.systemTheme;
+
           // Save to database
           fetch("/api/user-settings", {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(newSettings),
+            body: JSON.stringify(remoteSettings),
           }).catch((error) => {
             logger.error(
               "Failed to save user settings to database",
@@ -522,6 +532,7 @@ export const useSettingsStore = create<SettingsStore>()(
             ...currentState.user,
             ...persisted.user,
             theme: normalizeThemeMode(persisted.user?.theme),
+            systemTheme: normalizeSystemThemePair(persisted.user?.systemTheme),
           },
         };
       },
