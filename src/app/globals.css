@@ -10,6 +10,38 @@
 @import "../styles/needt-themes.css";
 @import "../styles/needt-motion.css";
 
+@font-face {
+  /* 205TF Exposure — the display face and the wordmark's own. One axis, EXPO,
+     −100 to +100. The metrics are DUPLEXED: every axis position has the same
+     advance width, so nothing in a layout moves when the axis animates and no
+     width lock is needed anywhere.
+
+     The file's own name records say "Trial"; see public/fonts/README.md. The
+     owner holds the web licence and 205TF support confirmed this is the file.
+
+     No Cyrillic in the face, so the display serif never carries a translatable
+     string — month and weekday names stay in the sans. */
+  /* Two names, one file. The vendored `.font-display` rule asks for
+     "Exposure VAR" because that is what the prototype's own @font-face was
+     called; that rule is generated and must not be hand-edited, so the face
+     answers to both names instead. Without this the vendored rule falls through
+     to Georgia — silently, and Georgia has no axis, so every animation below
+     would run against a font that cannot move. */
+  font-family: "Exposure";
+  src: url("/fonts/ExposureVAR.woff2") format("woff2-variations");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Exposure VAR";
+  src: url("/fonts/ExposureVAR.woff2") format("woff2-variations");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
