@@ -1,3 +1,15 @@
+/* The new design's tokens, vendored from the Claude Design bundle by
+   `npm run tokens:sync`. They are scoped under `.needt-v2` and must stay that
+   way while the port is in progress: the design system declares --background,
+   --foreground, --border and --destructive as hex/oklch, while Tailwind reads
+   those same four names as HSL triplets from the shadcn block further down this
+   file. Unscoping them turns every shadcn utility transparent with no error.
+   The scope is removed, and the shadcn block deleted, in one commit once every
+   screen is ported. */
+@import "../styles/needt-ds-tokens.css";
+@import "../styles/needt-themes.css";
+@import "../styles/needt-motion.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

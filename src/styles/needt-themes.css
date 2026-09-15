@@ -1,0 +1,212 @@
+/* ========================================================================
+   Needt themes — VENDORED, DO NOT EDIT BY HAND.
+   Generated from needt-app/themes.css on 2026-09-11.
+   Regenerate with: npm run tokens:sync
+   
+   Holds the two themes the design system does not ship (paper, warm), the
+   orthogonal drift layer, the dark-ground --shadow-raised override, and shared
+   object CSS that must not be duplicated per shell.
+   ======================================================================== */
+/* THE FIFTH THEME AND THE DRIFT LAYER
+ *
+ * Two separate things, deliberately kept separate:
+ *
+ *   THEME is a choice the person made. Five of them — Paper, Warm, Dim, Dark
+ *   and System — and a theme never changes on its own.
+ *
+ *   DRIFT is a property of the day. It is one toggle that sits on top of
+ *   whichever theme is chosen, and it moves only things that carry no
+ *   meaning: the temperature of the paper, the top of the text ladder, the
+ *   volume of the looping animations, and — at night — which theme of the
+ *   pair is showing. The accent never drifts, because a coloured rail must
+ *   mean the same thing at 11:00 and at 21:00.
+ *
+ * Mixing the two into one list is the trap: a person would pick "Evening" at
+ * nine in the morning and get something strange. The names differ so the two
+ * cannot argue.
+ *
+ * WARM repeats the whole text and fill ladder rather than inheriting it. This
+ * is not duplication for its own sake — a custom property whose value contains
+ * var() is substituted where it is DECLARED, so a theme that sets only its
+ * base colours gets a ladder still derived from the light foreground. That bug
+ * is documented in the design system's own corrections; every new theme scope
+ * pays this price. Change an alpha in one block and you change it in all.
+ */
+
+/* === PAPER — the light default, named so a nested preview can ask for the
+   undrifted original: drift writes its three declarations inline on the shell,
+   and a bare `.app` descendant would inherit them.
+   It repeats the full ladder for the same reason .warm does, and for one more:
+   a paper thumbnail sitting inside a DARK shell inherits
+   --foreground-rgb: 249, 249, 249, so three declarations would leave it
+   drawing white bars on white paper. === */
+.needt-v2[data-theme="paper"] {
+  --background: #fcfdfe;
+  --surface-raised: #ffffff;
+  --foreground: #1a1c1e;
+  --foreground-rgb: 26, 28, 30;
+
+  --text-primary: rgba(var(--foreground-rgb), 1);
+  --text-secondary: rgba(var(--foreground-rgb), 0.85);
+  --text-tertiary: rgba(var(--foreground-rgb), 0.7);
+  --text-quaternary: rgba(var(--foreground-rgb), 0.55);
+  --text-muted: rgba(var(--foreground-rgb), 0.4);
+  --text-disabled: rgba(var(--foreground-rgb), 0.25);
+
+  --fill-1: rgba(var(--foreground-rgb), 0.02);
+  --fill-2: rgba(var(--foreground-rgb), 0.03);
+  --fill-3: rgba(var(--foreground-rgb), 0.04);
+  --fill-4: rgba(var(--foreground-rgb), 0.06);
+  --fill-5: rgba(var(--foreground-rgb), 0.08);
+  --fill-6: rgba(var(--foreground-rgb), 0.12);
+
+  --border: rgba(var(--foreground-rgb), 0.08);
+  --shadow-inset-ring: rgba(var(--foreground-rgb), 0.08) 0 0 0 1px inset;
+  --shadow-ring: rgba(var(--foreground-rgb), 0.08) 0 0 0 1px;
+  --shadow-ring-strong: rgba(var(--foreground-rgb), 0.12) 0 0 0 1px;
+  --canvas-veil: linear-gradient(180deg, rgba(var(--foreground-rgb), 0) 0%, rgba(var(--foreground-rgb), 0.02) 45%, rgba(var(--foreground-rgb), 0.05) 100%);
+
+  --toolbar-fill: rgba(250, 250, 250, 0.85);
+  --floating-fill: rgba(255, 255, 255, 0.72);
+}
+
+/* === WARM — cream paper. The same geometry, a warmer ground and a warmer
+   near-black, so the greys derived from it are warm too rather than cold greys
+   sitting on cream. === */
+.needt-v2[data-theme="warm"] {
+  --background: #f7f1e4;                 /* canvas, sidebar */
+  --surface-raised: #fffdf7;             /* card, sheet, popover */
+  --foreground: #221d16;                 /* all text and icons */
+  --foreground-rgb: 34, 29, 22;
+
+  --text-primary: rgba(var(--foreground-rgb), 1);
+  --text-secondary: rgba(var(--foreground-rgb), 0.85);
+  --text-tertiary: rgba(var(--foreground-rgb), 0.7);
+  --text-quaternary: rgba(var(--foreground-rgb), 0.55);
+  --text-muted: rgba(var(--foreground-rgb), 0.4);
+  --text-disabled: rgba(var(--foreground-rgb), 0.25);
+
+  --fill-1: rgba(var(--foreground-rgb), 0.02);
+  --fill-2: rgba(var(--foreground-rgb), 0.03);
+  --fill-3: rgba(var(--foreground-rgb), 0.04);
+  --fill-4: rgba(var(--foreground-rgb), 0.06);
+  --fill-5: rgba(var(--foreground-rgb), 0.08);
+  --fill-6: rgba(var(--foreground-rgb), 0.12);
+
+  --border: rgba(var(--foreground-rgb), 0.08);
+  --ring-accent: rgba(var(--accent-rgb), 0.4);
+  --fill-accent: rgba(var(--accent-rgb), 0.12);
+  --fill-accent-strong: rgba(var(--accent-rgb), 0.24);
+  --fill-info: rgba(var(--info-rgb), 0.12);
+  --fill-success: rgba(var(--success-rgb), 0.12);
+  --fill-destructive: rgba(var(--destructive-rgb), 0.12);
+  --fill-destructive-strong: rgba(var(--destructive-rgb), 0.24);
+  --ring-destructive: rgba(var(--destructive-rgb), 0.4);
+
+  --shadow-inset-ring: rgba(var(--foreground-rgb), 0.08) 0 0 0 1px inset;
+  --shadow-ring: rgba(var(--foreground-rgb), 0.08) 0 0 0 1px;
+  --shadow-ring-strong: rgba(var(--foreground-rgb), 0.12) 0 0 0 1px;
+  --shadow-focus: rgba(var(--accent-rgb), 0.4) 0 0 0 2px inset;
+  --shadow-focus-destructive: rgba(var(--destructive-rgb), 0.4) 0 0 0 2px inset;
+  --canvas-veil: linear-gradient(180deg, rgba(var(--foreground-rgb), 0) 0%, rgba(var(--foreground-rgb), 0.02) 45%, rgba(var(--foreground-rgb), 0.05) 100%);
+
+  --toolbar-fill: rgba(255, 253, 247, 0.85);
+  --floating-fill: rgba(255, 253, 247, 0.74);
+}
+
+/* === DRIFT ===
+ *
+ * The engine writes --background, --surface-raised and --text-primary inline on
+ * the shell, interpolated between the theme's own pair and its evening pair, so
+ * there is nothing to fight over: it overrides three declarations and leaves
+ * the ladder alone. Everything else drift does is here.
+ *
+ * The transition is 90s. It is not a duration anybody waits out — it is what
+ * makes each one-minute step invisible, so the paper is never caught changing.
+ * The whole sunset therefore reads as half an hour of nothing happening. */
+.needt-v2[data-drift="on"] {
+  transition: background-color 90s linear, color 90s linear;
+}
+.needt-v2[data-drift="on"] .theme-drifts,
+.needt-v2[data-drift="on"] .theme-drifts {
+  transition: background-color 90s linear, color 90s linear, box-shadow 90s linear;
+}
+
+/* Animation volume. Not a mute — the loops keep running, they simply stop
+   asking for attention as the room gets dark. */
+.needt-v2[data-drift="on"][data-drift-quiet="1"] .needt-mark.is-breathing { animation-duration: 8s; }
+.needt-v2[data-drift="on"][data-drift-quiet="1"] .ew-leans { animation-duration: 34s; }
+.needt-v2[data-drift="on"][data-drift-quiet="1"] .focus-aura { animation-duration: 11s; opacity: 0.7; }
+.needt-v2[data-drift="on"][data-drift-quiet="1"] .focus-live { animation-duration: 11s; }
+.needt-v2[data-drift="on"][data-drift-quiet="1"] .flame i { animation-duration: 2.4s; }
+
+/* Reduced motion outranks drift: if the person asked for no movement, a slow
+   colour crawl is still movement. */
+@media (prefers-reduced-motion: reduce) {
+  .needt-v2[data-drift="on"],
+.needt-v2[data-drift="on"] .theme-drifts,
+.needt-v2[data-drift="on"] .theme-drifts { transition: none; }
+}
+
+
+/* === RAISED OBJECTS ON A DARK GROUND ===
+ *
+ * On paper an object reads as raised because a light surface sits above the
+ * shadow it casts. On a dark ground that mechanism is gone: a black shadow
+ * under a dark-grey surface separates nothing, and the stock dark stack rings
+ * the object in white at one even brightness — which is precisely what a flat
+ * sticker looks like.
+ *
+ * Real objects on dark grounds are read by their own EDGES: the top bevel
+ * catches the light, the underside falls into shadow. So the dark stack is
+ * rebuilt as a directional bevel — bright top, dark bottom, faint containing
+ * ring — over deepened cast layers. One override in the theme layer, so every
+ * raised control on every screen changes together, on both shells.
+ */
+.needt-v2[data-theme="dark"],
+.needt-v2[data-theme="dim"] {
+  --shadow-raised:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    rgba(0, 0, 0, 0.42) 0 1px 1px 0,
+    rgba(0, 0, 0, 0.34) 0 2px 3px 0,
+    rgba(0, 0, 0, 0.3) 0 5px 8px -2px;
+  --shadow-raised-hover:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    rgba(0, 0, 0, 0.46) 0 1px 1px 0,
+    rgba(0, 0, 0, 0.38) 0 3px 5px 0,
+    rgba(0, 0, 0, 0.34) 0 8px 14px -3px;
+  /* Pressed: the bevel inverts — the top edge goes into shadow and the object
+     sits down into the page, which is what pressing something looks like. */
+  --shadow-raised-pressed:
+    inset 0 2px 3px 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+
+/* An outline glyph inside a filled tile runs heavier than it does in a nav
+   row, so project marks and source marks read at the same weight. */
+.needt-v2 .rb-tile-glyph svg { stroke-width: 2.5; }
+/* THE ENTRY. The one thing on a task you press, so the one thing built as a
+   control: the raised default button, which answers the pointer with the
+   accent and says what pressing it does. Both labels share a grid cell, so the
+   opacity pair below is what keeps one of them hidden — without it they
+   render on top of each other. */
+.needt-v2 .rb-entry { color: var(--text-primary); background: var(--surface-raised); box-shadow: var(--shadow-raised);
+  transition: box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease; }
+.needt-v2 .rb-entry .rb-arrow { color: var(--rb-ink); transition: color 0.15s ease, transform 0.15s ease; }
+.needt-v2 .rb-entry .rb-cost { color: var(--text-tertiary); transition: color 0.15s ease; }
+.needt-v2 .rb-entry .rb-rest { opacity: 1; transition: opacity 0.15s ease; }
+.needt-v2 .rb-entry .rb-hot { opacity: 0; transition: opacity 0.15s ease; }
+.needt-v2 .rb-entry:hover { background: color-mix(in oklab, var(--accent) 12%, var(--surface-raised)); color: var(--accent); box-shadow: var(--shadow-raised-hover); }
+.needt-v2 .rb-entry:hover .rb-arrow { color: var(--accent); transform: translateX(2px); }
+.needt-v2 .rb-entry:hover .rb-cost { color: color-mix(in oklab, var(--accent) 70%, var(--text-tertiary)); }
+.needt-v2 .rb-entry:hover .rb-rest { opacity: 0; }
+.needt-v2 .rb-entry:hover .rb-hot { opacity: 1; }
+.needt-v2 .rb-entry:active { box-shadow: var(--shadow-inset-ring); }
+
+@media (prefers-reduced-motion: reduce) { .needt-v2 .rb-entry,
+.needt-v2 .rb-entry * { transition: none; } .needt-v2 .rb-entry:hover .rb-arrow { transform: none; } }

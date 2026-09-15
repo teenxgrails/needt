@@ -32,13 +32,15 @@
     "check:collaboration-runtime": "node scripts/check-collaboration-runtime.mjs",
     "check:ui-contracts": "node scripts/check-ui-contracts.mjs",
     "prisma:generate": "prisma generate",
+    "tokens:sync": "node scripts/sync-design-tokens.mjs",
     "prisma:studio": "prisma studio",
     "clean": "rm -rf .next node_modules",
     "db:up": "docker compose up db -d",
     "start:prod": "infisical run --token=\"$INFISICAL_TOKEN\" --projectId=\"$PROJECT_ID\" --env=\"$INFISICAL_SECRET_ENV\" --domain=\"$INFISICAL_API_URL\" -- next start",
     "prisma:update": "infisical run --token=\"$INFISICAL_TOKEN\" --projectId=\"$PROJECT_ID\" --env=\"$INFISICAL_SECRET_ENV\" --domain=\"$INFISICAL_API_URL\" -- npx prisma generate && infisical run --token=\"$INFISICAL_TOKEN\" --projectId=\"$PROJECT_ID\" --env=\"$INFISICAL_SECRET_ENV\" --domain=\"$INFISICAL_API_URL\" -- npx prisma migrate deploy",
     "docker:publish": "docker build -t ghcr.io/teenxgrails/needt:main -f docker/production/Dockerfile . && docker push ghcr.io/teenxgrails/needt:main",
-    "prepare": "husky"
+    "prepare": "husky",
+    "tokens:check": "node scripts/check-design-tokens.mjs"
   },
   "dependencies": {
     "@auth/core": "^0.41.3",
