@@ -1,7 +1,15 @@
 # 09 — Public launch track
 
-**Status:** active. This is the governing plan until Needt serves real users on
-`use.needt.app`.
+> **Superseded for sequencing (2026-08-24.)** The governing plan is now
+> [12 — Remaining work to the first paying user](12-remaining-work.md).
+> L0.1–L0.4 are done: `codex/sol-s11-contracts` and
+> `codex/terra-t8-product-ui` are merged into `origin/main`, the Figma capture
+> script is out of `src/app/layout.tsx`, and web, worker and collaboration all
+> report `e93d61a`. L1.2 (fail-closed rate limiting) and L1.5 (backups) are done
+> in part. Read this file for what a phase _means_; read plan 12 for what is
+> left.
+
+**Status:** reference. This was the governing plan until 2026-08-24.
 
 **Goal:** take the current green release from "locally verified" to "real paying
 users signing up on production", then resume feature work.
@@ -76,7 +84,7 @@ The primary checkout carries changes that must never reach a production image.
 
 - **`src/app/layout.tsx` — the Figma capture script is a launch blocker.**
   `https://mcp.figma.com/mcp/html-to-design/capture.js` currently loads
-  `afterInteractive` on *every* page, including authenticated ones. Shipping a
+  `afterInteractive` on _every_ page, including authenticated ones. Shipping a
   third-party script into authenticated Needt sessions is unacceptable. Gate it
   behind an explicit dev-only condition (`process.env.NODE_ENV !== "production"`
   **and** an opt-in env flag such as `NEEDT_FIGMA_CAPTURE=1`), so the production
@@ -284,7 +292,7 @@ exist; T1 flagged that the copy needs owner review before release.
   controller identity, hosting jurisdiction, subprocessors (Coolify VPS, Resend,
   Sentry, Creem, Google, Microsoft, the AI provider), retention periods.
 - Implement account deletion and data export as a user-facing flow, honoring the
-  archive/tombstone semantics from S2 — deletion of an *account* must actually
+  archive/tombstone semantics from S2 — deletion of an _account_ must actually
   remove personal data even though object deletion is soft.
 - Confirm the AI corpus retention rules stated in `NEXT_AGENT.md` are enforced in
   code: opt-out respected, personal workspace only, shared workspaces/mail/
@@ -357,6 +365,11 @@ its own contract-then-UI pair, in this order:
 4. Flexible habits and weekly focus targets on the deterministic scheduler.
 5. Meeting-note proposals requiring explicit approval before mutations.
 
+Plan [11 — Task shape and starting friction](11-task-model.md) queues here too:
+T-1 (progress counter and part-cut) is a self-contained release that may run
+alongside the list above; T-2 (mini-entry) is gated on T-1 plus a prompt-quality
+check; T-3 (streaks) is blocked on an open design question and does not ship.
+
 Still not authorized: a new AI scheduler, seat billing, cross-workspace views,
 third-party document storage, physical deletion of user content, read receipts,
 team snippets, Notion-style automation, portfolio management, audio
@@ -395,11 +408,11 @@ appearance — do not retrofit effects speculatively.
 
 ## Sequencing summary
 
-| Phase | Tasks | Gate to proceed |
-|-------|-------|-----------------|
-| Unblock | L0.1 → L0.2 → L0.3 → L0.4 | One green SHA, no open handoff |
-| Harden | L1 ∥ L2 ∥ L3 ∥ L4 | All four green; L1.7 checklist with the owner |
-| Rehearse | L5 | Staging rehearsal passed once, rollback proven |
-| Launch | owner deploys → L6 | Production stable, alerting live |
-| Grow | L7 | One week, no open P0/P1 |
-| Design | L8 | Owner decides direction |
+| Phase    | Tasks                     | Gate to proceed                                |
+| -------- | ------------------------- | ---------------------------------------------- |
+| Unblock  | L0.1 → L0.2 → L0.3 → L0.4 | One green SHA, no open handoff                 |
+| Harden   | L1 ∥ L2 ∥ L3 ∥ L4         | All four green; L1.7 checklist with the owner  |
+| Rehearse | L5                        | Staging rehearsal passed once, rollback proven |
+| Launch   | owner deploys → L6        | Production stable, alerting live               |
+| Grow     | L7                        | One week, no open P0/P1                        |
+| Design   | L8                        | Owner decides direction                        |

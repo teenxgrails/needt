@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Wordmark: added `ExposureWordmark`, the variable-font mark driven by the
+  now-licensed Exposure typeface's `EXPO` axis — develop-in on mount, an idle
+  breathe (with an optional pulse burst), a pointer-driven torch, and a busy
+  state for the scheduler. Not yet wired into the shell, which still renders
+  the SVG `Wordmark`; see `src/components/needt/wordmark/`.
+- Themes: five to choose from instead of three — Paper, Warm, Dim and Dark, plus
+  System. System is now a pair rather than a mode: you choose which theme fills
+  the light half of the OS preference and which fills the dark half. A saved
+  Light becomes Paper and a saved Graphite becomes Dim, so nothing has to be
+  picked again.
+- Themes: the pre-paint script that stops the flash of the wrong theme is now
+  generated from the same function the app itself uses, instead of being a copy
+  of it kept in step by hand. The two had already drifted — the script never
+  learned to set the `data-theme` attribute the running app had been setting.
+
 - Task editor: the dialog is 840x620 instead of 960x767, and its header row is
   shorter. The old size was set by the screen rather than by the content — the
   field column ran out well before the bottom edge and the description area held
