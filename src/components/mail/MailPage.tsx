@@ -784,12 +784,33 @@ export function MailPage() {
           </div>
         ) : (
           <div className="grid h-full place-items-center px-6 text-center">
-            <div>
+            <div className="max-w-xs">
               <MailOpen className="mx-auto mb-3 h-8 w-8 text-[var(--text-muted)]" />
-              <p className="text-[13px] font-medium">Select a message</p>
-              <p className="mt-1 text-[12px] text-[var(--text-muted)]">
-                Its body is fetched securely when you open it.
-              </p>
+              {accounts.length ? (
+                <>
+                  <p className="text-[13px] font-medium">Select a message</p>
+                  <p className="mt-1 text-[12px] text-[var(--text-muted)]">
+                    Its body is fetched securely when you open it.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-[13px] font-medium">No mail yet</p>
+                  <p className="mt-1 text-[12px] leading-5 text-[var(--text-muted)]">
+                    Connect Gmail, Outlook or any IMAP account and your mail
+                    lands here. Message bodies are fetched only when you open
+                    them.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => setConnectOpen(true)}
+                  >
+                    Connect mail
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

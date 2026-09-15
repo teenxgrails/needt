@@ -74,6 +74,10 @@ export function ProjectWorkspace() {
   const [archivedOpen, setArchivedOpen] = useState(false);
   const [stageName, setStageName] = useState("");
   const [stageSaving, setStageSaving] = useState(false);
+  // The project store starts at loading:false, so `!loading && no projects` is
+  // true before the first fetch resolves. Without this flag a user who has
+  // projects is told they have none on every mount.
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
 
   const activeProjects = useMemo(
     () => projects.filter((project) => project.status === ProjectStatus.ACTIVE),
@@ -110,7 +114,7 @@ export function ProjectWorkspace() {
   }, []);
 
   useEffect(() => {
-    void fetchProjects();
+    void fetchProjects().finally(() => setProjectsLoaded(true));
     void fetchTags();
   }, [fetchProjects, fetchTags]);
 
@@ -228,6 +232,19 @@ export function ProjectWorkspace() {
         blocker.blockerTask?.status !== TaskStatus.COMPLETED
     ).length ?? 0;
   const progress = detail?.progress ?? selectedSummary?.progress ?? 0;
+
+  if (!projectsLoaded && activeProjects.length === 0) {
+    return (
+      <div
+        className="flex min-h-[calc(100dvh-68px)] items-center justify-center px-5 lg:min-h-dvh"
+        aria-busy="true"
+      >
+        <p className="text-[13px] text-[var(--text-muted)]">
+          Loading projects…
+        </p>
+      </div>
+    );
+  }
 
   if (!loading && activeProjects.length === 0) {
     return (
