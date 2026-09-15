@@ -46,15 +46,15 @@ explicit exceptions.
 
 `npm run check:ui-contracts` protects the release-level UI invariants: one
 picker, flat Focus, isolated Today scrollers, draggable assistant affordances,
-the notification facade, Graphite migration, and the stable GHCR image name.
+the notification facade, Dim migration, and the stable GHCR image name.
 
 ## Shared UI contracts
 
 `src/components/ui/needt-picker.tsx` is the only product picker. It covers
 plain, searchable, and creatable single-select flows and switches from an
-anchored desktop popover to a mobile bottom sheet. Theme IDs are `light`,
-`graphite`, `dark`, and `system`; persisted `gray` is normalized to `graphite`
-when read.
+anchored desktop popover to a mobile bottom sheet. Theme IDs are `paper`,
+`warm`, `dim`, `dark`, and `system`; persisted `gray` and `graphite` are
+normalized to `dim` when read.
 
 Calendar positioning is centralized in
 `src/lib/calendar-scroll-policy.ts`; period arithmetic and interaction guards

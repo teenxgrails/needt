@@ -78,8 +78,8 @@ Owned by Codex. Steps and rules: [`docs/handoff/CODEX-NEXT.md`](../handoff/CODEX
 3. **Done in this commit:** apply the 2026-09-15 docs refresh, including this file.
 4. Widen the task id from `number` to `string` and delete `hashTaskId`.
 5. Apply the migration to the local container only. Never to Neon.
-6. Swap the screens in place, one per commit, deleting each old tree, and
-   FullCalendar with the calendar.
+6. Swap the screens in place, one per commit, deleting each old tree and the
+   legacy calendar implementation with the calendar tree.
 
 ### B — Blocking the first paying user
 

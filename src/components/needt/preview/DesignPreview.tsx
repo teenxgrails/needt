@@ -8,9 +8,10 @@
  *
  * `data-theme-pinned` keeps the app's own theme from being mirrored onto this
  * scope, so the picker below is what decides the ground. `.needt-v2` is what
- * scopes the vendored tokens and the vendored motion layer; nothing inside
- * this element may reach for `src/components/ui/**`, which reads a different
- * token set.
+ * scopes the vendored tokens and the vendored motion layer. The shared
+ * `NeedtPicker` is the deliberate exception to the otherwise separate UI
+ * primitives: the product has one picker, and the port supplies its trigger
+ * class inside this scope.
  *
  * A NOTE FOR ANYONE VERIFYING MOTION FROM AN AUTOMATED BROWSER: the Claude
  * Code preview pane injects `data-animations="off"` on <html>, and

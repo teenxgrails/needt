@@ -8,6 +8,8 @@
  */
 import * as React from "react";
 
+import { NeedtPicker } from "@/components/ui/needt-picker";
+
 import {
   addCalendarDays,
   calendarDayDifference,
@@ -321,25 +323,17 @@ export function ColumnsScreen({
   return (
     <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: 11 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "none" }}>
-        <select
-          value={sort}
-          onChange={(event) => setSort(event.target.value as SortMode)}
-          style={{
-            height: 30,
-            padding: "0 8px",
-            borderRadius: "var(--radius-md)",
-            border: "1px solid var(--border)",
-            background: "var(--surface-raised)",
-            color: "var(--text-primary)",
-            font: "var(--type-ui)",
-          }}
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <span className="nt-select" style={{ width: 160 }}>
+          <NeedtPicker
+            value={sort}
+            options={SORT_OPTIONS}
+            mode="plain"
+            onValueChange={(value) => setSort(value as SortMode)}
+            ariaLabel="Sort columns"
+            triggerVariant="field"
+            className="nt-select-trigger"
+          />
+        </span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 2 }}>
           <IconButton
             label="Earlier days"

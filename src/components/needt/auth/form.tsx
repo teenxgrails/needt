@@ -11,15 +11,12 @@
  * six times. They are local to `auth/` — Settings will draw its own when it
  * is built, the same way this file does now.
  *
- * `Select` is a native `<select>` wearing `.nt-select-trigger`, not a full
- * listbox: the one interactive listbox in the app
- * (`src/components/ui/needt-picker.tsx`) lives outside `.needt-v2` and is
- * off-limits here. A native control is a deliberate simplification for two
- * minor onboarding fields, not a second picker.
+ * `Select` adapts the shared NeedtPicker to the port's form-row classes, so the
+ * product keeps one picker implementation without repeating field markup.
  */
 import * as React from "react";
 
-import { TriggerCaret } from "../shell/chrome";
+import { NeedtPicker } from "@/components/ui/needt-picker";
 
 export function Row({
   label,
@@ -82,31 +79,15 @@ export function Select({
 }) {
   return (
     <span className="nt-select" style={width ? { width } : undefined}>
-      <select
-        aria-label={label}
-        className="nt-select-trigger"
+      <NeedtPicker
         value={value}
-        onChange={(event) => onChange(event.target.value)}
-        style={{ appearance: "none", paddingRight: 28 }}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <span
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          right: 8,
-          top: "50%",
-          transform: "translateY(-50%)",
-          pointerEvents: "none",
-        }}
-      >
-        <TriggerCaret />
-      </span>
+        options={[...options]}
+        mode="plain"
+        onValueChange={onChange}
+        ariaLabel={label}
+        triggerVariant="field"
+        className="nt-select-trigger"
+      />
     </span>
   );
 }

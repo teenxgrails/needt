@@ -92,13 +92,14 @@ One screen per commit. For each:
 | Route | New | Delete |
 | --- | --- | --- |
 | `/today` | `home/Home` | `src/components/today/**` |
-| `/calendar` | `calendar/CalendarScreen` | `src/components/calendar/**`, FullCalendar deps, the `.fc` blocks in `globals.css` |
+| `/calendar` | `calendar/CalendarScreen` | `src/components/calendar/**`, `@fullcalendar/*` dependencies, the `.fc` blocks in `globals.css` |
 | `/tasks`, `/projects` | `workspace/WorkspaceScreen` | `src/components/tasks/**`, `src/components/projects/**` |
 | `/pages` list | `docs/DocsScreen` | only the list view; keep the editor |
 | `/settings` | `settings/SettingsScreen` | old panels once each is covered |
 
 Keep `/design-preview` until the last screen is swapped, then remove it and its
-middleware line. When FullCalendar goes, drop it from the stack line in
+middleware line. When the legacy calendar dependency goes, drop it from the
+stack line in
 `CLAUDE.md` and from the branding exception in `AGENTS.md`.
 
 ## Rules that apply to every step

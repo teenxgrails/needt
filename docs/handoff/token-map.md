@@ -89,12 +89,13 @@ Same for `--surface-control` / `--control-bg` / `--menu-item-hover` /
 ## Groups not mapped here
 
 `globals.css` also carries `--primitive-*` (40 tokens, the raw palette the old
-semantic layer was built on), `--fc-*` (24, FullCalendar overrides), `--calendar-*`
+semantic layer was built on), `--fc-*` (24, legacy calendar-library overrides), `--calendar-*`
 (23), `--space-*` (20, the Pages/space surfaces), `--chart-*` and `--aurora-*`.
 
 - **`--primitive-*` dies with the semantic layer.** Nothing outside `globals.css`
   should read it.
-- **`--fc-*` and `--calendar-*` stay for now.** FullCalendar needs its own
+- **`--fc-*` and `--calendar-*` stay for now.** The legacy calendar library needs
+  its own
   variables; retarget them at the new tokens rather than deleting them.
 - **`--space-*` is a separate surface** (Pages). Migrate with that screen, not
   before.

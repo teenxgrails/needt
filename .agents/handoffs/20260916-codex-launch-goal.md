@@ -3,7 +3,7 @@ id: 20260916-codex-launch-goal
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-15T23:24:21Z
+updated: 2026-09-15T23:37:15Z
 objective: Complete the owner-approved launch goal without production, Neon, deploy, or protected-branch mutations.
 ---
 
@@ -17,6 +17,9 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 
 - Phase 1 steps 1–4 were completed through merge `ca2d034` with required gates green.
 - Applied the docs refresh as `6ff1683`, reconciling its stale pre-merge facts and preserving newer evidence in the two drifted handoffs.
+- Reconciled the merged UI/branding gates with the scoped port: the canonical
+  `.needt-v2` accent is allowed only in port components, both native selects now
+  use `NeedtPicker`, and the theme contract checks `gray|graphite → dim`.
 
 ## Working state
 
@@ -26,7 +29,13 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 ## Verification
 
 - Passed for `6ff1683`: `npm run type-check`; `npm run lint`; `npm run tokens:check`; `npm run test:unit` (194 suites passed, 1 skipped; 1282 tests passed, 1 skipped); `npm run check:agent-handoffs`; `git diff --check`; no live references to archived plan paths.
-- Not run / still required: Phase 1 draft-PR gates; all phase-specific and final Definition of Done gates.
+- Passed for the draft-PR boundary: `npm run type-check`; `npm run lint`;
+  `npm run tokens:check`; `npm run test:unit` (194 suites passed, 1 skipped;
+  1282 tests passed, 1 skipped); `npm run build`; `npm run check:ui-contracts`;
+  `npm run check:branding`; `npm run check:agent-handoffs`.
+- Visual: the Calendar columns picker passed as a desktop popover and a 390px
+  mobile bottom sheet; all three sort options were visible and selectable.
+- Not run / still required: all phase-specific and final Definition of Done gates.
 
 ## Decisions and constraints
 
@@ -42,4 +51,5 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 
 ## Next action
 
-- Run the remaining draft-PR gates, push `codex/design-completion`, and open the draft PR against `main` without merging it.
+- Commit the gate reconciliation, push `codex/design-completion`, and open the
+  draft PR against `main` without merging it.

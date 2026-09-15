@@ -97,6 +97,9 @@ for (const file of productSources) {
   }
 
   for (const legacyToken of LEGACY_TOKEN_NAMES) {
+    if (legacyToken === "accent" && name.startsWith("src/components/needt/")) {
+      continue;
+    }
     const escaped = legacyToken.replaceAll("-", "\\-");
     forbidPattern(
       name,
@@ -245,9 +248,9 @@ requireText(
   await source("docker-compose.yml")
 );
 requireText(
-  "src/lib/theme.ts",
-  'if (theme === "gray") return "graphite"',
-  await source("src/lib/theme.ts")
+  "src/lib/theme-init.ts",
+  'if (value === "gray" || value === "graphite") return "dim";',
+  await source("src/lib/theme-init.ts")
 );
 
 if (failures.length) {
