@@ -9,20 +9,23 @@ import React, {
 
 import { animateThemeTransition } from "@/components/ui/animated-theme-toggler";
 
-import { getThemeClassNames, resolveThemeMode } from "@/lib/theme";
+import { DEFAULT_SYSTEM_THEME_PAIR } from "@/lib/theme";
+import { applyThemeToRoot } from "@/lib/theme-init";
 
 import { useSettingsStore } from "@/store/settings";
 
-import { ThemeMode } from "@/types/settings";
+import { SystemThemePair, ThemeMode } from "@/types/settings";
 
 type ThemeContextType = {
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
+  /** Which theme fills each half of the OS preference when theme is "system". */
+  systemTheme: SystemThemePair;
+  setSystemTheme: (pair: SystemThemePair) => void;
 };
 
 type ThemeProviderProps = {
   children: React.ReactNode;
-  attribute?: string;
   forcedTheme?: ThemeMode;
   enableSystem?: boolean;
 };
@@ -39,7 +42,6 @@ export function useTheme() {
 
 export function ThemeProvider({
   children,
-  attribute = "class",
   forcedTheme,
   enableSystem = true,
 }: ThemeProviderProps) {
@@ -47,79 +49,62 @@ export function ThemeProvider({
 
   // Use forcedTheme if provided, otherwise use user theme
   const currentTheme = forcedTheme || user.theme;
+  const systemTheme = user.systemTheme ?? DEFAULT_SYSTEM_THEME_PAIR;
 
-  // Function to apply theme to the DOM
+  // Applying a theme is `applyThemeToRoot` and nothing else: the same function
+  // the pre-paint script in layout.tsx is serialised from, so the two cannot
+  // resolve a theme differently.
   const applyTheme = useCallback(
-    (theme: ThemeMode) => {
-      const root = window.document.documentElement;
-
-      root.classList.remove(
-        "light",
-        "dark",
-        "theme-gray",
-        "theme-graphite",
-        "theme-dark"
-      );
-
-      if (attribute !== "class") {
-        root.removeAttribute(attribute);
-      }
-
-      const resolvedTheme = resolveThemeMode(
+    (theme: ThemeMode, pair: SystemThemePair) => {
+      applyThemeToRoot(window.document.documentElement, {
         theme,
-        enableSystem &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches
-      );
-
-      // Graphite and Dark both use Tailwind's dark variants. Semantic classes
-      // select the palette without duplicating component styles.
-      root.classList.add(...getThemeClassNames(resolvedTheme));
-
-      if (attribute !== "class") {
-        root.setAttribute(attribute, resolvedTheme);
-      }
+        systemTheme: pair,
+        systemPrefersDark: enableSystem
+          ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          : false,
+      });
     },
-    [attribute, enableSystem]
+    [enableSystem]
   );
 
   // Apply theme when it changes
   useEffect(() => {
-    if (forcedTheme) {
-      applyTheme(forcedTheme);
-    } else {
-      applyTheme(user.theme);
-    }
-  }, [user.theme, forcedTheme, applyTheme]);
+    applyTheme(forcedTheme ?? user.theme, systemTheme);
+  }, [user.theme, systemTheme, forcedTheme, applyTheme]);
 
   // Listen for system theme changes if system preference is enabled
   useEffect(() => {
-    if (
-      forcedTheme ||
-      !enableSystem ||
-      (forcedTheme ? forcedTheme : user.theme) !== "system"
-    )
-      return;
+    if (forcedTheme || !enableSystem || currentTheme !== "system") return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     const handleChange = () => {
-      applyTheme("system");
+      applyTheme("system", systemTheme);
     };
 
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [user.theme, forcedTheme, enableSystem, applyTheme]);
+  }, [currentTheme, systemTheme, forcedTheme, enableSystem, applyTheme]);
 
   const setTheme = (theme: ThemeMode) => {
     if (theme === currentTheme) return;
     animateThemeTransition(() => {
       updateUserSettings({ theme });
-      if (!forcedTheme) applyTheme(theme);
+      if (!forcedTheme) applyTheme(theme, systemTheme);
+    });
+  };
+
+  const setSystemTheme = (pair: SystemThemePair) => {
+    animateThemeTransition(() => {
+      updateUserSettings({ systemTheme: pair });
+      if (!forcedTheme) applyTheme(currentTheme, pair);
     });
   };
 
   return (
-    <ThemeContext.Provider value={{ theme: currentTheme, setTheme }}>
+    <ThemeContext.Provider
+      value={{ theme: currentTheme, setTheme, systemTheme, setSystemTheme }}
+    >
       {children}
     </ThemeContext.Provider>
   );

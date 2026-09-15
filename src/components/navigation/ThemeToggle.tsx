@@ -1,6 +1,13 @@
 "use client";
 
-import { HiDesktopComputer, HiMoon, HiSun } from "react-icons/hi";
+import { IconType } from "react-icons";
+import {
+  HiDesktopComputer,
+  HiMoon,
+  HiOutlineMoon,
+  HiOutlineSun,
+  HiSun,
+} from "react-icons/hi";
 
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Button } from "@/components/ui/button";
@@ -10,6 +17,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+import { THEME_MODES, THEME_MODE_LABELS } from "@/lib/theme";
+
+import { ThemeMode } from "@/types/settings";
+
+const THEME_ICONS: Record<ThemeMode, IconType> = {
+  paper: HiOutlineSun,
+  warm: HiSun,
+  dim: HiOutlineMoon,
+  dark: HiMoon,
+  system: HiDesktopComputer,
+};
 
 export function ThemeToggle() {
   const { setTheme } = useTheme();
@@ -24,18 +43,15 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          <HiSun className="mr-2 h-4 w-4" />
-          <span>Light</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
-          <HiMoon className="mr-2 h-4 w-4" />
-          <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
-          <HiDesktopComputer className="mr-2 h-4 w-4" />
-          <span>System</span>
-        </DropdownMenuItem>
+        {THEME_MODES.map((mode) => {
+          const Icon = THEME_ICONS[mode];
+          return (
+            <DropdownMenuItem key={mode} onClick={() => setTheme(mode)}>
+              <Icon className="mr-2 h-4 w-4" />
+              <span>{THEME_MODE_LABELS[mode]}</span>
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
