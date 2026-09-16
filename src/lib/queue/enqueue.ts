@@ -1,7 +1,9 @@
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import {
-  getCalendarSyncQueue,
+  getAccountLifecycleQueue,
   getBugReportSyncQueue,
+  getCalendarSyncQueue,
   getMailSyncQueue,
   getReminderQueue,
   getRescheduleQueue,
@@ -90,11 +92,15 @@ export async function removeMailSyncSchedule(accountId: string) {
 
 export async function enqueueBugReportSync(reportId: string) {
   if (await skipWhenUnconfigured("bug-report-sync")) return null;
-  return getBugReportSyncQueue().add("sync-report", { reportId }, {
-    jobId: `bug-report-sync-${reportId}`,
-    attempts: 6,
-    backoff: { type: "exponential", delay: 30_000 },
-  });
+  return getBugReportSyncQueue().add(
+    "sync-report",
+    { reportId },
+    {
+      jobId: `bug-report-sync-${reportId}`,
+      attempts: 6,
+      backoff: { type: "exponential", delay: 30_000 },
+    }
+  );
 }
 
 export async function enqueueReminderDelivery(reminderId: string) {
@@ -106,6 +112,31 @@ export async function enqueueReminderDelivery(reminderId: string) {
       jobId: `reminder-${reminderId}`,
       attempts: 6,
       backoff: { type: "exponential", delay: 30_000 },
+    }
+  );
+}
+
+export async function enqueueAccountExport(requestId: string) {
+  if (await skipWhenUnconfigured("account-export")) return null;
+  return getAccountLifecycleQueue().add(
+    "generate-account-export",
+    { kind: "export", requestId },
+    { jobId: `account-export-${requestId}` }
+  );
+}
+
+export async function enqueueAccountDeletion(
+  requestId: string,
+  scheduledFor: Date
+) {
+  if (await skipWhenUnconfigured("account-deletion")) return null;
+  const delay = Math.max(0, scheduledFor.getTime() - newDate().getTime());
+  return getAccountLifecycleQueue().add(
+    "delete-account",
+    { kind: "delete", requestId },
+    {
+      jobId: `account-deletion-${requestId}-${scheduledFor.getTime()}`,
+      delay,
     }
   );
 }
