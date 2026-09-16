@@ -74,14 +74,15 @@ model Session {
 }
 
 model User {
-  id                     String                  @id @default(cuid())
-  isActive               Boolean                 @default(true)
+  id                     String                    @id @default(cuid())
+  isActive               Boolean                   @default(true)
   name                   String?
-  email                  String?                 @unique
+  email                  String?                   @unique
   emailVerified          DateTime?
   image                  String?
-  role                   String                  @default("user") // Possible values: "user", "admin"
+  role                   String                    @default("user") // Possible values: "user", "admin"
   subscription           Subscription?
+  lifetimeHold           LifetimeHold?
   accounts               Account[]
   sessions               Session[]
   calendars              CalendarFeed[]
@@ -129,12 +130,12 @@ model User {
   aiPageProposals        AiPageChangeProposal[]
   pageAssets             PageAsset[]
   pageComments           PageComment[]
-  pageAccessGrants       PageAccessGrant[]       @relation("PageAccessGrantee")
-  pageAccessGrantsGiven  PageAccessGrant[]       @relation("PageAccessGrantor")
-  pagePublications       PagePublication[]       @relation("PagePublicationPublisher")
-  moodboardsCreated      Moodboard[]             @relation("MoodboardCreator")
-  moodboardAccessGrants  MoodboardAccessGrant[]  @relation("MoodboardAccessGrantee")
-  moodboardGrantsGiven   MoodboardAccessGrant[]  @relation("MoodboardAccessGrantor")
+  pageAccessGrants       PageAccessGrant[]         @relation("PageAccessGrantee")
+  pageAccessGrantsGiven  PageAccessGrant[]         @relation("PageAccessGrantor")
+  pagePublications       PagePublication[]         @relation("PagePublicationPublisher")
+  moodboardsCreated      Moodboard[]               @relation("MoodboardCreator")
+  moodboardAccessGrants  MoodboardAccessGrant[]    @relation("MoodboardAccessGrantee")
+  moodboardGrantsGiven   MoodboardAccessGrant[]    @relation("MoodboardAccessGrantor")
   pageTemplates          PageTemplate[]
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
@@ -143,26 +144,26 @@ model User {
   idempotencyRecords     IdempotencyRecord[]
   creemWebhookEvents     CreemWebhookEvent[]
   creemCursors           CreemSubscriptionCursor[]
-  taskDependenciesOwned  TaskDependency[]        @relation("TaskDependencyOwner")
+  taskDependenciesOwned  TaskDependency[]          @relation("TaskDependencyOwner")
   focusPreferences       FocusPreferences?
   taskReminders          TaskReminder[]
   proactiveNudges        ProactiveNudge[]
   pushSubscriptions      PushSubscription[]
   bookingPages           BookingPage[]
-  bookings               Booking[]               @relation("BookingOwner")
+  bookings               Booking[]                 @relation("BookingOwner")
   featureFlagOverrides   FeatureFlagOverride[]
-  personalWorkspace      Workspace?              @relation("PersonalWorkspaceOwner")
+  personalWorkspace      Workspace?                @relation("PersonalWorkspaceOwner")
   workspaceMemberships   WorkspaceMember[]
-  workspaceInvitesSent   WorkspaceInvite[]       @relation("WorkspaceInviteSender")
-  workspaceInvitesUsed   WorkspaceInvite[]       @relation("WorkspaceInviteAcceptor")
-  assignedTasks          Task[]                  @relation("TaskAssignee")
-  taskActivities         TaskActivity[]          @relation("TaskActivityActor")
-  projectTemplates       ProjectTemplate[]       @relation("ProjectTemplateCreator")
-  projectBlockersCreated ProjectBlocker[]        @relation("ProjectBlockerCreator")
-  projectHealthUpdates   ProjectHealthUpdate[]   @relation("ProjectHealthUpdateAuthor")
+  workspaceInvitesSent   WorkspaceInvite[]         @relation("WorkspaceInviteSender")
+  workspaceInvitesUsed   WorkspaceInvite[]         @relation("WorkspaceInviteAcceptor")
+  assignedTasks          Task[]                    @relation("TaskAssignee")
+  taskActivities         TaskActivity[]            @relation("TaskActivityActor")
+  projectTemplates       ProjectTemplate[]         @relation("ProjectTemplateCreator")
+  projectBlockersCreated ProjectBlocker[]          @relation("ProjectBlockerCreator")
+  projectHealthUpdates   ProjectHealthUpdate[]     @relation("ProjectHealthUpdateAuthor")
   habits                 Habit[]
   weeklyFocusTargets     WeeklyFocusTarget[]
-  meetingNoteProposals   MeetingNoteProposal[]   @relation("MeetingNoteProposalCreator")
+  meetingNoteProposals   MeetingNoteProposal[]     @relation("MeetingNoteProposalCreator")
 }
 
 model Workspace {
@@ -2319,6 +2320,13 @@ enum SubscriptionStatus {
   PAST_DUE
 }
 
+enum LifetimeCheckoutReservationStatus {
+  CREATING
+  PENDING
+  CONSUMED
+  EXPIRED
+}
+
 enum SchedulingEnergyLevel {
   LOW
   MEDIUM
@@ -2604,6 +2612,22 @@ model Subscription {
   @@index([creemProductId])
   @@index([stripeCustomerId])
   @@index([stripePaymentIntentId])
+}
+
+model LifetimeHold {
+  id              String                            @id @default(cuid())
+  userId          String                            @unique
+  user            User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestId       String                            @unique
+  creemCheckoutId String?                           @unique
+  checkoutUrl     String?
+  status          LifetimeCheckoutReservationStatus @default(CREATING)
+  lastCheckedAt   DateTime?
+  createdAt       DateTime                          @default(now())
+  updatedAt       DateTime                          @updatedAt
+
+  @@index([status, updatedAt])
+  @@map("LifetimeCheckoutReservation")
 }
 
 model CreemWebhookEvent {

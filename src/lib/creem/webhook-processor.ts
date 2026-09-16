@@ -4,6 +4,10 @@ import {
   type SubscriptionStatus,
 } from "@prisma/client";
 
+import {
+  authorizeLifetimeCompletion,
+  consumeLifetimeReservation,
+} from "@/lib/creem/lifetime-cap";
 import { mapCreemEventToSubscription } from "@/lib/creem/webhook-mapping";
 import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
@@ -192,19 +196,6 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
           mutation.creemSubscriptionId
     );
     const lifetimePreserved = Boolean(currentSubscription?.plan === "LIFETIME");
-    const outcome = olderThanClaimedSubscription
-      ? "stale_event"
-      : weakerAtSameTimestamp
-        ? "equal_time_weaker_event"
-        : lifetimePreserved
-          ? "lifetime_preserved"
-          : missingSubscriptionIdentity
-            ? "missing_subscription_identity"
-            : blockedSubscriptionIdentity ||
-                restrictiveEventWithoutEstablishedIdentity
-              ? "subscription_identity_mismatch"
-              : "processed";
-
     const user = await transaction.user.findUnique({
       where: { id: userId },
       select: { id: true },
@@ -212,6 +203,37 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
     if (!user) {
       return { processed: false, reason: "missing_user" as const };
     }
+
+    const lifetimeAuthorization =
+      mutation.data.plan === SubscriptionPlan.LIFETIME &&
+      !lifetimePreserved &&
+      !olderThanClaimedSubscription &&
+      !weakerAtSameTimestamp
+        ? await authorizeLifetimeCompletion(transaction, {
+            userId,
+            reservationId: mutation.lifetimeReservationId,
+            checkoutId: mutation.checkoutId,
+            requestId: mutation.checkoutRequestId,
+          })
+        : null;
+    const lifetimeAuthorizationFailure =
+      lifetimeAuthorization && !lifetimeAuthorization.allowed
+        ? "lifetime_reservation_mismatch"
+        : null;
+    const outcome = olderThanClaimedSubscription
+      ? "stale_event"
+      : weakerAtSameTimestamp
+        ? "equal_time_weaker_event"
+        : lifetimePreserved
+          ? "lifetime_preserved"
+          : lifetimeAuthorizationFailure
+            ? lifetimeAuthorizationFailure
+            : missingSubscriptionIdentity
+              ? "missing_subscription_identity"
+              : blockedSubscriptionIdentity ||
+                  restrictiveEventWithoutEstablishedIdentity
+                ? "subscription_identity_mismatch"
+                : "processed";
 
     const receipt = await transaction.creemWebhookEvent.createMany({
       data: [
@@ -236,6 +258,12 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
     }
     if (lifetimePreserved) {
       return { processed: false, reason: "lifetime_preserved" as const };
+    }
+    if (lifetimeAuthorizationFailure) {
+      return {
+        processed: false,
+        reason: lifetimeAuthorizationFailure,
+      };
     }
     if (missingSubscriptionIdentity) {
       return {
@@ -310,6 +338,14 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
         lastCreemEventAt: eventCreatedAt,
       },
     });
+    if (mutation.data.plan === SubscriptionPlan.LIFETIME) {
+      await consumeLifetimeReservation(
+        transaction,
+        lifetimeAuthorization?.allowed
+          ? lifetimeAuthorization.reservationId
+          : null
+      );
+    }
 
     return { processed: true, subscription };
   });

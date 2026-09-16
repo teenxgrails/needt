@@ -27,6 +27,9 @@ export type CreemSubscriptionMutation = {
   userId: string | null;
   creemCustomerId: string | null;
   creemSubscriptionId: string | null;
+  checkoutId: string | null;
+  checkoutRequestId: string | null;
+  lifetimeReservationId: string | null;
   data: {
     plan: SubscriptionPlan;
     status: SubscriptionStatus;
@@ -73,6 +76,13 @@ function metadataUserId(object: Record<string, unknown>): string | null {
     stringValue(customerMetadata?.referenceId) ||
     stringValue(customerMetadata?.userId)
   );
+}
+
+function metadataValue(
+  object: Record<string, unknown>,
+  key: string
+): string | null {
+  return stringValue(asRecord(object.metadata)?.[key]);
 }
 
 function dateValue(value: unknown): Date | null {
@@ -172,6 +182,16 @@ export function mapCreemEventToSubscription(
     userId: metadataUserId(object),
     creemCustomerId: customerId,
     creemSubscriptionId: subscriptionId,
+    checkoutId:
+      event.eventType === "checkout.completed" ? entityId(object.id) : null,
+    checkoutRequestId:
+      event.eventType === "checkout.completed"
+        ? stringValue(field(object, "requestId", "request_id"))
+        : null,
+    lifetimeReservationId:
+      plan === "LIFETIME"
+        ? metadataValue(object, "lifetimeReservationId")
+        : null,
     data: {
       plan,
       status: statusForEvent(event.eventType, object),

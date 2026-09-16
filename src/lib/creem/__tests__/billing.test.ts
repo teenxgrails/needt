@@ -15,10 +15,17 @@ import { prisma } from "@/lib/prisma";
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     $transaction: jest.fn(),
+    $executeRaw: jest.fn(),
     subscription: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
+      count: jest.fn(),
       upsert: jest.fn(),
+    },
+    lifetimeHold: {
+      findFirst: jest.fn(),
+      count: jest.fn(),
+      update: jest.fn(),
     },
     creemSubscriptionCursor: {
       findUnique: jest.fn(),
@@ -269,6 +276,11 @@ describe("Creem webhook processing", () => {
     process.env.CREEM_PRODUCT_LIFETIME = products.lifetime;
     (prisma.subscription.findFirst as jest.Mock).mockResolvedValue(null);
     (prisma.subscription.findUnique as jest.Mock).mockResolvedValue(null);
+    (prisma.subscription.count as jest.Mock).mockResolvedValue(0);
+    (prisma.$executeRaw as jest.Mock).mockResolvedValue(0);
+    (prisma.lifetimeHold.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.lifetimeHold.count as jest.Mock).mockResolvedValue(0);
+    (prisma.lifetimeHold.update as jest.Mock).mockResolvedValue({});
     (prisma.creemSubscriptionCursor.findUnique as jest.Mock).mockResolvedValue(
       null
     );
@@ -925,6 +937,67 @@ describe("Creem webhook processing", () => {
       reason: "lifetime_preserved",
     });
     expect(prisma.subscription.upsert).not.toHaveBeenCalled();
+  });
+
+  it("atomically consumes the matching hold when Lifetime is granted", async () => {
+    (prisma.lifetimeHold.findFirst as jest.Mock).mockResolvedValue({
+      id: "reservation_1",
+      userId: "user_1",
+      requestId: "request_1",
+      creemCheckoutId: "checkout_1",
+      status: "PENDING",
+    });
+
+    const result = await processCreemBillingEvent({
+      id: "evt_lifetime_reserved",
+      createdAt: 1_728_734_327_355,
+      eventType: "checkout.completed",
+      object: {
+        id: "checkout_1",
+        requestId: "request_1",
+        product: { id: products.lifetime },
+        customer: { id: "cust_1" },
+        metadata: {
+          referenceId: "user_1",
+          lifetimeReservationId: "reservation_1",
+        },
+      },
+    });
+
+    expect(result.processed).toBe(true);
+    expect(prisma.lifetimeHold.update).toHaveBeenCalledWith({
+      where: { id: "reservation_1" },
+      data: { status: "CONSUMED" },
+    });
+  });
+
+  it("rejects a Lifetime payment that did not originate from a reservation", async () => {
+    const result = await processCreemBillingEvent({
+      id: "evt_lifetime_over_cap",
+      createdAt: 1_728_734_327_355,
+      eventType: "checkout.completed",
+      object: {
+        id: "checkout_301",
+        product: { id: products.lifetime },
+        customer: { id: "cust_301" },
+        metadata: { referenceId: "user_1" },
+      },
+    });
+
+    expect(result).toEqual({
+      processed: false,
+      reason: "lifetime_reservation_mismatch",
+    });
+    expect(prisma.subscription.upsert).not.toHaveBeenCalled();
+    expect(prisma.creemWebhookEvent.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            outcome: "lifetime_reservation_mismatch",
+          }),
+        ],
+      })
+    );
   });
 
   it.each([
