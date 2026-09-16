@@ -43,6 +43,8 @@ export function SystemSettings() {
           outlookTenantId: data.outlookTenantId,
           logLevel: data.logLevel,
           disableHomepage: data.disableHomepage,
+          requireEmailVerificationBeforeAccess:
+            data.requireEmailVerificationBeforeAccess,
           resendApiKey: data.resendApiKey,
         });
       })
@@ -261,6 +263,34 @@ export function SystemSettings() {
             <p className="text-sm text-muted-foreground">
               When enabled, the homepage (/) will redirect to the login page for
               unauthenticated users or to the calendar for authenticated users.
+            </p>
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          label="Email verification access"
+          description="Optionally require a confirmed email before entering the product."
+        >
+          <div className="space-y-2">
+            <Label>Require confirmation before access</Label>
+            <NeedtPicker
+              ariaLabel="Require email verification before access"
+              value={
+                system.requireEmailVerificationBeforeAccess ? "true" : "false"
+              }
+              onValueChange={(value) =>
+                handleUpdate({
+                  requireEmailVerificationBeforeAccess: value === "true",
+                })
+              }
+              options={[
+                { value: "false", label: "Allow Free access" },
+                { value: "true", label: "Require confirmation" },
+              ]}
+            />
+            <p className="text-sm text-muted-foreground">
+              Off by default. Unconfirmed accounts otherwise enter on Free and
+              start Pro only after confirming their email.
             </p>
           </div>
         </SettingRow>

@@ -4,6 +4,7 @@ import { POST } from "@/app/api/auth/register/route";
 import { hash } from "bcryptjs";
 
 import { isPublicSignupEnabled } from "@/lib/auth/public-signup";
+import { sendEmailVerification } from "@/lib/email/email-verification";
 import { prisma } from "@/lib/prisma";
 
 jest.mock("@/lib/auth/public-signup", () => ({
@@ -13,6 +14,9 @@ jest.mock("@/lib/security/rate-limit", () => ({
   accountRule: jest.fn(() => ({ identifier: "account" })),
   ipRule: jest.fn(() => ({ identifier: "ip" })),
   enforceRateLimits: jest.fn().mockResolvedValue(null),
+}));
+jest.mock("@/lib/email/email-verification", () => ({
+  sendEmailVerification: jest.fn(),
 }));
 jest.mock("@/lib/prisma", () => ({
   prisma: { user: { create: jest.fn() } },
@@ -30,6 +34,7 @@ function registrationRequest(body: unknown) {
 describe("public registration", () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    jest.mocked(sendEmailVerification).mockResolvedValue({ sent: true });
   });
 
   it("rejects registration when public signup is disabled", async () => {
@@ -89,5 +94,9 @@ describe("public registration", () => {
         }),
       })
     );
+    expect(sendEmailVerification).toHaveBeenCalledWith({
+      userId: "user-1",
+      baseUrl: "http://localhost",
+    });
   });
 });

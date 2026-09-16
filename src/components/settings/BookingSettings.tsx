@@ -24,12 +24,17 @@ export function BookingSettings() {
   const [slug, setSlug] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   const load = async () => {
     const response = await fetch("/api/booking-pages");
     if (!response.ok) return;
-    const data = (await response.json()) as { pages: BookingPageSummary[] };
+    const data = (await response.json()) as {
+      pages: BookingPageSummary[];
+      emailVerified: boolean;
+    };
     setPages(data.pages);
+    setEmailVerified(data.emailVerified);
   };
 
   useEffect(() => {
@@ -73,6 +78,11 @@ export function BookingSettings() {
         </p>
       </div>
       <div className="needt-panel-depth rounded-xl border border-[var(--border-subtle)] p-4">
+        {!emailVerified && (
+          <p className="mb-3 text-sm text-[var(--text-secondary)]">
+            Confirm your email to publish
+          </p>
+        )}
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
           <Input
             value={title}
@@ -96,7 +106,12 @@ export function BookingSettings() {
           />
           <Button
             className="min-h-11"
-            disabled={creating || !title.trim() || slug.trim().length < 3}
+            disabled={
+              !emailVerified ||
+              creating ||
+              !title.trim() ||
+              slug.trim().length < 3
+            }
             onClick={() => void create()}
           >
             {creating ? (
