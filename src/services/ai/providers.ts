@@ -295,6 +295,7 @@ export class OpenAIProvider implements SchedulerAI {
         },
         body: JSON.stringify({
           model: this.config.model || this.defaultModel,
+          max_tokens: this.config.maxTokens,
           temperature: 0,
           response_format: { type: "json_object" },
           messages: [{ role: "user", content: prompt }],
@@ -334,6 +335,7 @@ export class OpenAIProvider implements SchedulerAI {
         },
         body: JSON.stringify({
           model: this.config.model || this.defaultModel,
+          max_tokens: this.config.maxTokens,
           temperature: 0,
           tool_choice: "auto",
           tools: openAITools(input.tools),
@@ -386,6 +388,7 @@ export class OpenAIProvider implements SchedulerAI {
         },
         body: JSON.stringify({
           model: this.config.model || this.defaultModel,
+          max_tokens: this.config.maxTokens,
           temperature: 0.2,
           stream: true,
           messages: [

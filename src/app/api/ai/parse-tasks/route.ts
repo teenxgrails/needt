@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { parseTasksFallback } from "@/services/ai/fallback-parser";
-import { getConfiguredSchedulerAI } from "@/services/ai/settings";
+import {
+  getConfiguredSchedulerAI,
+  getPreparedSchedulerAI,
+} from "@/services/ai/settings";
+import {
+  HOSTED_AI_BUSY_MESSAGE,
+  HOSTED_AI_RESTING_MESSAGE,
+  HostedAiQueueError,
+} from "@/services/ai/slow-queue";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
@@ -15,7 +23,8 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const text = typeof body.text === "string" ? body.text : "";
-    const { settings, ai } = await getConfiguredSchedulerAI(auth.userId);
+    const configured = await getConfiguredSchedulerAI(auth.userId);
+    const { settings } = configured;
 
     if (!settings.allowParseTasks || !text.trim()) {
       return NextResponse.json({
@@ -25,10 +34,22 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      const { ai, source, usage, hostedMode } = await getPreparedSchedulerAI(
+        auth.userId,
+        configured
+      );
+      if (source === "none") {
+        return NextResponse.json({
+          tasks: parseTasksFallback(text),
+          fallback: true,
+          notice: usage.exhausted ? HOSTED_AI_RESTING_MESSAGE : undefined,
+        });
+      }
       const tasks = await ai.parseTasks(text);
       return NextResponse.json({
         tasks,
-        fallback: settings.provider === "NONE",
+        fallback: false,
+        notice: hostedMode === "slow" ? HOSTED_AI_BUSY_MESSAGE : undefined,
       });
     } catch (error) {
       logger.warn(
@@ -39,6 +60,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         tasks: parseTasksFallback(text),
         fallback: true,
+        notice:
+          error instanceof HostedAiQueueError
+            ? HOSTED_AI_BUSY_MESSAGE
+            : undefined,
       });
     }
   } catch (error) {
