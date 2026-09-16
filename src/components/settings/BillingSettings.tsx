@@ -43,6 +43,7 @@ interface BillingSummary {
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   canManageBilling: boolean;
+  lifetimeAvailable: boolean;
   usage: {
     calendars: UsageStatus;
     autoScheduledTasks: UsageStatus;
@@ -332,11 +333,16 @@ export function BillingSettings() {
               "Lifetime plan badge",
             ]}
             actionLabel={
-              summary.plan === "LIFETIME" ? "Current plan" : "Get Lifetime"
+              summary.plan === "LIFETIME"
+                ? "Current plan"
+                : summary.lifetimeAvailable
+                  ? "Get Lifetime"
+                  : "Lifetime is closed"
             }
             disabled={
               !summary.configured ||
               summary.plan === "LIFETIME" ||
+              !summary.lifetimeAvailable ||
               pendingAction !== null
             }
             loading={pendingAction === "lifetime"}

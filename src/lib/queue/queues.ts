@@ -6,6 +6,7 @@ import { getRedisConnection } from "@/lib/queue/connection";
 import {
   BugReportSyncJobData,
   CalendarSyncJobData,
+  LifetimeCheckoutReconciliationJobData,
   MailSyncJobData,
   NudgeJobData,
   QUEUE_NAMES,
@@ -21,6 +22,8 @@ let mailSyncQueue: Queue<MailSyncJobData> | null = null;
 let bugReportSyncQueue: Queue<BugReportSyncJobData> | null = null;
 let reminderQueue: Queue<ReminderJobData> | null = null;
 let nudgeQueue: Queue<NudgeJobData> | null = null;
+let lifetimeCheckoutReconciliationQueue: Queue<LifetimeCheckoutReconciliationJobData> | null =
+  null;
 
 const defaultJobOptions = {
   attempts: 4,
@@ -91,6 +94,17 @@ export function getNudgeQueue(): Queue<NudgeJobData> {
   return nudgeQueue;
 }
 
+export function getLifetimeCheckoutReconciliationQueue(): Queue<LifetimeCheckoutReconciliationJobData> {
+  lifetimeCheckoutReconciliationQueue ??= new Queue(
+    QUEUE_NAMES.lifetimeCheckoutReconciliation,
+    {
+      connection: getBullConnection(),
+      defaultJobOptions,
+    }
+  );
+  return lifetimeCheckoutReconciliationQueue;
+}
+
 export async function closeQueues(): Promise<void> {
   const queues = [
     calendarSyncQueue,
@@ -100,6 +114,7 @@ export async function closeQueues(): Promise<void> {
     bugReportSyncQueue,
     reminderQueue,
     nudgeQueue,
+    lifetimeCheckoutReconciliationQueue,
   ].filter((queue): queue is Queue => queue !== null);
   await Promise.all(queues.map((queue) => queue.close()));
   calendarSyncQueue = null;
@@ -109,4 +124,5 @@ export async function closeQueues(): Promise<void> {
   bugReportSyncQueue = null;
   reminderQueue = null;
   nudgeQueue = null;
+  lifetimeCheckoutReconciliationQueue = null;
 }

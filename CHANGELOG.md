@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Lifetime checkout now closes after 300 buyers with concurrency-safe holds,
+  idempotent retries, webhook enforcement, and provider-confirmed expiry.
 - Added an admin-only System settings route and account-menu links for system
   credentials and operations, with a contract check preventing orphaned
   admin-only settings components.

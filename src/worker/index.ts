@@ -21,6 +21,7 @@ import {
   updateCalendarFeedSyncState,
 } from "@/lib/calendar-db";
 import { renewCalendarWebhooks } from "@/lib/calendar-webhooks/renew";
+import { reconcileLifetimeCheckoutReservations } from "@/lib/creem/lifetime-reconciliation";
 import { newDate } from "@/lib/date-utils";
 import { syncGoogleCalendar } from "@/lib/google-sync";
 import {
@@ -55,6 +56,7 @@ import {
 import {
   closeQueues,
   getBugReportSyncQueue,
+  getLifetimeCheckoutReconciliationQueue,
   getNudgeQueue,
   getReminderQueue,
   getWebhookRenewQueue,
@@ -62,6 +64,7 @@ import {
 import {
   BugReportSyncJobData,
   CalendarSyncJobData,
+  LifetimeCheckoutReconciliationJobData,
   MailSyncJobData,
   NudgeJobData,
   QUEUE_NAMES,
@@ -194,6 +197,10 @@ async function processNudges() {
   await generateProactiveNudges();
 }
 
+async function processLifetimeCheckoutReconciliation() {
+  await reconcileLifetimeCheckoutReservations();
+}
+
 // BullMQ and the app can resolve distinct compatible ioredis patch versions,
 // so bridge their nominal types at this boundary.
 const connection = getRedisConnection() as unknown as ConnectionOptions;
@@ -232,6 +239,11 @@ const workers = [
     connection,
     concurrency: 1,
   }),
+  new Worker<LifetimeCheckoutReconciliationJobData>(
+    QUEUE_NAMES.lifetimeCheckoutReconciliation,
+    processLifetimeCheckoutReconciliation,
+    { connection, concurrency: 1 }
+  ),
 ];
 
 for (const worker of workers) {
@@ -308,6 +320,11 @@ async function start(): Promise<void> {
     "proactive-nudge-sweep",
     { every: 15 * 60_000 },
     { name: "sweep-nudges", data: { kind: "sweep" } }
+  );
+  await getLifetimeCheckoutReconciliationQueue().upsertJobScheduler(
+    "lifetime-checkout-reconciliation",
+    { every: 15 * 60_000 },
+    { name: "sweep-lifetime-checkouts", data: { kind: "sweep" } }
   );
   const mailAccountIds = await listActiveMailAccountIds();
   await Promise.all(
