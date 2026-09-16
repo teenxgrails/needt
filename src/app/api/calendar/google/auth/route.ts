@@ -4,6 +4,11 @@ import { authenticateRequest } from "@/lib/auth/api-auth";
 import { canAddCalendar } from "@/lib/entitlements";
 import { createGoogleOAuthClient } from "@/lib/google";
 import { GOOGLE_CALENDAR_SCOPES } from "@/lib/google-oauth-scopes";
+import {
+  calendarOAuthCookieOptions,
+  calendarOAuthStateCookie,
+  createCalendarOAuthState,
+} from "@/lib/calendar-oauth";
 import { buildCalendarOAuthRedirectUrl } from "@/lib/oauth-redirects";
 
 const LOG_SOURCE = "GoogleCalendarOAuthStart";
@@ -21,13 +26,21 @@ export async function GET(request: NextRequest) {
 
   const redirectUrl = buildCalendarOAuthRedirectUrl("google");
   const oauth2Client = await createGoogleOAuthClient({ redirectUrl });
+  const state = createCalendarOAuthState();
 
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
     scope: [...GOOGLE_CALENDAR_SCOPES],
     include_granted_scopes: true,
     prompt: "consent",
+    state,
   });
 
-  return NextResponse.redirect(url);
+  const response = NextResponse.redirect(url);
+  response.cookies.set(
+    calendarOAuthStateCookie("google"),
+    state,
+    calendarOAuthCookieOptions()
+  );
+  return response;
 }

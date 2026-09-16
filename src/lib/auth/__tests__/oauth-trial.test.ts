@@ -17,6 +17,7 @@ jest.mock("@/lib/auth", () => ({
 }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
+    autoScheduleSettings: { upsert: jest.fn() },
     userSettings: { upsert: jest.fn() },
   },
 }));

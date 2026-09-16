@@ -5,6 +5,14 @@ import { google } from "googleapis";
 import { v4 as uuidv4 } from "uuid";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import {
+  calendarProviderNeedsReconnect,
+  type CalendarProvider,
+} from "@/lib/calendar-connection-status";
+import {
+  calendarOAuthStateCookie,
+  isValidCalendarOAuthState,
+} from "@/lib/calendar-oauth";
 import { registerCalendarWebhookBestEffort } from "@/lib/calendar-webhooks/register";
 import { newDate } from "@/lib/date-utils";
 import { canAddCalendar } from "@/lib/entitlements";
@@ -13,18 +21,50 @@ import { getGoogleCalendarClient } from "@/lib/google-calendar";
 import { syncGoogleCalendar } from "@/lib/google-sync";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { publicAppUrl } from "@/lib/public-url";
 import { TokenManager } from "@/lib/token-manager";
 
 const LOG_SOURCE = "GoogleCalendarAPI";
 
+function settingsRedirect(
+  request: NextRequest,
+  provider: CalendarProvider,
+  result: { error?: string; success?: string }
+) {
+  const url = publicAppUrl("/settings", request);
+  url.searchParams.set("provider", provider);
+  if (result.error) url.searchParams.set("calendarError", result.error);
+  if (result.success) url.searchParams.set("calendarSuccess", result.success);
+  url.hash = "calendars";
+  const response = NextResponse.redirect(url);
+  response.cookies.delete(calendarOAuthStateCookie(provider));
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const code = request.nextUrl.searchParams.get("code");
-    if (!code) {
-      return NextResponse.json({ error: "No code provided" }, { status: 400 });
-    }
     const auth = await authenticateRequest(request, LOG_SOURCE);
     if ("response" in auth) return auth.response;
+    const expectedState = request.cookies.get(
+      calendarOAuthStateCookie("google")
+    )?.value;
+    const receivedState = request.nextUrl.searchParams.get("state");
+    if (!isValidCalendarOAuthState(expectedState, receivedState)) {
+      return settingsRedirect(request, "google", { error: "invalid_state" });
+    }
+    const providerError = request.nextUrl.searchParams.get("error");
+    if (providerError) {
+      return settingsRedirect(request, "google", {
+        error:
+          providerError === "access_denied"
+            ? "consent_denied"
+            : "callback_failed",
+      });
+    }
+    const code = request.nextUrl.searchParams.get("code");
+    if (!code) {
+      return settingsRedirect(request, "google", { error: "missing_code" });
+    }
     const entitlement = await canAddCalendar(auth.userId);
     if (!entitlement.allowed) {
       return NextResponse.json(
@@ -99,19 +139,14 @@ export async function GET(request: NextRequest) {
       )
     );
 
-    return NextResponse.redirect(
-      new URL("/settings#calendars", process.env.NEXTAUTH_URL!)
-    );
+    return settingsRedirect(request, "google", { success: "connected" });
   } catch (error) {
     await logger.error(
       "Google Calendar OAuth callback failed",
       { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
-    return NextResponse.json(
-      { error: "Failed to authenticate with Google" },
-      { status: 500 }
-    );
+    return settingsRedirect(request, "google", { error: "callback_failed" });
   }
 }
 
@@ -175,9 +210,15 @@ export async function POST(request: NextRequest) {
       { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
-    if (error instanceof GaxiosError && Number(error.code) === 401) {
+    if (
+      (error instanceof GaxiosError && Number(error.code) === 401) ||
+      calendarProviderNeedsReconnect(error)
+    ) {
       return NextResponse.json(
-        { error: "Authentication failed. Please try signing in again." },
+        {
+          code: "CALENDAR_REAUTHORIZATION_REQUIRED",
+          error: "Google Calendar needs to be reconnected.",
+        },
         { status: 401 }
       );
     }
@@ -218,9 +259,15 @@ export async function PUT(request: NextRequest) {
       { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
-    if (error instanceof GaxiosError && Number(error.code) === 401) {
+    if (
+      (error instanceof GaxiosError && Number(error.code) === 401) ||
+      calendarProviderNeedsReconnect(error)
+    ) {
       return NextResponse.json(
-        { error: "Authentication failed. Please try signing in again." },
+        {
+          code: "CALENDAR_REAUTHORIZATION_REQUIRED",
+          error: "Google Calendar needs to be reconnected.",
+        },
         { status: 401 }
       );
     }

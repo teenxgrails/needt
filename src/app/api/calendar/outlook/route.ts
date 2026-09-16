@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import {
+  type CalendarProvider,
+} from "@/lib/calendar-connection-status";
+import {
+  calendarOAuthStateCookie,
+  isValidCalendarOAuthState,
+} from "@/lib/calendar-oauth";
 import { newDate } from "@/lib/date-utils";
 import { canAddCalendar } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
+import { publicAppUrl } from "@/lib/public-url";
 import {
   MICROSOFT_GRAPH_AUTH_ENDPOINTS,
   resolveOutlookAccountEmail,
@@ -13,6 +21,21 @@ import { OutlookCalendarService } from "@/lib/outlook-calendar";
 import { TokenManager } from "@/lib/token-manager";
 
 const LOG_SOURCE = "OutlookCalendarAPI";
+
+function settingsRedirect(
+  request: NextRequest,
+  provider: CalendarProvider,
+  result: { error?: string; success?: string }
+) {
+  const url = publicAppUrl("/settings", request);
+  url.searchParams.set("provider", provider);
+  if (result.error) url.searchParams.set("calendarError", result.error);
+  if (result.success) url.searchParams.set("calendarSuccess", result.success);
+  url.hash = "calendars";
+  const response = NextResponse.redirect(url);
+  response.cookies.delete(calendarOAuthStateCookie(provider));
+  return response;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,18 +56,24 @@ export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get("code");
     const error = searchParams.get("error");
+    const expectedState = req.cookies.get(
+      calendarOAuthStateCookie("outlook")
+    )?.value;
+    const receivedState = searchParams.get("state");
+
+    if (!isValidCalendarOAuthState(expectedState, receivedState)) {
+      return settingsRedirect(req, "outlook", { error: "invalid_state" });
+    }
 
     if (error) {
       logger.error("Outlook auth error:", { error }, LOG_SOURCE);
-      return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL}/settings?error=outlook-auth-failed`
-      );
+      return settingsRedirect(req, "outlook", {
+        error: error === "access_denied" ? "consent_denied" : "callback_failed",
+      });
     }
 
     if (!code) {
-      return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL}/settings?error=no-code`
-      );
+      return settingsRedirect(req, "outlook", { error: "missing_code" });
     }
 
     const { clientId, clientSecret } = await getOutlookCredentials();
@@ -73,9 +102,7 @@ export async function GET(req: NextRequest) {
         { status: tokenResponse.status },
         LOG_SOURCE
       );
-      return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL}/settings?error=token-exchange-failed`
-      );
+      return settingsRedirect(req, "outlook", { error: "callback_failed" });
     }
 
     const tokenData = await tokenResponse.json();
@@ -110,9 +137,7 @@ export async function GET(req: NextRequest) {
           { profile: userProfile?.id ?? "unknown" },
           LOG_SOURCE
         );
-        return NextResponse.redirect(
-          `${process.env.NEXTAUTH_URL}/settings?error=profile-fetch-failed`
-        );
+        return settingsRedirect(req, "outlook", { error: "callback_failed" });
       }
 
       // Store tokens
@@ -128,18 +153,14 @@ export async function GET(req: NextRequest) {
         userId ?? "unknown"
       );
 
-      return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL}/settings?success=true`
-      );
+      return settingsRedirect(req, "outlook", { success: "connected" });
     } catch (error) {
       logger.error(
         "Failed to get user profile",
         { error: error instanceof Error ? error.message : String(error) },
         LOG_SOURCE
       );
-      return NextResponse.redirect(
-        `${process.env.NEXTAUTH_URL}/settings?error=profile-failed`
-      );
+      return settingsRedirect(req, "outlook", { error: "callback_failed" });
     }
   } catch (error) {
     logger.error(
@@ -147,8 +168,6 @@ export async function GET(req: NextRequest) {
       { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/settings?error=callback-failed`
-    );
+    return settingsRedirect(req, "outlook", { error: "callback_failed" });
   }
 }

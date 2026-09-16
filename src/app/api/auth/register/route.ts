@@ -88,6 +88,14 @@ export async function POST(request: NextRequest) {
             timeZone: "UTC",
           },
         },
+        autoScheduleSettings: {
+          create: {
+            workDays: "[1,2,3,4,5]",
+            workHourStart: 9,
+            workHourEnd: 17,
+            bufferMinutes: 15,
+          },
+        },
       },
       select: { id: true },
     });

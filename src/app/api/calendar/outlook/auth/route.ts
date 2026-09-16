@@ -3,6 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { canAddCalendar } from "@/lib/entitlements";
+import {
+  calendarOAuthCookieOptions,
+  calendarOAuthStateCookie,
+  createCalendarOAuthState,
+} from "@/lib/calendar-oauth";
 import { logger } from "@/lib/logger";
 import { buildCalendarOAuthRedirectUrl } from "@/lib/oauth-redirects";
 import {
@@ -26,6 +31,7 @@ export async function GET(request: NextRequest) {
 
     const { clientId } = await getOutlookCredentials();
     const redirectUrl = buildCalendarOAuthRedirectUrl("outlook");
+    const state = createCalendarOAuthState();
 
     // Construct the authorization URL
     const params = new URLSearchParams({
@@ -35,12 +41,19 @@ export async function GET(request: NextRequest) {
       scope: MICROSOFT_GRAPH_SCOPES.join(" "),
       response_mode: "query",
       prompt: "consent",
+      state,
     });
 
     const authUrl = `${
       MICROSOFT_GRAPH_AUTH_ENDPOINTS.auth
     }?${params.toString()}`;
-    return NextResponse.redirect(authUrl);
+    const response = NextResponse.redirect(authUrl);
+    response.cookies.set(
+      calendarOAuthStateCookie("outlook"),
+      state,
+      calendarOAuthCookieOptions()
+    );
+    return response;
   } catch (error) {
     await logger.error(
       "Failed to generate Outlook auth URL",

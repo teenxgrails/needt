@@ -126,6 +126,17 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
               update: {},
               create: { userId: user.id, theme: "dark", timeZone: "UTC" },
             });
+            await prisma.autoScheduleSettings.upsert({
+              where: { userId: user.id },
+              update: {},
+              create: {
+                userId: user.id,
+                workDays: "[1,2,3,4,5]",
+                workHourStart: 9,
+                workHourEnd: 17,
+                bufferMinutes: 15,
+              },
+            });
           }
         }
 
@@ -149,7 +160,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
     },
     pages: {
       signIn: "/auth/signin",
-      error: "/auth/error",
+      error: "/auth/signin",
     },
     debug: process.env.NODE_ENV === "development",
     session: {
