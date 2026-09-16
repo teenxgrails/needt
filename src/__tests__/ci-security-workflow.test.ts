@@ -3,15 +3,15 @@ import { readFileSync } from "node:fs";
 const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
 
 describe("CI security workflow", () => {
-  it("does not expose an all-zero push baseline to Semgrep", () => {
+  it("scans only findings added after the actual main merge base", () => {
     expect(workflow).toContain(
-      'zero_sha="0000000000000000000000000000000000000000"'
+      "git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main"
     );
-    expect(workflow).toContain('[ "$SEMGREP_BASELINE_COMMIT" != "$zero_sha" ]');
+    expect(workflow).toContain("BASE_SHA=$(git merge-base origin/main HEAD)");
     expect(workflow).toContain(
-      'semgrep --config=auto --error --baseline-commit "$SEMGREP_BASELINE_COMMIT"'
+      'semgrep --config=auto --error --baseline-commit "$BASE_SHA"'
     );
-    expect(workflow).toContain("unset SEMGREP_BASELINE_COMMIT");
-    expect(workflow).toContain("semgrep --config=auto --error");
+    expect(workflow).not.toContain("SEMGREP_BASELINE_COMMIT");
+    expect(workflow).not.toContain('zero_sha="');
   });
 });
