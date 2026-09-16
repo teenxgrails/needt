@@ -72,7 +72,7 @@ export function EmailVerificationGate({
 
   return (
     <>
-      {status && !status.verified && (
+      {status?.email && !status.verified && (
         <div className="fixed inset-x-0 top-0 z-[100] flex min-h-11 items-center justify-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-2 text-center text-xs text-[var(--text-secondary)]">
           <span>Confirm your email to start 14 days of Pro.</span>
           <Button
