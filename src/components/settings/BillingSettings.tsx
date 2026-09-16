@@ -291,7 +291,7 @@ export function BillingSettings() {
               )}
               onClick={() => setInterval(value)}
             >
-              {value === "month" ? "Monthly" : "Yearly · 2 months free"}
+              {value === "month" ? "Monthly" : "Yearly · 29% off"}
             </button>
           ))}
         </div>
@@ -308,7 +308,7 @@ export function BillingSettings() {
             features={[
               "Unlimited calendars, boards, and auto-scheduling",
               "Up to 3 mailboxes",
-              "AI agent and hosted AI actions",
+              "AI agent",
               "Focus scores, streaks, and weekly analytics",
             ]}
             actionLabel={summary.plan === "PRO" ? "Current plan" : "Choose Pro"}
@@ -365,14 +365,6 @@ export function BillingSettings() {
           <UsageRow
             label="Mailboxes"
             value={usageLabel(summary.usage.mailboxes)}
-          />
-          <UsageRow
-            label="Hosted AI actions this month"
-            value={
-              summary.usage.aiActions.limit === 0
-                ? "Available on Pro and Lifetime"
-                : `${summary.usage.aiActions.used} of ${summary.usage.aiActions.limit}`
-            }
           />
         </div>
         {!planIsPaid && (

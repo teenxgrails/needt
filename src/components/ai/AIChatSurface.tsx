@@ -455,12 +455,6 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
         </div>
 
         <div className="border-t border-[var(--border-subtle)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {settings?.usage && !settings.hasApiKey && (
-            <div className="mx-auto mb-2 max-w-[760px] text-right text-xs text-[var(--text-secondary)]">
-              {settings.usage.remaining}/{settings.usage.limit} actions left
-              this month
-            </div>
-          )}
           {!canChat && (
             <div className="needt-panel-depth mx-auto mb-2 max-w-[760px] rounded-md border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-secondary)]">
               {settings?.usage && !settings.usage.allowed

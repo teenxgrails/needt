@@ -138,7 +138,7 @@ describe("Creem webhook subscription mapping", () => {
           product: { id: products.lifetime },
           customer: { id: "cust_1" },
           metadata: { referenceId: "user_1" },
-          order: { amountPaid: 7900 },
+          order: { amountPaid: 14900 },
         },
       },
       products
@@ -153,7 +153,7 @@ describe("Creem webhook subscription mapping", () => {
         status: SubscriptionStatus.ACTIVE,
         creemProductId: products.lifetime,
         interval: null,
-        amount: 7900,
+        amount: 14900,
       },
     });
   });

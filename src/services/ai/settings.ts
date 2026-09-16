@@ -1,16 +1,35 @@
 import { AIProvider } from "@prisma/client";
 
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
 import { decryptSecret } from "./encryption";
 import { getCustomAIOAuthAccessToken, getCustomAIOAuthConfig } from "./oauth";
 import { createSchedulerAI } from "./providers";
-import { AIProviderName, SchedulerAIConfig } from "./types";
+import { AIProviderName, AIProviderUsage, SchedulerAIConfig } from "./types";
 import {
   HOSTED_AI_CONFIG,
   getHostedAiUsage,
+  recordHostedAiTokens,
   resolveAiAccessMode,
 } from "./usage";
+
+const LOG_SOURCE = "ai-settings";
+
+async function recordProviderUsage(
+  userId: string,
+  providerUsage: AIProviderUsage
+) {
+  try {
+    await recordHostedAiTokens(userId, providerUsage);
+  } catch (error) {
+    logger.warn(
+      "Failed to record hosted AI token usage",
+      { error: error instanceof Error ? error.message : String(error) },
+      LOG_SOURCE
+    );
+  }
+}
 
 export function getDefaultCustomAIUrl() {
   return process.env.AI_CUSTOM_URL?.trim() || null;
@@ -159,6 +178,7 @@ export async function getConfiguredSchedulerAI(userId: string) {
           model: HOSTED_AI_CONFIG.model,
           timeoutMs: settings.requestTimeoutSeconds * 1000,
           soulPreset: settings.soulPreset === "coach" ? "coach" : "business",
+          onUsage: (providerUsage) => recordProviderUsage(userId, providerUsage),
         }
       : {
           provider:

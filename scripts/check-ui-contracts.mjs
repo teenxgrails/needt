@@ -230,6 +230,33 @@ requireText(
 );
 requireText(rootLayoutPath, "figma-local-capture", rootLayout);
 
+for (const aiUsagePath of [
+  "src/components/ai/AIChatSurface.tsx",
+  "src/components/settings/AIAssistantSettings.tsx",
+  "src/components/settings/BillingSettings.tsx",
+]) {
+  const contents = await source(aiUsagePath);
+  for (const retired of [
+    "actions left",
+    "Hosted AI actions this month",
+    "AI agent and hosted AI actions",
+  ]) {
+    forbidText(aiUsagePath, retired, contents);
+  }
+  forbidPattern(
+    aiUsagePath,
+    /(?:settings\.usage\.(?:remaining|limit|used)|summary\.usage\.aiActions)/,
+    "rendered hosted AI usage count",
+    contents
+  );
+}
+
+const billingSettingsPath = "src/components/settings/BillingSettings.tsx";
+const billingSettings = await source(billingSettingsPath);
+requireText(billingSettingsPath, "Yearly · 29% off", billingSettings);
+requireText(billingSettingsPath, '"AI agent"', billingSettings);
+forbidText(billingSettingsPath, "2 months free", billingSettings);
+
 const packageJson = JSON.parse(await source("package.json"));
 if (packageJson.name !== "needt") {
   failures.push(`package.json: expected name "needt", got ${packageJson.name}`);

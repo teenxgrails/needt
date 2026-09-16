@@ -1,12 +1,13 @@
 import { newDate } from "@/lib/date-utils";
 import { getPlan } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
+import { AIProviderUsage } from "./types";
 
 export const HOSTED_AI_CONFIG = {
   monthlyActionCaps: {
     FREE: 0,
     PRO: Number(process.env.NEEDT_AI_MONTHLY_ACTION_CAP || 300),
-    LIFETIME: Number(process.env.NEEDT_AI_LIFETIME_ACTION_CAP || 3_000),
+    LIFETIME: Number(process.env.NEEDT_AI_LIFETIME_ACTION_CAP || 300),
   },
   baseUrl:
     process.env.NEEDT_AI_BASE_URL?.trim() || "https://api.deepseek.com/v1",
@@ -69,4 +70,27 @@ export async function recordHostedAiAction(userId: string) {
     getPlan(userId),
   ]);
   return hostedUsageStatus(row.actionCount, plan);
+}
+
+function tokenCount(value: number) {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+export async function recordHostedAiTokens(
+  userId: string,
+  usage: AIProviderUsage
+) {
+  const inputTokens = tokenCount(usage.inputTokens);
+  const outputTokens = tokenCount(usage.outputTokens);
+  if (inputTokens === 0 && outputTokens === 0) return;
+
+  const yearMonth = usageMonth();
+  await prisma.aiUsage.upsert({
+    where: { userId_yearMonth: { userId, yearMonth } },
+    create: { userId, yearMonth, inputTokens, outputTokens },
+    update: {
+      inputTokens: { increment: inputTokens },
+      outputTokens: { increment: outputTokens },
+    },
+  });
 }
