@@ -44,10 +44,15 @@ interface AISettingsResponse {
   hasApiKey: boolean;
   hostedAvailable?: boolean;
   usage?: {
+    plan: "FREE" | "PRO" | "LIFETIME";
     used: number;
     limit: number;
+    ceiling: number;
     remaining: number;
     allowed: boolean;
+    slowMode: boolean;
+    exhausted: boolean;
+    mode: "normal" | "slow" | "blocked";
   };
 }
 
@@ -195,22 +200,31 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
     });
 
     if (!response.ok || !response.body) {
+      let errorMessage = "I could not reach the AI provider. Try again.";
+      try {
+        const payload = (await response.json()) as { error?: string };
+        if (payload.error) errorMessage = payload.error;
+      } catch {
+        // Keep the stable fallback when the response is not JSON.
+      }
+      const targetId = activeId || "pending";
+      setConversations((current) =>
+        current.map((item) =>
+          item.id === "pending" || item.id === targetId
+            ? {
+                ...item,
+                messages: item.messages.map((msg) =>
+                  msg.id === tempAssistant.id
+                    ? { ...msg, content: errorMessage }
+                    : msg
+                ),
+              }
+            : item
+        )
+      );
       setStreaming(false);
       return;
     }
-    setSettings((current) =>
-      current?.usage && !current.hasApiKey
-        ? {
-            ...current,
-            usage: {
-              ...current.usage,
-              used: current.usage.used + 1,
-              remaining: Math.max(0, current.usage.remaining - 1),
-              allowed: current.usage.remaining > 1,
-            },
-          }
-        : current
-    );
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -234,6 +248,7 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
           requiresConfirm?: boolean;
           toolName?: string | null;
           toolPayload?: unknown;
+          notice?: string;
         };
         if (event.type === "meta") {
           conversationId = event.conversationId || conversationId;
@@ -250,6 +265,22 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
           }
           if (conversationId && activeId === "pending")
             setActiveId(conversationId);
+          if (event.notice) {
+            setSettings((current) =>
+              current?.usage
+                ? {
+                    ...current,
+                    usage: {
+                      ...current.usage,
+                      allowed: true,
+                      slowMode: true,
+                      exhausted: false,
+                      mode: "slow",
+                    },
+                  }
+                : current
+            );
+          }
         } else {
           assistantText += event.value || "";
           const targetId = conversationId || activeId || "pending";
@@ -272,6 +303,10 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
       }
     }
     if (requiresConfirm) setPendingConfirm(trimmed);
+    fetch("/api/ai-settings")
+      .then((settingsResponse) => settingsResponse.json())
+      .then(setSettings)
+      .catch(() => undefined);
     setStreaming(false);
   }
 
@@ -455,20 +490,34 @@ export function AIChatSurface({ compact = false }: AIChatSurfaceProps) {
         </div>
 
         <div className="border-t border-[var(--border-subtle)] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          {settings?.usage && !settings.hasApiKey && (
-            <div className="mx-auto mb-2 max-w-[760px] text-right text-xs text-[var(--text-secondary)]">
-              {settings.usage.remaining}/{settings.usage.limit} actions left
-              this month
+          {settings?.usage?.slowMode && !settings.hasApiKey && (
+            <div className="needt-panel-depth mx-auto mb-2 max-w-[760px] rounded-md border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-secondary)]">
+              AI is busy, so replies may take a little longer. Add your own key
+              for full speed.
             </div>
           )}
           {!canChat && (
             <div className="needt-panel-depth mx-auto mb-2 max-w-[760px] rounded-md border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-secondary)]">
-              {settings?.usage && !settings.usage.allowed
-                ? "Hosted AI limit reached. Add your own key for unlimited actions. "
-                : "Hosted AI is not configured. "}
-              <Link href="/settings#ai" className="text-[var(--color-accent)]">
-                Open Settings → AI
-              </Link>
+              {settings?.usage?.plan === "FREE" ? (
+                "The AI agent is available on Needt Pro and Lifetime."
+              ) : settings?.usage?.exhausted ? (
+                <Link
+                  href="/settings#ai"
+                  className="text-[var(--color-accent)]"
+                >
+                  AI is resting until the 1st. Add your own key to keep going.
+                </Link>
+              ) : (
+                <>
+                  Hosted AI is not configured.{" "}
+                  <Link
+                    href="/settings#ai"
+                    className="text-[var(--color-accent)]"
+                  >
+                    Open Settings → AI
+                  </Link>
+                </>
+              )}
             </div>
           )}
           {preview && (

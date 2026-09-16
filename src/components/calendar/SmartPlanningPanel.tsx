@@ -154,7 +154,13 @@ export function SmartPlanningPanel() {
         body: JSON.stringify({ text: brainDump }),
       });
       if (!response.ok) throw new Error("Could not parse tasks");
-      const data = (await response.json()) as { tasks: ParsedTask[] };
+      const data = (await response.json()) as {
+        tasks: ParsedTask[];
+        notice?: string;
+      };
+      if (data.notice) {
+        notify.info(data.notice, { dedupeKey: "hosted-ai-status" });
+      }
       setParsedTasks(data.tasks);
     } catch (error) {
       notify.error("Brain dump parse failed", {

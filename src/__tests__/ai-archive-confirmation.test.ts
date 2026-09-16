@@ -2,7 +2,10 @@ import { NextRequest } from "next/server";
 
 import { POST } from "@/app/api/ai/chat/route";
 import { buildAgentPromptForUser } from "@/services/ai/context";
-import { getConfiguredSchedulerAI } from "@/services/ai/settings";
+import {
+  getConfiguredSchedulerAI,
+  getPreparedSchedulerAI,
+} from "@/services/ai/settings";
 import { WorkspaceKind, WorkspaceRole } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
@@ -14,6 +17,7 @@ jest.mock("@/services/ai/context", () => ({
 }));
 jest.mock("@/services/ai/settings", () => ({
   getConfiguredSchedulerAI: jest.fn(),
+  getPreparedSchedulerAI: jest.fn(),
 }));
 jest.mock("@/lib/auth/api-auth", () => ({
   authenticateRequest: jest.fn(),
@@ -31,7 +35,11 @@ jest.mock("@/lib/security/rate-limit", () => ({
 }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    aiConversation: { create: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn() },
+    aiConversation: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      updateMany: jest.fn(),
+    },
     aiMessage: {
       create: jest.fn(),
       findFirst: jest.fn(),
@@ -82,7 +90,7 @@ describe("AI archive confirmation", () => {
       workspace,
     });
     jest.mocked(buildAgentPromptForUser).mockResolvedValue("system");
-    jest.mocked(getConfiguredSchedulerAI).mockResolvedValue({
+    const configured = {
       settings: {
         allowParseTasks: true,
         allowFullAuto: true,
@@ -95,9 +103,19 @@ describe("AI archive confirmation", () => {
         }),
       },
       source: "byok",
-      usage: { plan: "PRO", allowed: true },
+      usage: { plan: "PRO", allowed: true, mode: "normal" },
+    };
+    jest
+      .mocked(getConfiguredSchedulerAI)
+      .mockResolvedValue(configured as never);
+    jest.mocked(getPreparedSchedulerAI).mockResolvedValue({
+      ...configured,
+      hostedMode: null,
     } as never);
     (prisma.aiConversation.create as jest.Mock).mockResolvedValue({
+      id: "conversation-1",
+    });
+    (prisma.aiConversation.findFirst as jest.Mock).mockResolvedValue({
       id: "conversation-1",
     });
     (prisma.aiConversation.updateMany as jest.Mock).mockResolvedValue({});
@@ -145,8 +163,25 @@ describe("AI archive confirmation", () => {
     expect(taskModel.update).not.toHaveBeenCalled();
   });
 
+  it("rejects an expired confirmation before claiming hosted AI", async () => {
+    (prisma.aiConversation.findFirst as jest.Mock).mockResolvedValue({
+      id: "conversation-1",
+    });
+    (prisma.aiMessage.findFirst as jest.Mock).mockResolvedValue(null);
+
+    const response = (await POST(request(true, "conversation-1")))!;
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: "The confirmation expired. Ask to perform the action again.",
+    });
+    expect(getPreparedSchedulerAI).not.toHaveBeenCalled();
+  });
+
   it("archives instead of deleting after confirmation", async () => {
-    const items = await streamItems((await POST(request(true)))!);
+    const items = await streamItems(
+      (await POST(request(true, "conversation-1")))!
+    );
 
     expect(taskModel.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -180,7 +215,7 @@ describe("AI archive confirmation", () => {
   it("rejects confirmation replay without a pending server record", async () => {
     (prisma.aiMessage.findFirst as jest.Mock).mockResolvedValue(null);
 
-    const response = (await POST(request(true)))!;
+    const response = (await POST(request(true, "conversation-1")))!;
 
     expect(response.status).toBe(409);
     expect(taskModel.update).not.toHaveBeenCalled();

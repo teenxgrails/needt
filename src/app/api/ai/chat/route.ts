@@ -7,7 +7,15 @@ import {
   rememberForUser,
 } from "@/services/ai/memory";
 import { createReschedulePreview } from "@/services/ai/reschedule-preview";
-import { getConfiguredSchedulerAI } from "@/services/ai/settings";
+import {
+  getConfiguredSchedulerAI,
+  getPreparedSchedulerAI,
+} from "@/services/ai/settings";
+import {
+  HOSTED_AI_BUSY_MESSAGE,
+  HOSTED_AI_RESTING_MESSAGE,
+  HostedAiQueueError,
+} from "@/services/ai/slow-queue";
 import {
   getAgentToolDefinitions,
   isDangerousAgentTool,
@@ -19,7 +27,6 @@ import {
   AIChatToolCall,
   SchedulerAI,
 } from "@/services/ai/types";
-import { recordHostedAiAction } from "@/services/ai/usage";
 import {
   finalizeSession,
   getActiveSession,
@@ -1005,30 +1012,6 @@ export async function POST(request: NextRequest) {
   );
   if (limited) return limited;
 
-  const { settings, ai, source, usage } = await getConfiguredSchedulerAI(
-    auth.userId
-  );
-  if (source === "none") {
-    const upgradeRequired = usage.plan === "FREE";
-    return NextResponse.json(
-      {
-        error: upgradeRequired
-          ? "The AI agent is available on Needt Pro and Lifetime."
-          : usage.allowed
-            ? "Hosted AI is unavailable. Add your own provider key in Settings."
-            : "Monthly hosted AI limit reached. Add your own provider key for unlimited actions.",
-        code: upgradeRequired
-          ? "UPGRADE_REQUIRED"
-          : usage.allowed
-            ? "AI_UNAVAILABLE"
-            : "HOSTED_LIMIT_REACHED",
-        upgradeRequired,
-        usage,
-      },
-      { status: upgradeRequired ? 403 : 409 }
-    );
-  }
-
   const body = await request.json();
   const message = typeof body.message === "string" ? body.message.trim() : "";
   const confirmed = Boolean(body.confirmed);
@@ -1036,47 +1019,57 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
-  const conversation =
-    typeof body.conversationId === "string" && body.conversationId
-      ? await prisma.aiConversation.findFirst({
-          where: {
-            id: body.conversationId,
-            userId: auth.userId,
-            workspaceId: auth.workspace!.workspaceId,
-          },
-        })
-      : await prisma.aiConversation.create({
-          data: {
-            userId: auth.userId,
-            workspaceId: auth.workspace!.workspaceId,
-            title: titleFromMessage(message),
-          },
-        });
+  const configured = await getConfiguredSchedulerAI(auth.userId);
+  if (configured.source === "none") {
+    const upgradeRequired = configured.usage.plan === "FREE";
+    return NextResponse.json(
+      {
+        error: upgradeRequired
+          ? "The AI agent is available on Needt Pro and Lifetime."
+          : configured.usage.exhausted
+            ? HOSTED_AI_RESTING_MESSAGE
+            : "Hosted AI is unavailable. Add your own provider key in Settings.",
+        code: upgradeRequired
+          ? "UPGRADE_REQUIRED"
+          : configured.usage.exhausted
+            ? "HOSTED_LIMIT_REACHED"
+            : "AI_UNAVAILABLE",
+        upgradeRequired,
+        usage: configured.usage,
+      },
+      { status: upgradeRequired ? 403 : 409 }
+    );
+  }
 
-  if (!conversation) {
+  const requestedConversationId =
+    typeof body.conversationId === "string" && body.conversationId
+      ? body.conversationId
+      : null;
+  let conversation = requestedConversationId
+    ? await prisma.aiConversation.findFirst({
+        where: {
+          id: requestedConversationId,
+          userId: auth.userId,
+          workspaceId: auth.workspace!.workspaceId,
+        },
+      })
+    : null;
+  if (requestedConversationId && !conversation) {
     return NextResponse.json(
       { error: "Conversation not found" },
       { status: 404 }
     );
   }
 
-  await prisma.aiMessage.create({
-    data: {
-      conversationId: conversation.id,
-      userId: auth.userId,
-      workspaceId: auth.workspace!.workspaceId,
-      role: "user",
-      content: message,
-    },
-  });
-
-  const history = await recentMessages(
-    conversation.id,
-    auth.workspace!.workspaceId
-  );
   let confirmedTool: AIChatToolCall | null = null;
   let confirmationMessageId: string | null = null;
   if (confirmed) {
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "The confirmation expired. Ask to perform the action again." },
+        { status: 409 }
+      );
+    }
     const confirmation = await prisma.aiMessage.findFirst({
       where: {
         conversationId: conversation.id,
@@ -1111,9 +1104,63 @@ export async function POST(request: NextRequest) {
     };
     confirmationMessageId = confirmation.id;
   }
-  if (source === "hosted") {
-    await recordHostedAiAction(auth.userId);
+
+  let prepared: Awaited<ReturnType<typeof getPreparedSchedulerAI>>;
+  try {
+    prepared = await getPreparedSchedulerAI(auth.userId, configured);
+  } catch (error) {
+    if (error instanceof HostedAiQueueError) {
+      return NextResponse.json(
+        { error: HOSTED_AI_BUSY_MESSAGE, code: "HOSTED_AI_BUSY" },
+        { status: 503, headers: { "Retry-After": "2" } }
+      );
+    }
+    throw error;
   }
+  const { settings, ai, source, usage, hostedMode } = prepared;
+  if (source === "none") {
+    const upgradeRequired = usage.plan === "FREE";
+    return NextResponse.json(
+      {
+        error: upgradeRequired
+          ? "The AI agent is available on Needt Pro and Lifetime."
+          : usage.exhausted
+            ? HOSTED_AI_RESTING_MESSAGE
+            : "Hosted AI is unavailable. Add your own provider key in Settings.",
+        code: upgradeRequired
+          ? "UPGRADE_REQUIRED"
+          : usage.exhausted
+            ? "HOSTED_LIMIT_REACHED"
+            : "AI_UNAVAILABLE",
+        upgradeRequired,
+        usage,
+      },
+      { status: upgradeRequired ? 403 : 409 }
+    );
+  }
+
+  conversation ??= await prisma.aiConversation.create({
+    data: {
+      userId: auth.userId,
+      workspaceId: auth.workspace!.workspaceId,
+      title: titleFromMessage(message),
+    },
+  });
+
+  await prisma.aiMessage.create({
+    data: {
+      conversationId: conversation.id,
+      userId: auth.userId,
+      workspaceId: auth.workspace!.workspaceId,
+      role: "user",
+      content: message,
+    },
+  });
+
+  const history = await recentMessages(
+    conversation.id,
+    auth.workspace!.workspaceId
+  );
   const systemPrompt = await buildAgentPromptForUser(
     auth.userId,
     settings.soulPreset,
@@ -1207,6 +1254,7 @@ export async function POST(request: NextRequest) {
             requiresConfirm: toolResult?.requiresConfirm || false,
             toolName: toolResult?.toolName || null,
             toolPayload: toolResult?.toolPayload || null,
+            notice: hostedMode === "slow" ? HOSTED_AI_BUSY_MESSAGE : undefined,
           }) + "\n"
         )
       );
