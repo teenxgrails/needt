@@ -259,8 +259,11 @@ export function createCollaborationServer(
         select: { userId: true, documentFormatVersion: true },
       });
       if (!page) return;
+      const actor =
+        lastContext?.resource === "page" ? lastContext.actor : page.userId;
+      if (!actor) return;
       await replacePageBlocks(
-        lastContext?.resource === "page" ? lastContext.actor : page.userId,
+        actor,
         pageId,
         collaborationDocumentToPageBlocks(document),
         PageAuthor.HUMAN,
