@@ -103,7 +103,7 @@ export interface RbShapeContext {
 
 /** What the component draws. Nothing here needs resolving again. */
 export interface RbShape {
-  id: number;
+  id: string;
   title: string;
   done: boolean;
   holder: string | null;

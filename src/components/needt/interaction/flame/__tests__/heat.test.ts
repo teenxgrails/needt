@@ -5,7 +5,7 @@ import type { NeedtTask } from "@/lib/needt/types";
 import { IMPULSE_HORIZON, IMPULSE_TASK_WEIGHT, impulseOf } from "../heat";
 
 function task(overrides: Partial<NeedtTask> = {}): NeedtTask {
-  return { id: 1, title: "Task", done: false, ...overrides };
+  return { id: "1", title: "Task", done: false, ...overrides };
 }
 
 describe("impulseOf", () => {
@@ -14,7 +14,7 @@ describe("impulseOf", () => {
   });
 
   it("is 0 when nothing in the category has closed", () => {
-    expect(impulseOf([task(), task({ id: 2 })])).toBe(0);
+    expect(impulseOf([task(), task({ id: "2" })])).toBe(0);
   });
 
   it("counts a closed part as one", () => {
@@ -38,15 +38,15 @@ describe("impulseOf", () => {
   it("sums parts and tasks across the whole category", () => {
     const items = [
       task({ done: true }), // +2
-      task({ id: 2, parts: [{ title: "a", done: true }] }), // +1
-      task({ id: 3 }), // +0
+      task({ id: "2", parts: [{ title: "a", done: true }] }), // +1
+      task({ id: "3" }), // +0
     ];
     expect(impulseOf(items)).toBeCloseTo(3 / IMPULSE_HORIZON);
   });
 
   it("clamps at 1 rather than reading past full heat", () => {
     const items = Array.from({ length: 10 }, (_, i) =>
-      task({ id: i, done: true })
+      task({ id: String(i), done: true })
     );
     expect(impulseOf(items)).toBe(1);
   });

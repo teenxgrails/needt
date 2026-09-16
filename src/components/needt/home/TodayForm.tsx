@@ -22,16 +22,18 @@ import { LuPlus, LuRotateCcw } from "react-icons/lu";
 
 import { calendarDayDifference, startOfDay } from "@/lib/date-utils";
 import { isOverdue, parseDueDate } from "@/lib/needt/derive";
-import { today as fixtureToday, tasks as fixtureTasks } from "@/lib/needt/fixture";
+import {
+  tasks as fixtureTasks,
+  today as fixtureToday,
+} from "@/lib/needt/fixture";
 import type { NeedtTask } from "@/lib/needt/types";
 
 import { RichBlock } from "../RichBlock";
 import { rbShape } from "../rb-shape";
 import { Glyph, IconButton, SidebarHint } from "../shell/chrome";
-
 import { HabitRail } from "./HabitRail";
-import { homeParted } from "./logic";
 import { Wall, WallShade } from "./Wall";
+import { homeParted } from "./logic";
 
 export interface TodayFormProps {
   /** Defaults to the fixture's tasks. */
@@ -40,7 +42,7 @@ export interface TodayFormProps {
    * `new Date()`, per repository convention. */
   now?: Date;
   onOpenTask?: (task: NeedtTask) => void;
-  onToggleTask?: (id: number) => void;
+  onToggleTask?: (id: string) => void;
   onAddTask?: () => void;
   onMoveOverdueToToday?: () => void;
 }
@@ -60,7 +62,7 @@ function TaskColumn({
   tasks: readonly NeedtTask[];
   dense?: boolean;
   onOpen?: (task: NeedtTask) => void;
-  onToggle?: (id: number) => void;
+  onToggle?: (id: string) => void;
 }) {
   return (
     <>
@@ -87,7 +89,7 @@ function TodayColumn({
 }: {
   tasks: readonly NeedtTask[];
   onOpen?: (task: NeedtTask) => void;
-  onToggle?: (id: number) => void;
+  onToggle?: (id: string) => void;
   onAdd?: () => void;
 }) {
   const rows = homeParted(tasks);
@@ -102,9 +104,31 @@ function TodayColumn({
         gap: 8,
       }}
     >
-      <header style={{ display: "flex", alignItems: "baseline", gap: 8, height: 28, flex: "none" }}>
-        <span style={{ font: "var(--type-card-title)", fontSize: 13, color: "var(--accent)" }}>Today</span>
-        <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: 8,
+          height: 28,
+          flex: "none",
+        }}
+      >
+        <span
+          style={{
+            font: "var(--type-card-title)",
+            fontSize: 13,
+            color: "var(--accent)",
+          }}
+        >
+          Today
+        </span>
+        <span
+          style={{
+            font: "var(--type-meta)",
+            color: "var(--text-muted)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
           {tasks.length}
         </span>
       </header>
@@ -126,7 +150,12 @@ function TodayColumn({
             row.kind === "header" ? (
               <span
                 key={row.part}
-                style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: row.first ? 0 : 6 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingTop: row.first ? 0 : 6,
+                }}
               >
                 <span
                   style={{
@@ -139,7 +168,10 @@ function TodayColumn({
                 >
                   {row.part}
                 </span>
-                <span aria-hidden="true" style={{ flex: 1, borderTop: "1px solid var(--border)" }} />
+                <span
+                  aria-hidden="true"
+                  style={{ flex: 1, borderTop: "1px solid var(--border)" }}
+                />
               </span>
             ) : (
               <RichBlock
@@ -196,20 +228,43 @@ export function TodayForm({
     [tasks, now]
   );
   const mine = React.useMemo(
-    () => tasks.filter((t) => !t.noSlot && !isOverdue(t, now) && dueOffset(t, now) === 0),
+    () =>
+      tasks.filter(
+        (t) => !t.noSlot && !isOverdue(t, now) && dueOffset(t, now) === 0
+      ),
     [tasks, now]
   );
   const next = React.useMemo(
-    () => tasks.filter((t) => !t.noSlot && !isOverdue(t, now) && dueOffset(t, now) === 1),
+    () =>
+      tasks.filter(
+        (t) => !t.noSlot && !isOverdue(t, now) && dueOffset(t, now) === 1
+      ),
     [tasks, now]
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, gap: 16 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        minHeight: 0,
+        gap: 16,
+      }}
+    >
       <div style={{ flex: "none" }}>
         <HabitRail />
       </div>
-      <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", justifyContent: "center", overflow: "clip" }}>
+      <div
+        style={{
+          position: "relative",
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          justifyContent: "center",
+          overflow: "clip",
+        }}
+      >
         <WallShade side="left" />
         <WallShade side="right" />
         {debt.length ? (
@@ -227,12 +282,32 @@ export function TodayForm({
               />
             }
           >
-            <TaskColumn tasks={debt} dense onOpen={onOpenTask} onToggle={onToggleTask} />
+            <TaskColumn
+              tasks={debt}
+              dense
+              onOpen={onOpenTask}
+              onToggle={onToggleTask}
+            />
           </Wall>
         ) : null}
-        <TodayColumn tasks={mine} onOpen={onOpenTask} onToggle={onToggleTask} onAdd={onAddTask} />
-        <Wall side="right" title="Tomorrow" count={next.length} emptyText="Nothing yet.">
-          <TaskColumn tasks={next} dense onOpen={onOpenTask} onToggle={onToggleTask} />
+        <TodayColumn
+          tasks={mine}
+          onOpen={onOpenTask}
+          onToggle={onToggleTask}
+          onAdd={onAddTask}
+        />
+        <Wall
+          side="right"
+          title="Tomorrow"
+          count={next.length}
+          emptyText="Nothing yet."
+        >
+          <TaskColumn
+            tasks={next}
+            dense
+            onOpen={onOpenTask}
+            onToggle={onToggleTask}
+          />
         </Wall>
       </div>
     </div>

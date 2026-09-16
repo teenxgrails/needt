@@ -29,7 +29,7 @@ export interface FocusSession {
   intention: string;
   planned: number;
   elapsed: number;
-  taskId: number | null;
+  taskId: string | null;
 }
 
 const LENGTHS = [25, 50, 90] as const;
@@ -62,7 +62,7 @@ export function FocusControl({
     () => tasks.filter((task) => !task.done).slice(0, 5),
     [tasks]
   );
-  const [taskId, setTaskId] = React.useState<number | null>(
+  const [taskId, setTaskId] = React.useState<string | null>(
     open5[0]?.id ?? null
   );
 

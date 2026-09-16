@@ -12,6 +12,10 @@
  * server-only module should.
  */
 import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
+import {
   addCalendarDays,
   newDate,
   startOfDay,
@@ -79,22 +83,36 @@ const GLOBAL_STAGES: readonly NeedtStage[] = Object.freeze([
 
 async function getTasks(
   userId: string,
+  workspace: WorkspaceAccess,
   now: Date
 ): Promise<readonly NeedtTask[]> {
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const rows = await prisma.task.findMany({
     where: {
-      OR: [{ userId }, { assigneeId: userId }],
+      ...scope,
       isArchived: false,
     },
     include: taskNeedtInclude,
     orderBy: { createdAt: "desc" },
   });
-  return rows.map((row) => toNeedtTask(row, now));
+  const visibleIds = new Set(rows.map((row) => row.id));
+  return rows.map((row) => {
+    const task = toNeedtTask(row, now);
+    return task.blockedBy && !visibleIds.has(task.blockedBy)
+      ? { ...task, blockedBy: undefined }
+      : task;
+  });
 }
 
-async function getProjects(userId: string): Promise<readonly NeedtProject[]> {
+async function getProjects(
+  userId: string,
+  workspace: WorkspaceAccess
+): Promise<readonly NeedtProject[]> {
   const rows = await prisma.project.findMany({
-    where: { userId, status: "active" },
+    where: {
+      ...workspaceDataScopeWhere(workspace, userId),
+      status: "active",
+    },
     orderBy: { createdAt: "asc" },
   });
   return rows.map(
@@ -107,15 +125,47 @@ async function getProjects(userId: string): Promise<readonly NeedtProject[]> {
   );
 }
 
-async function getPeople(userId: string): Promise<readonly NeedtPerson[]> {
+async function getPeople(
+  userId: string,
+  workspace: WorkspaceAccess
+): Promise<readonly NeedtPerson[]> {
+  //todo Owner decision: if task holders/waits may include outside contacts,
+  // extend this registry without weakening workspace membership authorization.
+  if (workspace.dataScope.mode === "workspace") {
+    const members = await prisma.workspaceMember.findMany({
+      where: { workspaceId: workspace.dataScope.workspaceId },
+      select: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            initials: true,
+            hue: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    return members.map(
+      ({ user }): NeedtPerson => ({
+        id: user.id,
+        name: user.name ?? user.email ?? "Unknown",
+        initials: user.initials ?? initialsOf(user.name),
+        hue: user.hue ?? FALLBACK_HUE,
+      })
+    );
+  }
+
+  const scope = workspaceDataScopeWhere(workspace, userId);
   const [assignees, waitedOn] = await Promise.all([
     prisma.task.findMany({
-      where: { userId, assigneeId: { not: null } },
+      where: { ...scope, assigneeId: { not: null } },
       select: { assigneeId: true },
       distinct: ["assigneeId"],
     }),
     prisma.taskWait.findMany({
-      where: { resolvedAt: null, task: { userId } },
+      where: { resolvedAt: null, task: scope },
       select: { waitingOnUserId: true },
       distinct: ["waitingOnUserId"],
     }),
@@ -138,11 +188,15 @@ async function getPeople(userId: string): Promise<readonly NeedtPerson[]> {
 
 async function getHabits(
   userId: string,
+  workspace: WorkspaceAccess,
   now: Date
 ): Promise<readonly NeedtHabit[]> {
   const window = fourteenDayWindow(now);
   const rows = await prisma.habit.findMany({
-    where: { userId, archivedAt: null },
+    where: {
+      ...workspaceDataScopeWhere(workspace, userId),
+      archivedAt: null,
+    },
     include: {
       project: { select: { name: true } },
       completions: { where: { date: { gte: window[0] } } },
@@ -190,13 +244,9 @@ async function getCalendars(userId: string): Promise<NeedtCalendarMap> {
 }
 
 /**
- * The database-backed `NeedtDataSource`, scoped to one user.
- *
- * Scoping is by `userId` alone (the "legacy" mode `workspaceDataScopeWhere`
- * in `@/lib/auth/workspace-auth` falls back to) rather than by workspace: the
- * seam this implements takes a single `userId`, and layering workspace
- * fan-out on top is a caller-side concern for whoever wires this into a
- * route, not something this constructor shape can express today.
+ * The database-backed `NeedtDataSource`, scoped by a server-authorized
+ * workspace access object. A request-supplied workspace id is never enough:
+ * callers must resolve membership before constructing the source.
  *
  * `now` defaults to the real clock; a caller can pin it (tests, and any
  * screen that wants every read in one render judged against the same
@@ -204,13 +254,14 @@ async function getCalendars(userId: string): Promise<NeedtCalendarMap> {
  */
 export function prismaDataSource(
   userId: string,
+  workspace: WorkspaceAccess,
   now: () => Date = newDate
 ): NeedtDataSource {
   return {
-    getTasks: () => getTasks(userId, now()),
-    getProjects: () => getProjects(userId),
-    getPeople: () => getPeople(userId),
-    getHabits: () => getHabits(userId, now()),
+    getTasks: () => getTasks(userId, workspace, now()),
+    getProjects: () => getProjects(userId, workspace),
+    getPeople: () => getPeople(userId, workspace),
+    getHabits: () => getHabits(userId, workspace, now()),
     getStages: async () => GLOBAL_STAGES,
     getCalendars: () => getCalendars(userId),
     getClosedDays: () => getClosedDays(userId, now()),

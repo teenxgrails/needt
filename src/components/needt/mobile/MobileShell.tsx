@@ -79,19 +79,17 @@ export function MobileShell({
   const [focusOn, setFocusOn] = React.useState(false);
   const [queueOpen, setQueueOpen] = React.useState(false);
   const [composerOpen, setComposerOpen] = React.useState(false);
-  const [openTaskId, setOpenTaskId] = React.useState<number | null>(null);
+  const [openTaskId, setOpenTaskId] = React.useState<string | null>(null);
   const [tasks, setTasks] = React.useState<readonly NeedtTask[]>(initialTasks);
   const [theme, setTheme] = React.useState<ResolvedThemeMode>(initialTheme);
   const [drift, setDrift] = React.useState(false);
   const [rail, setRail] = React.useState<MobileRailLanguage>("movability");
-  /* A session-local id sequence, seeded past the fixture's own ids — there is
-   * no store behind this shell (PORT.md §9: `Data.js` is in-memory), so this
-   * only has to keep a new task distinct from the ones already on screen. */
-  const nextIdRef = React.useRef(
-    Math.max(0, ...initialTasks.map((task) => task.id)) + 1
-  );
+  /* A session-local string id sequence. There is no store behind this shell
+   * (PORT.md §9: `Data.js` is in-memory), so the prefix only has to keep a
+   * newly captured task distinct from the tasks already on screen. */
+  const nextIdRef = React.useRef(1);
 
-  const toggleTask = React.useCallback((id: number) => {
+  const toggleTask = React.useCallback((id: string) => {
     setTasks((list) =>
       list.map((task) =>
         task.id === id ? { ...task, done: !task.done } : task
@@ -99,7 +97,7 @@ export function MobileShell({
     );
   }, []);
 
-  const togglePart = React.useCallback((id: number, index: number) => {
+  const togglePart = React.useCallback((id: string, index: number) => {
     setTasks((list) =>
       list.map((task) =>
         task.id === id && task.parts
@@ -118,7 +116,7 @@ export function MobileShell({
     const { parse } = draft;
     const project = parse.found.project?.project.name ?? null;
     const due = parse.found.date?.label ?? null;
-    const id = nextIdRef.current;
+    const id = `mobile-${nextIdRef.current}`;
     nextIdRef.current += 1;
     const created: NeedtTask = {
       id,

@@ -68,7 +68,7 @@ export interface WaitsOn {
  * back to a default, which is how a habit once wore Operations' orange.
  */
 export interface NeedtTask {
-  id: number;
+  id: string;
   title: string;
   /** Project name, id or alias. `null`/absent = no project. */
   project?: string | null;
@@ -93,7 +93,7 @@ export interface NeedtTask {
   holder?: string;
   stage?: NeedtStageId;
   /** Id of the task that must close first. */
-  blockedBy?: number;
+  blockedBy?: string;
 
   /* Three-state fields — see the header. `null` = capability not built yet. */
 

@@ -44,35 +44,6 @@ import type {
   TaskPart,
 } from "./types";
 
-/* ── The id shim ──────────────────────────────────────────────────────────
- *
- * `NeedtTask.id` is `number` because the contract was authored against the
- * fixture's small integer ids (1..26) — see `types.ts`. Real `Task.id`s are
- * cuid strings. Widening the contract to `string | number` was the obvious
- * fix and the wrong one: `id: number` is read in every screen under
- * `src/components/needt/**`, `types.ts` says not to redesign the seam, and a
- * union would just move this exact problem to every call site instead of
- * solving it once, here.
- *
- * So every cuid is folded through the same deterministic hash (FNV-1a,
- * 32-bit) into an unsigned int. It is not reversible, and at real scale it is
- * not collision-free — this is a shim, not a fix, and it is the one part of
- * the gap that turned out not to be portable at all. `blockedBy` folds the
- * referenced task's cuid through the same function, so the two agree within
- * one response, which is all `derive.ts` ever needs of them: `blockerOf` and
- * `unblocks` only compare ids that came from the same task list. */
-const FNV_OFFSET_BASIS = 0x811c9dc5;
-const FNV_PRIME = 0x01000193;
-
-export function hashTaskId(cuid: string): number {
-  let hash = FNV_OFFSET_BASIS;
-  for (let i = 0; i < cuid.length; i++) {
-    hash ^= cuid.charCodeAt(i);
-    hash = Math.imul(hash, FNV_PRIME);
-  }
-  return hash >>> 0;
-}
-
 /* ── Small formatting helpers ─────────────────────────────────────────────
  *
  * These read fields off an already-constructed `Date`; they don't build one,
@@ -130,7 +101,7 @@ export function toNeedtTask(row: NeedtTaskRow, now: Date): NeedtTask {
   const activeWait = row.waits[0];
 
   return {
-    id: hashTaskId(row.id),
+    id: row.id,
     title: row.title,
     project: row.project?.name ?? null,
     time: row.scheduledStart ? formatClock(row.scheduledStart) : undefined,
@@ -148,7 +119,7 @@ export function toNeedtTask(row: NeedtTaskRow, now: Date): NeedtTask {
       : undefined,
     holder: row.assigneeId ?? undefined,
     stage: row.globalStage ? GLOBAL_STAGE_TO_ID[row.globalStage] : undefined,
-    blockedBy: row.dependsOnId ? hashTaskId(row.dependsOnId) : undefined,
+    blockedBy: row.dependsOnId ?? undefined,
 
     /* Three-state fields (see the header of types.ts). Every one of these
        now has a real column or table, so DB-null/empty means "this task has

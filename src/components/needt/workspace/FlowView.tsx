@@ -48,7 +48,7 @@ export interface FlowViewProps {
 }
 
 interface DrawnLink extends FlowLink {
-  id: number;
+  id: string;
   hue: string;
 }
 
@@ -74,7 +74,7 @@ function FlowCard({
   lead: boolean;
   dark?: boolean;
   onOpen?: () => void;
-  setNode: (id: number, el: HTMLElement | null) => void;
+  setNode: (id: string, el: HTMLElement | null) => void;
 }) {
   return (
     <div ref={(el) => setNode(task.id, el)} style={{ position: "relative" }}>
@@ -116,7 +116,7 @@ export function FlowView({
   const lead = React.useMemo(() => pickFlowLead(open, tasks), [open, tasks]);
 
   const shapes = React.useMemo(() => {
-    const map = new Map<number, RbShape>();
+    const map = new Map<string, RbShape>();
     for (const t of open) {
       const line = blockedLine(blockerOf(t, tasks), people);
       map.set(
@@ -155,8 +155,8 @@ export function FlowView({
   }, [stuck, tasks, people]);
 
   const wrapRef = React.useRef<HTMLDivElement | null>(null);
-  const nodeRefs = React.useRef(new Map<number, HTMLElement>());
-  const setNode = React.useCallback((id: number, el: HTMLElement | null) => {
+  const nodeRefs = React.useRef(new Map<string, HTMLElement>());
+  const setNode = React.useCallback((id: string, el: HTMLElement | null) => {
     if (el) nodeRefs.current.set(id, el);
     else nodeRefs.current.delete(id);
   }, []);

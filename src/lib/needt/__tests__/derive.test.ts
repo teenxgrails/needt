@@ -23,7 +23,7 @@ import {
 } from "../fixture";
 import type { NeedtDayMark, NeedtTask } from "../types";
 
-const task = (over: Partial<NeedtTask> & { id: number }): NeedtTask => ({
+const task = (over: Partial<NeedtTask> & { id: string }): NeedtTask => ({
   title: `Task ${over.id}`,
   done: false,
   ...over,
@@ -31,10 +31,10 @@ const task = (over: Partial<NeedtTask> & { id: number }): NeedtTask => ({
 
 describe("blockerOf", () => {
   it("prefers a task blocker over a person blocker", () => {
-    const blocker = task({ id: 1 });
+    const blocker = task({ id: "1" });
     const waiting = task({
-      id: 2,
-      blockedBy: 1,
+      id: "2",
+      blockedBy: "1",
       waitsOn: { on: "anna", for: "the legal sign-off" },
     });
 
@@ -45,10 +45,10 @@ describe("blockerOf", () => {
   });
 
   it("ignores a blocker that is already done and falls through to the person", () => {
-    const blocker = task({ id: 1, done: true });
+    const blocker = task({ id: "1", done: true });
     const waiting = task({
-      id: 2,
-      blockedBy: 1,
+      id: "2",
+      blockedBy: "1",
       waitsOn: { on: "anna", for: "the legal sign-off" },
     });
 
@@ -60,19 +60,19 @@ describe("blockerOf", () => {
   });
 
   it("reports nothing when the only blocker is done", () => {
-    const blocker = task({ id: 1, done: true });
-    const waiting = task({ id: 2, blockedBy: 1 });
+    const blocker = task({ id: "1", done: true });
+    const waiting = task({ id: "2", blockedBy: "1" });
 
     expect(blockerOf(waiting, [blocker, waiting])).toBeNull();
   });
 
   it("returns null honestly when nothing is in the way", () => {
-    const lone = task({ id: 1 });
+    const lone = task({ id: "1" });
     expect(blockerOf(lone, [lone])).toBeNull();
   });
 
   it("returns null when the blocking task is not in the list", () => {
-    const orphan = task({ id: 2, blockedBy: 99 });
+    const orphan = task({ id: "2", blockedBy: "99" });
     expect(blockerOf(orphan, [orphan])).toBeNull();
   });
 });
@@ -85,11 +85,11 @@ describe("unblocks", () => {
   it("counts a multi-step chain transitively", () => {
     // 1 ← 2 ← 3 ← 4, plus 5 hanging off 2 as a second branch.
     const list = [
-      task({ id: 1 }),
-      task({ id: 2, blockedBy: 1 }),
-      task({ id: 3, blockedBy: 2 }),
-      task({ id: 4, blockedBy: 3 }),
-      task({ id: 5, blockedBy: 2 }),
+      task({ id: "1" }),
+      task({ id: "2", blockedBy: "1" }),
+      task({ id: "3", blockedBy: "2" }),
+      task({ id: "4", blockedBy: "3" }),
+      task({ id: "5", blockedBy: "2" }),
     ];
 
     expect(unblocks(list[0], list)).toBe(4);
@@ -100,9 +100,9 @@ describe("unblocks", () => {
 
   it("does not count done tasks, or anything behind them", () => {
     const list = [
-      task({ id: 1 }),
-      task({ id: 2, blockedBy: 1, done: true }),
-      task({ id: 3, blockedBy: 2 }),
+      task({ id: "1" }),
+      task({ id: "2", blockedBy: "1", done: true }),
+      task({ id: "3", blockedBy: "2" }),
     ];
 
     expect(unblocks(list[0], list)).toBe(0);
@@ -113,13 +113,16 @@ describe("unblocks", () => {
     // is counted once) rather than spinning; a task inside the cycle is
     // reached by the walk and so counts itself, which is the prototype's
     // behaviour and is only reachable from data that can never resolve.
-    const list = [task({ id: 1, blockedBy: 2 }), task({ id: 2, blockedBy: 1 })];
+    const list = [
+      task({ id: "1", blockedBy: "2" }),
+      task({ id: "2", blockedBy: "1" }),
+    ];
 
     expect(unblocks(list[0], list)).toBe(2);
   });
 
   it("returns the cached result for the same list and task", () => {
-    const list = [task({ id: 1 }), task({ id: 2, blockedBy: 1 })];
+    const list = [task({ id: "1" }), task({ id: "2", blockedBy: "1" })];
 
     expect(unblocks(list[0], list)).toBe(1);
 
@@ -134,10 +137,10 @@ describe("unblocks", () => {
   });
 
   it("recomputes for a new array, the way a React update hands one over", () => {
-    const list = [task({ id: 1 }), task({ id: 2, blockedBy: 1 })];
+    const list = [task({ id: "1" }), task({ id: "2", blockedBy: "1" })];
     expect(unblocks(list[0], list)).toBe(1);
 
-    const next = [list[0], task({ id: 2 })];
+    const next = [list[0], task({ id: "2" })];
     expect(unblocks(next[0], next)).toBe(0);
   });
 
@@ -150,10 +153,10 @@ describe("unblocks", () => {
 describe("blocking", () => {
   it("counts open tasks per person, skipping done ones", () => {
     const list = [
-      task({ id: 1, waitsOn: { on: "anna", for: "sign-off" } }),
-      task({ id: 2, waitsOn: { on: "anna", for: "the numbers" } }),
-      task({ id: 3, waitsOn: { on: "tom", for: "the files" } }),
-      task({ id: 4, done: true, waitsOn: { on: "tom", for: "the quote" } }),
+      task({ id: "1", waitsOn: { on: "anna", for: "sign-off" } }),
+      task({ id: "2", waitsOn: { on: "anna", for: "the numbers" } }),
+      task({ id: "3", waitsOn: { on: "tom", for: "the files" } }),
+      task({ id: "4", done: true, waitsOn: { on: "tom", for: "the quote" } }),
     ];
 
     expect(blocking(list)).toEqual({ anna: 2, tom: 1 });
@@ -251,28 +254,28 @@ describe("dates", () => {
   });
 
   it("calls a passed deadline overdue and today's deadline not", () => {
-    expect(isOverdue(task({ id: 1, due: "31 Aug" }), now)).toBe(true);
-    expect(isOverdue(task({ id: 2, due: "1 Sep" }), now)).toBe(false);
-    expect(isOverdue(task({ id: 3, due: "4 Sep" }), now)).toBe(false);
+    expect(isOverdue(task({ id: "1", due: "31 Aug" }), now)).toBe(true);
+    expect(isOverdue(task({ id: "2", due: "1 Sep" }), now)).toBe(false);
+    expect(isOverdue(task({ id: "3", due: "4 Sep" }), now)).toBe(false);
   });
 
   it("never calls a done task overdue", () => {
-    expect(isOverdue(task({ id: 1, due: "31 Aug", done: true }), now)).toBe(
+    expect(isOverdue(task({ id: "1", due: "31 Aug", done: true }), now)).toBe(
       false
     );
   });
 
   it("agrees with the fixture's authored overdue flag", () => {
-    const invoices = fixtureTasks.find((t) => t.id === 2);
+    const invoices = fixtureTasks.find((t) => t.id === "2");
     expect(invoices?.overdue).toBe(true);
     expect(isOverdue(invoices as NeedtTask, now)).toBe(true);
   });
 
   it("reports age from the record, then from a passed deadline", () => {
-    expect(ageInDays(task({ id: 1, age: 34 }), now)).toBe(34);
-    expect(ageInDays(task({ id: 2, due: "25 Aug" }), now)).toBe(7);
-    expect(ageInDays(task({ id: 3, due: "4 Sep" }), now)).toBe(0);
-    expect(ageInDays(task({ id: 4 }), now)).toBe(0);
+    expect(ageInDays(task({ id: "1", age: 34 }), now)).toBe(34);
+    expect(ageInDays(task({ id: "2", due: "25 Aug" }), now)).toBe(7);
+    expect(ageInDays(task({ id: "3", due: "4 Sep" }), now)).toBe(0);
+    expect(ageInDays(task({ id: "4" }), now)).toBe(0);
   });
 
   it("spells one day label", () => {

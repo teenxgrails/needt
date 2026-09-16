@@ -42,11 +42,11 @@ export interface WorkspaceScreenProps {
   projects: readonly NeedtProject[];
   stages: readonly NeedtStage[];
   dark?: boolean;
-  onToggle?: (id: number) => void;
+  onToggle?: (id: string) => void;
   onOpen?: (task: NeedtTask) => void;
   onCreate?: () => void;
-  onTogglePart?: (taskId: number, index: number) => void;
-  onPromotePart?: (taskId: number, index: number) => void;
+  onTogglePart?: (taskId: string, index: number) => void;
+  onPromotePart?: (taskId: string, index: number) => void;
 }
 
 interface ProjectGroup {

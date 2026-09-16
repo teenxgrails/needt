@@ -62,7 +62,7 @@ export function blockerOf(
    map is weak — so the normal React path (a new array each update) recomputes
    and the old entry is collected. Mutating a list in place is the one case
    the cache cannot see: call `clearUnblocksCache()` after doing that. */
-let unblocksCache = new WeakMap<object, Map<number, number>>();
+let unblocksCache = new WeakMap<object, Map<string, number>>();
 
 /**
  * How many open tasks this task is holding up, counted transitively through
@@ -75,19 +75,19 @@ let unblocksCache = new WeakMap<object, Map<number, number>>();
 export function unblocks(task: NeedtTask, tasks: readonly NeedtTask[]): number {
   let perList = unblocksCache.get(tasks);
   if (!perList) {
-    perList = new Map<number, number>();
+    perList = new Map<string, number>();
     unblocksCache.set(tasks, perList);
   }
   const cached = perList.get(task.id);
   if (cached !== undefined) return cached;
 
   const open = tasks.filter((candidate) => !candidate.done);
-  const seen = new Set<number>();
-  let frontier = new Set<number>([task.id]);
+  const seen = new Set<string>();
+  let frontier = new Set<string>([task.id]);
   let held = 0;
 
   while (frontier.size) {
-    const next = new Set<number>();
+    const next = new Set<string>();
     for (const candidate of open) {
       if (seen.has(candidate.id)) continue;
       if (candidate.blockedBy === undefined) continue;
@@ -109,7 +109,7 @@ export function unblocks(task: NeedtTask, tasks: readonly NeedtTask[]): number {
  * is keyed by the list's identity.
  */
 export function clearUnblocksCache(): void {
-  unblocksCache = new WeakMap<object, Map<number, number>>();
+  unblocksCache = new WeakMap<object, Map<string, number>>();
 }
 
 /**

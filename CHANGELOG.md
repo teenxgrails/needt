@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Design data layer: task ids now stay as database cuid strings from Prisma
+  through every new-design surface instead of being irreversibly hashed to
+  numbers. The Prisma source now requires server-authorized workspace access,
+  scopes workspace-owned reads to it, and limits the people registry to that
+  workspace's members.
 - Wordmark: added `ExposureWordmark`, the variable-font mark driven by the
   now-licensed Exposure typeface's `EXPO` axis — develop-in on mount, an idle
   breathe (with an optional pulse burst), a pointer-driven torch, and a busy

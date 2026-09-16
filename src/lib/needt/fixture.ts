@@ -150,7 +150,7 @@ export const people: readonly NeedtPerson[] = Object.freeze([
    age and where the scheduler moved it from. */
 export const tasks: readonly NeedtTask[] = Object.freeze([
   {
-    id: 1,
+    id: "1",
     title: "Draft the launch brief",
     project: "Operations",
     tone: "info",
@@ -163,7 +163,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     holder: "you",
     waitsOn: { on: "anna", for: "the legal sign-off" },
     stage: "doing",
-    blockedBy: 6,
+    blockedBy: "6",
     heat: 0.7,
     parts: [
       { title: "Pull last month's numbers", done: true },
@@ -172,7 +172,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     ],
   },
   {
-    id: 2,
+    id: "2",
     title: "Send invoices for August",
     project: "Operations",
     tone: "info",
@@ -187,7 +187,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     stage: "doing",
   },
   {
-    id: 3,
+    id: "3",
     title: "Review the form-row spec",
     project: "Design system",
     tone: "accent",
@@ -201,7 +201,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     stage: "review",
   },
   {
-    id: 4,
+    id: "4",
     title: "German — B2 unit 4",
     project: "German",
     tone: "success",
@@ -215,7 +215,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     stage: "todo",
   },
   {
-    id: 5,
+    id: "5",
     title: "Call the accountant back",
     project: null,
     status: "todo",
@@ -224,7 +224,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     age: 34,
   },
   {
-    id: 14,
+    id: "14",
     title: "Finish the tank graphic",
     project: "Design system",
     tone: "accent",
@@ -239,7 +239,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     stage: "doing",
   },
   {
-    id: 15,
+    id: "15",
     title: "Reply to the Berlin buyer",
     project: "Resale",
     status: "todo",
@@ -249,7 +249,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     at: 9,
   },
   {
-    id: 16,
+    id: "16",
     title: "Photograph the shell",
     project: "Resale",
     status: "todo",
@@ -264,7 +264,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     ],
   },
   {
-    id: 17,
+    id: "17",
     title: "Sign the factory quote",
     project: "Operations",
     status: "todo",
@@ -275,10 +275,10 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     entry: "Open the quote PDF",
     holder: "tom",
     stage: "review",
-    blockedBy: 26,
+    blockedBy: "26",
   },
   {
-    id: 18,
+    id: "18",
     title: "Pick the courier for the batch",
     project: "Operations",
     status: "todo",
@@ -287,10 +287,10 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     done: false,
     at: 16,
     stage: "todo",
-    blockedBy: 17,
+    blockedBy: "17",
   },
   {
-    id: 19,
+    id: "19",
     title: "Read the VAT note",
     status: "todo",
     due: "3 Sep",
@@ -299,7 +299,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     at: 18,
   },
   {
-    id: 20,
+    id: "20",
     title: "Landing page copy",
     project: "Design system",
     status: "todo",
@@ -312,7 +312,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     stage: "doing",
   },
   {
-    id: 21,
+    id: "21",
     title: "Ship the camera body",
     project: "Resale",
     status: "todo",
@@ -323,7 +323,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     value: 1600,
   },
   {
-    id: 22,
+    id: "22",
     title: "Write the September brief",
     project: "Operations",
     status: "todo",
@@ -333,10 +333,10 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     at: 15,
     holder: "anna",
     stage: "todo",
-    blockedBy: 1,
+    blockedBy: "1",
   },
   {
-    id: 23,
+    id: "23",
     title: "German — B2 unit 5",
     project: "German",
     status: "todo",
@@ -346,7 +346,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     at: 18,
   },
   {
-    id: 24,
+    id: "24",
     title: "Archive August",
     status: "todo",
     due: "5 Sep",
@@ -354,7 +354,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     done: false,
   },
   {
-    id: 25,
+    id: "25",
     title: "Two pairs of boots — list them",
     project: "Resale",
     status: "todo",
@@ -365,7 +365,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     value: 5600,
   },
   {
-    id: 26,
+    id: "26",
     title: "Read the two supplier contracts",
     project: "Operations",
     status: "todo",
@@ -377,7 +377,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     stage: "doing",
   },
   {
-    id: 6,
+    id: "6",
     title: "Collect last quarter's numbers",
     project: "Operations",
     tone: "info",
@@ -394,7 +394,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     ],
   },
   {
-    id: 7,
+    id: "7",
     title: "Pick a courier for the September batch",
     project: null,
     status: "todo",
@@ -402,7 +402,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     done: false,
   },
   {
-    id: 8,
+    id: "8",
     title: "Write the weekly review",
     project: "Design system",
     tone: "accent",
@@ -413,7 +413,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     done: false,
   },
   {
-    id: 9,
+    id: "9",
     title: "Reconcile the card statement",
     project: "Operations",
     tone: "info",
@@ -421,11 +421,11 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     done: true,
     stage: "done",
   },
-  { id: 10, title: "Book the dentist", project: null, est: 15, done: true },
+  { id: "10", title: "Book the dentist", project: null, est: 15, done: true },
   /* A money group: one task per thing, a sum on the group, and no slot in the
      day — the thing sells when it sells, so there is nothing to move. */
   {
-    id: 11,
+    id: "11",
     title: "Arc'teryx shell — L",
     project: "Resale",
     status: "in_progress",
@@ -441,7 +441,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     ],
   },
   {
-    id: 12,
+    id: "12",
     title: "Two pairs of boots",
     project: "Resale",
     status: "todo",
@@ -456,7 +456,7 @@ export const tasks: readonly NeedtTask[] = Object.freeze([
     ],
   },
   {
-    id: 13,
+    id: "13",
     title: "Camera body",
     project: "Resale",
     status: "todo",

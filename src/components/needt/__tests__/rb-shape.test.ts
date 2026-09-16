@@ -17,7 +17,11 @@ import {
   rbShape,
 } from "../rb-shape";
 
-const base: NeedtTask = { id: 1, title: "Sign the factory quote", done: false };
+const base: NeedtTask = {
+  id: "1",
+  title: "Sign the factory quote",
+  done: false,
+};
 
 const task = (over: Partial<RbInput> = {}): RbInput => ({ ...base, ...over });
 

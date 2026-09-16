@@ -13,7 +13,7 @@ import {
 
 import { newDateFromYMD } from "@/lib/date-utils";
 
-import { hashTaskId, type NeedtTaskRow, toNeedtTask } from "../task-view";
+import { type NeedtTaskRow, toNeedtTask } from "../task-view";
 
 const NOW = newDateFromYMD(2026, 8, 15); // 15 Sep 2026
 
@@ -116,7 +116,11 @@ function row(overrides: Partial<NeedtTaskRow>): NeedtTaskRow {
 describe("toNeedtTask", () => {
   it("maps title, project name, and the todo/in_progress statuses", () => {
     const t = toNeedtTask(
-      row({ title: "Ship it", status: "in_progress", project: { name: "Operations" } }),
+      row({
+        title: "Ship it",
+        status: "in_progress",
+        project: { name: "Operations" },
+      }),
       NOW
     );
     expect(t.title).toBe("Ship it");
@@ -193,37 +197,16 @@ describe("toNeedtTask", () => {
   });
 
   describe("blockedBy — reads Task.dependsOnId, not TaskDependency", () => {
-    it("hashes the dependency's cuid the same way it hashes id", () => {
+    it("passes the task and dependency cuids through unchanged", () => {
       const t = toNeedtTask(row({ id: "task_a", dependsOnId: "task_b" }), NOW);
-      expect(t.id).toBe(hashTaskId("task_a"));
-      expect(t.blockedBy).toBe(hashTaskId("task_b"));
+      expect(t.id).toBe("task_a");
+      expect(t.blockedBy).toBe("task_b");
       expect(t.blockedBy).not.toBe(t.id);
     });
 
     it("leaves blockedBy unset with no dependency", () => {
       const t = toNeedtTask(row({ dependsOnId: null }), NOW);
       expect(t.blockedBy).toBeUndefined();
-    });
-  });
-
-  describe("id hashing", () => {
-    it("is deterministic", () => {
-      expect(hashTaskId("clx1234567890")).toBe(hashTaskId("clx1234567890"));
-    });
-
-    it("is a non-negative integer even for very different strings", () => {
-      for (const cuid of ["a", "clx1234567890", "z".repeat(40), ""]) {
-        const hash = hashTaskId(cuid);
-        expect(Number.isInteger(hash)).toBe(true);
-        expect(hash).toBeGreaterThanOrEqual(0);
-      }
-    });
-
-    it("gives different ids to different cuids (no accidental collision here)", () => {
-      const ids = new Set(
-        ["task_1", "task_2", "task_3", "task_4", "task_5"].map(hashTaskId)
-      );
-      expect(ids.size).toBe(5);
     });
   });
 

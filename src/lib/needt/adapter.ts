@@ -67,21 +67,18 @@ export const fixtureToday: Date = NEEDT.today;
 
 /* ── The Prisma seam ──────────────────────────────────────────────────────
  *
- * The database-backed implementation lands here as a second object satisfying
- * the same interface — in its own file (`prisma-source.ts`, server-only), so
+ * The database-backed implementation lives in `prisma-source.ts` (server-only),
+ * so
  * that no client bundle pulls `@prisma/client` in through this module:
  *
- *   export function prismaDataSource(userId: string): NeedtDataSource { … }
+ *   prismaDataSource(userId, authorizedWorkspace): NeedtDataSource
  *
- * Two rules it has to keep, both of them things the fixture already encodes:
+ * It requires a server-resolved `WorkspaceAccess`; a request-supplied workspace
+ * id is never authorization. Two mapping rules stay shared with the fixture:
  *
- *  1. A capability with no column yet returns `null` — `parts`, `entry`,
- *     `value`, `earned`, `heat`, `waitsOn`, `movedFrom`. Not `[]`, not `0`,
- *     not omitted. `null` is what lets the collapse budget skip the row
- *     instead of drawing an empty one. See the header of `types.ts`.
+ *  1. A capability with no honest source returns `null`, not `[]` or `0`.
+ *     Today that is `heat`; the other design fields have additive schema
+ *     storage and map an empty database value to an absent/empty task value.
  *  2. Nothing is derived on the way out. `blockedBy` is stored; "is holding
  *     up 4" is not, and must not become a column.
- *
- * Until then, a screen picks its source once, at the top, and everything
- * below takes the list it is handed.
  */

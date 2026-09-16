@@ -35,7 +35,7 @@ export interface PartPromotion {
 export function promotePart(
   task: NeedtTask,
   index: number,
-  promotedId: number
+  promotedId: string
 ): PartPromotion | null {
   const parts = task.parts;
   if (!parts || index < 0 || index >= parts.length) return null;

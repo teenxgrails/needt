@@ -25,7 +25,7 @@ export interface MobileQueueSheetProps {
   open: boolean;
   onClose: () => void;
   onOpenTask: (task: NeedtTask) => void;
-  onToggleTask: (id: number) => void;
+  onToggleTask: (id: string) => void;
 }
 
 export function MobileQueueSheet({

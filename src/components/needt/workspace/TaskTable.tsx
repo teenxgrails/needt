@@ -151,12 +151,12 @@ export function PartRow({
   onTogglePart,
   onPromotePart,
 }: {
-  taskId: number;
+  taskId: string;
   title: string;
   done: boolean;
   index: number;
-  onTogglePart?: (taskId: number, index: number) => void;
-  onPromotePart?: (taskId: number, index: number) => void;
+  onTogglePart?: (taskId: string, index: number) => void;
+  onPromotePart?: (taskId: string, index: number) => void;
 }) {
   const [hovered, setHovered] = React.useState(false);
   return (
@@ -265,10 +265,10 @@ export interface TaskRowProps {
    *  derived, never stored (PORT.md §2, `derive.ts`). */
   allTasks: readonly NeedtTask[];
   projects?: readonly NeedtProject[];
-  onToggle?: (id: number) => void;
+  onToggle?: (id: string) => void;
   onOpen?: (task: NeedtTask) => void;
-  onTogglePart?: (taskId: number, index: number) => void;
-  onPromotePart?: (taskId: number, index: number) => void;
+  onTogglePart?: (taskId: string, index: number) => void;
+  onPromotePart?: (taskId: string, index: number) => void;
 }
 
 /**

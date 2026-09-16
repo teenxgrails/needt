@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 
-import { blocking, blockerOf, streak, unblocks } from "../derive";
+import { blockerOf, blocking, streak, unblocks } from "../derive";
 import { NEEDT as needtFixture } from "../fixture";
 
 type Proto = {
@@ -25,7 +25,7 @@ type Proto = {
 
 const PROTOTYPE = join(
   process.cwd(),
-  "Content height and label fixes/needt-app/Data.js",
+  "Content height and label fixes/needt-app/Data.js"
 );
 
 function loadPrototype(): Proto {
@@ -45,7 +45,9 @@ describeIfBundled("parity with the prototype's Data.js", () => {
   const proto = bundled ? loadPrototype() : (null as unknown as Proto);
 
   it("has the same task ids", () => {
-    expect(needtFixture.tasks.map((t) => t.id)).toEqual(proto.tasks.map((t) => t.id));
+    expect(needtFixture.tasks.map((t) => String(t.id))).toEqual(
+      proto.tasks.map((t) => String(t.id))
+    );
   });
 
   it("unblocks() agrees on every task", () => {
@@ -57,10 +59,19 @@ describeIfBundled("parity with the prototype's Data.js", () => {
   it("blockerOf() agrees on every task", () => {
     const shape = (b: unknown) => {
       if (!b) return null;
-      const r = b as { kind: string; task?: { id: number }; on?: string; for?: string };
-      return r.kind === "task" ? { kind: "task", id: r.task?.id } : { kind: "person", on: r.on, for: r.for };
+      const r = b as {
+        kind: string;
+        task?: { id: unknown };
+        on?: string;
+        for?: string;
+      };
+      return r.kind === "task"
+        ? { kind: "task", id: String(r.task?.id) }
+        : { kind: "person", on: r.on, for: r.for };
     };
-    const mine = needtFixture.tasks.map((t) => shape(blockerOf(t, needtFixture.tasks)));
+    const mine = needtFixture.tasks.map((t) =>
+      shape(blockerOf(t, needtFixture.tasks))
+    );
     const theirs = proto.tasks.map((t) => shape(proto.blockerOf(t)));
     expect(mine).toEqual(theirs);
   });

@@ -22,7 +22,7 @@ export interface MobileWorkspaceProps {
   tasks: readonly NeedtTask[];
   projects?: readonly NeedtProject[];
   onOpenTask: (task: NeedtTask) => void;
-  onToggleTask: (id: number) => void;
+  onToggleTask: (id: string) => void;
 }
 
 export function MobileWorkspace({

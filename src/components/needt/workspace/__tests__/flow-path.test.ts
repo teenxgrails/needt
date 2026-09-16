@@ -95,7 +95,7 @@ describe("routeFlowLink", () => {
 /* ── The ranking ──────────────────────────────────────────────────────── */
 
 function task(
-  t: Partial<NeedtTask> & { id: number; title: string }
+  t: Partial<NeedtTask> & { id: string; title: string }
 ): NeedtTask {
   return { done: false, ...t };
 }
@@ -103,15 +103,19 @@ function task(
 describe("pickFlowLead", () => {
   it("names the free task that unblocks the most — not the one that merely looks urgent", () => {
     const overdue = task({
-      id: 1,
+      id: "1",
       title: "Overdue but stuck",
       overdue: true,
-      blockedBy: 2,
+      blockedBy: "2",
     });
-    const blocker = task({ id: 2, title: "Holding the overdue one up" });
-    const leverage = task({ id: 3, title: "Unremarkable, but frees two" });
-    const dep4 = task({ id: 4, title: "Waits on leverage", blockedBy: 3 });
-    const dep5 = task({ id: 5, title: "Also waits on leverage", blockedBy: 3 });
+    const blocker = task({ id: "2", title: "Holding the overdue one up" });
+    const leverage = task({ id: "3", title: "Unremarkable, but frees two" });
+    const dep4 = task({ id: "4", title: "Waits on leverage", blockedBy: "3" });
+    const dep5 = task({
+      id: "5",
+      title: "Also waits on leverage",
+      blockedBy: "3",
+    });
 
     const all = [overdue, blocker, leverage, dep4, dep5];
     const open = all;
@@ -129,11 +133,11 @@ describe("pickFlowLead", () => {
   });
 
   it("prefers the free task with the higher count", () => {
-    const a = task({ id: 1, title: "Frees one" });
-    const aChild = task({ id: 2, title: "Waits on A", blockedBy: 1 });
-    const b = task({ id: 10, title: "Frees three" });
-    const bChildren = [11, 12, 13].map((id) =>
-      task({ id, title: `Waits on B #${id}`, blockedBy: 10 })
+    const a = task({ id: "1", title: "Frees one" });
+    const aChild = task({ id: "2", title: "Waits on A", blockedBy: "1" });
+    const b = task({ id: "10", title: "Frees three" });
+    const bChildren = ["11", "12", "13"].map((id) =>
+      task({ id, title: `Waits on B #${id}`, blockedBy: "10" })
     );
 
     const all = [a, aChild, b, ...bChildren];
@@ -145,8 +149,8 @@ describe("pickFlowLead", () => {
 
   it("returns null when nothing free unblocks anything", () => {
     const all = [
-      task({ id: 1, title: "Free, unblocks nothing" }),
-      task({ id: 2, title: "Also free, also unblocks nothing" }),
+      task({ id: "1", title: "Free, unblocks nothing" }),
+      task({ id: "2", title: "Also free, also unblocks nothing" }),
     ];
     expect(pickFlowLead(all, all)).toBeNull();
   });
@@ -164,7 +168,7 @@ describe("blockedLine", () => {
   });
 
   it("names the blocking task for a task blocker", () => {
-    const blocking = task({ id: 9, title: "Draft the launch brief" });
+    const blocking = task({ id: "9", title: "Draft the launch brief" });
     expect(blockedLine({ kind: "task", task: blocking }, PEOPLE)).toBe(
       "After Draft the launch brief"
     );

@@ -27,7 +27,7 @@ const CASES: {
     weight: "open",
     height: null,
     task: {
-      id: 1,
+      id: "1",
       title: "Anna's birthday — get the gift",
       done: false,
       project: "life",
@@ -48,7 +48,7 @@ const CASES: {
     weight: "open",
     height: null,
     task: {
-      id: 2,
+      id: "2",
       title: "Upgrade Slack",
       done: false,
       project: "ops",
@@ -69,7 +69,7 @@ const CASES: {
     weight: "open",
     height: null,
     task: {
-      id: 3,
+      id: "3",
       title: "Team meeting",
       done: false,
       project: "ops",
@@ -86,7 +86,7 @@ const CASES: {
     weight: "open",
     height: null,
     task: {
-      id: 4,
+      id: "4",
       title: "German — B2 unit 4",
       done: false,
       project: "german",
@@ -101,7 +101,7 @@ const CASES: {
     weight: "open",
     height: null,
     task: {
-      id: 5,
+      id: "5",
       title: "Reply to counsel",
       done: false,
       project: "ops",
@@ -116,7 +116,7 @@ const CASES: {
     weight: "open",
     height: null,
     task: {
-      id: 6,
+      id: "6",
       title: "Ship the camera body",
       done: false,
       project: "resale",
@@ -132,7 +132,7 @@ const CASES: {
     weight: "compressed",
     height: 44,
     task: {
-      id: 7,
+      id: "7",
       title: "Hubstaff broadcast",
       done: false,
       project: "ds",
@@ -146,7 +146,7 @@ const CASES: {
     weight: "compressed",
     height: 44,
     task: {
-      id: 8,
+      id: "8",
       title: "German — B2 unit 4",
       done: true,
       project: "german",
@@ -159,14 +159,20 @@ const CASES: {
     label: "Declined · it keeps the slot and says nothing.",
     weight: "declined",
     height: 38,
-    task: { id: 9, title: "Declined", done: false, from: "16:25", to: "17:00" },
+    task: {
+      id: "9",
+      title: "Declined",
+      done: false,
+      from: "16:25",
+      to: "17:00",
+    },
   },
   {
     label: "Open · no project. A state with a colour of its own.",
     weight: "open",
     height: null,
     task: {
-      id: 10,
+      id: "10",
       title: "Something nobody filed",
       done: false,
       age: 46,
@@ -180,7 +186,7 @@ const CASES: {
     weight: "open",
     height: RB_HEADER + 6 * 33 + 15,
     task: {
-      id: 11,
+      id: "11",
       title: "Resale",
       done: false,
       project: "resale",
@@ -202,7 +208,7 @@ const CASES: {
 /* The block the two ladders are measured on: enough facts that the budget has
    something to give up, in the handoff's own order. */
 const LADDER_TASK: RbInput = {
-  id: 20,
+  id: "20",
   title: "Marketing course",
   done: false,
   project: "ds",
@@ -228,7 +234,7 @@ const ROW_COLS =
 
 const ROW_TASKS: RbInput[] = [
   {
-    id: 30,
+    id: "30",
     title: "Sign the factory quote",
     done: false,
     project: "ops",
@@ -238,7 +244,7 @@ const ROW_TASKS: RbInput[] = [
     risk: "The line is held until six today",
   },
   {
-    id: 31,
+    id: "31",
     title: "List the boots",
     done: false,
     project: "resale",
@@ -252,7 +258,7 @@ const ROW_TASKS: RbInput[] = [
     ],
   },
   {
-    id: 32,
+    id: "32",
     title: "Something nobody filed",
     done: false,
     noSlot: true,
@@ -260,7 +266,7 @@ const ROW_TASKS: RbInput[] = [
     movedFrom: "Tuesday",
   },
   {
-    id: 33,
+    id: "33",
     title: "Wrap the gift",
     done: true,
     project: "life",

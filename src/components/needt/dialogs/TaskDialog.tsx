@@ -290,7 +290,7 @@ export function TaskDialog({
   /* Ids for parts promoted in this session. Not a real id sequence — there is
      no store behind this component — just enough to keep each promoted task
      distinct within one editing session. */
-  const nextPromotedId = React.useRef(task.id * 1000 + 1);
+  const nextPromotedId = React.useRef(1);
 
   if (!open) return null;
 
@@ -310,7 +310,11 @@ export function TaskDialog({
 
   function promote(index: number) {
     const current: RbInput = { ...task, title, parts };
-    const result = promotePart(current, index, nextPromotedId.current);
+    const result = promotePart(
+      current,
+      index,
+      `${task.id}:part:${nextPromotedId.current}`
+    );
     if (!result) return;
     nextPromotedId.current += 1;
     setParts(result.task.parts ?? []);

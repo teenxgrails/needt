@@ -43,8 +43,8 @@ export interface MobileTaskSheetProps {
   projects?: readonly NeedtProject[];
   people?: readonly NeedtPerson[];
   onClose: () => void;
-  onToggle: (id: number) => void;
-  onTogglePart: (id: number, index: number) => void;
+  onToggle: (id: string) => void;
+  onTogglePart: (id: string, index: number) => void;
 }
 
 function MobileAttrRow({

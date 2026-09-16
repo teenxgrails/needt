@@ -17,11 +17,13 @@ import * as React from "react";
 
 import { LuWandSparkles } from "react-icons/lu";
 
-import { today as fixtureToday, tasks as fixtureTasks } from "@/lib/needt/fixture";
+import {
+  tasks as fixtureTasks,
+  today as fixtureToday,
+} from "@/lib/needt/fixture";
 import type { NeedtTask } from "@/lib/needt/types";
 
 import { Glyph } from "../shell/chrome";
-
 import { BriefBoard } from "./BriefBoard";
 import { FormSwitcher, type HomeFormKind } from "./FormSwitcher";
 import { TodayForm } from "./TodayForm";
@@ -37,7 +39,7 @@ export interface HomeProps {
   initialForm?: HomeFormKind;
   onFormChange?: (form: HomeFormKind) => void;
   onOpenTask?: (task: NeedtTask) => void;
-  onToggleTask?: (id: number) => void;
+  onToggleTask?: (id: string) => void;
   onAddTask?: () => void;
   onMoveOverdueToToday?: () => void;
   onPlanMyDay?: () => void;
@@ -61,14 +63,36 @@ export function Home({
   const setForm = onFormChange ?? setOwnForm;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, flex: "none", paddingBottom: form === "prose" ? 0 : 4 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        minHeight: 0,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flex: "none",
+          paddingBottom: form === "prose" ? 0 : 4,
+        }}
+      >
         {form === "prose" ? null : (
           <div style={{ flex: 1, minWidth: 0 }}>
             <WeekPlate now={now} tasks={tasks} />
           </div>
         )}
-        <div style={{ marginLeft: form === "prose" ? "auto" : undefined, display: "flex", alignItems: "center", gap: 8 }}>
+        <div
+          style={{
+            marginLeft: form === "prose" ? "auto" : undefined,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
           <FormSwitcher form={form} onChange={setForm} />
           <button
             type="button"
@@ -93,7 +117,10 @@ export function Home({
         </div>
       </div>
 
-      <div className="scroll-inner" style={{ flex: 1, minHeight: 0, overflow: "auto", paddingBottom: 20 }}>
+      <div
+        className="scroll-inner"
+        style={{ flex: 1, minHeight: 0, overflow: "auto", paddingBottom: 20 }}
+      >
         {form === "today" ? (
           <TodayForm
             tasks={tasks}

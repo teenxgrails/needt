@@ -29,7 +29,7 @@ export interface MobileHomeProps {
   tasks: readonly NeedtTask[];
   now: Date;
   onOpenTask: (task: NeedtTask) => void;
-  onToggleTask: (id: number) => void;
+  onToggleTask: (id: string) => void;
 }
 
 function MobileTaskCard({

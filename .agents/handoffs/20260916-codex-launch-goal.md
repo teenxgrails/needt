@@ -3,7 +3,7 @@ id: 20260916-codex-launch-goal
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-15T23:37:15Z
+updated: 2026-09-15T23:55:00Z
 objective: Complete the owner-approved launch goal without production, Neon, deploy, or protected-branch mutations.
 ---
 
@@ -20,10 +20,23 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 - Reconciled the merged UI/branding gates with the scoped port: the canonical
   `.needt-v2` accent is allowed only in port components, both native selects now
   use `NeedtPicker`, and the theme contract checks `gray|graphite → dim`.
+- Pushed `codex/design-completion` through `e5a20a0` as a fast-forward; the
+  standing owner permission covers later feature-branch pushes and draft PRs,
+  never `main`/`landing`, merge, deploy, production, or Neon.
+- Phase 2 task ids are strings end to end, `hashTaskId` is gone, fixture and
+  consumer contracts use strings, and generated preview ids use local strings.
+- Closed the workspace-access hole in `prismaDataSource`: construction now
+  requires server-resolved `WorkspaceAccess`, workspace-owned reads use its
+  scope, people come from workspace membership, and out-of-scope blockers are
+  removed from returned tasks.
+- Started the local Compose database via `npm run db:up`, explicitly targeted
+  `127.0.0.1:5432/fluid_calendar`, applied all 100 migrations through
+  `20260912000000_needt_design_data_layer`, and verified two synthetic tasks
+  through `prismaDataSource`; the verifier removed its synthetic rows.
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff only before its checkpoint commit; phase 2 will touch the Needt task-id/data-layer seam.
+- Files currently dirty or expected to change: the Phase 2 Needt task-id/data-layer seam, its tests/verifier, this handoff, and `CHANGELOG.md`.
 - Foreign changes that must remain untouched: untracked design bundles, landing sources outside the three docs-package files, `docker/landing/`, `pf-sync/`, root `pnpm-lock.yaml`, and untracked dim/paper visual baselines.
 
 ## Verification
@@ -35,6 +48,15 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
   `npm run check:branding`; `npm run check:agent-handoffs`.
 - Visual: the Calendar columns picker passed as a desktop popover and a 390px
   mobile bottom sheet; all three sort options were visible and selectable.
+- Phase 2 targeted: `npm run type-check`; 8 focused unit suites (148 tests);
+  local `prisma migrate status` reports the schema up to date; local verifier
+  returned two correctly mapped tasks with raw cuid ids, project, holder,
+  dependency, parts, wait, money, stage and no-slot fields.
+- Phase 2 full gates: `npm run type-check`; `npm run lint` (zero warnings);
+  `npm run tokens:check`; `npm run test:unit` (195 suites passed, 1 skipped;
+  1281 tests passed, 1 skipped); `npm run build` plus production-artifact check;
+  `npm run check:ui-contracts`; `npm run check:branding`;
+  `npm run check:agent-handoffs`; `git diff --check`.
 - Not run / still required: all phase-specific and final Definition of Done gates.
 
 ## Decisions and constraints
@@ -46,10 +68,13 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 
 ## Blockers
 
-- Docker daemon is currently unavailable; phase 2 will start it before any migration command.
 - People-on-tasks remains owner-gated. Until answered, use workspace members and leave the documented `//todo` seam.
+- Phase 5 source mismatch: `origin/landing` deploys static
+  `design-refs/landing/index.html`, while GOAL names the React source that only
+  exists on PR #32. Owner must choose the landing source before that PR.
 
 ## Next action
 
-- Commit the gate reconciliation, push `codex/design-completion`, and open the
-  draft PR against `main` without merging it.
+- Commit and push the scoped Phase 2 data-layer change, then open the draft
+  Design port PR against `main` with the workspace-access finding and fix
+  documented.

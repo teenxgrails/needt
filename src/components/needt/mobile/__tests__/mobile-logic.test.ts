@@ -8,8 +8,8 @@ import {
   FAB_SIZE,
   HABIT_CHIP_HEIGHT,
   HEADER_BUTTON_SIZE,
-  MOBILE_TAP_MIN,
   MOBILE_TABS,
+  MOBILE_TAP_MIN,
   QUEUE_BUTTON_HEIGHT,
   SETTINGS_ROW_MIN_HEIGHT,
   TAB_ITEM_HEIGHT,
@@ -89,40 +89,43 @@ describe("mobileDuration", () => {
 
 describe("mobileDueOffset", () => {
   it("is 0 for a task due today", () => {
-    expect(mobileDueOffset(task({ id: 1, due: "1 Sep" }), NOW)).toBe(0);
+    expect(mobileDueOffset(task({ id: "1", due: "1 Sep" }), NOW)).toBe(0);
   });
 
   it("is positive for a task due later", () => {
-    expect(mobileDueOffset(task({ id: 2, due: "4 Sep" }), NOW)).toBe(3);
+    expect(mobileDueOffset(task({ id: "2", due: "4 Sep" }), NOW)).toBe(3);
   });
 
   it("is null for a task with no due date", () => {
-    expect(mobileDueOffset(task({ id: 3 }), NOW)).toBeNull();
+    expect(mobileDueOffset(task({ id: "3" }), NOW)).toBeNull();
   });
 });
 
 describe("mobileDayLists", () => {
   it("splits overdue from due-today, and excludes done and noSlot tasks", () => {
     const tasks: NeedtTask[] = [
-      task({ id: 1, due: "31 Aug" }), // overdue
-      task({ id: 2, due: "1 Sep" }), // today
-      task({ id: 3, due: "31 Aug", done: true }), // closed — excluded
-      task({ id: 4, due: "1 Sep", noSlot: true }), // no slot — excluded
-      task({ id: 5, due: "4 Sep" }), // neither list
+      task({ id: "1", due: "31 Aug" }), // overdue
+      task({ id: "2", due: "1 Sep" }), // today
+      task({ id: "3", due: "31 Aug", done: true }), // closed — excluded
+      task({ id: "4", due: "1 Sep", noSlot: true }), // no slot — excluded
+      task({ id: "5", due: "4 Sep" }), // neither list
     ];
     const { debt, today } = mobileDayLists(tasks, NOW);
-    expect(debt.map((t) => t.id)).toEqual([1]);
-    expect(today.map((t) => t.id)).toEqual([2]);
+    expect(debt.map((t) => t.id)).toEqual(["1"]);
+    expect(today.map((t) => t.id)).toEqual(["2"]);
   });
 });
 
 describe("mobileDueTodayCount", () => {
   it("is 0 on a clear day — a dot that is always lit is not a signal", () => {
-    expect(mobileDueTodayCount([task({ id: 1, due: "4 Sep" })], NOW)).toBe(0);
+    expect(mobileDueTodayCount([task({ id: "1", due: "4 Sep" })], NOW)).toBe(0);
   });
 
   it("counts overdue plus due-today together", () => {
-    const tasks = [task({ id: 1, due: "31 Aug" }), task({ id: 2, due: "1 Sep" })];
+    const tasks = [
+      task({ id: "1", due: "31 Aug" }),
+      task({ id: "2", due: "1 Sep" }),
+    ];
     expect(mobileDueTodayCount(tasks, NOW)).toBe(2);
   });
 });
@@ -130,16 +133,19 @@ describe("mobileDueTodayCount", () => {
 describe("mobileQueue", () => {
   it("excludes done, already-timed, and noSlot tasks", () => {
     const tasks: NeedtTask[] = [
-      task({ id: 1 }),
-      task({ id: 2, time: "09:00" }),
-      task({ id: 3, done: true }),
-      task({ id: 4, noSlot: true }),
+      task({ id: "1" }),
+      task({ id: "2", time: "09:00" }),
+      task({ id: "3", done: true }),
+      task({ id: "4", noSlot: true }),
     ];
-    expect(mobileQueue(tasks).map((t) => t.id)).toEqual([1]);
+    expect(mobileQueue(tasks).map((t) => t.id)).toEqual(["1"]);
   });
 
   it("sums the queue's own minutes", () => {
-    const tasks: NeedtTask[] = [task({ id: 1, est: 20 }), task({ id: 2, est: 25 })];
+    const tasks: NeedtTask[] = [
+      task({ id: "1", est: 20 }),
+      task({ id: "2", est: 25 }),
+    ];
     expect(mobileQueueMinutes(tasks)).toBe(45);
   });
 });
@@ -152,25 +158,29 @@ describe("mobileGroupByProject", () => {
 
   it("groups in registry order, with an unresolved bucket last", () => {
     const tasks: NeedtTask[] = [
-      task({ id: 1, project: "Design system" }),
-      task({ id: 2, project: null }),
-      task({ id: 3, project: "Operations" }),
+      task({ id: "1", project: "Design system" }),
+      task({ id: "2", project: null }),
+      task({ id: "3", project: "Operations" }),
     ];
     const groups = mobileGroupByProject(tasks, projects);
-    expect(groups.map((g) => g.name)).toEqual(["Operations", "Design system", "No project"]);
+    expect(groups.map((g) => g.name)).toEqual([
+      "Operations",
+      "Design system",
+      "No project",
+    ]);
   });
 
   it("sums each group's task value", () => {
     const tasks: NeedtTask[] = [
-      task({ id: 1, project: "Operations", value: 100 }),
-      task({ id: 2, project: "Operations", value: 50 }),
+      task({ id: "1", project: "Operations", value: 100 }),
+      task({ id: "2", project: "Operations", value: 50 }),
     ];
     const groups = mobileGroupByProject(tasks, projects);
     expect(groups[0]?.value).toBe(150);
   });
 
   it("leaves an empty registry bucket out entirely", () => {
-    const tasks: NeedtTask[] = [task({ id: 1, project: "Operations" })];
+    const tasks: NeedtTask[] = [task({ id: "1", project: "Operations" })];
     const groups = mobileGroupByProject(tasks, projects);
     expect(groups.map((g) => g.key)).toEqual(["ops"]);
   });
@@ -189,6 +199,11 @@ describe("mobileDayStrip", () => {
 
 describe("MOBILE_TABS", () => {
   it("is the fixed four — no fifth tab", () => {
-    expect(MOBILE_TABS.map((t) => t.id)).toEqual(["home", "calendar", "workspace", "docs"]);
+    expect(MOBILE_TABS.map((t) => t.id)).toEqual([
+      "home",
+      "calendar",
+      "workspace",
+      "docs",
+    ]);
   });
 });
