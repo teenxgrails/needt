@@ -78,6 +78,11 @@ export interface AIChatToolCall {
   arguments: Record<string, unknown>;
 }
 
+export interface AIProviderUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface AIChatRequest {
   systemPrompt: string;
   messages: AIChatMessage[];
@@ -100,4 +105,5 @@ export interface SchedulerAIConfig {
   model?: string | null;
   timeoutMs?: number;
   soulPreset?: "business" | "coach";
+  onUsage?: (usage: AIProviderUsage) => void | Promise<void>;
 }

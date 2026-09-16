@@ -5,6 +5,7 @@ import {
   AIChatRequest,
   AIChatToolCall,
   AIChatToolDefinition,
+  AIProviderUsage,
   AISuggestion,
   ParsedTask,
   SchedulerAI,
@@ -37,6 +38,41 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
+}
+
+function tokenCount(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.floor(value))
+    : 0;
+}
+
+function openAIUsage(payload: Record<string, unknown> | null) {
+  const usage = asRecord(payload?.usage);
+  if (!usage) return null;
+  return {
+    inputTokens: tokenCount(usage.prompt_tokens),
+    outputTokens: tokenCount(usage.completion_tokens),
+  } satisfies AIProviderUsage;
+}
+
+function anthropicUsage(payload: Record<string, unknown> | null) {
+  const usage = asRecord(payload?.usage);
+  if (!usage) return null;
+  return {
+    inputTokens:
+      tokenCount(usage.input_tokens) +
+      tokenCount(usage.cache_creation_input_tokens) +
+      tokenCount(usage.cache_read_input_tokens),
+    outputTokens: tokenCount(usage.output_tokens),
+  } satisfies AIProviderUsage;
+}
+
+async function reportUsage(
+  config: SchedulerAIConfig,
+  usage: AIProviderUsage | null
+) {
+  if (!usage || (!usage.inputTokens && !usage.outputTokens)) return;
+  await config.onUsage?.(usage);
 }
 
 function parseToolArguments(value: unknown): Record<string, unknown> {
@@ -156,7 +192,9 @@ export class AnthropicProvider implements SchedulerAI {
       throw new Error(`Anthropic request failed: ${response.status}`);
     }
 
-    return parseStrictJson<T>(extractProviderText(await response.json()));
+    const payload = asRecord(await response.json());
+    await reportUsage(this.config, anthropicUsage(payload));
+    return parseStrictJson<T>(extractProviderText(payload));
   }
 
   suggestSchedule(input: SchedulingContext): Promise<AISuggestion> {
@@ -206,6 +244,7 @@ export class AnthropicProvider implements SchedulerAI {
     }
 
     const payload = asRecord(await response.json());
+    await reportUsage(this.config, anthropicUsage(payload));
     const content = Array.isArray(payload?.content) ? payload.content : [];
     for (const block of content) {
       const record = asRecord(block);
@@ -254,7 +293,17 @@ export class AnthropicProvider implements SchedulerAI {
       throw new Error(`Anthropic chat request failed: ${response.status}`);
     }
 
+    let usage: AIProviderUsage | null = null;
     for await (const payload of parseSseJson(response)) {
+      const messageUsage = anthropicUsage(asRecord(payload.message));
+      const deltaUsage = anthropicUsage(payload);
+      if (messageUsage) usage = messageUsage;
+      if (deltaUsage) {
+        usage = {
+          inputTokens: deltaUsage.inputTokens || usage?.inputTokens || 0,
+          outputTokens: deltaUsage.outputTokens,
+        };
+      }
       const delta = asRecord(payload.delta);
       if (
         payload.type === "content_block_delta" &&
@@ -263,6 +312,7 @@ export class AnthropicProvider implements SchedulerAI {
         yield delta.text;
       }
     }
+    await reportUsage(this.config, usage);
   }
 }
 
@@ -307,7 +357,9 @@ export class OpenAIProvider implements SchedulerAI {
       throw new Error(`${this.name} request failed: ${response.status}`);
     }
 
-    return parseStrictJson<T>(extractProviderText(await response.json()));
+    const payload = asRecord(await response.json());
+    await reportUsage(this.config, openAIUsage(payload));
+    return parseStrictJson<T>(extractProviderText(payload));
   }
 
   suggestSchedule(input: SchedulingContext): Promise<AISuggestion> {
@@ -354,6 +406,7 @@ export class OpenAIProvider implements SchedulerAI {
     }
 
     const payload = asRecord(await response.json());
+    await reportUsage(this.config, openAIUsage(payload));
     const choices = Array.isArray(payload?.choices) ? payload.choices : [];
     const firstChoice = asRecord(choices[0]);
     const message = asRecord(firstChoice?.message);
@@ -388,6 +441,9 @@ export class OpenAIProvider implements SchedulerAI {
           model: this.config.model || this.defaultModel,
           temperature: 0.2,
           stream: true,
+          ...(this.config.onUsage
+            ? { stream_options: { include_usage: true } }
+            : {}),
           messages: [
             { role: "system", content: input.systemPrompt },
             ...input.messages.map((message) => ({
@@ -404,7 +460,9 @@ export class OpenAIProvider implements SchedulerAI {
       throw new Error(`${this.name} chat request failed: ${response.status}`);
     }
 
+    let usage: AIProviderUsage | null = null;
     for await (const payload of parseSseJson(response)) {
+      usage = openAIUsage(payload) || usage;
       const choices = Array.isArray(payload.choices) ? payload.choices : [];
       const firstChoice = asRecord(choices[0]);
       const delta = asRecord(firstChoice?.delta);
@@ -412,6 +470,7 @@ export class OpenAIProvider implements SchedulerAI {
         yield delta.content;
       }
     }
+    await reportUsage(this.config, usage);
   }
 }
 

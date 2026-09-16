@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Updated Pro monthly to $7 and Lifetime to $149, hid hosted-AI usage counts
+  from product surfaces, aligned the default Lifetime allowance with Pro, and
+  added private input/output token accounting for hosted provider calls.
 - Added an admin-only System settings route and account-menu links for system
   credentials and operations, with a contract check preventing orphaned
   admin-only settings components.
