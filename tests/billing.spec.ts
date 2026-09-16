@@ -212,6 +212,19 @@ test.describe("recorded Creem billing lifecycle", () => {
     expect(
       (await sendWebhook(recordedFixtures.proActive, proUserId)).ok()
     ).toBe(true);
+    expect(await subscription(proUserId)).toMatchObject({
+      plan: SubscriptionPlan.PRO,
+      status: SubscriptionStatus.ACTIVE,
+      lastCreemEventId: fixtureEventId(recordedFixtures.proActive),
+    });
+    expect(
+      (
+        await authenticated.get("/api/tasks", {
+          headers: { "x-workspace-id": sharedWorkspaceId },
+        })
+      ).status()
+    ).toBe(200);
+
     expect(
       (
         await sendWebhook(
