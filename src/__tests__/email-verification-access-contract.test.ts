@@ -12,6 +12,11 @@ describe("email-verification access barrier", () => {
     expect(layout).toContain("verification?.required && !verification.verified");
   });
 
+  it("does not cover the app when a mocked or missing user has no email", () => {
+    const gate = read("src/components/auth/EmailVerificationGate.tsx");
+    expect(gate).toContain("status?.email && !status.verified");
+  });
+
   it.each([
     "src/app/api/calendar/caldav/test/route.ts",
     "src/app/api/auth/check-admin/route.ts",
