@@ -23,6 +23,8 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 - Pushed `codex/design-completion` through `e5a20a0` as a fast-forward; the
   standing owner permission covers later feature-branch pushes and draft PRs,
   never `main`/`landing`, merge, deploy, production, or Neon.
+- Opened draft PR #34, `Design port`, from `codex/design-completion` to `main`;
+  its body records the workspace authorization defect and the scoped fix.
 - Phase 2 task ids are strings end to end, `hashTaskId` is gone, fixture and
   consumer contracts use strings, and generated preview ids use local strings.
 - Closed the workspace-access hole in `prismaDataSource`: construction now
@@ -36,7 +38,8 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 
 ## Working state
 
-- Files currently dirty or expected to change: the Phase 2 Needt task-id/data-layer seam, its tests/verifier, this handoff, and `CHANGELOG.md`.
+- Files currently dirty or expected to change: this handoff checkpoint only;
+  Phase 3 launch blockers use separate worktrees and branches from `origin/main`.
 - Foreign changes that must remain untouched: untracked design bundles, landing sources outside the three docs-package files, `docker/landing/`, `pf-sync/`, root `pnpm-lock.yaml`, and untracked dim/paper visual baselines.
 
 ## Verification
@@ -75,6 +78,6 @@ objective: Complete the owner-approved launch goal without production, Neon, dep
 
 ## Next action
 
-- Commit and push the scoped Phase 2 data-layer change, then open the draft
-  Design port PR against `main` with the workspace-access finding and fix
-  documented.
+- Start Phase 3.1 from `origin/main` in its own worktree, re-read
+  `docs/plans/13-pricing.md`, and implement the first pricing/hidden-AI-limits
+  PR without touching production or the port checkout's foreign untracked files.
