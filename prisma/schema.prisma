@@ -74,14 +74,15 @@ model Session {
 }
 
 model User {
-  id                     String                  @id @default(cuid())
-  isActive               Boolean                 @default(true)
+  id                     String                    @id @default(cuid())
+  isActive               Boolean                   @default(true)
   name                   String?
-  email                  String?                 @unique
+  email                  String?                   @unique
   emailVerified          DateTime?
   image                  String?
-  role                   String                  @default("user") // Possible values: "user", "admin"
+  role                   String                    @default("user") // Possible values: "user", "admin"
   subscription           Subscription?
+  trialGrant             TrialGrant?
   accounts               Account[]
   sessions               Session[]
   calendars              CalendarFeed[]
@@ -129,12 +130,12 @@ model User {
   aiPageProposals        AiPageChangeProposal[]
   pageAssets             PageAsset[]
   pageComments           PageComment[]
-  pageAccessGrants       PageAccessGrant[]       @relation("PageAccessGrantee")
-  pageAccessGrantsGiven  PageAccessGrant[]       @relation("PageAccessGrantor")
-  pagePublications       PagePublication[]       @relation("PagePublicationPublisher")
-  moodboardsCreated      Moodboard[]             @relation("MoodboardCreator")
-  moodboardAccessGrants  MoodboardAccessGrant[]  @relation("MoodboardAccessGrantee")
-  moodboardGrantsGiven   MoodboardAccessGrant[]  @relation("MoodboardAccessGrantor")
+  pageAccessGrants       PageAccessGrant[]         @relation("PageAccessGrantee")
+  pageAccessGrantsGiven  PageAccessGrant[]         @relation("PageAccessGrantor")
+  pagePublications       PagePublication[]         @relation("PagePublicationPublisher")
+  moodboardsCreated      Moodboard[]               @relation("MoodboardCreator")
+  moodboardAccessGrants  MoodboardAccessGrant[]    @relation("MoodboardAccessGrantee")
+  moodboardGrantsGiven   MoodboardAccessGrant[]    @relation("MoodboardAccessGrantor")
   pageTemplates          PageTemplate[]
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
@@ -143,26 +144,26 @@ model User {
   idempotencyRecords     IdempotencyRecord[]
   creemWebhookEvents     CreemWebhookEvent[]
   creemCursors           CreemSubscriptionCursor[]
-  taskDependenciesOwned  TaskDependency[]        @relation("TaskDependencyOwner")
+  taskDependenciesOwned  TaskDependency[]          @relation("TaskDependencyOwner")
   focusPreferences       FocusPreferences?
   taskReminders          TaskReminder[]
   proactiveNudges        ProactiveNudge[]
   pushSubscriptions      PushSubscription[]
   bookingPages           BookingPage[]
-  bookings               Booking[]               @relation("BookingOwner")
+  bookings               Booking[]                 @relation("BookingOwner")
   featureFlagOverrides   FeatureFlagOverride[]
-  personalWorkspace      Workspace?              @relation("PersonalWorkspaceOwner")
+  personalWorkspace      Workspace?                @relation("PersonalWorkspaceOwner")
   workspaceMemberships   WorkspaceMember[]
-  workspaceInvitesSent   WorkspaceInvite[]       @relation("WorkspaceInviteSender")
-  workspaceInvitesUsed   WorkspaceInvite[]       @relation("WorkspaceInviteAcceptor")
-  assignedTasks          Task[]                  @relation("TaskAssignee")
-  taskActivities         TaskActivity[]          @relation("TaskActivityActor")
-  projectTemplates       ProjectTemplate[]       @relation("ProjectTemplateCreator")
-  projectBlockersCreated ProjectBlocker[]        @relation("ProjectBlockerCreator")
-  projectHealthUpdates   ProjectHealthUpdate[]   @relation("ProjectHealthUpdateAuthor")
+  workspaceInvitesSent   WorkspaceInvite[]         @relation("WorkspaceInviteSender")
+  workspaceInvitesUsed   WorkspaceInvite[]         @relation("WorkspaceInviteAcceptor")
+  assignedTasks          Task[]                    @relation("TaskAssignee")
+  taskActivities         TaskActivity[]            @relation("TaskActivityActor")
+  projectTemplates       ProjectTemplate[]         @relation("ProjectTemplateCreator")
+  projectBlockersCreated ProjectBlocker[]          @relation("ProjectBlockerCreator")
+  projectHealthUpdates   ProjectHealthUpdate[]     @relation("ProjectHealthUpdateAuthor")
   habits                 Habit[]
   weeklyFocusTargets     WeeklyFocusTarget[]
-  meetingNoteProposals   MeetingNoteProposal[]   @relation("MeetingNoteProposalCreator")
+  meetingNoteProposals   MeetingNoteProposal[]     @relation("MeetingNoteProposalCreator")
 }
 
 model Workspace {
@@ -2088,20 +2089,21 @@ model DataSettings {
 }
 
 model SystemSettings {
-  id                  String   @id @default(cuid())
-  googleClientId      String?
-  googleClientSecret  String?
-  outlookClientId     String?
-  outlookClientSecret String?
-  outlookTenantId     String?
-  logLevel            String   @default("none") // none, debug, info, warn, error
-  logRetention        Json? // Retention periods per log level
-  logDestination      String   @default("db") // db, file, both
-  publicSignup        Boolean  @default(true) // Whether public signup is enabled
-  disableHomepage     Boolean  @default(false) // Whether to disable the homepage and redirect to login/calendar
-  resendApiKey        String? // API key for Resend email service
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                                   String   @id @default(cuid())
+  googleClientId                       String?
+  googleClientSecret                   String?
+  outlookClientId                      String?
+  outlookClientSecret                  String?
+  outlookTenantId                      String?
+  logLevel                             String   @default("none") // none, debug, info, warn, error
+  logRetention                         Json? // Retention periods per log level
+  logDestination                       String   @default("db") // db, file, both
+  publicSignup                         Boolean  @default(true) // Whether public signup is enabled
+  requireEmailVerificationBeforeAccess Boolean  @default(false)
+  disableHomepage                      Boolean  @default(false) // Whether to disable the homepage and redirect to login/calendar
+  resendApiKey                         String? // API key for Resend email service
+  createdAt                            DateTime @default(now())
+  updatedAt                            DateTime @updatedAt
 }
 
 model Log {
@@ -2604,6 +2606,25 @@ model Subscription {
   @@index([creemProductId])
   @@index([stripeCustomerId])
   @@index([stripePaymentIntentId])
+}
+
+model TrialGrant {
+  id             String    @id @default(cuid())
+  emailKey       String    @unique
+  userId         String?   @unique
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  startedAt      DateTime
+  endsAt         DateTime
+  day11ClaimedAt DateTime?
+  day11SentAt    DateTime?
+  day14ClaimedAt DateTime?
+  day14SentAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([endsAt])
+  @@index([day11SentAt, startedAt])
+  @@index([day14SentAt, endsAt])
 }
 
 model CreemWebhookEvent {

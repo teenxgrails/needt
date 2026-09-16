@@ -91,32 +91,46 @@ export function effectiveSubscriptionPlan(
     plan: SubscriptionPlan;
     status: SubscriptionStatus;
     currentPeriodEnd: Date | null;
-  } | null
+  } | null,
+  trial: { endsAt: Date } | null = null,
+  now: Date = newDate()
 ): SubscriptionPlan {
-  if (!subscription || subscription.plan === SubscriptionPlan.FREE) {
-    return SubscriptionPlan.FREE;
-  }
-  if (subscription.status === SubscriptionStatus.ACTIVE) {
+  if (
+    subscription &&
+    subscription.plan !== SubscriptionPlan.FREE &&
+    subscription.status === SubscriptionStatus.ACTIVE
+  ) {
     return subscription.plan;
   }
   if (
+    subscription &&
+    subscription.plan !== SubscriptionPlan.FREE &&
     (subscription.status === SubscriptionStatus.CANCELED ||
       subscription.status === SubscriptionStatus.PAST_DUE ||
       subscription.status === SubscriptionStatus.PAYMENT_FAILED) &&
     subscription.currentPeriodEnd &&
-    subscription.currentPeriodEnd > newDate()
+    subscription.currentPeriodEnd > now
   ) {
     return subscription.plan;
   }
+  if (trial?.endsAt && trial.endsAt > now) return SubscriptionPlan.PRO;
   return SubscriptionPlan.FREE;
 }
 
 export async function getPlan(userId: string): Promise<SubscriptionPlan> {
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId },
-    select: { plan: true, status: true, currentPeriodEnd: true },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      subscription: {
+        select: { plan: true, status: true, currentPeriodEnd: true },
+      },
+      trialGrant: { select: { endsAt: true } },
+    },
   });
-  return effectiveSubscriptionPlan(subscription);
+  return effectiveSubscriptionPlan(
+    user?.subscription ?? null,
+    user?.trialGrant ?? null
+  );
 }
 
 export async function canCreateBoard(userId: string): Promise<LimitStatus> {

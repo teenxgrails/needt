@@ -6,6 +6,7 @@ export const QUEUE_NAMES = {
   bugReportSync: "bug-report-sync",
   reminders: "reminders",
   nudges: "nudges",
+  trials: "trials",
 } as const;
 
 export type CalendarWebhookProvider = "GOOGLE" | "OUTLOOK";
@@ -37,5 +38,9 @@ export type ReminderJobData =
   | { kind: "deliver"; reminderId: string };
 
 export interface NudgeJobData {
+  kind: "sweep";
+}
+
+export interface TrialJobData {
   kind: "sweep";
 }
