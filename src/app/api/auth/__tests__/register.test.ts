@@ -96,7 +96,9 @@ describe("public registration", () => {
     );
     expect(sendEmailVerification).toHaveBeenCalledWith({
       userId: "user-1",
-      baseUrl: "http://localhost",
+      baseUrl: new URL(
+        process.env.NEXTAUTH_URL ?? "http://localhost"
+      ).origin,
     });
   });
 });
