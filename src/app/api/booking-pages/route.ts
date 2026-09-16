@@ -9,19 +9,41 @@ const LOG_SOURCE = "booking-pages-route";
 export async function GET(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
-  const pages = await prisma.bookingPage.findMany({
-    where: { userId: auth.userId },
-    include: {
-      _count: { select: { bookings: true } },
-    },
-    orderBy: { createdAt: "desc" },
+  const [pages, user] = await Promise.all([
+    prisma.bookingPage.findMany({
+      where: { userId: auth.userId },
+      include: {
+        _count: { select: { bookings: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { emailVerified: true },
+    }),
+  ]);
+  return NextResponse.json({
+    pages,
+    emailVerified: Boolean(user?.emailVerified),
   });
-  return NextResponse.json({ pages });
 }
 
 export async function POST(request: NextRequest) {
   const auth = await authenticateRequest(request, LOG_SOURCE);
   if ("response" in auth) return auth.response;
+  const owner = await prisma.user.findUnique({
+    where: { id: auth.userId },
+    select: { emailVerified: true },
+  });
+  if (!owner?.emailVerified) {
+    return NextResponse.json(
+      {
+        error: "Confirm your email to publish",
+        code: "EMAIL_VERIFICATION_REQUIRED",
+      },
+      { status: 403 }
+    );
+  }
   const body = (await request.json()) as {
     title?: unknown;
     slug?: unknown;

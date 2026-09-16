@@ -6,16 +6,16 @@
  * message + 401. `classifyCalDAVError` is exercised for real; only the login
  * primitive and the auth/db boundaries are mocked.
  */
-import { getToken } from "next-auth/jwt";
-
-import { authenticateRequest } from "@/lib/auth/api-auth";
+import { authenticateRequest, requireAuth } from "@/lib/auth/api-auth";
 import { canAddCalendar } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 
 import * as utils from "../utils";
 
-jest.mock("next-auth/jwt", () => ({ getToken: jest.fn() }));
-jest.mock("@/lib/auth/api-auth", () => ({ authenticateRequest: jest.fn() }));
+jest.mock("@/lib/auth/api-auth", () => ({
+  authenticateRequest: jest.fn(),
+  requireAuth: jest.fn(),
+}));
 jest.mock("@/lib/entitlements", () => ({ canAddCalendar: jest.fn() }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
@@ -24,10 +24,10 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
-const mockGetToken = getToken as jest.MockedFunction<typeof getToken>;
 const mockAuthenticateRequest = authenticateRequest as jest.MockedFunction<
   typeof authenticateRequest
 >;
+const mockRequireAuth = requireAuth as jest.MockedFunction<typeof requireAuth>;
 const mockCanAddCalendar = canAddCalendar as jest.MockedFunction<
   typeof canAddCalendar
 >;
@@ -55,7 +55,7 @@ beforeEach(() => {
 
 describe("CalDAV test route classifies login failures", () => {
   beforeEach(() => {
-    mockGetToken.mockResolvedValue({ sub: "user-1" } as never);
+    mockRequireAuth.mockResolvedValue(null);
     jest
       .spyOn(utils, "createCalDAVClient")
       .mockReturnValue({} as ReturnType<typeof utils.createCalDAVClient>);

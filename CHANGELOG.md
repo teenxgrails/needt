@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added non-blocking email confirmation with one 14-day Pro trial per canonical
+  email, OAuth trial activation, day-11/day-14 worker emails, safe Free expiry,
+  and verified-owner gates for booking publication and outbound guest email.
 - Added an admin-only System settings route and account-menu links for system
   credentials and operations, with a contract check preventing orphaned
   admin-only settings components.

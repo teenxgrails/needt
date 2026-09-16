@@ -1,4 +1,5 @@
 import { NextAuthOptions } from "next-auth";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -9,6 +10,8 @@ import { authenticateUser } from "@/lib/auth/credentials-provider";
 import { GOOGLE_SIGN_IN_SCOPES } from "@/lib/google-oauth-scopes";
 import { logger } from "@/lib/logger";
 import { MICROSOFT_GRAPH_SCOPES } from "@/lib/outlook";
+import { prisma } from "@/lib/prisma";
+import { markEmailVerifiedAndStartTrial } from "@/lib/trials/trial-service";
 
 // Define a type for our user with role
 interface UserWithRole {
@@ -95,28 +98,35 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
   }
 
   return {
+    adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
     // Add secret for production - required for security
     secret: authSecret(),
 
     providers,
     callbacks: {
-      async jwt({ token, account, profile, user }) {
-        // Initial sign in
-        if (account && profile) {
-          return {
-            ...token,
-            accessToken: account.access_token,
-            refreshToken: account.refresh_token,
-            expiresAt: account.expires_at,
-            provider: account.provider,
-          };
+      async jwt({ token, account, user }) {
+        if (user) {
+          token.sub = user.id;
+          token.role = (user as UserWithRole).role;
         }
 
-        // Include user role in the token if available
-        if (user) {
-          // Add role from user object to token
-          // TypeScript doesn't know about our custom role property
-          token.role = (user as UserWithRole).role;
+        // Initial sign in
+        if (account) {
+          token.accessToken = account.access_token;
+          token.refreshToken = account.refresh_token;
+          token.expiresAt = account.expires_at;
+          token.provider = account.provider;
+          if (account.type === "oauth" && user?.id && user.email) {
+            await markEmailVerifiedAndStartTrial({
+              userId: user.id,
+              email: user.email,
+            });
+            await prisma.userSettings.upsert({
+              where: { userId: user.id },
+              update: {},
+              create: { userId: user.id, theme: "dark", timeZone: "UTC" },
+            });
+          }
         }
 
         return token;
@@ -124,6 +134,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
       async session({ session, token }) {
         // Add user role to the session
         if (session.user) {
+          session.user.id = token.sub;
           session.user.role = token.role;
         }
 

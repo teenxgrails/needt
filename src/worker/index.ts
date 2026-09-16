@@ -1,5 +1,6 @@
 import { syncBugReportToGithub } from "@/services/bug-reports/bug-report-service";
 import { generateProactiveNudges } from "@/services/nudges/proactive-assist";
+import { processTrialLifecycle } from "@/services/trials/trial-lifecycle";
 import { collectOperationsHealth } from "@/services/operations/health";
 import {
   deliverTaskReminder,
@@ -57,6 +58,7 @@ import {
   getBugReportSyncQueue,
   getNudgeQueue,
   getReminderQueue,
+  getTrialQueue,
   getWebhookRenewQueue,
 } from "@/lib/queue/queues";
 import {
@@ -67,6 +69,7 @@ import {
   QUEUE_NAMES,
   ReminderJobData,
   RescheduleJobData,
+  TrialJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
@@ -194,6 +197,10 @@ async function processNudges() {
   await generateProactiveNudges();
 }
 
+async function processTrials() {
+  await processTrialLifecycle();
+}
+
 // BullMQ and the app can resolve distinct compatible ioredis patch versions,
 // so bridge their nominal types at this boundary.
 const connection = getRedisConnection() as unknown as ConnectionOptions;
@@ -229,6 +236,10 @@ const workers = [
     concurrency: 5,
   }),
   new Worker<NudgeJobData>(QUEUE_NAMES.nudges, processNudges, {
+    connection,
+    concurrency: 1,
+  }),
+  new Worker<TrialJobData>(QUEUE_NAMES.trials, processTrials, {
     connection,
     concurrency: 1,
   }),
@@ -308,6 +319,11 @@ async function start(): Promise<void> {
     "proactive-nudge-sweep",
     { every: 15 * 60_000 },
     { name: "sweep-nudges", data: { kind: "sweep" } }
+  );
+  await getTrialQueue().upsertJobScheduler(
+    "trial-lifecycle-sweep",
+    { every: 60 * 60_000 },
+    { name: "sweep-trials", data: { kind: "sweep" } }
   );
   const mailAccountIds = await listActiveMailAccountIds();
   await Promise.all(

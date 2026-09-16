@@ -57,6 +57,7 @@ export function SignInForm({
   const [oauthLoading, setOauthLoading] = useState<OAuthProviderId | null>(
     null
   );
+  const [verificationSending, setVerificationSending] = useState(false);
   const router = useRouter();
   const safeCallbackUrl = safeCallbackPath(callbackUrl);
 
@@ -198,6 +199,37 @@ export function SignInForm({
     }
   };
 
+  const resendVerification = async () => {
+    if (!email.trim()) {
+      notify.error("Enter your email first");
+      return;
+    }
+    setVerificationSending(true);
+    try {
+      const response = await fetch("/api/auth/email-verification/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      if (!response.ok) throw new Error("Could not send verification email");
+      notify.success("If the account needs confirmation, an email is on its way.");
+    } catch (verificationError) {
+      logger.error(
+        "Email verification resend failed",
+        {
+          error:
+            verificationError instanceof Error
+              ? verificationError.message
+              : "Unknown error",
+        },
+        LOG_SOURCE
+      );
+      notify.error("Could not send verification email");
+    } finally {
+      setVerificationSending(false);
+    }
+  };
+
   return (
     <Card className="mx-auto w-full max-w-md">
       <CardHeader>
@@ -254,7 +286,16 @@ export function SignInForm({
                   onChange={(event) => setPassword(event.target.value)}
                   required
                 />
-                <div className="text-right">
+                <div className="flex justify-between gap-3">
+                  <Button
+                    variant="link"
+                    className="h-auto p-0 text-sm text-muted-foreground"
+                    onClick={() => void resendVerification()}
+                    disabled={verificationSending}
+                    type="button"
+                  >
+                    {verificationSending ? "Sending…" : "Resend confirmation"}
+                  </Button>
                   <Button
                     variant="link"
                     className="h-auto p-0 text-sm text-muted-foreground"
