@@ -61,7 +61,7 @@ test("component laboratory stays coherent in light mode", async ({ page }) => {
     "aria-pressed",
     "true"
   );
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
   await expect(page.locator("html")).not.toHaveClass(/dark|theme-dark/);
   await expect(page.getByText("#f6f7fb").first()).toBeVisible();
   await settleVisualSurface(page);
@@ -128,7 +128,10 @@ test("motion runtime honors reduced motion and the Animations setting", async ({
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/style", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("html")).toHaveAttribute("data-needt-motion", "off");
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-needt-motion",
+    "off"
+  );
   await expect(page.locator("html")).toHaveAttribute("data-animations", "off");
 
   await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -141,6 +144,9 @@ test("motion runtime honors reduced motion and the Animations setting", async ({
       })
     );
   });
-  await expect(page.locator("html")).toHaveAttribute("data-needt-motion", "off");
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-needt-motion",
+    "off"
+  );
   await expect(page.locator("html")).toHaveAttribute("data-animations", "off");
 });

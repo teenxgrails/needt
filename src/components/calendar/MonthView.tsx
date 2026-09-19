@@ -72,6 +72,10 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
   >([]);
   const calendarRef = useRef<CalendarEngine>(null);
   const tasks = useTaskStore((state) => state.tasks);
+  // Subscribed, not read once. `useTaskStore.getState().tags` evaluates during
+  // render and never re-renders when tags arrive, so the task editor opened
+  // with an empty label list and showed no category.
+  const storeTags = useTaskStore((state) => state.tags);
   const eventModalStore = useEventModalStore();
   const { handleEventDrop } = useCalendarDragHandlers();
 
@@ -108,6 +112,18 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
           durationEditable: false,
           extendedProps: {
             ...item,
+            // Owner decision: inside one day, items of the same category sit
+            // together instead of interleaving by clock time. A month cell is
+            // read by scanning, not by reading a schedule — grouping turns the
+            // category colours into readable bands rather than confetti.
+            // Sorted on below via eventOrder; external events group under their
+            // calendar name so they behave the same way.
+            categoryName:
+              (
+                item.extendedProps?.tags as Array<{ name: string }> | undefined
+              )?.[0]?.name ??
+              feeds.find((f) => f.id === item.feedId)?.name ??
+              "",
             isTask: item.extendedProps?.isTask,
             isRecurring: item.isRecurring,
             status: item.extendedProps?.status,
@@ -238,6 +254,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
         initialDate={currentDate}
         events={events}
         dayMaxEvents={true}
+        eventOrder="categoryName,start,title"
         expandRows={true}
         stickyHeaderDates={true}
         timeZone="local"
@@ -281,7 +298,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
           isOpen={isTaskModalOpen}
           onClose={handleTaskModalClose}
           task={selectedTask}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           onSave={async (updates) => {
             await updateTask(selectedTask.id, updates);
             handleTaskModalClose();
@@ -296,7 +313,7 @@ export function MonthView({ currentDate, onDateClick }: MonthViewProps) {
         <TaskModal
           isOpen={isNewTaskModalOpen}
           onClose={handleTaskModalClose}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           initialStart={selectedDate}
           initialEnd={selectedEndDate}
           onItemTypeChange={() => {

@@ -28,59 +28,41 @@ async function settle(page: import("@playwright/test").Page) {
   await page.waitForTimeout(250);
 }
 
-test("Today exposes the responsive timeline and explicit evening review", async ({
+test("Today uses the production Needt surface at every viewport", async ({
   page,
-}, testInfo) => {
+}) => {
   await prepareAuthenticatedPage(page);
-  const agendaResponse = await page.request.put("/api/daily-agenda", {
+  const taskResponse = await page.request.post("/api/tasks", {
     data: {
-      date: "2026-07-16",
-      content: "<p>Close the day with an intentional review.</p>",
+      title: "Production Today binding",
+      status: "todo",
+      duration: 30,
+      estimatedMinutes: 30,
+      dueDate: EVENING_NOW,
+      isAutoScheduled: false,
+      autoScheduled: false,
+      scheduleLocked: false,
+      tagIds: [],
     },
   });
-  expect(agendaResponse.ok()).toBeTruthy();
+  expect(taskResponse.ok()).toBeTruthy();
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
+  await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByText("Production Today binding")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Thursday", level: 1 })
-  ).toBeVisible();
-  await expect(page.getByText("Evening review", { exact: true })).toBeVisible();
-
-  if (testInfo.project.name === "desktop") {
-    await expect(page.getByLabel("One day timeline")).toBeVisible();
-  } else {
-    await expect(page.getByLabel("One day timeline")).toBeHidden();
-    await page.getByRole("button", { name: "Open day calendar" }).click();
-    await expect(
-      page.getByRole("dialog", { name: "Day calendar" })
-    ).toBeVisible();
-    await expect(
-      page
-        .getByRole("dialog", { name: "Day calendar" })
-        .getByLabel("One day timeline")
-    ).toBeVisible();
-    await settle(page);
-    await expect(page).toHaveScreenshot("today-calendar-sheet.png");
-    await page.keyboard.press("Escape");
-  }
-
-  await page.getByRole("button", { name: "Review", exact: true }).click();
-  const review = page.getByRole("dialog", { name: "Evening review" });
-  await expect(review).toBeVisible();
-  await expect(review.getByText("Morning deep work")).toBeVisible();
-  await expect(
-    review.getByRole("button", { name: "Move to tomorrow" })
-  ).toBeDisabled();
-  await review.getByText("Morning deep work").click();
-  await expect(
-    review.getByRole("button", { name: "Move to tomorrow" })
-  ).toBeEnabled();
+    page.getByText("Close the day with an intentional review.")
+  ).toHaveCount(0);
+  await expect(page.getByText("Prose", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Canvas", { exact: true })).toHaveCount(0);
   await settle(page);
-  await expect(page.getByText("Loading agenda…")).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "Thursday", level: 1 })
-  ).toBeVisible();
-  await expect(page).toHaveScreenshot("today-evening-review.png");
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth >
+        document.documentElement.clientWidth
+    )
+  ).toBe(false);
 });
 
 test("companion stays clear of fixed actions across viewports", async ({

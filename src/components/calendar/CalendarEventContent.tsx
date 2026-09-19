@@ -1,4 +1,4 @@
-import { memo, type CSSProperties } from "react";
+import { type CSSProperties, memo } from "react";
 
 import type { EventContentArg } from "@fullcalendar/core";
 import { Check } from "lucide-react";
@@ -61,7 +61,8 @@ export const CalendarEventContent = memo(function CalendarEventContent({
       : undefined
   );
   const chunkIndex = eventInfo.event.extendedProps.chunkIndex as
-    number | undefined;
+    | number
+    | undefined;
   const isRecurring = eventInfo.event.extendedProps.isRecurring;
   const status = eventInfo.event.extendedProps.status;
   const priority = eventInfo.event.extendedProps.priority;
@@ -97,12 +98,24 @@ export const CalendarEventContent = memo(function CalendarEventContent({
     eventInfo.event.backgroundColor ||
     eventInfo.event.borderColor ||
     DEFAULT_EVENT_COLOR;
-  const taskColor =
-    isTask && priority
-      ? priorityColors[priority as Priority] || eventColor
-      : eventColor;
-  const chipColor = isTask ? taskColor : eventColor;
+  // Colour carries ONE meaning: which category the item belongs to. The store
+  // derives it from the task's first tag. Priority used to overwrite it here,
+  // which meant category was computed and then thrown away — every medium task
+  // looked identical and the month view showed no grouping at all. Priority is
+  // a changing attribute, category is a stable belonging; the stable one owns
+  // the colour channel and priority is expressed as rail weight below.
+  // Overdue is a state, not a category, so it is the one thing allowed to
+  // override the rail.
+  const chipColor = isOverdue ? priorityColors[Priority.HIGH] : eventColor;
+  const isHighPriority = isTask && priority === Priority.HIGH;
   const displayTime = eventInfo.timeText || timeText;
+  // In a month cell every task costs vertical space twice over when the time
+  // sits on its own line. Inline the time before the title there — the same
+  // solution Google Calendar and Amie reach for — and keep the stacked layout
+  // in the time grid, where there is room for it.
+  const isMonthGrid =
+    eventInfo.view.type.startsWith("dayGrid") ||
+    eventInfo.view.type.startsWith("multiMonth");
   const staggerIndex = (taskId ?? eventInfo.event.id)
     .split("")
     .reduce((total, character) => total + character.charCodeAt(0), 0);
@@ -138,12 +151,18 @@ export const CalendarEventContent = memo(function CalendarEventContent({
     >
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-px -left-px -top-px z-[1] w-1 rounded-l-[4px]"
+        className={cn(
+          "pointer-events-none absolute -bottom-px -left-px -top-px z-[1] rounded-l-[4px] transition-[width] duration-150",
+          isHighPriority ? "w-[6px]" : "w-1"
+        )}
         style={{ backgroundColor: chipColor }}
       />
       <span
         aria-hidden="true"
-        className={cn("pointer-events-none absolute inset-0 bg-[var(--calendar-item-accent)] opacity-0 transition-opacity duration-150 group-hover:opacity-[0.11]", isSelected && "opacity-[0.09]")}
+        className={cn(
+          "pointer-events-none absolute inset-0 bg-[var(--calendar-item-accent)] opacity-0 transition-opacity duration-150 group-hover:opacity-[0.11]",
+          isSelected && "opacity-[0.09]"
+        )}
         style={{ "--calendar-item-accent": chipColor } as CSSProperties}
       />
       <div className="relative z-[2] grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-[3px] overflow-hidden py-px pl-[5px] pr-1 text-[12px] leading-4">
@@ -199,16 +218,23 @@ export const CalendarEventContent = memo(function CalendarEventContent({
           <div
             className={cn(
               "calendar-event-title text-[12px] font-normal leading-4 text-[var(--text-primary)]",
-              duration <= 1800000 ? "truncate" : "line-clamp-2 break-words",
+              isMonthGrid || duration <= 1800000
+                ? "truncate"
+                : "line-clamp-2 break-words",
               status === TaskStatus.COMPLETED && "line-through"
             )}
           >
             {isDayGridTimed && calendarName && (
               <span className="sr-only">{calendarName}, </span>
             )}
+            {isMonthGrid && displayTime && (
+              <span className="mr-1 tabular-nums text-[var(--text-secondary)]">
+                {displayTime}
+              </span>
+            )}
             {title}
           </div>
-          {displayTime && (
+          {displayTime && !isMonthGrid && (
             <div className="truncate text-[12px] font-normal leading-4 tabular-nums text-[var(--text-secondary)]">
               {displayTime}
             </div>

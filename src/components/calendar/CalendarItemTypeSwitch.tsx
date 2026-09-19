@@ -10,6 +10,17 @@ interface CalendarItemTypeSwitchProps {
   locked?: boolean;
 }
 
+/**
+ * The one thing people get wrong about this product: a task is something the
+ * scheduler may move, an event is something that happens at a fixed time. This
+ * switch decides the whole shape of the form, so it states the difference on
+ * hover instead of leaving it to be discovered.
+ */
+const TYPE_HINT: Record<CalendarItemType, string> = {
+  task: "Task — the planner can move it to fit your work hours.",
+  event: "Event — stays exactly where you put it.",
+};
+
 export function CalendarItemTypeSwitch({
   value,
   onValueChange,
@@ -17,7 +28,10 @@ export function CalendarItemTypeSwitch({
 }: CalendarItemTypeSwitchProps) {
   if (locked) {
     return (
-      <span className="flex items-center gap-2 text-[13px] font-normal text-[var(--text-muted)]">
+      <span
+        title={TYPE_HINT[value]}
+        className="flex items-center gap-2 text-[13px] font-normal text-[var(--text-muted)]"
+      >
         {value === "task" ? (
           <CheckSquare2 className="h-4 w-4" />
         ) : (
@@ -43,12 +57,17 @@ export function CalendarItemTypeSwitch({
             type="button"
             role="tab"
             aria-selected={selected}
+            title={TYPE_HINT[type]}
             onClick={() => onValueChange?.(type)}
             className={cn(
-              "flex h-7 items-center gap-1.5 rounded px-2.5 text-[12px] font-medium transition-[background-color,color] duration-150",
+              "flex h-7 items-center gap-1.5 rounded px-2.5 text-[12px] transition-[background-color,color,border-color] duration-150",
+              // The selected half sits on the raised surface with a hairline of
+              // its own. It used to use --surface-selected, which in the light
+              // theme is nearly the same tone as the track beneath it, so
+              // neither half looked chosen.
               selected
-                ? "bg-[var(--surface-selected)] text-[var(--control-selected-fg)]"
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                ? "border border-[var(--border-control)] bg-[var(--surface-raised)] font-semibold text-[var(--text-primary)]"
+                : "border border-transparent font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             )}
           >
             <Icon className="h-3.5 w-3.5" />

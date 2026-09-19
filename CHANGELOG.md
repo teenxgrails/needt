@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Today: replaced the legacy agenda/timeline tree with the ported Needt Home on
+  desktop and phone. The screen now reads the active authorized workspace,
+  persists task and habit completion, plans or moves work through existing task
+  APIs, respects Viewer access, and never falls back to fixture briefs or habits
+  in production.
+- Design data layer: task ids now stay as database cuid strings from Prisma
+  through every new-design surface instead of being irreversibly hashed to
+  numbers. The Prisma source now requires server-authorized workspace access,
+  scopes workspace-owned reads to it, and limits the people registry to that
+  workspace's members.
+- Wordmark: added `ExposureWordmark`, the variable-font mark driven by the
+  now-licensed Exposure typeface's `EXPO` axis — develop-in on mount, an idle
+  breathe (with an optional pulse burst), a pointer-driven torch, and a busy
+  state for the scheduler. Not yet wired into the shell, which still renders
+  the SVG `Wordmark`; see `src/components/needt/wordmark/`.
+- Themes: five to choose from instead of three — Paper, Warm, Dim and Dark, plus
+  System. System is now a pair rather than a mode: you choose which theme fills
+  the light half of the OS preference and which fills the dark half. A saved
+  Light becomes Paper and a saved Graphite becomes Dim, so nothing has to be
+  picked again.
+- Themes: the pre-paint script that stops the flash of the wrong theme is now
+  generated from the same function the app itself uses, instead of being a copy
+  of it kept in step by hand. The two had already drifted — the script never
+  learned to set the `data-theme` attribute the running app had been setting.
+
+- Task editor: the dialog is 840x620 instead of 960x767, and its header row is
+  shorter. The old size was set by the screen rather than by the content — the
+  field column ran out well before the bottom edge and the description area held
+  a half-window of blank space.
+- Task editor: switching between Task and Event keeps the title and description
+  you have already typed, in both directions. Previously the switch closed one
+  editor and opened the other, and everything typed was lost.
+- Task editor: the selected half of the Task/Event switch is now clearly the
+  selected one — it sat on `--surface-selected`, nearly the same tone as its own
+  track in the light theme. Both halves say what they mean on hover: a task can
+  be moved by the planner, an event stays where you put it.
+- Task editor: the first label is shown as the task's Category, with its colour,
+  because that is what the calendar paints the block with and what the month view
+  groups by. It used to render as a plain comma-separated list.
+- Calendar: tags are now loaded on the calendar page. They were fetched only on
+  /tasks, /today and /projects, and the calendar's task editor read them through
+  a non-reactive `getState()` snapshot — so opening a task from the calendar
+  showed an empty label list and no category at all, no matter what was set.
+- Task editor: plain-language hints on the fields nobody can guess —
+  Auto-scheduled, Min chunk, Hard deadline and Schedule.
+- Auth: a server error during sign-in no longer counts against the account. The
+  credentials route treated any `status >= 400` as a wrong password, so a 5xx
+  from the rate limiter — Redis unreachable, or `RATE_LIMIT_HASH_SECRET` unset —
+  accumulated brute-force strikes and locked people out after five attempts they
+  never made. Server errors now leave the counter untouched: they neither add a
+  strike nor clear existing ones, so an attacker cannot reset their own count by
+  provoking errors.
+- Scheduling: hard-deadline overflow no longer reaches into the night. Meeting a
+  hard deadline may still use time outside the work schedule — that is
+  deliberate — but the search is now bounded by 07:00 and the configured hard
+  stop, instead of walking the clock and returning 03:00.
+- Scheduling: energy windows no longer decide where a task lands. They narrowed
+  the day to a few hours, so tasks piled into those hours or found no slot at
+  all — and anything carrying a hard deadline then fell through to the overflow
+  path, which ignores work hours entirely and could place a block at three in
+  the morning. Auto-scheduling now runs against work hours only.
+  `EnergyProfileWindow` rows are left untouched so an assistant can still read
+  them as a stated preference.
+- Settings: removed the "Energy & focus" panel, whose profile no longer affects
+  scheduling, and the "Deadline colors" thresholds. "Break between tasks" is
+  unaffected.
+- Calendar: a task's colour again means its category. The store derives the
+  colour from the task's first tag, but `CalendarEventContent` overwrote it with
+  a priority colour, so every medium-priority task looked identical and
+  categories were invisible. Priority now shows as rail weight instead, and
+  overdue — a state rather than a belonging — is the only thing that overrides
+  the rail.
+- Calendar: inside a day, month-view items group by category rather than
+  interleaving by clock time, so the colours read as bands. Timed items show
+  their time inline with the title in month cells instead of on a second line,
+  which halves the height each task costs in a crowded cell.
+- Calendar: a dragged item keeps its own colour and category rail. A rule was
+  flooding the drag mirror with `--surface-selected` through `!important`, so
+  the card in hand read as a grey placeholder. It now lifts, tilts slightly and
+  shows a `grab` cursor only on items that can actually be moved.
+- Design: `--surface-panel` and `--surface-raised` are no longer aliased to
+  `--surface-canvas`, restoring three distinct elevation levels in both themes;
+  menus, popovers and dialogs sit on the raised level.
+- Build: `tsconfig.json` and the ESLint config no longer pull the self-contained
+  `landing`, `landing from figma` and `New ui ` sub-projects, or the design
+  reference kit, into the root gates. Each carries its own tsconfig and
+  dependency set, so the root run resolved their imports against a
+  `node_modules` they do not share — 907 reported problems, none actionable.
+- Dev: added `prisma/dev-seed.ts`, which fills a month with deliberately uneven
+  load — empty days, ordinary days and one day carrying eleven tasks — because a
+  month view only breaks on edge cases.
+- Docs: added `docs/plans/12-remaining-work.md` as the governing plan, written
+  against verified production state on 2026-08-24, and demoted
+  `docs/plans/09-launch.md` to reference — its L0 sequencing described merged
+  work as blocking. Records four live P0 defects: the admin credentials screen
+  has no route rendering it, the Creem checkout is enabled in production with no
+  lifecycle test, push reminders fail silently without `VAPID_PRIVATE_KEY`, and
+  account deletion and data export do not exist.
+- Ops: `needt-collaboration` restored — Coolify published port 3000 while
+  Hocuspocus listens on 1234, leaving the service down from 2026-08-13 to
+  2026-08-24.
+- Ops: `www.needt.app` now 301-redirects to the apex domain with the query
+  string preserved, via a Cloudflare redirect rule on a proxied CNAME.
 - Added an admin-only System settings route and account-menu links for system
   credentials and operations, with a contract check preventing orphaned
   admin-only settings components.

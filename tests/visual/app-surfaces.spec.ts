@@ -16,9 +16,12 @@ async function settleVisualSurface(page: import("@playwright/test").Page) {
 
 async function useVisualTheme(
   page: import("@playwright/test").Page,
-  theme: "dark" | "light"
+  theme: "dark" | "paper"
 ) {
-  await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+  await page.emulateMedia({
+    colorScheme: theme === "dark" ? "dark" : "light",
+    reducedMotion: "reduce",
+  });
   const update = await page.request.patch("/api/user-settings", {
     data: { theme },
   });
@@ -37,7 +40,7 @@ async function useVisualTheme(
   const themePicker = page.getByRole("combobox", { name: "Theme" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   await expect(page.getByText("Monday", { exact: true })).toBeVisible();
-  await expect(themePicker).toHaveText(theme === "dark" ? "Dark" : "Light");
+  await expect(themePicker).toHaveText(theme === "dark" ? "Dark" : "Paper");
   await expect(
     page
       .getByText("Animations:", { exact: true })
@@ -109,16 +112,7 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   }
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-    await expect(page.getByText("July 16th, 2026")).toBeVisible();
-  } else {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-  }
+  await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
   await expect(
     page.getByRole("main").getByText("Plan the launch").first()
   ).toBeVisible();
@@ -187,7 +181,7 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
     localStorage.setItem("needt-visit-count", "0");
   });
   await signInVisualUser(page);
-  await useVisualTheme(page, "light");
+  await useVisualTheme(page, "paper");
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("settings-appearance-light.png");
 
@@ -212,16 +206,10 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
   await page.keyboard.press("Escape");
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-    await expect(page.getByText("July 16th, 2026")).toBeVisible();
-  } else {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-  }
+  await expect(page.locator(".needt-v2")).toHaveAttribute(
+    "data-theme",
+    "paper"
+  );
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("today-light.png");
 

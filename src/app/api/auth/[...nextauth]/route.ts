@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { NextRequest } from "next/server";
 
 import { getAuthOptions } from "@/lib/auth/auth-options";
+import { classifyCredentialAttempt } from "@/lib/auth/credential-attempt";
 import {
   accountRule,
   clearCredentialFailures,
@@ -65,7 +66,9 @@ export async function POST(request: NextRequest, context: AuthRouteContext) {
   const handler = await getHandler();
   if (request.nextUrl.pathname.endsWith("/callback/credentials")) {
     const form = await request.clone().formData();
-    const email = String(form.get("email") ?? "").trim().toLowerCase();
+    const email = String(form.get("email") ?? "")
+      .trim()
+      .toLowerCase();
     const locked = await enforceCredentialLock(email);
     if (locked) return locked;
     const limited = await enforceRateLimits(
@@ -83,13 +86,10 @@ export async function POST(request: NextRequest, context: AuthRouteContext) {
       ?.includes("application/json")
       ? await response.clone().text()
       : "";
-    const failed =
-      response.status >= 400 ||
-      /[?&]error=|CredentialsSignin/i.test(location) ||
-      /[?&]error=|CredentialsSignin/i.test(body);
-    if (failed) {
+    const verdict = classifyCredentialAttempt(response.status, location, body);
+    if (verdict === "failed") {
       await recordCredentialFailure(email);
-    } else {
+    } else if (verdict === "succeeded") {
       await clearCredentialFailures(email);
     }
     return response;

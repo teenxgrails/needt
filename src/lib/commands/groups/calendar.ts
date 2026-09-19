@@ -13,6 +13,37 @@ import { useCalendarUIStore, useViewStore } from "@/store/calendar";
 
 import { Command } from "../types";
 
+/**
+ * What survives when someone switches between Task and Event mid-entry.
+ *
+ * Switching type closes one editor and opens the other, so anything already
+ * typed used to vanish — you would name a task, realise it is really a meeting,
+ * switch, and start over. Title and description mean the same thing on both
+ * sides, so they carry across; everything type-specific is left behind on
+ * purpose.
+ */
+export interface CalendarItemDraft {
+  title?: string;
+  description?: string;
+  /** When it was handed over, so a stale draft cannot leak into a later form. */
+  at: number;
+}
+
+/**
+ * How long a handover stays valid. Several editors are mounted at once and any
+ * of them may read first, so the draft is not consumed on read — it simply
+ * expires. Long enough to survive a modal swap, far too short to reappear in a
+ * task created minutes later.
+ */
+export const CALENDAR_DRAFT_TTL_MS = 5000;
+
+export function readFreshCalendarDraft(
+  draft: CalendarItemDraft | undefined
+): CalendarItemDraft | undefined {
+  if (!draft) return undefined;
+  return Date.now() - draft.at <= CALENDAR_DRAFT_TTL_MS ? draft : undefined;
+}
+
 // Create a store for managing event modal state
 interface EventModalStore {
   isOpen: boolean;
@@ -21,6 +52,8 @@ interface EventModalStore {
   setDefaultDate: (date?: Date) => void;
   defaultEndDate?: Date;
   setDefaultEndDate: (date?: Date) => void;
+  draft?: CalendarItemDraft;
+  setDraft: (draft?: CalendarItemDraft) => void;
 }
 
 export const useEventModalStore = create<EventModalStore>((set) => ({
@@ -30,6 +63,8 @@ export const useEventModalStore = create<EventModalStore>((set) => ({
   setDefaultDate: (date) => set({ defaultDate: date }),
   defaultEndDate: undefined,
   setDefaultEndDate: (date) => set({ defaultEndDate: date }),
+  draft: undefined,
+  setDraft: (draft) => set({ draft }),
 }));
 
 export function useCalendarCommands(): Command[] {

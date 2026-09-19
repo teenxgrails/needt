@@ -2,11 +2,17 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 import { MotionSwitchRow } from "@/components/settings/MotionSettingsControls";
 import { NeedtPicker } from "@/components/ui/needt-picker";
 
+import { THEME_MODES, THEME_MODE_LABELS } from "@/lib/theme";
 import { COMMON_TIME_ZONES, getTimeZoneDisplayName } from "@/lib/time-zones";
 
 import { useSettingsStore } from "@/store/settings";
 
-import { TimeFormat, WeekStartDay } from "@/types/settings";
+import {
+  ResolvedThemeMode,
+  ThemeMode,
+  TimeFormat,
+  WeekStartDay,
+} from "@/types/settings";
 
 import { SettingsSection } from "./SettingsSection";
 
@@ -17,7 +23,7 @@ interface UserSettingsProps {
 export function UserSettings({ page = "all" }: UserSettingsProps) {
   const { calendar, updateCalendarSettings, updateUserSettings, user } =
     useSettingsStore();
-  const { setTheme } = useTheme();
+  const { setTheme, systemTheme, setSystemTheme } = useTheme();
 
   const timeFormats: { value: TimeFormat; label: string }[] = [
     { value: "12h", label: "12-hour" },
@@ -29,12 +35,16 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
     { value: "monday", label: "Monday" },
   ];
 
-  const themes = [
-    { value: "light", label: "Light" },
-    { value: "graphite", label: "Graphite" },
-    { value: "dark", label: "Dark" },
-    { value: "system", label: "Use system setting" },
-  ] as const;
+  const themes = THEME_MODES.map((mode) => ({
+    value: mode,
+    label: mode === "system" ? "Use system setting" : THEME_MODE_LABELS[mode],
+  }));
+
+  // System is a pair: which theme fills the light half of the OS preference,
+  // and which fills the dark half.
+  const pairOptions = THEME_MODES.filter(
+    (mode): mode is ResolvedThemeMode => mode !== "system"
+  ).map((mode) => ({ value: mode, label: THEME_MODE_LABELS[mode] }));
 
   return (
     <SettingsSection
@@ -61,8 +71,36 @@ export function UserSettings({ page = "all" }: UserSettingsProps) {
                 themes.find((theme) => theme.value === user.theme)?.label
               }
               options={themes.map((theme) => ({ ...theme }))}
-              onValueChange={(value) => setTheme(value as typeof user.theme)}
+              onValueChange={(value) => setTheme(value as ThemeMode)}
             />
+            {user.theme === "system" && (
+              <>
+                <NeedtPicker
+                  label="System light half"
+                  value={systemTheme.light}
+                  valueLabel={THEME_MODE_LABELS[systemTheme.light]}
+                  options={pairOptions}
+                  onValueChange={(value) =>
+                    setSystemTheme({
+                      ...systemTheme,
+                      light: value as ResolvedThemeMode,
+                    })
+                  }
+                />
+                <NeedtPicker
+                  label="System dark half"
+                  value={systemTheme.dark}
+                  valueLabel={THEME_MODE_LABELS[systemTheme.dark]}
+                  options={pairOptions}
+                  onValueChange={(value) =>
+                    setSystemTheme({
+                      ...systemTheme,
+                      dark: value as ResolvedThemeMode,
+                    })
+                  }
+                />
+              </>
+            )}
             <NeedtPicker
               label="Start week on"
               value={user.weekStartDay}

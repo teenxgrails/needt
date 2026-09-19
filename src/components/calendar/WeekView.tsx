@@ -10,8 +10,6 @@ import interactionPlugin from "@fullcalendar/interaction";
 import CalendarEngine from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
 
-import { notify } from "@/lib/notifications";
-
 import { TaskModal } from "@/components/tasks/TaskModal";
 
 import { formatCalendarHour } from "@/lib/calendar-display";
@@ -24,10 +22,11 @@ import {
 import { useEventModalStore } from "@/lib/commands/groups/calendar";
 import { newDate, toLocalDateKey } from "@/lib/date-utils";
 import {
+  type BlockingOverride,
   isDateWholeDayBlocked,
   isRangeBlocked,
-  type BlockingOverride,
 } from "@/lib/flexible-hours-guard";
+import { notify } from "@/lib/notifications";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
@@ -114,6 +113,8 @@ export function WeekView({ currentDate }: WeekViewProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cancelScrollPolicyRef = useRef<(() => void) | null>(null);
   const tasks = useTaskStore((state) => state.tasks);
+  // Subscribed, not read once: getState() never re-renders when tags arrive.
+  const storeTags = useTaskStore((state) => state.tags);
   const eventModalStore = useEventModalStore();
   const { handleEventDrop, handleEventResize } = useCalendarDragHandlers(
     flexibleHourOverrides
@@ -572,7 +573,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
           isOpen={isTaskModalOpen}
           onClose={handleTaskModalClose}
           task={selectedTask}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           onSave={async (updates) => {
             await updateTask(selectedTask.id, updates);
             handleTaskModalClose();
@@ -586,7 +587,7 @@ export function WeekView({ currentDate }: WeekViewProps) {
         <TaskModal
           isOpen={isNewTaskModalOpen}
           onClose={handleTaskModalClose}
-          tags={useTaskStore.getState().tags}
+          tags={storeTags}
           initialStart={selectedDate}
           initialEnd={selectedEndDate}
           onItemTypeChange={() => {

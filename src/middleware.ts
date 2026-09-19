@@ -18,6 +18,11 @@ const publicRoutes = [
   "/privacy",
   "/p/",
   "/style",
+  // The ported design is judged here, against the same fixture the Claude
+  // Design prototype uses. It reads no user data and touches no database, so
+  // signing in would only stand between the design and the person reviewing it.
+  // Removed when every screen has replaced its predecessor.
+  "/design-preview",
   "/subscription/lifetime/success",
   "/subscription/lifetime/setup-password",
 ];

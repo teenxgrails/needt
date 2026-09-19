@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>merged day week canvas — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">09 · merged day week canvas</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Merged Day and Week canvas for Needt: one surface where the date strip becomes the week column headers</h2>
+
+<div style="background:var(--surface-1);border-radius:12px;padding:10px;">
+<div style="background:#17150F;border:0.5px solid #332E24;border-radius:8px;padding:12px 14px;">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+    <div id="ttl" style="font-size:15px;color:#EDE7DA;">Tuesday, 25 August</div>
+    <div style="margin-left:auto;display:flex;border:0.5px solid #332E24;border-radius:6px;overflow:hidden;">
+      <span id="mD" style="font-size:11px;padding:4px 12px;background:#C96442;color:#1A0F0A;cursor:pointer;">Day</span>
+      <span id="mW" style="font-size:11px;padding:4px 12px;color:#9A9184;cursor:pointer;">Week</span>
+    </div>
+  </div>
+
+  <div id="strip" style="display:flex;gap:2px;padding-left:38px;margin-bottom:8px;"></div>
+
+  <div style="display:flex;gap:12px;">
+    <div id="canvas" style="flex:1;position:relative;height:296px;min-width:0;"></div>
+    <div id="note" style="width:186px;flex:none;border-left:0.5px solid #332E24;padding-left:12px;transition:width 320ms cubic-bezier(.22,1,.32,1),opacity 160ms ease;overflow:hidden;">
+      <div style="font-size:10px;letter-spacing:.05em;color:#6F675B;margin-bottom:7px;">DAY NOTE</div>
+      <div style="font-size:11.5px;color:#EDE7DA;line-height:1.5;">Ship the pricing page. Everything else can slip.</div>
+      <div style="margin-top:12px;font-size:10px;letter-spacing:.05em;color:#6F675B;margin-bottom:6px;">NEEDS A SLOT</div>
+      <div style="font-size:11px;color:#9A9184;line-height:1.6;">Rewrite onboarding copy<br>Call accountant</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  var days=[['Mon','24'],['Tue','25'],['Wed','26'],['Thu','27'],['Fri','28'],['Sat','29'],['Sun','30']];
+  var strip=document.getElementById('strip'), canvas=document.getElementById('canvas');
+  var note=document.getElementById('note'), ttl=document.getElementById('ttl');
+  var mD=document.getElementById('mD'), mW=document.getElementById('mW');
+  var week=false, H=32, SEL=1;
+
+  function drawStrip(){
+    strip.innerHTML='';
+    days.forEach(function(d,i){
+      var on = i===SEL;
+      var e=document.createElement('div');
+      e.style.cssText='flex:1;text-align:center;padding:5px 0;border-radius:6px;cursor:pointer;'+
+        'background:'+(on&&!week?'#241F18':'transparent')+';'+
+        'border-bottom:'+(week&&on?'1px solid #C96442':'1px solid transparent')+';'+
+        'transition:background 200ms ease,border-color 200ms ease;';
+      e.innerHTML='<div style="font-size:9.5px;color:#6F675B;">'+d[0]+'</div>'+
+        '<div style="font-size:12.5px;font-variant-numeric:tabular-nums;color:'+(on?'#EDE7DA':'#9A9184')+';margin-top:1px;">'+d[1]+'</div>';
+      e.onclick=function(){ SEL=i; ttl.textContent=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i]+', '+d[1]+' August'; drawStrip(); draw(); };
+      strip.appendChild(e);
+    });
+  }
+
+  var dayItems=[['Standup',0,.5,0],['Design review',.75,1.25,1],['Lunch',3,1,0],['Deep work',4.25,1.75,1],['Retro',7,1,0]];
+  var weekItems=[[0,1,1,1],[1,.75,1.25,1],[1,4.25,1.75,1],[2,2,1,0],[3,1.5,2,1],[4,3,1,0],[4,5,1.5,1],[6,2,1,1]];
+
+  function draw(){
+    var h='';
+    for(var g=0;g<9;g++){
+      h+='<div style="position:absolute;left:0;right:0;top:'+(g*H)+'px;border-top:0.5px solid #332E24;"></div>';
+      h+='<div style="position:absolute;left:0;top:'+(g*H+3)+'px;font-size:9px;font-variant-numeric:tabular-nums;color:#6F675B;">'+(9+g)+':00</div>';
+    }
+    if(!week){
+      dayItems.forEach(function(x){
+        var tp=x[1]*H+1, hh=x[2]*H-3;
+        h+='<div style="position:absolute;left:38px;right:4px;top:'+tp+'px;height:'+hh+'px;box-sizing:border-box;padding:3px 7px;overflow:hidden;transition:all 320ms cubic-bezier(.22,1,.32,1);'+
+          (x[3]?'background:transparent;border:1px dashed #C96442;border-radius:4px;':'background:#211E17;border:0.5px solid #332E24;border-left:2px solid #9A9184;')+'">'+
+          '<div style="font-size:10.5px;color:#EDE7DA;line-height:1.2;">'+x[0]+'</div>'+
+          '<div style="font-size:9px;font-variant-numeric:tabular-nums;color:#6F675B;margin-top:1px;">'+(9+Math.floor(x[1]))+':'+((x[1]%1)*60<10?'0':'')+((x[1]%1)*60)+'</div></div>';
+      });
+    } else {
+      for(var c=1;c<7;c++){
+        h+='<div style="position:absolute;top:0;bottom:0;left:calc(38px + '+(c/7*100)+'% - '+(c/7*38)+'px);border-left:0.5px solid #241F18;"></div>';
+      }
+      weekItems.forEach(function(x){
+        var col=x[0], tp=x[1]*H+1, hh=x[2]*H-3;
+        var lw='calc((100% - 38px)/7)';
+        h+='<div style="position:absolute;left:calc(38px + '+(col)+' * '+lw+' + 1px);width:calc('+lw+' - 3px);top:'+tp+'px;height:'+hh+'px;box-sizing:border-box;padding:2px 4px;overflow:hidden;'+
+          (x[3]?'background:transparent;border:1px dashed #C96442;border-radius:4px;':'background:#211E17;border:0.5px solid #332E24;border-left:2px solid #9A9184;')+'"></div>';
+      });
+    }
+    var ny=2.4*H;
+    h+='<div style="position:absolute;left:32px;right:0;top:'+ny+'px;height:1px;background:#D8734F;"></div>';
+    h+='<div style="position:absolute;left:32px;top:'+(ny-2.5)+'px;width:6px;height:6px;border-radius:50%;background:#D8734F;"></div>';
+    canvas.innerHTML=h;
+  }
+
+  function setMode(w){
+    week=w;
+    mD.style.background=w?'transparent':'#C96442'; mD.style.color=w?'#9A9184':'#1A0F0A';
+    mW.style.background=w?'#C96442':'transparent'; mW.style.color=w?'#1A0F0A':'#9A9184';
+    note.style.width=w?'0px':'186px';
+    note.style.opacity=w?'0':'1';
+    note.style.paddingLeft=w?'0':'12px';
+    note.style.borderLeftColor=w?'transparent':'#332E24';
+    ttl.textContent=w?'24 – 30 August':'Tuesday, 25 August';
+    drawStrip(); draw();
+  }
+  mD.onclick=function(){setMode(false);}; mW.onclick=function(){setMode(true);};
+  drawStrip(); draw();
+})();
+</script>
+</div></body></html>

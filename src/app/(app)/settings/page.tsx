@@ -45,9 +45,7 @@ import { OnboardingChecklist } from "@/components/settings/OnboardingChecklist";
 import { ReportBugDialog } from "@/components/settings/ReportBugDialog";
 import { ScheduleSettings } from "@/components/settings/ScheduleSettings";
 import { SettingsPanelBoundary } from "@/components/settings/SettingsPanelBoundary";
-import { SmartSchedulingSettings } from "@/components/settings/SmartSchedulingSettings";
 import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings";
-import { TaskUrgencySettings } from "@/components/settings/TaskUrgencySettings";
 import { UserSettings } from "@/components/settings/UserSettings";
 import { WorkspaceSettings } from "@/components/settings/WorkspaceSettings";
 import { Input } from "@/components/ui/input";
@@ -297,14 +295,12 @@ export default function SettingsPage() {
         return (
           <div className="space-y-9">
             <AutoScheduleSettings />
-            <SmartSchedulingSettings />
           </div>
         );
       case "task-defaults":
         return (
           <div className="space-y-9">
             <TaskDefaultsSettings />
-            <TaskUrgencySettings />
           </div>
         );
       case "theme":

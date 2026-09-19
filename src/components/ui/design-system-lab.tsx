@@ -27,6 +27,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 
+import { RichBlockLab } from "@/components/needt/RichBlockLab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -97,8 +98,8 @@ import {
 
 import { APP_NAME } from "@/lib/app-config";
 import {
-  DESIGN_TOKEN_VARIABLES,
   DESIGN_TOKENS_EVENT,
+  DESIGN_TOKEN_VARIABLES,
   DesignTokens,
   applyDesignTokens,
   parseDesignTokens,
@@ -162,6 +163,7 @@ const SECTIONS = [
   ["feedback", "Feedback"],
   ["data", "Data display"],
   ["patterns", "Product patterns"],
+  ["rich-block", "The task object"],
 ] as const;
 
 async function fetchSavedDesignTokens(): Promise<DesignTokens | null> {
@@ -194,9 +196,7 @@ export function DesignSystemLab() {
   const [copyState, setCopyState] = React.useState("Copy theme CSS");
   const [editorStatus, setEditorStatus] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
-  const [savedDraft, setSavedDraft] = React.useState<DesignTokens | null>(
-    null
-  );
+  const [savedDraft, setSavedDraft] = React.useState<DesignTokens | null>(null);
   const originalRootRef = React.useRef<{
     className: string;
     dataTheme: string | null;
@@ -380,717 +380,740 @@ export function DesignSystemLab() {
 
           <div className="min-w-0 px-5 py-9 sm:px-8 lg:px-12 lg:py-12">
             <div className="mx-auto max-w-[1240px]">
-            <div className="pointer-events-none sticky top-3 z-40 mb-5 flex justify-end">
-              <div
-                aria-label="Quick theme switcher"
-                className="needt-overlay-shadow pointer-events-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border-control)] bg-[var(--surface-canvas)] p-1"
-                role="group"
-              >
-                <QuickThemeButton
-                  active={preset === "light"}
-                  icon={Sun}
-                  label="Light"
-                  onClick={() => choosePreset("light")}
-                />
-                <QuickThemeButton
-                  active={preset === "graphite"}
-                  icon={Palette}
-                  label="Graphite"
-                  onClick={() => choosePreset("graphite")}
-                />
-                <QuickThemeButton
-                  active={preset === "dark"}
-                  icon={Moon}
-                  label="Dark"
-                  onClick={() => choosePreset("dark")}
-                />
-              </div>
-            </div>
-            <header className="border-b border-[var(--border-subtle)] pb-9">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
-                Live component inventory
-              </p>
-              <h1 className="mt-3 text-[20px] font-bold leading-[24px] tracking-[-0.01em]">
-                Calm, dense, and deliberate.
-              </h1>
-              <p className="mt-3 max-w-3xl text-[14px] leading-6 text-[var(--text-secondary)]">
-                Real shared components, their states, and the semantic tokens
-                that theme them. Edit the sandbox once; product screens inherit
-                the same contract without a second component tree.
-              </p>
-            </header>
-
-            <section id="foundation" className="scroll-mt-8 py-10">
-              <SectionTitle
-                eyebrow="Foundation"
-                title="Theme sandbox"
-                description="Changes preview on this route, including portalled dialogs and menus. Apply the token object to bind every shared product control, or copy it as CSS."
-              />
-              <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-                <PreviewPanel
-                  title="Live tokens"
-                  description="Primitive values feed semantic roles."
-                  reference="Theme / semantic-tokens"
+              <div className="pointer-events-none sticky top-3 z-40 mb-5 flex justify-end">
+                <div
+                  aria-label="Quick theme switcher"
+                  className="needt-overlay-shadow pointer-events-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border-control)] bg-[var(--surface-canvas)] p-1"
+                  role="group"
                 >
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    {[
-                      ["Canvas", "canvas", draft.canvas],
-                      ["Control", "control", draft.control],
-                      ["Control hover", "control-hover", draft.controlHover],
-                      ["Surface hover", "hover", draft.hover],
-                      ["Divider", "border-subtle", draft.borderSubtle],
-                      ["Control border", "border", draft.border],
-                      ["Text", "text", draft.text],
-                      ["Accent", "accent", draft.accent],
-                    ].map(([label, token, value]) => (
-                      <div
-                        key={token}
-                        className="overflow-hidden rounded-[var(--control-radius)] border border-[var(--border-subtle)]"
-                      >
-                        <div className="h-16" style={{ background: value }} />
-                        <div className="bg-[var(--surface-canvas)] px-3 py-2">
-                          <p className="text-[12px] font-medium">{label}</p>
-                          <code className="text-[10px] text-[var(--text-muted)]">
-                            {value}
-                          </code>
+                  <QuickThemeButton
+                    active={preset === "light"}
+                    icon={Sun}
+                    label="Light"
+                    onClick={() => choosePreset("light")}
+                  />
+                  <QuickThemeButton
+                    active={preset === "graphite"}
+                    icon={Palette}
+                    label="Graphite"
+                    onClick={() => choosePreset("graphite")}
+                  />
+                  <QuickThemeButton
+                    active={preset === "dark"}
+                    icon={Moon}
+                    label="Dark"
+                    onClick={() => choosePreset("dark")}
+                  />
+                </div>
+              </div>
+              <header className="border-b border-[var(--border-subtle)] pb-9">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                  Live component inventory
+                </p>
+                <h1 className="mt-3 text-[20px] font-bold leading-[24px] tracking-[-0.01em]">
+                  Calm, dense, and deliberate.
+                </h1>
+                <p className="mt-3 max-w-3xl text-[14px] leading-6 text-[var(--text-secondary)]">
+                  Real shared components, their states, and the semantic tokens
+                  that theme them. Edit the sandbox once; product screens
+                  inherit the same contract without a second component tree.
+                </p>
+              </header>
+
+              <section id="foundation" className="scroll-mt-8 py-10">
+                <SectionTitle
+                  eyebrow="Foundation"
+                  title="Theme sandbox"
+                  description="Changes preview on this route, including portalled dialogs and menus. Apply the token object to bind every shared product control, or copy it as CSS."
+                />
+                <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <PreviewPanel
+                    title="Live tokens"
+                    description="Primitive values feed semantic roles."
+                    reference="Theme / semantic-tokens"
+                  >
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {[
+                        ["Canvas", "canvas", draft.canvas],
+                        ["Control", "control", draft.control],
+                        ["Control hover", "control-hover", draft.controlHover],
+                        ["Surface hover", "hover", draft.hover],
+                        ["Divider", "border-subtle", draft.borderSubtle],
+                        ["Control border", "border", draft.border],
+                        ["Text", "text", draft.text],
+                        ["Accent", "accent", draft.accent],
+                      ].map(([label, token, value]) => (
+                        <div
+                          key={token}
+                          className="overflow-hidden rounded-[var(--control-radius)] border border-[var(--border-subtle)]"
+                        >
+                          <div className="h-16" style={{ background: value }} />
+                          <div className="bg-[var(--surface-canvas)] px-3 py-2">
+                            <p className="text-[12px] font-medium">{label}</p>
+                            <code className="text-[10px] text-[var(--text-muted)]">
+                              {value}
+                            </code>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                    <div className="mt-6 space-y-4">
+                      <div className="text-[20px] font-bold leading-[24px]">
+                        Today&apos;s plan
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-6 space-y-4">
-                    <div className="text-[20px] font-bold leading-[24px]">
-                      Today&apos;s plan
+                      <div className="text-[20px] font-semibold">
+                        Section heading
+                      </div>
+                      <div className="text-[14px] font-medium">
+                        Task or setting label
+                      </div>
+                      <p className="max-w-xl text-[13px] leading-5 text-[var(--text-secondary)]">
+                        Secondary copy explains the next decision without
+                        competing with the primary label.
+                      </p>
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                        Eyebrow label
+                      </div>
                     </div>
-                    <div className="text-[20px] font-semibold">
-                      Section heading
-                    </div>
-                    <div className="text-[14px] font-medium">
-                      Task or setting label
-                    </div>
-                    <p className="max-w-xl text-[13px] leading-5 text-[var(--text-secondary)]">
-                      Secondary copy explains the next decision without
-                      competing with the primary label.
-                    </p>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                      Eyebrow label
-                    </div>
-                  </div>
-                </PreviewPanel>
+                  </PreviewPanel>
 
-                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-canvas)] p-4">
-                  <div className="flex items-center gap-2">
-                    <Settings2 className="h-4 w-4 text-[var(--text-secondary)]" />
-                    <h3 className="text-[14px] font-semibold">Theme editor</h3>
-                  </div>
-                  <div className="mt-4 flex items-start gap-2 border-y border-[var(--border-subtle)] py-3">
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "mt-1.5 h-1.5 w-1.5 rounded-full",
-                        isDraftDirty
-                          ? "bg-[var(--color-warning)]"
-                          : "bg-[var(--color-success)]"
-                      )}
-                    />
-                    <div>
-                      <p className="text-[12px] font-medium">
-                        {isDraftDirty
-                          ? "Preview only"
-                          : "Applied across Needt"}
-                      </p>
-                      <p className="mt-0.5 text-[11px] leading-4 text-[var(--text-muted)]">
-                        {isDraftDirty
-                          ? "Review the shared components, then apply this draft everywhere."
-                          : "This saved token set is active on product screens."}
-                      </p>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-canvas)] p-4">
+                    <div className="flex items-center gap-2">
+                      <Settings2 className="h-4 w-4 text-[var(--text-secondary)]" />
+                      <h3 className="text-[14px] font-semibold">
+                        Theme editor
+                      </h3>
                     </div>
-                  </div>
-                  <div className="mt-4 space-y-4">
-                    <Field label="Preset">
-                      <Select value={preset} onValueChange={choosePreset}>
-                        <SelectTrigger aria-label="Theme preset">
-                          <SelectValue placeholder="Custom draft" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="light">Needt light</SelectItem>
-                          <SelectItem value="graphite">
-                            Needt graphite
-                          </SelectItem>
-                          <SelectItem value="dark">Needt dark</SelectItem>
-                          {preset === "custom" ? (
-                            <SelectItem value="custom" disabled>
-                              Custom draft
+                    <div className="mt-4 flex items-start gap-2 border-y border-[var(--border-subtle)] py-3">
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "mt-1.5 h-1.5 w-1.5 rounded-full",
+                          isDraftDirty
+                            ? "bg-[var(--color-warning)]"
+                            : "bg-[var(--color-success)]"
+                        )}
+                      />
+                      <div>
+                        <p className="text-[12px] font-medium">
+                          {isDraftDirty
+                            ? "Preview only"
+                            : "Applied across Needt"}
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-4 text-[var(--text-muted)]">
+                          {isDraftDirty
+                            ? "Review the shared components, then apply this draft everywhere."
+                            : "This saved token set is active on product screens."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 space-y-4">
+                      <Field label="Preset">
+                        <Select value={preset} onValueChange={choosePreset}>
+                          <SelectTrigger aria-label="Theme preset">
+                            <SelectValue placeholder="Custom draft" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">Needt light</SelectItem>
+                            <SelectItem value="graphite">
+                              Needt graphite
                             </SelectItem>
-                          ) : null}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <div className="grid grid-cols-2 gap-3">
-                      <ColorField
-                        label="Canvas"
-                        value={draft.canvas}
-                        onChange={(value) => updateDraft("canvas", value)}
-                      />
-                      <ColorField
-                        label="Control"
-                        value={draft.control}
-                        onChange={(value) => updateDraft("control", value)}
-                      />
-                      <ColorField
-                        label="Control hover"
-                        value={draft.controlHover}
-                        onChange={(value) => updateDraft("controlHover", value)}
-                      />
-                      <ColorField
-                        label="Surface hover"
-                        value={draft.hover}
-                        onChange={(value) => updateDraft("hover", value)}
-                      />
-                      <ColorField
-                        label="Divider"
-                        value={draft.borderSubtle}
-                        onChange={(value) => updateDraft("borderSubtle", value)}
-                      />
-                      <ColorField
-                        label="Control border"
-                        value={draft.border}
-                        onChange={(value) => updateDraft("border", value)}
-                      />
-                      <ColorField
-                        label="Text"
-                        value={draft.text}
-                        onChange={(value) => updateDraft("text", value)}
-                      />
-                      <ColorField
-                        label="Secondary"
-                        value={draft.textSecondary}
-                        onChange={(value) =>
-                          updateDraft("textSecondary", value)
-                        }
-                      />
-                      <ColorField
-                        label="Muted"
-                        value={draft.muted}
-                        onChange={(value) => updateDraft("muted", value)}
-                      />
-                      <ColorField
-                        label="Accent"
-                        value={draft.accent}
-                        onChange={(value) => updateDraft("accent", value)}
-                      />
-                    </div>
-                    <Field label={`Radius · ${draft.radius}px`}>
-                      <Slider
-                        value={[draft.radius]}
-                        min={2}
-                        max={18}
-                        step={1}
-                        onValueChange={([value]) =>
-                          updateDraft("radius", value)
-                        }
-                        aria-label="Component radius"
-                      />
-                    </Field>
-                    <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pt-1">
-                      <Button
-                        size="sm"
-                        onClick={saveDraft}
-                        disabled={isSaving}
-                      >
-                        <Save /> {isSaving ? "Applying" : "Apply globally"}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={loadDraft}
-                        disabled={isSaving}
-                      >
-                        <RotateCcw /> Load saved
-                      </Button>
-                    </div>
-                    <Button
-                      className="w-full"
-                      size="sm"
-                      variant="outline"
-                      onClick={copyThemeCss}
-                    >
-                      <Copy /> {copyState}
-                    </Button>
-                    <p
-                      aria-live="polite"
-                      className="min-h-4 text-[11px] text-[var(--text-muted)]"
-                    >
-                      {editorStatus}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <CatalogSection
-              id="buttons"
-              eyebrow="Actions"
-              title="Buttons"
-              description="Actual variants, sizes, icon affordances, loading, disabled, and destructive states."
-            >
-              <PreviewPanel title="Variants" reference="Button / variants">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button>
-                    <Plus /> Primary
-                  </Button>
-                  <Button variant="secondary">Secondary</Button>
-                  <Button variant="outline">Outline</Button>
-                  <Button variant="ghost">Ghost</Button>
-                  <Button variant="link">Text link</Button>
-                  <Button variant="destructive">
-                    <Trash2 /> Delete
-                  </Button>
-                  <Button disabled>Unavailable</Button>
-                  <Button aria-busy="true">
-                    <LoadingSpinner size="sm" /> Saving
-                  </Button>
-                </div>
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <Button size="sm">Small</Button>
-                  <Button>Default</Button>
-                  <Button size="lg">Large</Button>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        aria-label="More actions"
-                      >
-                        <MoreHorizontal />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>More actions</TooltipContent>
-                  </Tooltip>
-                </div>
-              </PreviewPanel>
-            </CatalogSection>
-
-            <CatalogSection
-              id="forms"
-              eyebrow="Input"
-              title="Forms and selection"
-              description="Every field is a shared component with the same geometry, focus, disabled, and validation language."
-            >
-              <div className="grid gap-5 xl:grid-cols-2">
-                <PreviewPanel
-                  title="Text and date fields"
-                  reference="Form / text-date"
-                >
-                  <div className="space-y-4">
-                    <Field label="Task title">
-                      <Input defaultValue="Plan the launch" />
-                    </Field>
-                    <Field label="Search">
-                      <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-                        <Input
-                          className="pl-9"
-                          placeholder="Search or command"
+                            <SelectItem value="dark">Needt dark</SelectItem>
+                            {preset === "custom" ? (
+                              <SelectItem value="custom" disabled>
+                                Custom draft
+                              </SelectItem>
+                            ) : null}
+                          </SelectContent>
+                        </Select>
+                      </Field>
+                      <div className="grid grid-cols-2 gap-3">
+                        <ColorField
+                          label="Canvas"
+                          value={draft.canvas}
+                          onChange={(value) => updateDraft("canvas", value)}
+                        />
+                        <ColorField
+                          label="Control"
+                          value={draft.control}
+                          onChange={(value) => updateDraft("control", value)}
+                        />
+                        <ColorField
+                          label="Control hover"
+                          value={draft.controlHover}
+                          onChange={(value) =>
+                            updateDraft("controlHover", value)
+                          }
+                        />
+                        <ColorField
+                          label="Surface hover"
+                          value={draft.hover}
+                          onChange={(value) => updateDraft("hover", value)}
+                        />
+                        <ColorField
+                          label="Divider"
+                          value={draft.borderSubtle}
+                          onChange={(value) =>
+                            updateDraft("borderSubtle", value)
+                          }
+                        />
+                        <ColorField
+                          label="Control border"
+                          value={draft.border}
+                          onChange={(value) => updateDraft("border", value)}
+                        />
+                        <ColorField
+                          label="Text"
+                          value={draft.text}
+                          onChange={(value) => updateDraft("text", value)}
+                        />
+                        <ColorField
+                          label="Secondary"
+                          value={draft.textSecondary}
+                          onChange={(value) =>
+                            updateDraft("textSecondary", value)
+                          }
+                        />
+                        <ColorField
+                          label="Muted"
+                          value={draft.muted}
+                          onChange={(value) => updateDraft("muted", value)}
+                        />
+                        <ColorField
+                          label="Accent"
+                          value={draft.accent}
+                          onChange={(value) => updateDraft("accent", value)}
                         />
                       </div>
-                    </Field>
-                    <Field label="Description">
-                      <Textarea placeholder="Add useful context…" />
-                    </Field>
-                    <Field label="Start date">
-                      <StyleDatePickerPreview />
-                    </Field>
-                  </div>
-                </PreviewPanel>
-                <PreviewPanel
-                  title="Choice controls"
-                  reference="Form / choice-controls"
-                >
-                  <div className="space-y-4">
-                    <Field label="Calendar view">
-                      <NeedtPicker
-                        mode="plain"
-                        ariaLabel="Calendar view"
-                        defaultValue="week"
-                        options={[
-                          { value: "day", label: "Day" },
-                          { value: "week", label: "Week" },
-                          { value: "month", label: "Month" },
-                        ]}
-                      />
-                    </Field>
-                    <Field label="Priority">
-                      <NeedtPicker
-                        mode="searchable"
-                        ariaLabel="Priority"
-                        value="high"
-                        searchPlaceholder="Search"
-                        options={[
-                          {
-                            value: "high",
-                            label: "High",
-                            icon: (
-                              <Flag className="text-[var(--color-danger)]" />
-                            ),
-                          },
-                          {
-                            value: "medium",
-                            label: "Medium",
-                            icon: (
-                              <Flag className="text-[var(--color-warning)]" />
-                            ),
-                          },
-                          {
-                            value: "low",
-                            label: "Low",
-                            icon: <Flag className="text-[var(--text-muted)]" />,
-                          },
-                          { value: "none", label: "No priority" },
-                        ]}
-                      />
-                    </Field>
-                    <Field label="Project · searchable">
-                      <SearchPickerPreview />
-                    </Field>
-                    <Field label="Duration · type to add">
-                      <CreatablePickerPreview />
-                    </Field>
-                    <ChoiceRow label="Shade non-working hours">
-                      <Switch
-                        defaultChecked
-                        aria-label="Shade non-working hours"
-                      />
-                    </ChoiceRow>
-                    <ChoiceRow label="Email notifications">
-                      <Switch aria-label="Email notifications" />
-                    </ChoiceRow>
-                    <label className="flex min-h-11 items-center gap-3 border-b border-[var(--border-subtle)] text-[13px]">
-                      <Checkbox defaultChecked />
-                      <span>Include completed tasks</span>
-                    </label>
-                    <Field label="Default duration · 30 min">
-                      <Slider defaultValue={[30]} min={5} max={120} step={5} />
-                    </Field>
-                  </div>
-                </PreviewPanel>
-              </div>
-            </CatalogSection>
-
-            <CatalogSection
-              id="navigation"
-              eyebrow="Wayfinding"
-              title="Tabs, menus, and compact navigation"
-              description="Keyboard-accessible Radix primitives with Needt tokens and a consistent active state."
-            >
-              <PreviewPanel
-                title="Navigation controls"
-                reference="Navigation / tabs-menu"
-              >
-                <Tabs defaultValue="list">
-                  <TabsList>
-                    <TabsTrigger value="list">List</TabsTrigger>
-                    <TabsTrigger value="board">Board</TabsTrigger>
-                    <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                  </TabsList>
-                  <TabsContent
-                    value="list"
-                    className="pt-3 text-[13px] text-[var(--text-secondary)]"
-                  >
-                    Task list is active.
-                  </TabsContent>
-                  <TabsContent
-                    value="board"
-                    className="pt-3 text-[13px] text-[var(--text-secondary)]"
-                  >
-                    Board is active.
-                  </TabsContent>
-                  <TabsContent
-                    value="timeline"
-                    className="pt-3 text-[13px] text-[var(--text-secondary)]"
-                  >
-                    Timeline is active.
-                  </TabsContent>
-                </Tabs>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline">
-                        Actions <ChevronDown />
+                      <Field label={`Radius · ${draft.radius}px`}>
+                        <Slider
+                          value={[draft.radius]}
+                          min={2}
+                          max={18}
+                          step={1}
+                          onValueChange={([value]) =>
+                            updateDraft("radius", value)
+                          }
+                          aria-label="Component radius"
+                        />
+                      </Field>
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={saveDraft}
+                          disabled={isSaving}
+                        >
+                          <Save /> {isSaving ? "Applying" : "Apply globally"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={loadDraft}
+                          disabled={isSaving}
+                        >
+                          <RotateCcw /> Load saved
+                        </Button>
+                      </div>
+                      <Button
+                        className="w-full"
+                        size="sm"
+                        variant="outline"
+                        onClick={copyThemeCss}
+                      >
+                        <Copy /> {copyState}
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuLabel>Task actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        Edit<DropdownMenuShortcut>↵</DropdownMenuShortcut>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        Duplicate<DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
-                        Archive unavailable
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    aria-label="Notifications"
-                  >
-                    <Bell />
-                  </Button>
-                </div>
-              </PreviewPanel>
-            </CatalogSection>
-
-            <CatalogSection
-              id="overlays"
-              eyebrow="Layering"
-              title="Popover, dialog, and bottom sheet"
-              description="All overlays use the shared scrim, border, motion, and focus-management contract—never blur or glow."
-            >
-              <PreviewPanel
-                title="Open each real overlay"
-                reference="Overlay / popover-dialog-sheet"
-              >
-                <div className="flex flex-wrap gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline">Calendar options</Button>
-                    </PopoverTrigger>
-                    <PopoverContent align="start">
-                      <p className="text-[15px] font-semibold">Calendar</p>
-                      <div className="mt-3 space-y-3">
-                        <ChoiceRow label="24-hour time">
-                          <Switch aria-label="24-hour time" />
-                        </ChoiceRow>
-                        <ChoiceRow label="Shade non-working hours">
-                          <Switch
-                            defaultChecked
-                            aria-label="Shade non-working hours in popover"
-                          />
-                        </ChoiceRow>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline">Open dialog</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Edit task</DialogTitle>
-                        <DialogDescription>
-                          Shared desktop dialog and mobile sheet behavior.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <Input
-                        defaultValue="Plan the launch"
-                        aria-label="Dialog task title"
-                      />
-                      <DialogFooter>
-                        <Button variant="outline">Cancel</Button>
-                        <Button>Save changes</Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                  <BottomSheet>
-                    <BottomSheetTrigger asChild>
-                      <Button variant="outline">Open bottom sheet</Button>
-                    </BottomSheetTrigger>
-                    <BottomSheetContent>
-                      <BottomSheetTitle>Quick actions</BottomSheetTitle>
-                      <BottomSheetDescription>
-                        Touch-friendly actions with safe-area padding.
-                      </BottomSheetDescription>
-                      <div className="mt-5 grid gap-2">
-                        <Button>Create task</Button>
-                        <BottomSheetClose asChild>
-                          <Button variant="outline">Close</Button>
-                        </BottomSheetClose>
-                      </div>
-                    </BottomSheetContent>
-                  </BottomSheet>
-                </div>
-              </PreviewPanel>
-            </CatalogSection>
-
-            <CatalogSection
-              id="feedback"
-              eyebrow="System states"
-              title="Feedback, status, and loading"
-              description="Status is communicated with text and icon—not color alone—and every async surface has a visible state."
-            >
-              <div className="grid gap-5 xl:grid-cols-2">
-                <PreviewPanel
-                  title="Statuses and badges"
-                  reference="Feedback / status-badge"
-                >
-                  <div className="flex flex-wrap gap-2">
-                    <StatusPill
-                      label="Connected"
-                      color="var(--color-success)"
-                      icon={Check}
-                    />
-                    <StatusPill
-                      label="Needs attention"
-                      color="var(--color-warning)"
-                      icon={CircleAlert}
-                    />
-                    <StatusPill
-                      label="Unavailable"
-                      color="var(--text-muted)"
-                      icon={CircleMinus}
-                    />
-                    <StatusPill
-                      label="Error"
-                      color="var(--color-danger)"
-                      icon={TriangleAlert}
-                    />
-                  </div>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <Badge>Default</Badge>
-                    <Badge variant="secondary">Secondary</Badge>
-                    <Badge variant="outline">Outline</Badge>
-                    <Badge variant="destructive">Failed</Badge>
-                  </div>
-                </PreviewPanel>
-                <PreviewPanel
-                  title="Notices and loading"
-                  reference="Feedback / notice-loading"
-                >
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertTitle>Sync is ready</AlertTitle>
-                    <AlertDescription>
-                      Your local calendar is up to date.
-                    </AlertDescription>
-                  </Alert>
-                  <Alert variant="destructive" className="mt-3">
-                    <TriangleAlert className="h-4 w-4" />
-                    <AlertTitle>Could not save</AlertTitle>
-                    <AlertDescription>
-                      Keep the user&apos;s input and offer a retry.
-                    </AlertDescription>
-                  </Alert>
-                  <div className="mt-5 flex items-center gap-4">
-                    <LoadingSpinner size="sm" />
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <Skeleton className="h-3 w-2/3" />
-                      <Skeleton className="h-3 w-1/2" />
+                      <p
+                        aria-live="polite"
+                        className="min-h-4 text-[11px] text-[var(--text-muted)]"
+                      >
+                        {editorStatus}
+                      </p>
                     </div>
                   </div>
-                </PreviewPanel>
-              </div>
-            </CatalogSection>
-
-            <CatalogSection
-              id="data"
-              eyebrow="Display"
-              title="Cards, rows, and tables"
-              description="Use borders and spacing for hierarchy; avoid stacking unrelated raised cards across the interface."
-            >
-              <div className="grid gap-5 xl:grid-cols-2">
-                <Card className="rounded-lg border border-[var(--border-subtle)]">
-                  <CardHeader>
-                    <CardTitle className="text-[16px]">
-                      Daily capacity
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-[13px] text-[var(--text-secondary)]">
-                    4h 30m scheduled · 1h 15m available
-                  </CardContent>
-                </Card>
-                <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Task</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Duration</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Plan the launch</TableCell>
-                        <TableCell>In progress</TableCell>
-                        <TableCell className="text-right">45m</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Review calendar</TableCell>
-                        <TableCell>Todo</TableCell>
-                        <TableCell className="text-right">20m</TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
                 </div>
-              </div>
-            </CatalogSection>
+              </section>
 
-            <CatalogSection
-              id="patterns"
-              eyebrow="Composition"
-              title="Product patterns"
-              description="These are shared visual recipes for the feature screens, composed from the primitives above."
-            >
-              <PreviewPanel
-                title="Calendar task and event"
-                description="Hover to see the color wash; click either card to inspect the selected state. Tasks are solid, external events are dashed."
-                reference="Calendar / task-event"
+              <CatalogSection
+                id="buttons"
+                eyebrow="Actions"
+                title="Buttons"
+                description="Actual variants, sizes, icon affordances, loading, disabled, and destructive states."
               >
-                <CalendarItemPreview />
-              </PreviewPanel>
-              <div className="grid gap-5 xl:grid-cols-3">
-                <Pattern title="Settings row" icon={Settings2}>
-                  <ChoiceRow label="Auto-schedule tasks">
-                    <Switch defaultChecked aria-label="Auto-schedule tasks" />
-                  </ChoiceRow>
-                  <ChoiceRow label="Calendar account">
-                    <span className="text-[12px] text-[var(--color-success)]">
-                      Connected
-                    </span>
-                  </ChoiceRow>
-                </Pattern>
-                <Pattern title="Task row" icon={Clock3}>
-                  <div className="group flex min-h-11 items-center gap-3 border-b border-[var(--border-subtle)]">
-                    <button
-                      className="h-4 w-4 rounded-full border border-[var(--text-muted)]"
-                      aria-label="Complete task"
-                    />
-                    <span className="min-w-0 flex-1 truncate text-[13px]">
-                      Plan the launch
-                    </span>
-                    <span className="text-[12px] text-[var(--text-muted)]">
-                      45m
-                    </span>
-                    <Button
-                      className="opacity-0 group-hover:opacity-100"
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Task actions"
-                    >
-                      <Ellipsis />
+                <PreviewPanel title="Variants" reference="Button / variants">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button>
+                      <Plus /> Primary
+                    </Button>
+                    <Button variant="secondary">Secondary</Button>
+                    <Button variant="outline">Outline</Button>
+                    <Button variant="ghost">Ghost</Button>
+                    <Button variant="link">Text link</Button>
+                    <Button variant="destructive">
+                      <Trash2 /> Delete
+                    </Button>
+                    <Button disabled>Unavailable</Button>
+                    <Button aria-busy="true">
+                      <LoadingSpinner size="sm" /> Saving
                     </Button>
                   </div>
-                </Pattern>
-                <Pattern title="Inbox row" icon={Inbox}>
-                  <div className="flex min-h-12 items-center gap-3 border-b border-[var(--border-subtle)]">
-                    <div className="h-8 w-8 rounded-full bg-[var(--surface-control)]" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium">
-                        Weekly planning
-                      </p>
-                      <p className="truncate text-[12px] text-[var(--text-muted)]">
-                        A calm compact preview…
-                      </p>
-                    </div>
-                    <span className="text-[11px] text-[var(--text-muted)]">
-                      9:41
-                    </span>
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    <Button size="sm">Small</Button>
+                    <Button>Default</Button>
+                    <Button size="lg">Large</Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          aria-label="More actions"
+                        >
+                          <MoreHorizontal />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>More actions</TooltipContent>
+                    </Tooltip>
                   </div>
-                </Pattern>
-              </div>
-            </CatalogSection>
+                </PreviewPanel>
+              </CatalogSection>
+
+              <CatalogSection
+                id="forms"
+                eyebrow="Input"
+                title="Forms and selection"
+                description="Every field is a shared component with the same geometry, focus, disabled, and validation language."
+              >
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <PreviewPanel
+                    title="Text and date fields"
+                    reference="Form / text-date"
+                  >
+                    <div className="space-y-4">
+                      <Field label="Task title">
+                        <Input defaultValue="Plan the launch" />
+                      </Field>
+                      <Field label="Search">
+                        <div className="relative">
+                          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                          <Input
+                            className="pl-9"
+                            placeholder="Search or command"
+                          />
+                        </div>
+                      </Field>
+                      <Field label="Description">
+                        <Textarea placeholder="Add useful context…" />
+                      </Field>
+                      <Field label="Start date">
+                        <StyleDatePickerPreview />
+                      </Field>
+                    </div>
+                  </PreviewPanel>
+                  <PreviewPanel
+                    title="Choice controls"
+                    reference="Form / choice-controls"
+                  >
+                    <div className="space-y-4">
+                      <Field label="Calendar view">
+                        <NeedtPicker
+                          mode="plain"
+                          ariaLabel="Calendar view"
+                          defaultValue="week"
+                          options={[
+                            { value: "day", label: "Day" },
+                            { value: "week", label: "Week" },
+                            { value: "month", label: "Month" },
+                          ]}
+                        />
+                      </Field>
+                      <Field label="Priority">
+                        <NeedtPicker
+                          mode="searchable"
+                          ariaLabel="Priority"
+                          value="high"
+                          searchPlaceholder="Search"
+                          options={[
+                            {
+                              value: "high",
+                              label: "High",
+                              icon: (
+                                <Flag className="text-[var(--color-danger)]" />
+                              ),
+                            },
+                            {
+                              value: "medium",
+                              label: "Medium",
+                              icon: (
+                                <Flag className="text-[var(--color-warning)]" />
+                              ),
+                            },
+                            {
+                              value: "low",
+                              label: "Low",
+                              icon: (
+                                <Flag className="text-[var(--text-muted)]" />
+                              ),
+                            },
+                            { value: "none", label: "No priority" },
+                          ]}
+                        />
+                      </Field>
+                      <Field label="Project · searchable">
+                        <SearchPickerPreview />
+                      </Field>
+                      <Field label="Duration · type to add">
+                        <CreatablePickerPreview />
+                      </Field>
+                      <ChoiceRow label="Shade non-working hours">
+                        <Switch
+                          defaultChecked
+                          aria-label="Shade non-working hours"
+                        />
+                      </ChoiceRow>
+                      <ChoiceRow label="Email notifications">
+                        <Switch aria-label="Email notifications" />
+                      </ChoiceRow>
+                      <label className="flex min-h-11 items-center gap-3 border-b border-[var(--border-subtle)] text-[13px]">
+                        <Checkbox defaultChecked />
+                        <span>Include completed tasks</span>
+                      </label>
+                      <Field label="Default duration · 30 min">
+                        <Slider
+                          defaultValue={[30]}
+                          min={5}
+                          max={120}
+                          step={5}
+                        />
+                      </Field>
+                    </div>
+                  </PreviewPanel>
+                </div>
+              </CatalogSection>
+
+              <CatalogSection
+                id="navigation"
+                eyebrow="Wayfinding"
+                title="Tabs, menus, and compact navigation"
+                description="Keyboard-accessible Radix primitives with Needt tokens and a consistent active state."
+              >
+                <PreviewPanel
+                  title="Navigation controls"
+                  reference="Navigation / tabs-menu"
+                >
+                  <Tabs defaultValue="list">
+                    <TabsList>
+                      <TabsTrigger value="list">List</TabsTrigger>
+                      <TabsTrigger value="board">Board</TabsTrigger>
+                      <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                    </TabsList>
+                    <TabsContent
+                      value="list"
+                      className="pt-3 text-[13px] text-[var(--text-secondary)]"
+                    >
+                      Task list is active.
+                    </TabsContent>
+                    <TabsContent
+                      value="board"
+                      className="pt-3 text-[13px] text-[var(--text-secondary)]"
+                    >
+                      Board is active.
+                    </TabsContent>
+                    <TabsContent
+                      value="timeline"
+                      className="pt-3 text-[13px] text-[var(--text-secondary)]"
+                    >
+                      Timeline is active.
+                    </TabsContent>
+                  </Tabs>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          Actions <ChevronDown />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuLabel>Task actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem>
+                          Edit<DropdownMenuShortcut>↵</DropdownMenuShortcut>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          Duplicate
+                          <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled>
+                          Archive unavailable
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Notifications"
+                    >
+                      <Bell />
+                    </Button>
+                  </div>
+                </PreviewPanel>
+              </CatalogSection>
+
+              <CatalogSection
+                id="overlays"
+                eyebrow="Layering"
+                title="Popover, dialog, and bottom sheet"
+                description="All overlays use the shared scrim, border, motion, and focus-management contract—never blur or glow."
+              >
+                <PreviewPanel
+                  title="Open each real overlay"
+                  reference="Overlay / popover-dialog-sheet"
+                >
+                  <div className="flex flex-wrap gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline">Calendar options</Button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start">
+                        <p className="text-[15px] font-semibold">Calendar</p>
+                        <div className="mt-3 space-y-3">
+                          <ChoiceRow label="24-hour time">
+                            <Switch aria-label="24-hour time" />
+                          </ChoiceRow>
+                          <ChoiceRow label="Shade non-working hours">
+                            <Switch
+                              defaultChecked
+                              aria-label="Shade non-working hours in popover"
+                            />
+                          </ChoiceRow>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Open dialog</Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Edit task</DialogTitle>
+                          <DialogDescription>
+                            Shared desktop dialog and mobile sheet behavior.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Input
+                          defaultValue="Plan the launch"
+                          aria-label="Dialog task title"
+                        />
+                        <DialogFooter>
+                          <Button variant="outline">Cancel</Button>
+                          <Button>Save changes</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                    <BottomSheet>
+                      <BottomSheetTrigger asChild>
+                        <Button variant="outline">Open bottom sheet</Button>
+                      </BottomSheetTrigger>
+                      <BottomSheetContent>
+                        <BottomSheetTitle>Quick actions</BottomSheetTitle>
+                        <BottomSheetDescription>
+                          Touch-friendly actions with safe-area padding.
+                        </BottomSheetDescription>
+                        <div className="mt-5 grid gap-2">
+                          <Button>Create task</Button>
+                          <BottomSheetClose asChild>
+                            <Button variant="outline">Close</Button>
+                          </BottomSheetClose>
+                        </div>
+                      </BottomSheetContent>
+                    </BottomSheet>
+                  </div>
+                </PreviewPanel>
+              </CatalogSection>
+
+              <CatalogSection
+                id="feedback"
+                eyebrow="System states"
+                title="Feedback, status, and loading"
+                description="Status is communicated with text and icon—not color alone—and every async surface has a visible state."
+              >
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <PreviewPanel
+                    title="Statuses and badges"
+                    reference="Feedback / status-badge"
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      <StatusPill
+                        label="Connected"
+                        color="var(--color-success)"
+                        icon={Check}
+                      />
+                      <StatusPill
+                        label="Needs attention"
+                        color="var(--color-warning)"
+                        icon={CircleAlert}
+                      />
+                      <StatusPill
+                        label="Unavailable"
+                        color="var(--text-muted)"
+                        icon={CircleMinus}
+                      />
+                      <StatusPill
+                        label="Error"
+                        color="var(--color-danger)"
+                        icon={TriangleAlert}
+                      />
+                    </div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <Badge>Default</Badge>
+                      <Badge variant="secondary">Secondary</Badge>
+                      <Badge variant="outline">Outline</Badge>
+                      <Badge variant="destructive">Failed</Badge>
+                    </div>
+                  </PreviewPanel>
+                  <PreviewPanel
+                    title="Notices and loading"
+                    reference="Feedback / notice-loading"
+                  >
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Sync is ready</AlertTitle>
+                      <AlertDescription>
+                        Your local calendar is up to date.
+                      </AlertDescription>
+                    </Alert>
+                    <Alert variant="destructive" className="mt-3">
+                      <TriangleAlert className="h-4 w-4" />
+                      <AlertTitle>Could not save</AlertTitle>
+                      <AlertDescription>
+                        Keep the user&apos;s input and offer a retry.
+                      </AlertDescription>
+                    </Alert>
+                    <div className="mt-5 flex items-center gap-4">
+                      <LoadingSpinner size="sm" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Skeleton className="h-3 w-2/3" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </div>
+                  </PreviewPanel>
+                </div>
+              </CatalogSection>
+
+              <CatalogSection
+                id="data"
+                eyebrow="Display"
+                title="Cards, rows, and tables"
+                description="Use borders and spacing for hierarchy; avoid stacking unrelated raised cards across the interface."
+              >
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <Card className="rounded-lg border border-[var(--border-subtle)]">
+                    <CardHeader>
+                      <CardTitle className="text-[16px]">
+                        Daily capacity
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-[13px] text-[var(--text-secondary)]">
+                      4h 30m scheduled · 1h 15m available
+                    </CardContent>
+                  </Card>
+                  <div className="overflow-hidden rounded-lg border border-[var(--border-subtle)]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Task</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Duration</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>Plan the launch</TableCell>
+                          <TableCell>In progress</TableCell>
+                          <TableCell className="text-right">45m</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Review calendar</TableCell>
+                          <TableCell>Todo</TableCell>
+                          <TableCell className="text-right">20m</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </CatalogSection>
+
+              <CatalogSection
+                id="patterns"
+                eyebrow="Composition"
+                title="Product patterns"
+                description="These are shared visual recipes for the feature screens, composed from the primitives above."
+              >
+                <PreviewPanel
+                  title="Calendar task and event"
+                  description="Hover to see the color wash; click either card to inspect the selected state. Tasks are solid, external events are dashed."
+                  reference="Calendar / task-event"
+                >
+                  <CalendarItemPreview />
+                </PreviewPanel>
+                <div className="grid gap-5 xl:grid-cols-3">
+                  <Pattern title="Settings row" icon={Settings2}>
+                    <ChoiceRow label="Auto-schedule tasks">
+                      <Switch defaultChecked aria-label="Auto-schedule tasks" />
+                    </ChoiceRow>
+                    <ChoiceRow label="Calendar account">
+                      <span className="text-[12px] text-[var(--color-success)]">
+                        Connected
+                      </span>
+                    </ChoiceRow>
+                  </Pattern>
+                  <Pattern title="Task row" icon={Clock3}>
+                    <div className="group flex min-h-11 items-center gap-3 border-b border-[var(--border-subtle)]">
+                      <button
+                        className="h-4 w-4 rounded-full border border-[var(--text-muted)]"
+                        aria-label="Complete task"
+                      />
+                      <span className="min-w-0 flex-1 truncate text-[13px]">
+                        Plan the launch
+                      </span>
+                      <span className="text-[12px] text-[var(--text-muted)]">
+                        45m
+                      </span>
+                      <Button
+                        className="opacity-0 group-hover:opacity-100"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Task actions"
+                      >
+                        <Ellipsis />
+                      </Button>
+                    </div>
+                  </Pattern>
+                  <Pattern title="Inbox row" icon={Inbox}>
+                    <div className="flex min-h-12 items-center gap-3 border-b border-[var(--border-subtle)]">
+                      <div className="h-8 w-8 rounded-full bg-[var(--surface-control)]" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-medium">
+                          Weekly planning
+                        </p>
+                        <p className="truncate text-[12px] text-[var(--text-muted)]">
+                          A calm compact preview…
+                        </p>
+                      </div>
+                      <span className="text-[11px] text-[var(--text-muted)]">
+                        9:41
+                      </span>
+                    </div>
+                  </Pattern>
+                </div>
+              </CatalogSection>
+
+              <CatalogSection
+                id="rich-block"
+                eyebrow="Needt v2"
+                title="The task object"
+                description="RichBlock, inside the new design's own token scope. One component, four weights: the project owns the hue, the edge carries movability, the tile says where the block came from, and the height is spent down a ranked list of facts so a fact is shown whole or not shown."
+              >
+                <RichBlockLab />
+              </CatalogSection>
             </div>
           </div>
         </div>
