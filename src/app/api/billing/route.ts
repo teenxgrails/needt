@@ -13,6 +13,7 @@ import {
   canViewFocusStats,
   getPlan,
 } from "@/lib/entitlements";
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -25,6 +26,7 @@ export async function GET(request: NextRequest) {
 
     const [
       subscription,
+      trialGrant,
       plan,
       calendars,
       autoScheduledTasks,
@@ -45,6 +47,10 @@ export async function GET(request: NextRequest) {
           creemCustomerId: true,
         },
       }),
+      prisma.trialGrant.findUnique({
+        where: { userId: auth.userId },
+        select: { startedAt: true, endsAt: true },
+      }),
       getPlan(auth.userId),
       canAddCalendar(auth.userId),
       canAutoScheduleMore(auth.userId),
@@ -58,6 +64,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       configured: isCreemConfigured(),
       plan,
+      isTrial:
+        plan === "PRO" &&
+        Boolean(trialGrant?.endsAt && trialGrant.endsAt > newDate()) &&
+        subscription?.plan !== "PRO" &&
+        subscription?.plan !== "LIFETIME",
+      trialEndsAt: trialGrant?.endsAt ?? null,
       status: subscription?.status ?? "ACTIVE",
       interval: subscription?.interval ?? null,
       currentPeriodEnd: subscription?.currentPeriodEnd ?? null,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { calendarProviderNeedsReconnect } from "@/lib/calendar-connection-status";
 import { logger } from "@/lib/logger";
 import { OutlookCalendarService } from "@/lib/outlook-calendar";
 import { prisma } from "@/lib/prisma";
@@ -82,9 +83,15 @@ export async function GET(req: NextRequest) {
       },
       LOG_SOURCE
     );
-    return NextResponse.json(
-      { error: "Failed to list calendars" },
-      { status: 500 }
-    );
+    if (calendarProviderNeedsReconnect(error)) {
+      return NextResponse.json(
+        {
+          code: "CALENDAR_REAUTHORIZATION_REQUIRED",
+          error: "Outlook Calendar needs to be reconnected.",
+        },
+        { status: 401 }
+      );
+    }
+    return NextResponse.json({ error: "Failed to list calendars" }, { status: 500 });
   }
 }

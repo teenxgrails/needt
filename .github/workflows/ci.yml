@@ -117,6 +117,8 @@ jobs:
       - run: npm run check:branding
       - run: npm run check:ui-contracts
       - run: npm run test:unit -- --runInBand
+        env:
+          TRIAL_INTEGRATION: "1"
       - run: npm run build:collaboration
       - run: npm run check:collaboration-runtime
 

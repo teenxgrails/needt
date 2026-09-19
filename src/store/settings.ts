@@ -131,6 +131,7 @@ const defaultSettings: Settings & { accounts: ConnectedAccount[] } = {
     logRetention: undefined,
     logDestination: "db",
     disableHomepage: false,
+    requireEmailVerificationBeforeAccess: false,
   },
   accounts: [],
 };
@@ -499,6 +500,8 @@ export const useSettingsStore = create<SettingsStore>()(
             logRetention: systemSettings.logRetention,
             logDestination: systemSettings.logDestination,
             disableHomepage: systemSettings.disableHomepage,
+            requireEmailVerificationBeforeAccess:
+              systemSettings.requireEmailVerificationBeforeAccess,
           });
         } catch (error) {
           logger.error(

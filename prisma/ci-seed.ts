@@ -6,6 +6,8 @@ import {
   SubscriptionStatus,
 } from "@prisma/client";
 
+import { newDate } from "../src/lib/date-utils";
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -29,9 +31,13 @@ async function main() {
     const email = `ci-${plan.toLowerCase()}@needt.local`;
     const user = await prisma.user.upsert({
       where: { email },
-      update: { role: plan === SubscriptionPlan.LIFETIME ? "admin" : "user" },
+      update: {
+        role: plan === SubscriptionPlan.LIFETIME ? "admin" : "user",
+        emailVerified: newDate(),
+      },
       create: {
         email,
+        emailVerified: newDate(),
         name: `CI ${plan}`,
         role: plan === SubscriptionPlan.LIFETIME ? "admin" : "user",
       },

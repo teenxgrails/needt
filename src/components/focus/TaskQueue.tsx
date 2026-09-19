@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import Link from "next/link";
+
 import { Target } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -222,7 +224,18 @@ export function TaskQueue() {
           recentlyCompletedTasks.length === 0 && (
             <div className="py-7 text-center text-sm text-[var(--text-muted)]">
               <Target className="mx-auto mb-3 h-6 w-6 opacity-70" />
-              No tasks available
+              <p>No tasks available</p>
+              <p className="mt-1 text-xs">
+                Create a task, then add it to your focus queue.
+              </p>
+              <Button
+                asChild
+                className="mt-4 min-h-11"
+                size="sm"
+                variant="outline"
+              >
+                <Link href="/tasks">Create task</Link>
+              </Button>
             </div>
           )}
       </div>

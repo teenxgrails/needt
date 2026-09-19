@@ -150,6 +150,7 @@ export async function deliverTaskReminder(reminderId: string) {
       user: {
         select: {
           email: true,
+          emailVerified: true,
           pushSubscriptions: true,
         },
       },
@@ -191,6 +192,7 @@ export async function deliverTaskReminder(reminderId: string) {
     // push is unavailable (notably iOS browsers without an installed PWA).
     if (
       reminder.user.email &&
+      reminder.user.emailVerified &&
       (channels.includes("email") || !pushDelivered)
     ) {
       await EmailService.sendEmail({
@@ -201,7 +203,10 @@ export async function deliverTaskReminder(reminderId: string) {
       });
     }
 
-    if (!pushDelivered && !reminder.user.email) {
+    if (
+      !pushDelivered &&
+      (!reminder.user.email || !reminder.user.emailVerified)
+    ) {
       throw new Error("No deliverable push subscription or email");
     }
 
