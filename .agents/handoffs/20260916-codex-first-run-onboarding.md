@@ -2,8 +2,8 @@
 id: 20260916-codex-first-run-onboarding
 owner: codex
 branch: codex/first-run-onboarding
-status: active
-updated: 2026-09-19T20:30:00Z
+status: complete
+updated: 2026-09-19T21:05:00Z
 objective: Prove and repair the clean-database first run, honest primary-route empty states, recoverable OAuth failures, and 360/390px behavior.
 ---
 
@@ -23,10 +23,11 @@ objective: Prove and repair the clean-database first run, honest primary-route e
 - Created default auto-scheduling settings during registration and OAuth provisioning.
 - Added actionable first-run empty states for Calendar and Focus without showing false emptiness while data is loading or after a failed load.
 - Added a 360/390px clean-database journey covering password signup on Free, verification and trial activation, provider-boundary calendar connection, recoverable consent denial, task creation, the real scheduling service boundary, and the scheduled Calendar result.
+- Committed the completed Phase 3.6 work as `56aff62`, pushed `codex/first-run-onboarding`, and opened draft PR #42.
 
 ## Working state
 
-- Expected files: the scoped OAuth, Calendar/Focus/AppShell, unit/E2E, changelog, and this handoff changes shown by `git status --short`.
+- Expected dirty file until this completion checkpoint is committed: only this handoff.
 - Foreign changes that must remain untouched: the dirty primary checkout and every other worktree.
 
 ## Verification
@@ -49,4 +50,4 @@ objective: Prove and repair the clean-database first run, honest primary-route e
 
 ## Next action
 
-- Finish the combined mobile E2E and full gates, commit, push, and open the Phase 3.6 draft PR with the provider/worker boundary disclosure and known CI failures.
+- After the owner merges #37, #24 and #41, fetch fresh `main`, rebase remaining PR branches, then continue Phase 4 in the port checkout.
