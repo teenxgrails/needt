@@ -6,8 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import {
-  calendarProviderNeedsReconnect,
   type CalendarProvider,
+  calendarProviderNeedsReconnect,
 } from "@/lib/calendar-connection-status";
 import {
   calendarOAuthStateCookie,
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       calendarOAuthStateCookie("google")
     )?.value;
     const receivedState = request.nextUrl.searchParams.get("state");
-    if (!isValidCalendarOAuthState(expectedState, receivedState)) {
+    if (!isValidCalendarOAuthState(expectedState, receivedState, auth.userId)) {
       return settingsRedirect(request, "google", { error: "invalid_state" });
     }
     const providerError = request.nextUrl.searchParams.get("error");

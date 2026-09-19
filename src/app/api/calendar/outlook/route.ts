@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
-import {
-  type CalendarProvider,
-} from "@/lib/calendar-connection-status";
+import { type CalendarProvider } from "@/lib/calendar-connection-status";
 import {
   calendarOAuthStateCookie,
   isValidCalendarOAuthState,
@@ -12,12 +10,12 @@ import {
 import { newDate } from "@/lib/date-utils";
 import { canAddCalendar } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
-import { publicAppUrl } from "@/lib/public-url";
 import {
   MICROSOFT_GRAPH_AUTH_ENDPOINTS,
   resolveOutlookAccountEmail,
 } from "@/lib/outlook";
 import { OutlookCalendarService } from "@/lib/outlook-calendar";
+import { publicAppUrl } from "@/lib/public-url";
 import { TokenManager } from "@/lib/token-manager";
 
 const LOG_SOURCE = "OutlookCalendarAPI";
@@ -44,15 +42,6 @@ export async function GET(req: NextRequest) {
       return auth.response;
     }
 
-    const userId = auth.userId;
-    const entitlement = await canAddCalendar(userId);
-    if (!entitlement.allowed) {
-      return NextResponse.json(
-        { error: "Calendar limit reached.", entitlement },
-        { status: 403 }
-      );
-    }
-
     const searchParams = req.nextUrl.searchParams;
     const code = searchParams.get("code");
     const error = searchParams.get("error");
@@ -61,7 +50,7 @@ export async function GET(req: NextRequest) {
     )?.value;
     const receivedState = searchParams.get("state");
 
-    if (!isValidCalendarOAuthState(expectedState, receivedState)) {
+    if (!isValidCalendarOAuthState(expectedState, receivedState, auth.userId)) {
       return settingsRedirect(req, "outlook", { error: "invalid_state" });
     }
 
@@ -74,6 +63,15 @@ export async function GET(req: NextRequest) {
 
     if (!code) {
       return settingsRedirect(req, "outlook", { error: "missing_code" });
+    }
+
+    const userId = auth.userId;
+    const entitlement = await canAddCalendar(userId);
+    if (!entitlement.allowed) {
+      return NextResponse.json(
+        { error: "Calendar limit reached.", entitlement },
+        { status: 403 }
+      );
     }
 
     const { clientId, clientSecret } = await getOutlookCredentials();

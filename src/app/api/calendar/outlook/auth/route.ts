@@ -2,18 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getOutlookCredentials } from "@/lib/auth";
 import { authenticateRequest } from "@/lib/auth/api-auth";
-import { canAddCalendar } from "@/lib/entitlements";
 import {
   calendarOAuthCookieOptions,
   calendarOAuthStateCookie,
+  calendarOAuthStateCookieValue,
   createCalendarOAuthState,
 } from "@/lib/calendar-oauth";
+import { canAddCalendar } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
 import { buildCalendarOAuthRedirectUrl } from "@/lib/oauth-redirects";
 import {
   MICROSOFT_GRAPH_AUTH_ENDPOINTS,
   MICROSOFT_GRAPH_SCOPES,
 } from "@/lib/outlook";
+import { publicAppUrl } from "@/lib/public-url";
 
 const LOG_SOURCE = "OutlookCalendarOAuthStart";
 
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(authUrl);
     response.cookies.set(
       calendarOAuthStateCookie("outlook"),
-      state,
+      calendarOAuthStateCookieValue(state, auth.userId),
       calendarOAuthCookieOptions()
     );
     return response;
@@ -60,8 +62,10 @@ export async function GET(request: NextRequest) {
       { error: error instanceof Error ? error.message : String(error) },
       LOG_SOURCE
     );
-    return NextResponse.redirect(
-      `${process.env.NEXTAUTH_URL}/settings?error=outlook-auth-failed`
-    );
+    const url = publicAppUrl("/settings", request);
+    url.searchParams.set("provider", "outlook");
+    url.searchParams.set("calendarError", "callback_failed");
+    url.hash = "calendars";
+    return NextResponse.redirect(url);
   }
 }

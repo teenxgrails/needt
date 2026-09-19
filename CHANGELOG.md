@@ -47,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- New accounts now start with auto-scheduling defaults, actionable empty states
+  across primary routes, and recoverable calendar connection errors; calendar
+  OAuth callbacks are bound to the user who started the connection.
 - Google sign-in now requests only basic identity scopes; Calendar access is
   requested separately when connecting a calendar, while Google Tasks sync is
   explicitly deferred with an actionable connection error.
