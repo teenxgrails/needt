@@ -34,7 +34,11 @@
  * ───────────────────────────────────────────────────────────────────────── */
 import type { Prisma, TaskStage as PrismaTaskStage } from "@prisma/client";
 
-import { calendarDayDifference, startOfDay } from "@/lib/date-utils";
+import {
+  calendarDayDifference,
+  formatInTimeZone,
+  startOfDay,
+} from "@/lib/date-utils";
 
 import { dateLabel } from "./derive";
 import type {
@@ -48,10 +52,8 @@ import type {
  *
  * These read fields off an already-constructed `Date`; they don't build one,
  * so they stay local rather than moving to `@/lib/date-utils`. */
-function formatClock(date: Date): string {
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${hh}:${mm}`;
+function formatClock(date: Date, timeZone: string): string {
+  return formatInTimeZone(date, timeZone, "HH:mm");
 }
 
 const GLOBAL_STAGE_TO_ID: Record<PrismaTaskStage, NeedtStageId> = {
@@ -94,9 +96,14 @@ function toNeedtStatus(status: string): NeedtTaskStatus | undefined {
  *
  * `now` is threaded in rather than read with `new Date()` here, so a test can
  * pin it and so every task in one response is judged against the same
- * instant.
+ * instant. `timeZone` controls the user's calendar day and clock fields; the
+ * Prisma source passes a validated UserSettings zone.
  */
-export function toNeedtTask(row: NeedtTaskRow, now: Date): NeedtTask {
+export function toNeedtTask(
+  row: NeedtTaskRow,
+  now: Date,
+  timeZone = "UTC"
+): NeedtTask {
   const touchedAt = row.activities[0]?.createdAt ?? row.lastTouchedAt ?? null;
   const activeWait = row.waits[0];
 
@@ -104,12 +111,21 @@ export function toNeedtTask(row: NeedtTaskRow, now: Date): NeedtTask {
     id: row.id,
     title: row.title,
     project: row.project?.name ?? null,
-    time: row.scheduledStart ? formatClock(row.scheduledStart) : undefined,
+    time: row.scheduledStart
+      ? formatClock(row.scheduledStart, timeZone)
+      : undefined,
     status: toNeedtStatus(row.status),
     due: row.dueDate ? dateLabel(row.dueDate) : undefined,
+    scheduledOn: row.scheduledStart
+      ? formatInTimeZone(row.scheduledStart, timeZone, "yyyy-MM-dd")
+      : undefined,
+    scheduledStart: row.scheduledStart?.toISOString(),
+    scheduledEnd: row.scheduledEnd?.toISOString(),
     est: row.estimatedMinutes ?? undefined,
     done: row.status === "completed",
-    at: row.scheduledStart ? row.scheduledStart.getHours() : undefined,
+    at: row.scheduledStart
+      ? Number(formatInTimeZone(row.scheduledStart, timeZone, "H"))
+      : undefined,
     noSlot: row.noSlot || undefined,
     age: touchedAt
       ? Math.max(
@@ -140,7 +156,7 @@ export function toNeedtTask(row: NeedtTaskRow, now: Date): NeedtTask {
       ? { on: activeWait.waitingOnUserId, for: activeWait.reason }
       : undefined,
     movedFrom: row.previousScheduledStart
-      ? formatClock(row.previousScheduledStart)
+      ? formatClock(row.previousScheduledStart, timeZone)
       : undefined,
   };
 }

@@ -16,8 +16,8 @@
  * asserted in `__tests__/mobile-logic.test.ts` — a component and its test
  * cannot drift apart from a shared source the way two typed-out numbers can.
  */
-import { calendarDayDifference, startOfDay } from "@/lib/date-utils";
-import { isOverdue, parseDueDate } from "@/lib/needt/derive";
+import { startOfDay } from "@/lib/date-utils";
+import { isPlanningOverdue, taskDayOffset } from "@/lib/needt/derive";
 import { project as resolveProject } from "@/lib/needt/derive";
 import type { NeedtProject, NeedtTask } from "@/lib/needt/types";
 
@@ -76,9 +76,7 @@ export function mobileDuration(minutes: number | null | undefined): string {
    fork of anything larger; both read `parseDueDate` the one way every
    surface resolves a day label. */
 export function mobileDueOffset(task: NeedtTask, now: Date): number | null {
-  const due = parseDueDate(task.due, now);
-  if (!due) return null;
-  return calendarDayDifference(startOfDay(due), startOfDay(now));
+  return taskDayOffset(task, now);
 }
 
 export interface MobileDayLists {
@@ -98,7 +96,7 @@ export function mobileDayLists(
   const today: NeedtTask[] = [];
   for (const task of tasks) {
     if (task.done || task.noSlot) continue;
-    if (isOverdue(task, now)) {
+    if (isPlanningOverdue(task, now)) {
       debt.push(task);
     } else if (mobileDueOffset(task, now) === 0) {
       today.push(task);

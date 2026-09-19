@@ -61,11 +61,10 @@ Calendar positioning is centralized in
 live in `src/lib/calendar-navigation.ts`. Data refreshes must not invoke the
 scroll policy or reset a user's manual vertical position.
 
-The Today desktop route locks to the app viewport. `TodayView` owns independent
-document and timeline scrollers, while `DayTimeline` positions today at the
-current-time marker and other dates at their first event or Work Schedule
-start. Mobile keeps normal document page scroll and moves the timeline into a
-bottom sheet.
+The Today route locks to the app viewport and renders the ported Needt Home
+surface against authenticated, server-authorized workspace data. Desktop and
+mobile keep independent responsive compositions; task and habit writes require
+Editor access, and unfinished fixture-only forms stay out of production.
 
 Focus is rendered as a single flat, state-stable canvas in
 `src/components/focus/FocusTimerPanel.tsx`. The server remains authoritative

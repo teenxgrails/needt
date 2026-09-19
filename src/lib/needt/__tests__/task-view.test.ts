@@ -154,17 +154,40 @@ describe("toNeedtTask", () => {
     expect(t.est).toBe(90);
   });
 
-  it("reads at and time from scheduledStart's hour and clock, in local time", () => {
-    const scheduledStart = new Date(2026, 8, 4, 9, 30);
-    const t = toNeedtTask(row({ scheduledStart }), NOW);
-    expect(t.at).toBe(9);
-    expect(t.time).toBe("09:30");
+  it("reads scheduled day and clock in the user's timezone", () => {
+    const scheduledStart = new Date("2026-09-04T23:30:00.000Z");
+    const scheduledEnd = new Date("2026-09-05T00:15:00.000Z");
+    const t = toNeedtTask(
+      row({ scheduledStart, scheduledEnd }),
+      NOW,
+      "Europe/Zurich"
+    );
+    expect(t.at).toBe(1);
+    expect(t.time).toBe("01:30");
+    expect(t.scheduledOn).toBe("2026-09-05");
+    expect(t.scheduledStart).toBe(scheduledStart.toISOString());
+    expect(t.scheduledEnd).toBe(scheduledEnd.toISOString());
+  });
+
+  it("does not group a late UTC task onto the server's calendar day", () => {
+    const scheduledStart = new Date("2026-09-04T23:30:00.000Z");
+    const t = toNeedtTask(
+      row({ scheduledStart }),
+      NOW,
+      "America/Los_Angeles"
+    );
+    expect(t.time).toBe("16:30");
+    expect(t.scheduledOn).toBe("2026-09-04");
+    expect(t.at).toBe(16);
   });
 
   it("leaves at, time and noSlot unset for an unscheduled, non-noSlot task", () => {
     const t = toNeedtTask(row({ scheduledStart: null, noSlot: false }), NOW);
     expect(t.at).toBeUndefined();
     expect(t.time).toBeUndefined();
+    expect(t.scheduledOn).toBeUndefined();
+    expect(t.scheduledStart).toBeUndefined();
+    expect(t.scheduledEnd).toBeUndefined();
     expect(t.noSlot).toBeUndefined();
   });
 
@@ -175,8 +198,11 @@ describe("toNeedtTask", () => {
 
   it("formats movedFrom from previousScheduledStart", () => {
     const t = toNeedtTask(
-      row({ previousScheduledStart: new Date(2026, 8, 4, 9, 30) }),
-      NOW
+      row({
+        previousScheduledStart: new Date("2026-09-04T07:30:00.000Z"),
+      }),
+      NOW,
+      "Europe/Zurich"
     );
     expect(t.movedFrom).toBe("09:30");
   });

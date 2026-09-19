@@ -20,11 +20,13 @@ import * as React from "react";
 import { LuCheck } from "react-icons/lu";
 
 import { project as resolveProject } from "@/lib/needt/derive";
-import { habits as fixtureHabits, projects as fixtureProjects } from "@/lib/needt/fixture";
+import {
+  habits as fixtureHabits,
+  projects as fixtureProjects,
+} from "@/lib/needt/fixture";
 import type { NeedtHabit, NeedtProject } from "@/lib/needt/types";
 
 import { Glyph } from "../shell/chrome";
-
 import { habitFieldDays, habitKeptRatio, habitWeekKept } from "./logic";
 
 export interface HabitRailProps {
@@ -32,6 +34,8 @@ export interface HabitRailProps {
   habits?: readonly NeedtHabit[];
   /** Resolves each habit's `project` to a hue. Defaults to the fixture. */
   projects?: readonly NeedtProject[];
+  onToggleHabit?: (id: string, completed: boolean) => void;
+  readOnly?: boolean;
 }
 
 function HabitFieldView({ habits }: { habits: readonly NeedtHabit[] }) {
@@ -40,7 +44,12 @@ function HabitFieldView({ habits }: { habits: readonly NeedtHabit[] }) {
   return (
     <span
       title={label}
-      style={{ display: "flex", gap: 2.5, justifyContent: "center", minWidth: 0 }}
+      style={{
+        display: "flex",
+        gap: 2.5,
+        justifyContent: "center",
+        minWidth: 0,
+      }}
     >
       {days.map((day) => {
         const ratio = day.of ? day.kept / day.of : 0;
@@ -68,10 +77,12 @@ function HabitChip({
   habit,
   hue,
   onToggle,
+  disabled,
 }: {
   habit: NeedtHabit;
   hue: string;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   const on = Boolean(habit.done[habit.done.length - 1]);
   const { kept, of } = habitKeptRatio(habit.done);
@@ -84,6 +95,7 @@ function HabitChip({
       type="button"
       title={`${habit.at ? `${habit.at} · ` : ""}${summary} · ${on ? "kept today, click to undo" : "click to mark it kept"}`}
       onClick={onToggle}
+      disabled={disabled}
       style={{
         display: "flex",
         alignItems: "center",
@@ -130,13 +142,14 @@ function HabitChip({
 }
 
 /**
- * The habit rail. Toggling is local to this component — it edits only
- * today's cell of each habit's own record, never the days before it, which
- * is what keeps "a missed day does nothing" true here too.
+ * The habit rail. Production controls the toggle through `onToggleHabit`;
+ * the fixture preview keeps a local fallback. Both edit today's cell only.
  */
 export function HabitRail({
   habits = fixtureHabits,
   projects = fixtureProjects,
+  onToggleHabit,
+  readOnly = false,
 }: HabitRailProps) {
   const [today, setToday] = React.useState<Record<string, boolean>>({});
 
@@ -146,7 +159,8 @@ export function HabitRail({
         const override = today[h.id];
         if (override === undefined) return h;
         const done = h.done.slice();
-        done[done.length - 1] = override ? 1 : 0;
+        if (done.length) done[done.length - 1] = override ? 1 : 0;
+        else done.push(override ? 1 : 0);
         return { ...h, done };
       }),
     [habits, today]
@@ -182,9 +196,12 @@ export function HabitRail({
               key={h.id}
               habit={h}
               hue={hue}
-              onToggle={() =>
-                setToday((s) => ({ ...s, [h.id]: !on }))
-              }
+              disabled={readOnly}
+              onToggle={() => {
+                if (readOnly) return;
+                if (onToggleHabit) onToggleHabit(h.id, !on);
+                else setToday((s) => ({ ...s, [h.id]: !on }));
+              }}
             />
           );
         })}

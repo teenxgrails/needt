@@ -15,7 +15,7 @@
  */
 import * as React from "react";
 
-import { LuChevronRight } from "react-icons/lu";
+import { LuChevronRight, LuPlus } from "react-icons/lu";
 
 import type { NeedtTask } from "@/lib/needt/types";
 
@@ -28,8 +28,9 @@ import { mobileDayLists } from "./mobile-logic";
 export interface MobileHomeProps {
   tasks: readonly NeedtTask[];
   now: Date;
-  onOpenTask: (task: NeedtTask) => void;
-  onToggleTask: (id: string) => void;
+  onOpenTask?: (task: NeedtTask) => void;
+  onToggleTask?: (id: string) => void;
+  onAddTask?: () => void;
 }
 
 function MobileTaskCard({
@@ -40,8 +41,8 @@ function MobileTaskCard({
 }: {
   task: NeedtTask;
   atRisk?: boolean;
-  onOpen: () => void;
-  onToggle: () => void;
+  onOpen?: () => void;
+  onToggle?: () => void;
 }) {
   const input: RbInput = atRisk ? { ...task, priority: "now" } : task;
   return (
@@ -61,6 +62,7 @@ export function MobileHome({
   now,
   onOpenTask,
   onToggleTask,
+  onAddTask,
 }: MobileHomeProps) {
   const { debt, today } = React.useMemo(
     () => mobileDayLists(tasks, now),
@@ -145,8 +147,10 @@ export function MobileHome({
                   key={task.id}
                   task={task}
                   atRisk
-                  onOpen={() => onOpenTask(task)}
-                  onToggle={() => onToggleTask(task.id)}
+                  onOpen={onOpenTask ? () => onOpenTask(task) : undefined}
+                  onToggle={
+                    onToggleTask ? () => onToggleTask(task.id) : undefined
+                  }
                 />
               ))
             : null}
@@ -208,12 +212,35 @@ export function MobileHome({
               <MobileTaskCard
                 key={row.task.id}
                 task={row.task}
-                onOpen={() => onOpenTask(row.task)}
-                onToggle={() => onToggleTask(row.task.id)}
+                onOpen={onOpenTask ? () => onOpenTask(row.task) : undefined}
+                onToggle={
+                  onToggleTask ? () => onToggleTask(row.task.id) : undefined
+                }
               />
             )
           )
         )}
+        {onAddTask ? (
+          <button
+            type="button"
+            onClick={onAddTask}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              minHeight: 44,
+              padding: "0 10px",
+              border: 0,
+              borderRadius: "var(--radius-lg)",
+              background: "transparent",
+              color: "var(--text-muted)",
+              font: "var(--type-ui)",
+            }}
+          >
+            <Glyph of={LuPlus} size={16} />
+            Add task
+          </button>
+        ) : null}
       </section>
     </div>
   );

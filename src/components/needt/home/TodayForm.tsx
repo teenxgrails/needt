@@ -20,13 +20,12 @@ import * as React from "react";
 
 import { LuPlus, LuRotateCcw } from "react-icons/lu";
 
-import { calendarDayDifference, startOfDay } from "@/lib/date-utils";
-import { isOverdue, parseDueDate } from "@/lib/needt/derive";
+import { isPlanningOverdue, taskDayOffset } from "@/lib/needt/derive";
 import {
   tasks as fixtureTasks,
   today as fixtureToday,
 } from "@/lib/needt/fixture";
-import type { NeedtTask } from "@/lib/needt/types";
+import type { NeedtHabit, NeedtProject, NeedtTask } from "@/lib/needt/types";
 
 import { RichBlock } from "../RichBlock";
 import { rbShape } from "../rb-shape";
@@ -38,19 +37,21 @@ import { homeParted } from "./logic";
 export interface TodayFormProps {
   /** Defaults to the fixture's tasks. */
   tasks?: readonly NeedtTask[];
+  habits?: readonly NeedtHabit[];
+  projects?: readonly NeedtProject[];
   /** The reference "today". Defaults to the fixture's date — never a bare
    * `new Date()`, per repository convention. */
   now?: Date;
   onOpenTask?: (task: NeedtTask) => void;
   onToggleTask?: (id: string) => void;
+  onToggleHabit?: (id: string, completed: boolean) => void;
   onAddTask?: () => void;
   onMoveOverdueToToday?: () => void;
+  habitsReadOnly?: boolean;
 }
 
 function dueOffset(task: NeedtTask, now: Date): number | null {
-  const due = parseDueDate(task.due, now);
-  if (!due) return null;
-  return calendarDayDifference(startOfDay(due), startOfDay(now));
+  return taskDayOffset(task, now);
 }
 
 function TaskColumn({
@@ -217,27 +218,34 @@ function TodayColumn({
  */
 export function TodayForm({
   tasks = fixtureTasks,
+  habits,
+  projects,
   now = fixtureToday,
   onOpenTask,
   onToggleTask,
+  onToggleHabit,
   onAddTask,
   onMoveOverdueToToday,
+  habitsReadOnly = false,
 }: TodayFormProps) {
   const debt = React.useMemo(
-    () => tasks.filter((t) => !t.done && !t.noSlot && isOverdue(t, now)),
+    () =>
+      tasks.filter((t) => !t.done && !t.noSlot && isPlanningOverdue(t, now)),
     [tasks, now]
   );
   const mine = React.useMemo(
     () =>
       tasks.filter(
-        (t) => !t.noSlot && !isOverdue(t, now) && dueOffset(t, now) === 0
+        (t) =>
+          !t.noSlot && !isPlanningOverdue(t, now) && dueOffset(t, now) === 0
       ),
     [tasks, now]
   );
   const next = React.useMemo(
     () =>
       tasks.filter(
-        (t) => !t.noSlot && !isOverdue(t, now) && dueOffset(t, now) === 1
+        (t) =>
+          !t.noSlot && !isPlanningOverdue(t, now) && dueOffset(t, now) === 1
       ),
     [tasks, now]
   );
@@ -252,9 +260,16 @@ export function TodayForm({
         gap: 16,
       }}
     >
-      <div style={{ flex: "none" }}>
-        <HabitRail />
-      </div>
+      {habits?.length === 0 ? null : (
+        <div style={{ flex: "none" }}>
+          <HabitRail
+            habits={habits}
+            projects={projects}
+            onToggleHabit={onToggleHabit}
+            readOnly={habitsReadOnly}
+          />
+        </div>
+      )}
       <div
         style={{
           position: "relative",
@@ -274,12 +289,14 @@ export function TodayForm({
             count={debt.length}
             emptyText="Nothing overdue."
             action={
-              <IconButton
-                label="Move everything overdue to today"
-                variant="ghost"
-                icon={<Glyph of={LuRotateCcw} size={14} />}
-                onClick={onMoveOverdueToToday}
-              />
+              onMoveOverdueToToday ? (
+                <IconButton
+                  label="Move everything overdue to today"
+                  variant="ghost"
+                  icon={<Glyph of={LuRotateCcw} size={14} />}
+                  onClick={onMoveOverdueToToday}
+                />
+              ) : undefined
             }
           >
             <TaskColumn

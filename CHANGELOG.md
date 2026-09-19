@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Today: replaced the legacy agenda/timeline tree with the ported Needt Home on
+  desktop and phone. The screen now reads the active authorized workspace,
+  persists task and habit completion, plans or moves work through existing task
+  APIs, respects Viewer access, and never falls back to fixture briefs or habits
+  in production.
 - Design data layer: task ids now stay as database cuid strings from Prisma
   through every new-design surface instead of being irreversibly hashed to
   numbers. The Prisma source now requires server-authorized workspace access,

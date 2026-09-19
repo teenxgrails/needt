@@ -147,14 +147,24 @@ for (const retired of [
   forbidText(focusPath, retired, focus);
 }
 
-const todayPath = "src/components/today/TodayView.tsx";
+const todayPath = "src/components/needt/home/TodayRoute.tsx";
 const today = await source(todayPath);
-requireText(todayPath, 'data-testid="today-route-scroll"', today);
-requireText(todayPath, 'data-testid="today-document-scroll"', today);
+requireText(todayPath, 'className="needt-v2"', today);
+requireText(todayPath, "data-theme={theme}", today);
+requireText(todayPath, "sm:hidden", today);
+requireText(todayPath, "sm:flex", today);
 
-const timelinePath = "src/components/today/DayTimeline.tsx";
-const timeline = await source(timelinePath);
-requireText(timelinePath, 'data-testid="today-timeline-scroll"', timeline);
+for (const retired of [
+  "src/components/today/TodayView.tsx",
+  "src/components/today/DayTimeline.tsx",
+]) {
+  try {
+    await access(join(ROOT, retired));
+    failures.push(`${retired}: retired Today surface still exists`);
+  } catch {
+    // Expected: the production route uses the ported Needt Home.
+  }
+}
 
 const companionPath = "src/components/ai/AICompanion.tsx";
 const companion = await source(companionPath);

@@ -80,6 +80,11 @@ export interface NeedtTask {
   overdue?: boolean;
   /** Day label, e.g. "4 Sep". */
   due?: string;
+  /** Local calendar day of the scheduled block, in YYYY-MM-DD form. */
+  scheduledOn?: string;
+  /** Exact placement timestamps, used by production mutations. */
+  scheduledStart?: string;
+  scheduledEnd?: string;
   /** Estimate in minutes. */
   est?: number;
   done: boolean;

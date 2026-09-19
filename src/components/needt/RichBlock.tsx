@@ -174,7 +174,7 @@ export function RichBlock({
           <RbCheckbox
             done={block.done}
             hue={hue}
-            label={`Close ${block.title}`}
+            label={`${block.done ? "Reopen" : "Complete"} ${block.title}`}
             hitSlop={touch ? 15 : 0}
             onToggle={onToggle}
           />
@@ -760,7 +760,7 @@ export function RichBlock({
             <RbCheckbox
               done={block.done}
               hue={hue}
-              label={`Close ${block.title}`}
+              label={`${block.done ? "Reopen" : "Complete"} ${block.title}`}
               hitSlop={touch ? 15 : 0}
               onToggle={onToggle}
             />

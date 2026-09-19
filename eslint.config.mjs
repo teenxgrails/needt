@@ -15,6 +15,9 @@ const eslintConfig = [
       ".next/**",
       ".codex/**",
       ".agents/**",
+      // Separate Git worktrees are validated from their own roots. Traversing
+      // them here lints other branches as if they belonged to this checkout.
+      ".claude/**",
       "dist/**",
       "coverage/**",
       "playwright-report/**",

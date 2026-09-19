@@ -99,6 +99,21 @@ describe("mobileDueOffset", () => {
   it("is null for a task with no due date", () => {
     expect(mobileDueOffset(task({ id: "3" }), NOW)).toBeNull();
   });
+
+  it("uses the scheduled day before a different deadline", () => {
+    expect(
+      mobileDueOffset(
+        task({ id: "4", scheduledOn: "2026-09-01", due: "4 Sep" }),
+        NOW
+      )
+    ).toBe(0);
+    expect(
+      mobileDueOffset(
+        task({ id: "5", scheduledOn: "2026-09-02", due: "1 Sep" }),
+        NOW
+      )
+    ).toBe(1);
+  });
 });
 
 describe("mobileDayLists", () => {
@@ -113,6 +128,17 @@ describe("mobileDayLists", () => {
     const { debt, today } = mobileDayLists(tasks, NOW);
     expect(debt.map((t) => t.id)).toEqual(["1"]);
     expect(today.map((t) => t.id)).toEqual(["2"]);
+  });
+
+  it("classifies scheduled tasks by their scheduled day", () => {
+    const tasks = [
+      task({ id: "1", scheduledOn: "2026-08-31", due: "4 Sep" }),
+      task({ id: "2", scheduledOn: "2026-09-01", due: "4 Sep" }),
+      task({ id: "3", scheduledOn: "2026-09-02", due: "1 Sep" }),
+    ];
+    const { debt, today } = mobileDayLists(tasks, NOW);
+    expect(debt.map((item) => item.id)).toEqual(["1"]);
+    expect(today.map((item) => item.id)).toEqual(["2"]);
   });
 });
 

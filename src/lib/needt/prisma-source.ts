@@ -21,6 +21,12 @@ import {
   startOfDay,
   toLocalDateKey,
 } from "@/lib/date-utils";
+import {
+  habitDateFromKey,
+  habitDateKey,
+  habitDayWindow,
+  normalizeUserTimeZone,
+} from "@/lib/habit-completion-date";
 import { prisma } from "@/lib/prisma";
 
 import type { NeedtDataSource } from "./adapter";
@@ -87,17 +93,24 @@ async function getTasks(
   now: Date
 ): Promise<readonly NeedtTask[]> {
   const scope = workspaceDataScopeWhere(workspace, userId);
-  const rows = await prisma.task.findMany({
-    where: {
-      ...scope,
-      isArchived: false,
-    },
-    include: taskNeedtInclude,
-    orderBy: { createdAt: "desc" },
-  });
+  const [rows, settings] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        ...scope,
+        isArchived: false,
+      },
+      include: taskNeedtInclude,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    }),
+  ]);
+  const timeZone = normalizeUserTimeZone(settings?.timeZone);
   const visibleIds = new Set(rows.map((row) => row.id));
   return rows.map((row) => {
-    const task = toNeedtTask(row, now);
+    const task = toNeedtTask(row, now, timeZone);
     return task.blockedBy && !visibleIds.has(task.blockedBy)
       ? { ...task, blockedBy: undefined }
       : task;
@@ -191,15 +204,21 @@ async function getHabits(
   workspace: WorkspaceAccess,
   now: Date
 ): Promise<readonly NeedtHabit[]> {
-  const window = fourteenDayWindow(now);
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId },
+    select: { timeZone: true },
+  });
+  const window = habitDayWindow(now, settings?.timeZone);
   const rows = await prisma.habit.findMany({
     where: {
       ...workspaceDataScopeWhere(workspace, userId),
+      userId,
       archivedAt: null,
+      isActive: true,
     },
     include: {
       project: { select: { name: true } },
-      completions: { where: { date: { gte: window[0] } } },
+      completions: { where: { date: { gte: habitDateFromKey(window[0]) } } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -210,9 +229,13 @@ async function getHabits(
       at: row.at,
       project: row.project?.name ?? null,
       quota: row.quota,
-      done: markWindow(
-        window,
-        row.completions.map((completion) => completion.date)
+      done: window.map(
+        (day): NeedtDayMark =>
+          row.completions.some(
+            (completion) => habitDateKey(completion.date) === day
+          )
+            ? 1
+            : 0
       ),
     })
   );

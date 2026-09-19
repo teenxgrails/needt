@@ -15,6 +15,7 @@ jest.mock("@/lib/prisma", () => ({
     taskWait: { findMany: jest.fn() },
     user: { findMany: jest.fn() },
     habit: { findMany: jest.fn() },
+    userSettings: { findUnique: jest.fn() },
     closedDay: { findMany: jest.fn() },
     calendarFeed: { findMany: jest.fn() },
   },
@@ -57,6 +58,9 @@ function taskRow(id: string, dependsOnId: string | null = null): NeedtTaskRow {
 describe("prismaDataSource workspace scope", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.mocked(prisma.userSettings.findUnique).mockResolvedValue({
+      timeZone: "UTC",
+    } as never);
   });
 
   it("queries tasks through verified workspace scope and preserves cuid ids", async () => {
@@ -116,5 +120,22 @@ describe("prismaDataSource workspace scope", () => {
         hue: "#123456",
       },
     ]);
+  });
+
+  it("keeps habits inside both the workspace and current-user boundary", async () => {
+    jest.mocked(prisma.habit.findMany).mockResolvedValue([]);
+
+    await prismaDataSource("user-1", workspace, () => NOW).getHabits();
+
+    expect(prisma.habit.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          workspaceId: "workspace-1",
+          userId: "user-1",
+          archivedAt: null,
+          isActive: true,
+        },
+      })
+    );
   });
 });

@@ -21,7 +21,7 @@ import {
   tasks as fixtureTasks,
   today as fixtureToday,
 } from "@/lib/needt/fixture";
-import type { NeedtTask } from "@/lib/needt/types";
+import type { NeedtHabit, NeedtProject, NeedtTask } from "@/lib/needt/types";
 
 import { Glyph } from "../shell/chrome";
 import { BriefBoard } from "./BriefBoard";
@@ -32,6 +32,8 @@ import { WeekPlate } from "./WeekPlate";
 export interface HomeProps {
   /** Defaults to the fixture's tasks. */
   tasks?: readonly NeedtTask[];
+  habits?: readonly NeedtHabit[];
+  projects?: readonly NeedtProject[];
   /** The reference "today". Defaults to the fixture's date. */
   now?: Date;
   /** Uncontrolled by default; pass both to control the chosen form. */
@@ -40,23 +42,32 @@ export interface HomeProps {
   onFormChange?: (form: HomeFormKind) => void;
   onOpenTask?: (task: NeedtTask) => void;
   onToggleTask?: (id: string) => void;
+  onToggleHabit?: (id: string, completed: boolean) => void;
   onAddTask?: () => void;
   onMoveOverdueToToday?: () => void;
   onPlanMyDay?: () => void;
+  /** Production keeps unfinished Prose/Canvas persistence out of view. */
+  showFormSwitcher?: boolean;
+  habitsReadOnly?: boolean;
 }
 
 /** The screen. Export it; the caller decides when and where to mount it. */
 export function Home({
   tasks = fixtureTasks,
+  habits,
+  projects,
   now = fixtureToday,
   form: formProp,
   initialForm = "today",
   onFormChange,
   onOpenTask,
   onToggleTask,
+  onToggleHabit,
   onAddTask,
   onMoveOverdueToToday,
   onPlanMyDay,
+  showFormSwitcher = true,
+  habitsReadOnly = false,
 }: HomeProps) {
   const [ownForm, setOwnForm] = React.useState<HomeFormKind>(initialForm);
   const form = formProp ?? ownForm;
@@ -93,27 +104,31 @@ export function Home({
             gap: 8,
           }}
         >
-          <FormSwitcher form={form} onChange={setForm} />
-          <button
-            type="button"
-            onClick={onPlanMyDay}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 7,
-              height: 32,
-              padding: "0 12px 0 10px",
-              border: 0,
-              cursor: "default",
-              borderRadius: "var(--radius-lg)",
-              background: "var(--fill-accent)",
-              color: "var(--accent)",
-              font: "var(--type-ui-medium)",
-            }}
-          >
-            <Glyph of={LuWandSparkles} size={14} />
-            Plan my day
-          </button>
+          {showFormSwitcher ? (
+            <FormSwitcher form={form} onChange={setForm} />
+          ) : null}
+          {onPlanMyDay ? (
+            <button
+              type="button"
+              onClick={onPlanMyDay}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                height: 32,
+                padding: "0 12px 0 10px",
+                border: 0,
+                cursor: "default",
+                borderRadius: "var(--radius-lg)",
+                background: "var(--fill-accent)",
+                color: "var(--accent)",
+                font: "var(--type-ui-medium)",
+              }}
+            >
+              <Glyph of={LuWandSparkles} size={14} />
+              Plan my day
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -124,11 +139,15 @@ export function Home({
         {form === "today" ? (
           <TodayForm
             tasks={tasks}
+            habits={habits}
+            projects={projects}
             now={now}
             onOpenTask={onOpenTask}
             onToggleTask={onToggleTask}
+            onToggleHabit={onToggleHabit}
             onAddTask={onAddTask}
             onMoveOverdueToToday={onMoveOverdueToToday}
+            habitsReadOnly={habitsReadOnly}
           />
         ) : (
           <BriefBoard form={form} />

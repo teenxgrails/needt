@@ -172,6 +172,35 @@ export function parseDueDate(
   return inThisYear;
 }
 
+function parseLocalDateKey(value: string | undefined): Date | null {
+  if (!value) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const date = newDateFromYMD(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3])
+  );
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** The day a task occupies in planning views. A scheduled block wins over
+ * its deadline because moving the block must move the card even when the
+ * deadline remains later. */
+export function taskDayOffset(task: NeedtTask, now: Date): number | null {
+  const day =
+    parseLocalDateKey(task.scheduledOn) ?? parseDueDate(task.due, now);
+  if (!day) return null;
+  return calendarDayDifference(startOfDay(day), startOfDay(now));
+}
+
+/** Overdue in a planning view means the task occupies a past day. */
+export function isPlanningOverdue(task: NeedtTask, now: Date): boolean {
+  if (task.done) return false;
+  const offset = taskDayOffset(task, now);
+  return offset == null ? task.overdue === true : offset < 0;
+}
+
 /**
  * Whether a task's deadline has passed. A done task is never overdue.
  *

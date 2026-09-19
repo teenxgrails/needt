@@ -30,16 +30,20 @@ import { HABIT_CHIP_HEIGHT } from "./mobile-logic";
 export interface MobileHabitStripProps {
   habits?: readonly NeedtHabit[];
   projects?: readonly NeedtProject[];
+  onToggleHabit?: (id: string, completed: boolean) => void;
+  readOnly?: boolean;
 }
 
 function MobileHabitChip({
   habit,
   hue,
   onToggle,
+  disabled,
 }: {
   habit: NeedtHabit;
   hue: string;
   onToggle: () => void;
+  disabled?: boolean;
 }) {
   const on = Boolean(habit.done[habit.done.length - 1]);
   const { kept, of } = habitKeptRatio(habit.done);
@@ -53,6 +57,7 @@ function MobileHabitChip({
       type="button"
       title={`${habit.at ? `${habit.at} · ` : ""}${summary} · ${on ? "kept today, tap to undo" : "tap to mark it kept"}`}
       onClick={onToggle}
+      disabled={disabled}
       style={{
         flex: "none",
         display: "flex",
@@ -102,6 +107,8 @@ function MobileHabitChip({
 export function MobileHabitStrip({
   habits = fixtureHabits,
   projects = fixtureProjects,
+  onToggleHabit,
+  readOnly = false,
 }: MobileHabitStripProps) {
   const [today, setToday] = React.useState<Record<string, boolean>>({});
 
@@ -111,7 +118,8 @@ export function MobileHabitStrip({
         const override = today[habit.id];
         if (override === undefined) return habit;
         const done = habit.done.slice();
-        done[done.length - 1] = override ? 1 : 0;
+        if (done.length) done[done.length - 1] = override ? 1 : 0;
+        else done.push(override ? 1 : 0);
         return { ...habit, done };
       }),
     [habits, today]
@@ -139,9 +147,12 @@ export function MobileHabitStrip({
             key={habit.id}
             habit={habit}
             hue={hue}
-            onToggle={() =>
-              setToday((state) => ({ ...state, [habit.id]: !on }))
-            }
+            disabled={readOnly}
+            onToggle={() => {
+              if (readOnly) return;
+              if (onToggleHabit) onToggleHabit(habit.id, !on);
+              else setToday((state) => ({ ...state, [habit.id]: !on }));
+            }}
           />
         );
       })}

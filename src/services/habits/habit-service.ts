@@ -1,3 +1,5 @@
+import { scheduleAllTasksForUserDetailed } from "@/services/scheduling/TaskSchedulingService";
+
 import type { WorkspaceAccess } from "@/lib/auth/workspace-auth";
 import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import {
@@ -8,8 +10,12 @@ import {
   startOfWeek,
   toZonedTime,
 } from "@/lib/date-utils";
+import {
+  habitDateFromKey,
+  habitDayKey,
+  normalizeUserTimeZone,
+} from "@/lib/habit-completion-date";
 import { prisma } from "@/lib/prisma";
-import { scheduleAllTasksForUserDetailed } from "@/services/scheduling/TaskSchedulingService";
 
 export async function materializeHabitWeek(
   userId: string,
@@ -80,7 +86,52 @@ export async function materializeHabitWeek(
   });
   return {
     habitId,
-    occurrences: occurrences.map((occurrence) => occurrence.start.toISOString()),
+    occurrences: occurrences.map((occurrence) =>
+      occurrence.start.toISOString()
+    ),
     unscheduled: result.scheduleResult.unscheduled,
   };
+}
+
+export async function setHabitCompletionToday(input: {
+  userId: string;
+  workspace: WorkspaceAccess;
+  habitId: string;
+  completed: boolean;
+  now?: Date;
+}) {
+  const settings = await prisma.userSettings.findUnique({
+    where: { userId: input.userId },
+    select: { timeZone: true },
+  });
+  const timeZone = normalizeUserTimeZone(settings?.timeZone);
+  const dateKey = habitDayKey(input.now ?? newDate(), timeZone);
+  const date = habitDateFromKey(dateKey);
+
+  return prisma.$transaction(async (transaction) => {
+    const habit = await transaction.habit.findFirst({
+      where: {
+        id: input.habitId,
+        ...workspaceDataScopeWhere(input.workspace, input.userId),
+        userId: input.userId,
+        archivedAt: null,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    if (!habit) return null;
+
+    if (input.completed) {
+      await transaction.habitCompletion.upsert({
+        where: { habitId_date: { habitId: habit.id, date } },
+        update: {},
+        create: { habitId: habit.id, date },
+      });
+    } else {
+      await transaction.habitCompletion.deleteMany({
+        where: { habitId: habit.id, date },
+      });
+    }
+    return { habitId: habit.id, date: dateKey, completed: input.completed };
+  });
 }
