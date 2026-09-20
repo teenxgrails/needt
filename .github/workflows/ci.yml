@@ -195,7 +195,11 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npx tsx prisma/ci-seed.ts
       - run: npx playwright install --with-deps
+      - name: Build E2E application
+        run: npm run build
       - name: Run E2E and collaboration authorization smoke
+        env:
+          NEEDT_E2E_PRODUCTION_SERVER: "1"
         run: npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4

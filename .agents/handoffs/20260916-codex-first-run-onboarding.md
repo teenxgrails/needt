@@ -2,8 +2,8 @@
 id: 20260916-codex-first-run-onboarding
 owner: codex
 branch: codex/first-run-onboarding
-status: complete
-updated: 2026-09-19T21:05:00Z
+status: active
+updated: 2026-09-20T21:45:00Z
 objective: Prove and repair the clean-database first run, honest primary-route empty states, recoverable OAuth failures, and 360/390px behavior.
 ---
 
@@ -27,7 +27,8 @@ objective: Prove and repair the clean-database first run, honest primary-route e
 
 ## Working state
 
-- Expected dirty file until this completion checkpoint is committed: only this handoff.
+- Expected dirty files: `.github/workflows/ci.yml` and this handoff while the
+  CI E2E memory-restart fix is being verified.
 - Foreign changes that must remain untouched: the dirty primary checkout and every other worktree.
 
 ## Verification
@@ -35,6 +36,14 @@ objective: Prove and repair the clean-database first run, honest primary-route e
 - Passed: `npm run agent:context`; `git diff --check`; Prettier; `npm run type-check`; `npm run lint`; `npm run test:unit` (181 suites, 858 tests); `npm run check:ui-contracts`; `npm run check:branding`; `npm run check:agent-handoffs`; `npm run build:worker`; individual 360px and 390px onboarding E2E runs.
 - Build: the normal standalone build compiled and generated 131/131 pages twice, then failed during standalone trace-copy because the disk filled. `VERCEL=1 npm run build` passed, including the production-artifact check. Docker CI must prove the standalone packaging on the pushed SHA.
 - `tokens:check` is not present on this branch; the design-port branch owns that gate.
+- CI failure diagnosis: run `35462108027`, E2E job `105948131125`, shows
+  repeated Next dev-server memory-threshold restarts followed by transient
+  `ERR_CONNECTION_REFUSED` and whole-test retries. No onboarding assertion
+  failed before the server disappeared.
+- Current CI fix passed `npm run prisma:generate`, `npm run type-check`,
+  `npm run lint`, `npm run check:agent-handoffs`, Prettier and
+  `git diff --check`. A repeat local production build was stopped by host
+  `ENOSPC`; CI is the authoritative production-build/E2E check for this change.
 
 ## Decisions and constraints
 
@@ -46,8 +55,12 @@ objective: Prove and repair the clean-database first run, honest primary-route e
 
 ## Blockers
 
-- None.
+- The pushed SHA `eb0b685` fails the E2E job because the Next development
+  server repeatedly reaches its memory threshold and restarts while the
+  onboarding test visits every primary route. The test then sees transient
+  connection refusals and retries the whole journey.
 
 ## Next action
 
-- After the owner merges #37, #24 and #41, fetch fresh `main`, rebase remaining PR branches, then continue Phase 4 in the port checkout.
+- Run the E2E suite against the repository's existing production-server mode,
+  push the verified fix, and confirm a new PR #42 CI run starts.
