@@ -3,7 +3,7 @@ id: 20260916-codex-first-run-onboarding
 owner: codex
 branch: codex/first-run-onboarding
 status: active
-updated: 2026-09-20T21:45:00Z
+updated: 2026-09-20T21:53:00Z
 objective: Prove and repair the clean-database first run, honest primary-route empty states, recoverable OAuth failures, and 360/390px behavior.
 ---
 
@@ -27,8 +27,8 @@ objective: Prove and repair the clean-database first run, honest primary-route e
 
 ## Working state
 
-- Expected dirty files: `.github/workflows/ci.yml` and this handoff while the
-  CI E2E memory-restart fix is being verified.
+- Expected dirty files: `playwright.config.ts` and this handoff while the
+  production-server E2E fix is being verified.
 - Foreign changes that must remain untouched: the dirty primary checkout and every other worktree.
 
 ## Verification
@@ -44,6 +44,11 @@ objective: Prove and repair the clean-database first run, honest primary-route e
   `npm run lint`, `npm run check:agent-handoffs`, Prettier and
   `git diff --check`. A repeat local production build was stopped by host
   `ENOSPC`; CI is the authoritative production-build/E2E check for this change.
+- CI run `35539499663` proved the production build passes and removed every
+  dev-server restart. Its E2E failures exposed the production-only PWA worker
+  intercepting API requests before Playwright route stubs; the E2E browser
+  context now blocks service workers so those explicit test boundaries remain
+  authoritative.
 
 ## Decisions and constraints
 
@@ -55,12 +60,11 @@ objective: Prove and repair the clean-database first run, honest primary-route e
 
 ## Blockers
 
-- The pushed SHA `eb0b685` fails the E2E job because the Next development
-  server repeatedly reaches its memory threshold and restarts while the
-  onboarding test visits every primary route. The test then sees transient
-  connection refusals and retries the whole journey.
+- The pushed SHA `5c1f474` passes its new production build but exposes that the
+  production PWA worker bypasses Playwright API stubs. The follow-up config fix
+  still needs CI verification.
 
 ## Next action
 
-- Run the E2E suite against the repository's existing production-server mode,
-  push the verified fix, and confirm a new PR #42 CI run starts.
+- Push the E2E service-worker isolation fix and confirm PR #42 E2E passes
+  against the production server.
