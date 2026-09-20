@@ -56,11 +56,13 @@ function dueOffset(task: NeedtTask, now: Date): number | null {
 
 function TaskColumn({
   tasks,
+  projects,
   dense,
   onOpen,
   onToggle,
 }: {
   tasks: readonly NeedtTask[];
+  projects?: readonly NeedtProject[];
   dense?: boolean;
   onOpen?: (task: NeedtTask) => void;
   onToggle?: (id: string) => void;
@@ -70,7 +72,7 @@ function TaskColumn({
       {tasks.map((task) => (
         <RichBlock
           key={task.id}
-          block={rbShape(task, { layout: "card", dense })}
+          block={rbShape(task, { layout: "card", dense, projects })}
           weight={dense ? "compressed" : "open"}
           fit
           onOpen={onOpen ? () => onOpen(task) : undefined}
@@ -84,11 +86,13 @@ function TaskColumn({
 /** Today's own column: the habit rail's contents, cut into its parts. */
 function TodayColumn({
   tasks,
+  projects,
   onOpen,
   onToggle,
   onAdd,
 }: {
   tasks: readonly NeedtTask[];
+  projects?: readonly NeedtProject[];
   onOpen?: (task: NeedtTask) => void;
   onToggle?: (id: string) => void;
   onAdd?: () => void;
@@ -177,7 +181,7 @@ function TodayColumn({
             ) : (
               <RichBlock
                 key={row.task.id}
-                block={rbShape(row.task, { layout: "card" })}
+                block={rbShape(row.task, { layout: "card", projects })}
                 weight="open"
                 fit
                 onOpen={onOpen ? () => onOpen(row.task) : undefined}
@@ -301,6 +305,7 @@ export function TodayForm({
           >
             <TaskColumn
               tasks={debt}
+              projects={projects}
               dense
               onOpen={onOpenTask}
               onToggle={onToggleTask}
@@ -309,6 +314,7 @@ export function TodayForm({
         ) : null}
         <TodayColumn
           tasks={mine}
+          projects={projects}
           onOpen={onOpenTask}
           onToggle={onToggleTask}
           onAdd={onAddTask}
@@ -321,6 +327,7 @@ export function TodayForm({
         >
           <TaskColumn
             tasks={next}
+            projects={projects}
             dense
             onOpen={onOpenTask}
             onToggle={onToggleTask}
