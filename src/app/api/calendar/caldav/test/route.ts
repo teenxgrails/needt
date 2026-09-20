@@ -1,9 +1,8 @@
-import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 import { DAVCalendar } from "tsdav";
 
-import { authSecret } from "@/lib/auth/auth-secret";
+import { requireAuth } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
 
 import {
@@ -24,21 +23,8 @@ const LOG_SOURCE = "CalDAVTest";
  */
 export async function POST(request: NextRequest) {
   try {
-    // Get the user token from the request
-    const token = await getToken({
-      req: request,
-      secret: authSecret(),
-    });
-
-    // If there's no token, return unauthorized
-    if (!token) {
-      logger.warn(
-        "Unauthorized access attempt to CalDAV test API",
-        {},
-        LOG_SOURCE
-      );
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+    const denied = await requireAuth(request);
+    if (denied) return denied;
 
     const { serverUrl, username, password, path } = await request.json();
 

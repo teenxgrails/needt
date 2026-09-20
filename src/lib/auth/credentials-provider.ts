@@ -3,6 +3,7 @@ import { compare } from "bcryptjs";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
+import { requiresEmailVerificationBeforeAccess } from "./email-verification-access";
 import { isPublicSignupEnabled } from "./public-signup";
 
 const LOG_SOURCE = "CredentialsProvider";
@@ -15,9 +16,10 @@ const LOG_SOURCE = "CredentialsProvider";
  */
 export async function authenticateUser(email: string, password: string) {
   try {
+    const normalizedEmail = email.trim().toLowerCase();
     // Find the user by email
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: {
         accounts: {
           where: {
@@ -64,6 +66,18 @@ export async function authenticateUser(email: string, password: string) {
       logger.warn(
         "Authentication failed: Invalid password",
         {},
+        LOG_SOURCE
+      );
+      return null;
+    }
+
+    if (
+      !user.emailVerified &&
+      (await requiresEmailVerificationBeforeAccess())
+    ) {
+      logger.warn(
+        "Authentication blocked pending email verification",
+        { userId: user.id },
         LOG_SOURCE
       );
       return null;

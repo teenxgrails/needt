@@ -83,9 +83,9 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: auth.userId },
-      select: { email: true, name: true },
+      select: { email: true, emailVerified: true, name: true },
     });
-    if (!user?.email) {
+    if (!user?.email || !user.emailVerified) {
       return NextResponse.json(
         { error: "A verified account email is required for checkout." },
         { status: 400 }

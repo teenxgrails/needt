@@ -5,16 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import {
+  CalendarPlus2,
   ChevronLeft,
   ChevronRight,
   MoreHorizontal,
   Settings,
 } from "lucide-react";
-import {
-  AnimatePresence,
-  LayoutGroup,
-  motion,
-} from "motion/react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import {
   IoAddOutline,
   IoChevronDown,
@@ -26,6 +23,7 @@ import { DayView } from "@/components/calendar/DayView";
 import { MonthView } from "@/components/calendar/MonthView";
 import { MultiMonthView } from "@/components/calendar/MultiMonthView";
 import { WeekView } from "@/components/calendar/WeekView";
+import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 import { TaskModal } from "@/components/tasks/TaskModal";
 import {
   APP_TOOLBAR_BUTTON_CLASS,
@@ -58,8 +56,6 @@ import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notifications";
 import { summarizeUnscheduledReasons } from "@/lib/scheduling-reasons";
 import { cn } from "@/lib/utils";
-
-import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useCalendarHorizontalNavigation } from "@/hooks/useCalendarHorizontalNavigation";
@@ -97,9 +93,10 @@ export function Calendar({
   initialEvents = [],
 }: CalendarProps) {
   const { date: currentDate, setDate, view, setView } = useViewStore();
-  const { scheduleAllTasks, scheduleAnimationRevision, tags } = useTaskStore();
+  const { scheduleAllTasks, scheduleAnimationRevision, tags, tasks } =
+    useTaskStore();
   const { createTask } = useTaskMutations();
-  const { setFeeds, setEvents } = useCalendarStore();
+  const { events, feeds, setFeeds, setEvents } = useCalendarStore();
   const {
     user: userSettings,
     calendar: calendarSettings,
@@ -112,10 +109,13 @@ export function Calendar({
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isRefreshingTasks, setIsRefreshingTasks] = useState(false);
   const [isMobileOptionsOpen, setIsMobileOptionsOpen] = useState(false);
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
 
   // Use initial data from server for hydration
   useEffect(() => {
+    let active = true;
+
     if (initialFeeds.length > 0) {
       setFeeds(initialFeeds);
     }
@@ -124,13 +124,22 @@ export function Calendar({
       setEvents(initialEvents);
     }
 
-    // Only fetch from database if we didn't get initial data
-    if (!initialFeeds.length || !initialEvents.length) {
-      useCalendarStore.getState().loadFromDatabase();
-    }
+    const loadInitialData = async () => {
+      if (!initialFeeds.length || !initialEvents.length) {
+        await useCalendarStore.getState().loadFromDatabase();
+      }
+      await useTaskStore.getState().fetchTasks();
 
-    // Always fetch tasks since they're not pre-loaded
-    useTaskStore.getState().fetchTasks();
+      if (!active) return;
+      const calendarError = useCalendarStore.getState().error;
+      const taskError = useTaskStore.getState().error;
+      setHasLoadedInitialData(!calendarError && !taskError);
+    };
+
+    void loadInitialData();
+    return () => {
+      active = false;
+    };
   }, [initialFeeds, initialEvents, setFeeds, setEvents]);
 
   const handleAutoSchedule = async () => {
@@ -202,6 +211,11 @@ export function Calendar({
   const handleNewTask = () => {
     setIsTaskModalOpen(true);
   };
+  const isCalendarEmpty =
+    hasLoadedInitialData &&
+    feeds.length === 0 &&
+    events.length === 0 &&
+    tasks.length === 0;
 
   return (
     <div className="needt-page-depth flex h-full w-full overflow-hidden text-[var(--text-primary)]">
@@ -534,6 +548,37 @@ export function Calendar({
               </motion.div>
             </AnimatePresence>
           </LayoutGroup>
+          {isCalendarEmpty && (
+            <div
+              className="pointer-events-none absolute inset-x-4 top-20 z-10 flex justify-center sm:top-24"
+              data-testid="calendar-empty-state"
+            >
+              <div className="pointer-events-auto w-full max-w-sm rounded-[var(--panel-radius)] border border-[var(--border-subtle)] bg-[var(--surface-panel)] p-5 text-center needt-overlay-shadow">
+                <CalendarPlus2 className="mx-auto h-6 w-6 text-[var(--text-muted)]" />
+                <h2 className="mt-3 text-sm font-semibold">
+                  Start with your first plan
+                </h2>
+                <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
+                  Connect a calendar or create a task and let Needt schedule it.
+                </p>
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    className="min-h-11 rounded-[var(--control-radius)] border border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] px-3 text-[13px] font-medium text-[var(--button-primary-fg)]"
+                    onClick={handleNewTask}
+                  >
+                    Create task
+                  </button>
+                  <Link
+                    href="/settings#calendars"
+                    className="inline-flex min-h-11 items-center rounded-[var(--control-radius)] border border-[var(--button-secondary-border)] bg-[var(--button-secondary-bg)] px-3 text-[13px] font-medium text-[var(--control-fg)]"
+                  >
+                    Connect calendar
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
       <TaskModal

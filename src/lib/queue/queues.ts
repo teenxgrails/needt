@@ -11,6 +11,7 @@ import {
   QUEUE_NAMES,
   ReminderJobData,
   RescheduleJobData,
+  TrialJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";
 
@@ -21,6 +22,7 @@ let mailSyncQueue: Queue<MailSyncJobData> | null = null;
 let bugReportSyncQueue: Queue<BugReportSyncJobData> | null = null;
 let reminderQueue: Queue<ReminderJobData> | null = null;
 let nudgeQueue: Queue<NudgeJobData> | null = null;
+let trialQueue: Queue<TrialJobData> | null = null;
 
 const defaultJobOptions = {
   attempts: 4,
@@ -91,6 +93,14 @@ export function getNudgeQueue(): Queue<NudgeJobData> {
   return nudgeQueue;
 }
 
+export function getTrialQueue(): Queue<TrialJobData> {
+  trialQueue ??= new Queue(QUEUE_NAMES.trials, {
+    connection: getBullConnection(),
+    defaultJobOptions,
+  });
+  return trialQueue;
+}
+
 export async function closeQueues(): Promise<void> {
   const queues = [
     calendarSyncQueue,
@@ -100,6 +110,7 @@ export async function closeQueues(): Promise<void> {
     bugReportSyncQueue,
     reminderQueue,
     nudgeQueue,
+    trialQueue,
   ].filter((queue): queue is Queue => queue !== null);
   await Promise.all(queues.map((queue) => queue.close()));
   calendarSyncQueue = null;
@@ -109,4 +120,5 @@ export async function closeQueues(): Promise<void> {
   bugReportSyncQueue = null;
   reminderQueue = null;
   nudgeQueue = null;
+  trialQueue = null;
 }

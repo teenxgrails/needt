@@ -9,6 +9,7 @@ import {
   requestedWorkspaceId,
   resolveWorkspaceAccess,
 } from "@/lib/auth/workspace-auth";
+import { getEmailVerificationStatus } from "@/lib/auth/email-verification-access";
 import { prisma } from "@/lib/prisma";
 
 export function generateConnectorToken() {
@@ -49,6 +50,18 @@ export async function authorizeConnectorWorkspace(
   | { response: NextResponse; userId?: undefined; workspace?: undefined }
 > {
   try {
+    const verification = await getEmailVerificationStatus(userId);
+    if (verification.required && !verification.verified) {
+      return {
+        response: NextResponse.json(
+          {
+            error: "Confirm your email to continue",
+            code: "EMAIL_VERIFICATION_REQUIRED",
+          },
+          { status: 403 }
+        ),
+      };
+    }
     const workspace = await resolveWorkspaceAccess({
       userId,
       requestedWorkspaceId: requestedWorkspaceId(request),

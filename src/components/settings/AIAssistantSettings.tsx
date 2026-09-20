@@ -492,18 +492,6 @@ export function AIAssistantSettings() {
               </div>
             </SettingsCard>
           )}
-          {settings.usage && settings.provider === "NONE" && (
-            <SettingsCard className="p-3">
-              <div className="text-sm font-medium">
-                {settings.usage.remaining}/{settings.usage.limit} actions left
-                this month
-              </div>
-              <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                Hosted actions reset monthly. Bring your own provider key below
-                for unlimited usage.
-              </p>
-            </SettingsCard>
-          )}
           {settings.provider !== "NONE" && (
             <div className="space-y-2">
               <Label htmlFor="ai-key">
