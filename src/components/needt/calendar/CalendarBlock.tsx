@@ -11,6 +11,8 @@
  */
 import * as React from "react";
 
+import type { NeedtProject } from "@/lib/needt/types";
+
 import { formatClock } from "./geometry";
 import { rbShape } from "../rb-shape";
 import type { RbWeight } from "../rb-layout";
@@ -20,6 +22,7 @@ import type { CalendarEntry } from "./entries";
 
 export interface CalendarBlockProps {
   entry: CalendarEntry;
+  projects?: readonly NeedtProject[];
   /** The height the grid's geometry gave this block. */
   height: number;
   /** The width the overlap layout gave this block, in whatever unit the
@@ -34,6 +37,7 @@ export interface CalendarBlockProps {
 
 export function CalendarBlock({
   entry,
+  projects,
   height,
   width = null,
   weight = "open",
@@ -52,7 +56,7 @@ export function CalendarBlock({
     };
   }, [entry, use24Hour]);
 
-  const block = rbShape(withSpan, { layout: "block" });
+  const block = rbShape(withSpan, { layout: "block", projects });
 
   return (
     <RichBlock

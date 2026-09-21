@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Calendar: replaced the legacy FullCalendar screen with the ported Needt Day,
+  Week, Month, Columns and Sequence views. The route now reads tasks, split
+  schedule blocks, local calendar events and privacy-safe shared Busy intervals
+  through the authorized workspace boundary; Viewer access is read-only, real
+  projects own task colour, and FullCalendar and its CSS are removed.
 - Today: replaced the legacy agenda/timeline tree with the ported Needt Home on
   desktop and phone. The screen now reads the active authorized workspace,
   persists task and habit completion, plans or moves work through existing task

@@ -3,7 +3,7 @@ id: 20260919-codex-phase4-screens
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-19T19:22:15Z
+updated: 2026-09-21T10:30:00Z
 objective: Replace the five legacy product screens in place with the ported Needt screens, real server data, and no parallel variants.
 ---
 
@@ -21,6 +21,9 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Bound each Today response to the server-authorized workspace so an in-flight response cannot overwrite the screen after a workspace switch.
 - Made scheduling wait for its queued run to succeed, serialized repeated task/habit toggles, and rendered task dates in the user's timezone rather than the container timezone.
 - Deleted the complete legacy `src/components/today/**` tree and its external unit test; migrated Today visual assertions to the new production contract.
+- Today committed as `cc5fd41` + `5663b23` (real project metadata) and pushed to draft PR #34.
+- Calendar (2026-09-21, finished by Claude while Codex was rate-limited): replaced the FullCalendar route with the ported Needt views over `/api/needt/calendar`; split blocks, own events and opaque Busy intervals; Viewer mutations refused server-side; whole-day flexible-hours guard; FullCalendar packages, CSS and legacy `src/components/calendar/**` deleted.
+- Moved `tests/calendar-production.spec.ts` to `tests/visual/` (it needs the visual seed user; under the e2e config it could never pass) and scoped flexible-hours selectors to `:visible` because the phone Day view stays in the DOM, hidden by CSS, on desktop.
 
 ## Working state
 
@@ -41,10 +44,12 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Habit completion is an idempotent user-timezone operation on the existing `(habitId, date)` unique key. Habit reads retain the existing per-user ownership rule inside the authorized workspace.
 - One writer owns this checkout; subagents are read-only auditors.
 
+- Calendar gates (2026-09-21): type-check; full unit (199 suites, 1295 tests, one skipped); scoped eslint on every changed file; tokens, UI contracts, branding, handoff checks; `npm run build` with loopback DB URLs + artifact check; `npm run build:worker`; visual `calendar-production` (2/2) and `schedules-flexible-hours` on desktop against the isolated `127.0.0.1:5433/needt_test`. Calendar screenshot baselines were not refreshed.
+
 ## Blockers
 
 - PRs #37, #24 and #41 are still open, so the owner-requested rebase wave cannot start yet.
 
 ## Next action
 
-- Commit and push Today as one screen unit, start its CI, remove this worktree's `.next`, then begin the Calendar replacement while retaining the explicit browser-verification blocker.
+- Next screen: `/tasks` and `/projects`. Calendar visual baselines need the CI baseline-refresh flow.

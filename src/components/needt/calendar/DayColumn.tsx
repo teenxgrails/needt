@@ -10,6 +10,8 @@
  */
 import * as React from "react";
 
+import type { NeedtProject } from "@/lib/needt/types";
+
 import { CalendarBlock } from "./CalendarBlock";
 import { CollapsedChip } from "./CollapsedChip";
 import { MinuteBox } from "./Minutes";
@@ -34,12 +36,15 @@ import {
 
 export interface DayColumnProps {
   entries: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
   isToday?: boolean;
   gridStart?: number;
   gridEnd?: number;
   hourHeight?: number;
   workStart?: number;
   workEnd?: number;
+  workingRanges?: readonly (readonly [number, number])[];
+  blockedRanges?: readonly (readonly [number, number])[];
   /** The column's own pixel width, shared by every day in the row. */
   columnWidthPx: number;
   use24Hour?: boolean;
@@ -56,12 +61,15 @@ export interface DayColumnProps {
 
 export function DayColumn({
   entries,
+  projects,
   isToday = false,
   gridStart = GRID_START_HOUR,
   gridEnd = GRID_END_HOUR,
   hourHeight = HOUR_HEIGHT_PX,
   workStart = 9,
   workEnd = 18,
+  workingRanges,
+  blockedRanges = [],
   columnWidthPx,
   use24Hour = true,
   dark = false,
@@ -96,7 +104,30 @@ export function DayColumn({
     return map;
   }, [placed]);
 
-  const hatch = nonWorkingRanges(workStart, workEnd, gridStart, gridEnd);
+  const scheduledWorkingHatch = React.useMemo(() => {
+    if (!workingRanges) {
+      return nonWorkingRanges(workStart, workEnd, gridStart, gridEnd);
+    }
+    const ranges = [...workingRanges]
+      .map(([start, end]) => [
+        Math.max(gridStart, start),
+        Math.min(gridEnd, end),
+      ] as const)
+      .filter(([start, end]) => end > start)
+      .sort((left, right) => left[0] - right[0]);
+    const gaps: Array<readonly [number, number]> = [];
+    let cursor = gridStart;
+    for (const [start, end] of ranges) {
+      if (start > cursor) gaps.push([cursor, start]);
+      cursor = Math.max(cursor, end);
+    }
+    if (cursor < gridEnd) gaps.push([cursor, gridEnd]);
+    return gaps;
+  }, [gridEnd, gridStart, workEnd, workStart, workingRanges]);
+  const hatch = [
+    ...scheduledWorkingHatch.map((range) => ({ range, flexible: false })),
+    ...blockedRanges.map((range) => ({ range, flexible: true })),
+  ];
   const gaps = React.useMemo(
     () => findMinuteGaps(items, workStart, workEnd, hourHeight),
     [items, workStart, workEnd, hourHeight]
@@ -104,10 +135,11 @@ export function DayColumn({
 
   return (
     <div style={{ position: "relative", minWidth: 0 }}>
-      {hatch.map(([from, to]) => (
+      {hatch.map(({ range: [from, to], flexible }, index) => (
         <span
-          key={`off${from}`}
+          key={`off${from}-${to}-${index}`}
           className="cal-off"
+          data-flexible-hours={flexible ? "blocked" : undefined}
           aria-hidden="true"
           style={{
             position: "absolute",
@@ -194,6 +226,7 @@ export function DayColumn({
           >
             <CalendarBlock
               entry={entry}
+              projects={projects}
               height={height}
               width={widthPx}
               weight="open"

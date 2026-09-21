@@ -26,6 +26,7 @@ import {
 } from "./fixture";
 import type {
   NeedtCalendarMap,
+  NeedtCalendarEntry,
   NeedtDayMark,
   NeedtHabit,
   NeedtPerson,
@@ -47,6 +48,10 @@ export interface NeedtDataSource {
   getStages(): Promise<readonly NeedtStage[]>;
   /** Calendars are addressed by id, so this stays a map rather than a list. */
   getCalendars(): Promise<NeedtCalendarMap>;
+  getCalendarEntries(
+    start: Date,
+    end: Date
+  ): Promise<readonly NeedtCalendarEntry[]>;
   /** The last fourteen days, oldest first; `streak()` reads this. */
   getClosedDays(): Promise<readonly NeedtDayMark[]>;
 }
@@ -59,6 +64,12 @@ export const fixtureDataSource: NeedtDataSource = {
   getHabits: async () => fixtureHabits,
   getStages: async () => fixtureStages,
   getCalendars: async () => fixtureCalendars,
+  getCalendarEntries: async () =>
+    fixtureTasks.map((task) => ({
+      ...task,
+      kind: "task" as const,
+      sourceId: task.id,
+    })),
   getClosedDays: async () => fixtureClosedDays,
 };
 

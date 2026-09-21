@@ -26,6 +26,7 @@ import * as React from "react";
 
 import { calendarDayDifference } from "@/lib/date-utils";
 import { dateLabel } from "@/lib/needt/derive";
+import type { NeedtProject } from "@/lib/needt/types";
 
 import { RichBlock } from "../RichBlock";
 import { rbShape } from "../rb-shape";
@@ -35,6 +36,7 @@ import { formatClock } from "./geometry";
 
 export interface SequenceViewProps {
   entries: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
   today: Date;
   use24Hour?: boolean;
   dark?: boolean;
@@ -70,6 +72,7 @@ function sequenceRows(
 
 export function SequenceView({
   entries,
+  projects,
   today,
   use24Hour = true,
   dark = false,
@@ -113,7 +116,7 @@ export function SequenceView({
           const dayKey = row.date ? row.date.toDateString() : "undated";
           const showHeading = dayKey !== lastDayKey;
           lastDayKey = dayKey;
-          const shape = rbShape(row.entry, { layout: "card" });
+          const shape = rbShape(row.entry, { layout: "card", projects });
           return (
             <React.Fragment key={row.entry.id}>
               {showHeading ? (

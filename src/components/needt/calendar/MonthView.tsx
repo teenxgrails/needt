@@ -6,6 +6,8 @@
  */
 import * as React from "react";
 
+import type { NeedtProject } from "@/lib/needt/types";
+
 import { Hung, MenuItem } from "../shell/chrome";
 import { rbShape } from "../rb-shape";
 
@@ -16,6 +18,7 @@ export interface MonthViewProps {
   monthAnchor: Date;
   today: Date;
   entries: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
   weekStart?: "mon" | "sun";
   onOpen?: (entry: CalendarEntry) => void;
   onSelectDay?: (date: Date) => void;
@@ -28,12 +31,14 @@ const WEEKDAY_LABELS: Record<"mon" | "sun", readonly string[]> = {
 
 function MonthRow({
   entry,
+  projects,
   onOpen,
 }: {
   entry: CalendarEntry;
+  projects?: readonly NeedtProject[];
   onOpen?: (entry: CalendarEntry) => void;
 }) {
-  const shape = rbShape(entry, { layout: "card", dense: true });
+  const shape = rbShape(entry, { layout: "card", dense: true, projects });
   const task = !shape.event;
   return (
     <button
@@ -92,11 +97,13 @@ function MonthRow({
 function MonthCellView({
   cell,
   entries,
+  projects,
   onOpen,
   onSelectDay,
 }: {
   cell: MonthCell;
   entries: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
   onOpen?: (entry: CalendarEntry) => void;
   onSelectDay?: (date: Date) => void;
 }) {
@@ -140,7 +147,12 @@ function MonthCellView({
         {cell.date.getDate()}
       </span>
       {shown.map((entry) => (
-        <MonthRow key={entry.id} entry={entry} onOpen={onOpen} />
+        <MonthRow
+          key={entry.id}
+          entry={entry}
+          projects={projects}
+          onOpen={onOpen}
+        />
       ))}
       {extra > 0 ? (
         <Hung
@@ -189,6 +201,7 @@ export function MonthView({
   monthAnchor,
   today,
   entries,
+  projects,
   weekStart = "mon",
   onOpen,
   onSelectDay,
@@ -243,6 +256,7 @@ export function MonthView({
             key={cell.date.getTime()}
             cell={cell}
             entries={entriesOnDay(entries, cell.date, today)}
+            projects={projects}
             onOpen={onOpen}
             onSelectDay={onSelectDay}
           />

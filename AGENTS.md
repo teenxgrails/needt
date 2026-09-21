@@ -264,9 +264,8 @@ continues beyond a short read-only investigation.
   Transform and opacity only on hot paths. 60fps on the reference device or the
   effect does not ship.
 - **JSX text:** escape quotes and apostrophes as `&quot;` / `&apos;`.
-- **Branding:** product copy and internal event names say Needt only. The
-  `@fullcalendar/*` package IDs and legal attribution are the only exceptions;
-  `npm run check:branding` enforces this.
+- **Branding:** product copy and internal event names say Needt only. Legal
+  attribution is the only exception; `npm run check:branding` enforces this.
 
 ---
 

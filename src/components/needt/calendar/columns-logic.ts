@@ -80,6 +80,35 @@ export function capacityMinutes(
   return Math.max(0, (workEndHour - nowHour) * 60);
 }
 
+export interface CapacityWindow {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+function clockMinutes(value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+  return hour * 60 + minute;
+}
+
+/** Capacity from the saved default work schedule, including split days. */
+export function capacityMinutesForWindows(
+  windows: readonly CapacityWindow[],
+  dayOfWeek: number,
+  isToday: boolean,
+  nowHour: number
+): number {
+  const nowMinutes = nowHour * 60;
+  return windows
+    .filter((window) => window.dayOfWeek === dayOfWeek)
+    .reduce((total, window) => {
+      const start = clockMinutes(window.startTime);
+      const end = clockMinutes(window.endTime);
+      const availableStart = isToday ? Math.max(start, nowMinutes) : start;
+      return total + Math.max(0, end - availableStart);
+    }, 0);
+}
+
 export type ColumnsPriority = "now" | "soon" | "later" | "none";
 
 /** The ring is the priority. Overdue and at-risk are both "now" — a

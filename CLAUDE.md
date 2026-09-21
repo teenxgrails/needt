@@ -46,7 +46,7 @@ worktree, and never stage or alter unfamiliar dirty files.
 
 ## Tech Stack
 
-Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) · Zustand · TanStack Query · FullCalendar (being removed screen by screen, see `docs/handoff/CODEX-NEXT.md`) · Tailwind + shadcn/ui (Radix) · Zod.
+Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) · Zustand · TanStack Query · Tailwind + shadcn/ui (Radix) · Zod.
 
 ## Architecture
 

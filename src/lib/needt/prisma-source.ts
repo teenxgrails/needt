@@ -28,11 +28,18 @@ import {
   normalizeUserTimeZone,
 } from "@/lib/habit-completion-date";
 import { prisma } from "@/lib/prisma";
+import { toWorkspaceBusyEvent } from "@/lib/calendar-privacy";
 
 import type { NeedtDataSource } from "./adapter";
+import {
+  toCalendarEventEntries,
+  toCalendarTaskEntries,
+  type CalendarEventViewRow,
+} from "./calendar-view";
 import { taskNeedtInclude, toNeedtTask } from "./task-view";
 import type {
   NeedtCalendarMap,
+  NeedtCalendarEntry,
   NeedtDayMark,
   NeedtHabit,
   NeedtPerson,
@@ -266,6 +273,94 @@ async function getCalendars(userId: string): Promise<NeedtCalendarMap> {
   return map;
 }
 
+async function getCalendarEntries(
+  userId: string,
+  workspace: WorkspaceAccess,
+  rangeStart: Date,
+  rangeEnd: Date,
+  now: Date
+): Promise<readonly NeedtCalendarEntry[]> {
+  const scope = workspaceDataScopeWhere(workspace, userId);
+  const otherMemberIds =
+    workspace.enabled && workspace.workspaceKind === "SHARED"
+      ? (
+          await prisma.workspaceMember.findMany({
+            where: {
+              workspaceId: workspace.workspaceId,
+              userId: { not: userId },
+            },
+            select: { userId: true },
+          })
+        ).map((member) => member.userId)
+      : [];
+
+  const [tasks, ownEvents, busyEvents, settings] = await Promise.all([
+    prisma.task.findMany({
+      where: { ...scope, isArchived: false },
+      include: taskNeedtInclude,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.calendarEvent.findMany({
+      where: {
+        archivedAt: null,
+        feed: { userId, enabled: true },
+        OR: [
+          { description: null },
+          { NOT: { description: { startsWith: "[NEEDT_DAY_BLOCK]" } } },
+        ],
+        AND: [
+          {
+            OR: [
+              { start: { lte: rangeEnd }, end: { gte: rangeStart } },
+              { isMaster: true, recurrenceRule: { not: null } },
+            ],
+          },
+        ],
+      },
+      include: { feed: { select: { name: true, color: true } } },
+    }),
+    otherMemberIds.length
+      ? prisma.calendarEvent.findMany({
+          where: {
+            archivedAt: null,
+            feed: { userId: { in: otherMemberIds }, enabled: true },
+            start: { lte: rangeEnd },
+            end: { gte: rangeStart },
+            OR: [
+              { description: null },
+              { NOT: { description: { startsWith: "[NEEDT_DAY_BLOCK]" } } },
+            ],
+          },
+          select: { id: true, start: true, end: true, allDay: true },
+        })
+      : Promise.resolve([]),
+    prisma.userSettings.findUnique({
+      where: { userId },
+      select: { timeZone: true },
+    }),
+  ]);
+
+  const timeZone = normalizeUserTimeZone(settings?.timeZone);
+  const taskEntries = tasks.flatMap((row) =>
+    toCalendarTaskEntries(row, now, timeZone)
+  );
+  const visibleIds = new Set(tasks.map((row) => row.id));
+  for (const entry of taskEntries) {
+    if (entry.blockedBy && !visibleIds.has(entry.blockedBy)) {
+      entry.blockedBy = undefined;
+    }
+  }
+
+  const eventRows: CalendarEventViewRow[] = [
+    ...ownEvents,
+    ...busyEvents.map(toWorkspaceBusyEvent),
+  ];
+  return [
+    ...taskEntries,
+    ...toCalendarEventEntries(eventRows, rangeStart, rangeEnd, timeZone),
+  ];
+}
+
 /**
  * The database-backed `NeedtDataSource`, scoped by a server-authorized
  * workspace access object. A request-supplied workspace id is never enough:
@@ -287,6 +382,8 @@ export function prismaDataSource(
     getHabits: () => getHabits(userId, workspace, now()),
     getStages: async () => GLOBAL_STAGES,
     getCalendars: () => getCalendars(userId),
+    getCalendarEntries: (start, end) =>
+      getCalendarEntries(userId, workspace, start, end, now()),
     getClosedDays: () => getClosedDays(userId, now()),
   };
 }

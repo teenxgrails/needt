@@ -17,6 +17,7 @@ import {
   toLocalDateKey,
 } from "@/lib/date-utils";
 import { dateLabel, isOverdue } from "@/lib/needt/derive";
+import type { NeedtProject, NeedtWorkWindow } from "@/lib/needt/types";
 
 import { RichBlock } from "../RichBlock";
 import { rbShape } from "../rb-shape";
@@ -25,6 +26,7 @@ import { LuChevronLeft, LuChevronRight, LuRotateCcw } from "react-icons/lu";
 
 import {
   capacityMinutes,
+  capacityMinutesForWindows,
   computeShed,
   priorityOf,
   reasonFor,
@@ -37,12 +39,14 @@ import { hourOfDay } from "./geometry";
 
 export interface ColumnsScreenProps {
   entries: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
   today: Date;
   /** How many day columns to draw after today. */
   dayCount?: number;
   /** The working day's own end — today's capacity is what is left between
    *  now and this hour, never a whole day's worth. */
   workEnd?: number;
+  workWindows?: readonly NeedtWorkWindow[];
   /** Free hours on a day this isn't today. */
   freeHoursDefault?: number;
   dark?: boolean;
@@ -137,12 +141,14 @@ function sortShaped(list: ShapedEntry[], sort: SortMode): ShapedEntry[] {
 
 function CvCard({
   shaped,
+  projects,
   sort,
   onOpen,
   onToggle,
   dark,
 }: {
   shaped: ShapedEntry;
+  projects?: readonly NeedtProject[];
   sort: SortMode;
   onOpen?: (entry: CalendarEntry) => void;
   onToggle?: (entry: CalendarEntry) => void;
@@ -155,6 +161,7 @@ function CvCard({
   const shape = rbShape(withReason, {
     layout: "card",
     reason: sort === "ai",
+    projects,
   });
   return (
     <article
@@ -244,9 +251,11 @@ function ColumnHeader({
 
 export function ColumnsScreen({
   entries,
+  projects,
   today,
   dayCount = 7,
   workEnd = 18,
+  workWindows,
   freeHoursDefault = 6,
   dark = false,
   onOpen,
@@ -292,12 +301,14 @@ export function ColumnsScreen({
         const due = entryDueDate(entry, today);
         return due != null && calendarDayDifference(due, date) === 0;
       });
-      const capacityMin = capacityMinutes(
-        isToday,
-        nowHour,
-        workEnd,
-        freeHoursDefault
-      );
+      const capacityMin = workWindows
+        ? capacityMinutesForWindows(
+            workWindows,
+            date.getDay(),
+            isToday,
+            nowHour
+          )
+        : capacityMinutes(isToday, nowHour, workEnd, freeHoursDefault);
       const shaped = own.map((entry) =>
         shapeEntry(entry, today, i, false)
       );
@@ -310,7 +321,16 @@ export function ColumnsScreen({
       });
     }
     return columns;
-  }, [placeable, overdue, today, dayCount, nowHour, workEnd, freeHoursDefault]);
+  }, [
+    placeable,
+    overdue,
+    today,
+    dayCount,
+    nowHour,
+    workEnd,
+    freeHoursDefault,
+    workWindows,
+  ]);
 
   const noDate = React.useMemo(
     () =>
@@ -407,6 +427,7 @@ export function ColumnsScreen({
                 <CvCard
                   key={shaped.entry.id}
                   shaped={shaped}
+                  projects={projects}
                   sort={sort}
                   onOpen={onOpen}
                   onToggle={onToggle}
@@ -516,6 +537,7 @@ export function ColumnsScreen({
                   <CvCard
                     key={shaped.entry.id}
                     shaped={shaped}
+                    projects={projects}
                     sort={sort}
                     onOpen={onOpen}
                     onToggle={onToggle}
@@ -571,6 +593,7 @@ export function ColumnsScreen({
                 <CvCard
                   key={shaped.entry.id}
                   shaped={shaped}
+                  projects={projects}
                   sort={sort}
                   onOpen={onOpen}
                   onToggle={onToggle}

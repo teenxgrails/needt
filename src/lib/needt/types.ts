@@ -80,6 +80,8 @@ export interface NeedtTask {
   overdue?: boolean;
   /** Day label, e.g. "4 Sep". */
   due?: string;
+  /** Exact due day in YYYY-MM-DD form, independent of the display label. */
+  dueOn?: string;
   /** Local calendar day of the scheduled block, in YYYY-MM-DD form. */
   scheduledOn?: string;
   /** Exact placement timestamps, used by production mutations. */
@@ -116,6 +118,46 @@ export interface NeedtTask {
   waitsOn?: WaitsOn | null;
   /** Where the scheduler moved it from. `null` = capability not built yet. */
   movedFrom?: string | null;
+}
+
+export type NeedtCalendarEntryKind = "task" | "event" | "busy";
+
+export interface NeedtWorkWindow {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+/**
+ * One item placed on the production calendar. Tasks may fan out to several
+ * entries when the scheduler split them into multiple blocks. Calendar events
+ * keep their source identity separate from the render id so an occurrence or
+ * task chunk can be opened without guessing from a composite id.
+ */
+export interface NeedtCalendarEntry extends NeedtTask {
+  kind: NeedtCalendarEntryKind;
+  sourceId: string;
+  feedId?: string;
+  calendarName?: string;
+  description?: string;
+  location?: string;
+  allDay?: boolean;
+  isRecurring?: boolean;
+  recurrenceRule?: string;
+  isMaster?: boolean;
+  externalEventId?: string;
+  scheduledBlockId?: string;
+  occurrenceStart?: string;
+  seriesStart?: string;
+  seriesEnd?: string;
+  chunkIndex?: number;
+  chunkCount?: number;
+  frozen?: boolean;
+  /** Calendar-owned hue for an event or Busy interval. */
+  hue?: string | null;
+  /** Events are fixed; tasks are movable unless their block is frozen. */
+  movable?: boolean;
+  event?: boolean;
 }
 
 /**

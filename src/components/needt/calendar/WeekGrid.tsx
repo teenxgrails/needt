@@ -17,11 +17,17 @@
 import * as React from "react";
 
 import { calendarDayDifference } from "@/lib/date-utils";
-import { DOW } from "@/lib/needt/fixture";
+import type { BlockingOverride } from "@/lib/flexible-hours-guard";
+import type { NeedtProject, NeedtWorkWindow } from "@/lib/needt/types";
 
 import { DayColumn } from "./DayColumn";
 import { HourGutter } from "./HourGutter";
-import { type CalendarEntry, entriesOnDay } from "./entries";
+import {
+  blockedRangesForDay,
+  type CalendarEntry,
+  entriesOnDay,
+  workingRangesForDay,
+} from "./entries";
 import {
   GRID_END_HOUR,
   GRID_START_HOUR,
@@ -43,6 +49,7 @@ export interface WeekGridProps {
    *  somewhere to scroll to. */
   days: readonly Date[];
   entries: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
   today: Date;
   /** Which index in `days` opens as the first visible column. */
   anchorIndex?: number;
@@ -51,6 +58,8 @@ export interface WeekGridProps {
   hourHeight?: number;
   workStart?: number;
   workEnd?: number;
+  flexibleHours?: readonly BlockingOverride[];
+  workWindows?: readonly NeedtWorkWindow[];
   visibleDays?: number;
   use24Hour?: boolean;
   dark?: boolean;
@@ -59,45 +68,68 @@ export interface WeekGridProps {
   })[];
   onOpen?: (entry: CalendarEntry) => void;
   onToggle?: (entry: CalendarEntry) => void;
-  onPickShelf?: (entry: CalendarEntry, gapStart: number) => void;
+  onPickShelf?: (entry: CalendarEntry, gapStart: number, day: Date) => void;
 }
 
 function DayHead({
   date,
   isToday,
+  entries,
+  onOpen,
 }: {
   date: Date;
   isToday: boolean;
+  entries: readonly CalendarEntry[];
+  onOpen?: (entry: CalendarEntry) => void;
 }) {
+  const allDay = entries.filter((entry) => entry.allDay);
   return (
     <div
       style={{
         display: "flex",
-        alignItems: "baseline",
-        gap: 7,
-        height: 34,
-        padding: "0 8px",
+        flexDirection: "column",
+        gap: 3,
+        minHeight: 34,
+        padding: "0 8px 4px",
       }}
     >
-      <span
-        style={{
-          font: "var(--weight-medium) 15px / 18px var(--font-sans)",
-          fontVariantNumeric: "tabular-nums",
-          color: isToday ? "var(--accent)" : "var(--text-secondary)",
-        }}
-      >
-        {date.getDate()}
+      <span style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+        <span
+          style={{
+            font: "var(--weight-medium) 15px / 18px var(--font-sans)",
+            fontVariantNumeric: "tabular-nums",
+            color: isToday ? "var(--accent)" : "var(--text-secondary)",
+          }}
+        >
+          {date.getDate()}
+        </span>
+        <span
+          style={{
+            font: "var(--type-meta)",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            color: isToday ? "var(--accent)" : "var(--text-quaternary)",
+          }}
+        >
+          {new Intl.DateTimeFormat(undefined, { weekday: "short" })
+            .format(date)
+            .toUpperCase()}
+        </span>
       </span>
-      <span
-        style={{
-          font: "var(--type-meta)",
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          color: isToday ? "var(--accent)" : "var(--text-quaternary)",
-        }}
-      >
-        {DOW[date.getDay()]}
-      </span>
+      {allDay.slice(0, 2).map((entry) => (
+        <button
+          key={entry.id}
+          type="button"
+          onClick={() => onOpen?.(entry)}
+          className="truncate rounded-[var(--radius-xs)] px-1 text-left text-[11px]"
+          style={{
+            background: `color-mix(in oklab, ${entry.hue ?? "var(--accent)"} 14%, var(--surface-raised))`,
+            color: "var(--text-secondary)",
+          }}
+        >
+          {entry.title}
+        </button>
+      ))}
     </div>
   );
 }
@@ -105,6 +137,7 @@ function DayHead({
 export function WeekGrid({
   days,
   entries,
+  projects,
   today,
   anchorIndex = 0,
   gridStart = GRID_START_HOUR,
@@ -112,6 +145,8 @@ export function WeekGrid({
   hourHeight = HOUR_HEIGHT_PX,
   workStart = 9,
   workEnd = 18,
+  flexibleHours = [],
+  workWindows,
   visibleDays = WEEK_VISIBLE_DAYS,
   use24Hour = true,
   dark = false,
@@ -262,6 +297,8 @@ export function WeekGrid({
               key={date.getTime()}
               date={date}
               isToday={calendarDayDifference(date, today) === 0}
+              entries={entriesOnDay(entries, date, today)}
+              onOpen={onOpen}
             />
           ))}
         </div>
@@ -286,23 +323,36 @@ export function WeekGrid({
           />
           {days.map((date) => {
             const isToday = calendarDayDifference(date, today) === 0;
+            const blockedRanges = blockedRangesForDay(
+              flexibleHours,
+              date,
+              workStart,
+              workEnd
+            );
             return (
               <DayColumn
                 key={date.getTime()}
                 entries={entriesOnDay(entries, date, today)}
+                projects={projects}
                 isToday={isToday}
                 gridStart={gridStart}
                 gridEnd={gridEnd}
                 hourHeight={hourHeight}
                 workStart={workStart}
                 workEnd={workEnd}
+                blockedRanges={blockedRanges}
+                workingRanges={
+                  workWindows ? workingRangesForDay(workWindows, date) : undefined
+                }
                 columnWidthPx={colW}
                 use24Hour={use24Hour}
                 dark={dark}
                 shelfCandidates={shelfCandidates}
                 onOpen={onOpen}
                 onToggle={onToggle}
-                onPickShelf={onPickShelf}
+                onPickShelf={(entry, gapStart) =>
+                  onPickShelf?.(entry, gapStart, date)
+                }
               />
             );
           })}

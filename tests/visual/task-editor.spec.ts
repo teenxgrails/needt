@@ -104,52 +104,21 @@ test("task editor stays usable at every breakpoint", async ({ page }) => {
   }
 });
 
-test("calendar plus opens Task directly and switches into the shared Event editor", async ({
+test("calendar plus opens the production event editor", async ({
   page,
 }) => {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await signInVisualUser(page);
   await page.goto("/calendar", { waitUntil: "domcontentloaded" });
 
-  const todayHeader = page
-    .locator(".fc-col-header-cell.fc-day-today")
-    .filter({ visible: true });
-  await expect(todayHeader).toHaveCount(1);
-  await expect(todayHeader).toContainText("Thu");
-  await expect(todayHeader).toContainText("16");
-  const dayAction = todayHeader.getByRole("button", {
-    name: "Adjust task hours",
-  });
-  await expect(dayAction).toHaveCSS("opacity", "0");
-  await todayHeader.hover();
-  await expect(dayAction).toHaveCSS("opacity", "1");
-
-  await page.getByRole("button", { name: "Create task" }).click();
-  const taskModal = page.getByTestId("task-modal");
-  await expect(taskModal).toBeVisible();
-  await expect(taskModal.getByRole("tab", { name: "Task" })).toHaveAttribute(
-    "aria-selected",
-    "true"
-  );
-  await taskModal.getByRole("tab", { name: "Event" }).click();
-
-  const eventModal = page.getByTestId("event-modal");
-  await expect(eventModal).toBeVisible();
-  await expect(eventModal.getByRole("tab", { name: "Event" })).toHaveAttribute(
-    "aria-selected",
-    "true"
-  );
-  await expect(eventModal.getByTestId("task-description-editor")).toBeVisible();
-  await expect(eventModal.getByTestId("calendar-select")).toContainText(
-    "Select a calendar"
-  );
-  await expect(
-    eventModal.getByRole("button", { name: "Choose event start" })
-  ).toBeVisible();
-  await expect(
-    eventModal.getByRole("button", { name: "Choose event end" })
-  ).toBeVisible();
-  await expect(eventModal.getByText("All changes saved")).toBeVisible();
+  await expect(page.locator('[data-calendar-view="week"]')).toBeVisible();
+  await page.getByRole("button", { name: "New event" }).click();
+  const eventModal = page.getByRole("dialog");
+  await expect(eventModal.getByRole("heading", { name: "New event" })).toBeVisible();
+  await expect(eventModal.getByLabel("Title")).toBeVisible();
+  await expect(eventModal.getByLabel("Starts")).toBeVisible();
+  await expect(eventModal.getByLabel("Ends")).toBeVisible();
+  await expect(eventModal.getByLabel("Notes")).toBeVisible();
   await settleTaskEditor(page);
-  await expect(page).toHaveScreenshot("event-editor-shared.png");
+  await expect(page).toHaveScreenshot("event-editor-production.png");
 });

@@ -24,13 +24,13 @@ import {
 } from "lucide-react";
 import { RRule } from "rrule";
 
-import { CalendarItemTypeSwitch } from "@/components/calendar/CalendarItemTypeSwitch";
+import { CalendarItemTypeSwitch } from "@/components/tasks/CalendarItemTypeSwitch";
 import {
   CALENDAR_EDITOR_ASIDE_FOOTER_CLASS,
   CALENDAR_EDITOR_CONTENT_CLASS,
   CALENDAR_EDITOR_FORM_CLASS,
   CALENDAR_EDITOR_MAIN_FOOTER_CLASS,
-} from "@/components/calendar/calendar-editor-shell";
+} from "@/components/tasks/calendar-editor-shell";
 import { TaskDependenciesSection } from "@/components/tasks/TaskDependenciesSection";
 import { TaskTimer } from "@/components/tasks/TaskTimer";
 import { Button } from "@/components/ui/button";

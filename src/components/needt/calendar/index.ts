@@ -19,6 +19,8 @@ export { MinuteBox, type MinuteBoxProps } from "./Minutes";
 
 export {
   type CalendarEntry,
+  blockedRangesForDay,
+  workingRangesForDay,
   entriesOnDay,
   entryDueDate,
   entryEndHour,
@@ -81,6 +83,7 @@ export {
   type ShedCandidate,
   type ShedResult,
   capacityMinutes,
+  capacityMinutesForWindows,
   computeShed,
   priorityOf,
   reasonFor,

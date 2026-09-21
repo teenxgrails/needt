@@ -21,12 +21,16 @@
 import * as React from "react";
 
 import { calendarDayDifference } from "@/lib/date-utils";
+import type { NeedtProject, NeedtWorkWindow } from "@/lib/needt/types";
+import type { BlockingOverride } from "@/lib/flexible-hours-guard";
 
 import {
   type CalendarEntry,
+  blockedRangesForDay,
   DayColumn,
   HourGutter,
   entriesOnDay,
+  workingRangesForDay,
 } from "../calendar";
 
 const MOBILE_DAY_START = 8;
@@ -36,6 +40,9 @@ const MOBILE_GUTTER_WIDTH = 44;
 
 export interface MobileCalendarDayProps {
   tasks: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
+  flexibleHours?: readonly BlockingOverride[];
+  workWindows?: readonly NeedtWorkWindow[];
   /** The day in view — a plain calendar day, independent of "today". */
   day: Date;
   today: Date;
@@ -45,6 +52,9 @@ export interface MobileCalendarDayProps {
 
 export function MobileCalendarDay({
   tasks,
+  projects,
+  flexibleHours = [],
+  workWindows,
   day,
   today,
   onOpen,
@@ -88,11 +98,21 @@ export function MobileCalendarDay({
       >
         <DayColumn
           entries={entries}
+          projects={projects}
           isToday={isToday}
           gridStart={MOBILE_DAY_START}
           gridEnd={MOBILE_DAY_END}
           hourHeight={MOBILE_HOUR_HEIGHT}
           columnWidthPx={columnWidth}
+          blockedRanges={blockedRangesForDay(
+            flexibleHours,
+            day,
+            MOBILE_DAY_START,
+            MOBILE_DAY_END
+          )}
+          workingRanges={
+            workWindows ? workingRangesForDay(workWindows, day) : undefined
+          }
           onOpen={onOpen}
           onToggle={onToggle}
         />

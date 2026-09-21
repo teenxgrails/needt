@@ -8,6 +8,8 @@ import * as React from "react";
 
 import { addCalendarDays, calendarDayDifference } from "@/lib/date-utils";
 import { parseDueDate } from "@/lib/needt/derive";
+import type { NeedtProject, NeedtWorkWindow } from "@/lib/needt/types";
+import type { BlockingOverride } from "@/lib/flexible-hours-guard";
 
 import { ColumnsScreen } from "./ColumnsScreen";
 import { MonthView } from "./MonthView";
@@ -23,11 +25,14 @@ export interface CalendarOpts {
   weekStart?: "mon" | "sun";
   workStart?: number;
   workEnd?: number;
+  flexibleHours?: readonly BlockingOverride[];
+  workWindows?: readonly NeedtWorkWindow[];
 }
 
 export interface CalendarScreenProps {
   view: CalendarView;
   entries: readonly CalendarEntry[];
+  projects?: readonly NeedtProject[];
   today: Date;
   /** The day Day/Week centre on. Defaults to `today`. */
   selectedDate?: Date;
@@ -38,16 +43,9 @@ export interface CalendarScreenProps {
   onOpen?: (entry: CalendarEntry) => void;
   onToggle?: (entry: CalendarEntry) => void;
   onSelectDay?: (date: Date) => void;
-  onPickShelf?: (entry: CalendarEntry, gapStart: number) => void;
+  onPickShelf?: (entry: CalendarEntry, gapStart: number, day: Date) => void;
   onShed?: (entries: readonly CalendarEntry[], toDate: Date) => void;
 }
-
-const DEFAULT_OPTS: Required<CalendarOpts> = {
-  use24Hour: true,
-  weekStart: "mon",
-  workStart: 9,
-  workEnd: 18,
-};
 
 /** The two-minute shelf's candidates: every entry with an entry step, ranked
  *  by nearest due date — the whole pool, not only what a day column shows. */
@@ -70,6 +68,7 @@ function shelfCandidatesOf(
 export function CalendarScreen({
   view,
   entries,
+  projects,
   today,
   selectedDate = today,
   monthAnchor = today,
@@ -81,7 +80,14 @@ export function CalendarScreen({
   onPickShelf,
   onShed,
 }: CalendarScreenProps) {
-  const o = { ...DEFAULT_OPTS, ...opts };
+  const o = {
+    use24Hour: opts?.use24Hour ?? true,
+    weekStart: opts?.weekStart ?? "mon",
+    workStart: opts?.workStart ?? 9,
+    workEnd: opts?.workEnd ?? 18,
+    flexibleHours: opts?.flexibleHours ?? [],
+    workWindows: opts?.workWindows,
+  };
   const shelfCandidates = React.useMemo(
     () => shelfCandidatesOf(entries, today),
     [entries, today]
@@ -91,8 +97,10 @@ export function CalendarScreen({
     return (
       <ColumnsScreen
         entries={entries}
+        projects={projects}
         today={today}
         workEnd={o.workEnd}
+        workWindows={o.workWindows}
         dark={dark}
         onOpen={onOpen}
         onToggle={onToggle}
@@ -105,6 +113,7 @@ export function CalendarScreen({
     return (
       <SequenceView
         entries={entries}
+        projects={projects}
         today={today}
         use24Hour={o.use24Hour}
         dark={dark}
@@ -120,6 +129,7 @@ export function CalendarScreen({
         monthAnchor={monthAnchor}
         today={today}
         entries={entries}
+        projects={projects}
         weekStart={o.weekStart}
         onOpen={onOpen}
         onSelectDay={onSelectDay}
@@ -141,10 +151,13 @@ export function CalendarScreen({
     <WeekGrid
       days={days}
       entries={entries}
+      projects={projects}
       today={today}
       anchorIndex={spanBefore}
       workStart={o.workStart}
       workEnd={o.workEnd}
+      flexibleHours={o.flexibleHours}
+      workWindows={o.workWindows}
       visibleDays={visibleDays}
       use24Hour={o.use24Hour}
       dark={dark}

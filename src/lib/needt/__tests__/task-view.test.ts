@@ -107,6 +107,7 @@ const baseRow: NeedtTaskRow = {
   parts: [],
   waits: [],
   activities: [],
+  scheduledBlocks: [],
 };
 
 function row(overrides: Partial<NeedtTaskRow>): NeedtTaskRow {
@@ -162,7 +163,7 @@ describe("toNeedtTask", () => {
       NOW,
       "Europe/Zurich"
     );
-    expect(t.at).toBe(1);
+    expect(t.at).toBe(1.5);
     expect(t.time).toBe("01:30");
     expect(t.scheduledOn).toBe("2026-09-05");
     expect(t.scheduledStart).toBe(scheduledStart.toISOString());
@@ -178,7 +179,7 @@ describe("toNeedtTask", () => {
     );
     expect(t.time).toBe("16:30");
     expect(t.scheduledOn).toBe("2026-09-04");
-    expect(t.at).toBe(16);
+    expect(t.at).toBe(16.5);
   });
 
   it("leaves at, time and noSlot unset for an unscheduled, non-noSlot task", () => {

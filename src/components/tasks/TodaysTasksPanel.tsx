@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { Draggable } from "@fullcalendar/interaction";
 import { Play } from "lucide-react";
 
 import { newDate } from "@/lib/date-utils";
@@ -31,7 +30,6 @@ function formatDueTime(dueDate: Date): string {
 
 export function TodaysTasksPanel({ className }: { className?: string }) {
   const [taskListRef] = useAutoAnimate<HTMLUListElement>({ duration: 180 });
-  const externalDragContainerRef = useRef<HTMLDivElement>(null);
   const tasks = useTaskStore((state) => state.tasks);
   const redThresholdHours = useTaskUrgencyStore(
     (state) => state.redThresholdHours
@@ -55,34 +53,11 @@ export function TodaysTasksPanel({ className }: { className?: string }) {
     setModalOpen(true);
   };
 
-  useEffect(() => {
-    const container = externalDragContainerRef.current;
-    if (!container) return;
-
-    const draggable = new Draggable(container, {
-      itemSelector: "[data-calendar-task-id]",
-      minDistance: 6,
-      longPressDelay: 180,
-      eventData: (element) => ({
-        create: false,
-        title: element.dataset.calendarTaskTitle ?? "Task",
-        duration: {
-          minutes: Number(element.dataset.calendarTaskDuration ?? 30),
-        },
-      }),
-    });
-
-    return () => draggable.destroy();
-  }, []);
-
   if (todaysTasks.length === 0) return null;
 
   return (
     <div className={cn("flex min-h-0 flex-col", className)}>
-      <div
-        ref={externalDragContainerRef}
-        className="min-h-0 flex-1 overflow-y-auto"
-      >
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <ul ref={taskListRef} className="space-y-0.5">
           {todaysTasks.map((task) => {
             const urgency = getTaskUrgency(task, {
@@ -92,11 +67,6 @@ export function TodaysTasksPanel({ className }: { className?: string }) {
             return (
               <li
                 key={task.id}
-                data-calendar-task-id={task.id}
-                data-calendar-task-title={task.title}
-                data-calendar-task-duration={
-                  task.duration ?? task.estimatedMinutes ?? 30
-                }
               >
                 <div className="group relative flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[var(--surface-hover)] active:cursor-grabbing">
                   <span

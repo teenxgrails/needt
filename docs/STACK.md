@@ -41,8 +41,7 @@ GitHub Actions exposes required `security`, `quality-gates`, `schema-drift`,
 publishing is triggered only by a successful CI run on `main`.
 
 `npm run check:branding` is part of CI. Product copy and internal event names
-use Needt only; legal attribution and `@fullcalendar/*` package IDs are the
-explicit exceptions.
+use Needt only; legal attribution is the explicit exception.
 
 `npm run check:ui-contracts` protects the release-level UI invariants: one
 picker, flat Focus, isolated Today scrollers, draggable assistant affordances,

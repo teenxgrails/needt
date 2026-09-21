@@ -76,6 +76,7 @@ export const taskNeedtInclude = {
     take: 1,
     select: { createdAt: true },
   },
+  scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
 } satisfies Prisma.TaskInclude;
 
 export type NeedtTaskRow = Prisma.TaskGetPayload<{
@@ -116,6 +117,9 @@ export function toNeedtTask(
       : undefined,
     status: toNeedtStatus(row.status),
     due: row.dueDate ? dateLabel(row.dueDate) : undefined,
+    dueOn: row.dueDate
+      ? formatInTimeZone(row.dueDate, timeZone, "yyyy-MM-dd")
+      : undefined,
     scheduledOn: row.scheduledStart
       ? formatInTimeZone(row.scheduledStart, timeZone, "yyyy-MM-dd")
       : undefined,
@@ -124,7 +128,8 @@ export function toNeedtTask(
     est: row.estimatedMinutes ?? undefined,
     done: row.status === "completed",
     at: row.scheduledStart
-      ? Number(formatInTimeZone(row.scheduledStart, timeZone, "H"))
+      ? Number(formatInTimeZone(row.scheduledStart, timeZone, "H")) +
+        Number(formatInTimeZone(row.scheduledStart, timeZone, "m")) / 60
       : undefined,
     noSlot: row.noSlot || undefined,
     age: touchedAt

@@ -21,7 +21,7 @@ import {
   TimerReset,
 } from "lucide-react";
 
-import { CalendarTaskActionsMenu } from "@/components/calendar/CalendarTaskActionsMenu";
+import { CalendarTaskActionsMenu } from "@/components/tasks/CalendarTaskActionsMenu";
 import {
   TaskSavedViewState,
   TaskSavedViewsMenu,
