@@ -2,7 +2,7 @@
  *
  * `MobileShell` is the whole product at 402×874 — exported for a caller to
  * mount, the same convention every other `*Screen` in this app follows.
- * Nothing in this directory reaches into `DesignPreview.tsx` or a route.
+ * Nothing in this directory mounts itself or reaches into a route.
  */
 export { MobileShell, type MobileShellProps, type MobileStage } from "./MobileShell";
 

@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Billing now shows the launch prices and trial state, numeric AI usage is no
   longer exposed, and account export/deletion entry points remain attached to
   the real panels supplied by their launch-blocker PRs.
+- Design port: removed the public `/design-preview` route now that every ported
+  product screen is mounted in place.
 - Documents: replaced the legacy Pages list with the ported Needt document
   grid and list over the authorized workspace data source. Search, folders,
   tags, saved filters, favorites, Page/database creation and recoverable trash

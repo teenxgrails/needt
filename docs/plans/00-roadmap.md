@@ -43,11 +43,11 @@ Replaced wholesale on 2026-09-11 by a Claude Design project. Authority, in
 order: `docs/handoff/PORT.md`, then
 `docs/handoff/design-reconciliation-2026-09-11.md`, then the vendored CSS.
 
-The port is built and committed but not on any product route: tokens scoped
-under `.needt-v2`, five themes, the data contract in `src/lib/needt/`, the screens
-in `src/components/needt/`, all rendered only at
-`/design-preview`. `/DESIGN.md`, `design-refs/`, Figma and Figma Make are
-history.
+The port is mounted in place on the product routes: tokens stay scoped under
+`.needt-v2`, five themes share the data contract in `src/lib/needt/`, and the
+ported screens live in `src/components/needt/`. The temporary
+`/design-preview` route is retired. `/DESIGN.md`, `design-refs/`, Figma and
+Figma Make are history.
 
 ---
 

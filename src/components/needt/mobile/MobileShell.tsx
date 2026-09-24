@@ -11,9 +11,8 @@
  * every other surface in this app calls — nothing in this directory forks
  * the task object.
  *
- * Exported, not mounted: nothing here reaches into `DesignPreview.tsx` or any
- * route — a caller drops this in as a screen, the same convention every
- * other `*Screen` in this app follows.
+ * Exported, not mounted: nothing here reaches into a route — a caller drops
+ * this in as a screen, the same convention every other `*Screen` follows.
  */
 import * as React from "react";
 

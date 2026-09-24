@@ -3,8 +3,8 @@
  * per PORT.md §5 (drag), the Drift entry of §3 and `Drift.jsx` (drift), and
  * `Flame.jsx` (the flame).
  *
- * Nothing here is mounted, and `DesignPreview.tsx` is untouched — a caller
- * takes the hook and the components below and wires them into a screen.
+ * Nothing here mounts itself — a caller takes the hook and the components
+ * below and wires them into a product screen.
  */
 
 /* ── Drag ─────────────────────────────────────────────────────────────── */
