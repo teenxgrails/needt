@@ -11,10 +11,15 @@
  * `src/components/**` may import this file — only a route handler or another
  * server-only module should.
  */
+import { listPages } from "@/services/pages/page-service";
+import { PageAccessRole } from "@prisma/client";
+
+import { pageRoleAtLeast } from "@/lib/auth/page-auth";
 import {
   type WorkspaceAccess,
   workspaceDataScopeWhere,
 } from "@/lib/auth/workspace-auth";
+import { toWorkspaceBusyEvent } from "@/lib/calendar-privacy";
 import {
   addCalendarDays,
   newDate,
@@ -28,19 +33,20 @@ import {
   normalizeUserTimeZone,
 } from "@/lib/habit-completion-date";
 import { prisma } from "@/lib/prisma";
-import { toWorkspaceBusyEvent } from "@/lib/calendar-privacy";
 
 import type { NeedtDataSource } from "./adapter";
 import {
+  type CalendarEventViewRow,
   toCalendarEventEntries,
   toCalendarTaskEntries,
-  type CalendarEventViewRow,
 } from "./calendar-view";
 import { taskNeedtInclude, toNeedtTask } from "./task-view";
 import type {
-  NeedtCalendarMap,
   NeedtCalendarEntry,
+  NeedtCalendarMap,
   NeedtDayMark,
+  NeedtDocument,
+  NeedtDocumentFilters,
   NeedtHabit,
   NeedtPerson,
   NeedtProject,
@@ -57,6 +63,66 @@ import type {
    colour yet. */
 const FALLBACK_HUE = "var(--muted-foreground)";
 const FALLBACK_GLYPH = "circle";
+
+function documentMeta(updatedAt: Date, now: Date) {
+  const minutes = Math.max(
+    0,
+    Math.floor((now.getTime() - updatedAt.getTime()) / 60_000)
+  );
+  if (minutes < 2) return "Edited just now";
+  if (minutes < 60) return `Edited ${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Edited ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `Edited ${days} day${days === 1 ? "" : "s"} ago`;
+  return `Edited ${updatedAt.toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+    year: updatedAt.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  })}`;
+}
+
+async function getDocuments(
+  userId: string,
+  workspace: WorkspaceAccess,
+  filters: NeedtDocumentFilters | undefined,
+  now: Date
+): Promise<readonly NeedtDocument[]> {
+  const rows = await listPages(
+    { userId, workspace },
+    {
+      search: filters?.search,
+      folderId: filters?.collectionId,
+      tagIds: filters?.tagIds ? [...filters.tagIds] : undefined,
+      favorites: filters?.favorites,
+      privateOnly: filters?.privateOnly,
+    }
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title || "Untitled",
+    icon: row.icon,
+    meta: documentMeta(row.updatedAt, now),
+    collection: row.folder
+      ? {
+          id: row.folder.id,
+          name: row.folder.name,
+          hue: row.folder.color,
+        }
+      : null,
+    tags: row.tags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      hue: tag.color,
+    })),
+    lines: Math.max(4, Math.min(9, Math.ceil(row.title.length / 12) + 3)),
+    pinned: row.isFavorite,
+    isPrivate: row.isPrivate,
+    isDatabase: Boolean(row.database),
+    canEdit: pageRoleAtLeast(row.accessRole, PageAccessRole.EDITOR),
+    canTrash: pageRoleAtLeast(row.accessRole, PageAccessRole.FULL_ACCESS),
+  }));
+}
 
 /** The last fourteen days, oldest first, ending on `startOfDay(now)`. */
 function fourteenDayWindow(now: Date): readonly Date[] {
@@ -385,6 +451,7 @@ export function prismaDataSource(
     getCalendarEntries: (start, end) =>
       getCalendarEntries(userId, workspace, start, end, now()),
     getClosedDays: () => getClosedDays(userId, now()),
+    getDocuments: (filters) => getDocuments(userId, workspace, filters, now()),
   };
 }
 

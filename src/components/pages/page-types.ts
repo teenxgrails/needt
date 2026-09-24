@@ -10,6 +10,7 @@ export type PageSummary = {
   tags?: Array<{ id: string; name: string; color: string | null }>;
   updatedAt: string;
   database: { id: string } | null;
+  accessRole?: "FULL_ACCESS" | "EDITOR" | "VIEWER";
 };
 
 export type PageBlock = {

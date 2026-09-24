@@ -24,7 +24,13 @@
 import * as React from "react";
 
 import { fixtureToday } from "@/lib/needt/adapter";
-import { people, projects, stages, tasks } from "@/lib/needt/fixture";
+import {
+  documents,
+  people,
+  projects,
+  stages,
+  tasks,
+} from "@/lib/needt/fixture";
 import type { NeedtTask } from "@/lib/needt/types";
 
 import { CalendarScreen, type CalendarView } from "../calendar";
@@ -233,7 +239,7 @@ export function DesignPreview() {
                   dark={dark}
                 />
               ),
-              docs: <DocsScreen projects={projects} />,
+              docs: <DocsScreen docs={documents} />,
               settings: (
                 <SettingsScreen
                   accountName={ACCOUNT.name}

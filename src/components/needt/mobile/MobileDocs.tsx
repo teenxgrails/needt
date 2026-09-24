@@ -73,7 +73,7 @@ export function MobileDocs() {
             <span
               style={{ font: "var(--type-meta)", color: "var(--text-muted)" }}
             >
-              {[doc.project, doc.meta].filter(Boolean).join(" · ")}
+              {[doc.collection?.name, doc.meta].filter(Boolean).join(" · ")}
             </span>
           </span>
         </span>

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Documents: replaced the legacy Pages list with the ported Needt document
+  grid and list over the authorized workspace data source. Search, folders,
+  tags, saved filters, favorites, Page/database creation and recoverable trash
+  now use the existing server APIs; Viewer mutation controls are absent, and
+  the retained editor closes comment, proposal and template-copy write paths
+  when Page access is read-only.
 - Workspace: replaced the separate legacy Tasks and Projects screens with the
   ported Needt List, Kanban and Flow views over one authorized workspace data
   source. Desktop and phone now share real tasks, projects and members; task

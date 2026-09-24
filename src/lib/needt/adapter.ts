@@ -18,6 +18,7 @@ import {
   NEEDT,
   calendars as fixtureCalendars,
   closedDays as fixtureClosedDays,
+  documents as fixtureDocuments,
   habits as fixtureHabits,
   people as fixturePeople,
   projects as fixtureProjects,
@@ -25,9 +26,11 @@ import {
   tasks as fixtureTasks,
 } from "./fixture";
 import type {
-  NeedtCalendarMap,
   NeedtCalendarEntry,
+  NeedtCalendarMap,
   NeedtDayMark,
+  NeedtDocument,
+  NeedtDocumentFilters,
   NeedtHabit,
   NeedtPerson,
   NeedtProject,
@@ -54,6 +57,9 @@ export interface NeedtDataSource {
   ): Promise<readonly NeedtCalendarEntry[]>;
   /** The last fourteen days, oldest first; `streak()` reads this. */
   getClosedDays(): Promise<readonly NeedtDayMark[]>;
+  getDocuments(
+    filters?: NeedtDocumentFilters
+  ): Promise<readonly NeedtDocument[]>;
 }
 
 /** The seed source: the fixture, unchanged, behind the interface. */
@@ -71,6 +77,32 @@ export const fixtureDataSource: NeedtDataSource = {
       sourceId: task.id,
     })),
   getClosedDays: async () => fixtureClosedDays,
+  getDocuments: async (filters) =>
+    fixtureDocuments.filter((document) => {
+      if (
+        filters?.search &&
+        !document.title.toLowerCase().includes(filters.search.toLowerCase())
+      ) {
+        return false;
+      }
+      if (
+        filters?.collectionId &&
+        document.collection?.id !== filters.collectionId
+      ) {
+        return false;
+      }
+      if (
+        filters?.tagIds?.length &&
+        !filters.tagIds.every((id) =>
+          document.tags.some((tag) => tag.id === id)
+        )
+      ) {
+        return false;
+      }
+      if (filters?.favorites && !document.pinned) return false;
+      if (filters?.privateOnly && !document.isPrivate) return false;
+      return true;
+    }),
 };
 
 /** The date the fixture calls "today". Real sources use the real clock. */

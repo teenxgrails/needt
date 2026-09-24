@@ -9,7 +9,11 @@ import {
   Prisma,
 } from "@prisma/client";
 
-import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
+import {
+  pageSummaryAccessRole,
+  pageVisibilityWhere,
+  resolvePageAccess,
+} from "@/lib/auth/page-auth";
 import { type WorkspaceAccess } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -90,7 +94,7 @@ export async function listPages(
   }
 ) {
   const tagIds = [...new Set(options?.tagIds ?? [])];
-  return prisma.page.findMany({
+  const pages = await prisma.page.findMany({
     where: {
       ...actorPageScope(actor),
       trashedAt: null,
@@ -113,6 +117,7 @@ export async function listPages(
     },
     select: {
       id: true,
+      userId: true,
       parentId: true,
       title: true,
       icon: true,
@@ -125,6 +130,11 @@ export async function listPages(
       position: true,
       updatedAt: true,
       database: { select: { id: true } },
+      accessGrants: {
+        where: { userId: actorUserId(actor) },
+        select: { role: true },
+        take: 1,
+      },
     },
     orderBy: [
       { isFavorite: "desc" },
@@ -132,6 +142,14 @@ export async function listPages(
       { updatedAt: "desc" },
     ],
   });
+  return pages.map(({ userId, accessGrants, ...page }) => ({
+    ...page,
+    accessRole: pageSummaryAccessRole(actor, {
+      userId,
+      isPrivate: page.isPrivate,
+      accessGrants,
+    }),
+  }));
 }
 
 export async function getPage(actor: PageActor, pageId: string) {

@@ -171,6 +171,35 @@ export interface NeedtProject {
   glyph: string;
 }
 
+export interface NeedtDocumentCollection {
+  id: string;
+  name: string;
+  hue: string | null;
+}
+
+export interface NeedtDocument {
+  id: string;
+  title: string;
+  icon: string | null;
+  meta: string;
+  collection: NeedtDocumentCollection | null;
+  tags: readonly { id: string; name: string; hue: string | null }[];
+  lines: number;
+  pinned: boolean;
+  isPrivate: boolean;
+  isDatabase: boolean;
+  canEdit: boolean;
+  canTrash: boolean;
+}
+
+export interface NeedtDocumentFilters {
+  search?: string;
+  collectionId?: string;
+  tagIds?: readonly string[];
+  favorites?: boolean;
+  privateOnly?: boolean;
+}
+
 /** A person owns a hue the same way a project does; the face is that hue. */
 export interface NeedtPerson {
   id: string;

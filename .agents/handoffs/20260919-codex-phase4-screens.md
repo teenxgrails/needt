@@ -3,7 +3,7 @@ id: 20260919-codex-phase4-screens
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-24T16:03:04Z
+updated: 2026-09-24T16:23:37Z
 objective: Replace the five legacy product screens in place with the ported Needt screens, real server data, and no parallel variants.
 ---
 
@@ -29,10 +29,14 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Editors keep the full production task editor, including scheduling, recurrence, dependencies, time tracking, labels and archive; Viewers get the ported read-only task detail. Workspace selection also bootstraps the shared task/tag/project stores so Focus and navigation consumers do not empty after a switch.
 - `/projects` keeps project creation, rename, archive and restore in a compact manager over the ported Workspace; legacy List/Kanban/Gantt, template and health-journal presentation stays deleted because the port owns List/Kanban/Flow and PORT marks stage/blocker editing out of scope.
 - Added server Editor gates to every task/tag mutation reachable from the retained editor and workspace-scoped `start-now` and time-tracking task lookup. Production port controls without persistence stay hidden or read-only.
+- Replaced only the `/pages` list with the ported Documents screen while retaining the Page editor, navigation tree and APIs. The new route reads workspace-authorized Pages through `prismaDataSource`, guards stale workspace responses, and persists search/filter, Page/database creation, favorite and trash actions through existing APIs; fixture data remains preview-only.
+- Preserved folders, tags and saved filters, removed the unimplemented Import control, added keyboard-open semantics, and hid all document mutation controls from Viewers.
+- Closed three retained-editor Viewer write holes found during the A.2 audit: old comment authors cannot mutate after downgrade or workspace loss, proposal rejection now needs workspace and Page Editor access, and a Viewer cannot copy a shared Page into a personal template.
+- Removed the test-only `__internal` export from the Calendar route after generated Next route typings correctly rejected the extra route-module export; runtime behavior is unchanged.
 
 ## Working state
 
-- A.1 is ready to commit. Files in this checkpoint are the two routes, `src/components/needt/workspace/**`, `/api/needt/workspace`, read-only production adaptations in the ported task dialogs/mobile workspace, relocated shared task helpers, replacement unit/E2E/visual specs, changelog and this handoff.
+- A.2 is ready for full gates. Its tracked scope is the `/pages` route, `src/components/needt/docs/**`, the authorized documents data seam/API, the retained editor's Viewer guards, focused unit/E2E/visual specs, changelog and this handoff.
 - Foreign changes that must remain untouched: all 41 pre-existing untracked paths reported by `npm run agent:context`, including design bundles, landing sources, `pf-sync/`, root `pnpm-lock.yaml`, and dim/paper visual baselines.
 
 ## Verification
@@ -52,6 +56,8 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Calendar gates (2026-09-21): type-check; full unit (199 suites, 1295 tests, one skipped); scoped eslint on every changed file; tokens, UI contracts, branding, handoff checks; `npm run build` with loopback DB URLs + artifact check; `npm run build:worker`; visual `calendar-production` (2/2) and `schedules-flexible-hours` on desktop against the isolated `127.0.0.1:5433/needt_test`. Calendar screenshot baselines were not refreshed.
 - Workspace A.1 (2026-09-24): `npm run type-check`; `npm run lint`; full unit (194 suites, 1261 tests, one skipped); `npm run tokens:check`; UI contracts; branding; handoff check; `npm run build` with explicit loopback DB URLs (146 pages, artifact check passed); `npm run build:worker`; `git diff --check`; Playwright lists the replacement workspace journey at desktop, 360px and 390px and the updated visual specs without compile errors.
 - The workspace browser journey was not executed locally because its global setup would restart the intentionally stopped Docker E2E stack and apply migrations. No migration ran, no container was recreated, and Neon was not touched. Linux CI remains the runtime authority for this checkpoint.
+- Documents A.2 (2026-09-24): `npm run type-check`; `npm run lint`; full unit (196 suites, 1267 tests, one skipped); 6 focused authorization/API assertions; tokens, UI contracts, branding and handoff checks; `npm run build` with explicit loopback DB URLs (147 pages, artifact check passed); `npm run build:worker`; `git diff --check`; Playwright lists the editor journey plus 360px and 390px Viewer journeys without compile errors. A 5.6 Terra read-only final diff review returned no actionable findings.
+- The Documents browser journey was not executed locally because it would restart the intentionally stopped Docker E2E stack and apply migrations. No migration ran, no container was recreated, and Neon was not touched. Linux CI remains the runtime authority for this checkpoint.
 
 ## Blockers
 
@@ -60,4 +66,4 @@ objective: Replace the five legacy product screens in place with the ported Need
 
 ## Next action
 
-- Commit and push A.1, update draft PR #34, then continue with A.2 `/pages`. Calendar and workspace visual baselines stay for the Linux CI refresh wave.
+- Commit and push A.2 to draft PR #34, update the PR evidence, then continue with A.3 `/settings`. Calendar, workspace and document visual baselines stay for the Linux CI refresh wave.
