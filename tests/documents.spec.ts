@@ -148,17 +148,23 @@ test("Documents searches, persists a favorite, opens, and creates", async ({
   await expect.poll(state.favoritePayload).toEqual({ isFavorite: true });
   await expect(page.getByText("Pinned")).toBeVisible();
 
+  // The editor's own endpoints are not mocked here, so it bounces back to the
+  // list; watch for the navigation itself rather than the settled URL.
+  const opened = page.waitForURL(new RegExp(`/pages/${document.id}$`));
   await page
     .getByRole("main")
     .getByRole("link", { name: `Open ${document.title}` })
     .first()
     .click();
-  await expect(page).toHaveURL(new RegExp(`/pages/${document.id}$`));
+  await opened;
 
   await page.goto("/pages");
+  // The editor for a freshly created Page bounces back to the list because this
+  // test does not mock the editor's own endpoints, so watch for the push itself.
+  const created = page.waitForURL(/\/pages\/new-page-e2e$/);
   await page.getByRole("button", { name: "New document" }).click();
   await expect.poll(state.createPayload).toEqual({ title: "Untitled" });
-  await expect(page).toHaveURL(/\/pages\/new-page-e2e$/);
+  await created;
 });
 
 for (const width of [360, 390]) {
