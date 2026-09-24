@@ -43,6 +43,11 @@ export interface WorkspaceScreenProps {
   stages: readonly NeedtStage[];
   todayKey?: string;
   dark?: boolean;
+  view?: WorkspaceView;
+  filter?: WorkspaceFilter;
+  actions?: React.ReactNode;
+  onViewChange?: (view: WorkspaceView) => void;
+  onFilterChange?: (filter: WorkspaceFilter) => void;
   onToggle?: (id: string) => void;
   onOpen?: (task: NeedtTask) => void;
   onCreate?: () => void;
@@ -347,6 +352,11 @@ export function WorkspaceScreen({
   stages,
   todayKey,
   dark = false,
+  view: controlledView,
+  filter: controlledFilter,
+  actions,
+  onViewChange,
+  onFilterChange,
   onToggle,
   onOpen,
   onCreate,
@@ -354,8 +364,19 @@ export function WorkspaceScreen({
   onTogglePart,
   onPromotePart,
 }: WorkspaceScreenProps) {
-  const [view, setView] = React.useState<WorkspaceView>("list");
-  const [filter, setFilter] = React.useState<WorkspaceFilter>("all");
+  const [internalView, setInternalView] = React.useState<WorkspaceView>("list");
+  const [internalFilter, setInternalFilter] =
+    React.useState<WorkspaceFilter>("all");
+  const view = controlledView ?? internalView;
+  const filter = controlledFilter ?? internalFilter;
+  const setView = (next: WorkspaceView) => {
+    if (controlledView === undefined) setInternalView(next);
+    onViewChange?.(next);
+  };
+  const setFilter = (next: WorkspaceFilter) => {
+    if (controlledFilter === undefined) setInternalFilter(next);
+    onFilterChange?.(next);
+  };
 
   const open = React.useMemo(() => tasks.filter((t) => !t.done), [tasks]);
   const done = React.useMemo(() => tasks.filter((t) => t.done), [tasks]);
@@ -407,6 +428,7 @@ export function WorkspaceScreen({
         style={{ flex: "none", display: "flex", alignItems: "center", gap: 12 }}
       >
         <ViewToggle value={view} onChange={setView} />
+        {actions}
         <div
           style={{
             marginLeft: "auto",

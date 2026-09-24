@@ -22,10 +22,13 @@ import { useProjectStore } from "@/store/project";
 import type { Project } from "@/types/project";
 import { ProjectStatus } from "@/types/project";
 
+import { ProjectHealthPanel } from "./ProjectHealthPanel";
+
 interface ProjectManagerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onChanged: () => Promise<unknown>;
+  canEdit: boolean;
 }
 
 interface ProjectDraft {
@@ -55,6 +58,7 @@ export function ProjectManagerDialog({
   open,
   onOpenChange,
   onChanged,
+  canEdit,
 }: ProjectManagerDialogProps) {
   const projects = useProjectStore((state) => state.projects);
   const createProject = useProjectStore((state) => state.createProject);
@@ -64,7 +68,19 @@ export function ProjectManagerDialog({
   const [editing, setEditing] = React.useState<Project | null>(null);
   const [draft, setDraft] = React.useState<ProjectDraft>(EMPTY_DRAFT);
   const [showForm, setShowForm] = React.useState(false);
+  const [healthProject, setHealthProject] = React.useState<Project | null>(
+    null
+  );
   const [busy, setBusy] = React.useState(false);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setHealthProject(null);
+      setShowForm(false);
+      setEditing(null);
+    }
+    onOpenChange(nextOpen);
+  };
 
   const beginCreate = () => {
     setEditing(null);
@@ -125,157 +141,201 @@ export function ProjectManagerDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[86dvh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Projects</DialogTitle>
-          <DialogDescription>
-            Create, rename, archive, or restore workspace projects.
-          </DialogDescription>
-        </DialogHeader>
-
-        {showForm ? (
-          <form className="grid gap-4" onSubmit={save}>
-            <div className="grid gap-2">
-              <Label htmlFor="project-name">Name</Label>
-              <Input
-                id="project-name"
-                autoFocus
-                value={draft.name}
-                onChange={(event) =>
-                  setDraft((value) => ({ ...value, name: event.target.value }))
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="project-description">Description</Label>
-              <Textarea
-                id="project-description"
-                value={draft.description}
-                onChange={(event) =>
-                  setDraft((value) => ({
-                    ...value,
-                    description: event.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="grid grid-cols-[96px_1fr] gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor="project-color">Colour</Label>
-                <Input
-                  id="project-color"
-                  type="color"
-                  value={draft.color}
-                  onChange={(event) =>
-                    setDraft((value) => ({
-                      ...value,
-                      color: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="project-icon">Glyph</Label>
-                <Input
-                  id="project-icon"
-                  value={draft.icon}
-                  placeholder="Optional"
-                  onChange={(event) =>
-                    setDraft((value) => ({
-                      ...value,
-                      icon: event.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowForm(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={busy || !draft.name.trim()}>
-                {editing ? "Save changes" : "Create project"}
-              </Button>
-            </DialogFooter>
-          </form>
+        {healthProject ? (
+          <ProjectHealthPanel
+            project={healthProject}
+            canEdit={canEdit}
+            onBack={() => setHealthProject(null)}
+          />
         ) : (
-          <div className="grid gap-5">
-            <Button type="button" className="w-fit" onClick={beginCreate}>
-              New project
-            </Button>
-            <section className="grid gap-2" aria-label="Active projects">
-              <h3 className="text-sm font-semibold">Active</h3>
-              {active.length ? (
-                active.map((project) => (
-                  <div
-                    key={project.id}
-                    className="flex min-h-12 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] px-3"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="size-2 rounded-full"
-                      style={{
-                        background: project.color ?? "var(--text-muted)",
-                      }}
+          <>
+            <DialogHeader>
+              <DialogTitle>Projects</DialogTitle>
+              <DialogDescription>
+                {canEdit
+                  ? "Create, rename, archive, or review workspace projects."
+                  : "Review workspace projects and their health updates."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {showForm && canEdit ? (
+              <form className="grid gap-4" onSubmit={save}>
+                <div className="grid gap-2">
+                  <Label htmlFor="project-name">Name</Label>
+                  <Input
+                    id="project-name"
+                    autoFocus
+                    value={draft.name}
+                    onChange={(event) =>
+                      setDraft((value) => ({
+                        ...value,
+                        name: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="project-description">Description</Label>
+                  <Textarea
+                    id="project-description"
+                    value={draft.description}
+                    onChange={(event) =>
+                      setDraft((value) => ({
+                        ...value,
+                        description: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-[96px_1fr] gap-3">
+                  <div className="grid gap-2">
+                    <Label htmlFor="project-color">Colour</Label>
+                    <Input
+                      id="project-color"
+                      type="color"
+                      value={draft.color}
+                      onChange={(event) =>
+                        setDraft((value) => ({
+                          ...value,
+                          color: event.target.value,
+                        }))
+                      }
                     />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                      {project.name}
-                    </span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => beginEdit(project)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => void setArchived(project, true)}
-                    >
-                      Archive
-                    </Button>
                   </div>
-                ))
-              ) : (
-                <p className="text-sm text-[var(--text-secondary)]">
-                  No projects yet.
-                </p>
-              )}
-            </section>
-            {archived.length ? (
-              <section className="grid gap-2" aria-label="Archived projects">
-                <h3 className="text-sm font-semibold">Archived</h3>
-                {archived.map((project) => (
-                  <div
-                    key={project.id}
-                    className="flex min-h-12 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] px-3"
+                  <div className="grid gap-2">
+                    <Label htmlFor="project-icon">Glyph</Label>
+                    <Input
+                      id="project-icon"
+                      value={draft.icon}
+                      placeholder="Optional"
+                      onChange={(event) =>
+                        setDraft((value) => ({
+                          ...value,
+                          icon: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowForm(false)}
                   >
-                    <span className="min-w-0 flex-1 truncate text-sm text-[var(--text-secondary)]">
-                      {project.name}
-                    </span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      disabled={busy}
-                      onClick={() => void setArchived(project, false)}
-                    >
-                      Restore
-                    </Button>
-                  </div>
-                ))}
-              </section>
-            ) : null}
-          </div>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={busy || !draft.name.trim()}>
+                    {editing ? "Save changes" : "Create project"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            ) : (
+              <div className="grid gap-5">
+                {canEdit ? (
+                  <Button type="button" className="w-fit" onClick={beginCreate}>
+                    New project
+                  </Button>
+                ) : null}
+                <section className="grid gap-2" aria-label="Active projects">
+                  <h3 className="text-sm font-semibold">Active</h3>
+                  {active.length ? (
+                    active.map((project) => (
+                      <div
+                        key={project.id}
+                        className="flex min-h-12 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] px-3"
+                      >
+                        <span
+                          aria-hidden="true"
+                          className="size-2 rounded-full"
+                          style={{
+                            background: project.color ?? "var(--text-muted)",
+                          }}
+                        />
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {project.name}
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Health for ${project.name}`}
+                          onClick={() => setHealthProject(project)}
+                        >
+                          Health
+                        </Button>
+                        {canEdit ? (
+                          <>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => beginEdit(project)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              disabled={busy}
+                              onClick={() => void setArchived(project, true)}
+                            >
+                              Archive
+                            </Button>
+                          </>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      No projects yet.
+                    </p>
+                  )}
+                </section>
+                {archived.length ? (
+                  <section
+                    className="grid gap-2"
+                    aria-label="Archived projects"
+                  >
+                    <h3 className="text-sm font-semibold">Archived</h3>
+                    {archived.map((project) => (
+                      <div
+                        key={project.id}
+                        className="flex min-h-12 items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--border-subtle)] px-3"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-sm text-[var(--text-secondary)]">
+                          {project.name}
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Health for ${project.name}`}
+                          onClick={() => setHealthProject(project)}
+                        >
+                          Health
+                        </Button>
+                        {canEdit ? (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            disabled={busy}
+                            onClick={() => void setArchived(project, false)}
+                          >
+                            Restore
+                          </Button>
+                        ) : null}
+                      </div>
+                    ))}
+                  </section>
+                ) : null}
+              </div>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>

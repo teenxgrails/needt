@@ -33,7 +33,12 @@ import { TaskDialog } from "../dialogs";
 import { MobileTaskSheet, MobileWorkspace } from "../mobile";
 import { Glyph } from "../shell/chrome";
 import { ProjectManagerDialog } from "./ProjectManagerDialog";
-import { WorkspaceScreen } from "./WorkspaceScreen";
+import { WorkspaceSavedViews } from "./WorkspaceSavedViews";
+import {
+  type WorkspaceFilter,
+  WorkspaceScreen,
+  type WorkspaceView,
+} from "./WorkspaceScreen";
 
 interface WorkspacePayload {
   workspaceId: string;
@@ -90,6 +95,10 @@ export function WorkspaceRoute() {
   );
   const [error, setError] = React.useState(false);
   const [projectManagerOpen, setProjectManagerOpen] = React.useState(false);
+  const [workspaceView, setWorkspaceView] =
+    React.useState<WorkspaceView>("list");
+  const [workspaceFilter, setWorkspaceFilter] =
+    React.useState<WorkspaceFilter>("all");
   const pendingTaskIds = React.useRef(new Set<string>());
   const openedTaskParam = React.useRef<string | null>(null);
 
@@ -113,6 +122,8 @@ export function WorkspaceRoute() {
     let current = true;
     setData(null);
     setSelectedTask(null);
+    setWorkspaceView("list");
+    setWorkspaceFilter("all");
     openedTaskParam.current = null;
     setError(false);
     if (!activeWorkspaceId) return () => undefined;
@@ -245,13 +256,25 @@ export function WorkspaceRoute() {
           stages={data.stages}
           todayKey={data.todayKey}
           dark={dark}
+          view={workspaceView}
+          filter={workspaceFilter}
+          onViewChange={setWorkspaceView}
+          onFilterChange={setWorkspaceFilter}
+          actions={
+            <WorkspaceSavedViews
+              view={workspaceView}
+              filter={workspaceFilter}
+              onApply={({ view, filter }) => {
+                setWorkspaceView(view);
+                setWorkspaceFilter(filter);
+              }}
+            />
+          }
           onToggle={canEdit ? toggleTask : undefined}
           onOpen={setSelectedTask}
           onCreate={canEdit ? addTask : undefined}
           onManageProjects={
-            canEdit && isProjectsRoute
-              ? () => setProjectManagerOpen(true)
-              : undefined
+            isProjectsRoute ? () => setProjectManagerOpen(true) : undefined
           }
         />
       </div>
@@ -264,26 +287,28 @@ export function WorkspaceRoute() {
               {activeWorkspace?.workspace.name ?? "Workspace"}
             </h1>
           </div>
-          {canEdit ? (
+          {canEdit || isProjectsRoute ? (
             <div className="flex gap-2">
               {isProjectsRoute ? (
                 <button
                   type="button"
                   onClick={() => setProjectManagerOpen(true)}
-                  aria-label="Manage projects"
+                  aria-label={canEdit ? "Manage projects" : "View projects"}
                   className="grid size-11 flex-none place-items-center rounded-[var(--radius-floating)] bg-[var(--fill-2)] text-[var(--text-secondary)]"
                 >
                   <Glyph of={LuFolder} size={18} />
                 </button>
               ) : null}
-              <button
-                type="button"
-                onClick={addTask}
-                aria-label="Add task"
-                className="grid size-11 flex-none place-items-center rounded-[var(--radius-floating)] bg-[var(--fill-accent)] text-[var(--accent)]"
-              >
-                <Glyph of={LuPlus} size={18} />
-              </button>
+              {canEdit ? (
+                <button
+                  type="button"
+                  onClick={addTask}
+                  aria-label="Add task"
+                  className="grid size-11 flex-none place-items-center rounded-[var(--radius-floating)] bg-[var(--fill-accent)] text-[var(--accent)]"
+                >
+                  <Glyph of={LuPlus} size={18} />
+                </button>
+              ) : null}
             </div>
           ) : null}
         </header>
@@ -333,11 +358,12 @@ export function WorkspaceRoute() {
           onClose={closeTask}
         />
       </div>
-      {canEdit && isProjectsRoute ? (
+      {isProjectsRoute ? (
         <ProjectManagerDialog
           open={projectManagerOpen}
           onOpenChange={setProjectManagerOpen}
           onChanged={refresh}
+          canEdit={canEdit}
         />
       ) : null}
     </div>

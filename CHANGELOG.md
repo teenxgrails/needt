@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Workspace: saved views are back on Tasks and Projects — apply, save and remove
+  a view from the workspace header — and the project health journal is readable
+  again from the project manager, with posting kept behind edit access.
+- Mail: `/mail` renders the mail surface again instead of redirecting to a task
+  view that the ported workspace screen does not implement.
 - Settings: replaced the legacy settings shell with the ported nine-section
   Needt screen while keeping every production control and legacy deep link.
   Billing now shows the launch prices and trial state, numeric AI usage is no
