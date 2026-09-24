@@ -101,5 +101,3 @@ export async function GET(request: NextRequest) {
     { headers: NO_STORE }
   );
 }
-
-export const __internal = { requestedRange, hourOf };
