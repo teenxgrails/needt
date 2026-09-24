@@ -148,7 +148,11 @@ test("Documents searches, persists a favorite, opens, and creates", async ({
   await expect.poll(state.favoritePayload).toEqual({ isFavorite: true });
   await expect(page.getByText("Pinned")).toBeVisible();
 
-  await page.getByRole("link", { name: `Open ${document.title}` }).click();
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: `Open ${document.title}` })
+    .first()
+    .click();
   await expect(page).toHaveURL(new RegExp(`/pages/${document.id}$`));
 
   await page.goto("/pages");

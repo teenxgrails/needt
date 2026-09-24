@@ -158,6 +158,9 @@ async function mockWorkspace(page: Page, canEdit = true) {
     if (url.pathname === "/api/projects") {
       return route.fulfill({ json: [rawProject] });
     }
+    if (url.pathname === "/api/work-schedules") {
+      return route.fulfill({ json: { schedules: [] } });
+    }
     if (
       url.pathname === `/api/projects/${project.id}` &&
       request.method() === "PUT"
@@ -233,14 +236,18 @@ for (const width of [360, 390]) {
     await expect(
       page.getByRole("heading", { name: workspace.name })
     ).toBeVisible();
-    await expect(page.getByTitle("Publish website")).toBeVisible();
+    const mobileTask = page
+      .getByRole("main")
+      .getByText("Publish website", { exact: true })
+      .last();
+    await expect(mobileTask).toBeVisible();
     await expect(page.getByRole("button", { name: "Add task" })).toHaveCount(0);
     await page.goto("/projects");
     await expect(
       page.getByRole("button", { name: "Manage projects" })
     ).toHaveCount(0);
     await page.goto("/tasks");
-    await page.getByTitle("Publish website").click();
+    await mobileTask.click();
     await expect(page.getByText("Archive")).toHaveCount(0);
   });
 }

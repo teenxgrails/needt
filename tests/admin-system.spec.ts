@@ -40,7 +40,9 @@ test("an admin can reach the system credential form", async ({ page }) => {
 
   await page.goto("/admin/system");
 
-  await expect(page.getByTestId("admin-system-form")).toBeVisible();
+  await expect(page.getByTestId("admin-system-form")).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(
     page.getByPlaceholder("Enter your client secret").first()
   ).toBeVisible();
