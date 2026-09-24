@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Workspace: replaced the separate legacy Tasks and Projects screens with the
+  ported Needt List, Kanban and Flow views over one authorized workspace data
+  source. Desktop and phone now share real tasks, projects and members; task
+  completion and full task editing persist, project creation/edit/archive/
+  restore stays reachable, Viewer access is enforced read-only, and the
+  replaced task/project component trees are removed.
 - Calendar: replaced the legacy FullCalendar screen with the ported Needt Day,
   Week, Month, Columns and Sequence views. The route now reads tasks, split
   schedule blocks, local calendar events and privacy-safe shared Busy intervals

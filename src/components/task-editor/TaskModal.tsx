@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 
 import {
+  Archive,
   Bell,
   BookOpen,
   BookTemplate,
@@ -24,15 +25,15 @@ import {
 } from "lucide-react";
 import { RRule } from "rrule";
 
-import { CalendarItemTypeSwitch } from "@/components/tasks/CalendarItemTypeSwitch";
+import { CalendarItemTypeSwitch } from "@/components/task-editor/CalendarItemTypeSwitch";
+import { TaskDependenciesSection } from "@/components/task-editor/TaskDependenciesSection";
+import { TaskTimer } from "@/components/task-editor/TaskTimer";
 import {
   CALENDAR_EDITOR_ASIDE_FOOTER_CLASS,
   CALENDAR_EDITOR_CONTENT_CLASS,
   CALENDAR_EDITOR_FORM_CLASS,
   CALENDAR_EDITOR_MAIN_FOOTER_CLASS,
-} from "@/components/tasks/calendar-editor-shell";
-import { TaskDependenciesSection } from "@/components/tasks/TaskDependenciesSection";
-import { TaskTimer } from "@/components/tasks/TaskTimer";
+} from "@/components/task-editor/calendar-editor-shell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -86,6 +87,7 @@ interface TaskModalProps {
   task?: Task;
   tags: Tag[];
   onCreateTag: (name: string, color?: string) => Promise<Tag>;
+  onDelete?: (taskId: string) => Promise<void>;
   initialProjectId?: string | null;
   initialStart?: Date;
   initialEnd?: Date;
@@ -152,7 +154,7 @@ const LOG_SOURCE = "TaskModal";
 const SAVED_TASK_TEMPLATES_KEY = "needt-task-templates";
 const TaskDescriptionEditor = dynamic(
   () =>
-    import("@/components/tasks/TaskDescriptionEditor").then(
+    import("@/components/task-editor/TaskDescriptionEditor").then(
       (module) => module.TaskDescriptionEditor
     ),
   {
@@ -173,6 +175,7 @@ export function TaskModal({
   task,
   tags,
   onCreateTag,
+  onDelete,
   initialProjectId,
   initialStart,
   initialEnd,
@@ -689,6 +692,26 @@ export function TaskModal({
                         <Check className="h-3.5 w-3.5" /> Completed
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          !onDelete ||
+                          !window.confirm("Archive this task?")
+                        ) {
+                          return;
+                        }
+                        setIsSubmitting(true);
+                        void onDelete(task.id).finally(() =>
+                          setIsSubmitting(false)
+                        );
+                      }}
+                      disabled={isSubmitting || !onDelete}
+                      className="grid h-10 w-10 place-items-center rounded-md hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:hidden sm:h-[25px] sm:w-[25px]"
+                      aria-label="Archive task"
+                    >
+                      <Archive className="h-4 w-4" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => void copyTask()}

@@ -41,10 +41,12 @@ export interface WorkspaceScreenProps {
   people: readonly NeedtPerson[];
   projects: readonly NeedtProject[];
   stages: readonly NeedtStage[];
+  todayKey?: string;
   dark?: boolean;
   onToggle?: (id: string) => void;
   onOpen?: (task: NeedtTask) => void;
   onCreate?: () => void;
+  onManageProjects?: () => void;
   onTogglePart?: (taskId: string, index: number) => void;
   onPromotePart?: (taskId: string, index: number) => void;
 }
@@ -343,10 +345,12 @@ export function WorkspaceScreen({
   people,
   projects,
   stages,
+  todayKey,
   dark = false,
   onToggle,
   onOpen,
   onCreate,
+  onManageProjects,
   onTogglePart,
   onPromotePart,
 }: WorkspaceScreenProps) {
@@ -357,19 +361,31 @@ export function WorkspaceScreen({
   const done = React.useMemo(() => tasks.filter((t) => t.done), [tasks]);
   const today = React.useMemo(
     () =>
-      open.filter((t) => typeof t.time === "string" && t.time.includes(":")),
-    [open]
+      open.filter((task) =>
+        todayKey
+          ? task.scheduledOn === todayKey || task.dueOn === todayKey
+          : typeof task.time === "string" && task.time.includes(":")
+      ),
+    [open, todayKey]
+  );
+  const todayIds = React.useMemo(
+    () => new Set(today.map((task) => task.id)),
+    [today]
+  );
+  const later = React.useMemo(
+    () => open.filter((task) => !todayIds.has(task.id)),
+    [open, todayIds]
   );
   const shown = React.useMemo(
     () =>
       filter === "done"
         ? done
         : filter === "later"
-          ? []
+          ? later
           : filter === "today"
             ? today
             : open,
-    [filter, done, today, open]
+    [filter, done, later, today, open]
   );
 
   const groups = React.useMemo(
@@ -391,25 +407,50 @@ export function WorkspaceScreen({
         style={{ flex: "none", display: "flex", alignItems: "center", gap: 12 }}
       >
         <ViewToggle value={view} onChange={setView} />
-        {onCreate ? (
-          <button
-            type="button"
-            onClick={onCreate}
-            style={{
-              marginLeft: "auto",
-              height: 30,
-              padding: "0 12px",
-              border: 0,
-              borderRadius: "var(--radius-md)",
-              cursor: "default",
-              font: "var(--type-meta-medium)",
-              color: "var(--accent)",
-              background: "var(--fill-accent)",
-            }}
-          >
-            New task
-          </button>
-        ) : null}
+        <div
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          {onManageProjects ? (
+            <button
+              type="button"
+              onClick={onManageProjects}
+              style={{
+                height: 30,
+                padding: "0 12px",
+                border: 0,
+                borderRadius: "var(--radius-md)",
+                font: "var(--type-meta-medium)",
+                color: "var(--text-secondary)",
+                background: "var(--fill-2)",
+              }}
+            >
+              Projects
+            </button>
+          ) : null}
+          {onCreate ? (
+            <button
+              type="button"
+              onClick={onCreate}
+              style={{
+                height: 30,
+                padding: "0 12px",
+                border: 0,
+                borderRadius: "var(--radius-md)",
+                cursor: "default",
+                font: "var(--type-meta-medium)",
+                color: "var(--accent)",
+                background: "var(--fill-accent)",
+              }}
+            >
+              New task
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <TeamStrip tasks={tasks} people={people} />
@@ -421,7 +462,7 @@ export function WorkspaceScreen({
           counts={{
             all: open.length,
             today: today.length,
-            later: null,
+            later: later.length,
             done: done.length,
           }}
         />
@@ -462,11 +503,40 @@ export function WorkspaceScreen({
                 placeItems: "center",
               }}
             >
-              <p
-                style={{ font: "var(--type-meta)", color: "var(--text-muted)" }}
-              >
-                Nothing here yet.
-              </p>
+              <div style={{ display: "grid", justifyItems: "center", gap: 10 }}>
+                <p
+                  style={{
+                    margin: 0,
+                    font: "var(--type-ui-medium)",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  {filter === "done"
+                    ? "Completed tasks will collect here."
+                    : filter === "today"
+                      ? "Nothing is due or scheduled today."
+                      : filter === "later"
+                        ? "Nothing is waiting for later."
+                        : "Start with the next thing you need to do."}
+                </p>
+                {filter === "all" && onCreate ? (
+                  <button
+                    type="button"
+                    onClick={onCreate}
+                    style={{
+                      height: 30,
+                      padding: "0 12px",
+                      border: 0,
+                      borderRadius: "var(--radius-md)",
+                      background: "var(--fill-accent)",
+                      color: "var(--accent)",
+                      font: "var(--type-meta-medium)",
+                    }}
+                  >
+                    Add your first task
+                  </button>
+                ) : null}
+              </div>
             </div>
           ) : (
             <div

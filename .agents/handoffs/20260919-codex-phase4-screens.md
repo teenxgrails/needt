@@ -3,7 +3,7 @@ id: 20260919-codex-phase4-screens
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-21T10:30:00Z
+updated: 2026-09-24T16:03:04Z
 objective: Replace the five legacy product screens in place with the ported Needt screens, real server data, and no parallel variants.
 ---
 
@@ -24,15 +24,20 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Today committed as `cc5fd41` + `5663b23` (real project metadata) and pushed to draft PR #34.
 - Calendar (2026-09-21, finished by Claude while Codex was rate-limited): replaced the FullCalendar route with the ported Needt views over `/api/needt/calendar`; split blocks, own events and opaque Busy intervals; Viewer mutations refused server-side; whole-day flexible-hours guard; FullCalendar packages, CSS and legacy `src/components/calendar/**` deleted.
 - Moved `tests/calendar-production.spec.ts` to `tests/visual/` (it needs the visual seed user; under the e2e config it could never pass) and scoped flexible-hours selectors to `:visible` because the phone Day view stays in the DOM, hidden by CSS, on desktop.
+- Replaced both `/tasks` and `/projects` with the ported Workspace List, Kanban and Flow over `/api/needt/workspace`; desktop and phone read the same real tasks, projects and workspace members, and Viewer controls are absent while server authorization remains authoritative.
+- Removed the legacy `src/components/tasks/**` and `src/components/projects/**` trees. The task editor, focus timer/description and navigation Today panel still used by other product routes were relocated to owned shared directories rather than deleted with the old screens.
+- Editors keep the full production task editor, including scheduling, recurrence, dependencies, time tracking, labels and archive; Viewers get the ported read-only task detail. Workspace selection also bootstraps the shared task/tag/project stores so Focus and navigation consumers do not empty after a switch.
+- `/projects` keeps project creation, rename, archive and restore in a compact manager over the ported Workspace; legacy List/Kanban/Gantt, template and health-journal presentation stays deleted because the port owns List/Kanban/Flow and PORT marks stage/blocker editing out of scope.
+- Added server Editor gates to every task/tag mutation reachable from the retained editor and workspace-scoped `start-now` and time-tracking task lookup. Production port controls without persistence stay hidden or read-only.
 
 ## Working state
 
-- Files currently being edited for the first screen: `/today` route, the ported `needt/home` data/interaction boundary, habit-completion service/API, tests, changelog, UI contract gate, and this handoff.
+- A.1 is ready to commit. Files in this checkpoint are the two routes, `src/components/needt/workspace/**`, `/api/needt/workspace`, read-only production adaptations in the ported task dialogs/mobile workspace, relocated shared task helpers, replacement unit/E2E/visual specs, changelog and this handoff.
 - Foreign changes that must remain untouched: all 41 pre-existing untracked paths reported by `npm run agent:context`, including design bundles, landing sources, `pf-sync/`, root `pnpm-lock.yaml`, and dim/paper visual baselines.
 
 ## Verification
 
-- Passed: `npm run type-check`; focused suites after audit fixes; full `npm run test:unit` (197 suites, 1294 tests, one skipped); `npm run lint`; `npm run tokens:check`; `npm run check:ui-contracts`; `npm run check:branding`; `npm run check:agent-handoffs`; `npm run build`; `npm run build:worker`; `git diff --check`.
+- Passed: `npm run type-check`; focused suites after audit fixes; full `npm run test:unit` (194 suites, 1261 tests, one skipped); `npm run lint`; `npm run tokens:check`; `npm run check:ui-contracts`; `npm run check:branding`; `npm run check:agent-handoffs`; `npm run build`; `npm run build:worker`; `git diff --check`.
 - ESLint now ignores `.claude/**`, which contains independent 622 MB worktrees and previously exhausted the root lint process; no lint rule or source path was suppressed.
 - Browser visual inspection at desktop/390/360 remains blocked: Docker Desktop reports its engine running in the UI, but the CLI returns `Docker Desktop is unable to start`, so `npm run db:up` cannot start the local database. No migration was run and Neon was not touched.
 
@@ -45,11 +50,14 @@ objective: Replace the five legacy product screens in place with the ported Need
 - One writer owns this checkout; subagents are read-only auditors.
 
 - Calendar gates (2026-09-21): type-check; full unit (199 suites, 1295 tests, one skipped); scoped eslint on every changed file; tokens, UI contracts, branding, handoff checks; `npm run build` with loopback DB URLs + artifact check; `npm run build:worker`; visual `calendar-production` (2/2) and `schedules-flexible-hours` on desktop against the isolated `127.0.0.1:5433/needt_test`. Calendar screenshot baselines were not refreshed.
+- Workspace A.1 (2026-09-24): `npm run type-check`; `npm run lint`; full unit (194 suites, 1261 tests, one skipped); `npm run tokens:check`; UI contracts; branding; handoff check; `npm run build` with explicit loopback DB URLs (146 pages, artifact check passed); `npm run build:worker`; `git diff --check`; Playwright lists the replacement workspace journey at desktop, 360px and 390px and the updated visual specs without compile errors.
+- The workspace browser journey was not executed locally because its global setup would restart the intentionally stopped Docker E2E stack and apply migrations. No migration ran, no container was recreated, and Neon was not touched. Linux CI remains the runtime authority for this checkpoint.
 
 ## Blockers
 
 - PRs #37, #24 and #41 are still open, so the owner-requested rebase wave cannot start yet.
+- Owner decision on outside contacts is still open. A.1 uses workspace members for holder/waits-on data and keeps the existing `//todo` seam in `prisma-source.ts`.
 
 ## Next action
 
-- Next screen: `/tasks` and `/projects`. Calendar visual baselines need the CI baseline-refresh flow.
+- Commit and push A.1, update draft PR #34, then continue with A.2 `/pages`. Calendar and workspace visual baselines stay for the Linux CI refresh wave.

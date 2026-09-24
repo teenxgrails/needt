@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { WorkspaceRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -40,7 +42,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }

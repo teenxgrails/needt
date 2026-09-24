@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { z } from "zod";
-
 import {
   ActiveFocusSessionError,
-  startTaskNow,
-  TaskNotFoundError,
   OutsideWorkHoursError,
+  TaskNotFoundError,
+  startTaskNow,
 } from "@/services/tasks/startTaskNow";
+import { WorkspaceRole } from "@prisma/client";
+import { z } from "zod";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 
 const schema = z.object({
-  durationMinutes: z.number().int().min(5).max(12 * 60),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(12 * 60),
   startFocus: z.boolean().default(true),
   confirmOutsideWorkHours: z.boolean().default(false),
 });
@@ -20,7 +24,9 @@ const schema = z.object({
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, "StartTaskNowAPI");
+  const auth = await authenticateRequest(request, "StartTaskNowAPI", {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
   const key = request.headers.get("Idempotency-Key");
   if (!key || key.length > 128) {
@@ -31,12 +37,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid start request." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid start request." },
+      { status: 400 }
+    );
   }
   const { id } = await params;
   try {
     const command = await startTaskNow({
       userId: auth.userId,
+      workspace: auth.workspace,
       taskId: id,
       durationMinutes: parsed.data.durationMinutes,
       startFocus: parsed.data.startFocus,
@@ -64,6 +74,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: "Could not start task." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Could not start task." },
+      { status: 500 }
+    );
   }
 }

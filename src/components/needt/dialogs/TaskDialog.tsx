@@ -205,10 +205,12 @@ function TdSwitch({
   checked,
   label,
   onChange,
+  disabled = false,
 }: {
   checked: boolean;
   label: string;
   onChange: (value: boolean) => void;
+  disabled?: boolean;
 }) {
   return (
     <label className="nt-switch" data-checked={checked ? "true" : undefined}>
@@ -216,6 +218,7 @@ function TdSwitch({
         type="checkbox"
         checked={checked}
         aria-label={label}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
       />
       <span className="nt-switch-track">
@@ -248,9 +251,12 @@ export interface TaskDialogProps {
   projects?: readonly NeedtProject[];
   people?: readonly NeedtPerson[];
   /** Fires once, with the edited task, when "Save" is pressed. */
-  onSave?: (task: RbInput) => void;
+  onSave?: (task: RbInput) => void | Promise<void>;
   /** Fires once per promotion — see `part-promote.ts` for the rule itself. */
   onPromotePart?: (promotion: PartPromotion) => void;
+  editable?: boolean;
+  partsEditable?: boolean;
+  prototypeControls?: boolean;
 }
 
 /**
@@ -271,6 +277,9 @@ export function TaskDialog({
   people = fixturePeople,
   onSave,
   onPromotePart,
+  editable = true,
+  partsEditable = true,
+  prototypeControls = true,
 }: TaskDialogProps) {
   const shape = React.useMemo(
     () => rbShape(task, { projects }),
@@ -287,6 +296,7 @@ export function TaskDialog({
   const [placed, setPlaced] = React.useState(
     !task.noSlot && Boolean(task.time || task.at !== undefined)
   );
+  const [saving, setSaving] = React.useState(false);
   /* Ids for parts promoted in this session. Not a real id sequence — there is
      no store behind this component — just enough to keep each promoted task
      distinct within one editing session. */
@@ -299,16 +309,19 @@ export function TaskDialog({
   const entryHue = shape.hue ?? "var(--accent)";
 
   function togglePart(index: number) {
+    if (!partsEditable) return;
     setParts((list) =>
       list.map((p, i) => (i === index ? { ...p, done: !p.done } : p))
     );
   }
 
   function addPart() {
+    if (!partsEditable) return;
     setParts((list) => list.concat([{ title: "New part", done: false }]));
   }
 
   function promote(index: number) {
+    if (!partsEditable) return;
     const current: RbInput = { ...task, title, parts };
     const result = promotePart(
       current,
@@ -321,9 +334,18 @@ export function TaskDialog({
     onPromotePart?.(result);
   }
 
-  function save() {
-    onSave?.({ ...task, title, parts });
-    onClose();
+  async function save() {
+    if (!editable || !onSave || saving) return;
+    setSaving(true);
+    try {
+      await onSave({ ...task, title, parts });
+      onClose();
+    } catch {
+      // The production caller owns the user-facing error and leaves the
+      // editor open so the change can be retried.
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -359,6 +381,7 @@ export function TaskDialog({
                   type="button"
                   className={kind === k ? "segment is-selected" : "segment"}
                   aria-pressed={kind === k}
+                  disabled={!prototypeControls}
                   onClick={() => setKind(k)}
                   style={{
                     display: "inline-flex",
@@ -381,11 +404,19 @@ export function TaskDialog({
             >
               {/* Not wired — the kit's own template and recurrence pickers
                   are not part of this port. */}
-              <button type="button" className="btn btn-ghost">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={!prototypeControls}
+              >
                 <Glyph of={LuLayoutTemplate} size={14} />
                 Template
               </button>
-              <button type="button" className="btn btn-ghost">
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={!prototypeControls}
+              >
                 <Glyph of={LuRepeat} size={14} />
                 Recurring
               </button>
@@ -395,6 +426,7 @@ export function TaskDialog({
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
+            readOnly={!editable}
             placeholder="Name it"
             style={{
               flex: "none",
@@ -409,40 +441,42 @@ export function TaskDialog({
             }}
           />
 
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              flex: "none",
-              opacity: 0.85,
-            }}
-          >
-            {/* Decorative — no rich-text model backs this port yet. */}
-            {TD_MARKS.map((mark, i) => (
-              <IconButton
-                key={i}
-                label={mark.letter ?? "Formatting"}
-                variant="ghost"
-                icon={
-                  mark.letter ? (
-                    <span
-                      style={{
-                        font: "var(--type-ui-medium)",
-                        fontStyle: mark.italic ? "italic" : "normal",
-                        textDecoration: mark.strike ? "line-through" : "none",
-                        fontWeight: mark.bold ? 700 : 500,
-                      }}
-                    >
-                      {mark.letter}
-                    </span>
-                  ) : (
-                    <Glyph of={mark.glyph} size={14} />
-                  )
-                }
-              />
-            ))}
-          </div>
+          {prototypeControls ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                flex: "none",
+                opacity: 0.85,
+              }}
+            >
+              {/* Decorative — no rich-text model backs this port yet. */}
+              {TD_MARKS.map((mark, i) => (
+                <IconButton
+                  key={i}
+                  label={mark.letter ?? "Formatting"}
+                  variant="ghost"
+                  icon={
+                    mark.letter ? (
+                      <span
+                        style={{
+                          font: "var(--type-ui-medium)",
+                          fontStyle: mark.italic ? "italic" : "normal",
+                          textDecoration: mark.strike ? "line-through" : "none",
+                          fontWeight: mark.bold ? 700 : 500,
+                        }}
+                      >
+                        {mark.letter}
+                      </span>
+                    ) : (
+                      <Glyph of={mark.glyph} size={14} />
+                    )
+                  }
+                />
+              ))}
+            </div>
+          ) : null}
 
           <div className="scroll-inner td-body">
             {/* Three-state: `null` means the product has no description on
@@ -517,7 +551,7 @@ export function TaskDialog({
                       done={p.done}
                       hue={shape.hue ?? "var(--text-tertiary)"}
                       label={p.title}
-                      onToggle={() => togglePart(i)}
+                      onToggle={partsEditable ? () => togglePart(i) : undefined}
                     />
                     <span
                       style={{
@@ -532,39 +566,43 @@ export function TaskDialog({
                     >
                       {p.title}
                     </span>
-                    <span
-                      className="reveal-on-hover"
-                      style={{ display: "flex", gap: 2 }}
-                    >
-                      <IconButton
-                        label="Make it a task of its own"
-                        variant="ghost"
-                        onClick={() => promote(i)}
-                        icon={<Glyph of={LuArrowUpRight} size={13} />}
-                      />
-                    </span>
+                    {partsEditable ? (
+                      <span
+                        className="reveal-on-hover"
+                        style={{ display: "flex", gap: 2 }}
+                      >
+                        <IconButton
+                          label="Make it a task of its own"
+                          variant="ghost"
+                          onClick={() => promote(i)}
+                          icon={<Glyph of={LuArrowUpRight} size={13} />}
+                        />
+                      </span>
+                    ) : null}
                   </span>
                 ))}
-                <button
-                  type="button"
-                  onClick={addPart}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 7,
-                    height: 30,
-                    padding: "0 6px",
-                    border: 0,
-                    cursor: "default",
-                    borderRadius: "var(--radius-md)",
-                    background: "transparent",
-                    font: "var(--type-ui)",
-                    color: "var(--text-muted)",
-                  }}
-                >
-                  <Glyph of={LuPlus} size={14} />
-                  Add a part
-                </button>
+                {partsEditable ? (
+                  <button
+                    type="button"
+                    onClick={addPart}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 7,
+                      height: 30,
+                      padding: "0 6px",
+                      border: 0,
+                      cursor: "default",
+                      borderRadius: "var(--radius-md)",
+                      background: "transparent",
+                      font: "var(--type-ui)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
+                    <Glyph of={LuPlus} size={14} />
+                    Add a part
+                  </button>
+                ) : null}
               </section>
             ) : null}
 
@@ -599,7 +637,11 @@ export function TaskDialog({
               boxShadow: "var(--border) 0 -1px 0 0 inset",
             }}
           >
-            <button type="button" className="btn btn-ghost">
+            <button
+              type="button"
+              className="btn btn-ghost"
+              disabled={!prototypeControls}
+            >
               <Glyph of={LuPaperclip} size={14} />
               Attach
             </button>
@@ -645,7 +687,8 @@ export function TaskDialog({
               the scheduler is scripted, not solved, in this port. */}
           <button
             type="button"
-            onClick={() => setPlaced((v) => !v)}
+            disabled={!prototypeControls}
+            onClick={() => prototypeControls && setPlaced((v) => !v)}
             style={{
               display: "flex",
               alignItems: "center",
@@ -723,7 +766,8 @@ export function TaskDialog({
               <TdSwitch
                 checked={hard}
                 label="Hard deadline"
-                onChange={setHard}
+                onChange={prototypeControls ? setHard : () => undefined}
+                disabled={!prototypeControls}
               />
             </TdRow>
             {/* //todo: recurrence is a `Habit` concept today (`NeedtHabit`),
@@ -752,6 +796,7 @@ export function TaskDialog({
           <div style={{ padding: "8px 0" }}>
             <button
               type="button"
+              disabled={!prototypeControls}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -787,15 +832,22 @@ export function TaskDialog({
                 color: "var(--text-disabled)",
               }}
             >
-              {onSave ? "Unsaved" : "Saved"}
+              {editable && onSave ? "Unsaved" : "Saved"}
             </span>
             <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
               <button type="button" className="btn btn-ghost" onClick={onClose}>
-                Cancel
+                {editable && onSave ? "Cancel" : "Close"}
               </button>
-              <button type="button" className="btn" onClick={save}>
-                Save
-              </button>
+              {editable && onSave ? (
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={saving}
+                  onClick={() => void save()}
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
+              ) : null}
             </span>
           </footer>
         </aside>

@@ -5,6 +5,8 @@ export {
   type WorkspaceView,
   type WorkspaceFilter,
 } from "./WorkspaceScreen";
+export { WorkspaceRoute } from "./WorkspaceRoute";
+export { ProjectManagerDialog } from "./ProjectManagerDialog";
 export { FlowView, type FlowViewProps } from "./FlowView";
 export {
   TeamStrip,

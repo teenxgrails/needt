@@ -32,7 +32,7 @@ export function RbCheckbox({
    * it. The phone shell passes enough to clear 44.
    */
   hitSlop?: number;
-  onToggle: () => void;
+  onToggle?: () => void;
 }) {
   return (
     <button
@@ -40,9 +40,10 @@ export function RbCheckbox({
       role="checkbox"
       aria-checked={done}
       aria-label={label}
+      disabled={!onToggle}
       onClick={(event) => {
         event.stopPropagation();
-        onToggle();
+        onToggle?.();
       }}
       style={{
         position: "relative",
@@ -63,7 +64,10 @@ export function RbCheckbox({
       }}
     >
       {hitSlop > 0 ? (
-        <span aria-hidden="true" style={{ position: "absolute", inset: -hitSlop }} />
+        <span
+          aria-hidden="true"
+          style={{ position: "absolute", inset: -hitSlop }}
+        />
       ) : null}
       {done ? <RbGlyph name="check" size={Math.round(size * 0.6)} /> : null}
     </button>

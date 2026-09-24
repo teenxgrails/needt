@@ -6,6 +6,7 @@ import {
   listTaskDependencies,
   removeTaskDependency,
 } from "@/services/tasks/dependencies";
+import { WorkspaceRole } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
@@ -50,7 +51,9 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
 
   try {
@@ -81,7 +84,9 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
 
   try {

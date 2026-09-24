@@ -65,9 +65,7 @@ export function TodaysTasksPanel({ className }: { className?: string }) {
               yellowThresholdHours,
             });
             return (
-              <li
-                key={task.id}
-              >
+              <li key={task.id}>
                 <div className="group relative flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-[var(--surface-hover)] active:cursor-grabbing">
                   <span
                     className="h-3 w-3 flex-none rounded-full border-2"

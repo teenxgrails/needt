@@ -11,7 +11,7 @@ import {
   boardViewStorageKey,
   isBoardViewType,
 } from "@/components/boards/board-view-types";
-import { TaskModal } from "@/components/tasks/TaskModal";
+import { TaskModal } from "@/components/task-editor/TaskModal";
 import { Button } from "@/components/ui/button";
 import {
   Popover,

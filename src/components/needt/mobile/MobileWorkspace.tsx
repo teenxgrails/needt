@@ -22,7 +22,8 @@ export interface MobileWorkspaceProps {
   tasks: readonly NeedtTask[];
   projects?: readonly NeedtProject[];
   onOpenTask: (task: NeedtTask) => void;
-  onToggleTask: (id: string) => void;
+  onToggleTask?: (id: string) => void;
+  onCreate?: () => void;
 }
 
 export function MobileWorkspace({
@@ -30,6 +31,7 @@ export function MobileWorkspace({
   projects = fixtureProjects,
   onOpenTask,
   onToggleTask,
+  onCreate,
 }: MobileWorkspaceProps) {
   const open = React.useMemo(() => tasks.filter((task) => !task.done), [tasks]);
   const groups = React.useMemo(
@@ -46,67 +48,109 @@ export function MobileWorkspace({
         padding: "0 16px 16px",
       }}
     >
-      {groups.map((group) => (
-        <section
-          key={group.key}
-          style={{ display: "flex", flexDirection: "column", gap: 8 }}
+      {groups.length === 0 ? (
+        <div
+          style={{
+            minHeight: 240,
+            display: "grid",
+            placeItems: "center",
+            textAlign: "center",
+          }}
         >
-          <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span
+          <div style={{ display: "grid", justifyItems: "center", gap: 10 }}>
+            <p
               style={{
-                font: "var(--type-meta-medium)",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-                color: "var(--text-quaternary)",
+                margin: 0,
+                font: "var(--type-ui-medium)",
+                color: "var(--text-secondary)",
               }}
             >
-              {group.name}
-            </span>
-            <span
-              style={{
-                font: "var(--type-meta)",
-                color: "var(--text-muted)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {group.items.length}
-            </span>
-            {group.value ? (
+              Start with the next thing you need to do.
+            </p>
+            {onCreate ? (
+              <button
+                type="button"
+                onClick={onCreate}
+                style={{
+                  minHeight: 44,
+                  padding: "0 16px",
+                  border: 0,
+                  borderRadius: "var(--radius-lg)",
+                  background: "var(--fill-accent)",
+                  color: "var(--accent)",
+                  font: "var(--type-ui-medium)",
+                }}
+              >
+                Add your first task
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        groups.map((group) => (
+          <section
+            key={group.key}
+            style={{ display: "flex", flexDirection: "column", gap: 8 }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span
                 style={{
-                  marginLeft: "auto",
                   font: "var(--type-meta-medium)",
-                  color: "var(--text-secondary)",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  color: "var(--text-quaternary)",
+                }}
+              >
+                {group.name}
+              </span>
+              <span
+                style={{
+                  font: "var(--type-meta)",
+                  color: "var(--text-muted)",
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {rbMoney(group.value)}
+                {group.items.length}
               </span>
-            ) : null}
-          </span>
-          {group.items.map((task) => {
-            /* The card already sits under its own project header, so the
+              {group.value ? (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    font: "var(--type-meta-medium)",
+                    color: "var(--text-secondary)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {rbMoney(group.value)}
+                </span>
+              ) : null}
+            </span>
+            {group.items.map((task) => {
+              /* The card already sits under its own project header, so the
                project dot on the card itself would repeat it — the same
                reason the prototype clears `where` here. */
-            const input: RbInput = {
-              ...task,
-              project: null,
-              priority: task.overdue ? "now" : null,
-            };
-            return (
-              <RichBlock
-                touch
-                key={task.id}
-                block={rbShape(input, { layout: "card" })}
-                weight="open"
-                fit
-                onOpen={() => onOpenTask(task)}
-                onToggle={() => onToggleTask(task.id)}
-              />
-            );
-          })}
-        </section>
-      ))}
+              const input: RbInput = {
+                ...task,
+                project: null,
+                priority: task.overdue ? "now" : null,
+              };
+              return (
+                <RichBlock
+                  touch
+                  key={task.id}
+                  block={rbShape(input, { layout: "card" })}
+                  weight="open"
+                  fit
+                  onOpen={() => onOpenTask(task)}
+                  onToggle={
+                    onToggleTask ? () => onToggleTask(task.id) : undefined
+                  }
+                />
+              );
+            })}
+          </section>
+        ))
+      )}
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { WorkspaceRole } from "@prisma/client";
 import { RRule } from "rrule";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { workspaceDataScopeWhere } from "@/lib/auth/workspace-auth";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 import { normalizeRecurrenceRule } from "@/lib/utils/normalize-recurrence-rules";
@@ -15,7 +17,9 @@ const LOG_SOURCE = "normalize-recurrence-route";
  */
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
         recurrenceRule: {
           not: null,
         },
-        userId,
+        ...workspaceDataScopeWhere(auth.workspace, userId),
       },
     });
 
@@ -65,7 +69,7 @@ export async function POST(request: NextRequest) {
           await prisma.task.update({
             where: {
               id: task.id,
-              userId,
+              ...workspaceDataScopeWhere(auth.workspace, userId),
             },
             data: { recurrenceRule: standardizedRule },
           });

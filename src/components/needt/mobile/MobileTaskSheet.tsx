@@ -43,8 +43,9 @@ export interface MobileTaskSheetProps {
   projects?: readonly NeedtProject[];
   people?: readonly NeedtPerson[];
   onClose: () => void;
-  onToggle: (id: string) => void;
-  onTogglePart: (id: string, index: number) => void;
+  onToggle?: (id: string) => void;
+  onTogglePart?: (id: string, index: number) => void;
+  onDelete?: (id: string) => void;
 }
 
 function MobileAttrRow({
@@ -66,8 +67,7 @@ function MobileAttrRow({
         {label}
       </span>
       <span className="nt-row-control">
-        <button
-          type="button"
+        <span
           style={{
             display: "flex",
             alignItems: "center",
@@ -96,7 +96,7 @@ function MobileAttrRow({
           >
             {value}
           </span>
-        </button>
+        </span>
       </span>
     </div>
   );
@@ -110,6 +110,7 @@ export function MobileTaskSheet({
   onClose,
   onToggle,
   onTogglePart,
+  onDelete,
 }: MobileTaskSheetProps) {
   const shape = React.useMemo(
     () => (task ? rbShape(task, { projects }) : null),
@@ -166,10 +167,8 @@ export function MobileTaskSheet({
           {parts.length ? (
             <div style={{ display: "flex", flexDirection: "column" }}>
               {parts.map((part, index) => (
-                <button
+                <div
                   key={`${part.title}-${index}`}
-                  type="button"
-                  onClick={() => onTogglePart(task.id, index)}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -178,7 +177,6 @@ export function MobileTaskSheet({
                     minHeight: TASK_SHEET_ROW_HEIGHT,
                     padding: 0,
                     border: 0,
-                    cursor: "default",
                     textAlign: "left",
                     background: "transparent",
                     boxShadow: "var(--border) 0 -1px 0 0 inset",
@@ -188,7 +186,11 @@ export function MobileTaskSheet({
                     done={part.done}
                     hue={shape.hue ?? "var(--text-tertiary)"}
                     label={part.title}
-                    onToggle={() => onTogglePart(task.id, index)}
+                    onToggle={
+                      onTogglePart
+                        ? () => onTogglePart(task.id, index)
+                        : undefined
+                    }
                   />
                   <span
                     style={{
@@ -203,7 +205,7 @@ export function MobileTaskSheet({
                   >
                     {part.title}
                   </span>
-                </button>
+                </div>
               ))}
             </div>
           ) : null}
@@ -246,47 +248,50 @@ export function MobileTaskSheet({
             />
           </div>
 
-          <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
-            <button
-              type="button"
-              onClick={() => {
-                onToggle(task.id);
-                onClose();
-              }}
-              style={{
-                flex: 1,
-                minHeight: 44,
-                border: 0,
-                cursor: "default",
-                borderRadius: "var(--radius-lg)",
-                background: "var(--fill-accent)",
-                color: "var(--accent)",
-                font: "var(--type-ui-medium)",
-              }}
-            >
-              {task.done ? "Reopen" : "Close it"}
-            </button>
-            {/* //todo: no delete callback is wired yet — `NEEDT.tasks` is an
-                in-memory fixture (PORT.md §9), so this closes the sheet the
-                same honest way the prototype's own stub button did. */}
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                flex: "none",
-                minHeight: 44,
-                padding: "0 16px",
-                border: 0,
-                cursor: "default",
-                borderRadius: "var(--radius-lg)",
-                background: "var(--fill-destructive)",
-                color: "var(--destructive)",
-                font: "var(--type-ui-medium)",
-              }}
-            >
-              Delete
-            </button>
-          </div>
+          {onToggle || onDelete ? (
+            <div style={{ display: "flex", gap: 8, paddingTop: 4 }}>
+              {onToggle ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onToggle(task.id);
+                    onClose();
+                  }}
+                  style={{
+                    flex: 1,
+                    minHeight: 44,
+                    border: 0,
+                    cursor: "default",
+                    borderRadius: "var(--radius-lg)",
+                    background: "var(--fill-accent)",
+                    color: "var(--accent)",
+                    font: "var(--type-ui-medium)",
+                  }}
+                >
+                  {task.done ? "Reopen" : "Close it"}
+                </button>
+              ) : null}
+              {onDelete ? (
+                <button
+                  type="button"
+                  onClick={() => onDelete(task.id)}
+                  style={{
+                    flex: "none",
+                    minHeight: 44,
+                    padding: "0 16px",
+                    border: 0,
+                    cursor: "default",
+                    borderRadius: "var(--radius-lg)",
+                    background: "var(--fill-destructive)",
+                    color: "var(--destructive)",
+                    font: "var(--type-ui-medium)",
+                  }}
+                >
+                  Archive
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </>
       ) : null}
     </MobileSheet>
