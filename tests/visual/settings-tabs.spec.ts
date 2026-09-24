@@ -100,7 +100,7 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
       page.getByRole("heading", { name: "Settings", level: 1 })
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: label, level: 2 })
+      page.locator("#settings-panel > h2").filter({ hasText: label })
     ).toBeVisible();
 
     await settleSettings(page);

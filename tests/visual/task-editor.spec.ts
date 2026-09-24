@@ -34,13 +34,10 @@ test("production task details stay usable at every breakpoint", async ({
   const task = await findVisualTask(page);
 
   await page.goto(`/tasks?task=${task.id}`, { waitUntil: "domcontentloaded" });
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await expect(page.getByRole("heading", { name: task.title })).toBeVisible();
-    await expect(page.getByText("Archive")).toBeVisible();
-  } else {
-    const dialog = page.getByRole("dialog", { name: "Edit task" });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByPlaceholder("Name it")).toHaveValue(task.title);
+  const dialog = page.getByTestId("task-modal");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Task name")).toHaveValue(task.title);
+  if ((page.viewportSize()?.width ?? 0) >= 640) {
     await expect(
       dialog.getByRole("button", { name: "Template" })
     ).toBeDisabled();

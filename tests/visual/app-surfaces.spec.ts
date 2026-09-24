@@ -71,10 +71,13 @@ test("Calendar, Today, and Workspace stay visually stable", async ({
         : '[data-calendar-view="week"]'
     )
   ).toBeVisible();
+  const calendarView = page.locator(
+    (page.viewportSize()?.width ?? 0) < 640
+      ? '[data-calendar-view="day"]'
+      : '[data-calendar-view="week"]'
+  );
   await expect(
-    page
-      .getByTestId("calendar-task")
-      .filter({ hasText: "Review calendar sync" })
+    calendarView.getByText("Review calendar sync", { exact: true })
   ).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("calendar.png");
@@ -131,7 +134,7 @@ test("Calendar, Today, and Workspace stay visually stable", async ({
 
   await page.goto("/tasks", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
-  await expect(page.getByText("Review calendar sync").first()).toBeVisible();
+  await expect(page.getByTitle("Review calendar sync")).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("workspace.png");
 
@@ -194,7 +197,7 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
     "data-theme",
     "paper"
   );
-  await expect(page.getByText("Review calendar sync").first()).toBeVisible();
+  await expect(page.getByTitle("Review calendar sync")).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("workspace-light.png");
 });

@@ -38,7 +38,9 @@ test("Today binds real tasks and keeps completion after reload", async ({
   expect(created.ok()).toBeTruthy();
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
-  await expect(page.getByText(title, { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("main").getByText(title, { exact: true })
+  ).toBeVisible();
   await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
 
   await page.getByRole("button", { name: `Complete ${title}` }).click();
@@ -74,5 +76,7 @@ test("Today exposes load failures and recovers", async ({ page }) => {
   await expect(page.getByText("Today could not be loaded.")).toBeVisible();
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Today could not be loaded.")).toBeHidden();
-  await expect(page.getByText("Today", { exact: true }).first()).toBeVisible();
+  await expect(
+    page.locator(".needt-v2").getByText("Today", { exact: true }).last()
+  ).toBeVisible();
 });

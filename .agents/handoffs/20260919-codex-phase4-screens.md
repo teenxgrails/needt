@@ -3,7 +3,7 @@ id: 20260919-codex-phase4-screens
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-24T17:14:39Z
+updated: 2026-09-24T17:20:31Z
 objective: Replace the five legacy product screens in place with the ported Needt screens, real server data, and no parallel variants.
 ---
 
@@ -36,10 +36,11 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Replaced the legacy Settings shell with the ported nine-section Settings screen while retaining the real production panels, all historical hash aliases, Report Bug access, the launch pricing/trial contract, and account export/deletion integration points. Numeric hosted-AI usage is no longer rendered.
 - Removed the public `/design-preview` route, its middleware exception, and the now-orphaned fixture compositor after every ported product screen was mounted in place.
 - Repaired the Phase 4 browser contracts reported by PR #34 CI: scoped duplicate Documents/project/task locators, updated the renamed Settings Provider heading, and aligned the non-admin redirect assertion with middleware's `/` destination.
+- Repaired the seven visual-spec contracts that stopped Linux baseline generation: selectors now target the ported Calendar, Documents, Settings, task editor and Today surfaces rather than removed test IDs, hidden responsive copies or navigation duplicates.
 
 ## Working state
 
-- Phase A is complete and pushed through A.4. The tracked working scope is the E2E contract repair for PR #34 plus this handoff; Phase B is blocked on visual-spec selector repair before CI can persist Linux baselines.
+- Phase A is complete and pushed through A.4. The E2E contract repair is pushed as `9a4503d`; the tracked working scope is the Phase B visual-spec repair plus this handoff.
 - Foreign changes that must remain untouched: all 41 pre-existing untracked paths reported by `npm run agent:context`, including design bundles, landing sources, `pf-sync/`, root `pnpm-lock.yaml`, and dim/paper visual baselines.
 
 ## Verification
@@ -75,4 +76,4 @@ objective: Replace the five legacy product screens in place with the ported Need
 
 ## Next action
 
-- Commit and push the E2E contract repair to draft PR #34, confirm CI, then repair the seven failing visual specs and rerun the Linux baseline workflow. Review every generated PNG before accepting it.
+- Commit and push the seven visual-spec repairs, then rerun the Linux baseline workflow to a fresh output branch. Review every generated PNG and accept only Today, Calendar and Phase A surface baselines; keep the known secondary-surfaces baseline problem documented rather than importing it.

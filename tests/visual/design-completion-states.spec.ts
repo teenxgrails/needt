@@ -49,7 +49,9 @@ test("Today uses the production Needt surface at every viewport", async ({
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
-  await expect(page.getByText("Production Today binding")).toBeVisible();
+  await expect(
+    page.getByRole("main").getByText("Production Today binding")
+  ).toBeVisible();
   await expect(
     page.getByText("Close the day with an intentional review.")
   ).toHaveCount(0);

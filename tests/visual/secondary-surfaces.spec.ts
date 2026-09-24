@@ -47,7 +47,7 @@ test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
 
     await page.goto("/pages", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: "Documents" })
+      page.getByRole("heading", { name: "Documents", exact: true })
     ).toBeVisible();
     const visualDesignPage = page
       .getByRole("link", { name: /Visual design notes/ })
