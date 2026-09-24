@@ -130,7 +130,7 @@ test("Integrations empty search and private bug report dialog stay usable", asyn
   await prepareAuthenticatedPage(page);
   await page.goto("/settings#integrations", { waitUntil: "domcontentloaded" });
   await expect(
-    page.getByRole("heading", { name: "Integrations", level: 1 })
+    page.getByRole("heading", { name: "Calendars", level: 2 })
   ).toBeVisible();
   const search = page.getByPlaceholder("Search integrations");
   await expect(search).toBeVisible();
@@ -139,12 +139,6 @@ test("Integrations empty search and private bug report dialog stay usable", asyn
   await settle(page);
   await expect(page).toHaveScreenshot("settings-integrations-empty.png");
 
-  const backToSettings = page.getByRole("button", {
-    name: "Back to Settings",
-  });
-  if (await backToSettings.isVisible()) {
-    await backToSettings.click();
-  }
   const reportTrigger = page.getByRole("button", { name: "Report a bug" });
   await reportTrigger.click();
   const report = page.getByRole("dialog", { name: "Report a bug" });

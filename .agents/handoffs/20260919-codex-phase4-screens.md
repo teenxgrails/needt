@@ -3,7 +3,7 @@ id: 20260919-codex-phase4-screens
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-24T16:23:37Z
+updated: 2026-09-24T16:49:29Z
 objective: Replace the five legacy product screens in place with the ported Needt screens, real server data, and no parallel variants.
 ---
 
@@ -33,10 +33,11 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Preserved folders, tags and saved filters, removed the unimplemented Import control, added keyboard-open semantics, and hid all document mutation controls from Viewers.
 - Closed three retained-editor Viewer write holes found during the A.2 audit: old comment authors cannot mutate after downgrade or workspace loss, proposal rejection now needs workspace and Page Editor access, and a Viewer cannot copy a shared Page into a personal template.
 - Removed the test-only `__internal` export from the Calendar route after generated Next route typings correctly rejected the extra route-module export; runtime behavior is unchanged.
+- Replaced the legacy Settings shell with the ported nine-section Settings screen while retaining the real production panels, all historical hash aliases, Report Bug access, the launch pricing/trial contract, and account export/deletion integration points. Numeric hosted-AI usage is no longer rendered.
 
 ## Working state
 
-- A.2 is ready for full gates. Its tracked scope is the `/pages` route, `src/components/needt/docs/**`, the authorized documents data seam/API, the retained editor's Viewer guards, focused unit/E2E/visual specs, changelog and this handoff.
+- A.3 is ready for full gates. Its tracked scope is the `/settings` route, the ported Settings adapter/screen registry, billing and AI presentation contracts, focused unit/E2E/visual specs, changelog and this handoff.
 - Foreign changes that must remain untouched: all 41 pre-existing untracked paths reported by `npm run agent:context`, including design bundles, landing sources, `pf-sync/`, root `pnpm-lock.yaml`, and dim/paper visual baselines.
 
 ## Verification
@@ -52,12 +53,15 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Production exposes only Today form until Prose/Canvas have a real persistence model; fake `BRIEF_SEED` content must never appear as user data.
 - Habit completion is an idempotent user-timezone operation on the existing `(habitId, date)` unique key. Habit reads retain the existing per-user ownership rule inside the authorized workspace.
 - One writer owns this checkout; subagents are read-only auditors.
+- Trial state, account deletion and account export remain dependencies on PRs #39 and #40; this screen mirrors their UI contracts without duplicating their backend lifecycle.
 
 - Calendar gates (2026-09-21): type-check; full unit (199 suites, 1295 tests, one skipped); scoped eslint on every changed file; tokens, UI contracts, branding, handoff checks; `npm run build` with loopback DB URLs + artifact check; `npm run build:worker`; visual `calendar-production` (2/2) and `schedules-flexible-hours` on desktop against the isolated `127.0.0.1:5433/needt_test`. Calendar screenshot baselines were not refreshed.
 - Workspace A.1 (2026-09-24): `npm run type-check`; `npm run lint`; full unit (194 suites, 1261 tests, one skipped); `npm run tokens:check`; UI contracts; branding; handoff check; `npm run build` with explicit loopback DB URLs (146 pages, artifact check passed); `npm run build:worker`; `git diff --check`; Playwright lists the replacement workspace journey at desktop, 360px and 390px and the updated visual specs without compile errors.
 - The workspace browser journey was not executed locally because its global setup would restart the intentionally stopped Docker E2E stack and apply migrations. No migration ran, no container was recreated, and Neon was not touched. Linux CI remains the runtime authority for this checkpoint.
 - Documents A.2 (2026-09-24): `npm run type-check`; `npm run lint`; full unit (196 suites, 1267 tests, one skipped); 6 focused authorization/API assertions; tokens, UI contracts, branding and handoff checks; `npm run build` with explicit loopback DB URLs (147 pages, artifact check passed); `npm run build:worker`; `git diff --check`; Playwright lists the editor journey plus 360px and 390px Viewer journeys without compile errors. A 5.6 Terra read-only final diff review returned no actionable findings.
 - The Documents browser journey was not executed locally because it would restart the intentionally stopped Docker E2E stack and apply migrations. No migration ran, no container was recreated, and Neon was not touched. Linux CI remains the runtime authority for this checkpoint.
+- Settings A.3: `npm run type-check`; `npm run lint`; full unit (196 suites, 1270 tests, one skipped); 14 focused settings registry/search/pricing/AI-privacy assertions; tokens, UI contracts, branding, handoff and diff checks; production build with explicit loopback DB URLs (147 pages, artifact check passed); worker build; Playwright lists the desktop billing journey and 360px/390px section/overflow journeys. A 5.6 Sol/Terra read-only review found and closed seven missing legacy hash aliases; the trial backend remains correctly owned by PR #39.
+- The Settings browser journey was not executed locally because its standard setup would restart the intentionally stopped Docker stack and apply migrations. The production build did not connect to Neon, no migration ran, and `.next` was removed immediately after the build.
 
 ## Blockers
 
@@ -66,4 +70,4 @@ objective: Replace the five legacy product screens in place with the ported Need
 
 ## Next action
 
-- Commit and push A.2 to draft PR #34, update the PR evidence, then continue with A.3 `/settings`. Calendar, workspace and document visual baselines stay for the Linux CI refresh wave.
+- Finish A.3 full gates, commit and push it to draft PR #34, then remove `/design-preview` in A.4. Calendar, workspace, document and settings visual baselines stay for the Linux CI refresh wave.

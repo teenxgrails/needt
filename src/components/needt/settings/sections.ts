@@ -48,7 +48,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = Object.freeze([
     id: "calendars",
     label: "Calendars",
     keywords:
-      "apple google sync declined all-day write back default view connect",
+      "apple google sync declined all-day write back default view connect integrations booking",
   },
   {
     id: "tasks",
@@ -73,12 +73,14 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = Object.freeze([
   {
     id: "account",
     label: "Account",
-    keywords: "name email password plan sign out session",
+    keywords:
+      "name email password plan sign out session workspace billing free pro lifetime trial delete account",
   },
   {
     id: "data",
     label: "Data",
-    keywords: "export csv markdown json clear delete account",
+    keywords:
+      "export csv markdown json import archive api connector webhook ai provider key memory oauth",
   },
 ]);
 

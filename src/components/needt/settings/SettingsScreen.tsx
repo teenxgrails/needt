@@ -47,6 +47,8 @@ import {
   LuUser,
 } from "react-icons/lu";
 
+import { NeedtPicker } from "@/components/ui/needt-picker";
+
 import {
   Avatar,
   Chip,
@@ -231,6 +233,10 @@ export interface SettingsScreenProps {
   accountEmail?: string;
   accountInitials?: string;
   onSignOut?: () => void;
+  section?: SettingsSectionId;
+  onSectionChange?: (section: SettingsSectionId) => void;
+  sectionContent?: Record<SettingsSectionId, React.ReactNode>;
+  actions?: React.ReactNode;
 }
 
 export function SettingsScreen({
@@ -238,8 +244,14 @@ export function SettingsScreen({
   accountEmail = "you@needt.app",
   accountInitials = "YO",
   onSignOut,
+  section: controlledSection,
+  onSectionChange,
+  sectionContent,
+  actions,
 }: SettingsScreenProps) {
-  const [section, setSection] = React.useState<SettingsSectionId>("appearance");
+  const [internalSection, setInternalSection] =
+    React.useState<SettingsSectionId>("appearance");
+  const section = controlledSection ?? internalSection;
   const [query, setQuery] = React.useState("");
   const [saved, setSaved] = React.useState(0);
   const navRef = React.useRef<HTMLElement | null>(null);
@@ -266,7 +278,9 @@ export function SettingsScreen({
   }, [saved]);
 
   function open(id: SettingsSectionId) {
-    if (id !== section) setSection(id);
+    if (id === section) return;
+    setInternalSection(id);
+    onSectionChange?.(id);
   }
 
   /* One tab stop with a roving selection: arrows move, Home/End jump to the
@@ -360,8 +374,21 @@ export function SettingsScreen({
           justifyContent: "flex-end",
           gap: 11,
           paddingBottom: 11,
+          flexWrap: "wrap",
         }}
       >
+        {actions}
+        <NeedtPicker
+          ariaLabel="Settings section"
+          className="min-w-0 flex-[1_1_176px] sm:hidden"
+          mode="plain"
+          options={SETTINGS_SECTIONS.map((item) => ({
+            value: item.id,
+            label: item.label,
+          }))}
+          value={active.id}
+          onValueChange={(value) => open(value as SettingsSectionId)}
+        />
         {saved ? (
           <span
             key={saved}
@@ -383,7 +410,13 @@ export function SettingsScreen({
           </span>
         ) : null}
         <span
-          style={{ position: "relative", display: "inline-flex", width: 210 }}
+          style={{
+            position: "relative",
+            display: "inline-flex",
+            width: 210,
+            maxWidth: "100%",
+            flex: "1 1 210px",
+          }}
         >
           <input
             className="nt-input"
@@ -416,56 +449,57 @@ export function SettingsScreen({
           paddingBottom: 20,
         }}
       >
-        <nav
-          ref={navRef}
-          tabIndex={0}
-          aria-label="Settings sections"
-          onKeyDown={navKeys}
-          style={{
-            flex: "none",
-            width: 176,
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-          }}
-        >
-          {hits.length === 0 ? (
-            <p
-              style={{
-                margin: "8px 6px",
-                font: "var(--type-meta)",
-                fontStyle: "italic",
-                color: "var(--text-muted)",
-                textWrap: "pretty",
-              }}
-            >
-              Nothing matches &quot;{query}&quot;. Try a word from the setting
-              itself, like &quot;rail&quot; or &quot;buffer&quot;.
-            </p>
-          ) : null}
-          {hits.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className="nav-row nt-nav-row"
-              aria-current={active.id === s.id ? "page" : undefined}
-              data-active={active.id === s.id ? "true" : undefined}
-              onClick={() => open(s.id)}
-            >
-              <Glyph of={SECTION_GLYPHS[s.id]} size={16} />
-              <span
+        <div className="hidden sm:block" style={{ flex: "none", width: 176 }}>
+          <nav
+            ref={navRef}
+            tabIndex={0}
+            aria-label="Settings sections"
+            onKeyDown={navKeys}
+            style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
+            {hits.length === 0 ? (
+              <p
                 style={{
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  margin: "8px 6px",
+                  font: "var(--type-meta)",
+                  fontStyle: "italic",
+                  color: "var(--text-muted)",
+                  textWrap: "pretty",
                 }}
               >
-                {s.label}
-              </span>
-            </button>
-          ))}
-        </nav>
+                Nothing matches &quot;{query}&quot;. Try a word from the setting
+                itself, like &quot;rail&quot; or &quot;buffer&quot;.
+              </p>
+            ) : null}
+            {hits.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="nav-row nt-nav-row"
+                aria-current={active.id === s.id ? "page" : undefined}
+                data-active={active.id === s.id ? "true" : undefined}
+                onClick={() => open(s.id)}
+              >
+                <Glyph of={SECTION_GLYPHS[s.id]} size={16} />
+                <span
+                  style={{
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {s.label}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </div>
 
         <div
           style={{
@@ -497,570 +531,606 @@ export function SettingsScreen({
               {active.label}
             </h2>
 
-            {active.id === "appearance" ? (
-              <AppearanceSection
-                value={appearance}
-                onChange={(patch) => {
-                  setAppearance((current) => ({ ...current, ...patch }));
-                  setSaved(Date.now());
-                }}
-              />
-            ) : null}
-
-            {active.id === "appearance" ? (
-              <Group title="Type">
-                <Row label="Interface font">
-                  <SSelect
-                    value={font}
-                    onChange={mark(setFont)}
-                    width={CONTROL_W}
-                    options={[
-                      { value: "inter", label: "Inter" },
-                      { value: "system", label: "System" },
-                    ]}
-                  />
-                </Row>
-                <Row label="Document width">
-                  <SInput
-                    value={docWidth}
-                    onChange={mark(setDocWidth)}
-                    suffix="px"
-                    width={120}
-                  />
-                </Row>
-              </Group>
-            ) : null}
-
-            {active.id === "day" ? (
+            {sectionContent?.[active.id] ?? (
               <>
-                <Group title="Working hours">
-                  <Row label="Day starts">
-                    <SInput
-                      type="time"
-                      value={dayStart}
-                      onChange={mark(setDayStart)}
-                      width={120}
-                    />
-                  </Row>
-                  <Row label="Day ends">
-                    <SInput
-                      type="time"
-                      value={dayEnd}
-                      onChange={mark(setDayEnd)}
-                      width={120}
-                    />
-                  </Row>
-                  <Row label="Week starts">
-                    <SSelect
-                      value={weekStart}
-                      onChange={mark(setWeekStart)}
-                      width={CONTROL_W}
-                      options={[
-                        { value: "mon", label: "Monday" },
-                        { value: "sun", label: "Sunday" },
-                      ]}
-                    />
-                  </Row>
-                  <Row label="Time zone">
-                    <SSelect
-                      value={zone}
-                      onChange={mark(setZone)}
-                      width={CONTROL_W}
-                      options={[
-                        { value: "cet", label: "CET — Berlin" },
-                        { value: "utc", label: "UTC" },
-                        { value: "est", label: "EST — New York" },
-                      ]}
-                    />
-                  </Row>
-                </Group>
-                <Group title="Scheduler">
-                  <Row
-                    label="Auto-schedule"
-                    hint="Unplaced tasks are placed into real free hours."
-                  >
-                    <SSwitch checked={auto} onChange={mark(setAuto)} />
-                  </Row>
-                  <Row
-                    label="Protect focus"
-                    hint="The scheduler will not place anything inside a focus block."
-                  >
-                    <SSwitch checked={protect} onChange={mark(setProtect)} />
-                  </Row>
-                  <Row label="Min chunk">
-                    <SInput
-                      value={minChunk}
-                      onChange={mark(setMinChunk)}
-                      suffix="min"
-                      width={120}
-                    />
-                  </Row>
-                  <Row label="Buffer">
-                    <SInput
-                      value={buffer}
-                      onChange={mark(setBuffer)}
-                      suffix="min"
-                      width={120}
-                    />
-                  </Row>
-                  <Row label="Fill weekends">
-                    <SSwitch
-                      checked={fillWeekends}
-                      onChange={mark(setFillWeekends)}
-                    />
-                  </Row>
-                </Group>
-              </>
-            ) : null}
+                {active.id === "appearance" ? (
+                  <AppearanceSection
+                    value={appearance}
+                    onChange={(patch) => {
+                      setAppearance((current) => ({ ...current, ...patch }));
+                      setSaved(Date.now());
+                    }}
+                  />
+                ) : null}
 
-            {active.id === "calendars" ? (
-              <>
-                <Group title="Connected">
-                  <div
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
-                    {calendars.length === 0 ? (
-                      <div className="nt-empty">
-                        <span className="nt-empty-icon">
-                          <Glyph of={LuCalendarOff} size={24} />
-                        </span>
-                        <span className="nt-empty-text">
-                          No calendar is connected. Events you already agreed to
-                          will not appear on the grid until one is.
-                        </span>
-                        <button
-                          type="button"
-                          className="btn btn-flat"
-                          onClick={() => {
-                            setCalendars(DEFAULT_CALENDARS);
-                            setSaved(Date.now());
-                          }}
-                        >
-                          <Glyph of={LuPlus} size={13} />
-                          Connect a calendar
-                        </button>
-                      </div>
-                    ) : (
-                      calendars.map((account) => (
-                        <CalendarRow
-                          key={account.id}
-                          account={account}
-                          onSync={mark((sync: boolean) =>
-                            setCalendars((current) =>
-                              current.map((c) =>
-                                c.id === account.id ? { ...c, sync } : c
-                              )
-                            )
-                          )}
-                          onDisconnect={() => {
-                            setCalendars((current) =>
-                              current.filter((c) => c.id !== account.id)
-                            );
-                            setSaved(Date.now());
-                          }}
+                {active.id === "appearance" ? (
+                  <Group title="Type">
+                    <Row label="Interface font">
+                      <SSelect
+                        value={font}
+                        onChange={mark(setFont)}
+                        width={CONTROL_W}
+                        options={[
+                          { value: "inter", label: "Inter" },
+                          { value: "system", label: "System" },
+                        ]}
+                      />
+                    </Row>
+                    <Row label="Document width">
+                      <SInput
+                        value={docWidth}
+                        onChange={mark(setDocWidth)}
+                        suffix="px"
+                        width={120}
+                      />
+                    </Row>
+                  </Group>
+                ) : null}
+
+                {active.id === "day" ? (
+                  <>
+                    <Group title="Working hours">
+                      <Row label="Day starts">
+                        <SInput
+                          type="time"
+                          value={dayStart}
+                          onChange={mark(setDayStart)}
+                          width={120}
                         />
-                      ))
-                    )}
-                    {calendars.length ? (
-                      <button
-                        type="button"
-                        className="btn btn-flat"
-                        style={{ alignSelf: "flex-start" }}
+                      </Row>
+                      <Row label="Day ends">
+                        <SInput
+                          type="time"
+                          value={dayEnd}
+                          onChange={mark(setDayEnd)}
+                          width={120}
+                        />
+                      </Row>
+                      <Row label="Week starts">
+                        <SSelect
+                          value={weekStart}
+                          onChange={mark(setWeekStart)}
+                          width={CONTROL_W}
+                          options={[
+                            { value: "mon", label: "Monday" },
+                            { value: "sun", label: "Sunday" },
+                          ]}
+                        />
+                      </Row>
+                      <Row label="Time zone">
+                        <SSelect
+                          value={zone}
+                          onChange={mark(setZone)}
+                          width={CONTROL_W}
+                          options={[
+                            { value: "cet", label: "CET — Berlin" },
+                            { value: "utc", label: "UTC" },
+                            { value: "est", label: "EST — New York" },
+                          ]}
+                        />
+                      </Row>
+                    </Group>
+                    <Group title="Scheduler">
+                      <Row
+                        label="Auto-schedule"
+                        hint="Unplaced tasks are placed into real free hours."
                       >
-                        <Glyph of={LuPlus} size={16} />
-                        Connect a calendar
-                      </button>
-                    ) : null}
-                  </div>
-                </Group>
-                <Group title="What lands on the grid">
-                  <Row label="Declined">
-                    <SSwitch checked={declined} onChange={mark(setDeclined)} />
-                  </Row>
-                  <Row label="All-day">
-                    <SSwitch checked={allDay} onChange={mark(setAllDay)} />
-                  </Row>
-                  <Row
-                    label="Write back"
-                    hint="Closing an imported task closes it in its source."
-                  >
-                    <SSwitch
-                      checked={writeBack}
-                      onChange={mark(setWriteBack)}
-                    />
-                  </Row>
-                  <Row label="Default view">
-                    <SSelect
-                      value={defaultView}
-                      onChange={mark(setDefaultView)}
-                      width={CONTROL_W}
-                      options={[
-                        { value: "week", label: "Week" },
-                        { value: "month", label: "Month" },
-                      ]}
-                    />
-                  </Row>
-                </Group>
-              </>
-            ) : null}
+                        <SSwitch checked={auto} onChange={mark(setAuto)} />
+                      </Row>
+                      <Row
+                        label="Protect focus"
+                        hint="The scheduler will not place anything inside a focus block."
+                      >
+                        <SSwitch
+                          checked={protect}
+                          onChange={mark(setProtect)}
+                        />
+                      </Row>
+                      <Row label="Min chunk">
+                        <SInput
+                          value={minChunk}
+                          onChange={mark(setMinChunk)}
+                          suffix="min"
+                          width={120}
+                        />
+                      </Row>
+                      <Row label="Buffer">
+                        <SInput
+                          value={buffer}
+                          onChange={mark(setBuffer)}
+                          suffix="min"
+                          width={120}
+                        />
+                      </Row>
+                      <Row label="Fill weekends">
+                        <SSwitch
+                          checked={fillWeekends}
+                          onChange={mark(setFillWeekends)}
+                        />
+                      </Row>
+                    </Group>
+                  </>
+                ) : null}
 
-            {active.id === "tasks" ? (
-              <>
-                <Group title="New tasks">
-                  <Row label="Estimate">
-                    <SInput
-                      value={estimate}
-                      onChange={mark(setEstimate)}
-                      suffix="min"
-                      width={120}
-                    />
-                  </Row>
-                  <Row label="Project">
-                    <SSelect
-                      value={defaultProject}
-                      onChange={mark(setDefaultProject)}
-                      width={CONTROL_W}
-                      options={[
-                        { value: "none", label: "No project" },
-                        { value: "ops", label: "Operations" },
-                        { value: "ds", label: "Design system" },
-                      ]}
-                    />
-                  </Row>
-                  <Row
-                    label="Show parts"
-                    hint="Parts stay visible as nested rows instead of a disclosure."
-                  >
-                    <SSwitch
-                      checked={showParts}
-                      onChange={mark(setShowParts)}
-                    />
-                  </Row>
-                  <Row
-                    label="Money groups"
-                    hint="A group of tasks states what it is worth when all of them close."
-                  >
-                    <SSwitch
-                      checked={moneyGroups}
-                      onChange={mark(setMoneyGroups)}
-                    />
-                  </Row>
-                </Group>
-                <Group title="Impulse">
-                  <Row label="Flame">
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <Glyph of={LuFlame} size={16} />
-                      <span
+                {active.id === "calendars" ? (
+                  <>
+                    <Group title="Connected">
+                      <div
                         style={{
-                          font: "var(--type-ui)",
-                          color: "var(--text-tertiary)",
-                          textWrap: "pretty",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
                         }}
                       >
-                        Height is parts and tasks closed lately. A cold category
-                        has no flame, so there is nothing to switch off.
+                        {calendars.length === 0 ? (
+                          <div className="nt-empty">
+                            <span className="nt-empty-icon">
+                              <Glyph of={LuCalendarOff} size={24} />
+                            </span>
+                            <span className="nt-empty-text">
+                              No calendar is connected. Events you already
+                              agreed to will not appear on the grid until one
+                              is.
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-flat"
+                              onClick={() => {
+                                setCalendars(DEFAULT_CALENDARS);
+                                setSaved(Date.now());
+                              }}
+                            >
+                              <Glyph of={LuPlus} size={13} />
+                              Connect a calendar
+                            </button>
+                          </div>
+                        ) : (
+                          calendars.map((account) => (
+                            <CalendarRow
+                              key={account.id}
+                              account={account}
+                              onSync={mark((sync: boolean) =>
+                                setCalendars((current) =>
+                                  current.map((c) =>
+                                    c.id === account.id ? { ...c, sync } : c
+                                  )
+                                )
+                              )}
+                              onDisconnect={() => {
+                                setCalendars((current) =>
+                                  current.filter((c) => c.id !== account.id)
+                                );
+                                setSaved(Date.now());
+                              }}
+                            />
+                          ))
+                        )}
+                        {calendars.length ? (
+                          <button
+                            type="button"
+                            className="btn btn-flat"
+                            style={{ alignSelf: "flex-start" }}
+                          >
+                            <Glyph of={LuPlus} size={16} />
+                            Connect a calendar
+                          </button>
+                        ) : null}
+                      </div>
+                    </Group>
+                    <Group title="What lands on the grid">
+                      <Row label="Declined">
+                        <SSwitch
+                          checked={declined}
+                          onChange={mark(setDeclined)}
+                        />
+                      </Row>
+                      <Row label="All-day">
+                        <SSwitch checked={allDay} onChange={mark(setAllDay)} />
+                      </Row>
+                      <Row
+                        label="Write back"
+                        hint="Closing an imported task closes it in its source."
+                      >
+                        <SSwitch
+                          checked={writeBack}
+                          onChange={mark(setWriteBack)}
+                        />
+                      </Row>
+                      <Row label="Default view">
+                        <SSelect
+                          value={defaultView}
+                          onChange={mark(setDefaultView)}
+                          width={CONTROL_W}
+                          options={[
+                            { value: "week", label: "Week" },
+                            { value: "month", label: "Month" },
+                          ]}
+                        />
+                      </Row>
+                    </Group>
+                  </>
+                ) : null}
+
+                {active.id === "tasks" ? (
+                  <>
+                    <Group title="New tasks">
+                      <Row label="Estimate">
+                        <SInput
+                          value={estimate}
+                          onChange={mark(setEstimate)}
+                          suffix="min"
+                          width={120}
+                        />
+                      </Row>
+                      <Row label="Project">
+                        <SSelect
+                          value={defaultProject}
+                          onChange={mark(setDefaultProject)}
+                          width={CONTROL_W}
+                          options={[
+                            { value: "none", label: "No project" },
+                            { value: "ops", label: "Operations" },
+                            { value: "ds", label: "Design system" },
+                          ]}
+                        />
+                      </Row>
+                      <Row
+                        label="Show parts"
+                        hint="Parts stay visible as nested rows instead of a disclosure."
+                      >
+                        <SSwitch
+                          checked={showParts}
+                          onChange={mark(setShowParts)}
+                        />
+                      </Row>
+                      <Row
+                        label="Money groups"
+                        hint="A group of tasks states what it is worth when all of them close."
+                      >
+                        <SSwitch
+                          checked={moneyGroups}
+                          onChange={mark(setMoneyGroups)}
+                        />
+                      </Row>
+                    </Group>
+                    <Group title="Impulse">
+                      <Row label="Flame">
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Glyph of={LuFlame} size={16} />
+                          <span
+                            style={{
+                              font: "var(--type-ui)",
+                              color: "var(--text-tertiary)",
+                              textWrap: "pretty",
+                            }}
+                          >
+                            Height is parts and tasks closed lately. A cold
+                            category has no flame, so there is nothing to switch
+                            off.
+                          </span>
+                        </span>
+                      </Row>
+                    </Group>
+                  </>
+                ) : null}
+
+                {active.id === "focus" ? (
+                  <>
+                    <Group title="Session">
+                      <Row label="Length">
+                        <SInput
+                          value={sessionLength}
+                          onChange={mark(setSessionLength)}
+                          suffix="min"
+                          width={120}
+                        />
+                      </Row>
+                      <Row label="Break">
+                        <SInput
+                          value={sessionBreak}
+                          onChange={mark(setSessionBreak)}
+                          suffix="min"
+                          width={120}
+                        />
+                      </Row>
+                      <Row label="Start sound">
+                        <SSelect
+                          value={startSound}
+                          onChange={mark(setStartSound)}
+                          width={CONTROL_W}
+                          options={[
+                            { value: "none", label: "Silent" },
+                            { value: "tick", label: "Tick" },
+                            { value: "chime", label: "Chime" },
+                          ]}
+                        />
+                      </Row>
+                    </Group>
+                    <Group title="While a session runs">
+                      <Row
+                        label="Corner glow"
+                        hint="The screen edges breathe in the accent for the length of the session."
+                      >
+                        <SSwitch
+                          checked={cornerGlow}
+                          onChange={mark(setCornerGlow)}
+                        />
+                      </Row>
+                      <Row label="Hide alerts">
+                        <SSwitch
+                          checked={hideAlerts}
+                          onChange={mark(setHideAlerts)}
+                        />
+                      </Row>
+                      <Row
+                        label="Snap click"
+                        hint="A short click when a dragged task snaps to the quarter hour."
+                      >
+                        <SSwitch
+                          checked={snapClick}
+                          onChange={mark(setSnapClick)}
+                        />
+                      </Row>
+                      <Row
+                        label="Stop the mark"
+                        hint="The wordmark holds still until the session ends."
+                      >
+                        <SSwitch
+                          checked={stopMark}
+                          onChange={mark(setStopMark)}
+                        />
+                      </Row>
+                    </Group>
+                  </>
+                ) : null}
+
+                {active.id === "alerts" ? (
+                  <Group title="When Needt speaks">
+                    <Row label="Daily plan">
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <SSwitch
+                          checked={dailyPlan}
+                          onChange={mark(setDailyPlan)}
+                        />
+                        <SInput
+                          type="time"
+                          value={dailyPlanAt}
+                          onChange={mark(setDailyPlanAt)}
+                          width={108}
+                        />
                       </span>
-                    </span>
-                  </Row>
-                </Group>
-              </>
-            ) : null}
-
-            {active.id === "focus" ? (
-              <>
-                <Group title="Session">
-                  <Row label="Length">
-                    <SInput
-                      value={sessionLength}
-                      onChange={mark(setSessionLength)}
-                      suffix="min"
-                      width={120}
-                    />
-                  </Row>
-                  <Row label="Break">
-                    <SInput
-                      value={sessionBreak}
-                      onChange={mark(setSessionBreak)}
-                      suffix="min"
-                      width={120}
-                    />
-                  </Row>
-                  <Row label="Start sound">
-                    <SSelect
-                      value={startSound}
-                      onChange={mark(setStartSound)}
-                      width={CONTROL_W}
-                      options={[
-                        { value: "none", label: "Silent" },
-                        { value: "tick", label: "Tick" },
-                        { value: "chime", label: "Chime" },
-                      ]}
-                    />
-                  </Row>
-                </Group>
-                <Group title="While a session runs">
-                  <Row
-                    label="Corner glow"
-                    hint="The screen edges breathe in the accent for the length of the session."
-                  >
-                    <SSwitch
-                      checked={cornerGlow}
-                      onChange={mark(setCornerGlow)}
-                    />
-                  </Row>
-                  <Row label="Hide alerts">
-                    <SSwitch
-                      checked={hideAlerts}
-                      onChange={mark(setHideAlerts)}
-                    />
-                  </Row>
-                  <Row
-                    label="Snap click"
-                    hint="A short click when a dragged task snaps to the quarter hour."
-                  >
-                    <SSwitch
-                      checked={snapClick}
-                      onChange={mark(setSnapClick)}
-                    />
-                  </Row>
-                  <Row
-                    label="Stop the mark"
-                    hint="The wordmark holds still until the session ends."
-                  >
-                    <SSwitch checked={stopMark} onChange={mark(setStopMark)} />
-                  </Row>
-                </Group>
-              </>
-            ) : null}
-
-            {active.id === "alerts" ? (
-              <Group title="When Needt speaks">
-                <Row label="Daily plan">
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
-                    <SSwitch
-                      checked={dailyPlan}
-                      onChange={mark(setDailyPlan)}
-                    />
-                    <SInput
-                      type="time"
-                      value={dailyPlanAt}
-                      onChange={mark(setDailyPlanAt)}
-                      width={108}
-                    />
-                  </span>
-                </Row>
-                <Row label="Overdue">
-                  <SSwitch
-                    checked={overdueAlert}
-                    onChange={mark(setOverdueAlert)}
-                  />
-                </Row>
-                <Row
-                  label="Week review"
-                  hint="Friday, once the last block closes."
-                >
-                  <SSwitch
-                    checked={weekReview}
-                    onChange={mark(setWeekReview)}
-                  />
-                </Row>
-                <Row label="Channel">
-                  <RadioRow
-                    name="alert-channel"
-                    value={channel}
-                    onChange={mark(setChannel)}
-                    items={[
-                      { value: "desktop", label: "Desktop" },
-                      { value: "mail", label: "Email" },
-                      { value: "off", label: "None" },
-                    ]}
-                  />
-                </Row>
-              </Group>
-            ) : null}
-
-            {active.id === "keys" ? (
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
-              >
-                {NEEDT_KEYS.map((group) => (
-                  <div
-                    key={group.title}
-                    style={{ display: "flex", flexDirection: "column" }}
-                  >
-                    <span
-                      style={{
-                        font: "var(--type-meta-medium)",
-                        letterSpacing: "0.04em",
-                        textTransform: "uppercase",
-                        color: "var(--text-quaternary)",
-                        height: 24,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
+                    </Row>
+                    <Row label="Overdue">
+                      <SSwitch
+                        checked={overdueAlert}
+                        onChange={mark(setOverdueAlert)}
+                      />
+                    </Row>
+                    <Row
+                      label="Week review"
+                      hint="Friday, once the last block closes."
                     >
-                      {group.title}
-                    </span>
-                    {group.keys.map((row, i) => (
+                      <SSwitch
+                        checked={weekReview}
+                        onChange={mark(setWeekReview)}
+                      />
+                    </Row>
+                    <Row label="Channel">
+                      <RadioRow
+                        name="alert-channel"
+                        value={channel}
+                        onChange={mark(setChannel)}
+                        items={[
+                          { value: "desktop", label: "Desktop" },
+                          { value: "mail", label: "Email" },
+                          { value: "off", label: "None" },
+                        ]}
+                      />
+                    </Row>
+                  </Group>
+                ) : null}
+
+                {active.id === "keys" ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 16,
+                    }}
+                  >
+                    {NEEDT_KEYS.map((group) => (
                       <div
-                        key={row.label}
+                        key={group.title}
+                        style={{ display: "flex", flexDirection: "column" }}
+                      >
+                        <span
+                          style={{
+                            font: "var(--type-meta-medium)",
+                            letterSpacing: "0.04em",
+                            textTransform: "uppercase",
+                            color: "var(--text-quaternary)",
+                            height: 24,
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          {group.title}
+                        </span>
+                        {group.keys.map((row, i) => (
+                          <div
+                            key={row.label}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 16,
+                              height: 34,
+                              boxShadow: i
+                                ? "var(--border) 0 -1px 0 0 inset"
+                                : "none",
+                            }}
+                          >
+                            <span
+                              style={{
+                                flex: "none",
+                                width: 96,
+                                display: "flex",
+                                gap: 3,
+                              }}
+                            >
+                              {row.caps.map((cap, j) => (
+                                <kbd key={j} className="key-cap">
+                                  {cap}
+                                </kbd>
+                              ))}
+                            </span>
+                            <span
+                              style={{
+                                font: "var(--type-ui)",
+                                color: "var(--text-tertiary)",
+                              }}
+                            >
+                              {row.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {active.id === "account" ? (
+                  <>
+                    <Group title="You">
+                      <div
                         style={{
                           display: "flex",
                           alignItems: "center",
                           gap: 16,
-                          height: 34,
-                          boxShadow: i
-                            ? "var(--border) 0 -1px 0 0 inset"
-                            : "none",
+                          paddingBottom: 16,
                         }}
                       >
+                        <Avatar
+                          initials={accountInitials}
+                          name={accountName}
+                          size={44}
+                        />
                         <span
-                          style={{
-                            flex: "none",
-                            width: 96,
-                            display: "flex",
-                            gap: 3,
-                          }}
+                          style={{ display: "flex", flexDirection: "column" }}
                         >
-                          {row.caps.map((cap, j) => (
-                            <kbd key={j} className="key-cap">
-                              {cap}
-                            </kbd>
-                          ))}
+                          <span
+                            style={{
+                              font: "var(--type-card-title)",
+                              color: "var(--text-primary)",
+                            }}
+                          >
+                            {accountName}
+                          </span>
+                          <span
+                            style={{
+                              font: "var(--type-meta)",
+                              color: "var(--text-muted)",
+                            }}
+                          >
+                            {accountEmail}
+                          </span>
                         </span>
+                        <Chip accent>Pro</Chip>
+                        <button
+                          type="button"
+                          className="btn btn-flat"
+                          style={{ marginLeft: "auto" }}
+                        >
+                          Replace photo
+                        </button>
+                      </div>
+                      <Row label="Password">
+                        <button type="button" className="btn btn-flat">
+                          Change password
+                        </button>
+                      </Row>
+                    </Group>
+                    <Group title="Session">
+                      <Row label="Signed in">
                         <span
                           style={{
                             font: "var(--type-ui)",
                             color: "var(--text-tertiary)",
                           }}
                         >
-                          {row.label}
+                          This device
                         </span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            ) : null}
+                      </Row>
+                      <Row label="Sign out">
+                        <button
+                          type="button"
+                          className="btn btn-flat"
+                          onClick={onSignOut}
+                        >
+                          <Glyph of={LuLogOut} size={14} />
+                          Sign out
+                        </button>
+                      </Row>
+                    </Group>
+                  </>
+                ) : null}
 
-            {active.id === "account" ? (
-              <>
-                <Group title="You">
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 16,
-                      paddingBottom: 16,
-                    }}
-                  >
-                    <Avatar
-                      initials={accountInitials}
-                      name={accountName}
-                      size={44}
-                    />
-                    <span style={{ display: "flex", flexDirection: "column" }}>
-                      <span
-                        style={{
-                          font: "var(--type-card-title)",
-                          color: "var(--text-primary)",
-                        }}
+                {active.id === "data" ? (
+                  <>
+                    <Group title="Export">
+                      <Row label="Tasks">
+                        <button type="button" className="btn btn-flat">
+                          <Glyph of={LuDownload} size={14} />
+                          Download CSV
+                        </button>
+                      </Row>
+                      <Row label="Documents">
+                        <button type="button" className="btn btn-flat">
+                          <Glyph of={LuDownload} size={14} />
+                          Download Markdown
+                        </button>
+                      </Row>
+                      <Row label="Everything">
+                        <button type="button" className="btn btn-flat">
+                          <Glyph of={LuDownload} size={14} />
+                          Download JSON
+                        </button>
+                      </Row>
+                    </Group>
+                    <Group title="Danger">
+                      <Row
+                        label="Clear tasks"
+                        hint="Documents and calendars stay."
                       >
-                        {accountName}
-                      </span>
-                      <span
-                        style={{
-                          font: "var(--type-meta)",
-                          color: "var(--text-muted)",
-                        }}
+                        <button type="button" className="btn btn-flat">
+                          Clear
+                        </button>
+                      </Row>
+                      <Row
+                        label="Delete account"
+                        hint="Everything goes at once. There is no undo."
                       >
-                        {accountEmail}
-                      </span>
-                    </span>
-                    <Chip accent>Pro</Chip>
-                    <button
-                      type="button"
-                      className="btn btn-flat"
-                      style={{ marginLeft: "auto" }}
-                    >
-                      Replace photo
-                    </button>
-                  </div>
-                  <Row label="Password">
-                    <button type="button" className="btn btn-flat">
-                      Change password
-                    </button>
-                  </Row>
-                </Group>
-                <Group title="Session">
-                  <Row label="Signed in">
-                    <span
-                      style={{
-                        font: "var(--type-ui)",
-                        color: "var(--text-tertiary)",
-                      }}
-                    >
-                      This device
-                    </span>
-                  </Row>
-                  <Row label="Sign out">
-                    <button
-                      type="button"
-                      className="btn btn-flat"
-                      onClick={onSignOut}
-                    >
-                      <Glyph of={LuLogOut} size={14} />
-                      Sign out
-                    </button>
-                  </Row>
-                </Group>
+                        <button type="button" className="btn btn-destructive">
+                          <Glyph of={LuTrash2} size={14} />
+                          Delete
+                        </button>
+                      </Row>
+                    </Group>
+                  </>
+                ) : null}
               </>
-            ) : null}
-
-            {active.id === "data" ? (
-              <>
-                <Group title="Export">
-                  <Row label="Tasks">
-                    <button type="button" className="btn btn-flat">
-                      <Glyph of={LuDownload} size={14} />
-                      Download CSV
-                    </button>
-                  </Row>
-                  <Row label="Documents">
-                    <button type="button" className="btn btn-flat">
-                      <Glyph of={LuDownload} size={14} />
-                      Download Markdown
-                    </button>
-                  </Row>
-                  <Row label="Everything">
-                    <button type="button" className="btn btn-flat">
-                      <Glyph of={LuDownload} size={14} />
-                      Download JSON
-                    </button>
-                  </Row>
-                </Group>
-                <Group title="Danger">
-                  <Row label="Clear tasks" hint="Documents and calendars stay.">
-                    <button type="button" className="btn btn-flat">
-                      Clear
-                    </button>
-                  </Row>
-                  <Row
-                    label="Delete account"
-                    hint="Everything goes at once. There is no undo."
-                  >
-                    <button type="button" className="btn btn-destructive">
-                      <Glyph of={LuTrash2} size={14} />
-                      Delete
-                    </button>
-                  </Row>
-                </Group>
-              </>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

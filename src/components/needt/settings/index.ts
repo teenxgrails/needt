@@ -1,3 +1,4 @@
+export { SettingsRoute } from "./SettingsRoute";
 export { SettingsScreen, type SettingsScreenProps } from "./SettingsScreen";
 export {
   AppearanceSection,

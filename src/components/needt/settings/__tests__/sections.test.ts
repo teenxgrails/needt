@@ -43,6 +43,15 @@ describe("filterSettingsSections", () => {
     expect(hits.map((s) => s.id)).toEqual(["day"]);
   });
 
+  it("keeps billing and AI settings discoverable inside the nine sections", () => {
+    expect(filterSettingsSections("billing").map((s) => s.id)).toEqual([
+      "account",
+    ]);
+    expect(filterSettingsSections("AI provider").map((s) => s.id)).toEqual([
+      "data",
+    ]);
+  });
+
   it("is case-insensitive", () => {
     expect(filterSettingsSections("RAIL").map((s) => s.id)).toEqual([
       "appearance",

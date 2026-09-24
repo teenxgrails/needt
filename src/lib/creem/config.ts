@@ -6,7 +6,7 @@ export const NEEDT_PRICING = {
   pro: {
     name: "Pro",
     month: {
-      amountCents: 600,
+      amountCents: 700,
       productEnv: "CREEM_PRODUCT_PRO_MONTHLY",
     },
     year: {
@@ -16,7 +16,7 @@ export const NEEDT_PRICING = {
   },
   lifetime: {
     name: "Lifetime",
-    amountCents: 7_900,
+    amountCents: 14_900,
     productEnv: "CREEM_PRODUCT_LIFETIME",
   },
 } as const;
