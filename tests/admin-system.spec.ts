@@ -59,6 +59,6 @@ test("a non-admin is redirected away from system credentials", async ({
 
   await page.goto("/admin/system");
 
-  await expect(page).toHaveURL(/\/calendar$/);
+  await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId("admin-system-form")).toHaveCount(0);
 });

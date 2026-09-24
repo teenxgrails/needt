@@ -284,7 +284,9 @@ for (const width of [360, 390]) {
     await expect(page).toHaveURL(/#data$/);
     await expect(page.getByRole("heading", { name: "Data" })).toBeVisible();
     await expect(page.getByText("Personal API", { exact: true })).toBeVisible();
-    await expect(page.getByText("AI Assistant", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Provider", exact: true })
+    ).toBeVisible();
     await expect(page.getByText(/\d+\/\d+ actions left/)).toHaveCount(0);
     expect(
       await page.evaluate(

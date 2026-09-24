@@ -184,11 +184,11 @@ test("Tasks and Projects share the real workspace views and persist completion",
 
   await page.goto("/tasks");
   await expect(page.locator(".needt-v2")).toBeVisible();
-  await expect(page.getByText(project.name)).toBeVisible();
-  await expect(page.getByText("Publish website")).toBeVisible();
+  await expect(page.getByText(project.name).first()).toBeVisible();
+  await expect(page.getByTitle("Publish website")).toBeVisible();
   await expect(page.getByText(person.name)).toBeVisible();
 
-  await page.getByText("Publish website").first().click();
+  await page.getByTitle("Publish website").click();
   await expect(page.getByLabel("Task name")).toBeVisible();
   await expect(page.getByText("Auto-scheduled", { exact: true })).toBeVisible();
   await page.getByLabel("Task name").fill("Publish website v2");
@@ -210,7 +210,7 @@ test("Tasks and Projects share the real workspace views and persist completion",
   await page.getByRole("button", { name: "Kanban" }).click();
   await expect(page.getByText("In progress")).toBeVisible();
   await page.getByRole("button", { name: "Flow" }).click();
-  await expect(page.getByText("Website launch")).toBeVisible();
+  await expect(page.getByText("Website launch").first()).toBeVisible();
   await expect(page.getByText("Open deployment")).toBeVisible();
 
   await page.getByRole("button", { name: "Projects", exact: true }).click();
@@ -233,14 +233,14 @@ for (const width of [360, 390]) {
     await expect(
       page.getByRole("heading", { name: workspace.name })
     ).toBeVisible();
-    await expect(page.getByText("Publish website")).toBeVisible();
+    await expect(page.getByTitle("Publish website")).toBeVisible();
     await expect(page.getByRole("button", { name: "Add task" })).toHaveCount(0);
     await page.goto("/projects");
     await expect(
       page.getByRole("button", { name: "Manage projects" })
     ).toHaveCount(0);
     await page.goto("/tasks");
-    await page.getByText("Publish website").click();
+    await page.getByTitle("Publish website").click();
     await expect(page.getByText("Archive")).toHaveCount(0);
   });
 }

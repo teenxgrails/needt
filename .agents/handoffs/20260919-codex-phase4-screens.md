@@ -3,7 +3,7 @@ id: 20260919-codex-phase4-screens
 owner: codex
 branch: codex/design-completion
 status: active
-updated: 2026-09-24T16:55:41Z
+updated: 2026-09-24T17:14:39Z
 objective: Replace the five legacy product screens in place with the ported Needt screens, real server data, and no parallel variants.
 ---
 
@@ -35,10 +35,11 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Removed the test-only `__internal` export from the Calendar route after generated Next route typings correctly rejected the extra route-module export; runtime behavior is unchanged.
 - Replaced the legacy Settings shell with the ported nine-section Settings screen while retaining the real production panels, all historical hash aliases, Report Bug access, the launch pricing/trial contract, and account export/deletion integration points. Numeric hosted-AI usage is no longer rendered.
 - Removed the public `/design-preview` route, its middleware exception, and the now-orphaned fixture compositor after every ported product screen was mounted in place.
+- Repaired the Phase 4 browser contracts reported by PR #34 CI: scoped duplicate Documents/project/task locators, updated the renamed Settings Provider heading, and aligned the non-admin redirect assertion with middleware's `/` destination.
 
 ## Working state
 
-- Phase A is complete. A.4 is ready to commit and push; its tracked scope is the retired preview route/compositor, middleware regression test, current roadmap, changelog and this handoff.
+- Phase A is complete and pushed through A.4. The tracked working scope is the E2E contract repair for PR #34 plus this handoff; Phase B is blocked on visual-spec selector repair before CI can persist Linux baselines.
 - Foreign changes that must remain untouched: all 41 pre-existing untracked paths reported by `npm run agent:context`, including design bundles, landing sources, `pf-sync/`, root `pnpm-lock.yaml`, and dim/paper visual baselines.
 
 ## Verification
@@ -64,12 +65,14 @@ objective: Replace the five legacy product screens in place with the ported Need
 - Settings A.3: `npm run type-check`; `npm run lint`; full unit (196 suites, 1270 tests, one skipped); 14 focused settings registry/search/pricing/AI-privacy assertions; tokens, UI contracts, branding, handoff and diff checks; production build with explicit loopback DB URLs (147 pages, artifact check passed); worker build; Playwright lists the desktop billing journey and 360px/390px section/overflow journeys. A 5.6 Sol/Terra read-only review found and closed seven missing legacy hash aliases; the trial backend remains correctly owned by PR #39.
 - The Settings browser journey was not executed locally because its standard setup would restart the intentionally stopped Docker stack and apply migrations. The production build did not connect to Neon, no migration ran, and `.next` was removed immediately after the build.
 - Preview removal A.4: type-check; lint; full unit (196 suites, 1271 tests, one skipped); focused middleware regression (2 assertions); tokens, UI contracts, branding, handoff and diff checks; production build with explicit loopback DB URLs (146 pages, no `/design-preview`, artifact check passed); worker build. `.next` was removed immediately after the build.
+- PR #34 E2E repair: type-check; lint; full unit (196 suites, 1271 tests, one skipped); tokens, UI contracts, branding, handoff and diff checks; production build (146 pages, artifact check passed); worker build; Playwright lists all 11 affected tests without compile errors. Runtime execution remains CI-owned because Docker is intentionally stopped.
 
 ## Blockers
 
 - PRs #37, #24 and #41 are still open, so the owner-requested rebase wave cannot start yet.
 - Owner decision on outside contacts is still open. A.1 uses workspace members for holder/waits-on data and keeps the existing `//todo` seam in `prisma-source.ts`.
+- Linux-baseline run 36031058057 failed before its commit step: 22 visual tests use stale or ambiguous selectors after the in-place screen replacements. No output branch, commit or artifact was created; the 12 existing untracked dim/paper snapshots are foreign and remain untouched.
 
 ## Next action
 
-- Commit and push A.4 to draft PR #34, then start Phase B through the Linux CI baseline flow. Do not refresh visual baselines locally.
+- Commit and push the E2E contract repair to draft PR #34, confirm CI, then repair the seven failing visual specs and rerun the Linux baseline workflow. Review every generated PNG before accepting it.

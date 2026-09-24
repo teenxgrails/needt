@@ -133,7 +133,9 @@ test("Documents searches, persists a favorite, opens, and creates", async ({
   const state = await mockDocuments(page);
 
   await page.goto("/pages");
-  await expect(page.getByRole("heading", { name: "Documents" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Documents", exact: true })
+  ).toBeVisible();
   await expect(page.getByText(document.title)).toBeVisible();
 
   await page.getByLabel("Search documents").fill("missing");
