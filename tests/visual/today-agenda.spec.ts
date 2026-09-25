@@ -68,7 +68,11 @@ test("Today binds real tasks and keeps completion after reload", async ({
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(
-    page.getByRole("main").getByText("Today", { exact: true }).first()
+    page
+      .getByRole("main")
+      .getByText("Today", { exact: true })
+      .locator("visible=true")
+      .first()
   ).toBeVisible();
   await expect(
     page.getByRole("main").getByText(title, { exact: true })

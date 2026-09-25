@@ -61,10 +61,11 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
  * a collapsed line the phone taps open. Reveal whichever this viewport uses.
  */
 export async function openOverdue(page: import("@playwright/test").Page) {
-  const line = page.getByRole("button", { name: /^Overdue/ });
-  if (await line.count()) {
-    if ((await line.first().getAttribute("aria-expanded")) !== "true") {
-      await line.first().click();
+  if ((page.viewportSize()?.width ?? 0) < 640) {
+    const line = page.getByRole("button", { name: /^Overdue/ }).first();
+    await line.waitFor();
+    if ((await line.getAttribute("aria-expanded")) !== "true") {
+      await line.click();
     }
     return;
   }
