@@ -77,11 +77,16 @@ objective: Replace the five legacy product screens in place with the ported Need
 
 - Phase B preparation (2026-09-25): ran the whole visual suite with `--ignore-snapshots` so its logic failures could be separated from expected screenshot drift. Fixed four stale contracts: Today completes through a `checkbox` on the Overdue shelf, which rests off-canvas and needs a hover on its lip; a completed task leaves Today, so persistence is proven through the stored status; the failure stub has to keep failing because the screen loads more than once per visit; Settings names the open section instead of repeating "Settings"; an editor gets the production task editor, so the ported dialog's unwired Template and Recurring controls are the Viewer's; and `light` is the legacy alias the product migrates to Paper.
 
+- Phase B done (2026-09-25): the baseline job needed three repairs before it could run — it never reached phone and tablet, it could not switch to a branch from main while carrying dim and paper baselines the branch owns, and its bot commit tripped the repo pre-commit hook. Run 36091718001 then produced 105 Linux baselines, which were reviewed before acceptance and committed as `d80e03f`.
+- The ported screens print the server's clock, which `page.clock` cannot freeze, so every Today and Calendar screenshot carried the day it was taken and would have gone red the next morning. `freezeNeedtNow` rewrites `now` and `todayKey` for the four Needt endpoints.
+- CI on `d80e03f`: the push run is green on every job — `e2e`, `visual-style`, `quality-gates`, `schema-drift`, `security`. The pull-request run still reports `security` red through the PR baseline filter that PR #37 fixes.
+- Phase D closed: saved views and project health (`1590376`), the `/mail` route (`b454f2b`), the AI schedule preview journey in `tests/ai-chat.spec.ts` (`951a30c`). `/mail` is covered by the secondary-surfaces visual spec.
+
 ## Blockers
 
 - PRs #37, #24 and #41 are still open, so the owner-requested rebase wave cannot start yet.
 - Owner decision on outside contacts is still open. A.1 uses workspace members for holder/waits-on data and keeps the existing `//todo` seam in `prisma-source.ts`.
-- Linux-baseline run 36033804560 is still generating snapshots from `e975a04`; no output branch is available yet. The 12 existing untracked dim/paper snapshots are foreign and remain untouched.
+- The six tracked dim and paper `-linux.png` baselines now come from CI; the local untracked copies were saved to `~/Needt-handoff/2026-09-25-foreign-baselines/` before the cherry-pick resolved them.
 
 ## Next action
 
