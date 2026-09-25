@@ -1,6 +1,22 @@
+> **SUPERSEDED — 2026-09-11.** The design was replaced wholesale. The
+> authority is now `needt-app/HANDOFF.md` inside the Claude Design project
+> `Content height and label fixes`
+> (`260768ff-eb30-4609-b2f7-d75b353033ed`), mirrored locally under
+> `needt-app-design/` once the bundle is downloaded. See
+> `docs/handoff/design-reconciliation-2026-09-11.md` for what changed.
+> Nothing below decides anything. It is kept as the record of how the product
+> got here, and for measurements that the new design does not restate.
+
 # Needt app design system
 
-The finished Calendar UI is the visual source of truth for every Needt screen.
+> **SUPERSEDED 2026-08-31 by `/DESIGN.md`.** This file claimed to be the visual
+> source of truth; it no longer is. It is kept because the Calendar contract and
+> the token descriptions below still document what is built today. Do not take
+> values from here for new work — take them from `/DESIGN.md`, and from
+> `src/app/globals.css` at runtime.
+
+The finished Calendar UI was the visual source of truth for every Needt screen
+until 2026-08-31.
 This document records its palette, control geometry, and theme contract so new
 tabs do not recreate styles locally.
 

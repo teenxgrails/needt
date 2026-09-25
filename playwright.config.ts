@@ -33,6 +33,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   /* E2E reset/seed owns one PostgreSQL and Redis fixture per suite. */
   workers: 1,
+  /* The suite runs against `next dev`, so the first hit on a route pays for its
+   * compile. That regularly costs more than Playwright's 30s default. */
+  timeout: 90_000,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -42,6 +45,7 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
+    navigationTimeout: 60_000,
     // Set viewport to a large size
     viewport: { width: 1920, height: 1080 },
     // Launch the browser maximized

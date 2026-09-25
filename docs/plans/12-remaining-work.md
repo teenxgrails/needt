@@ -1,8 +1,9 @@
 # 12 — Remaining work to the first paying user
 
-**Status:** active. Supersedes the sequencing in `09-launch.md` L0–L5, which was
-written before those tasks landed. `09-launch.md` stays as the reference for what
-each phase _means_; this file is the authority on what is _left_.
+**Status:** detail chapter. The governing plan is [`00-roadmap.md`](00-roadmap.md),
+rewritten 2026-09-15, which carries the current state of every item below. This
+file holds what each item _means_ and how to verify it. `09-launch.md` is
+archived at `docs/_old/09-launch.md`.
 
 **Verified:** 2026-08-24 against `origin/main` `e93d61a`, the live Coolify
 project `needt/production`, and production HTTP.
@@ -30,6 +31,10 @@ this work, and do not trust `09-launch.md` where it contradicts this table.
 
 **Consequence:** `09-launch.md` L0.1, L0.2, L0.3, L0.4 are done. L1.2 and L1.5
 are done in part. Close them; stop scheduling them.
+
+**2026-09-15, owner:** Pro becomes $7/month ($60/year unchanged), Lifetime $149
+once for the first 300 buyers, and Pro gets a 14-day trial without a card. Neither is in code yet — roadmap P0.6
+and P0.7. The pricing row above is true of the code, not of the decision.
 
 ## Status, 2026-08-25
 
@@ -232,6 +237,9 @@ target branch already exists on the remote, and the input default is
 
 ### P1.3 — Close the three stale handoffs
 
+**Done 2026-09-15.** All three closed with their resolving SHAs; the open
+remainder moved to the roadmap.
+
 `20260815-codex-delivery-audit`, `20260815-codex-mail-focused-splits` and
 `20260816-codex-release-boundary-audit` are all still `status: blocked`, and all
 three describe work that has since merged. A blocked handoff that is actually
@@ -336,10 +344,11 @@ Items 1–3 and 6 can run in one sitting. Items 4, 5 and 7 are the real work.
 
 ## Not authorized
 
-Unchanged from `09-launch.md` L7: no new AI scheduler, no seat billing, no
+Unchanged from `docs/_old/09-launch.md` L7: no new AI scheduler, no seat billing, no
 cross-workspace views, no third-party document storage, no physical deletion of
 user content, no read receipts, no team snippets, no Notion-style automation, no
 portfolio management, no audio transcription, no new integrations.
 
-Plan 10 (design identity) and plan 11 (task shape — T-1, T-2, T-4) stay queued
-behind a stable production week, exactly as written.
+Plan 10 is archived: the design is now the Claude Design port in
+`docs/handoff/`. Plan 11 (task shape — T-1, T-2, T-4) stays queued behind a
+stable production week.

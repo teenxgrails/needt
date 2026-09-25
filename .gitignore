@@ -67,3 +67,14 @@ scripts/test-outlook-task-api.sh
 
 # git worktrees created by skills (e.g. implement-github-issue)
 /.claude/worktrees/
+
+# Figma Make leftovers, archived 2026-08-31 — delete once confirmed
+_archive-figma-make/
+
+# 205TF Exposure trial fonts — testing only, no commercial use, never commit
+design-refs/fonts/
+
+# The Claude Design bundle ships the Exposure trial font inside it.
+# Track the bundle, never the font — same trial licence as design-refs/fonts/.
+needt-app-design/**/*.woff2
+Needt Design System/**/*.woff2

@@ -20,10 +20,10 @@ import {
 } from "lucide-react";
 import { HiOutlineFolder } from "react-icons/hi";
 
-import { MiniCalendar } from "@/components/calendar/MiniCalendar";
 import { DownloadAppsModal } from "@/components/navigation/DownloadAppsModal";
+import { MiniCalendar } from "@/components/navigation/MiniCalendar";
+import { TodaysTasksPanel } from "@/components/navigation/TodaysTasksPanel";
 import { PagesSidebarSection } from "@/components/pages/PagesSidebarSection";
-import { TodaysTasksPanel } from "@/components/tasks/TodaysTasksPanel";
 import { RainbowButton } from "@/components/ui/rainbow-button";
 import {
   Tooltip,

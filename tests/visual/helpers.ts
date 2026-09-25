@@ -4,10 +4,42 @@ import { expect } from "@playwright/test";
 
 import { prisma } from "@/lib/prisma";
 
-import { VISUAL_TEST_EMAIL, VISUAL_TEST_PAGE_ID } from "./fixtures";
+import {
+  VISUAL_TEST_EMAIL,
+  VISUAL_TEST_NOW,
+  VISUAL_TEST_PAGE_ID,
+} from "./fixtures";
 import { resetVisualSettings, resetVisualTaskData } from "./global-setup";
 
+/**
+ * The ported screens print the server's clock, which `page.clock` cannot
+ * freeze, so a screenshot of Today or Calendar would otherwise carry the day
+ * it was taken and drift the next morning. Rewrite that one field.
+ */
+export async function freezeNeedtNow(page: import("@playwright/test").Page) {
+  const screens = ["today", "calendar", "workspace", "docs"];
+  for (const screen of screens) {
+    await page.route(`**/api/needt/${screen}`, async (route) => {
+      try {
+        const response = await route.fetch();
+        if (!response.ok()) return route.fulfill({ response });
+        const body = (await response.json()) as Record<string, unknown>;
+        if (typeof body?.now === "string") body.now = VISUAL_TEST_NOW;
+        if (typeof body?.todayKey === "string") {
+          body.todayKey = VISUAL_TEST_NOW.slice(0, 10);
+        }
+        await route.fulfill({ response, json: body });
+      } catch {
+        // A screen that cannot be rewritten is still better served live than
+        // left hanging on an aborted request.
+        await route.continue();
+      }
+    });
+  }
+}
+
 export async function signInVisualUser(page: import("@playwright/test").Page) {
+  await freezeNeedtNow(page);
   await page.addInitScript(() => {
     sessionStorage.setItem("needt-ai-companion-intro-seen", "1");
   });

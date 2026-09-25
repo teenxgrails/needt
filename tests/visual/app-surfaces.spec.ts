@@ -16,9 +16,12 @@ async function settleVisualSurface(page: import("@playwright/test").Page) {
 
 async function useVisualTheme(
   page: import("@playwright/test").Page,
-  theme: "dark" | "light"
+  theme: "dark" | "paper"
 ) {
-  await page.emulateMedia({ colorScheme: theme, reducedMotion: "reduce" });
+  await page.emulateMedia({
+    colorScheme: theme === "dark" ? "dark" : "light",
+    reducedMotion: "reduce",
+  });
   const update = await page.request.patch("/api/user-settings", {
     data: { theme },
   });
@@ -37,7 +40,7 @@ async function useVisualTheme(
   const themePicker = page.getByRole("combobox", { name: "Theme" });
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   await expect(page.getByText("Monday", { exact: true })).toBeVisible();
-  await expect(themePicker).toHaveText(theme === "dark" ? "Dark" : "Light");
+  await expect(themePicker).toHaveText(theme === "dark" ? "Dark" : "Paper");
   await expect(
     page
       .getByText("Animations:", { exact: true })
@@ -46,7 +49,9 @@ async function useVisualTheme(
   ).not.toBeChecked();
 }
 
-test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
+test("Calendar, Today, and Workspace stay visually stable", async ({
+  page,
+}) => {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await page.addInitScript(() => {
     localStorage.setItem("needt:quick-tip:last-shown-at", String(Date.now()));
@@ -58,14 +63,21 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   await expect(page).toHaveScreenshot("settings-appearance.png");
   await page.goto("/calendar", { waitUntil: "domcontentloaded" });
 
-  const visibleTimeGrid = page
-    .locator(".fc-timegrid")
-    .filter({ visible: true });
-  await expect(visibleTimeGrid).toHaveCount(1);
+  await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
   await expect(
-    page
-      .getByTestId("calendar-task")
-      .filter({ hasText: "Review calendar sync" })
+    page.locator(
+      (page.viewportSize()?.width ?? 0) < 640
+        ? '[data-calendar-view="day"]'
+        : '[data-calendar-view="week"]'
+    )
+  ).toBeVisible();
+  const calendarView = page.locator(
+    (page.viewportSize()?.width ?? 0) < 640
+      ? '[data-calendar-view="day"]'
+      : '[data-calendar-view="week"]'
+  );
+  await expect(
+    calendarView.getByText("Review calendar sync", { exact: true })
   ).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("calendar.png");
@@ -82,45 +94,20 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   await expect(page).toHaveScreenshot("command-palette.png");
   await page.keyboard.press("Escape");
 
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await page.getByRole("button", { name: "Create task" }).click();
-    await expect(page.getByTestId("task-modal")).toBeVisible();
-    await settleVisualSurface(page);
-    await expect(page).toHaveScreenshot("calendar-create-task.png");
-    await page
-      .getByTestId("task-modal")
-      .getByRole("button", { name: /Cancel/ })
-      .click();
-    await expect(page.getByTestId("task-modal")).toBeHidden();
-
-    await page.getByRole("button", { name: "More calendar actions" }).click();
-    await expect(
-      page.getByRole("heading", { name: "Calendar options" })
-    ).toBeVisible();
-    await settleVisualSurface(page);
-    await expect(page).toHaveScreenshot("calendar-options-sheet.png");
-    await page.keyboard.press("Escape");
-  } else {
-    await page.getByTitle("Calendar options").click();
-    await expect(page.getByRole("heading", { name: "Calendar" })).toBeVisible();
-    await settleVisualSurface(page);
-    await expect(page).toHaveScreenshot("calendar-options.png");
-    await page.keyboard.press("Escape");
-  }
+  await page.getByRole("button", { name: "New event" }).click();
+  await expect(page.getByRole("heading", { name: "New event" })).toBeVisible();
+  await settleVisualSurface(page);
+  await expect(page).toHaveScreenshot("calendar-create-event.png");
+  await page.keyboard.press("Escape");
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-    await expect(page.getByText("July 16th, 2026")).toBeVisible();
-  } else {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-  }
+  await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
   await expect(
-    page.getByRole("main").getByText("Plan the launch").first()
+    page
+      .getByRole("main")
+      .getByText("Plan the launch")
+      .locator("visible=true")
+      .first()
   ).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("today.png");
@@ -150,33 +137,24 @@ test("Calendar, Today, and Space stay visually stable", async ({ page }) => {
   await expect(page).toHaveScreenshot("page-document.png");
 
   await page.goto("/tasks", { waitUntil: "domcontentloaded" });
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await expect(page.getByText("Space is best on desktop")).toBeVisible();
-  } else {
-    await expect(page.getByText("Schedule stays unchanged")).toBeVisible();
-  }
+  await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
+  await expect(
+    page
+      .getByRole("main")
+      .getByText("Review calendar sync")
+      .locator("visible=true")
+      .first()
+  ).toBeVisible();
   await settleVisualSurface(page);
-  await expect(page).toHaveScreenshot("space.png");
+  await expect(page).toHaveScreenshot("workspace.png");
 
   if ((page.viewportSize()?.width ?? 0) >= 640) {
-    await page.getByRole("button", { name: "Timeline" }).click();
-    const ganttViewport = page.getByTestId("gantt-scroll-viewport");
-    const ganttGrid = page.getByTestId("gantt-grid-background");
-    await expect(ganttViewport).toBeVisible();
-    await expect(ganttGrid).toBeVisible();
-
-    const bottomGap = await page.evaluate(() => {
-      const viewport = document
-        .querySelector('[data-testid="gantt-scroll-viewport"]')
-        ?.getBoundingClientRect();
-      const grid = document
-        .querySelector('[data-testid="gantt-grid-background"]')
-        ?.getBoundingClientRect();
-      if (!viewport || !grid) return Number.POSITIVE_INFINITY;
-      return Math.abs(viewport.bottom - grid.bottom);
-    });
-    expect(bottomGap).toBeLessThanOrEqual(1);
-    await expect(ganttViewport.getByText("Jun 2026")).toHaveCount(0);
+    await page.getByRole("button", { name: "Kanban" }).click();
+    await expect(page.getByText("In progress")).toBeVisible();
+    await page.getByRole("button", { name: "Flow" }).click();
+    await expect(
+      page.getByText("Review calendar sync").locator("visible=true").first()
+    ).toBeVisible();
   }
 });
 
@@ -187,15 +165,22 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
     localStorage.setItem("needt-visit-count", "0");
   });
   await signInVisualUser(page);
-  await useVisualTheme(page, "light");
+  await useVisualTheme(page, "paper");
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("settings-appearance-light.png");
 
   await page.goto("/calendar", { waitUntil: "domcontentloaded" });
-  const visibleTimeGrid = page
-    .locator(".fc-timegrid")
-    .filter({ visible: true });
-  await expect(visibleTimeGrid).toHaveCount(1);
+  await expect(page.locator(".needt-v2")).toHaveAttribute(
+    "data-theme",
+    "paper"
+  );
+  await expect(
+    page.locator(
+      (page.viewportSize()?.width ?? 0) < 640
+        ? '[data-calendar-view="day"]'
+        : '[data-calendar-view="week"]'
+    )
+  ).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("calendar-light.png");
 
@@ -212,25 +197,25 @@ test("primary app surfaces stay coherent in light mode", async ({ page }) => {
   await page.keyboard.press("Escape");
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-    await expect(page.getByText("July 16th, 2026")).toBeVisible();
-  } else {
-    await expect(
-      page.getByRole("heading", { name: "Thursday", level: 1 })
-    ).toBeVisible();
-  }
+  await expect(page.locator(".needt-v2")).toHaveAttribute(
+    "data-theme",
+    "paper"
+  );
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("today-light.png");
 
   await page.goto("/tasks", { waitUntil: "domcontentloaded" });
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    await expect(page.getByText("Space is best on desktop")).toBeVisible();
-  } else {
-    await expect(page.getByText("Schedule stays unchanged")).toBeVisible();
-  }
+  await expect(page.locator(".needt-v2")).toHaveAttribute(
+    "data-theme",
+    "paper"
+  );
+  await expect(
+    page
+      .getByRole("main")
+      .getByText("Review calendar sync")
+      .locator("visible=true")
+      .first()
+  ).toBeVisible();
   await settleVisualSurface(page);
-  await expect(page).toHaveScreenshot("space-light.png");
+  await expect(page).toHaveScreenshot("workspace-light.png");
 });

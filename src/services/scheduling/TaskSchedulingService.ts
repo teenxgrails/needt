@@ -19,7 +19,6 @@ import {
 
 import {
   CalendarBusyBlock,
-  EnergyProfile,
   SchedulableTask,
   ScheduleResult,
   SchedulingPreferences,
@@ -308,39 +307,6 @@ function buildPreferences(
   };
 }
 
-function buildFallbackEnergyProfile(legacySettings: {
-  highEnergyStart: number | null;
-  highEnergyEnd: number | null;
-  mediumEnergyStart: number | null;
-  mediumEnergyEnd: number | null;
-  lowEnergyStart: number | null;
-  lowEnergyEnd: number | null;
-  workDays: string;
-}): EnergyProfile {
-  return {
-    windows: parseWorkDays(legacySettings.workDays).flatMap((dayOfWeek) => [
-      {
-        dayOfWeek,
-        startTime: toTime(legacySettings.highEnergyStart ?? 9),
-        endTime: toTime(legacySettings.highEnergyEnd ?? 12),
-        energyLevel: "HIGH",
-      },
-      {
-        dayOfWeek,
-        startTime: toTime(legacySettings.lowEnergyStart ?? 13),
-        endTime: toTime(legacySettings.lowEnergyEnd ?? 14),
-        energyLevel: "LOW",
-      },
-      {
-        dayOfWeek,
-        startTime: toTime(legacySettings.mediumEnergyStart ?? 15),
-        endTime: toTime(legacySettings.mediumEnergyEnd ?? 18),
-        energyLevel: "MEDIUM",
-      },
-    ]),
-  };
-}
-
 function summarizeSchedule(result: ScheduleResult) {
   return {
     blocks: result.blocks.length,
@@ -392,10 +358,6 @@ export async function scheduleAllTasksForUserDetailed(
         }),
       ]);
     const calibration = await getCalibrationContext(userId);
-    const energyWindows = await prisma.energyProfileWindow.findMany({
-      where: { userId },
-      orderBy: [{ dayOfWeek: "asc" }, { sortOrder: "asc" }],
-    });
     const now = new Date();
     const selectedCalendarIds = parseJsonArray(
       legacySettings.selectedCalendars
@@ -488,17 +450,15 @@ export async function scheduleAllTasksForUserDetailed(
           source: "calendar",
         })
       ),
-      energyProfile:
-        energyWindows.length > 0
-          ? {
-              windows: energyWindows.map((window) => ({
-                dayOfWeek: window.dayOfWeek,
-                startTime: window.startTime,
-                endTime: window.endTime,
-                energyLevel: window.energyLevel,
-              })),
-            }
-          : buildFallbackEnergyProfile(legacySettings),
+      // Energy windows no longer constrain placement. They narrowed the day to
+      // a few hours, so tasks either piled into those hours or found no slot at
+      // all, and anything with a hard deadline then fell through to the
+      // overflow path — which ignores work hours entirely and could land a task
+      // at three in the morning. Owner decision 2026-08-31: schedule against
+      // work hours only. `EnergyProfileWindow` rows are left untouched in the
+      // database, so an assistant can still read them as a stated preference;
+      // they simply no longer decide where a block goes.
+      energyProfile: { windows: [] },
       prefs: {
         ...buildPreferences(smartPrefs, legacySettings),
         calibrationFactors: calibration.factors,

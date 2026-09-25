@@ -8,6 +8,8 @@ Needt is a multi-user intelligent planner product built from the FluidCalendar
 fork. It has one unified Next.js application plus a BullMQ worker built from
 the same image and SHA.
 
+What is left, and in what order: `docs/plans/00-roadmap.md` (2026-09-15).
+
 ## Commands
 
 ```bash
@@ -44,7 +46,7 @@ worktree, and never stage or alter unfamiliar dirty files.
 
 ## Tech Stack
 
-Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) · Zustand · TanStack Query · FullCalendar · Tailwind + shadcn/ui (Radix) · Zod.
+Next.js 15 (App Router) · React 19 · TypeScript · Prisma + PostgreSQL · NextAuth.js (v4) · Zustand · TanStack Query · Tailwind + shadcn/ui (Radix) · Zod.
 
 ## Architecture
 
@@ -82,8 +84,10 @@ server-controlled through `src/lib/feature-flags.ts`.
 - **API route handlers** (Next 15): `params` is a Promise - `async function GET(req, { params }: { params: Promise<{ id: string }> }) { const { id } = await params; }`.
 - **Admin-only**: API routes use `requireAdmin` middleware from `@/lib/auth/api-auth` (do not call `getServerSession` and check role by hand); UI uses the `useAdmin` hook or `<AdminOnly>` wrapper with `<AccessDeniedMessage>`.
 - **shadcn/ui**: add components with `npx shadcn@latest add`. Icons via `react-icons`.
-- **UI "house format"**: popups/options panels, toggles, and modals follow the fixed format in `design-refs/ui-conventions.md`. `NeedtPicker` is the only product picker and covers plain/searchable/creatable modes plus the mobile sheet. Use token-based colors, no glows, and no backdrop blur.
-- **Focus UI**: keep one flat, state-stable canvas separated by hairlines; do not reintroduce dashboard cards or metric tiles.
+- **Design authority (2026-09-11), in this order**: `docs/handoff/PORT.md` first — it is the newest brief and the only one that records *why* each decision beat the obvious alternative, so read it before touching any design work; then `Content height and label fixes/needt-app/HANDOFF.md` in the downloaded bundle for per-subsystem detail; then the bound design system under `Content height and label fixes/_ds/`. Where the two briefs disagree, `docs/handoff/design-reconciliation-2026-09-11.md` holds the rulings, and where either disagrees with the vendored CSS the CSS wins, because it is the shipped artefact. `/DESIGN.md` and everything in `design-refs/` are superseded and carry a banner saying so; read them for history, never for a value.
+- **Design work flows one way per artefact**: screens move from Claude Design into `src/`, tokens move back up to the design-system project. A shipped screen is edited in code, never re-exported. See `docs/handoff/design-workflow.md`.
+- **Do not re-derive a design decision from its result.** PORT.md §0 and §6 may not be changed without asking the owner. Five alternatives that look like improvements and are not: a damped spring for the agent cursor (it oscillates, people do not sway), a toast instead of the growing island (a second object arriving is what makes toasts ignorable), a sheet under a whole screen (then every object on it is a card on a card), a count above rows that are already visible (a tally of what you can see is noise), and a `ResizeObserver` per card (it fires through entry staggers and re-measures everything).
+- **Four rules outrank everything**: every grey is one text colour at a ladder alpha; the chrome type scale is 13px and 12px with no 14px; the accent is never a solid fill on a button or surface, only on a mark; one form-row geometry, and a label that does not fit gets shortened rather than the column widened.
 - **Notifications**: product code calls the typed `notify` facade in `src/lib/notifications.ts`; only the facade and shared Toaster import Sonner.
 - **AI companion**: position math belongs in `src/lib/assistant-position.ts`; persist normalized coordinates and mark fixed controls that it must avoid with `data-assistant-avoid`.
 - **JSX text**: escape quotes/apostrophes as `&apos;` / `&quot;`.

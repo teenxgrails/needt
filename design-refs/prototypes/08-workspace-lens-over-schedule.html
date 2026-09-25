@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>workspace lens over schedule — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">08 · workspace lens over schedule</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Workspace concept for Needt: a task list ordered by the schedule rather than by priority, with unscheduled work separated</h2>
+
+<div style="background:var(--surface-1);border-radius:12px;padding:10px;">
+<div style="background:#17150F;border:0.5px solid #332E24;border-radius:8px;padding:14px 16px;">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <div style="font-size:15px;color:#EDE7DA;">Workspace</div>
+    <div style="margin-left:auto;display:flex;border:0.5px solid #332E24;border-radius:6px;overflow:hidden;">
+      <span style="font-size:11px;padding:4px 11px;background:#C96442;color:#1A0F0A;">List</span>
+      <span style="font-size:11px;padding:4px 11px;color:#9A9184;">Board</span>
+      <span style="font-size:11px;padding:4px 11px;color:#9A9184;">Timeline</span>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+    <span style="font-size:11px;color:#9A9184;font-variant-numeric:tabular-nums;">6h 20m planned</span>
+    <span style="font-size:11px;color:#9A9184;font-variant-numeric:tabular-nums;">1h 40m free</span>
+    <div style="flex:1;max-width:190px;height:4px;border-radius:2px;background:#241F18;overflow:hidden;">
+      <div style="width:79%;height:100%;background:#C96442;"></div>
+    </div>
+  </div>
+
+  <div id="list"></div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  var groups=[
+    {g:'Now', rows:[
+      ['Design review notes','11:30','45m','#7FA6C9','Needt v1',1]
+    ]},
+    {g:'Later today', rows:[
+      ['Billing edits','13:00','1h 30m','#7FA6C9','Needt v1',1],
+      ['Reply to supplier','15:00','20m','#C9A87F','Resale',1],
+      ['Weekly retro','16:00','1h','#7FA6C9','Needt v1',0]
+    ]},
+    {g:'Tomorrow', rows:[
+      ['Ship pricing page','09:30','2h','#7FA6C9','Needt v1',1],
+      ['Photo edit batch','14:00','1h','#8FC99B','Beats',1]
+    ]},
+    {g:'Needs a slot', hint:'Needt could not place these', rows:[
+      ['Rewrite onboarding copy',null,'2h','#7FA6C9','Needt v1',1],
+      ['Call accountant',null,'30m','#C9A87F','Resale',1]
+    ]}
+  ];
+
+  var out='';
+  groups.forEach(function(gr){
+    var un = gr.g==='Needs a slot';
+    out+='<div style="display:flex;align-items:baseline;gap:8px;margin:16px 0 6px;">'+
+      '<span style="font-size:11px;letter-spacing:.05em;color:'+(un?'#C96442':'#6F675B')+';">'+gr.g.toUpperCase()+'</span>'+
+      (gr.hint?'<span style="font-size:11px;color:#6F675B;">'+gr.hint+'</span>':'')+
+      '<span style="margin-left:auto;font-size:11px;color:#6F675B;font-variant-numeric:tabular-nums;">'+gr.rows.length+'</span></div>';
+
+    gr.rows.forEach(function(r){
+      var marker = r[5]
+        ? 'border-left:1px dashed #C96442;'
+        : 'border-left:2px solid #9A9184;';
+      out+='<div class="row" style="display:flex;align-items:center;gap:10px;height:34px;padding:0 8px;'+
+        'border-bottom:0.5px solid #241F18;'+marker+'transition:background 120ms ease;">'+
+        '<span style="width:13px;height:13px;border-radius:3px;border:1px solid #4A4237;flex:none;"></span>'+
+        '<span style="font-size:12.5px;color:#EDE7DA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+r[0]+'</span>'+
+        '<span style="width:6px;height:6px;border-radius:2px;background:'+r[3]+';flex:none;margin-left:2px;"></span>'+
+        '<span style="font-size:11px;color:#6F675B;">'+r[4]+'</span>'+
+        '<span style="margin-left:auto;font-size:11px;color:#6F675B;font-variant-numeric:tabular-nums;">'+r[2]+'</span>'+
+        '<span style="font-size:11.5px;font-variant-numeric:tabular-nums;width:44px;text-align:right;color:'+(r[1]?'#9A9184':'#C96442')+';">'+
+        (r[1]||'Place')+'</span>'+
+        '</div>';
+    });
+  });
+
+  var el=document.getElementById('list');
+  el.innerHTML=out;
+  Array.prototype.forEach.call(el.querySelectorAll('.row'),function(r){
+    r.onmouseenter=function(){r.style.background='#1E1B15';};
+    r.onmouseleave=function(){r.style.background='transparent';};
+  });
+})();
+</script>
+</div></body></html>

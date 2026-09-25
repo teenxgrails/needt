@@ -2472,16 +2472,18 @@ export function PageWorkspace({
               Use an image URL. The cover remains private with this page.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="page-cover-url">Image URL</Label>
-            <Input
-              id="page-cover-url"
-              type="url"
-              value={coverUrl}
-              onChange={(event) => setCoverUrl(event.target.value)}
-              placeholder="https://…"
-            />
-          </div>
+          {canEdit && (
+            <div className="space-y-2">
+              <Label htmlFor="page-cover-url">Image URL</Label>
+              <Input
+                id="page-cover-url"
+                type="url"
+                value={coverUrl}
+                onChange={(event) => setCoverUrl(event.target.value)}
+                placeholder="https://…"
+              />
+            </div>
+          )}
           <DialogFooter>
             {page.coverUrl && (
               <Button
@@ -2578,13 +2580,15 @@ export function PageWorkspace({
                     {comment.resolvedAt ? "Resolved" : "Open"} ·{" "}
                     {new Date(comment.createdAt).toLocaleDateString()}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => void resolveComment(comment)}
-                    className="rounded px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
-                  >
-                    {comment.resolvedAt ? "Reopen" : "Resolve"}
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => void resolveComment(comment)}
+                      className="rounded px-2 py-1 text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                    >
+                      {comment.resolvedAt ? "Reopen" : "Resolve"}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -2604,20 +2608,22 @@ export function PageWorkspace({
               template.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2">
-            <Input
-              aria-label="Template name"
-              value={templateName}
-              onChange={(event) => setTemplateName(event.target.value)}
-              placeholder="Template name"
-            />
-            <Button
-              onClick={() => void saveTemplate()}
-              disabled={!templateName.trim()}
-            >
-              Save current
-            </Button>
-          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <Input
+                aria-label="Template name"
+                value={templateName}
+                onChange={(event) => setTemplateName(event.target.value)}
+                placeholder="Template name"
+              />
+              <Button
+                onClick={() => void saveTemplate()}
+                disabled={!templateName.trim()}
+              >
+                Save current
+              </Button>
+            </div>
+          )}
           <div className="max-h-[360px] space-y-1 overflow-y-auto">
             {templates.length === 0 && (
               <div className="py-6 text-center text-[12px] text-[var(--text-muted)]">

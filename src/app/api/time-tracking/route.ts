@@ -6,16 +6,24 @@ import {
   startTaskTimer,
   stopTaskTimer,
 } from "@/services/time-tracking/timeEntries";
-import { TimeEntrySource } from "@prisma/client";
+import { TimeEntrySource, WorkspaceRole } from "@prisma/client";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
 const LOG_SOURCE = "time-tracking-route";
 
-async function assertTask(taskId: string, userId: string) {
-  const task = await prisma.task.findUnique({
-    where: { id: taskId, userId },
+async function assertTask(
+  taskId: string,
+  userId: string,
+  workspace?: WorkspaceAccess
+) {
+  const task = await prisma.task.findFirst({
+    where: { id: taskId, ...workspaceDataScopeWhere(workspace, userId) },
     select: { id: true },
   });
   return Boolean(task);
@@ -26,7 +34,7 @@ export async function GET(request: NextRequest) {
   if ("response" in auth) return auth.response;
 
   const taskId = new URL(request.url).searchParams.get("taskId");
-  if (!taskId || !(await assertTask(taskId, auth.userId))) {
+  if (!taskId || !(await assertTask(taskId, auth.userId, auth.workspace))) {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
@@ -34,14 +42,16 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
 
   const body = await request.json();
   const taskId = typeof body.taskId === "string" ? body.taskId : "";
   const action = typeof body.action === "string" ? body.action : "";
 
-  if (!taskId || !(await assertTask(taskId, auth.userId))) {
+  if (!taskId || !(await assertTask(taskId, auth.userId, auth.workspace))) {
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 

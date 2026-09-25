@@ -86,8 +86,19 @@ describe("scheduleTasks", () => {
   it("uses the documented scheduling hierarchy", () => {
     const result = scheduleTasks({
       tasks: [
-        task({ id: "low-hard", title: "Low hard", priority: "LOW", hardDeadline: true, deadline: new Date(2026, 6, 8, 17, 0, 0) }),
-        task({ id: "high-soft", title: "High soft", priority: "HIGH", deadline: new Date(2026, 6, 7, 17, 0, 0) }),
+        task({
+          id: "low-hard",
+          title: "Low hard",
+          priority: "LOW",
+          hardDeadline: true,
+          deadline: new Date(2026, 6, 8, 17, 0, 0),
+        }),
+        task({
+          id: "high-soft",
+          title: "High soft",
+          priority: "HIGH",
+          deadline: new Date(2026, 6, 7, 17, 0, 0),
+        }),
         task({ id: "urgent", title: "Urgent", priority: "URGENT" }),
         task({ id: "high-none", title: "High none", priority: "HIGH" }),
       ],
@@ -109,8 +120,18 @@ describe("scheduleTasks", () => {
     const result = scheduleTasks({
       tasks: [
         task({ id: "same-b", title: "Same", estimatedMinutes: 30 }),
-        task({ id: "later", title: "Same", estimatedMinutes: 20, availableFrom: new Date(2026, 6, 6, 10, 0, 0) }),
-        task({ id: "recurring", title: "Same", estimatedMinutes: 20, isRecurring: true }),
+        task({
+          id: "later",
+          title: "Same",
+          estimatedMinutes: 20,
+          availableFrom: new Date(2026, 6, 6, 10, 0, 0),
+        }),
+        task({
+          id: "recurring",
+          title: "Same",
+          estimatedMinutes: 20,
+          isRecurring: true,
+        }),
         task({ id: "same-a", title: "Same", estimatedMinutes: 30 }),
         task({ id: "short", title: "Same", estimatedMinutes: 20 }),
       ],
@@ -358,9 +379,7 @@ describe("scheduleTasks", () => {
       now: mondayMorning,
     });
 
-    expect(result.unscheduled[0]?.reason).toBe(
-      "ENERGY_WINDOW_UNAVAILABLE"
-    );
+    expect(result.unscheduled[0]?.reason).toBe("ENERGY_WINDOW_UNAVAILABLE");
   });
 
   it("allows a soft deadline to fall back to the nearest later slot", () => {
@@ -473,6 +492,39 @@ describe("scheduleTasks", () => {
         end: new Date(2026, 6, 6, 11, 0, 0),
       })
     );
+  });
+
+  it("never places hard-deadline overflow during the night", () => {
+    // Monday is entirely blocked and the deadline is Tuesday morning, so the
+    // only free minutes before it are the small hours. A hard deadline may
+    // outrank the work schedule — that is deliberate — but it must not outrank
+    // sleep: overflow used to walk the clock minute by minute and return 03:00,
+    // which nobody acts on.
+    const result = scheduleTasks({
+      tasks: [
+        task({
+          id: "hard-night",
+          estimatedMinutes: 60,
+          hardDeadline: true,
+          deadline: new Date(2026, 6, 7, 9, 0, 0),
+        }),
+      ],
+      busyBlocks: [
+        busy({
+          start: new Date(2026, 6, 6, 8, 0, 0),
+          end: new Date(2026, 6, 6, 23, 59, 0),
+        }),
+      ],
+      energyProfile,
+      prefs: { ...prefs, hardStopTime: "22:00" },
+      now: mondayMorning,
+    });
+
+    for (const block of result.blocks) {
+      const hour = block.start.getHours();
+      expect(hour).toBeGreaterThanOrEqual(7);
+      expect(block.end.getHours()).toBeLessThanOrEqual(22);
+    }
   });
 
   it("does not use overflow time for a soft deadline", () => {

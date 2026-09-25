@@ -74,13 +74,18 @@ model Session {
 }
 
 model User {
-  id                     String                  @id @default(cuid())
-  isActive               Boolean                 @default(true)
+  id                     String                    @id @default(cuid())
+  isActive               Boolean                   @default(true)
   name                   String?
-  email                  String?                 @unique
+  email                  String?                   @unique
   emailVerified          DateTime?
   image                  String?
-  role                   String                  @default("user") // Possible values: "user", "admin"
+  role                   String                    @default("user") // Possible values: "user", "admin"
+  // Needt design: a person's own hue/initials, the same way a project owns
+  // its hue (see NeedtPerson in src/lib/needt/types.ts). Nullable because most
+  // users predate this and get no fallback color baked into the database.
+  hue                    String?
+  initials               String?
   subscription           Subscription?
   accounts               Account[]
   sessions               Session[]
@@ -129,12 +134,12 @@ model User {
   aiPageProposals        AiPageChangeProposal[]
   pageAssets             PageAsset[]
   pageComments           PageComment[]
-  pageAccessGrants       PageAccessGrant[]       @relation("PageAccessGrantee")
-  pageAccessGrantsGiven  PageAccessGrant[]       @relation("PageAccessGrantor")
-  pagePublications       PagePublication[]       @relation("PagePublicationPublisher")
-  moodboardsCreated      Moodboard[]             @relation("MoodboardCreator")
-  moodboardAccessGrants  MoodboardAccessGrant[]  @relation("MoodboardAccessGrantee")
-  moodboardGrantsGiven   MoodboardAccessGrant[]  @relation("MoodboardAccessGrantor")
+  pageAccessGrants       PageAccessGrant[]         @relation("PageAccessGrantee")
+  pageAccessGrantsGiven  PageAccessGrant[]         @relation("PageAccessGrantor")
+  pagePublications       PagePublication[]         @relation("PagePublicationPublisher")
+  moodboardsCreated      Moodboard[]               @relation("MoodboardCreator")
+  moodboardAccessGrants  MoodboardAccessGrant[]    @relation("MoodboardAccessGrantee")
+  moodboardGrantsGiven   MoodboardAccessGrant[]    @relation("MoodboardAccessGrantor")
   pageTemplates          PageTemplate[]
   pageFormSubmissions    PageFormSubmission[]
   bugReports             BugReport[]
@@ -143,26 +148,28 @@ model User {
   idempotencyRecords     IdempotencyRecord[]
   creemWebhookEvents     CreemWebhookEvent[]
   creemCursors           CreemSubscriptionCursor[]
-  taskDependenciesOwned  TaskDependency[]        @relation("TaskDependencyOwner")
+  taskDependenciesOwned  TaskDependency[]          @relation("TaskDependencyOwner")
   focusPreferences       FocusPreferences?
   taskReminders          TaskReminder[]
   proactiveNudges        ProactiveNudge[]
   pushSubscriptions      PushSubscription[]
   bookingPages           BookingPage[]
-  bookings               Booking[]               @relation("BookingOwner")
+  bookings               Booking[]                 @relation("BookingOwner")
   featureFlagOverrides   FeatureFlagOverride[]
-  personalWorkspace      Workspace?              @relation("PersonalWorkspaceOwner")
+  personalWorkspace      Workspace?                @relation("PersonalWorkspaceOwner")
   workspaceMemberships   WorkspaceMember[]
-  workspaceInvitesSent   WorkspaceInvite[]       @relation("WorkspaceInviteSender")
-  workspaceInvitesUsed   WorkspaceInvite[]       @relation("WorkspaceInviteAcceptor")
-  assignedTasks          Task[]                  @relation("TaskAssignee")
-  taskActivities         TaskActivity[]          @relation("TaskActivityActor")
-  projectTemplates       ProjectTemplate[]       @relation("ProjectTemplateCreator")
-  projectBlockersCreated ProjectBlocker[]        @relation("ProjectBlockerCreator")
-  projectHealthUpdates   ProjectHealthUpdate[]   @relation("ProjectHealthUpdateAuthor")
+  workspaceInvitesSent   WorkspaceInvite[]         @relation("WorkspaceInviteSender")
+  workspaceInvitesUsed   WorkspaceInvite[]         @relation("WorkspaceInviteAcceptor")
+  assignedTasks          Task[]                    @relation("TaskAssignee")
+  taskActivities         TaskActivity[]            @relation("TaskActivityActor")
+  projectTemplates       ProjectTemplate[]         @relation("ProjectTemplateCreator")
+  projectBlockersCreated ProjectBlocker[]          @relation("ProjectBlockerCreator")
+  projectHealthUpdates   ProjectHealthUpdate[]     @relation("ProjectHealthUpdateAuthor")
   habits                 Habit[]
   weeklyFocusTargets     WeeklyFocusTarget[]
-  meetingNoteProposals   MeetingNoteProposal[]   @relation("MeetingNoteProposalCreator")
+  meetingNoteProposals   MeetingNoteProposal[]     @relation("MeetingNoteProposalCreator")
+  closedDays             ClosedDay[]
+  taskWaitsOnMe          TaskWait[]                @relation("TaskWaitWaitingOnUser")
 }
 
 model Workspace {
@@ -409,6 +416,7 @@ model Project {
   taskListMappings TaskListMapping[]
   stages           ProjectStage[]
   blockers         ProjectBlocker[]
+  habits           Habit[]
   healthStatus     ProjectHealthStatus   @default(UNKNOWN)
   healthVersion    Int                   @default(0)
   healthUpdatedAt  DateTime?
@@ -771,6 +779,21 @@ model Task {
   boardPosition Float?
   properties    Json?
 
+  // Needt design: fields the new design's contract (src/lib/needt/types.ts)
+  // needs and the schema did not have a column for yet. All additive; see
+  // src/lib/needt/task-view.ts for how each is read (or honestly returned as
+  // `null`, per the contract's three-state convention, when it still can't
+  // be).
+  entry                  String? // The task's two-minute first step.
+  noSlot                 Boolean    @default(false) // Belongs to no day/rail.
+  lastTouchedAt          DateTime? // Backs `age` without updatedAt's reschedule noise.
+  previousScheduledStart DateTime? // Backs `movedFrom`: where the scheduler moved it from.
+  valueCents             Int? // Money task: what it is worth, in integer cents.
+  earnedCents            Int? // Money task: what has come in, in integer cents.
+  globalStage            TaskStage? // Four global stages, independent of any project.
+  parts                  TaskPart[]
+  waits                  TaskWait[]
+
   @@unique([recurrenceMasterId, recurrenceInstanceAt])
   @@unique([habitId, habitOccurrenceAt])
   @@unique([id, projectId])
@@ -807,9 +830,49 @@ model Task {
   @@index([externalListId])
   @@index([blockDirty, userId])
   @@index([blockFeedId])
+  @@index([globalStage])
   @@index([habitId, habitOccurrenceAt])
 }
 
+/// One level only — a part can be promoted to a task, never nested further
+/// (src/lib/needt/types.ts TaskPart). Additive: the design's `parts` field had
+/// no table at all before this.
+model TaskPart {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String
+  done      Boolean  @default(false)
+  position  Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId, position])
+}
+
+/// What a task is waiting on: a person, with a reason (src/lib/needt/types.ts
+/// WaitsOn). A table rather than two columns on Task because `blocking()`
+/// needs something groupable by person, and a task can only be waiting on one
+/// person at a time in the current design, so `resolvedAt` marks history
+/// rather than deleting the row.
+model TaskWait {
+  id              String    @id @default(cuid())
+  taskId          String
+  task            Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  waitingOnUserId String
+  waitingOnUser   User      @relation("TaskWaitWaitingOnUser", fields: [waitingOnUserId], references: [id], onDelete: Cascade)
+  reason          String
+  resolvedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([taskId, resolvedAt])
+  @@index([waitingOnUserId, resolvedAt])
+}
+
+/// A recurring habit (src/lib/needt/types.ts NeedtHabit). `done`, the last
+/// fourteen days oldest-first, is NOT a stored array — it's a query over
+/// HabitCompletion, the same way `streak()` and the rest of derive.ts treat
+/// everything else that could go stale.
 model Habit {
   id                       String                 @id @default(cuid())
   userId                   String
@@ -825,15 +888,31 @@ model Habit {
   priority                 SchedulingTaskPriority @default(MEDIUM)
   scheduleId               String?
   schedule                 WorkSchedule?          @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  at                       String? // Time of day, e.g. "18:00"; null = not pinned to one.
+  projectId                String?
+  project                  Project?               @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  quota                    Int? // Per-week quota; null = no quota.
   isActive                 Boolean                @default(true)
   archivedAt               DateTime?
   tasks                    Task[]
+  completions              HabitCompletion[]
   createdAt                DateTime               @default(now())
   updatedAt                DateTime               @updatedAt
 
   @@index([workspaceId, archivedAt, isActive])
   @@index([userId, archivedAt])
   @@index([scheduleId])
+  @@index([projectId])
+}
+
+model HabitCompletion {
+  id        String   @id @default(cuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
 }
 
 model WeeklyFocusTarget {
@@ -849,6 +928,20 @@ model WeeklyFocusTarget {
 
   @@unique([userId, workspaceId])
   @@index([workspaceId])
+}
+
+/// A day counts as closed when everything with a deadline on it was closed
+/// (src/lib/needt/types.ts NeedtDayMark / closedDays). One row per closed day;
+/// an absent row means not closed, so the fourteen-day window is also a query
+/// here rather than a stored array.
+model ClosedDay {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@unique([userId, date])
 }
 
 model TimeEntry {
@@ -2405,6 +2498,17 @@ enum MoodboardAccessRole {
 enum TaskBusyStatus {
   BUSY
   FREE
+}
+
+/// Four global stages, the same for every task regardless of project
+/// (src/lib/needt/types.ts NeedtStageId). Independent of ProjectStage, which
+/// is per-project and requires a project — see the design gap notes in the
+/// Needt data-layer handoff for why the two are not the same thing.
+enum TaskStage {
+  TODO
+  DOING
+  REVIEW
+  DONE
 }
 
 enum ProjectTemplateKind {
