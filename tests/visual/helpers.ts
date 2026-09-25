@@ -87,25 +87,3 @@ export async function signInVisualUser(page: import("@playwright/test").Page) {
     },
   ]);
 }
-
-/**
- * Overdue work parks off-canvas: a shelf that extends on hover at desk width,
- * a collapsed line the phone taps open. Reveal whichever this viewport uses.
- */
-export async function openOverdue(page: import("@playwright/test").Page) {
-  if ((page.viewportSize()?.width ?? 0) < 640) {
-    const line = page.getByRole("button", { name: /^Overdue/ }).first();
-    await line.waitFor();
-    if ((await line.getAttribute("aria-expanded")) !== "true") {
-      await line.click();
-    }
-    return;
-  }
-  const shelf = page
-    .getByRole("main")
-    .locator("section")
-    .filter({ hasText: "Overdue" })
-    .first();
-  // Inside the shelf's own box, a point that still sits on its visible lip.
-  await shelf.hover({ position: { x: 250, y: 40 } });
-}

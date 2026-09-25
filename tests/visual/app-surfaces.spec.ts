@@ -102,10 +102,12 @@ test("Calendar, Today, and Workspace stay visually stable", async ({
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
-  // Overdue work stays parked in both layouts, so assert the rail itself
-  // rather than a task that only a hover or a tap reveals.
   await expect(
-    page.getByRole("main").getByText("Overdue").locator("visible=true").first()
+    page
+      .getByRole("main")
+      .getByText("Plan the launch")
+      .locator("visible=true")
+      .first()
   ).toBeVisible();
   await settleVisualSurface(page);
   await expect(page).toHaveScreenshot("today.png");
