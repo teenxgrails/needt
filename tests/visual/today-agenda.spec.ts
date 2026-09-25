@@ -1,10 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { VISUAL_TEST_NOW } from "./fixtures";
-import { signInVisualUser } from "./helpers";
-
-/** Inside the shelf's own box, a point that still sits on the visible lip. */
-const WALL_LIP_PROBE = 250;
+import { openOverdue, signInVisualUser } from "./helpers";
 
 async function prepare(page: import("@playwright/test").Page) {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
@@ -42,19 +39,18 @@ test("Today binds real tasks and keeps completion after reload", async ({
   const task = (await created.json()) as { id: string };
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
+  await openOverdue(page);
   await expect(
-    page.getByRole("main").getByText(title, { exact: true })
+    page
+      .getByRole("main")
+      .getByText(title, { exact: true })
+      .locator("visible=true")
+      .first()
   ).toBeVisible();
   await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
 
-  // A task that is already due parks on the Overdue shelf, which rests
-  // off-canvas behind the navigation and only extends on hover.
-  const overdueShelf = page
-    .getByRole("main")
-    .locator("section")
-    .filter({ hasText: "Overdue" })
-    .first();
-  await overdueShelf.hover({ position: { x: WALL_LIP_PROBE, y: 40 } });
+  // A task that is already due parks with the rest of the overdue work.
+  await openOverdue(page);
   const saved = page.waitForResponse(
     (response) =>
       response.url().endsWith(`/api/tasks/${task.id}`) &&
