@@ -284,7 +284,20 @@ jobs:
             esac
           done
 
+          # A baseline the dispatch ref already carries but main does not would
+          # block the switch, so park every regenerated PNG, start the branch
+          # from a clean main, and put them back.
+          carry="$RUNNER_TEMP/linux-baselines"
+          rm -rf "$carry"
+          mkdir -p "$carry"
+          find tests/visual -name '*-linux.png' -print0 | while IFS= read -r -d '' png; do
+            mkdir -p "$carry/$(dirname "$png")"
+            cp "$png" "$carry/$png"
+          done
+          git checkout -- tests/visual
+          git clean -fd tests/visual
           git switch --create "$TARGET_BRANCH" origin/main
+          cp -R "$carry/tests" .
           git add -- ':(glob)tests/visual/**/*-linux.png'
 
           if git diff --cached --quiet; then
