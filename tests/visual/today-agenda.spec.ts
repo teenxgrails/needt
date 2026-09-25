@@ -3,6 +3,9 @@ import { expect, test } from "@playwright/test";
 import { VISUAL_TEST_NOW } from "./fixtures";
 import { signInVisualUser } from "./helpers";
 
+/** Inside the shelf's own box, a point that still sits on the visible lip. */
+const WALL_LIP_PROBE = 250;
+
 async function prepare(page: import("@playwright/test").Page) {
   await page.clock.setFixedTime(new Date(VISUAL_TEST_NOW));
   await page.addInitScript(() => {
@@ -36,6 +39,7 @@ test("Today binds real tasks and keeps completion after reload", async ({
     },
   });
   expect(created.ok()).toBeTruthy();
+  const task = (await created.json()) as { id: string };
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
   await expect(
@@ -43,14 +47,41 @@ test("Today binds real tasks and keeps completion after reload", async ({
   ).toBeVisible();
   await expect(page.locator(".needt-v2")).toHaveAttribute("data-theme", "dark");
 
-  await page.getByRole("button", { name: `Complete ${title}` }).click();
+  // A task that is already due parks on the Overdue shelf, which rests
+  // off-canvas behind the navigation and only extends on hover.
+  const overdueShelf = page
+    .getByRole("main")
+    .locator("section")
+    .filter({ hasText: "Overdue" })
+    .first();
+  await overdueShelf.hover({ position: { x: WALL_LIP_PROBE, y: 40 } });
+  const saved = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(`/api/tasks/${task.id}`) &&
+      response.request().method() === "PUT"
+  );
+  await page
+    .getByRole("main")
+    .getByRole("checkbox", { name: `Complete ${title}` })
+    .click();
+  // Today carries what is still open, so a completed task leaves the screen.
   await expect(
-    page.getByRole("button", { name: `Reopen ${title}` })
-  ).toBeVisible();
+    page.getByRole("main").getByText(title, { exact: true })
+  ).toHaveCount(0);
+  expect((await saved).ok()).toBeTruthy();
+
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(
-    page.getByRole("button", { name: `Reopen ${title}` })
+    page.getByRole("main").getByText("Today", { exact: true }).first()
   ).toBeVisible();
+  await expect(
+    page.getByRole("main").getByText(title, { exact: true })
+  ).toHaveCount(0);
+  const stored = await page.request.get(`/api/tasks/${task.id}`);
+  expect(stored.ok()).toBeTruthy();
+  expect(((await stored.json()) as { status: string }).status).toBe(
+    "completed"
+  );
 
   const overflow = await page.evaluate(
     () =>
@@ -62,10 +93,11 @@ test("Today binds real tasks and keeps completion after reload", async ({
 
 test("Today exposes load failures and recovers", async ({ page }) => {
   await prepare(page);
+  // The screen loads more than once per visit, so keep failing until the error
+  // state is on screen; releasing on the first hit just hides it again.
   let fail = true;
   await page.route("**/api/needt/today", async (route) => {
     if (fail) {
-      fail = false;
       await route.fulfill({ status: 503, json: { error: "Unavailable" } });
       return;
     }
@@ -74,9 +106,14 @@ test("Today exposes load failures and recovers", async ({ page }) => {
 
   await page.goto("/today", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Today could not be loaded.")).toBeVisible();
+  fail = false;
   await page.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("Today could not be loaded.")).toBeHidden();
   await expect(
-    page.locator(".needt-v2").getByText("Today", { exact: true }).last()
+    page
+      .locator(".needt-v2")
+      .getByText("Today", { exact: true })
+      .locator("visible=true")
+      .first()
   ).toBeVisible();
 });

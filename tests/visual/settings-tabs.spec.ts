@@ -65,9 +65,8 @@ test("Billing stays visually consistent", async ({ page }) => {
   expect(themeResponse.ok()).toBeTruthy();
   await page.goto("/settings#billing", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/#billing$/);
-  await expect(
-    page.getByRole("heading", { name: "Settings", level: 1 })
-  ).toBeVisible();
+  // The ported screen names the open section instead of repeating "Settings";
+  // billing lives inside Account.
   await expect(
     page.getByRole("heading", { name: "Account", level: 2 })
   ).toBeVisible();

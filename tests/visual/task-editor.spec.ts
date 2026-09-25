@@ -38,12 +38,11 @@ test("production task details stay usable at every breakpoint", async ({
   await expect(dialog).toBeVisible();
   await expect(dialog.getByLabel("Task name")).toHaveValue(task.title);
   if ((page.viewportSize()?.width ?? 0) >= 640) {
+    // An editor opens the production task editor; the ported read-only dialog
+    // with its unwired Template and Recurring controls is the Viewer's.
     await expect(
-      dialog.getByRole("button", { name: "Template" })
-    ).toBeDisabled();
-    await expect(
-      dialog.getByRole("button", { name: "Recurring" })
-    ).toBeDisabled();
+      dialog.getByRole("button", { name: "Save changes" })
+    ).toBeVisible();
   }
   await settleTaskEditor(page);
   await expect(page).toHaveScreenshot("task-editor-production.png");

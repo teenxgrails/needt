@@ -28,7 +28,11 @@ async function applyTheme(page: import("@playwright/test").Page, theme: Theme) {
   // The Settings route hydrates the persisted settings store from the API;
   // this mirrors the actual Appearance control before visiting app surfaces.
   await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+  // "light" is the legacy alias the product migrates to the Paper palette.
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-theme",
+    theme === "light" ? "paper" : theme
+  );
 }
 
 test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
