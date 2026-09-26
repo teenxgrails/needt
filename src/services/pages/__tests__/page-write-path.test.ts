@@ -286,8 +286,10 @@ describe("page write path", () => {
     expect(tx.pageCollaborationState.upsert).not.toHaveBeenCalled();
   });
 
-  it("stores live state and its block projection in one transaction", async () => {
+  it("stores accepted live state after the originating actor loses access", async () => {
     const tx = transactionClient(1);
+    pageFindFirst.mockResolvedValue(null);
+    tx.page.findFirst.mockResolvedValue(null);
     tx.page.findUnique.mockResolvedValue({
       id: "page-1",
       title: "Live page",
@@ -328,6 +330,8 @@ describe("page write path", () => {
       },
       select: { pageId: true },
     });
+    expect(pageFindFirst).not.toHaveBeenCalled();
+    expect(tx.page.findFirst).not.toHaveBeenCalled();
 
     expect(tx.pageBlock.upsert).toHaveBeenCalledWith(
       expect.objectContaining({

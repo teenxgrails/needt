@@ -2,8 +2,8 @@
 id: 20260926-codex-page-write-path
 owner: codex
 branch: codex/page-write-path
-status: complete
-updated: 2026-09-26T08:17:01Z
+status: active
+updated: 2026-09-26T08:57:29Z
 objective: Make one deep module own page block writes so REST autosaves cannot overwrite live collaboration state.
 ---
 
@@ -39,13 +39,37 @@ objective: Make one deep module own page block writes so REST autosaves cannot o
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff; Prisma schema and
-  additive migration; page model/write modules; page service/routes;
-  collaboration server; PageWorkspace/autosave; focused tests; changelog.
+- Files currently dirty or expected to change: this handoff,
+  `tests/e2e/collaboration.spec.ts`, and
+  `src/services/pages/page-write-path.ts` plus its focused unit test for the v2
+  room-name CI fix and defects exposed by the corrected test.
 - Foreign changes that must remain untouched: every other worktree and the primary checkout's tracked/untracked changes.
+
+- PR #44 E2E reproduced locally: the authorization-boundary test still opened
+  `page:${pageId}`, so the v2 server correctly rejected its token before sync.
+- After correcting the room name, the same test exposed Prisma rejecting the
+  PostgreSQL `void` result from `pg_advisory_xact_lock`; the lock query now
+  casts that result to a supported text value without changing lock semantics.
+- It also exposed a debounced-store race: a change accepted while the actor was
+  authorized could not flush after that actor was removed. Collaboration
+  persistence now uses the exact live session lease as its authority; message
+  authorization still runs before each inbound write, so revoked updates never
+  enter the server document.
 
 ## Verification
 
+- Follow-up passed: `npm run type-check`; `npm run lint`; full
+  `npm run test:unit` (171 passed suites / 828 passed tests, 1 suite/test
+  skipped); focused page-write-path unit suite (9/9); and the real local
+  `tests/e2e/collaboration.spec.ts` (2/2).
+- Current CI visual failure is not a baseline mismatch: every snapshot suite
+  passed, while `pages-block-editor` failed its first PUT because the advisory
+  lock query returned PostgreSQL `void`. The cast fix covers that API path; no
+  baseline changed.
+- The follow-up production build was attempted but the machine reached ENOSPC
+  with only about 200 MiB free after all authorized `.next` cleanup. The
+  temporary tracing-root config was reverted and `.next` deleted. Remaining
+  pre-push gates and push wait on safe disk reclamation.
 - Passed: `npm run agent:context -- --json`; local `prisma migrate deploy` and
   `prisma generate`; `npm run type-check`; `npm run lint`; candidate-focused
   tests (5 suites / 31 tests); full `npm run test:unit` (171 passed suites / 828
@@ -74,12 +98,13 @@ objective: Make one deep module own page block writes so REST autosaves cannot o
 
 ## Blockers
 
-- No implementation blocker. The non-overlapping collaboration cutover above
-  is a release constraint and must be honored when this PR is eventually
-  deployed.
+- Pre-push build is blocked by host ENOSPC after authorized cache cleanup; the
+  primary checkout's 1.6 GiB `node_modules` was not removed without exact owner
+  approval. The non-overlapping collaboration cutover remains a release
+  constraint.
 
 ## Next action
 
-- Review the draft PR. Do not merge or deploy until the collaboration cutover
-  can stop/drain the old server before the v2 server starts. Do not start
-  candidate 2 from this workstream.
+- Free enough safe local disk, rerun build plus the remaining pre-push gates,
+  push the follow-up, update PR #44's CI/cutover sections, and wait for E2E and
+  visual-style. Do not start candidate 2.

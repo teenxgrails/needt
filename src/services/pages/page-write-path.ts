@@ -63,7 +63,7 @@ export class PageRevisionConflictError extends Error {
 
 async function lockPageWrite(tx: Prisma.TransactionClient, pageId: string) {
   await tx.$queryRaw(
-    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${pageId}, 0))`
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${pageId}, 0))::text`
   );
 }
 
@@ -141,7 +141,10 @@ async function persistPageBlocks(
   source: PageWriteSource,
   expectedContentRevision?: number
 ) {
-  if (!(await pageActorCanAccess(actor, pageId, PageAccessRole.EDITOR))) {
+  if (
+    source.kind === "snapshot" &&
+    !(await pageActorCanAccess(actor, pageId, PageAccessRole.EDITOR))
+  ) {
     return null;
   }
   if (blocks.length > 2_000) throw new Error("Page has too many blocks");
@@ -166,6 +169,7 @@ async function persistPageBlocks(
   return prisma.$transaction(async (tx) => {
     await lockPageWrite(tx, pageId);
     if (
+      source.kind === "snapshot" &&
       !(await pageActorCanAccessInTransaction(
         tx,
         actor,

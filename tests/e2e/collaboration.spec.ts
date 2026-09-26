@@ -1,4 +1,5 @@
 import { createCollaborationServer } from "@/collaboration/server";
+import { pageCollaborationDocumentName } from "@/services/pages/page-collaboration-protocol";
 import { issuePageCollaborationToken } from "@/services/pages/page-collaboration-token";
 import {
   HocuspocusProvider,
@@ -185,11 +186,12 @@ test.describe("collaboration authorization boundary", () => {
   });
 
   test("reconnects safely and revokes writes after role or membership changes", async () => {
-    const firstConnection = await connectClient(memberToken, `page:${pageId}`);
+    const documentName = pageCollaborationDocumentName(pageId);
+    const firstConnection = await connectClient(memberToken, documentName);
     destroyClient(firstConnection);
 
-    const member = await connectClient(memberToken, `page:${pageId}`);
-    const owner = await connectClient(ownerToken, `page:${pageId}`);
+    const member = await connectClient(memberToken, documentName);
+    const owner = await connectClient(ownerToken, documentName);
     member.document.getText("probe").insert(0, "allowed");
     await expect
       .poll(() => owner.document.getText("probe").toString())
@@ -214,7 +216,7 @@ test.describe("collaboration authorization boundary", () => {
       .poll(() => member.closeReason, { timeout: 5_000 })
       .toBe("Collaboration access revoked");
 
-    const deniedReconnect = createClient(memberToken, `page:${pageId}`);
+    const deniedReconnect = createClient(memberToken, documentName);
     await deniedReconnect.socket.connect();
     await expect
       .poll(() => deniedReconnect.authenticationFailure, { timeout: 5_000 })
@@ -222,7 +224,10 @@ test.describe("collaboration authorization boundary", () => {
   });
 
   test("rejects a valid token when it is presented to another room", async () => {
-    const forgedRoom = createClient(ownerToken, `page:guessed-${runId}`);
+    const forgedRoom = createClient(
+      ownerToken,
+      pageCollaborationDocumentName(`guessed-${runId}`)
+    );
     await forgedRoom.socket.connect();
     await expect
       .poll(() => forgedRoom.authenticationFailure, { timeout: 5_000 })
