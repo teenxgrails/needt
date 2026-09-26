@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  createPage,
-  replacePageBlocks,
-  updatePage,
-} from "@/services/pages/page-service";
+import { createPage, updatePage } from "@/services/pages/page-service";
+import { writePageBlocks } from "@/services/pages/page-write-path";
 import { PageAuthor, PageBlockType, type Prisma } from "@prisma/client";
 import { WorkspaceRole } from "@prisma/client";
 
@@ -68,7 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       },
     ];
   });
-  const hydrated = await replacePageBlocks(
+  const hydrated = await writePageBlocks(
     auth,
     page.id,
     blocks.length > 0

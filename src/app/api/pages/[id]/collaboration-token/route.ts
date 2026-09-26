@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { issuePageCollaborationToken } from "@/services/pages/page-collaboration-token";
+import { pageCollaborationDocumentName } from "@/services/pages/page-collaboration-protocol";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { prisma } from "@/lib/prisma";
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   });
   return NextResponse.json({
     ...issued,
-    documentName: `page:${id}`,
+    documentName: pageCollaborationDocumentName(id),
     url:
       process.env.COLLABORATION_PUBLIC_URL ??
       process.env.NEXT_PUBLIC_COLLABORATION_URL ??
