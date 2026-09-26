@@ -1,4 +1,15 @@
-import { pageBlocksToCollaborationState } from "@/services/pages/page-collaboration-document";
+import {
+  type PageActor,
+  pageActorCanAccess as actorCanAccess,
+  pageActorScope as actorPageScope,
+  pageActorUserId as actorUserId,
+  pageActorWorkspaceId as actorWorkspaceId,
+  pageDetailInclude,
+} from "@/services/pages/page-model";
+import {
+  type PageBlockInput,
+  writePageBlocks,
+} from "@/services/pages/page-write-path";
 import {
   AiProposalStatus,
   DatabasePropertyType,
@@ -9,75 +20,9 @@ import {
   Prisma,
 } from "@prisma/client";
 
-import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
-import { type WorkspaceAccess } from "@/lib/auth/workspace-auth";
 import { prisma } from "@/lib/prisma";
 
-export type PageActor =
-  | string
-  | {
-      userId: string;
-      workspace?: WorkspaceAccess;
-    };
-
-function actorUserId(actor: PageActor) {
-  return typeof actor === "string" ? actor : actor.userId;
-}
-
-function actorPageScope(actor: PageActor) {
-  const userId = actorUserId(actor);
-  return typeof actor === "string" ? { userId } : pageVisibilityWhere(actor);
-}
-
-async function actorCanAccess(
-  actor: PageActor,
-  pageId: string,
-  role: PageAccessRole
-) {
-  if (typeof actor === "string") {
-    return prisma.page.findFirst({
-      where: { id: pageId, userId: actor, trashedAt: null },
-      select: { id: true },
-    });
-  }
-  return resolvePageAccess(actor, pageId, role);
-}
-
-function actorWorkspaceId(actor: PageActor) {
-  return typeof actor === "string" ? undefined : actor.workspace?.workspaceId;
-}
-
-export interface PageBlockInput {
-  id?: string;
-  parentBlockId?: string | null;
-  type: PageBlockType;
-  content: Prisma.InputJsonValue;
-  position: number;
-  createdBy?: PageAuthor;
-}
-
-const pageDetailInclude = {
-  folder: { select: { id: true, name: true, color: true } },
-  tags: { select: { id: true, name: true, color: true } },
-  blocks: { orderBy: { position: "asc" as const } },
-  children: {
-    where: { trashedAt: null },
-    orderBy: { position: "asc" as const },
-  },
-  database: {
-    include: {
-      properties: { orderBy: { position: "asc" as const } },
-      views: { orderBy: { position: "asc" as const } },
-      records: {
-        orderBy: { position: "asc" as const },
-        include: {
-          page: true,
-          values: true,
-        },
-      },
-    },
-  },
-} satisfies Prisma.PageInclude;
+export type { PageActor } from "@/services/pages/page-model";
 
 export async function listPages(
   actor: PageActor,
@@ -241,172 +186,6 @@ export async function updatePage(
     },
     include: pageDetailInclude,
   });
-}
-
-export async function replacePageBlocks(
-  actor: PageActor,
-  pageId: string,
-  blocks: PageBlockInput[],
-  createdBy: PageAuthor = PageAuthor.HUMAN,
-  documentFormatVersion: 1 | 2 = 1,
-  options: { syncCollaborationState?: boolean } = {}
-) {
-  if (!(await actorCanAccess(actor, pageId, PageAccessRole.EDITOR)))
-    return null;
-  const userId = actorUserId(actor);
-  const page = await getPage(actor, pageId);
-  if (!page) return null;
-  if (blocks.length > 2_000) throw new Error("Page has too many blocks");
-
-  const normalized = blocks.map((block, index) => ({
-    id: block.id,
-    parentBlockId: block.parentBlockId ?? null,
-    type: block.type,
-    content: block.content,
-    position: Number.isFinite(block.position)
-      ? block.position
-      : (index + 1) * 1024,
-    createdBy: block.createdBy ?? createdBy,
-  }));
-
-  return prisma.$transaction(async (tx) => {
-    if (page.documentFormatVersion !== documentFormatVersion) {
-      await tx.page.update({
-        where: { id: pageId },
-        data: { documentFormatVersion },
-      });
-    }
-    await tx.pageRevision.create({
-      data: {
-        pageId,
-        userId,
-        createdBy,
-        snapshot: {
-          title: page.title,
-          icon: page.icon,
-          blocks: page.blocks.map((block) => ({
-            id: block.id,
-            parentBlockId: block.parentBlockId,
-            type: block.type,
-            content: block.content,
-            position: block.position,
-            createdBy: block.createdBy,
-          })),
-        },
-      },
-    });
-
-    const requestedIds = normalized
-      .map((block) => block.id)
-      .filter((id): id is string => Boolean(id));
-    if (new Set(requestedIds).size !== requestedIds.length) {
-      throw new PageBlockIdentityError("Page block IDs must be unique");
-    }
-    const foreignBlocks = requestedIds.length
-      ? await tx.pageBlock.count({
-          where: { id: { in: requestedIds }, pageId: { not: pageId } },
-        })
-      : 0;
-    if (foreignBlocks > 0) {
-      throw new Error("A page block ID belongs to another page");
-    }
-
-    // Detach first so removing a parent never cascades into a retained child.
-    await tx.pageBlock.updateMany({
-      where: { pageId },
-      data: { parentBlockId: null },
-    });
-    await tx.pageBlock.deleteMany({
-      where: {
-        pageId,
-        ...(requestedIds.length > 0 ? { id: { notIn: requestedIds } } : {}),
-      },
-    });
-
-    const reconciledIds: string[] = [];
-    for (const block of normalized) {
-      if (block.id) {
-        await tx.pageBlock.upsert({
-          where: { id: block.id },
-          update: {
-            type: block.type,
-            content: block.content,
-            position: block.position,
-            createdBy: block.createdBy,
-          },
-          create: {
-            id: block.id,
-            pageId,
-            type: block.type,
-            content: block.content,
-            position: block.position,
-            createdBy: block.createdBy,
-          },
-        });
-        reconciledIds.push(block.id);
-      } else {
-        const created = await tx.pageBlock.create({
-          data: {
-            pageId,
-            type: block.type,
-            content: block.content,
-            position: block.position,
-            createdBy: block.createdBy,
-          },
-          select: { id: true },
-        });
-        reconciledIds.push(created.id);
-      }
-    }
-
-    const idByInput = normalized.map((block, index) => ({
-      id: reconciledIds[index],
-      parentBlockId: block.parentBlockId,
-    }));
-    const validIds = new Set(reconciledIds);
-    for (const block of idByInput) {
-      if (!block.parentBlockId) continue;
-      if (!validIds.has(block.parentBlockId)) {
-        throw new Error("Parent block must belong to the same page");
-      }
-      if (block.parentBlockId === block.id) {
-        throw new Error("A page block cannot contain itself");
-      }
-      await tx.pageBlock.update({
-        where: { id: block.id },
-        data: { parentBlockId: block.parentBlockId },
-      });
-    }
-    await tx.page.update({
-      where: { id: pageId },
-      data: { updatedAt: new Date() },
-    });
-    if (options.syncCollaborationState !== false) {
-      const state = pageBlocksToCollaborationState(
-        normalized.map((block, index) => ({
-          id: reconciledIds[index],
-          parentBlockId: block.parentBlockId,
-          type: block.type,
-          content: block.content,
-          position: block.position,
-          createdBy: block.createdBy,
-        }))
-      );
-      await tx.pageCollaborationState.upsert({
-        where: { pageId },
-        create: { pageId, state: Buffer.from(state) },
-        update: { state: Buffer.from(state) },
-      });
-    }
-    return tx.page.findUnique({
-      where: { id: pageId },
-      include: pageDetailInclude,
-    });
-  });
-}
-
-export class PageBlockIdentityError extends Error {
-  readonly code = "DUPLICATE_BLOCK_ID";
 }
 
 export async function createDatabase(
@@ -604,7 +383,7 @@ export async function applyAiProposal(actor: PageActor, proposalId: string) {
     });
   }
   if (blocks.length > 0) {
-    await replacePageBlocks(
+    await writePageBlocks(
       actor,
       page.id,
       [
@@ -621,7 +400,9 @@ export async function applyAiProposal(actor: PageActor, proposalId: string) {
           position: (page.blocks.at(-1)?.position ?? 0) + (index + 1) * 1024,
         })),
       ],
-      PageAuthor.AI
+      PageAuthor.AI,
+      page.documentFormatVersion === 2 ? 2 : 1,
+      page.contentRevision
     );
   }
   return prisma.aiPageChangeProposal.update({
@@ -689,7 +470,7 @@ export async function restorePageRevision(
     },
     select: {
       snapshot: true,
-      page: { select: { documentFormatVersion: true } },
+      page: { select: { documentFormatVersion: true, contentRevision: true } },
     },
   });
   if (
@@ -706,7 +487,7 @@ export async function restorePageRevision(
           Boolean(block) && typeof block === "object" && !Array.isArray(block)
       )
     : [];
-  const restored = await replacePageBlocks(
+  const restored = await writePageBlocks(
     actor,
     pageId,
     blocks.flatMap((block, index) => {
@@ -740,7 +521,8 @@ export async function restorePageRevision(
       ];
     }),
     PageAuthor.HUMAN,
-    revision.page.documentFormatVersion === 2 ? 2 : 1
+    revision.page.documentFormatVersion === 2 ? 2 : 1,
+    revision.page.contentRevision
   );
   if (!restored) return null;
   return prisma.page.update({

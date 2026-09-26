@@ -10,11 +10,16 @@ import {
   authenticatePageCollaboration,
   pageIdFromCollaborationDocument,
 } from "@/services/pages/page-collaboration-auth";
-import { collaborationDocumentToPageBlocks } from "@/services/pages/page-collaboration-document";
-import { replacePageBlocks } from "@/services/pages/page-service";
+import {
+  closePageCollaborationSessions,
+  openPageCollaborationSession,
+  storePageCollaborationDocument,
+  touchPageCollaborationSession,
+} from "@/services/pages/page-write-path";
 import { Redis as RedisExtension } from "@hocuspocus/extension-redis";
 import { type Connection, Server } from "@hocuspocus/server";
-import { PageAuthor, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 
 import { Yjs as Y } from "@/lib/collaboration/yjs";
 import { newDate } from "@/lib/date-utils";
@@ -29,6 +34,7 @@ import {
 
 const MOODBOARD_SNAPSHOT_INTERVAL_MS = 5 * 60 * 1_000;
 const DEFAULT_AUTHORIZATION_RECHECK_INTERVAL_MS = 15_000;
+const PAGE_LEASE_HEARTBEAT_INTERVAL_MS = 15_000;
 const ACCESS_REVOKED = {
   code: 4403,
   reason: "Collaboration access revoked",
@@ -99,16 +105,79 @@ async function refreshConnectionAuthorization(
 export function createCollaborationServer(
   options: CollaborationServerOptions = {}
 ) {
+  let collaborationServer: Server<CollaborationContext> | null = null;
   const recheckInterval =
     options.authorizationRecheckIntervalMs ??
     DEFAULT_AUTHORIZATION_RECHECK_INTERVAL_MS;
   const buildSha = options.buildSha ?? resolveBuildSha();
   const recheckTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  const pageLeaseTimers = new Map<
+    string,
+    { sessionId: string; timer: ReturnType<typeof setTimeout> }
+  >();
+  const pageSessions = new Map<string, string>();
+  const unloadingPageSessions = new Map<string, string>();
+  let destroyed = false;
 
-  function cancelRecheck(socketId: string) {
-    const timer = recheckTimers.get(socketId);
+  function recheckKey(socketId: string, documentName: string) {
+    return `${socketId}\0${documentName}`;
+  }
+
+  async function releasePageSession(documentName: string, sessionId: string) {
+    const pageId = pageIdFromCollaborationDocument(documentName);
+    if (pageId) await closePageCollaborationSessions(pageId, [sessionId]);
+  }
+
+  function resetPageDocument(documentName: string) {
+    const hocuspocus = collaborationServer?.hocuspocus;
+    if (!hocuspocus) return;
+    const document = hocuspocus.documents.get(documentName);
+    hocuspocus.closeConnections(documentName);
+    hocuspocus.documents.delete(documentName);
+    document?.destroy();
+  }
+
+  function cancelPageLeaseHeartbeat(documentName: string, sessionId?: string) {
+    const heartbeat = pageLeaseTimers.get(documentName);
+    if (!heartbeat || (sessionId && heartbeat.sessionId !== sessionId)) return;
+    clearTimeout(heartbeat.timer);
+    pageLeaseTimers.delete(documentName);
+  }
+
+  function schedulePageLeaseHeartbeat(
+    documentName: string,
+    pageId: string,
+    sessionId: string
+  ) {
+    cancelPageLeaseHeartbeat(documentName);
+    const timer = setTimeout(() => {
+      pageLeaseTimers.delete(documentName);
+      if (pageSessions.get(documentName) !== sessionId) return;
+      void touchPageCollaborationSession(pageId, sessionId)
+        .then((touched) => {
+          if (pageSessions.get(documentName) !== sessionId) return;
+          if (!touched) {
+            pageSessions.delete(documentName);
+            resetPageDocument(documentName);
+            return;
+          }
+          schedulePageLeaseHeartbeat(documentName, pageId, sessionId);
+        })
+        .catch(() => {
+          if (pageSessions.get(documentName) === sessionId) {
+            schedulePageLeaseHeartbeat(documentName, pageId, sessionId);
+          }
+        });
+    }, PAGE_LEASE_HEARTBEAT_INTERVAL_MS);
+    timer.unref();
+    pageLeaseTimers.set(documentName, { sessionId, timer });
+  }
+
+  function cancelRecheck(socketId: string, documentName: string) {
+    const key = recheckKey(socketId, documentName);
+    const timer = recheckTimers.get(key);
     if (timer) clearTimeout(timer);
-    recheckTimers.delete(socketId);
+    recheckTimers.delete(key);
   }
 
   function scheduleRecheck(
@@ -117,9 +186,10 @@ export function createCollaborationServer(
     connection: Connection<CollaborationContext>
   ) {
     if (recheckInterval <= 0) return;
-    cancelRecheck(socketId);
+    const key = recheckKey(socketId, documentName);
+    cancelRecheck(socketId, documentName);
     const timer = setTimeout(() => {
-      recheckTimers.delete(socketId);
+      recheckTimers.delete(key);
       void refreshConnectionAuthorization(connection, documentName)
         .then(() => {
           if (connection.document.hasConnection(connection)) {
@@ -129,10 +199,10 @@ export function createCollaborationServer(
         .catch(() => connection.close(ACCESS_REVOKED));
     }, recheckInterval);
     timer.unref();
-    recheckTimers.set(socketId, timer);
+    recheckTimers.set(key, timer);
   }
 
-  return new Server<CollaborationContext>({
+  collaborationServer = new Server<CollaborationContext>({
     address: options.address ?? process.env.COLLABORATION_HOST ?? "0.0.0.0",
     port: options.port ?? Number(process.env.COLLABORATION_PORT ?? 1234),
     quiet: true,
@@ -178,11 +248,45 @@ export function createCollaborationServer(
     async beforeHandleMessage({ connection, documentName }) {
       await refreshConnectionAuthorization(connection, documentName);
     },
-    async onDisconnect({ socketId }) {
-      cancelRecheck(socketId);
+    async onDisconnect({ socketId, documentName }) {
+      cancelRecheck(socketId, documentName);
     },
     async onDestroy() {
-      for (const socketId of recheckTimers.keys()) cancelRecheck(socketId);
+      destroyed = true;
+      for (const timer of recheckTimers.values()) clearTimeout(timer);
+      recheckTimers.clear();
+      for (const heartbeat of pageLeaseTimers.values()) {
+        clearTimeout(heartbeat.timer);
+      }
+      pageLeaseTimers.clear();
+      const sessions = [
+        ...pageSessions.entries(),
+        ...unloadingPageSessions.entries(),
+      ];
+      pageSessions.clear();
+      unloadingPageSessions.clear();
+      await Promise.all(
+        sessions.map(([documentName, sessionId]) =>
+          releasePageSession(documentName, sessionId)
+        )
+      );
+    },
+    async beforeUnloadDocument({ documentName, document, instance }) {
+      if (instance.documents.get(documentName) !== document) {
+        throw new Error("Ignoring stale collaboration document unload");
+      }
+      const sessionId = pageSessions.get(documentName);
+      if (sessionId) unloadingPageSessions.set(documentName, sessionId);
+    },
+    async afterUnloadDocument({ documentName }) {
+      const sessionId = unloadingPageSessions.get(documentName);
+      unloadingPageSessions.delete(documentName);
+      if (!sessionId) return;
+      if (pageSessions.get(documentName) === sessionId) {
+        pageSessions.delete(documentName);
+        cancelPageLeaseHeartbeat(documentName, sessionId);
+      }
+      await releasePageSession(documentName, sessionId);
     },
     async onLoadDocument({ document, documentName }) {
       const moodboardId = moodboardIdFromCollaborationDocument(documentName);
@@ -200,13 +304,33 @@ export function createCollaborationServer(
       }
       const pageId = pageIdFromCollaborationDocument(documentName);
       if (!pageId) throw new Error("Invalid Page document name");
-      const stored = await prisma.pageCollaborationState.findUnique({
-        where: { pageId },
-        select: { state: true },
-      });
-      if (!stored) throw new Error("Page collaboration state is unavailable");
-      Y.applyUpdate(document, new Uint8Array(stored.state));
-      return document;
+      const sessionId = randomUUID();
+      const opened = await openPageCollaborationSession(pageId, sessionId);
+      if (!opened) throw new Error("Page collaboration state is unavailable");
+      if (destroyed) {
+        await releasePageSession(documentName, sessionId);
+        throw new Error("Collaboration server is shutting down");
+      }
+      pageSessions.set(documentName, sessionId);
+      schedulePageLeaseHeartbeat(documentName, pageId, sessionId);
+      try {
+        const stored = await prisma.pageCollaborationState.findUnique({
+          where: { pageId },
+          select: { state: true },
+        });
+        if (!stored) {
+          throw new Error("Page collaboration state is unavailable");
+        }
+        Y.applyUpdate(document, new Uint8Array(stored.state));
+        return document;
+      } catch (error) {
+        if (pageSessions.get(documentName) === sessionId) {
+          pageSessions.delete(documentName);
+          cancelPageLeaseHeartbeat(documentName, sessionId);
+        }
+        await releasePageSession(documentName, sessionId);
+        throw error;
+      }
     },
     async onStoreDocument({ document, documentName, lastContext }) {
       const moodboardId = moodboardIdFromCollaborationDocument(documentName);
@@ -248,25 +372,26 @@ export function createCollaborationServer(
       }
       const pageId = pageIdFromCollaborationDocument(documentName);
       if (!pageId) throw new Error("Invalid Page document name");
-      const state = Y.encodeStateAsUpdate(document);
-      await prisma.pageCollaborationState.upsert({
-        where: { pageId },
-        create: { pageId, state: Buffer.from(state) },
-        update: { state: Buffer.from(state) },
-      });
       const page = await prisma.page.findUnique({
         where: { id: pageId },
         select: { userId: true, documentFormatVersion: true },
       });
       if (!page) return;
-      await replacePageBlocks(
+      const sessionId = pageSessions.get(documentName);
+      if (!sessionId) {
+        throw new Error("Page collaboration lease is unavailable");
+      }
+      const stored = await storePageCollaborationDocument(
         lastContext?.resource === "page" ? lastContext.actor : page.userId,
         pageId,
-        collaborationDocumentToPageBlocks(document),
-        PageAuthor.HUMAN,
-        page.documentFormatVersion === 2 ? 2 : 1,
-        { syncCollaborationState: false }
+        sessionId,
+        document,
+        page.documentFormatVersion === 2 ? 2 : 1
       );
+      if (!stored) {
+        throw new Error("Page collaboration write access was revoked");
+      }
     },
   });
+  return collaborationServer;
 }

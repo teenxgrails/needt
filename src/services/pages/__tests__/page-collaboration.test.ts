@@ -7,6 +7,11 @@ import {
   type PageCollaborationClaims,
   verifyPageCollaborationToken,
 } from "@/services/pages/page-collaboration-token";
+import {
+  legacyPageCollaborationDraftKey,
+  pageCollaborationDocumentName,
+  pageCollaborationDraftKey,
+} from "@/services/pages/page-collaboration-protocol";
 import { PageAccessRole, WorkspaceKind, WorkspaceRole } from "@prisma/client";
 import { createHmac, randomBytes } from "node:crypto";
 import * as Y from "yjs";
@@ -73,7 +78,7 @@ describe("Page collaboration security", () => {
 
   it("rejects a valid token used for a guessed Page document", async () => {
     await expect(
-      authenticatePageCollaboration(signedToken(), "page:page-b")
+      authenticatePageCollaboration(signedToken(), "page:v2:page-b")
     ).rejects.toThrow("token is invalid");
     expect(resolveWorkspaceAccess).not.toHaveBeenCalled();
   });
@@ -89,7 +94,7 @@ describe("Page collaboration security", () => {
     resolvePageAccessMock.mockResolvedValue(null);
 
     await expect(
-      authenticatePageCollaboration(signedToken(), "page:page-a")
+      authenticatePageCollaboration(signedToken(), "page:v2:page-a")
     ).rejects.toThrow("access denied");
     expect(resolvePageAccess).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "member" }),
@@ -111,7 +116,7 @@ describe("Page collaboration security", () => {
     });
 
     await expect(
-      authenticatePageCollaboration(signedToken(), "page:page-a")
+      authenticatePageCollaboration(signedToken(), "page:v2:page-a")
     ).resolves.toEqual(
       expect.objectContaining({ pageId: "page-a", role: PageAccessRole.VIEWER })
     );
@@ -142,7 +147,7 @@ describe("Page collaboration security", () => {
           pageId: "page-a",
           role: PageAccessRole.EDITOR,
         },
-        "page:page-a"
+        "page:v2:page-a"
       )
     ).resolves.toMatchObject({ role: PageAccessRole.VIEWER });
   });
@@ -169,13 +174,21 @@ describe("Page collaboration security", () => {
           pageId: "page-a",
           role: PageAccessRole.EDITOR,
         },
-        "page:page-a"
+        "page:v2:page-a"
       )
     ).rejects.toThrow("Workspace access denied");
   });
 
   it("parses only Page collaboration document names", () => {
-    expect(pageIdFromCollaborationDocument("page:page-a")).toBe("page-a");
+    expect(pageIdFromCollaborationDocument("page:v2:page-a")).toBe("page-a");
+    expect(pageCollaborationDocumentName("page-a")).toBe("page:v2:page-a");
+    expect(pageCollaborationDraftKey("page-a")).toBe(
+      "needt-page-draft:v2:page-a"
+    );
+    expect(legacyPageCollaborationDraftKey("page-a")).toBe(
+      "needt-page-draft:page-a"
+    );
+    expect(pageIdFromCollaborationDocument("page:page-a")).toBeNull();
     expect(pageIdFromCollaborationDocument("task:page-a")).toBeNull();
   });
 });

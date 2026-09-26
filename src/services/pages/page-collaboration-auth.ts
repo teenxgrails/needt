@@ -1,10 +1,9 @@
 import { verifyPageCollaborationToken } from "@/services/pages/page-collaboration-token";
+import { pageIdFromCollaborationDocument } from "@/services/pages/page-collaboration-protocol";
 import { PageAccessRole } from "@prisma/client";
 
 import { type PageAccessActor, resolvePageAccess } from "@/lib/auth/page-auth";
 import { resolveWorkspaceAccess } from "@/lib/auth/workspace-auth";
-
-const DOCUMENT_PREFIX = "page:";
 
 export type PageCollaborationContext = {
   resource: "page";
@@ -13,11 +12,7 @@ export type PageCollaborationContext = {
   role: PageAccessRole;
 };
 
-export function pageIdFromCollaborationDocument(documentName: string) {
-  return documentName.startsWith(DOCUMENT_PREFIX)
-    ? documentName.slice(DOCUMENT_PREFIX.length)
-    : null;
-}
+export { pageIdFromCollaborationDocument };
 
 async function resolveCurrentPageCollaborationAccess(input: {
   userId: string;
