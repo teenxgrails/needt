@@ -3,7 +3,7 @@ id: 20260926-codex-page-write-path
 owner: codex
 branch: codex/page-write-path
 status: active
-updated: 2026-09-26T08:57:29Z
+updated: 2026-09-26T10:00:33Z
 objective: Make one deep module own page block writes so REST autosaves cannot overwrite live collaboration state.
 ---
 
@@ -16,6 +16,9 @@ objective: Make one deep module own page block writes so REST autosaves cannot o
 
 ## Completed
 
+- Committed the CI follow-up as `199e554`: canonical v2 room names in the
+  authorization E2E, a Prisma-safe advisory-lock result, and safe persistence
+  of already-authorized document state after later membership revocation.
 - Created the isolated branch and worktree from fresh `origin/main`.
 - Added one canonical page block writer with a per-page PostgreSQL advisory
   lock, exact collaboration-session leases, transactional relational/CRDT
@@ -39,10 +42,7 @@ objective: Make one deep module own page block writes so REST autosaves cannot o
 
 ## Working state
 
-- Files currently dirty or expected to change: this handoff,
-  `tests/e2e/collaboration.spec.ts`, and
-  `src/services/pages/page-write-path.ts` plus its focused unit test for the v2
-  room-name CI fix and defects exposed by the corrected test.
+- Files currently dirty or expected to change: this handoff checkpoint only.
 - Foreign changes that must remain untouched: every other worktree and the primary checkout's tracked/untracked changes.
 
 - PR #44 E2E reproduced locally: the authorization-boundary test still opened
@@ -66,10 +66,12 @@ objective: Make one deep module own page block writes so REST autosaves cannot o
   passed, while `pages-block-editor` failed its first PUT because the advisory
   lock query returned PostgreSQL `void`. The cast fix covers that API path; no
   baseline changed.
-- The follow-up production build was attempted but the machine reached ENOSPC
-  with only about 200 MiB free after all authorized `.next` cleanup. The
-  temporary tracing-root config was reverted and `.next` deleted. Remaining
-  pre-push gates and push wait on safe disk reclamation.
+- Follow-up pre-push gates passed: `npm run build` including the production
+  artifact postcheck (1393 files), `npm run build:worker`,
+  `npm run check:ui-contracts` (476 files), `npm run check:branding` (944
+  files), and `npm run check:agent-handoffs` (28 handoffs). The build used a
+  temporary local tracing root with webpack disk cache disabled; both config
+  edits were reverted and `.next` was deleted immediately afterward.
 - Passed: `npm run agent:context -- --json`; local `prisma migrate deploy` and
   `prisma generate`; `npm run type-check`; `npm run lint`; candidate-focused
   tests (5 suites / 31 tests); full `npm run test:unit` (171 passed suites / 828
@@ -98,13 +100,10 @@ objective: Make one deep module own page block writes so REST autosaves cannot o
 
 ## Blockers
 
-- Pre-push build is blocked by host ENOSPC after authorized cache cleanup; the
-  primary checkout's 1.6 GiB `node_modules` was not removed without exact owner
-  approval. The non-overlapping collaboration cutover remains a release
-  constraint.
+- No implementation blocker. The non-overlapping collaboration cutover remains
+  a release constraint.
 
 ## Next action
 
-- Free enough safe local disk, rerun build plus the remaining pre-push gates,
-  push the follow-up, update PR #44's CI/cutover sections, and wait for E2E and
-  visual-style. Do not start candidate 2.
+- Push the follow-up and this checkpoint, update PR #44's CI/cutover sections,
+  and wait for E2E and visual-style. Do not start candidate 2.
