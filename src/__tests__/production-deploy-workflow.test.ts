@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 const workflow = readFileSync(".github/workflows/docker-publish.yml", "utf8");
+const deployScript = readFileSync("scripts/trigger-coolify-deploy.sh", "utf8");
 
 describe("production deployment workflow", () => {
   it("accepts privileged workflow runs only from a successful main push in this repository", () => {
@@ -17,7 +18,9 @@ describe("production deployment workflow", () => {
     expect(workflow).toContain(
       "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
     );
-    expect(workflow.match(/ref: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(3);
+    expect(workflow.match(/ref: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(
+      3
+    );
     expect(workflow).not.toContain(
       "ref: ${{ github.event.repository.default_branch }}"
     );
@@ -65,10 +68,16 @@ describe("production deployment workflow", () => {
   });
 
   it("uses authenticated Coolify deploy webhooks and manual native rollback", () => {
+    // Every redeploy goes through the one script, which posts, falls back to
+    // GET only on 405, and fails the job on anything else.
     expect(
-      workflow.match(/Authorization: Bearer \$COOLIFY_TOKEN/g)
+      workflow.match(/\.\/scripts\/trigger-coolify-deploy\.sh/g)
     ).toHaveLength(3);
-    expect(workflow.match(/--request GET/g)).toHaveLength(3);
+    expect(workflow).not.toContain("--request GET");
+    expect(deployScript).toContain("request POST");
+    expect(deployScript).toContain("Authorization: Bearer $COOLIFY_TOKEN");
+    expect(deployScript).toContain('"405"');
+    expect(deployScript).toContain("exit 1");
     expect(workflow).not.toContain("COOLIFY_ROLLBACK_WEBHOOK_URL");
     expect(workflow).not.toContain("?sha=$DEPLOY_SHA");
     expect(workflow).toContain("Record current healthy web SHA");
