@@ -61,6 +61,8 @@ function canConnect() {
 
 async function hasExpectedHealth() {
   try {
+    // Fixed loopback smoke carries no credentials and never leaves the runner.
+    // nosemgrep: typescript.react.security.react-insecure-request.react-insecure-request
     const response = await fetch(`http://${HOST}:${PORT}/health`, {
       signal: AbortSignal.timeout(250),
     });

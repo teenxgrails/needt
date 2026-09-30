@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { canAddCalendar } from "@/lib/entitlements";
 import { createGoogleOAuthClient } from "@/lib/google";
+import { GOOGLE_CALENDAR_SCOPES } from "@/lib/google-oauth-scopes";
+import { buildCalendarOAuthRedirectUrl } from "@/lib/oauth-redirects";
 
 const LOG_SOURCE = "GoogleCalendarOAuthStart";
 
@@ -17,17 +19,13 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const redirectUrl = `${process.env.NEXTAUTH_URL}/api/calendar/google`;
+  const redirectUrl = buildCalendarOAuthRedirectUrl("google");
   const oauth2Client = await createGoogleOAuthClient({ redirectUrl });
 
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
-    scope: [
-      "https://www.googleapis.com/auth/calendar",
-      "https://www.googleapis.com/auth/calendar.events",
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/tasks",
-    ],
+    scope: [...GOOGLE_CALENDAR_SCOPES],
+    include_granted_scopes: true,
     prompt: "consent",
   });
 

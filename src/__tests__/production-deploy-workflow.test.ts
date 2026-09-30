@@ -3,6 +3,47 @@ import { readFileSync } from "node:fs";
 const workflow = readFileSync(".github/workflows/docker-publish.yml", "utf8");
 
 describe("production deployment workflow", () => {
+  it("accepts privileged workflow runs only from a successful main push in this repository", () => {
+    expect(workflow).toContain("github.event.workflow_run.event == 'push'");
+    expect(workflow).toContain(
+      "github.event.workflow_run.head_repository.full_name == github.repository"
+    );
+    expect(workflow).toContain(
+      "github.event.workflow_run.head_branch == github.event.repository.default_branch"
+    );
+    expect(workflow).toContain(
+      "github.event.workflow_run.conclusion == 'success'"
+    );
+    expect(workflow).toContain(
+      "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
+    );
+    expect(workflow.match(/ref: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(3);
+    expect(workflow).not.toContain(
+      "ref: ${{ github.event.repository.default_branch }}"
+    );
+    expect(workflow.match(/Verify checked-out release commit/g)).toHaveLength(
+      3
+    );
+    expect(workflow).toContain("context: git");
+    expect(workflow).toContain("type=raw,value=main");
+    expect(workflow).not.toContain("enable={{is_default_branch}}");
+    expect(
+      workflow.match(
+        /DEPLOY_SHA: \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}/g
+      )
+    ).toHaveLength(2);
+  });
+
+  it("pins every third-party action to an immutable commit", () => {
+    const actionRefs = [
+      ...workflow.matchAll(/^\s*-?\s*uses:\s*([^\s]+)$/gm),
+    ].map(([, ref]) => ref);
+    expect(actionRefs.length).toBeGreaterThan(0);
+    for (const ref of actionRefs) {
+      expect(ref).toMatch(/^[^@]+@[0-9a-f]{40}$/);
+    }
+  });
+
   it("fails closed when required deployment configuration is missing", () => {
     expect(workflow).toContain(
       "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"

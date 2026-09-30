@@ -1,9 +1,13 @@
 import { AutoScheduleSettings } from "@prisma/client";
 
+import { fromZonedTime, toZonedTime } from "@/lib/date-utils";
+
+import { TimeSlot } from "@/types/scheduling";
+
 import { CalendarService } from "../CalendarService";
 import { TimeSlotManagerImpl } from "../TimeSlotManager";
 
-import { TimeSlot } from "@/types/scheduling";
+const TIME_ZONE = "Europe/Zurich";
 
 const settings = {
   bufferMinutes: 15,
@@ -14,9 +18,15 @@ const settings = {
 } as AutoScheduleSettings;
 
 function slot(startHour: number, endHour: number): TimeSlot {
+  const atHour = (hour: number) =>
+    fromZonedTime(
+      `2026-08-10T${hour.toString().padStart(2, "0")}:00:00`,
+      TIME_ZONE
+    );
+
   return {
-    start: new Date(2026, 7, 10, startHour, 0, 0),
-    end: new Date(2026, 7, 10, endHour, 0, 0),
+    start: atHour(startHour),
+    end: atHour(endHour),
     score: 0,
     conflicts: [],
     energyLevel: null,
@@ -28,7 +38,9 @@ function slot(startHour: number, endHour: number): TimeSlot {
 function calendarService(conflictFor?: "before" | "after"): CalendarService {
   return {
     findConflicts: jest.fn().mockImplementation((candidate: TimeSlot) => {
-      if (conflictFor === "before" && candidate.end.getHours() === 10) {
+      const zonedStart = toZonedTime(candidate.start, TIME_ZONE);
+      const zonedEnd = toZonedTime(candidate.end, TIME_ZONE);
+      if (conflictFor === "before" && zonedEnd.getHours() === 10) {
         return [
           {
             type: "calendar_event",
@@ -39,7 +51,7 @@ function calendarService(conflictFor?: "before" | "after"): CalendarService {
           },
         ];
       }
-      if (conflictFor === "after" && candidate.start.getHours() === 11) {
+      if (conflictFor === "after" && zonedStart.getHours() === 11) {
         return [
           {
             type: "calendar_event",

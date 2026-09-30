@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Check, Loader2 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +12,8 @@ import {
   NEEDT_PRICING,
   formatBillingPrice,
 } from "@/lib/creem/config";
+import { failedPaymentMessage } from "@/lib/creem/failed-payment";
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 import { SettingsSection } from "./SettingsSection";
@@ -86,6 +87,9 @@ function periodLabel(summary: BillingSummary) {
   const date = new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(new Date(summary.currentPeriodEnd));
+  if (summary.status === "PAST_DUE" || summary.status === "PAYMENT_FAILED") {
+    return `Paid access through ${date}`;
+  }
   return summary.cancelAtPeriodEnd
     ? `Access continues until ${date}`
     : `Renews ${date}`;
@@ -249,6 +253,18 @@ export function BillingSettings() {
           <div className="mt-3 rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3 text-[13px] text-[var(--text-secondary)]">
             Purchases are not configured for this installation. Your current
             plan and planner data are unaffected.
+          </div>
+        )}
+        {(summary.status === "PAST_DUE" ||
+          summary.status === "PAYMENT_FAILED") && (
+          <div
+            className="mt-3 rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3 text-[13px] text-[var(--text-secondary)]"
+            role="alert"
+          >
+            {failedPaymentMessage({
+              effectivePlan: summary.plan,
+              currentPeriodEnd: summary.currentPeriodEnd,
+            })}
           </div>
         )}
       </SettingsSection>

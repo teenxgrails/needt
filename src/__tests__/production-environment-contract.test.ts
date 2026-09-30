@@ -44,8 +44,9 @@ describe("production environment contract", () => {
   it("passes only the non-secret build identity to docker-publish", () => {
     const args = buildArgs(workflow);
 
+    expect(workflow.match(/^  RELEASE_SHA:/gm)).toHaveLength(1);
     expect(args).toContain(
-      "NEEDT_BUILD_SHA=${{ github.event.workflow_run.head_sha || github.sha }}"
+      "NEEDT_BUILD_SHA=${{ env.RELEASE_SHA }}"
     );
     expect(args).not.toMatch(/secrets\./i);
     for (const secret of runtimeSecrets) {

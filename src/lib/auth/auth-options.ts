@@ -6,6 +6,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { getGoogleCredentials, getOutlookCredentials } from "@/lib/auth";
 import { authSecret } from "@/lib/auth/auth-secret";
 import { authenticateUser } from "@/lib/auth/credentials-provider";
+import { GOOGLE_SIGN_IN_SCOPES } from "@/lib/google-oauth-scopes";
 import { logger } from "@/lib/logger";
 import { MICROSOFT_GRAPH_SCOPES } from "@/lib/outlook";
 
@@ -67,11 +68,7 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
         clientSecret: googleCredentials.clientSecret,
         authorization: {
           params: {
-            scope:
-              "openid email https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/tasks",
-            prompt: "consent",
-            access_type: "offline",
-            response_type: "code",
+            scope: GOOGLE_SIGN_IN_SCOPES.join(" "),
           },
         },
       })

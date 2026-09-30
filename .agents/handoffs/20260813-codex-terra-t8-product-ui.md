@@ -2,8 +2,8 @@
 id: 20260813-codex-terra-t8-product-ui
 owner: codex
 branch: codex/terra-t8-product-ui
-status: blocked
-updated: 2026-08-14T00:40:55Z
+status: complete
+updated: 2026-08-24T18:12:53Z
 objective: Deliver the Terra T8 product UI for the completed Sol S11 backend contracts as independent, scoped releases.
 ---
 
@@ -30,6 +30,7 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 - Committed role-loading guard and Mail contract checkpoint as `bfaa3b6` (`fix(terra): guard role-gated product actions`).
 - Audited T8.5: Mail already provides Snooze and Remind Me; no focused-splits server contract, endpoint, or persistence model exists.
 - Audited T9: `docs/security-model.md`, `docs/STACK.md`, and `docs/release-gate.md` already cover the required access/threat models and collaboration release gate.
+- Resolved: branch tip `eafc9e5` is an ancestor of `origin/main`; integration merge `eee3284` brought the combined S11/T8 line into the release history, including the later focused-Mail implementation.
 
 ## Working state
 
@@ -41,6 +42,7 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 - Passed: T8.1 checks; T8.2 `npm run type-check`, targeted ESLint, and `npm run test:unit -- --runInBand src/lib/__tests__/saved-views.test.ts`.
 - Attempted: Playwright `/tasks` before and after the edit; the pre-existing local server returns HTTP 500, so no authenticated visual assertion was possible.
 - Not run / still required: targeted checks per Terra release; full release gates after T8. Docker/E2E remain blocked by the existing Docker Desktop, disk-space, and user-owned dev-server conditions recorded by Sol.
+- Resolution evidence: `git merge-base --is-ancestor codex/terra-t8-product-ui origin/main` exits 0; `MailFocusedSplit` and `SavedView` are present in `origin/main:prisma/schema.prisma`; GitHub Actions run `32759055915` passed E2E and the complete visual/style job.
 
 ## Decisions and constraints
 
@@ -51,9 +53,8 @@ objective: Deliver the Terra T8 product UI for the completed Sol S11 backend con
 
 ## Blockers
 
-- T8.5 is blocked: implement a reviewed Sol-side data/API contract for user-defined focused Mail splits, then wire it into `MailPage`.
-- Full runtime gates are independently blocked; see the Sol handoff for exact owner actions.
+- None. T8.5 and the previously deferred runtime gates are complete on the integrated release.
 
 ## Next action
 
-- After an approved focused-splits contract lands, implement its Mail UI; then run the shared final release gates when Docker/local runtime prerequisites are restored.
+- None for this completed workstream.

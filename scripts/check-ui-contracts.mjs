@@ -1,6 +1,8 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import { extname, join, relative } from "node:path";
 
+import { checkAdminSettingsReachability } from "./ui-contracts/admin-settings-reachability.mjs";
+
 const ROOT = process.cwd();
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
 const failures = [];
@@ -115,6 +117,8 @@ for (const file of productSources) {
     );
   }
 }
+
+failures.push(...(await checkAdminSettingsReachability(ROOT)));
 
 for (const integrationPath of ["src/app/globals.css", "tailwind.config.ts"]) {
   const contents = await source(integrationPath);
