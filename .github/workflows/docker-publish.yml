@@ -120,6 +120,11 @@ jobs:
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
+      # The redeploy runs scripts/trigger-coolify-deploy.sh, so this job needs
+      # the repository on disk like deploy-runtimes does.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.RELEASE_SHA }}
       - name: Validate production deployment configuration
         run: |
           : "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"

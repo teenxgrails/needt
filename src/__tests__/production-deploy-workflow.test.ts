@@ -18,8 +18,9 @@ describe("production deployment workflow", () => {
     expect(workflow).toContain(
       "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
     );
+    // Every checkout pins the release commit, deploy-web's included.
     expect(workflow.match(/ref: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(
-      3
+      4
     );
     expect(workflow).not.toContain(
       "ref: ${{ github.event.repository.default_branch }}"
@@ -74,6 +75,8 @@ describe("production deployment workflow", () => {
       workflow.match(/\.\/scripts\/trigger-coolify-deploy\.sh/g)
     ).toHaveLength(3);
     expect(workflow).not.toContain("--request GET");
+    // Both deploy jobs run the script, so both must check the repo out.
+    expect(workflow.match(/actions\/checkout@/g)).toHaveLength(4);
     expect(deployScript).toContain("request POST");
     expect(deployScript).toContain("Authorization: Bearer $COOLIFY_TOKEN");
     expect(deployScript).toContain('"405"');
