@@ -223,7 +223,13 @@ export function AIAssistantSettings() {
         body: JSON.stringify({ text: brainDump }),
       });
       if (!response.ok) throw new Error("Failed to parse tasks");
-      const data = (await response.json()) as { tasks: ParsedTaskPreview[] };
+      const data = (await response.json()) as {
+        tasks: ParsedTaskPreview[];
+        notice?: string;
+      };
+      if (data.notice) {
+        notify.info(data.notice, { dedupeKey: "hosted-ai-status" });
+      }
       setParsedTasks(data.tasks);
     } catch (error) {
       notify.error("Could not parse the brain dump", {

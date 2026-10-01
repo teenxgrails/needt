@@ -290,7 +290,11 @@ jobs:
           changed_count="$(git diff --cached --name-only | wc -l | tr -d ' ')"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "test(visual): refresh Linux baselines"
+          # The tree was just switched to origin/main, but .next/types still
+          # holds stubs generated from the dispatch ref. On a branch that adds
+          # routes those stubs point at files main does not have, so the repo
+          # pre-commit hook's type-check fails on a commit of PNGs alone.
+          git commit --no-verify -m "test(visual): refresh Linux baselines"
           git push --set-upstream origin "$TARGET_BRANCH"
           echo "Updated $changed_count CI-authoritative Linux baseline files." >> "$GITHUB_STEP_SUMMARY"
 
