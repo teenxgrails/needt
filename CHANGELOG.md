@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   checkout is created; a payment Creem has already taken always grants the
   plan, and a completion whose reservation is missing or expired is recorded as
   `processed_without_lifetime_reservation` instead of being refused.
+- Added non-blocking email confirmation with one 14-day Pro trial per canonical
+  email, OAuth trial activation, day-11/day-14 worker emails, safe Free expiry,
+  and verified-owner gates for booking publication and outbound guest email.
 - Added a complete account archive and a re-authenticated, seven-day account
   deletion flow that removes personal data while preserving scrubbed,
   authorless shared-workspace tombstones.
@@ -54,6 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- New accounts now start with auto-scheduling defaults, actionable empty states
+  across primary routes, and recoverable calendar connection errors; calendar
+  OAuth callbacks are bound to the user who started the connection.
 - Page block writes now defer to an active collaboration session and persist
   its CRDT state and relational block projection atomically, preventing stale
   REST autosaves from overwriting live edits. A versioned collaboration room

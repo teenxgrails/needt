@@ -4,6 +4,7 @@ import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
+import { requiresEmailVerificationBeforeAccess } from "./email-verification-access";
 import { isPublicSignupEnabled } from "./public-signup";
 
 const LOG_SOURCE = "CredentialsProvider";
@@ -16,9 +17,10 @@ const LOG_SOURCE = "CredentialsProvider";
  */
 export async function authenticateUser(email: string, password: string) {
   try {
+    const normalizedEmail = email.trim().toLowerCase();
     // Find the user by email
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: {
         accounts: {
           where: {
@@ -62,6 +64,19 @@ export async function authenticateUser(email: string, password: string) {
       return null;
     }
 
+    if (
+      !user.emailVerified &&
+      (await requiresEmailVerificationBeforeAccess())
+    ) {
+      logger.warn(
+        "Authentication blocked pending email verification",
+        { userId: user.id },
+        LOG_SOURCE
+      );
+      return null;
+    }
+    // Recorded only once the sign-in is actually going to succeed; a blocked
+    // attempt must not count as proof of identity for reauthentication.
     await prisma.user.update({
       where: { id: user.id },
       data: { lastAuthenticatedAt: newDate() },

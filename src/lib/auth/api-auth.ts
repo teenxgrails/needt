@@ -5,6 +5,10 @@ import type { WorkspaceRole } from "@prisma/client";
 
 import { authSecret } from "@/lib/auth/auth-secret";
 import {
+  getEmailVerificationStatus,
+  requiresEmailVerificationBeforeAccess,
+} from "@/lib/auth/email-verification-access";
+import {
   type WorkspaceAccess,
   WorkspaceAuthorizationError,
   requestedWorkspaceId,
@@ -48,6 +52,18 @@ export async function authenticateRequest(
   }
 
   try {
+    const verification = await getEmailVerificationStatus(userId);
+    if (verification.required && !verification.verified) {
+      return {
+        response: NextResponse.json(
+          {
+            error: "Confirm your email to continue",
+            code: "EMAIL_VERIFICATION_REQUIRED",
+          },
+          { status: 403 }
+        ),
+      };
+    }
     const workspace = await resolveWorkspaceAccess({
       userId,
       requestedWorkspaceId: requestedWorkspaceId(request),
@@ -104,6 +120,16 @@ export async function requireAuth(
       );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const verification = await getEmailVerificationStatus(token.sub);
+    if (verification.required && !verification.verified) {
+      return NextResponse.json(
+        {
+          error: "Confirm your email to continue",
+          code: "EMAIL_VERIFICATION_REQUIRED",
+        },
+        { status: 403 }
+      );
+    }
 
     return null; // Authentication successful
   } catch (error) {
@@ -145,7 +171,7 @@ export async function requireAdmin(
 
     const user = await prisma.user.findUnique({
       where: { id: token.sub },
-      select: { isActive: true, role: true },
+      select: { emailVerified: true, isActive: true, role: true },
     });
     if (!user?.isActive) {
       logger.warn(
@@ -154,6 +180,19 @@ export async function requireAdmin(
         LOG_SOURCE
       );
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (
+      !user.emailVerified &&
+      (await requiresEmailVerificationBeforeAccess())
+    ) {
+      return NextResponse.json(
+        {
+          error: "Confirm your email to continue",
+          code: "EMAIL_VERIFICATION_REQUIRED",
+        },
+        { status: 403 }
+      );
     }
 
     if (user.role !== "admin") {

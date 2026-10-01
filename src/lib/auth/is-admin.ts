@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { Session } from "next-auth";
 
 import { getAuthOptions } from "@/lib/auth/auth-options";
+import { requiresEmailVerificationBeforeAccess } from "@/lib/auth/email-verification-access";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -36,9 +37,14 @@ export async function isAdmin(): Promise<boolean> {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { isActive: true, role: true },
+      select: { emailVerified: true, isActive: true, role: true },
     });
-    const isUserAdmin = user?.isActive === true && user.role === "admin";
+    const verificationRequired =
+      await requiresEmailVerificationBeforeAccess();
+    const isUserAdmin =
+      user?.isActive === true &&
+      user.role === "admin" &&
+      (!verificationRequired || Boolean(user.emailVerified));
     logger.info(
       "Checked if user is admin",
       { isAdmin: isUserAdmin, userIsActive: user?.isActive ?? false },

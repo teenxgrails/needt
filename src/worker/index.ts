@@ -16,6 +16,7 @@ import {
 } from "@/services/reminders/reminder-delivery";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 import { executeSchedulingRun } from "@/services/scheduling/runs";
+import { processTrialLifecycle } from "@/services/trials/trial-lifecycle";
 import {
   startWorkerHealthServer,
   stopWorkerHealthServer,
@@ -70,6 +71,7 @@ import {
   getLifetimeCheckoutReconciliationQueue,
   getNudgeQueue,
   getReminderQueue,
+  getTrialQueue,
   getWebhookRenewQueue,
 } from "@/lib/queue/queues";
 import {
@@ -82,6 +84,7 @@ import {
   QUEUE_NAMES,
   ReminderJobData,
   RescheduleJobData,
+  TrialJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
@@ -213,6 +216,10 @@ async function processLifetimeCheckoutReconciliation() {
   await reconcileLifetimeCheckoutReservations();
 }
 
+async function processTrials() {
+  await processTrialLifecycle();
+}
+
 async function processAccountLifecycle(job: Job<AccountLifecycleJobData>) {
   if (job.data.kind === "export") {
     await processAccountExport(job.data.requestId);
@@ -270,6 +277,10 @@ const workers = [
     processLifetimeCheckoutReconciliation,
     { connection, concurrency: 1 }
   ),
+  new Worker<TrialJobData>(QUEUE_NAMES.trials, processTrials, {
+    connection,
+    concurrency: 1,
+  }),
   new Worker<AccountLifecycleJobData>(
     QUEUE_NAMES.accountLifecycle,
     processAccountLifecycle,
@@ -357,6 +368,11 @@ export async function start(): Promise<void> {
     "lifetime-checkout-reconciliation",
     { every: 15 * 60_000 },
     { name: "sweep-lifetime-checkouts", data: { kind: "sweep" } }
+  );
+  await getTrialQueue().upsertJobScheduler(
+    "trial-lifecycle-sweep",
+    { every: 60 * 60_000 },
+    { name: "sweep-trials", data: { kind: "sweep" } }
   );
   await getAccountLifecycleQueue().upsertJobScheduler(
     "account-lifecycle-sweep",

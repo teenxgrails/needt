@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GaxiosError } from "gaxios";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { calendarProviderNeedsReconnect } from "@/lib/calendar-connection-status";
 import { getGoogleCalendarClient } from "@/lib/google-calendar";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -89,9 +90,15 @@ export async function GET(request: NextRequest) {
       },
       LOG_SOURCE
     );
-    if (error instanceof GaxiosError && Number(error.code) === 401) {
+    if (
+      (error instanceof GaxiosError && Number(error.code) === 401) ||
+      calendarProviderNeedsReconnect(error)
+    ) {
       return NextResponse.json(
-        { error: "Authentication failed. Please try signing in again." },
+        {
+          code: "CALENDAR_REAUTHORIZATION_REQUIRED",
+          error: "Google Calendar needs to be reconnected.",
+        },
         { status: 401 }
       );
     }

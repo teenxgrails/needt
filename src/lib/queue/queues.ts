@@ -13,6 +13,7 @@ import {
   QUEUE_NAMES,
   ReminderJobData,
   RescheduleJobData,
+  TrialJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";
 
@@ -25,6 +26,7 @@ let reminderQueue: Queue<ReminderJobData> | null = null;
 let nudgeQueue: Queue<NudgeJobData> | null = null;
 let lifetimeCheckoutReconciliationQueue: Queue<LifetimeCheckoutReconciliationJobData> | null =
   null;
+let trialQueue: Queue<TrialJobData> | null = null;
 let accountLifecycleQueue: Queue<AccountLifecycleJobData> | null = null;
 
 const defaultJobOptions = {
@@ -107,6 +109,14 @@ export function getLifetimeCheckoutReconciliationQueue(): Queue<LifetimeCheckout
   return lifetimeCheckoutReconciliationQueue;
 }
 
+export function getTrialQueue(): Queue<TrialJobData> {
+  trialQueue ??= new Queue(QUEUE_NAMES.trials, {
+    connection: getBullConnection(),
+    defaultJobOptions,
+  });
+  return trialQueue;
+}
+
 export function getAccountLifecycleQueue(): Queue<AccountLifecycleJobData> {
   accountLifecycleQueue ??= new Queue(QUEUE_NAMES.accountLifecycle, {
     connection: getBullConnection(),
@@ -125,6 +135,7 @@ export async function closeQueues(): Promise<void> {
     reminderQueue,
     nudgeQueue,
     lifetimeCheckoutReconciliationQueue,
+    trialQueue,
     accountLifecycleQueue,
   ].filter((queue): queue is Queue => queue !== null);
   await Promise.all(queues.map((queue) => queue.close()));
@@ -136,5 +147,6 @@ export async function closeQueues(): Promise<void> {
   reminderQueue = null;
   nudgeQueue = null;
   lifetimeCheckoutReconciliationQueue = null;
+  trialQueue = null;
   accountLifecycleQueue = null;
 }
