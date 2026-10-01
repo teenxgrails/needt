@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>palette directions three options — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">04 · palette directions three options</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Три варианта палитры Needt на одном фрагменте календаря: тёплый уголь, светлый песок, глубокие чернила</h2>
+
+<div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;">
+  <div id="p0"></div><div id="p1"></div><div id="p2"></div>
+</div>
+
+<script>
+(function(){
+  var sets=[
+    {n:'Тёплый уголь', sub:'Акцент — глина',
+     bg:'#17150F', panel:'#201D16', line:'#332E24', txt:'#EDE7DA', dim:'#9A9184', acc:'#C96442', accbg:'#2A1F19'},
+    {n:'Светлый песок', sub:'Акцент — хвоя',
+     bg:'#F5F2EA', panel:'#FFFFFF', line:'#E0DACC', txt:'#211F1A', dim:'#6E6А5F'.replace('А','6'), acc:'#2F6B4F', accbg:'#E4EDE7'},
+    {n:'Глубокие чернила', sub:'Акцент — бирюза',
+     bg:'#0E1214', panel:'#151B1E', line:'#232C30', txt:'#E4EBED', dim:'#8B989D', acc:'#3FA89A', accbg:'#15282A'}
+  ];
+
+  var day=[
+    {t:'Обзор макетов', h:'09:00', s:0, d:2},
+    {t:'Дейли', h:'10:00', s:2, d:1, fix:1},
+    {t:'Глубокая работа', h:'10:30', s:3, d:3},
+    {t:'Обед', h:'12:00', s:6, d:2, fix:1},
+    {t:'Правки биллинга', h:'13:00', s:8, d:3}
+  ];
+
+  sets.forEach(function(p,ix){
+    var el=document.getElementById('p'+ix);
+    var h='<div style="background:'+p.bg+';border:0.5px solid '+p.line+';border-radius:10px;padding:10px;">';
+    h+='<div style="font-size:12px;color:'+p.txt+';">'+p.n+'</div>';
+    h+='<div style="font-size:11px;color:'+p.dim+';margin:1px 0 9px;">'+p.sub+'</div>';
+    h+='<div style="position:relative;height:230px;">';
+
+    for(var g=0; g<11; g++){
+      h+='<div style="position:absolute;left:0;right:0;top:'+(g*21)+'px;border-top:0.5px solid '+p.line+';"></div>';
+    }
+
+    day.forEach(function(b){
+      var isAcc=!b.fix;
+      h+='<div style="position:absolute;left:0;right:0;top:'+(b.s*21+2)+'px;height:'+(b.d*21-4)+'px;'+
+        'box-sizing:border-box;background:'+(isAcc?p.accbg:p.panel)+';'+
+        'border:0.5px solid '+p.line+';border-left:2px solid '+(isAcc?p.acc:p.dim)+';'+
+        'padding:4px 6px;overflow:hidden;">'+
+        '<div style="font-size:10px;line-height:1.2;color:'+p.txt+';">'+b.t+'</div>'+
+        '<div style="font-size:9px;font-variant-numeric:tabular-nums;color:'+p.dim+';margin-top:1px;">'+b.h+'</div>'+
+        '</div>';
+    });
+
+    h+='</div>';
+    h+='<div style="display:flex;gap:5px;margin-top:9px;">'+
+       '<span style="flex:1;height:5px;border-radius:3px;background:'+p.acc+';"></span>'+
+       '<span style="flex:1;height:5px;border-radius:3px;background:'+p.panel+';"></span>'+
+       '<span style="flex:1;height:5px;border-radius:3px;background:'+p.line+';"></span>'+
+       '<span style="flex:1;height:5px;border-radius:3px;background:'+p.dim+';"></span>'+
+       '</div>';
+    h+='</div>';
+    el.innerHTML=h;
+  });
+})();
+</script>
+</div></body></html>
