@@ -11,6 +11,7 @@ import {
   startWorkerHealthServer,
   stopWorkerHealthServer,
 } from "@/worker/health-server";
+import { runWorkerStartupChecks } from "@/worker/startup";
 import * as Sentry from "@sentry/node";
 import { ConnectionOptions, Job, Worker } from "bullmq";
 import { randomUUID } from "node:crypto";
@@ -270,7 +271,8 @@ for (const worker of workers) {
   });
 }
 
-async function start(): Promise<void> {
+export async function start(): Promise<void> {
+  await runWorkerStartupChecks();
   if (isGitBuildSha(BUILD_SHA)) {
     releaseHeartbeatRedis =
       getRedisConnection() as unknown as ReleaseHealthRedis;
@@ -387,12 +389,14 @@ process.once("SIGINT", () => {
   void shutdown("SIGINT").finally(() => process.exit(0));
 });
 
-void start().catch(async (error) => {
-  await logger.error(
-    "Needt background worker could not start",
-    { error: error instanceof Error ? error.message : String(error) },
-    LOG_SOURCE
-  );
-  await shutdown("startup-error");
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== "test") {
+  void start().catch(async (error) => {
+    await logger.error(
+      "Needt background worker could not start",
+      { error: error instanceof Error ? error.message : String(error) },
+      LOG_SOURCE
+    );
+    await shutdown("startup-error");
+    process.exit(1);
+  });
+}
