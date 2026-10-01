@@ -3,25 +3,53 @@ import { ReminderDeliveryStatus, TaskReminderKind } from "@prisma/client";
 import { EmailService } from "@/lib/email/email-service";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { VapidVariableName, getVapidConfiguration } from "@/lib/push-config";
 
 const LOG_SOURCE = "ReminderDelivery";
 const RETRY_AFTER_MS = 5 * 60_000;
+let hasWarnedAboutMissingVapidConfiguration = false;
+let missingVapidWarning: Promise<void> | null = null;
 
-function reminderTarget(
-  reminder: {
-    kind: TaskReminderKind;
-    offsetMinutes: number;
-    task: {
-      scheduledStart: Date | null;
-      deadline: Date | null;
-      dueDate: Date | null;
-    };
-  }
+export async function warnAboutMissingVapidConfigurationOnce(
+  missingVariables: VapidVariableName[]
 ) {
+  if (hasWarnedAboutMissingVapidConfiguration) return;
+  if (!missingVapidWarning) {
+    missingVapidWarning = logger
+      .warn(
+        `Web Push delivery is unavailable; missing environment variables: ${missingVariables.join(", ")}`,
+        { missingVariables },
+        LOG_SOURCE
+      )
+      .then(() => {
+        hasWarnedAboutMissingVapidConfiguration = true;
+      })
+      .finally(() => {
+        missingVapidWarning = null;
+      });
+  }
+  await missingVapidWarning;
+}
+
+export async function warnIfVapidConfigurationIsMissingOnce() {
+  const configuration = getVapidConfiguration();
+  if (configuration.configured) return;
+  await warnAboutMissingVapidConfigurationOnce(configuration.missingVariables);
+}
+
+function reminderTarget(reminder: {
+  kind: TaskReminderKind;
+  offsetMinutes: number;
+  task: {
+    scheduledStart: Date | null;
+    deadline: Date | null;
+    dueDate: Date | null;
+  };
+}) {
   const anchor =
     reminder.kind === TaskReminderKind.BEFORE_START
       ? reminder.task.scheduledStart
-      : reminder.task.deadline ?? reminder.task.dueDate;
+      : (reminder.task.deadline ?? reminder.task.dueDate);
   return anchor
     ? new Date(anchor.getTime() - reminder.offsetMinutes * 60_000)
     : null;
@@ -79,7 +107,7 @@ export async function findDueReminderIds(now = new Date()) {
     .map((reminder) => reminder.id);
 }
 
-async function deliverPush(
+export async function deliverPush(
   subscription: {
     id: string;
     endpoint: string;
@@ -88,10 +116,13 @@ async function deliverPush(
   },
   payload: { title: string; body: string; url: string }
 ) {
-  const subject = process.env.VAPID_SUBJECT;
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  if (!subject || !publicKey || !privateKey) return false;
+  const configuration = getVapidConfiguration();
+  if (!configuration.configured) {
+    await warnAboutMissingVapidConfigurationOnce(
+      configuration.missingVariables
+    );
+    return false;
+  }
 
   // This standards-based push helper is ESM-only. Keep the import dynamic so
   // the CommonJS BullMQ worker can load it without bundling top-level await.
@@ -106,7 +137,11 @@ async function deliverPush(
       expirationTime: null,
       keys: { p256dh: subscription.p256dh, auth: subscription.auth },
     },
-    { subject, publicKey, privateKey }
+    {
+      subject: configuration.subject,
+      publicKey: configuration.publicKey,
+      privateKey: configuration.privateKey,
+    }
   );
   const response = await fetch(subscription.endpoint, request);
   if (response.status === 404 || response.status === 410) {
@@ -128,10 +163,7 @@ export async function deliverTaskReminder(reminderId: string) {
       deliveredAt: null,
       canceledAt: null,
       deliveryStatus: {
-        in: [
-          ReminderDeliveryStatus.PENDING,
-          ReminderDeliveryStatus.FAILED,
-        ],
+        in: [ReminderDeliveryStatus.PENDING, ReminderDeliveryStatus.FAILED],
       },
     },
     data: {
@@ -189,10 +221,7 @@ export async function deliverTaskReminder(reminderId: string) {
 
     // Email is both an explicit channel and the reliable fallback when web
     // push is unavailable (notably iOS browsers without an installed PWA).
-    if (
-      reminder.user.email &&
-      (channels.includes("email") || !pushDelivered)
-    ) {
+    if (reminder.user.email && (channels.includes("email") || !pushDelivered)) {
       await EmailService.sendEmail({
         to: reminder.user.email,
         subject: `${payload.title}: ${reminder.task.title}`,

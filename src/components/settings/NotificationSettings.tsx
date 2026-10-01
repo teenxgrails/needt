@@ -12,10 +12,13 @@ export function NotificationSettings() {
   const [pushNote, setPushNote] = useState<string | null>(null);
 
   const enablePush = async (enabled: boolean) => {
+    if (enabled && !notifications.webPushConfigured) return;
+
     if (!enabled) {
       const registration = await navigator.serviceWorker?.ready;
-      const subscription =
-        await registration?.pushManager.getSubscription().catch(() => null);
+      const subscription = await registration?.pushManager
+        .getSubscription()
+        .catch(() => null);
       if (subscription) {
         await fetch(
           `/api/push-subscriptions?endpoint=${encodeURIComponent(subscription.endpoint)}`,
@@ -46,7 +49,9 @@ export function NotificationSettings() {
       const isStandalone =
         window.matchMedia("(display-mode: standalone)").matches ||
         ("standalone" in navigator &&
-          Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
+          Boolean(
+            (navigator as Navigator & { standalone?: boolean }).standalone
+          ));
       if (isIos && !isStandalone) {
         setPushNote(
           "On iPhone and iPad, install Needt to the Home Screen to receive Web Push. Email reminders remain active."
@@ -133,16 +138,26 @@ export function NotificationSettings() {
               updateNotificationSettings({ dailyEmailEnabled: enabled })
             }
           />
-          {pushNote && (
-            <p className="px-3 pb-2 text-xs leading-5 text-[var(--text-muted)]">
-              {pushNote}
-            </p>
-          )}
           <MotionSwitchRow
             label="Browser notifications"
-            checked={notifications.webPushEnabled}
+            checked={
+              notifications.webPushConfigured && notifications.webPushEnabled
+            }
             onCheckedChange={enablePush}
+            disabled={!notifications.webPushConfigured}
           />
+          {!notifications.webPushConfigured ? (
+            <p className="px-3 pb-2 text-xs leading-5 text-[var(--text-muted)]">
+              Push delivery setup is incomplete on this Needt server. Browser
+              notifications are unavailable. Email reminders still work.
+            </p>
+          ) : (
+            pushNote && (
+              <p className="px-3 pb-2 text-xs leading-5 text-[var(--text-muted)]">
+                {pushNote}
+              </p>
+            )
+          )}
         </div>
       </SettingsSection>
 

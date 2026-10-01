@@ -1,0 +1,67 @@
+---
+id: 20260824-codex-push-config-visibility
+owner: codex
+branch: codex/push-config-visibility
+status: active
+updated: 2026-08-25T23:42:39Z
+objective: Preserve the saved push preference across missing server configuration, prove warning behavior by execution, and align visual coverage with real server state.
+---
+
+## Scope
+
+- Governing plan/spec: `docs/plans/12-remaining-work.md` P0.3 and prompt 3 in `docs/plans/12-codex-prompts.md`.
+- In scope: notification-settings preference round trips, reminder-delivery warning behavior, execution/render tests, honest visual fixtures and reviewed baselines, changelog, required local gates, push, and PR.
+- Out of scope: VAPID key generation, service-worker or payload changes, production/Coolify operations, deployment, and merge.
+
+## Completed
+
+- Created an isolated worktree from `origin/codex/plan12-coordination` at `f4b2400` and reviewed the required project context.
+- Added a shared VAPID configuration reader, a once-per-process warning used at worker startup and delivery time, and secret-free availability responses from the notification settings API.
+- Disabled the existing browser-notification switch with an explanatory state when push delivery is unavailable, without persisting the server-derived boolean or clearing the saved preference during an outage.
+- Added configured/every-variable-missing tests, API/UI/worker startup contracts, deploy checklist guidance, and the unreleased changelog entry.
+- Rebased the single scoped implementation commit onto `origin/main` at `40b9ecb`, then merged fresh `origin/main` at `0483d26` while preserving the prior PR head as an ancestor for the push-event security baseline.
+- Opened PR #24, removed the fabricated configured-push visual fixture, and added a real unavailable-state visual case backed by the unmodified API response.
+
+## Working state
+
+- Implementation, tests, and reviewed darwin/Ubuntu baselines are committed through `00bcecf`. Fresh `origin/main` is being merged to restore PR mergeability; only `jest.config.js` and `tests/visual/settings-tabs.spec.ts` conflicted, and both are resolved without dropping either workstream.
+- Foreign changes that must remain untouched: every file in `/Users/lol/Needt` and every pre-existing worktree/handoff.
+
+## Verification
+
+- Passed after the fresh `origin/main` rebase: `npm run type-check`; `npm run lint` with zero warnings; full `npm run test:unit -- --runInBand` (169 suites / 783 tests passed, 1 suite / 1 test skipped); `npm run build` (142 pages and 1,390 production artifacts); `npm run build:worker` (33.4 MB bundle).
+- Also passed: `npm run agent:context`; active-handoff overlap review; focused unit tests (5 suites / 10 tests); direct Playwright visual collection (69 tests); `npm run check:agent-handoffs` (24 handoffs); `git diff --check`.
+- Historical CI diagnosis: the first new-branch push had a zero baseline SHA, then the rebased force-push compared non-ancestor heads; both Semgrep runs surfaced unchanged repository findings while each corresponding PR diff scan passed. The visual job found the expected unavailable-state delta in notification settings plus an unrelated flaky Today scroll assertion; no baseline was changed.
+- Final-SHA CI on `8c58026` passed changes, schema drift, quality gates, security, and E2E for both push and PR events. Visual failed only the deterministic notification screenshots because the fixture set availability true but retained the API-masked false enabled preference.
+- Follow-up `f1eecc8` asserted both server boolean fields and attempted to override only `webPushConfigured` and `webPushEnabled`. Both CI events again passed changes, schema, quality, security, and E2E, but the received screenshots were byte-for-byte equivalent to the prior unavailable state: combining `response` with `json` in `route.fulfill` retained the fetched body instead of the JSON override.
+- The pending correction now fulfills with the fetched status plus the spread real JSON fields and the two explicit booleans, without passing the original response body. Local `npm run lint`, `npm run type-check`, and `git diff --check` pass. No baseline changed.
+- Audit follow-up returns the saved push preference unmasked alongside the independent server-availability boolean, sends reminder timing as an array, and covers all five unrelated notification switches with a stateful GET-to-PATCH round trip.
+- `deliverPush` now has direct behavior coverage; a temporary removal of its warning made 3/4 focused tests fail before the call was restored. Failed logger writes retry, concurrent calls coalesce, and the once flag is committed only after successful logging.
+- Replaced the JSX/source and worker/source tests with component rendering and executed startup-preflight tests. The honest visual case uses the real unconfigured API and no route override.
+- Adversarial follow-up made the store test execute one hydration-to-mutation flow and assert the complete outgoing payload, including saved push preference, flattened alerts, and array reminder timing. The worker test now imports the real entrypoint and executes exported `start()` with isolated runtime mocks; temporarily deleting its preflight call made the test fail before restoration.
+- A final audit added direct execution coverage for `runWorkerStartupChecks`; temporarily removing its body produced the expected exact warning failure before restoration.
+- Manually reviewed desktop/tablet/mobile darwin captures before updating their three baselines: Browser notifications is disabled/off with the unavailable explanation, and all four seeded Calendar alerts remain on.
+- Passed on Node 22: focused unit suite (5 suites / 15 tests); `npm run type-check`; `npm run lint`; full `npm run test:unit` (170 passed suites / 792 passed tests, 1 skipped); `npm run build` (142 pages / 1,390 artifacts); `npm run build:worker` (33.4 MB); focused visual unavailable-state run (3/3).
+- Recorded pre-fix failure: the stateful round trip failed all five unrelated-toggle cases because unconfigured GET returned `webPushEnabled: false` and the full PATCH persisted it.
+- Full local `npm run test:visual` was attempted again. It failed before the notification cases on unrelated existing dev-mode regressions in `app-surfaces`, `boards-workspace`, and `pages-block-editor`; the run was stopped after 4 failures / 4 passes because its result was already determined. No unrelated baseline was accepted.
+- Shared test database was acquired at 2026-08-25T23:00:58Z and released at 2026-08-25T23:05:13Z with `docker compose -f docker-compose.e2e.yml down --volumes`; no workstream owns it now.
+- Final Node 22 code gates at `f555aa2`: `npm run type-check` passed; `npm run lint` passed; full `npm run test:unit -- --runInBand` passed (170 suites / 792 tests, 1 suite / 1 test skipped); `npm run build` passed (142 pages / 1,390 artifacts); `npm run build:worker` passed (33.4 MB).
+- CI run `32907686297` for `66b3cba` passed quality, security, schema drift, and E2E. Visual failed only tablet/mobile notification screenshots; the official Ubuntu candidates were manually reviewed and imported. Desktop Linux was byte-identical and left unchanged.
+- Final CI run `32909210139` attempt 2 on `5d1b732` passed changes, quality gates, schema drift, security, E2E, visual (68 passed / 4 skipped), and style (15/15). Attempt 1 had one unrelated flaky `focus-dark.png` mismatch; its last-failed candidate rerun and the clean failed-job rerun both passed without a baseline change.
+- Current-head CI run `32910707598` on `00bcecf` also passed every required job. GitHub then reported three newer `main` commits and two content conflicts; the merge resolution keeps main's shared `tsconfig.jest.json`, both Billing visual cases, and this workstream's isolated Notifications visual case.
+- Post-resolution Node 22 checks pass: Prisma client regeneration plus `npm run type-check`; `npm run lint`; focused push tests (5 suites / 15 tests); full unit (174 suites / 826 tests, 1 suite / 1 test skipped); `npm run build` (142 pages / 1,393 artifacts); `npm run build:worker` (33.4 MB).
+
+## Decisions and constraints
+
+- Expose only a server-computed boolean; never return VAPID values or generate keys.
+- The warning must name missing environment variables only and be emitted once per process.
+- Do not touch push payloads or the service worker.
+- The coordinator narrowed final verification to code-only; no production or configuration service was contacted, and the blocked Docker-based browser fixture was abandoned without changing product data.
+
+## Blockers
+
+- None.
+
+## Next action
+
+- Commit/push the merge and confirm CI on the mergeable head; production VAPID configuration remains a separate owner-controlled operation.
