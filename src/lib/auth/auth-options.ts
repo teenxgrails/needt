@@ -6,9 +6,11 @@ import GoogleProvider from "next-auth/providers/google";
 import { getGoogleCredentials, getOutlookCredentials } from "@/lib/auth";
 import { authSecret } from "@/lib/auth/auth-secret";
 import { authenticateUser } from "@/lib/auth/credentials-provider";
+import { newDate } from "@/lib/date-utils";
 import { GOOGLE_SIGN_IN_SCOPES } from "@/lib/google-oauth-scopes";
 import { logger } from "@/lib/logger";
 import { MICROSOFT_GRAPH_SCOPES } from "@/lib/outlook";
+import { prisma } from "@/lib/prisma";
 
 // Define a type for our user with role
 interface UserWithRole {
@@ -100,6 +102,15 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
 
     providers,
     callbacks: {
+      async signIn({ user, account }) {
+        if (account?.provider !== "credentials" && user.email) {
+          await prisma.user.updateMany({
+            where: { email: user.email },
+            data: { lastAuthenticatedAt: newDate() },
+          });
+        }
+        return true;
+      },
       async jwt({ token, account, profile, user }) {
         // Initial sign in
         if (account && profile) {

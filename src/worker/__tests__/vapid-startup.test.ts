@@ -101,6 +101,7 @@ jest.mock("@/lib/queue/queues", () => {
     getNudgeQueue: jest.fn(() => queue),
     getReminderQueue: jest.fn(() => queue),
     getLifetimeCheckoutReconciliationQueue: jest.fn(() => queue),
+    getAccountLifecycleQueue: jest.fn(() => queue),
     getWebhookRenewQueue: jest.fn(() => queue),
   };
 });

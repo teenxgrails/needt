@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   checkout is created; a payment Creem has already taken always grants the
   plan, and a completion whose reservation is missing or expired is recorded as
   `processed_without_lifetime_reservation` instead of being refused.
+- Added a complete account archive and a re-authenticated, seven-day account
+  deletion flow that removes personal data while preserving scrubbed,
+  authorless shared-workspace tombstones.
 - Kept hosted AI available in a bounded slower mode after its normal allowance,
   while preserving uncapped BYOK access and hiding usage counts from chat.
 - Added an admin-only System settings route and account-menu links for system
