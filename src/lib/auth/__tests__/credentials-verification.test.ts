@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 jest.mock("bcryptjs", () => ({ compare: jest.fn() }));
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    user: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), update: jest.fn() },
     systemSettings: { findFirst: jest.fn() },
   },
 }));
@@ -28,7 +28,9 @@ const unverifiedUser = {
 describe("credentials verification feature flag", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.mocked(prisma.user.findUnique).mockResolvedValue(unverifiedUser as never);
+    jest
+      .mocked(prisma.user.findUnique)
+      .mockResolvedValue(unverifiedUser as never);
     jest.mocked(compare).mockResolvedValue(true as never);
   });
 

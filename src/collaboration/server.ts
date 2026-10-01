@@ -381,8 +381,13 @@ export function createCollaborationServer(
       if (!sessionId) {
         throw new Error("Page collaboration lease is unavailable");
       }
+      const actor =
+        lastContext?.resource === "page" ? lastContext.actor : page.userId;
+      // A page whose owner is being deleted has no actor to attribute the
+      // write to; dropping it is correct, the document is on its way out.
+      if (!actor) return;
       const stored = await storePageCollaborationDocument(
-        lastContext?.resource === "page" ? lastContext.actor : page.userId,
+        actor,
         pageId,
         sessionId,
         document,
