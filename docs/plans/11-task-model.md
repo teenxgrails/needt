@@ -109,7 +109,7 @@ Until both are answered, no streak UI ships.
 
 ---
 
-## T-4 — Value-bearing task groups (captured 2026-08-24, not authorized)
+## T-4 — Value-bearing task groups (captured 2026-08-24, questions answered 2026-08-26, not yet authorized)
 
 **Owner's idea, in his words:** a category that holds tasks sharing one outcome —
 "sell these things" — where each task is one item to sell. The category carries a
@@ -126,26 +126,65 @@ motivation, and "task done" is not.
 **State of the ground:** `prisma/schema.prisma` has no monetary field on Task or
 Project. This is a new entity, not a new field.
 
-### The three things that must be answered before this can be a plan
+### The three questions, answered 2026-08-26
 
-1. **Forecast vs. realized.** A price on an unsold item is a hope, not a number.
-   If the headline shows "CHF 340 left to earn" and the week produces CHF 180,
-   the number teaches the user to distrust it — and a distrusted headline is
-   worse than no headline. **Decide which number the product commits to** before
-   deciding how it looks.
-2. **Tasks that carry no money.** A resale group is not only "sell item X". It is
-   photograph, list, answer buyers, pack, ship. Most of its tasks carry zero
-   value. Either the group holds two kinds of task, or the money lives on the
-   item and not on the task at all.
-3. **The flame contradicts two written decisions.** Line 114 of this plan bans
-   gamification surfaces. `docs/plans/10-design.md` bans decorative animation
-   outright and states that spectacle "read[s] as premium for one session and as
-   noise by the third". Either that track is reopened deliberately, with a
-   reason, or the emphasis has to come from typography and number size rather
-   than from a glow.
+**1. The headline commits to realized money. Forecast is secondary and labelled.**
 
-**Gate:** blocked until 1 and 2 are answered, and until Needt has users whose
-resale behaviour can be observed rather than assumed.
+Owner delegated this one. The decision, and why:
+
+A resale listing price is not a forecast, it is an opening bid. Items sell after
+haggling, or at a discount to clear, or not at all. So a "still to earn" headline
+is not merely uncertain — it is _systematically_ high, and the error is not
+random noise that averages out. A number that is wrong in a consistent direction
+teaches distrust faster than one that is merely noisy.
+
+Therefore: **the large number is money actually received.** It only ever goes up,
+which is also the direction that motivates. Potential appears beside it, smaller,
+explicitly marked as an estimate — `CHF 180 earned · CHF 340 listed`. When an item
+sells for less than listed, the group reconciles silently: listed drops, earned
+rises, and no cell ever shows a number the user did not receive.
+
+Consequence for the schema: an item carries **two** amounts, asking and settled.
+The group sums settled for the headline and asking for the estimate. This also
+gives the resale seller something no planner offers — realised margin per item,
+which is the number that actually decides what to buy next.
+
+**2. The group holds two kinds of task. Confirmed by owner.**
+
+A resale group is `sell item X` plus photograph, list, answer buyers, pack, ship.
+So: **value-bearing tasks** carry an amount and roll into the group total;
+**work tasks** carry none and behave like every other Needt task. One group, two
+kinds, one visible difference — the amount. A work task must never render an
+empty money slot; absence of the field is the design, not a zero.
+
+Open sub-question for implementation, not blocking: whether shipping _this_
+item is a subtask of the value-bearing task or a sibling in the group. Decide
+against real data, not in advance.
+
+**3. The bans are reopened — deliberately, and narrowly. Owner decision.**
+
+`docs/plans/10-design.md:38-43` bans "any effect that exists only to be seen",
+and this plan's Not-authorized list bans gamification surfaces. Both stand, with
+one carved exception, stated precisely so it cannot spread:
+
+- **Permitted:** a single transient animation fired by one event — an item
+  actually sold and money booked. It plays once, it is short, it is the only
+  animated surface in the app, and it is the visual acknowledgement of money
+  arriving. That is feedback on a real event, not decoration.
+- **Still banned:** any ambient or persistent flame, glow, or motion on the
+  group while it merely exists. A category that burns permanently is exactly the
+  spectacle plan 10 describes — premium for one session, noise by the third. The
+  group at rest earns attention through the size of the number, nothing else.
+- **Still banned everywhere else:** points, badges, leaderboards, streak UI. Money
+  received is not a game score; it is the thing itself. That distinction is the
+  whole reason this exception is defensible.
+
+The animation must honour `MotionRuntime`'s reduced-motion handling like every
+other transition in the app.
+
+**Gate:** questions 1-3 are answered. Remaining gate: Needt has users whose
+resale behaviour can be observed rather than assumed, and T-1 has shipped —
+value-bearing groups reuse its progress model rather than inventing a second one.
 
 ---
 
@@ -153,6 +192,11 @@ resale behaviour can be observed rather than assumed.
 
 Habit entity, habit tracker screen, streak UI, points, badges, leaderboards,
 per-increment scheduling, or any gamification surface beyond the above.
+
+**One exception, 2026-08-26 owner decision:** the sale-completed animation in
+T-4. It fires on a real money event, once, transiently, on one surface. Nothing
+else in the app gets an animated surface on the strength of this, and the group
+at rest stays still. See T-4 question 3 for the exact boundary.
 
 ## Sequencing
 
