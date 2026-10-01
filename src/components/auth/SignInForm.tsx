@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { APP_NAME } from "@/lib/app-config";
 import { isPublicSignupEnabledClient } from "@/lib/auth/client-public-signup";
 import { safeCallbackPath } from "@/lib/auth/callback-url";
+import { oauthErrorMessage } from "@/lib/auth/oauth-error";
 import { logger } from "@/lib/logger";
 
 const LOG_SOURCE = "SignInForm";
@@ -60,6 +61,7 @@ export function SignInForm({
   const [verificationSending, setVerificationSending] = useState(false);
   const router = useRouter();
   const safeCallbackUrl = safeCallbackPath(callbackUrl);
+  const authErrorMessage = oauthErrorMessage(error);
 
   useEffect(() => {
     void isPublicSignupEnabledClient().then(setPublicSignupEnabled);
@@ -258,9 +260,9 @@ export function SignInForm({
 
           <TabsContent value="signin">
             <form onSubmit={handleEmailSignIn} className="space-y-4">
-              {error && (
+              {authErrorMessage && (
                 <p className="text-sm text-destructive" role="alert">
-                  We couldn&apos;t sign you in. Please try again.
+                  {authErrorMessage}
                 </p>
               )}
               <div className="space-y-2">

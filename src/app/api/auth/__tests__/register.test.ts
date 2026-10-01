@@ -91,6 +91,13 @@ describe("public registration", () => {
           userSettings: {
             create: expect.objectContaining({ theme: "dark", timeZone: "UTC" }),
           },
+          autoScheduleSettings: {
+            create: expect.objectContaining({
+              workDays: "[1,2,3,4,5]",
+              workHourStart: 9,
+              workHourEnd: 17,
+            }),
+          },
         }),
       })
     );

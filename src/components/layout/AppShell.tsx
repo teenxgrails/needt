@@ -80,7 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               open={commandPaletteOpen}
               onOpenChange={setCommandPaletteOpen}
             />
-            <CommandPaletteHint />
+            {!pathname.startsWith("/auth/") && <CommandPaletteHint />}
             <CommandPaletteFab />
             <ShortcutsModal
               isOpen={shortcutsOpen}
