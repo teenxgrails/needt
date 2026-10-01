@@ -1,5 +1,6 @@
 import { compare } from "bcryptjs";
 
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -34,11 +35,7 @@ export async function authenticateUser(email: string, password: string) {
       !user.accounts ||
       user.accounts.length === 0
     ) {
-      logger.warn(
-        "Authentication failed: User not found",
-        {},
-        LOG_SOURCE
-      );
+      logger.warn("Authentication failed: User not found", {}, LOG_SOURCE);
       return null;
     }
 
@@ -61,13 +58,14 @@ export async function authenticateUser(email: string, password: string) {
     const passwordMatch = await compare(password, credentialsAccount.id_token);
 
     if (!passwordMatch) {
-      logger.warn(
-        "Authentication failed: Invalid password",
-        {},
-        LOG_SOURCE
-      );
+      logger.warn("Authentication failed: Invalid password", {}, LOG_SOURCE);
       return null;
     }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastAuthenticatedAt: newDate() },
+    });
 
     logger.info(
       "User authenticated successfully",

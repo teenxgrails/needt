@@ -1,3 +1,12 @@
+import {
+  finalizeAccountDeletion,
+  finalizeDueAccountDeletions,
+} from "@/services/account/account-deletion";
+import {
+  expireAccountExports,
+  processAccountExport,
+} from "@/services/account/account-export";
+import { deleteExpiredReauthentications } from "@/services/account/account-reauthentication";
 import { syncBugReportToGithub } from "@/services/bug-reports/bug-report-service";
 import { generateProactiveNudges } from "@/services/nudges/proactive-assist";
 import { collectOperationsHealth } from "@/services/operations/health";
@@ -55,12 +64,14 @@ import {
 } from "@/lib/queue/enqueue";
 import {
   closeQueues,
+  getAccountLifecycleQueue,
   getBugReportSyncQueue,
   getNudgeQueue,
   getReminderQueue,
   getWebhookRenewQueue,
 } from "@/lib/queue/queues";
 import {
+  AccountLifecycleJobData,
   BugReportSyncJobData,
   CalendarSyncJobData,
   MailSyncJobData,
@@ -195,6 +206,20 @@ async function processNudges() {
   await generateProactiveNudges();
 }
 
+async function processAccountLifecycle(job: Job<AccountLifecycleJobData>) {
+  if (job.data.kind === "export") {
+    await processAccountExport(job.data.requestId);
+    return;
+  }
+  if (job.data.kind === "delete") {
+    await finalizeAccountDeletion(job.data.requestId);
+    return;
+  }
+  await expireAccountExports();
+  await deleteExpiredReauthentications();
+  await finalizeDueAccountDeletions();
+}
+
 // BullMQ and the app can resolve distinct compatible ioredis patch versions,
 // so bridge their nominal types at this boundary.
 const connection = getRedisConnection() as unknown as ConnectionOptions;
@@ -233,6 +258,11 @@ const workers = [
     connection,
     concurrency: 1,
   }),
+  new Worker<AccountLifecycleJobData>(
+    QUEUE_NAMES.accountLifecycle,
+    processAccountLifecycle,
+    { connection, concurrency: 1 }
+  ),
 ];
 
 for (const worker of workers) {
@@ -310,6 +340,11 @@ export async function start(): Promise<void> {
     "proactive-nudge-sweep",
     { every: 15 * 60_000 },
     { name: "sweep-nudges", data: { kind: "sweep" } }
+  );
+  await getAccountLifecycleQueue().upsertJobScheduler(
+    "account-lifecycle-sweep",
+    { every: 60 * 60_000 },
+    { name: "sweep-account-lifecycle", data: { kind: "sweep" } }
   );
   const mailAccountIds = await listActiveMailAccountIds();
   await Promise.all(
