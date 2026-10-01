@@ -1,16 +1,22 @@
 import { AIProvider } from "@prisma/client";
 
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
 import { decryptSecret } from "./encryption";
 import { getCustomAIOAuthAccessToken, getCustomAIOAuthConfig } from "./oauth";
 import { createSchedulerAI } from "./providers";
+import { waitForHostedAiSlot } from "./slow-queue";
 import { AIProviderName, SchedulerAIConfig } from "./types";
 import {
   HOSTED_AI_CONFIG,
+  claimHostedAiAction,
   getHostedAiUsage,
+  releaseHostedAiAction,
   resolveAiAccessMode,
 } from "./usage";
+
+const LOG_SOURCE = "AISettings";
 
 export function getDefaultCustomAIUrl() {
   return process.env.AI_CUSTOM_URL?.trim() || null;
@@ -179,5 +185,80 @@ export async function getConfiguredSchedulerAI(userId: string) {
     ai: createSchedulerAI(config),
     source,
     usage,
+  };
+}
+
+export async function getPreparedSchedulerAI(
+  userId: string,
+  existing?: Awaited<ReturnType<typeof getConfiguredSchedulerAI>>
+) {
+  const configured = existing ?? (await getConfiguredSchedulerAI(userId));
+  if (configured.source !== "hosted") {
+    return { ...configured, hostedMode: null };
+  }
+
+  let queued = false;
+  if (configured.usage.slowMode) {
+    await waitForHostedAiSlot(userId);
+    queued = true;
+  }
+
+  const claim = await claimHostedAiAction(userId);
+  if (!claim.claimed) {
+    return {
+      ...configured,
+      ai: createSchedulerAI({ provider: "NONE" }),
+      source: "none" as const,
+      usage: claim.usage,
+      hostedMode: "blocked" as const,
+    };
+  }
+
+  if (claim.mode === "slow") {
+    if (!queued) {
+      try {
+        await waitForHostedAiSlot(userId);
+      } catch (error) {
+        try {
+          await releaseHostedAiAction(userId, claim.yearMonth);
+        } catch (releaseError) {
+          await logger.error(
+            "Failed to release hosted AI claim after queue failure",
+            {
+              userId,
+              error:
+                releaseError instanceof Error
+                  ? releaseError.message
+                  : String(releaseError),
+            },
+            LOG_SOURCE
+          );
+        }
+        throw error;
+      }
+    }
+    const hostedKey = process.env.NEEDT_AI_API_KEY?.trim() || null;
+    const config: SchedulerAIConfig = {
+      provider: "OPENAI",
+      apiKey: hostedKey,
+      baseUrl: HOSTED_AI_CONFIG.baseUrl,
+      model: HOSTED_AI_CONFIG.model,
+      timeoutMs: configured.settings.requestTimeoutSeconds * 1000,
+      soulPreset:
+        configured.settings.soulPreset === "coach" ? "coach" : "business",
+      maxTokens: 600,
+    };
+    return {
+      ...configured,
+      ai: createSchedulerAI(config),
+      usage: claim.usage,
+      hostedMode: claim.mode,
+    };
+  }
+
+  return {
+    ...configured,
+    usage: claim.usage,
+    hostedMode: claim.mode,
   };
 }
