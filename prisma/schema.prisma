@@ -1237,6 +1237,7 @@ model Page {
   trashedAt             DateTime?
   position              Float                   @default(0)
   documentFormatVersion Int                     @default(1)
+  contentRevision       Int                     @default(0)
   blocks                PageBlock[]
   database              PageDatabase?
   record                DatabaseRecord?
@@ -1248,6 +1249,7 @@ model Page {
   forms                 PageForm[]
   accessGrants          PageAccessGrant[]
   collaborationState    PageCollaborationState?
+  collaborationSessions PageCollaborationSession[]
   publication           PagePublication?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
@@ -1522,6 +1524,18 @@ model PageCollaborationState {
   updatedAt DateTime @updatedAt
 
   @@index([updatedAt])
+}
+
+model PageCollaborationSession {
+  pageId    String
+  sessionId String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([pageId, sessionId])
+  @@index([expiresAt])
 }
 
 model PagePublication {

@@ -8,6 +8,7 @@ export type PageSummary = {
   folderId?: string | null;
   folder?: { id: string; name: string; color: string | null } | null;
   tags?: Array<{ id: string; name: string; color: string | null }>;
+  contentRevision: number;
   updatedAt: string;
   database: { id: string } | null;
 };
