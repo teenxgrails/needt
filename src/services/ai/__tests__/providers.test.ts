@@ -65,6 +65,7 @@ describe("AI provider chat adapters", () => {
       provider: "OPENAI",
       apiKey: "test-key",
       model: "gpt-test",
+      maxTokens: 600,
     });
 
     await expect(provider.selectChatTool(chatRequest)).resolves.toEqual({
@@ -77,29 +78,67 @@ describe("AI provider chat adapters", () => {
       "https://api.openai.com/v1/chat/completions"
     );
     expect(body.tool_choice).toBe("auto");
+    expect(body.max_tokens).toBe(600);
     expect(body.tools[0].function.name).toBe("create_task");
   });
 
   it("streams OpenAI-compatible SSE chat deltas", async () => {
-    global.fetch = jest.fn().mockResolvedValue(
-      new Response(
-        [
-          'data: {"choices":[{"delta":{"content":"Hel"}}]}',
-          'data: {"choices":[{"delta":{"content":"lo"}}]}',
-          "data: [DONE]",
-          "",
-        ].join("\n\n"),
-        { status: 200, headers: { "Content-Type": "text/event-stream" } }
-      )
-    );
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          [
+            'data: {"choices":[{"delta":{"content":"Hel"}}]}',
+            'data: {"choices":[{"delta":{"content":"lo"}}]}',
+            "data: [DONE]",
+            "",
+          ].join("\n\n"),
+          { status: 200, headers: { "Content-Type": "text/event-stream" } }
+        )
+      );
     const provider = new OpenAIProvider({
       provider: "OPENAI",
       apiKey: "test-key",
+      maxTokens: 600,
     });
 
     await expect(collect(provider.streamChat(chatRequest))).resolves.toBe(
       "Hello"
     );
+    const body = JSON.parse(
+      String((global.fetch as jest.Mock).mock.calls[0][1]?.body)
+    );
+    expect(body.max_tokens).toBe(600);
+  });
+
+  it("caps OpenAI-compatible completions only when configured", async () => {
+    const fetchMock = mockFetchOnce({
+      choices: [{ message: { content: "[]" } }],
+    });
+    const capped = new OpenAIProvider({
+      provider: "OPENAI",
+      apiKey: "hosted-key",
+      maxTokens: 600,
+    });
+    await capped.parseTasks("Plan tomorrow");
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).max_tokens
+    ).toBe(600);
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ choices: [{ message: { content: "[]" } }] }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+    const byok = new OpenAIProvider({
+      provider: "OPENAI",
+      apiKey: "user-key",
+    });
+    await byok.parseTasks("Plan tomorrow");
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
+    ).not.toHaveProperty("max_tokens");
   });
 
   it("maps Anthropic tool_use blocks into planner tool calls", async () => {
@@ -124,16 +163,18 @@ describe("AI provider chat adapters", () => {
   });
 
   it("streams Anthropic content_block_delta text", async () => {
-    global.fetch = jest.fn().mockResolvedValue(
-      new Response(
-        [
-          'data: {"type":"content_block_delta","delta":{"text":"Sch"}}',
-          'data: {"type":"content_block_delta","delta":{"text":"eduled"}}',
-          "",
-        ].join("\n\n"),
-        { status: 200, headers: { "Content-Type": "text/event-stream" } }
-      )
-    );
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          [
+            'data: {"type":"content_block_delta","delta":{"text":"Sch"}}',
+            'data: {"type":"content_block_delta","delta":{"text":"eduled"}}',
+            "",
+          ].join("\n\n"),
+          { status: 200, headers: { "Content-Type": "text/event-stream" } }
+        )
+      );
     const provider = new AnthropicProvider({
       provider: "ANTHROPIC",
       apiKey: "test-key",
