@@ -36,9 +36,15 @@ type CompletionIdentity = {
   requestId: string | null;
 };
 
-export type LifetimeCompletionAuthorization =
-  | { allowed: true; reservationId: string }
-  | { allowed: false; reason: "reservation_mismatch" };
+// A completed payment is always honoured. The 300-seat cap is enforced when a
+// checkout is created; refusing a purchase Creem has already charged for would
+// take the money and leave the buyer on FREE with no way back. A grant with no
+// matching reservation is flagged instead, so the owner can see it.
+export type LifetimeCompletionAuthorization = {
+  allowed: true;
+  reservationId: string | null;
+  unreserved: boolean;
+};
 
 function isRetryableTransaction(error: unknown) {
   return (
@@ -216,25 +222,28 @@ export async function authorizeLifetimeCompletion(
       })
     : null;
 
-  if (reservation) {
-    if (
-      reservation.status === LifetimeCheckoutReservationStatus.EXPIRED ||
-      (reservation.creemCheckoutId &&
-        identity.checkoutId &&
-        reservation.creemCheckoutId !== identity.checkoutId)
-    ) {
-      return { allowed: false, reason: "reservation_mismatch" };
-    }
+  const usable =
+    reservation &&
+    reservation.status !== LifetimeCheckoutReservationStatus.EXPIRED &&
+    !(
+      reservation.creemCheckoutId &&
+      identity.checkoutId &&
+      reservation.creemCheckoutId !== identity.checkoutId
+    );
+
+  if (reservation && usable) {
     if (!reservation.creemCheckoutId && identity.checkoutId) {
       await transaction.lifetimeHold.update({
         where: { id: reservation.id },
         data: { creemCheckoutId: identity.checkoutId },
       });
     }
-    return { allowed: true, reservationId: reservation.id };
+    return { allowed: true, reservationId: reservation.id, unreserved: false };
   }
 
-  return { allowed: false, reason: "reservation_mismatch" };
+  // No reservation, or one that expired while the buyer was paying. Grant the
+  // plan anyway and let the caller record the anomaly.
+  return { allowed: true, reservationId: null, unreserved: true };
 }
 
 export async function consumeLifetimeReservation(

@@ -10,9 +10,12 @@ import {
 } from "@/lib/creem/lifetime-cap";
 import { mapCreemEventToSubscription } from "@/lib/creem/webhook-mapping";
 import { newDate } from "@/lib/date-utils";
+import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
 import type { CreemBillingEvent } from "./webhook-mapping";
+
+const LOG_SOURCE = "CreemWebhookProcessor";
 
 const SERIALIZABLE_RETRIES = 3;
 
@@ -216,23 +219,20 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
             requestId: mutation.checkoutRequestId,
           })
         : null;
-    const lifetimeAuthorizationFailure =
-      lifetimeAuthorization && !lifetimeAuthorization.allowed
-        ? "lifetime_reservation_mismatch"
-        : null;
+    const unreservedLifetime = Boolean(lifetimeAuthorization?.unreserved);
     const outcome = olderThanClaimedSubscription
       ? "stale_event"
       : weakerAtSameTimestamp
         ? "equal_time_weaker_event"
         : lifetimePreserved
           ? "lifetime_preserved"
-          : lifetimeAuthorizationFailure
-            ? lifetimeAuthorizationFailure
-            : missingSubscriptionIdentity
-              ? "missing_subscription_identity"
-              : blockedSubscriptionIdentity ||
-                  restrictiveEventWithoutEstablishedIdentity
-                ? "subscription_identity_mismatch"
+          : missingSubscriptionIdentity
+            ? "missing_subscription_identity"
+            : blockedSubscriptionIdentity ||
+                restrictiveEventWithoutEstablishedIdentity
+              ? "subscription_identity_mismatch"
+              : unreservedLifetime
+                ? "processed_without_lifetime_reservation"
                 : "processed";
 
     const receipt = await transaction.creemWebhookEvent.createMany({
@@ -258,12 +258,6 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
     }
     if (lifetimePreserved) {
       return { processed: false, reason: "lifetime_preserved" as const };
-    }
-    if (lifetimeAuthorizationFailure) {
-      return {
-        processed: false,
-        reason: lifetimeAuthorizationFailure,
-      };
     }
     if (missingSubscriptionIdentity) {
       return {
@@ -341,10 +335,18 @@ export async function processCreemBillingEvent(event: CreemBillingEvent) {
     if (mutation.data.plan === SubscriptionPlan.LIFETIME) {
       await consumeLifetimeReservation(
         transaction,
-        lifetimeAuthorization?.allowed
-          ? lifetimeAuthorization.reservationId
-          : null
+        lifetimeAuthorization?.reservationId ?? null
       );
+      if (unreservedLifetime) {
+        // The seat cap is enforced when a checkout is created, so this is a
+        // paid purchase whose reservation never existed or expired while the
+        // buyer paid. The plan is granted; the receipt records the anomaly.
+        void logger.warn(
+          "Granted Lifetime without a matching reservation",
+          { userId, eventId, checkoutId: mutation.checkoutId },
+          LOG_SOURCE
+        );
+      }
     }
 
     return { processed: true, subscription };

@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Lifetime checkout now closes after 300 buyers with concurrency-safe holds,
-  idempotent retries, webhook enforcement, and provider-confirmed expiry.
+  idempotent retries, and provider-confirmed expiry. The cap is enforced when a
+  checkout is created; a payment Creem has already taken always grants the
+  plan, and a completion whose reservation is missing or expired is recorded as
+  `processed_without_lifetime_reservation` instead of being refused.
 - Added an admin-only System settings route and account-menu links for system
   credentials and operations, with a contract check preventing orphaned
   admin-only settings components.

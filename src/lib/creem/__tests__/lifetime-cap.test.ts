@@ -130,14 +130,20 @@ describe("Lifetime checkout capacity", () => {
         checkoutId: "checkout_1",
         requestId: "needt-lifetime-request_1",
       })
-    ).resolves.toEqual({ allowed: true, reservationId: "reservation_1" });
+    ).resolves.toEqual({
+      allowed: true,
+      reservationId: "reservation_1",
+      unreserved: false,
+    });
     expect(prisma.lifetimeHold.update).toHaveBeenCalledWith({
       where: { id: "reservation_1" },
       data: { creemCheckoutId: "checkout_1" },
     });
   });
 
-  it("rejects an unknown reservation instead of granting a paid slot", async () => {
+  it("grants a paid completion with no matching reservation and flags it", async () => {
+    // The seat cap is enforced when the checkout is created. Refusing here
+    // would keep money Creem has already taken and leave the buyer on FREE.
     await expect(
       authorizeLifetimeCompletion(prisma, {
         userId: "user_1",
@@ -146,8 +152,9 @@ describe("Lifetime checkout capacity", () => {
         requestId: "unknown-request",
       })
     ).resolves.toEqual({
-      allowed: false,
-      reason: "reservation_mismatch",
+      allowed: true,
+      reservationId: null,
+      unreserved: true,
     });
   });
 });

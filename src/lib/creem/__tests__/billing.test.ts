@@ -971,7 +971,7 @@ describe("Creem webhook processing", () => {
     });
   });
 
-  it("rejects a Lifetime payment that did not originate from a reservation", async () => {
+  it("grants a Lifetime payment with no reservation and marks the receipt", async () => {
     const result = await processCreemBillingEvent({
       id: "evt_lifetime_over_cap",
       createdAt: 1_728_734_327_355,
@@ -984,16 +984,13 @@ describe("Creem webhook processing", () => {
       },
     });
 
-    expect(result).toEqual({
-      processed: false,
-      reason: "lifetime_reservation_mismatch",
-    });
-    expect(prisma.subscription.upsert).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ processed: true });
+    expect(prisma.subscription.upsert).toHaveBeenCalled();
     expect(prisma.creemWebhookEvent.createMany).toHaveBeenCalledWith(
       expect.objectContaining({
         data: [
           expect.objectContaining({
-            outcome: "lifetime_reservation_mismatch",
+            outcome: "processed_without_lifetime_reservation",
           }),
         ],
       })
