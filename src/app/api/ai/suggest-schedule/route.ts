@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getConfiguredSchedulerAI } from "@/services/ai/settings";
+import { getPreparedSchedulerAI } from "@/services/ai/settings";
+import {
+  HOSTED_AI_BUSY_MESSAGE,
+  HOSTED_AI_RESTING_MESSAGE,
+  HostedAiQueueError,
+} from "@/services/ai/slow-queue";
 import { AISuggestion, SchedulingContext } from "@/services/ai/types";
 import { getCalibrationContext } from "@/services/time-tracking/calibration";
 
@@ -24,22 +29,37 @@ export async function POST(request: NextRequest) {
 
     const context = (await request.json()) as SchedulingContext;
     context.calibration = await getCalibrationContext(auth.userId);
-    const { settings, ai } = await getConfiguredSchedulerAI(auth.userId);
-
-    if (settings.provider === "NONE") {
-      return NextResponse.json({ suggestion: FALLBACK, fallback: true });
-    }
-
     try {
+      const { ai, source, usage, hostedMode } = await getPreparedSchedulerAI(
+        auth.userId
+      );
+      if (source === "none") {
+        return NextResponse.json({
+          suggestion: FALLBACK,
+          fallback: true,
+          notice: usage.exhausted ? HOSTED_AI_RESTING_MESSAGE : undefined,
+        });
+      }
       const suggestion = await ai.suggestSchedule(context);
-      return NextResponse.json({ suggestion, fallback: false });
+      return NextResponse.json({
+        suggestion,
+        fallback: false,
+        notice: hostedMode === "slow" ? HOSTED_AI_BUSY_MESSAGE : undefined,
+      });
     } catch (error) {
       logger.warn(
         "AI schedule suggestion failed, falling back",
         { error: error instanceof Error ? error.message : String(error) },
         LOG_SOURCE
       );
-      return NextResponse.json({ suggestion: FALLBACK, fallback: true });
+      return NextResponse.json({
+        suggestion: FALLBACK,
+        fallback: true,
+        notice:
+          error instanceof HostedAiQueueError
+            ? HOSTED_AI_BUSY_MESSAGE
+            : undefined,
+      });
     }
   } catch (error) {
     logger.error(

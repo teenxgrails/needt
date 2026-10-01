@@ -68,6 +68,7 @@ describe("AI provider chat adapters", () => {
       apiKey: "test-key",
       model: "gpt-test",
       onUsage,
+      maxTokens: 600,
     });
 
     await expect(provider.selectChatTool(chatRequest)).resolves.toEqual({
@@ -80,6 +81,7 @@ describe("AI provider chat adapters", () => {
       "https://api.openai.com/v1/chat/completions"
     );
     expect(body.tool_choice).toBe("auto");
+    expect(body.max_tokens).toBe(600);
     expect(body.tools[0].function.name).toBe("create_task");
     expect(onUsage).toHaveBeenCalledWith({
       inputTokens: 21,
@@ -126,6 +128,7 @@ describe("AI provider chat adapters", () => {
       provider: "OPENAI",
       apiKey: "test-key",
       onUsage,
+      maxTokens: 600,
     });
 
     await expect(collect(provider.streamChat(chatRequest))).resolves.toBe(
@@ -138,6 +141,7 @@ describe("AI provider chat adapters", () => {
     const fetchMock = global.fetch as jest.Mock;
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body.stream_options).toEqual({ include_usage: true });
+    expect(body.max_tokens).toBe(600);
   });
 
   it("does not request streaming usage for BYOK providers", async () => {
@@ -160,6 +164,37 @@ describe("AI provider chat adapters", () => {
     const fetchMock = global.fetch as jest.Mock;
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body).not.toHaveProperty("stream_options");
+  });
+
+
+  it("caps OpenAI-compatible completions only when configured", async () => {
+    const fetchMock = mockFetchOnce({
+      choices: [{ message: { content: "[]" } }],
+    });
+    const capped = new OpenAIProvider({
+      provider: "OPENAI",
+      apiKey: "hosted-key",
+      maxTokens: 600,
+    });
+    await capped.parseTasks("Plan tomorrow");
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[0][1]?.body)).max_tokens
+    ).toBe(600);
+
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ choices: [{ message: { content: "[]" } }] }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      )
+    );
+    const byok = new OpenAIProvider({
+      provider: "OPENAI",
+      apiKey: "user-key",
+    });
+    await byok.parseTasks("Plan tomorrow");
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[1][1]?.body))
+    ).not.toHaveProperty("max_tokens");
   });
 
   it("maps Anthropic tool_use blocks into planner tool calls", async () => {
