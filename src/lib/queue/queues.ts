@@ -7,6 +7,7 @@ import {
   AccountLifecycleJobData,
   BugReportSyncJobData,
   CalendarSyncJobData,
+  LifetimeCheckoutReconciliationJobData,
   MailSyncJobData,
   NudgeJobData,
   QUEUE_NAMES,
@@ -23,6 +24,8 @@ let mailSyncQueue: Queue<MailSyncJobData> | null = null;
 let bugReportSyncQueue: Queue<BugReportSyncJobData> | null = null;
 let reminderQueue: Queue<ReminderJobData> | null = null;
 let nudgeQueue: Queue<NudgeJobData> | null = null;
+let lifetimeCheckoutReconciliationQueue: Queue<LifetimeCheckoutReconciliationJobData> | null =
+  null;
 let trialQueue: Queue<TrialJobData> | null = null;
 let accountLifecycleQueue: Queue<AccountLifecycleJobData> | null = null;
 
@@ -95,6 +98,17 @@ export function getNudgeQueue(): Queue<NudgeJobData> {
   return nudgeQueue;
 }
 
+export function getLifetimeCheckoutReconciliationQueue(): Queue<LifetimeCheckoutReconciliationJobData> {
+  lifetimeCheckoutReconciliationQueue ??= new Queue(
+    QUEUE_NAMES.lifetimeCheckoutReconciliation,
+    {
+      connection: getBullConnection(),
+      defaultJobOptions,
+    }
+  );
+  return lifetimeCheckoutReconciliationQueue;
+}
+
 export function getTrialQueue(): Queue<TrialJobData> {
   trialQueue ??= new Queue(QUEUE_NAMES.trials, {
     connection: getBullConnection(),
@@ -120,6 +134,7 @@ export async function closeQueues(): Promise<void> {
     bugReportSyncQueue,
     reminderQueue,
     nudgeQueue,
+    lifetimeCheckoutReconciliationQueue,
     trialQueue,
     accountLifecycleQueue,
   ].filter((queue): queue is Queue => queue !== null);
@@ -131,6 +146,7 @@ export async function closeQueues(): Promise<void> {
   bugReportSyncQueue = null;
   reminderQueue = null;
   nudgeQueue = null;
+  lifetimeCheckoutReconciliationQueue = null;
   trialQueue = null;
   accountLifecycleQueue = null;
 }

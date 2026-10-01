@@ -32,6 +32,7 @@ import {
   updateCalendarFeedSyncState,
 } from "@/lib/calendar-db";
 import { renewCalendarWebhooks } from "@/lib/calendar-webhooks/renew";
+import { reconcileLifetimeCheckoutReservations } from "@/lib/creem/lifetime-reconciliation";
 import { newDate } from "@/lib/date-utils";
 import { syncGoogleCalendar } from "@/lib/google-sync";
 import {
@@ -67,6 +68,7 @@ import {
   closeQueues,
   getAccountLifecycleQueue,
   getBugReportSyncQueue,
+  getLifetimeCheckoutReconciliationQueue,
   getNudgeQueue,
   getReminderQueue,
   getTrialQueue,
@@ -76,6 +78,7 @@ import {
   AccountLifecycleJobData,
   BugReportSyncJobData,
   CalendarSyncJobData,
+  LifetimeCheckoutReconciliationJobData,
   MailSyncJobData,
   NudgeJobData,
   QUEUE_NAMES,
@@ -209,6 +212,10 @@ async function processNudges() {
   await generateProactiveNudges();
 }
 
+async function processLifetimeCheckoutReconciliation() {
+  await reconcileLifetimeCheckoutReservations();
+}
+
 async function processTrials() {
   await processTrialLifecycle();
 }
@@ -265,6 +272,11 @@ const workers = [
     connection,
     concurrency: 1,
   }),
+  new Worker<LifetimeCheckoutReconciliationJobData>(
+    QUEUE_NAMES.lifetimeCheckoutReconciliation,
+    processLifetimeCheckoutReconciliation,
+    { connection, concurrency: 1 }
+  ),
   new Worker<TrialJobData>(QUEUE_NAMES.trials, processTrials, {
     connection,
     concurrency: 1,
@@ -351,6 +363,11 @@ export async function start(): Promise<void> {
     "proactive-nudge-sweep",
     { every: 15 * 60_000 },
     { name: "sweep-nudges", data: { kind: "sweep" } }
+  );
+  await getLifetimeCheckoutReconciliationQueue().upsertJobScheduler(
+    "lifetime-checkout-reconciliation",
+    { every: 15 * 60_000 },
+    { name: "sweep-lifetime-checkouts", data: { kind: "sweep" } }
   );
   await getTrialQueue().upsertJobScheduler(
     "trial-lifecycle-sweep",
