@@ -9,6 +9,10 @@ import {
   getCreemProductId,
   isCreemConfigured,
 } from "@/lib/creem/config";
+import {
+  attachLifetimeCheckout,
+  reserveLifetimeCheckout,
+} from "@/lib/creem/lifetime-cap";
 import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -100,9 +104,33 @@ export async function POST(request: NextRequest) {
     successUrl.searchParams.set("billing", "success");
     successUrl.hash = "billing";
 
+    const lifetimeReservation =
+      selection.plan === "lifetime"
+        ? await reserveLifetimeCheckout(auth.userId)
+        : null;
+    if (lifetimeReservation?.outcome === "closed") {
+      return NextResponse.json(
+        { error: "Lifetime is closed.", code: "LIFETIME_CLOSED" },
+        { status: 409 }
+      );
+    }
+    if (lifetimeReservation?.outcome === "already_owned") {
+      return NextResponse.json(
+        { error: "Lifetime is already active on this account." },
+        { status: 409 }
+      );
+    }
+    if (lifetimeReservation?.reservation.checkoutUrl) {
+      return NextResponse.json({
+        url: lifetimeReservation.reservation.checkoutUrl,
+      });
+    }
+
     const checkout = await getCreemClient().checkouts.create({
       productId,
-      requestId: checkoutRequestId(auth.userId, selection),
+      requestId:
+        lifetimeReservation?.reservation.requestId ??
+        checkoutRequestId(auth.userId, selection),
       customer: {
         email: user.email,
         ...(user.name ? { name: user.name } : {}),
@@ -113,10 +141,19 @@ export async function POST(request: NextRequest) {
         userId: auth.userId,
         plan: selection.plan,
         interval: selection.plan === "pro" ? selection.interval : "once",
+        ...(lifetimeReservation
+          ? { lifetimeReservationId: lifetimeReservation.reservation.id }
+          : {}),
       },
     });
     if (!checkout.checkoutUrl) {
       throw new Error("Creem did not return a checkout URL.");
+    }
+    if (lifetimeReservation) {
+      await attachLifetimeCheckout(lifetimeReservation.reservation.id, {
+        id: checkout.id,
+        checkoutUrl: checkout.checkoutUrl,
+      });
     }
 
     return NextResponse.json({ url: checkout.checkoutUrl });

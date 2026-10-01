@@ -86,6 +86,7 @@ model User {
   deletionRequest        AccountDeletionRequest?
   reauthentications      AccountReauthentication[]
   subscription           Subscription?
+  lifetimeHold           LifetimeHold?
   trialGrant             TrialGrant?
   accounts               Account[]
   sessions               Session[]
@@ -1287,27 +1288,27 @@ model SavedView {
 /// A personal, block-based document. Pages are deliberately independent from
 /// Task so notebooks and databases never become a parallel scheduling system.
 model Page {
-  id                    String                  @id @default(cuid())
+  id                    String                     @id @default(cuid())
   userId                String?
-  user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user                  User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId           String?
-  workspace             Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  workspace             Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   parentId              String?
-  parent                Page?                   @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children              Page[]                  @relation("PageTree")
+  parent                Page?                      @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Page[]                     @relation("PageTree")
   folderId              String?
-  folder                PageFolder?             @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder                PageFolder?                @relation(fields: [folderId], references: [id], onDelete: SetNull)
   tags                  PageTag[]
-  title                 String                  @default("Untitled")
+  title                 String                     @default("Untitled")
   icon                  String?
   coverUrl              String?
-  isPrivate             Boolean                 @default(false)
-  isFavorite            Boolean                 @default(false)
-  createdBy             PageAuthor              @default(HUMAN)
+  isPrivate             Boolean                    @default(false)
+  isFavorite            Boolean                    @default(false)
+  createdBy             PageAuthor                 @default(HUMAN)
   trashedAt             DateTime?
-  position              Float                   @default(0)
-  documentFormatVersion Int                     @default(1)
-  contentRevision       Int                     @default(0)
+  position              Float                      @default(0)
+  documentFormatVersion Int                        @default(1)
+  contentRevision       Int                        @default(0)
   blocks                PageBlock[]
   database              PageDatabase?
   record                DatabaseRecord?
@@ -1321,8 +1322,8 @@ model Page {
   collaborationState    PageCollaborationState?
   collaborationSessions PageCollaborationSession[]
   publication           PagePublication?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
 
   @@index([userId, parentId, position])
   @@index([workspaceId])
@@ -2404,6 +2405,13 @@ enum SubscriptionStatus {
   PAST_DUE
 }
 
+enum LifetimeCheckoutReservationStatus {
+  CREATING
+  PENDING
+  CONSUMED
+  EXPIRED
+}
+
 enum SchedulingEnergyLevel {
   LOW
   MEDIUM
@@ -2689,6 +2697,22 @@ model Subscription {
   @@index([creemProductId])
   @@index([stripeCustomerId])
   @@index([stripePaymentIntentId])
+}
+
+model LifetimeHold {
+  id              String                            @id @default(cuid())
+  userId          String                            @unique
+  user            User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestId       String                            @unique
+  creemCheckoutId String?                           @unique
+  checkoutUrl     String?
+  status          LifetimeCheckoutReservationStatus @default(CREATING)
+  lastCheckedAt   DateTime?
+  createdAt       DateTime                          @default(now())
+  updatedAt       DateTime                          @updatedAt
+
+  @@index([status, updatedAt])
+  @@map("LifetimeCheckoutReservation")
 }
 
 model TrialGrant {
