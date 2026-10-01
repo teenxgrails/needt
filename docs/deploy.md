@@ -149,7 +149,7 @@ AI_CUSTOM_URL=""
 AI_ENCRYPTION_KEY=""
 ```
 
-### Web Push (optional; web and worker)
+### Web Push (required for push delivery; web and worker)
 
 ```bash
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
@@ -157,10 +157,11 @@ VAPID_PRIVATE_KEY=""
 VAPID_SUBJECT="mailto:you@example.com"
 ```
 
-Enable Web Push only when all three values are set. `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
-is the public half exposed by the web API; `VAPID_PRIVATE_KEY` and
-`VAPID_SUBJECT` stay runtime-only. Supply the same trio to web and worker so
-subscriptions and reminder delivery use the same VAPID identity.
+`VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are required for push delivery. The
+already deployed `NEXT_PUBLIC_VAPID_PUBLIC_KEY` must belong to the same key pair
+as `VAPID_PRIVATE_KEY`. Supply the same trio to web and worker so subscriptions
+and reminder delivery use one VAPID identity. The private key and subject stay
+runtime-only.
 
 Apple/iCloud CalDAV credentials are entered in the app at runtime and never stored in env.
 

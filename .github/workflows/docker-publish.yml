@@ -61,6 +61,9 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ env.RELEASE_SHA }}
+          # metadata-action reads the git context; a depth-1 checkout at a ref
+          # leaves a grafted detached HEAD it cannot resolve.
+          fetch-depth: 0
       - name: Verify checked-out release commit
         run: test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
@@ -117,6 +120,11 @@ jobs:
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
+      # The redeploy runs scripts/trigger-coolify-deploy.sh, so this job needs
+      # the repository on disk like deploy-runtimes does.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ env.RELEASE_SHA }}
       - name: Validate production deployment configuration
         run: |
           : "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"
@@ -138,11 +146,13 @@ jobs:
           echo "sha=$previous_sha" >> "$GITHUB_OUTPUT"
       - name: Trigger web redeploy
         run: >-
-          curl --fail --silent --show-error --retry 3 --request GET
-          --header "Authorization: Bearer $COOLIFY_TOKEN" "$WEB_HOOK"
+          ./scripts/trigger-coolify-deploy.sh "$WEB_HOOK"
       - name: Wait for the exact web SHA and database health
         run: |
-          for attempt in $(seq 1 60); do
+          # A cold image build plus container start has taken well over ten
+          # minutes in production; 45 keeps a real failure visible without
+          # reporting a red release for a deploy that is still working.
+          for attempt in $(seq 1 270); do
             response=$(curl --fail --silent --show-error --max-time 30 "$WEB_HEALTH_URL" || true)
             healthy_sha=$(printf '%s' "$response" | jq -r \
               'if .ok == true and .db == "ok" then (.buildSha // "") else "" end' \
@@ -197,15 +207,14 @@ jobs:
           : "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
       - name: Trigger worker redeploy
         run: >-
-          curl --fail --silent --show-error --retry 3 --request GET
-          --header "Authorization: Bearer $COOLIFY_TOKEN" "$WORKER_HOOK"
+          ./scripts/trigger-coolify-deploy.sh "$WORKER_HOOK"
       - name: Trigger collaboration redeploy
         run: >-
-          curl --fail --silent --show-error --retry 3 --request GET
-          --header "Authorization: Bearer $COOLIFY_TOKEN" "$COLLABORATION_HOOK"
+          ./scripts/trigger-coolify-deploy.sh "$COLLABORATION_HOOK"
       - name: Wait for all runtime SHAs
         env:
-          RUNTIME_SHA_TIMEOUT_MS: "600000"
+          # The worker image took 54 minutes to build on 15 September.
+          RUNTIME_SHA_TIMEOUT_MS: "4500000"
           RUNTIME_SHA_POLL_INTERVAL_MS: "10000"
         run: npm run check:runtime-shas
       - name: Record manual rollback instructions
