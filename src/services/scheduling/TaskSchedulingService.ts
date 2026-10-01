@@ -1,4 +1,5 @@
 import { getCalibrationContext } from "@/services/time-tracking/calibration";
+import { selectTasksWithinAutoScheduleLimit } from "@/services/scheduling/entitlement-selection";
 
 import { canAutoScheduleMore } from "@/lib/entitlements";
 import { logger } from "@/lib/logger";
@@ -463,19 +464,12 @@ export async function scheduleAllTasksForUserDetailed(
     const entitlement = await canAutoScheduleMore(
       options.entitlementUserId || userId
     );
-    if (entitlement.remaining !== null) {
-      const alreadyScheduled = dbTasks.filter(
-        (task) =>
-          task.scheduledStart !== null || Boolean(task.scheduledBlocks?.length)
-      );
-      const newCandidates = dbTasks.filter(
-        (task) => task.scheduledStart === null && !task.scheduledBlocks?.length
-      );
-      dbTasks = [
-        ...alreadyScheduled,
-        ...newCandidates.slice(0, entitlement.remaining),
-      ];
-    }
+    dbTasks = selectTasksWithinAutoScheduleLimit(
+      dbTasks,
+      entitlement,
+      (task) =>
+        task.scheduledStart !== null || Boolean(task.scheduledBlocks?.length)
+    );
 
     const result = scheduleTasks({
       tasks: dbTasks.map(toSchedulableTask),

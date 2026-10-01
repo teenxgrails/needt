@@ -16,6 +16,7 @@ import {
 } from "@/services/reminders/reminder-delivery";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 import { executeSchedulingRun } from "@/services/scheduling/runs";
+import { processTrialLifecycle } from "@/services/trials/trial-lifecycle";
 import {
   startWorkerHealthServer,
   stopWorkerHealthServer,
@@ -68,6 +69,7 @@ import {
   getBugReportSyncQueue,
   getNudgeQueue,
   getReminderQueue,
+  getTrialQueue,
   getWebhookRenewQueue,
 } from "@/lib/queue/queues";
 import {
@@ -79,6 +81,7 @@ import {
   QUEUE_NAMES,
   ReminderJobData,
   RescheduleJobData,
+  TrialJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
@@ -206,6 +209,10 @@ async function processNudges() {
   await generateProactiveNudges();
 }
 
+async function processTrials() {
+  await processTrialLifecycle();
+}
+
 async function processAccountLifecycle(job: Job<AccountLifecycleJobData>) {
   if (job.data.kind === "export") {
     await processAccountExport(job.data.requestId);
@@ -255,6 +262,10 @@ const workers = [
     concurrency: 5,
   }),
   new Worker<NudgeJobData>(QUEUE_NAMES.nudges, processNudges, {
+    connection,
+    concurrency: 1,
+  }),
+  new Worker<TrialJobData>(QUEUE_NAMES.trials, processTrials, {
     connection,
     concurrency: 1,
   }),
@@ -340,6 +351,11 @@ export async function start(): Promise<void> {
     "proactive-nudge-sweep",
     { every: 15 * 60_000 },
     { name: "sweep-nudges", data: { kind: "sweep" } }
+  );
+  await getTrialQueue().upsertJobScheduler(
+    "trial-lifecycle-sweep",
+    { every: 60 * 60_000 },
+    { name: "sweep-trials", data: { kind: "sweep" } }
   );
   await getAccountLifecycleQueue().upsertJobScheduler(
     "account-lifecycle-sweep",

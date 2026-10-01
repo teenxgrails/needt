@@ -13,7 +13,11 @@ export default async function PublicBookingPage({
 }) {
   const { slug } = await params;
   const page = await prisma.bookingPage.findFirst({
-    where: { slug, isActive: true },
+    where: {
+      slug,
+      isActive: true,
+      user: { emailVerified: { not: null } },
+    },
     select: {
       slug: true,
       title: true,

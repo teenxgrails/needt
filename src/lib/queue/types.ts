@@ -6,6 +6,7 @@ export const QUEUE_NAMES = {
   bugReportSync: "bug-report-sync",
   reminders: "reminders",
   nudges: "nudges",
+  trials: "trials",
   accountLifecycle: "account-lifecycle",
 } as const;
 
@@ -41,6 +42,9 @@ export interface NudgeJobData {
   kind: "sweep";
 }
 
+export interface TrialJobData {
+  kind: "sweep";
+}
 export type AccountLifecycleJobData =
   | { kind: "export"; requestId: string }
   | { kind: "delete"; requestId: string }

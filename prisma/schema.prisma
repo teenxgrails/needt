@@ -86,6 +86,7 @@ model User {
   deletionRequest        AccountDeletionRequest?
   reauthentications      AccountReauthentication[]
   subscription           Subscription?
+  trialGrant             TrialGrant?
   accounts               Account[]
   sessions               Session[]
   calendars              CalendarFeed[]
@@ -2171,20 +2172,21 @@ model DataSettings {
 }
 
 model SystemSettings {
-  id                  String   @id @default(cuid())
-  googleClientId      String?
-  googleClientSecret  String?
-  outlookClientId     String?
-  outlookClientSecret String?
-  outlookTenantId     String?
-  logLevel            String   @default("none") // none, debug, info, warn, error
-  logRetention        Json? // Retention periods per log level
-  logDestination      String   @default("db") // db, file, both
-  publicSignup        Boolean  @default(true) // Whether public signup is enabled
-  disableHomepage     Boolean  @default(false) // Whether to disable the homepage and redirect to login/calendar
-  resendApiKey        String? // API key for Resend email service
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                                   String   @id @default(cuid())
+  googleClientId                       String?
+  googleClientSecret                   String?
+  outlookClientId                      String?
+  outlookClientSecret                  String?
+  outlookTenantId                      String?
+  logLevel                             String   @default("none") // none, debug, info, warn, error
+  logRetention                         Json? // Retention periods per log level
+  logDestination                       String   @default("db") // db, file, both
+  publicSignup                         Boolean  @default(true) // Whether public signup is enabled
+  requireEmailVerificationBeforeAccess Boolean  @default(false)
+  disableHomepage                      Boolean  @default(false) // Whether to disable the homepage and redirect to login/calendar
+  resendApiKey                         String? // API key for Resend email service
+  createdAt                            DateTime @default(now())
+  updatedAt                            DateTime @updatedAt
 }
 
 model Log {
@@ -2687,6 +2689,25 @@ model Subscription {
   @@index([creemProductId])
   @@index([stripeCustomerId])
   @@index([stripePaymentIntentId])
+}
+
+model TrialGrant {
+  id             String    @id @default(cuid())
+  emailKey       String    @unique
+  userId         String?   @unique
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  startedAt      DateTime
+  endsAt         DateTime
+  day11ClaimedAt DateTime?
+  day11SentAt    DateTime?
+  day14ClaimedAt DateTime?
+  day14SentAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([endsAt])
+  @@index([day11SentAt, startedAt])
+  @@index([day14SentAt, endsAt])
 }
 
 model CreemWebhookEvent {

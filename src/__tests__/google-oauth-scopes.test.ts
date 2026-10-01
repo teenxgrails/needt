@@ -1,5 +1,8 @@
 import { getAuthOptions } from "@/lib/auth/auth-options";
 
+jest.mock("@auth/prisma-adapter", () => ({
+  PrismaAdapter: jest.fn(() => ({})),
+}));
 jest.mock("next-auth/providers/google", () => {
   return jest.fn((opts: unknown) => ({ __mockGoogleOpts: opts }));
 });

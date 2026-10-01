@@ -2,12 +2,15 @@ import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 import { authSecret } from "@/lib/auth/auth-secret";
+import { requireAuth } from "@/lib/auth/api-auth";
 import { logger } from "@/lib/logger";
 
 const LOG_SOURCE = "CheckAdminAPI";
 
 export async function GET(request: NextRequest) {
   try {
+    const denied = await requireAuth(request);
+    if (denied) return denied;
     const token = await getToken({
       req: request,
       secret: authSecret(),
