@@ -194,6 +194,45 @@ describe("production migration tooling", () => {
     expect(entrypoint).toContain("/app/node_modules/.bin/prisma");
   });
 
+  it("keeps the worker and collaboration images off the Next build", () => {
+    // One host builds all three services. When the runtime stages reach back
+    // into `builder`, every release runs `next build` three times and the
+    // server runs out of memory mid-deploy.
+    expect(rootDockerfile).toContain("FROM base AS runtime-builder");
+    expect(rootDockerfile).toContain("FROM runtime-builder AS builder");
+
+    const runtimeBuilder = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS runtime-builder"),
+      rootDockerfile.indexOf("FROM runtime-builder AS builder")
+    );
+    expect(runtimeBuilder).toContain("RUN npm run build:worker");
+    expect(runtimeBuilder).toContain("RUN npm run build:collaboration");
+    expect(runtimeBuilder).not.toContain("RUN npm run build\n");
+
+    const runtimeDeps = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS runtime-deps"),
+      rootDockerfile.indexOf("FROM base AS worker")
+    );
+    const workerStage = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS worker"),
+      rootDockerfile.indexOf("FROM base AS collaboration")
+    );
+    const collaborationStage = rootDockerfile.slice(
+      rootDockerfile.indexOf("FROM base AS collaboration"),
+      rootDockerfile.indexOf("FROM base AS production")
+    );
+
+    for (const stage of [runtimeDeps, workerStage, collaborationStage]) {
+      expect(stage).not.toContain("COPY --from=builder");
+    }
+    expect(workerStage).toContain(
+      "COPY --from=runtime-builder /app/dist/worker ./dist/worker"
+    );
+    expect(collaborationStage).toContain(
+      "COPY --from=runtime-builder /app/dist/collaboration ./dist/collaboration"
+    );
+  });
+
   it("starts collaboration from its ESM bundle", () => {
     const packageJson = JSON.parse(read("package.json")) as {
       scripts?: Record<string, string>;
