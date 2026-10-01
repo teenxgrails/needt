@@ -52,6 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New accounts now start with auto-scheduling defaults, actionable empty states
   across primary routes, and recoverable calendar connection errors; calendar
   OAuth callbacks are bound to the user who started the connection.
+- Page block writes now defer to an active collaboration session and persist
+  its CRDT state and relational block projection atomically, preventing stale
+  REST autosaves from overwriting live edits. A versioned collaboration room
+  also prevents pre-fix offline documents from resurrecting removed blocks.
 - Notification settings now preserve saved browser-push and reminder-timing
   preferences while reporting unavailable delivery, and reminder workers warn
   once per process with the missing VAPID variable names.

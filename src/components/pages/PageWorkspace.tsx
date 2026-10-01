@@ -3,6 +3,7 @@
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -16,7 +17,9 @@ import {
   HocuspocusProviderWebsocket,
 } from "@hocuspocus/provider";
 import { type JSONContent } from "@tiptap/core";
-import Collaboration from "@tiptap/extension-collaboration";
+import Collaboration, {
+  isChangeOrigin,
+} from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import ImageExtension from "@tiptap/extension-image";
 import LinkExtension from "@tiptap/extension-link";
@@ -80,6 +83,7 @@ import { DatabaseWorkspace } from "@/components/pages/DatabaseWorkspace";
 import { PageBlockNode } from "@/components/pages/PageBlockNode";
 import {
   PageAutosave,
+  selectLatestPageRevision,
   type PageSaveState,
 } from "@/components/pages/page-autosave";
 import {
@@ -87,6 +91,11 @@ import {
   legacyPageHtml,
   pageBlocksFromDocument,
 } from "@/components/pages/page-document";
+import {
+  legacyPageCollaborationDraftKey,
+  pageCollaborationDocumentName,
+  pageCollaborationDraftKey,
+} from "@/services/pages/page-collaboration-protocol";
 import type { PageDetail } from "@/components/pages/page-types";
 import {
   BottomSheet,
@@ -440,7 +449,7 @@ export function PageWorkspace({
   const router = useRouter();
   const hostRef = useRef<HTMLDivElement>(null);
   const autosave = useRef<PageAutosave | null>(null);
-  const pageRevisionRef = useRef<string | null>(null);
+  const pageRevisionRef = useRef<number | null>(null);
   const hydrated = useRef(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressStart = useRef<{ x: number; y: number } | null>(null);
@@ -506,9 +515,42 @@ export function PageWorkspace({
   const [aiAction, setAiAction] = useState<AiAction>("rewrite");
   const canEdit = page?.accessRole !== "VIEWER";
   const canManageAccess = page?.accessRole === "FULL_ACCESS";
+  const collaborationStatusRef = useRef<
+    "connecting" | "connected" | "disconnected"
+  >("connecting");
+  const collaborationDraftPendingRef = useRef(false);
+  const legacyDraftPendingRef = useRef<string | null>(null);
+  const collaborationConfiguredRef = useRef(false);
   const [collaborationStatus, setCollaborationStatus] = useState<
     "connecting" | "connected" | "disconnected"
   >("connecting");
+  const updateCollaborationStatus = useCallback(
+    (status: "connecting" | "connected" | "disconnected") => {
+      collaborationStatusRef.current = status;
+      if (status === "connected") {
+        const pendingDraft =
+          autosave.current?.setWriteAuthority("collaboration");
+        if (pendingDraft) collaborationDraftPendingRef.current = true;
+      } else if (collaborationConfiguredRef.current) {
+        autosave.current?.setWriteAuthority("collaboration-offline");
+      } else if (status === "disconnected") {
+        autosave.current?.setWriteAuthority("rest");
+      }
+      setCollaborationStatus(status);
+    },
+    []
+  );
+  const acknowledgeCollaborationSync = useCallback(
+    (unsyncedChanges: number) => {
+      if (!collaborationDraftPendingRef.current) return;
+      if (
+        autosave.current?.acknowledgeCollaborationSync(unsyncedChanges)
+      ) {
+        collaborationDraftPendingRef.current = false;
+      }
+    },
+    []
+  );
   const [collaborators, setCollaborators] = useState<
     Array<{ name: string; color: string }>
   >([]);
@@ -527,18 +569,20 @@ export function PageWorkspace({
   const collaborationProvider = useMemo(
     () =>
       new HocuspocusProvider({
-        name: `page:${pageId}`,
+        name: pageCollaborationDocumentName(pageId),
         document: collaborationDocument,
         websocketProvider: collaborationSocket,
         token: null,
         onStatus: ({ status }) =>
-          setCollaborationStatus(
+          updateCollaborationStatus(
             status === "connected"
               ? "connected"
               : status === "disconnected"
                 ? "disconnected"
                 : "connecting"
           ),
+        onUnsyncedChanges: ({ number }) =>
+          acknowledgeCollaborationSync(number),
         onAwarenessChange: ({ states }) =>
           setCollaborators(
             states.flatMap((state) => {
@@ -552,7 +596,13 @@ export function PageWorkspace({
             })
           ),
       }),
-    [collaborationDocument, collaborationSocket, pageId]
+    [
+      collaborationDocument,
+      collaborationSocket,
+      acknowledgeCollaborationSync,
+      pageId,
+      updateCollaborationStatus,
+    ]
   );
 
   const clearLongPress = () => {
@@ -643,20 +693,26 @@ export function PageWorkspace({
   };
 
   useEffect(() => {
-    const draftKey = `needt-page-draft:${pageId}`;
+    const draftKey = pageCollaborationDraftKey(pageId);
     const queue = new PageAutosave({
       isOnline: () => navigator.onLine,
       onStateChange: setSaveState,
       persistDraft: (document) =>
         localStorage.setItem(draftKey, JSON.stringify(document)),
-      removeDraft: () => localStorage.removeItem(draftKey),
+      removeDraft: () => {
+        localStorage.removeItem(draftKey);
+        if (legacyDraftPendingRef.current) {
+          localStorage.removeItem(legacyDraftPendingRef.current);
+          legacyDraftPendingRef.current = null;
+        }
+      },
       save: async (document) => {
         const response = await fetch(`/api/pages/${pageId}/blocks`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            ...(pageRevisionRef.current
-              ? { "If-Match": pageRevisionRef.current }
+            ...(pageRevisionRef.current !== null
+              ? { "If-Match": String(pageRevisionRef.current) }
               : {}),
           },
           body: JSON.stringify({
@@ -667,14 +723,28 @@ export function PageWorkspace({
         if (!response.ok) throw new Error("Save failed");
         if (response.status !== 202) {
           const result = (await response.json()) as { page: PageDetail };
-          pageRevisionRef.current = result.page.updatedAt;
+          pageRevisionRef.current = selectLatestPageRevision(
+            pageRevisionRef.current,
+            result.page.contentRevision
+          );
           setPage((current) =>
-            current ? { ...current, updatedAt: result.page.updatedAt } : current
+            current && result.page.contentRevision >= current.contentRevision
+              ? {
+                  ...current,
+                  contentRevision: result.page.contentRevision,
+                  updatedAt: result.page.updatedAt,
+                }
+              : current
           );
         }
         window.dispatchEvent(new Event("pages-changed"));
       },
     });
+    if (collaborationStatusRef.current === "connected") {
+      queue.setWriteAuthority("collaboration");
+    } else if (collaborationConfiguredRef.current) {
+      queue.setWriteAuthority("collaboration-offline");
+    }
     autosave.current = queue;
     return () => {
       queue.dispose();
@@ -736,11 +806,19 @@ export function PageWorkspace({
         return false;
       },
     },
-    onUpdate: ({ editor: current }) => {
+    onUpdate: ({ editor: current, transaction }) => {
       if (!hydrated.current) return;
       ensureBlockIds(current);
-      const document = current.getJSON();
-      autosave.current?.schedule(document);
+      if (
+        !collaborationConfiguredRef.current ||
+        !isChangeOrigin(transaction)
+      ) {
+        const document = current.getJSON();
+        autosave.current?.schedule(document);
+        if (collaborationConfiguredRef.current) {
+          collaborationDraftPendingRef.current = true;
+        }
+      }
 
       const { $from } = current.state.selection;
       const match = $from.parent.textContent.match(/^\/([^\s]*)$/);
@@ -855,9 +933,14 @@ export function PageWorkspace({
       }
       const { page: loaded } = (await response.json()) as { page: PageDetail };
       if (cancelled) return;
-      pageRevisionRef.current = loaded.updatedAt;
+      pageRevisionRef.current = loaded.contentRevision;
       setPage(loaded);
-      const localDraft = localStorage.getItem(`needt-page-draft:${pageId}`);
+      const draftKey = pageCollaborationDraftKey(pageId);
+      const legacyDraftKey = legacyPageCollaborationDraftKey(pageId);
+      const currentDraft = localStorage.getItem(draftKey);
+      const legacyDraft = localStorage.getItem(legacyDraftKey);
+      const localDraft = currentDraft ?? legacyDraft;
+      legacyDraftPendingRef.current = legacyDraft ? legacyDraftKey : null;
 
       const tokenResponse = await fetch(
         `/api/pages/${pageId}/collaboration-token`,
@@ -869,6 +952,8 @@ export function PageWorkspace({
         try {
           const collaboration =
             (await tokenResponse.json()) as CollaborationTokenResponse;
+          collaborationConfiguredRef.current = true;
+          autosave.current?.setWriteAuthority("collaboration-offline");
           Y.applyUpdate(
             collaborationDocument,
             decodeCollaborationState(collaboration.initialState)
@@ -904,23 +989,27 @@ export function PageWorkspace({
                   emitUpdate: false,
                 }
               );
+              collaborationDraftPendingRef.current = true;
               setSaveState("failed");
             } catch {
-              localStorage.removeItem(`needt-page-draft:${pageId}`);
+              collaborationDraftPendingRef.current = false;
+              localStorage.removeItem(currentDraft ? draftKey : legacyDraftKey);
+              if (!currentDraft) legacyDraftPendingRef.current = null;
             }
           }
           ensureBlockIds(editor);
           hydrated.current = true;
-          if (localDraft) autosave.current?.schedule(editor.getJSON());
           void collaborationSocket
             .connect()
-            .catch(() => setCollaborationStatus("disconnected"));
+            .catch(() => updateCollaborationStatus("disconnected"));
           return;
         } catch {
-          setCollaborationStatus("disconnected");
+          collaborationConfiguredRef.current = false;
+          updateCollaborationStatus("disconnected");
         }
       }
 
+      collaborationConfiguredRef.current = false;
       const document = documentFromPageBlocks(loaded.blocks);
       editor.commands.setContent(document || legacyPageHtml(loaded.blocks), {
         emitUpdate: false,
@@ -932,16 +1021,20 @@ export function PageWorkspace({
           });
           setSaveState("failed");
         } catch {
-          localStorage.removeItem(`needt-page-draft:${pageId}`);
+          localStorage.removeItem(currentDraft ? draftKey : legacyDraftKey);
+          if (!currentDraft) legacyDraftPendingRef.current = null;
         }
       }
       ensureBlockIds(editor);
       hydrated.current = true;
-      setCollaborationStatus("disconnected");
+      updateCollaborationStatus("disconnected");
       if (localDraft) autosave.current?.schedule(editor.getJSON());
     })().catch(() => router.replace("/pages"));
     return () => {
       cancelled = true;
+      collaborationDraftPendingRef.current = false;
+      legacyDraftPendingRef.current = null;
+      collaborationConfiguredRef.current = false;
     };
   }, [
     collaborationDocument,
@@ -950,6 +1043,7 @@ export function PageWorkspace({
     editor,
     pageId,
     router,
+    updateCollaborationStatus,
   ]);
 
   useEffect(() => {
@@ -1010,7 +1104,9 @@ export function PageWorkspace({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
-    if (!response.ok) notify.error("Could not update page");
+    if (!response.ok) {
+      notify.error("Could not update page");
+    }
     window.dispatchEvent(new Event("pages-changed"));
   };
 
@@ -1184,12 +1280,82 @@ export function PageWorkspace({
     }
   };
 
+  const runSnapshotMutation = async (url: string, init: RequestInit) => {
+    const handoff = collaborationConfiguredRef.current;
+    editor?.setEditable(false);
+    const recoverHandoff = () => {
+      editor?.setEditable(canEdit);
+      if (!handoff) return;
+      void collaborationSocket
+        .connect()
+        .catch(() => updateCollaborationStatus("disconnected"));
+    };
+    if (autosave.current?.hasPendingWrite()) {
+      recoverHandoff();
+      return new Response(
+        JSON.stringify({ error: "PAGE_SNAPSHOT_WRITE_PENDING" }),
+        { status: 409, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    if (handoff) {
+      for (
+        let attempt = 0;
+        attempt < 40 &&
+        (collaborationProvider.hasUnsyncedChanges ||
+          collaborationDraftPendingRef.current);
+        attempt += 1
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      if (
+        collaborationProvider.hasUnsyncedChanges ||
+        collaborationDraftPendingRef.current
+      ) {
+        recoverHandoff();
+        return new Response(
+          JSON.stringify({ error: "PAGE_COLLABORATION_UNSYNCED" }),
+          {
+            status: 409,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+      collaborationSocket.disconnect();
+    }
+
+    let response: Response | null = null;
+    try {
+      for (let attempt = 0; attempt < 50; attempt += 1) {
+        response = await fetch(url, init);
+        if (response.status !== 409) break;
+        const body = (await response
+          .clone()
+          .json()
+          .catch(() => ({}))) as {
+          error?: string;
+        };
+        if (body.error !== "PAGE_COLLABORATION_ACTIVE") break;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    } catch (error) {
+      recoverHandoff();
+      throw error;
+    }
+
+    if (!response) throw new Error("Snapshot mutation did not run");
+    if (!response.ok) recoverHandoff();
+    return response;
+  };
+
   const restoreRevision = async (revisionId: string) => {
-    const response = await fetch(`/api/pages/${pageId}/revisions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ revisionId }),
-    });
+    const response = await runSnapshotMutation(
+      `/api/pages/${pageId}/revisions`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revisionId }),
+      }
+    );
     if (!response.ok) {
       notify.error("Could not restore this version");
       return;
@@ -1302,10 +1468,11 @@ export function PageWorkspace({
     proposal: PageProposal,
     decision: "approve" | "reject"
   ) => {
-    const response = await fetch(
-      `/api/ai/page-proposals/${proposal.id}/${decision}`,
-      { method: "POST" }
-    );
+    const url = `/api/ai/page-proposals/${proposal.id}/${decision}`;
+    const response =
+      decision === "approve"
+        ? await runSnapshotMutation(url, { method: "POST" })
+        : await fetch(url, { method: "POST" });
     if (!response.ok) {
       notify.error("Could not update proposal");
       return;
