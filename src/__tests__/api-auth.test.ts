@@ -6,10 +6,16 @@ import { prisma } from "@/lib/prisma";
 
 jest.mock("next-auth/jwt", () => ({ getToken: jest.fn() }));
 jest.mock("@/lib/prisma", () => ({
-  prisma: { user: { findUnique: jest.fn() } },
+  prisma: {
+    user: { findUnique: jest.fn() },
+    systemSettings: { findFirst: jest.fn() },
+  },
 }));
 
 const userModel = prisma.user as unknown as { findUnique: jest.Mock };
+const settingsModel = prisma.systemSettings as unknown as {
+  findFirst: jest.Mock;
+};
 
 function request(path = "/api/private") {
   return new NextRequest(`http://localhost${path}`);
@@ -19,7 +25,14 @@ describe("shared API authentication", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.mocked(getToken).mockResolvedValue({ sub: "user-1" });
-    userModel.findUnique.mockResolvedValue({ isActive: true, role: "user" });
+    userModel.findUnique.mockResolvedValue({
+      emailVerified: null,
+      isActive: true,
+      role: "user",
+    });
+    settingsModel.findFirst.mockResolvedValue({
+      requireEmailVerificationBeforeAccess: false,
+    });
   });
 
   it("rejects a token whose user no longer exists", async () => {
@@ -52,8 +65,30 @@ describe("shared API authentication", () => {
 
   it("allows an active database admin", async () => {
     jest.mocked(getToken).mockResolvedValue({ sub: "admin-1", role: "user" });
-    userModel.findUnique.mockResolvedValue({ isActive: true, role: "admin" });
+    userModel.findUnique.mockResolvedValue({
+      emailVerified: null,
+      isActive: true,
+      role: "admin",
+    });
 
     await expect(requireAdmin(request("/api/admin"))).resolves.toBeNull();
+  });
+
+  it("blocks an unverified admin while the access flag is on", async () => {
+    userModel.findUnique.mockResolvedValue({
+      emailVerified: null,
+      isActive: true,
+      role: "admin",
+    });
+    settingsModel.findFirst.mockResolvedValue({
+      requireEmailVerificationBeforeAccess: true,
+    });
+
+    const response = await requireAdmin(request("/api/admin"));
+
+    expect(response?.status).toBe(403);
+    await expect(response?.json()).resolves.toMatchObject({
+      code: "EMAIL_VERIFICATION_REQUIRED",
+    });
   });
 });

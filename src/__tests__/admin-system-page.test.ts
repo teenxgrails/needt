@@ -51,6 +51,9 @@ jest.mock("@/lib/prisma", () => ({
     user: {
       findUnique: jest.fn(),
     },
+    systemSettings: {
+      findFirst: jest.fn(),
+    },
   },
 }));
 
@@ -70,12 +73,17 @@ describe("admin system settings page", () => {
   >;
   const getTokenMock = getToken as jest.MockedFunction<typeof getToken>;
   const findUserMock = prisma.user.findUnique as jest.Mock;
+  const findSystemSettingsMock = prisma.systemSettings.findFirst as jest.Mock;
 
   beforeEach(() => {
     getAuthOptionsMock.mockResolvedValue({} as never);
     getTokenMock.mockReset();
     getServerSessionMock.mockReset();
     findUserMock.mockReset();
+    findSystemSettingsMock.mockReset();
+    findSystemSettingsMock.mockResolvedValue({
+      requireEmailVerificationBeforeAccess: false,
+    });
   });
 
   async function renderPage() {
@@ -86,7 +94,11 @@ describe("admin system settings page", () => {
     getServerSessionMock.mockResolvedValue({
       user: { email: "admin@needt.test", role: "admin" },
     } as never);
-    findUserMock.mockResolvedValue({ isActive: true, role: "admin" });
+    findUserMock.mockResolvedValue({
+      emailVerified: null,
+      isActive: true,
+      role: "admin",
+    });
 
     const markup = await renderPage();
 
@@ -109,6 +121,25 @@ describe("admin system settings page", () => {
     );
     expect(markup).not.toContain('data-testid="admin-system-form"');
     expect(markup).not.toContain('data-testid="system-settings-sentinel"');
+  });
+
+  it("denies an unverified admin while the access flag is on", async () => {
+    getServerSessionMock.mockResolvedValue({
+      user: { email: "admin@needt.test", role: "admin" },
+    } as never);
+    findUserMock.mockResolvedValue({
+      emailVerified: null,
+      isActive: true,
+      role: "admin",
+    });
+    findSystemSettingsMock.mockResolvedValue({
+      requireEmailVerificationBeforeAccess: true,
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain('data-testid="admin-system-access-denied"');
+    expect(markup).not.toContain('data-testid="admin-system-form"');
   });
 
   it("denies an inactive admin even when the session still says admin", async () => {

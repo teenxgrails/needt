@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated Pro monthly to $7 and Lifetime to $149, hid hosted-AI usage counts
   from product surfaces, and added private input/output token accounting for
   hosted provider calls alongside the action count.
+- Added non-blocking email confirmation with one 14-day Pro trial per canonical
+  email, OAuth trial activation, day-11/day-14 worker emails, safe Free expiry,
+  and verified-owner gates for booking publication and outbound guest email.
+- Added a complete account archive and a re-authenticated, seven-day account
+  deletion flow that removes personal data while preserving scrubbed,
+  authorless shared-workspace tombstones.
 - Kept hosted AI available in a bounded slower mode after its normal allowance,
   while preserving uncapped BYOK access and hiding usage counts from chat.
 - Added an admin-only System settings route and account-menu links for system
@@ -49,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- New accounts now start with auto-scheduling defaults, actionable empty states
+  across primary routes, and recoverable calendar connection errors; calendar
+  OAuth callbacks are bound to the user who started the connection.
 - Page block writes now defer to an active collaboration session and persist
   its CRDT state and relational block projection atomically, preventing stale
   REST autosaves from overwriting live edits. A versioned collaboration room

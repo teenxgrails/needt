@@ -38,6 +38,8 @@ interface UsageStatus {
 interface BillingSummary {
   configured: boolean;
   plan: Plan;
+  isTrial: boolean;
+  trialEndsAt: string | null;
   status: BillingStatus;
   interval: "month" | "year" | null;
   currentPeriodEnd: string | null;
@@ -79,6 +81,12 @@ function usageLabel(usage: { used: number; limit: number | null }) {
 }
 
 function periodLabel(summary: BillingSummary) {
+  if (summary.isTrial && summary.trialEndsAt) {
+    const date = new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+    }).format(new Date(summary.trialEndsAt));
+    return `Pro trial ends ${date}`;
+  }
   if (summary.plan === "LIFETIME") return "One-time purchase";
   if (summary.plan === "FREE") return "No payment method required";
   if (!summary.currentPeriodEnd) {
@@ -220,7 +228,7 @@ export function BillingSettings() {
                   {PLAN_NAMES[summary.plan]}
                 </span>
                 <span className="rounded-full bg-[var(--surface-control)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)]">
-                  {STATUS_LABELS[summary.status]}
+                  {summary.isTrial ? "Trial" : STATUS_LABELS[summary.status]}
                 </span>
                 {summary.cancelAtPeriodEnd && (
                   <span className="rounded-full bg-[var(--surface-control)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)]">
@@ -311,10 +319,14 @@ export function BillingSettings() {
               "AI agent",
               "Focus scores, streaks, and weekly analytics",
             ]}
-            actionLabel={summary.plan === "PRO" ? "Current plan" : "Choose Pro"}
+            actionLabel={
+              summary.plan === "PRO" && !summary.isTrial
+                ? "Current plan"
+                : "Choose Pro"
+            }
             disabled={
               !summary.configured ||
-              summary.plan === "PRO" ||
+              (summary.plan === "PRO" && !summary.isTrial) ||
               summary.plan === "LIFETIME" ||
               pendingAction !== null
             }
