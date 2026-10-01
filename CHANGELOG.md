@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a complete account archive and a re-authenticated, seven-day account
   deletion flow that removes personal data while preserving scrubbed,
   authorless shared-workspace tombstones.
+- Kept hosted AI available in a bounded slower mode after its normal allowance,
+  while preserving uncapped BYOK access and hiding usage counts from chat.
 - Added an admin-only System settings route and account-menu links for system
   credentials and operations, with a contract check preventing orphaned
   admin-only settings components.
