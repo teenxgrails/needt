@@ -4,13 +4,13 @@ import { useState } from "react";
 import { useRef } from "react";
 
 import { Download, FileJson2, Loader2, Upload } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 import { APP_SLUG } from "@/lib/app-config";
+import { notify } from "@/lib/notifications";
 
 import { SettingRow, SettingsCard, SettingsSection } from "./SettingsSection";
 
@@ -18,6 +18,8 @@ export function ImportExportSettings() {
   const [includeCompleted, setIncludeCompleted] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isRequestingAccountExport, setIsRequestingAccountExport] =
+    useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
@@ -67,6 +69,21 @@ export function ImportExportSettings() {
     }
   };
 
+  const handleAccountExport = async () => {
+    setIsRequestingAccountExport(true);
+    try {
+      const response = await fetch("/api/account/export", { method: "POST" });
+      if (!response.ok) throw new Error("Failed to request account export");
+      notify.success(
+        "We will email your one-use download link when the archive is ready"
+      );
+    } catch {
+      notify.error("Account export is temporarily unavailable");
+    } finally {
+      setIsRequestingAccountExport(false);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -97,7 +114,9 @@ export function ImportExportSettings() {
           }
 
           const result = await response.json();
-          notify.success(`Import successful: ${result.imported} tasks imported`);
+          notify.success(
+            `Import successful: ${result.imported} tasks imported`
+          );
         } catch (error) {
           console.error("Import processing error:", error);
           notify.error(
@@ -204,6 +223,28 @@ export function ImportExportSettings() {
             twice can create duplicates.
           </p>
         </SettingsCard>
+      </SettingRow>
+
+      <SettingRow
+        label="Full account archive"
+        description="Request a compressed archive of the data owned by your account. Secrets and other people's private data are excluded."
+      >
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleAccountExport}
+          disabled={isRequestingAccountExport}
+          className="w-full sm:w-auto"
+        >
+          {isRequestingAccountExport ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4" />
+          )}
+          {isRequestingAccountExport
+            ? "Preparing request..."
+            : "Request account archive"}
+        </Button>
       </SettingRow>
     </SettingsSection>
   );

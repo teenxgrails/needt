@@ -1,12 +1,14 @@
 import { NextAuthOptions } from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 
+import { PrismaAdapter } from "@auth/prisma-adapter";
+
 import { getGoogleCredentials, getOutlookCredentials } from "@/lib/auth";
 import { authSecret } from "@/lib/auth/auth-secret";
 import { authenticateUser } from "@/lib/auth/credentials-provider";
+import { newDate } from "@/lib/date-utils";
 import { GOOGLE_SIGN_IN_SCOPES } from "@/lib/google-oauth-scopes";
 import { logger } from "@/lib/logger";
 import { MICROSOFT_GRAPH_SCOPES } from "@/lib/outlook";
@@ -104,6 +106,17 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
 
     providers,
     callbacks: {
+      async signIn({ user, account }) {
+        if (account?.provider !== "credentials" && user.email) {
+          await prisma.user.updateMany({
+            where: { email: user.email },
+            data: { lastAuthenticatedAt: newDate() },
+          });
+        }
+        return true;
+      },
+      // This branch's jwt supersedes main's: it keeps token.sub and the role
+      // instead of early-returning a fresh token object that dropped both.
       async jwt({ token, account, user }) {
         if (user) {
           token.sub = user.id;

@@ -81,6 +81,10 @@ model User {
   emailVerified          DateTime?
   image                  String?
   role                   String                    @default("user") // Possible values: "user", "admin"
+  lastAuthenticatedAt    DateTime?
+  dataExports            DataExportRequest[]
+  deletionRequest        AccountDeletionRequest?
+  reauthentications      AccountReauthentication[]
   subscription           Subscription?
   trialGrant             TrialGrant?
   accounts               Account[]
@@ -244,6 +248,71 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum DataExportStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+  DOWNLOADED
+  EXPIRED
+}
+
+model DataExportRequest {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       DataExportStatus @default(PENDING)
+  archive      Bytes?
+  tokenHash    String?          @unique
+  expiresAt    DateTime?
+  downloadedAt DateTime?
+  errorCode    String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
+}
+
+enum AccountDeletionStatus {
+  SCHEDULED
+  CANCELED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model AccountDeletionRequest {
+  id           String                @id @default(cuid())
+  userId       String?               @unique
+  user         User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status       AccountDeletionStatus @default(SCHEDULED)
+  scheduledFor DateTime
+  canceledAt   DateTime?
+  completedAt  DateTime?
+  errorCode    String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([status, scheduledFor])
+}
+
+model AccountReauthentication {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionHash     String
+  challengeHash   String?   @unique
+  provider        String?
+  authenticatedAt DateTime?
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, sessionHash, expiresAt])
+  @@index([expiresAt])
 }
 
 model CalendarFeed {
@@ -1008,8 +1077,8 @@ model TaskDependency {
   id            String    @id @default(cuid())
   workspaceId   String
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  userId        String
-  user          User      @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?     @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: SetNull)
   blockerTaskId String
   blocker       Task      @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
   blockedTaskId String
@@ -1151,8 +1220,8 @@ model Booking {
 
 model Board {
   id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId String?
   workspace   Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name        String
@@ -1189,8 +1258,8 @@ model BoardColumn {
 
 model SavedView {
   id           String              @id @default(cuid())
-  userId       String
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId  String?
   workspace    Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   boardId      String?
@@ -1219,8 +1288,8 @@ model SavedView {
 /// Task so notebooks and databases never become a parallel scheduling system.
 model Page {
   id                    String                  @id @default(cuid())
-  userId                String
-  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                String?
+  user                  User?                   @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId           String?
   workspace             Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   parentId              String?
@@ -1266,8 +1335,8 @@ model Page {
 /// permissions or document identity.
 model PageFolder {
   id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name        String
@@ -1286,8 +1355,8 @@ model PageFolder {
 /// historical Page record.
 model PageTag {
   id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name        String
@@ -1305,8 +1374,8 @@ model PageTag {
 /// future filter change from silently reinterpreting an existing Smart Folder.
 model PageSmartFolder {
   id           String     @id @default(cuid())
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId  String?
   workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name         String
@@ -1343,8 +1412,8 @@ model PageAsset {
   id           String   @id @default(cuid())
   pageId       String
   page         Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   originalName String
   mimeType     String
   size         Int
@@ -1489,8 +1558,8 @@ model PageRevision {
   id        String     @id @default(cuid())
   pageId    String
   page      Page       @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   snapshot  Json
   createdBy PageAuthor @default(HUMAN)
   createdAt DateTime   @default(now())
@@ -1506,8 +1575,8 @@ model PageAccessGrant {
   userId      String
   user        User           @relation("PageAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
   role        PageAccessRole
-  grantedById String
-  grantedBy   User           @relation("PageAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  grantedById String?
+  grantedBy   User?          @relation("PageAccessGrantor", fields: [grantedById], references: [id], onDelete: SetNull)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -1561,8 +1630,8 @@ model Moodboard {
   id                 String                       @id @default(cuid())
   workspaceId        String
   workspace          Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  createdById        String
-  createdBy          User                         @relation("MoodboardCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdById        String?
+  createdBy          User?                        @relation("MoodboardCreator", fields: [createdById], references: [id], onDelete: SetNull)
   title              String                       @default("Untitled Moodboard")
   archivedAt         DateTime?
   accessGrants       MoodboardAccessGrant[]
@@ -1582,8 +1651,8 @@ model MoodboardAccessGrant {
   userId      String
   user        User                @relation("MoodboardAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
   role        MoodboardAccessRole
-  grantedById String
-  grantedBy   User                @relation("MoodboardAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  grantedById String?
+  grantedBy   User?               @relation("MoodboardAccessGrantor", fields: [grantedById], references: [id], onDelete: SetNull)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 

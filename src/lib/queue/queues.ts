@@ -4,6 +4,7 @@ import { ConnectionOptions, Queue } from "bullmq";
 // its optional Valkey transport is never traversed by the client bundler.
 import { getRedisConnection } from "@/lib/queue/connection";
 import {
+  AccountLifecycleJobData,
   BugReportSyncJobData,
   CalendarSyncJobData,
   MailSyncJobData,
@@ -23,6 +24,7 @@ let bugReportSyncQueue: Queue<BugReportSyncJobData> | null = null;
 let reminderQueue: Queue<ReminderJobData> | null = null;
 let nudgeQueue: Queue<NudgeJobData> | null = null;
 let trialQueue: Queue<TrialJobData> | null = null;
+let accountLifecycleQueue: Queue<AccountLifecycleJobData> | null = null;
 
 const defaultJobOptions = {
   attempts: 4,
@@ -101,6 +103,14 @@ export function getTrialQueue(): Queue<TrialJobData> {
   return trialQueue;
 }
 
+export function getAccountLifecycleQueue(): Queue<AccountLifecycleJobData> {
+  accountLifecycleQueue ??= new Queue(QUEUE_NAMES.accountLifecycle, {
+    connection: getBullConnection(),
+    defaultJobOptions,
+  });
+  return accountLifecycleQueue;
+}
+
 export async function closeQueues(): Promise<void> {
   const queues = [
     calendarSyncQueue,
@@ -111,6 +121,7 @@ export async function closeQueues(): Promise<void> {
     reminderQueue,
     nudgeQueue,
     trialQueue,
+    accountLifecycleQueue,
   ].filter((queue): queue is Queue => queue !== null);
   await Promise.all(queues.map((queue) => queue.close()));
   calendarSyncQueue = null;
@@ -121,4 +132,5 @@ export async function closeQueues(): Promise<void> {
   reminderQueue = null;
   nudgeQueue = null;
   trialQueue = null;
+  accountLifecycleQueue = null;
 }
