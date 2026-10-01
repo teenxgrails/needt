@@ -3,12 +3,12 @@
 import { useState } from "react";
 
 import { CornerDownLeft, Sparkles } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
 import { logger } from "@/lib/logger";
+import { notify } from "@/lib/notifications";
 
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
@@ -51,7 +51,13 @@ export default function QuickAddPage() {
         body: JSON.stringify({ text: trimmed }),
       });
       if (!response.ok) throw new Error(`parse failed: ${response.status}`);
-      const data = (await response.json()) as { tasks: ParsedTask[] };
+      const data = (await response.json()) as {
+        tasks: ParsedTask[];
+        notice?: string;
+      };
+      if (data.notice) {
+        notify.info(data.notice, { dedupeKey: "hosted-ai-status" });
+      }
 
       if (!data.tasks.length) {
         notify.error("Nothing to add");
@@ -116,7 +122,9 @@ export default function QuickAddPage() {
             }
           }}
           rows={7}
-          placeholder={"Draft the Q3 report ~90m by Friday\nEmail the design team\nBook dentist"}
+          placeholder={
+            "Draft the Q3 report ~90m by Friday\nEmail the design team\nBook dentist"
+          }
           className="min-h-[180px] resize-y px-3.5 py-3 text-[14px] leading-6"
         />
         <div className="mt-3 flex items-center justify-between gap-3">
@@ -124,7 +132,11 @@ export default function QuickAddPage() {
             <CornerDownLeft className="h-3.5 w-3.5" />
             ⌘/Ctrl + Enter
           </span>
-          <Button type="button" onClick={submit} disabled={busy || !text.trim()}>
+          <Button
+            type="button"
+            onClick={submit}
+            disabled={busy || !text.trim()}
+          >
             {busy ? "Adding…" : "Add tasks"}
           </Button>
         </div>

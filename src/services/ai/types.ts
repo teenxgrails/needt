@@ -10,7 +10,12 @@ import {
 import { CalibrationContext } from "@/services/time-tracking/calibration";
 
 export type AIProviderName =
-  "NONE" | "ANTHROPIC" | "OPENAI" | "GROK" | "GLM" | "CUSTOM";
+  | "NONE"
+  | "ANTHROPIC"
+  | "OPENAI"
+  | "GROK"
+  | "GLM"
+  | "CUSTOM";
 
 export interface SchedulingContext {
   tasks: SchedulableTask[];
@@ -100,4 +105,5 @@ export interface SchedulerAIConfig {
   model?: string | null;
   timeoutMs?: number;
   soulPreset?: "business" | "coach";
+  maxTokens?: number;
 }
