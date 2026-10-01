@@ -57,6 +57,9 @@ describe("Lifetime checkout route", () => {
     process.env.CREEM_API_KEY = "creem_test_key";
     (prisma.user.findUnique as jest.Mock).mockResolvedValue({
       email: "buyer@example.test",
+      // Checkout refuses an unverified account, so the buyer must be verified
+      // for these cap assertions to reach the provider at all.
+      emailVerified: new Date("2026-09-01T00:00:00.000Z"),
       name: "Buyer",
     });
     (getCreemClient as jest.Mock).mockReturnValue({
