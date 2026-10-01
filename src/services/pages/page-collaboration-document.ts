@@ -1,5 +1,9 @@
 import { PageAuthor } from "@prisma/client";
-import { prosemirrorJSONToYDoc, yDocToProsemirrorJSON } from "y-prosemirror";
+import {
+  prosemirrorJSONToYDoc,
+  prosemirrorJSONToYXmlFragment,
+  yDocToProsemirrorJSON,
+} from "y-prosemirror";
 
 import {
   documentFromPageBlocks,
@@ -21,6 +25,19 @@ export function pageBlocksToCollaborationState(blocks: PageBlock[]) {
     COLLABORATION_FIELD
   );
   return Y.encodeStateAsUpdate(yDocument);
+}
+
+export function replacePageCollaborationDocumentBlocks(
+  yDocument: Y.Doc,
+  blocks: PageBlock[]
+) {
+  const document =
+    documentFromPageBlocks(blocks) ?? ({ type: "doc", content: [] } as const);
+  prosemirrorJSONToYXmlFragment(
+    pageEditorSchema,
+    document,
+    yDocument.getXmlFragment(COLLABORATION_FIELD)
+  );
 }
 
 export function collaborationDocumentToPageBlocks(document: Y.Doc) {

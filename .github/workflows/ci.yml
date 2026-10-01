@@ -279,7 +279,30 @@ jobs:
             esac
           done
 
+          # The guard above leaves only baseline PNGs modified or untracked.
+          # Carry them across the switch by hand: when the dispatch ref already
+          # committed baselines of its own, git refuses to switch a tracked file
+          # that differs between the two commits, and the whole job dies after
+          # the suite has already run.
+          parked="$(mktemp -d)"
+          git status --porcelain --untracked-files=all \
+            -- ':(glob)tests/visual/**/*-linux.png' \
+            | cut -c4- > "$parked/list"
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            mkdir -p "$parked/files/$(dirname "$path")"
+            cp "$path" "$parked/files/$path"
+          done < "$parked/list"
+          git checkout -- tests/visual
+          git clean -fdq -- tests/visual
+
           git switch --create "$TARGET_BRANCH" origin/main
+
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            mkdir -p "$(dirname "$path")"
+            cp "$parked/files/$path" "$path"
+          done < "$parked/list"
           git add -- ':(glob)tests/visual/**/*-linux.png'
 
           if git diff --cached --quiet; then
