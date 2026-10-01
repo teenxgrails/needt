@@ -149,7 +149,10 @@ jobs:
           ./scripts/trigger-coolify-deploy.sh "$WEB_HOOK"
       - name: Wait for the exact web SHA and database health
         run: |
-          for attempt in $(seq 1 60); do
+          # A cold image build plus container start has taken well over ten
+          # minutes in production; 45 keeps a real failure visible without
+          # reporting a red release for a deploy that is still working.
+          for attempt in $(seq 1 270); do
             response=$(curl --fail --silent --show-error --max-time 30 "$WEB_HEALTH_URL" || true)
             healthy_sha=$(printf '%s' "$response" | jq -r \
               'if .ok == true and .db == "ok" then (.buildSha // "") else "" end' \
@@ -210,7 +213,8 @@ jobs:
           ./scripts/trigger-coolify-deploy.sh "$COLLABORATION_HOOK"
       - name: Wait for all runtime SHAs
         env:
-          RUNTIME_SHA_TIMEOUT_MS: "600000"
+          # The worker image took 54 minutes to build on 15 September.
+          RUNTIME_SHA_TIMEOUT_MS: "4500000"
           RUNTIME_SHA_POLL_INTERVAL_MS: "10000"
         run: npm run check:runtime-shas
       - name: Record manual rollback instructions
