@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its CRDT state and relational block projection atomically, preventing stale
   REST autosaves from overwriting live edits. A versioned collaboration room
   also prevents pre-fix offline documents from resurrecting removed blocks.
+- Notification settings now preserve saved browser-push and reminder-timing
+  preferences while reporting unavailable delivery, and reminder workers warn
+  once per process with the missing VAPID variable names.
 - Google sign-in now requests only basic identity scopes; Calendar access is
   requested separately when connecting a calendar, while Google Tasks sync is
   explicitly deferred with an actionable connection error.

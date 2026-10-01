@@ -38,6 +38,7 @@ export interface NotificationSettings {
     eventReminders: boolean;
   };
   defaultReminderTiming: number[]; // minutes before event, multiple allowed
+  webPushConfigured: boolean;
   webPushEnabled: boolean;
   webPushSubscription?: PushSubscriptionJSON | null;
 }
