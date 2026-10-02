@@ -26,4 +26,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://127.0.0.1/healthz || exit 1
 
 STOPSIGNAL SIGQUIT
+# nginx needs root to bind port 80, and the port is pinned to Coolify's
+# "Ports exposes" field. Moving to nginxinc/nginx-unprivileged means changing
+# both together; that is its own change.
+# nosemgrep: dockerfile.security.missing-user.missing-user
 CMD ["nginx", "-g", "daemon off;"]
