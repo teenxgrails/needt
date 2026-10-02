@@ -300,7 +300,7 @@ export function BillingSettings() {
               )}
               onClick={() => setInterval(value)}
             >
-              {value === "month" ? "Monthly" : "Yearly · 2 months free"}
+              {value === "month" ? "Monthly" : "Yearly · 29% off"}
             </button>
           ))}
         </div>

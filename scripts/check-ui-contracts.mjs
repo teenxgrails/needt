@@ -251,6 +251,12 @@ for (const aiUsagePath of [
   );
 }
 
+const billingSettingsPath = "src/components/settings/BillingSettings.tsx";
+const billingSettings = await source(billingSettingsPath);
+requireText(billingSettingsPath, "Yearly · 29% off", billingSettings);
+requireText(billingSettingsPath, '"AI agent"', billingSettings);
+forbidText(billingSettingsPath, "2 months free", billingSettings);
+
 const packageJson = JSON.parse(await source("package.json"));
 if (packageJson.name !== "needt") {
   failures.push(`package.json: expected name "needt", got ${packageJson.name}`);

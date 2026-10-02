@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Updated Pro monthly to $7 and Lifetime to $149, hid hosted-AI usage counts
+  from product surfaces, and added private input/output token accounting for
+  hosted provider calls alongside the action count.
 - Lifetime checkout now closes after 300 buyers with concurrency-safe holds,
   idempotent retries, and provider-confirmed expiry. The cap is enforced when a
   checkout is created; a payment Creem has already taken always grants the

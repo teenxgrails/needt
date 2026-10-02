@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { newDate } from "@/lib/date-utils";
 import { getPlan } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
+import { AIProviderUsage } from "./types";
 
 export const HOSTED_AI_CONFIG = {
   monthlyActionCaps: {
@@ -140,4 +141,27 @@ export async function releaseHostedAiAction(userId: string, yearMonth: string) {
       AND "yearMonth" = ${yearMonth}
       AND "actionCount" > 0
   `;
+}
+
+function tokenCount(value: number) {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+}
+
+export async function recordHostedAiTokens(
+  userId: string,
+  usage: AIProviderUsage
+) {
+  const inputTokens = tokenCount(usage.inputTokens);
+  const outputTokens = tokenCount(usage.outputTokens);
+  if (inputTokens === 0 && outputTokens === 0) return;
+
+  const yearMonth = usageMonth();
+  await prisma.aiUsage.upsert({
+    where: { userId_yearMonth: { userId, yearMonth } },
+    create: { userId, yearMonth, inputTokens, outputTokens },
+    update: {
+      inputTokens: { increment: inputTokens },
+      outputTokens: { increment: outputTokens },
+    },
+  });
 }
