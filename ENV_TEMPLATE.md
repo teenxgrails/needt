@@ -78,7 +78,10 @@ NEEDT_AI_BASE_URL="https://api.deepseek.com/v1"
 NEEDT_AI_MONTHLY_ACTION_CAP="300"
 NEEDT_AI_LIFETIME_ACTION_CAP="3000"
 NEEDT_AI_CEILING_MULTIPLIER="2"
+NEEDT_ALERT_EMAIL=""
 ```
+
+`NEEDT_ALERT_EMAIL` receives critical operations alerts — queue backlogs, missed cron windows — through the same Resend sender as product email. Leave it empty and critical alerts stay in Sentry only; warnings never email regardless.
 
 `NEEDT_AI_API_KEY` enables the hosted OpenAI-compatible fallback (DeepSeek by default). `NEEDT_AI_MODEL`, `NEEDT_AI_BASE_URL`, `NEEDT_AI_MONTHLY_ACTION_CAP`, and `NEEDT_AI_LIFETIME_ACTION_CAP` configure the deployment-wide model and paid-plan allowances. `NEEDT_AI_CEILING_MULTIPLIER` defaults to `2` and bounds the slower hosted-AI overflow window. Pro and Lifetime users can instead supply their own provider key in Settings. Keys entered in Settings are encrypted at rest with `AI_ENCRYPTION_KEY` (or `NEXTAUTH_SECRET` when it is omitted).
 
