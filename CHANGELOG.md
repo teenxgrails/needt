@@ -64,6 +64,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `NEEDT_ALERT_EMAIL` instead of stopping at Sentry, which nothing was
   watching. Warnings stay in Sentry, and the web container and the worker
   share one deduplication window so a fault is reported once.
+- Refunds and chargebacks now take the plan back. `refund.created` and
+  `dispute.created` were enabled in Creem and handled nowhere, so a customer
+  who charged back kept Pro or Lifetime silently and with no record. A refund
+  smaller than what was paid leaves access alone; a Lifetime refund returns the
+  seat to the 300 automatically, because the cap counts subscription rows.
 
 - New accounts now start with auto-scheduling defaults, actionable empty states
   across primary routes, and recoverable calendar connection errors; calendar
