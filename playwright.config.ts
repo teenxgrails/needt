@@ -43,6 +43,9 @@ export default defineConfig({
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: testBaseUrl,
 
+    /* E2E route stubs must see requests before the production PWA worker. */
+    serviceWorkers: "block",
+
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
     navigationTimeout: 60_000,

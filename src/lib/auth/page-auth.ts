@@ -14,7 +14,9 @@ export type PageAccessActor = {
 export function pageSummaryAccessRole(
   actor: PageAccessActor | string,
   page: {
-    userId: string;
+    // Null once the owner's account is deleted; such a page grants nothing by
+    // ownership and falls through to its explicit grants and visibility.
+    userId: string | null;
     isPrivate: boolean;
     accessGrants: readonly { role: PageAccessRole }[];
   }

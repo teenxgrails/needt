@@ -58,23 +58,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+      - name: Fetch main baseline
+        run: git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.13"
       - run: python -m pip install semgrep==1.172.0
       - name: Scan for new security findings
-        env:
-          SEMGREP_BASELINE_COMMIT: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
-          zero_sha="0000000000000000000000000000000000000000"
-          if [ -n "$SEMGREP_BASELINE_COMMIT" ] && \
-             [ "$SEMGREP_BASELINE_COMMIT" != "$zero_sha" ] && \
-             git cat-file -e "${SEMGREP_BASELINE_COMMIT}^{commit}" 2>/dev/null; then
-            semgrep --config=auto --error --baseline-commit "$SEMGREP_BASELINE_COMMIT"
-          else
-            unset SEMGREP_BASELINE_COMMIT
-            semgrep --config=auto --error
-          fi
+          BASE_SHA=$(git merge-base origin/main HEAD)
+          semgrep --config=auto --error --baseline-commit "$BASE_SHA"
 
   quality-gates:
     if: github.event_name != 'workflow_dispatch'
@@ -117,6 +110,9 @@ jobs:
       - run: npm run check:branding
       - run: npm run check:ui-contracts
       - run: npm run test:unit -- --runInBand
+        env:
+          LIFETIME_CAP_INTEGRATION: "1"
+          TRIAL_INTEGRATION: "1"
       - run: npm run build:collaboration
       - run: npm run check:collaboration-runtime
 
@@ -193,7 +189,11 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npx tsx prisma/ci-seed.ts
       - run: npx playwright install --with-deps
+      - name: Build E2E application
+        run: npm run build
       - name: Run E2E and collaboration authorization smoke
+        env:
+          NEEDT_E2E_PRODUCTION_SERVER: "1"
         run: npm run test:e2e
       - if: failure()
         uses: actions/upload-artifact@v4
@@ -284,20 +284,30 @@ jobs:
             esac
           done
 
-          # A baseline the dispatch ref already carries but main does not would
-          # block the switch, so park every regenerated PNG, start the branch
-          # from a clean main, and put them back.
-          carry="$RUNNER_TEMP/linux-baselines"
-          rm -rf "$carry"
-          mkdir -p "$carry"
-          find tests/visual -name '*-linux.png' -print0 | while IFS= read -r -d '' png; do
-            mkdir -p "$carry/$(dirname "$png")"
-            cp "$png" "$carry/$png"
-          done
+          # The guard above leaves only baseline PNGs modified or untracked.
+          # Carry them across the switch by hand: when the dispatch ref already
+          # committed baselines of its own, git refuses to switch a tracked file
+          # that differs between the two commits, and the whole job dies after
+          # the suite has already run.
+          parked="$(mktemp -d)"
+          git status --porcelain --untracked-files=all \
+            -- ':(glob)tests/visual/**/*-linux.png' \
+            | cut -c4- > "$parked/list"
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            mkdir -p "$parked/files/$(dirname "$path")"
+            cp "$path" "$parked/files/$path"
+          done < "$parked/list"
           git checkout -- tests/visual
-          git clean -fd tests/visual
+          git clean -fdq -- tests/visual
+
           git switch --create "$TARGET_BRANCH" origin/main
-          cp -R "$carry/tests" .
+
+          while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            mkdir -p "$(dirname "$path")"
+            cp "$parked/files/$path" "$path"
+          done < "$parked/list"
           git add -- ':(glob)tests/visual/**/*-linux.png'
 
           if git diff --cached --quiet; then
@@ -308,8 +318,10 @@ jobs:
           changed_count="$(git diff --cached --name-only | wc -l | tr -d ' ')"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # PNGs only, and the port build's .next types no longer match a tree
-          # taken from main, so the repo hooks have nothing useful to say here.
+          # The tree was just switched to origin/main, but .next/types still
+          # holds stubs generated from the dispatch ref. On a branch that adds
+          # routes those stubs point at files main does not have, so the repo
+          # pre-commit hook's type-check fails on a commit of PNGs alone.
           git commit --no-verify -m "test(visual): refresh Linux baselines"
           git push --set-upstream origin "$TARGET_BRANCH"
           echo "Updated $changed_count CI-authoritative Linux baseline files." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,38 @@
+import { readFileSync } from "fs";
+import { join } from "path";
+
+import {
+  HOSTED_AI_BUSY_MESSAGE,
+  HOSTED_AI_RESTING_MESSAGE,
+} from "../slow-queue";
+
+describe("hosted AI soft-limit UI contract", () => {
+  const source = readFileSync(
+    join(process.cwd(), "src/components/ai/AIChatSurface.tsx"),
+    "utf8"
+  );
+  const normalizedSource = source.replace(/\s+/g, " ");
+
+  it("keeps the no-number busy and resting messages in chat", () => {
+    expect(normalizedSource).toContain(HOSTED_AI_BUSY_MESSAGE);
+    expect(normalizedSource).toContain(HOSTED_AI_RESTING_MESSAGE);
+  });
+
+  it("does not render hosted allowance counts in chat", () => {
+    expect(source).not.toMatch(/actions left|remaining\}\s*\/\s*\{.*limit/i);
+  });
+
+  it("surfaces task-parsing notices in every visible consumer", () => {
+    // SmartPlanningPanel was this notice's third consumer. The design port
+    // removed the panel outright — AI assistance moved to the chat overlay
+    // and the action cursor — so there is no third surface to check.
+    for (const path of [
+      "src/components/settings/AIAssistantSettings.tsx",
+      "src/app/(app)/quick-add/page.tsx",
+    ]) {
+      const consumer = readFileSync(join(process.cwd(), path), "utf8");
+      expect(consumer).toContain("data.notice");
+      expect(consumer).toContain('dedupeKey: "hosted-ai-status"');
+    }
+  });
+});

@@ -86,7 +86,13 @@ model User {
   // users predate this and get no fallback color baked into the database.
   hue                    String?
   initials               String?
+  lastAuthenticatedAt    DateTime?
+  dataExports            DataExportRequest[]
+  deletionRequest        AccountDeletionRequest?
+  reauthentications      AccountReauthentication[]
   subscription           Subscription?
+  lifetimeHold           LifetimeHold?
+  trialGrant             TrialGrant?
   accounts               Account[]
   sessions               Session[]
   calendars              CalendarFeed[]
@@ -250,6 +256,71 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+enum DataExportStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+  DOWNLOADED
+  EXPIRED
+}
+
+model DataExportRequest {
+  id           String           @id @default(cuid())
+  userId       String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       DataExportStatus @default(PENDING)
+  archive      Bytes?
+  tokenHash    String?          @unique
+  expiresAt    DateTime?
+  downloadedAt DateTime?
+  errorCode    String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, expiresAt])
+}
+
+enum AccountDeletionStatus {
+  SCHEDULED
+  CANCELED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model AccountDeletionRequest {
+  id           String                @id @default(cuid())
+  userId       String?               @unique
+  user         User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status       AccountDeletionStatus @default(SCHEDULED)
+  scheduledFor DateTime
+  canceledAt   DateTime?
+  completedAt  DateTime?
+  errorCode    String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  @@index([status, scheduledFor])
+}
+
+model AccountReauthentication {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionHash     String
+  challengeHash   String?   @unique
+  provider        String?
+  authenticatedAt DateTime?
+  expiresAt       DateTime
+  consumedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, sessionHash, expiresAt])
+  @@index([expiresAt])
 }
 
 model CalendarFeed {
@@ -1100,8 +1171,8 @@ model TaskDependency {
   id            String    @id @default(cuid())
   workspaceId   String
   workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  userId        String
-  user          User      @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?
+  user          User?     @relation("TaskDependencyOwner", fields: [userId], references: [id], onDelete: SetNull)
   blockerTaskId String
   blocker       Task      @relation("TaskDependencyBlocker", fields: [blockerTaskId], references: [id], onDelete: Cascade)
   blockedTaskId String
@@ -1243,8 +1314,8 @@ model Booking {
 
 model Board {
   id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId String?
   workspace   Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name        String
@@ -1281,8 +1352,8 @@ model BoardColumn {
 
 model SavedView {
   id           String              @id @default(cuid())
-  userId       String
-  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId  String?
   workspace    Workspace?          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   boardId      String?
@@ -1310,26 +1381,27 @@ model SavedView {
 /// A personal, block-based document. Pages are deliberately independent from
 /// Task so notebooks and databases never become a parallel scheduling system.
 model Page {
-  id                    String                  @id @default(cuid())
-  userId                String
-  user                  User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String                     @id @default(cuid())
+  userId                String?
+  user                  User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId           String?
-  workspace             Workspace?              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  workspace             Workspace?                 @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   parentId              String?
-  parent                Page?                   @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children              Page[]                  @relation("PageTree")
+  parent                Page?                      @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children              Page[]                     @relation("PageTree")
   folderId              String?
-  folder                PageFolder?             @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folder                PageFolder?                @relation(fields: [folderId], references: [id], onDelete: SetNull)
   tags                  PageTag[]
-  title                 String                  @default("Untitled")
+  title                 String                     @default("Untitled")
   icon                  String?
   coverUrl              String?
-  isPrivate             Boolean                 @default(false)
-  isFavorite            Boolean                 @default(false)
-  createdBy             PageAuthor              @default(HUMAN)
+  isPrivate             Boolean                    @default(false)
+  isFavorite            Boolean                    @default(false)
+  createdBy             PageAuthor                 @default(HUMAN)
   trashedAt             DateTime?
-  position              Float                   @default(0)
-  documentFormatVersion Int                     @default(1)
+  position              Float                      @default(0)
+  documentFormatVersion Int                        @default(1)
+  contentRevision       Int                        @default(0)
   blocks                PageBlock[]
   database              PageDatabase?
   record                DatabaseRecord?
@@ -1341,9 +1413,10 @@ model Page {
   forms                 PageForm[]
   accessGrants          PageAccessGrant[]
   collaborationState    PageCollaborationState?
+  collaborationSessions PageCollaborationSession[]
   publication           PagePublication?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
 
   @@index([userId, parentId, position])
   @@index([workspaceId])
@@ -1356,8 +1429,8 @@ model Page {
 /// permissions or document identity.
 model PageFolder {
   id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name        String
@@ -1376,8 +1449,8 @@ model PageFolder {
 /// historical Page record.
 model PageTag {
   id          String     @id @default(cuid())
-  userId      String
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId String?
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name        String
@@ -1395,8 +1468,8 @@ model PageTag {
 /// future filter change from silently reinterpreting an existing Smart Folder.
 model PageSmartFolder {
   id           String     @id @default(cuid())
-  userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspaceId  String?
   workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   name         String
@@ -1433,8 +1506,8 @@ model PageAsset {
   id           String   @id @default(cuid())
   pageId       String
   page         Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   originalName String
   mimeType     String
   size         Int
@@ -1579,8 +1652,8 @@ model PageRevision {
   id        String     @id @default(cuid())
   pageId    String
   page      Page       @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   snapshot  Json
   createdBy PageAuthor @default(HUMAN)
   createdAt DateTime   @default(now())
@@ -1596,8 +1669,8 @@ model PageAccessGrant {
   userId      String
   user        User           @relation("PageAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
   role        PageAccessRole
-  grantedById String
-  grantedBy   User           @relation("PageAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  grantedById String?
+  grantedBy   User?          @relation("PageAccessGrantor", fields: [grantedById], references: [id], onDelete: SetNull)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -1615,6 +1688,18 @@ model PageCollaborationState {
   updatedAt DateTime @updatedAt
 
   @@index([updatedAt])
+}
+
+model PageCollaborationSession {
+  pageId    String
+  sessionId String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([pageId, sessionId])
+  @@index([expiresAt])
 }
 
 model PagePublication {
@@ -1639,8 +1724,8 @@ model Moodboard {
   id                 String                       @id @default(cuid())
   workspaceId        String
   workspace          Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  createdById        String
-  createdBy          User                         @relation("MoodboardCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  createdById        String?
+  createdBy          User?                        @relation("MoodboardCreator", fields: [createdById], references: [id], onDelete: SetNull)
   title              String                       @default("Untitled Moodboard")
   archivedAt         DateTime?
   accessGrants       MoodboardAccessGrant[]
@@ -1660,8 +1745,8 @@ model MoodboardAccessGrant {
   userId      String
   user        User                @relation("MoodboardAccessGrantee", fields: [userId], references: [id], onDelete: Cascade)
   role        MoodboardAccessRole
-  grantedById String
-  grantedBy   User                @relation("MoodboardAccessGrantor", fields: [grantedById], references: [id], onDelete: Restrict)
+  grantedById String?
+  grantedBy   User?               @relation("MoodboardAccessGrantor", fields: [grantedById], references: [id], onDelete: SetNull)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
@@ -1924,13 +2009,15 @@ model AgentMemory {
 }
 
 model AiUsage {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  yearMonth   String
-  actionCount Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yearMonth    String
+  actionCount  Int      @default(0)
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@unique([userId, yearMonth])
   @@index([yearMonth])
@@ -2181,20 +2268,21 @@ model DataSettings {
 }
 
 model SystemSettings {
-  id                  String   @id @default(cuid())
-  googleClientId      String?
-  googleClientSecret  String?
-  outlookClientId     String?
-  outlookClientSecret String?
-  outlookTenantId     String?
-  logLevel            String   @default("none") // none, debug, info, warn, error
-  logRetention        Json? // Retention periods per log level
-  logDestination      String   @default("db") // db, file, both
-  publicSignup        Boolean  @default(true) // Whether public signup is enabled
-  disableHomepage     Boolean  @default(false) // Whether to disable the homepage and redirect to login/calendar
-  resendApiKey        String? // API key for Resend email service
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                                   String   @id @default(cuid())
+  googleClientId                       String?
+  googleClientSecret                   String?
+  outlookClientId                      String?
+  outlookClientSecret                  String?
+  outlookTenantId                      String?
+  logLevel                             String   @default("none") // none, debug, info, warn, error
+  logRetention                         Json? // Retention periods per log level
+  logDestination                       String   @default("db") // db, file, both
+  publicSignup                         Boolean  @default(true) // Whether public signup is enabled
+  requireEmailVerificationBeforeAccess Boolean  @default(false)
+  disableHomepage                      Boolean  @default(false) // Whether to disable the homepage and redirect to login/calendar
+  resendApiKey                         String? // API key for Resend email service
+  createdAt                            DateTime @default(now())
+  updatedAt                            DateTime @updatedAt
 }
 
 model Log {
@@ -2410,6 +2498,13 @@ enum SubscriptionStatus {
   PAYMENT_FAILED
   CANCELED
   PAST_DUE
+}
+
+enum LifetimeCheckoutReservationStatus {
+  CREATING
+  PENDING
+  CONSUMED
+  EXPIRED
 }
 
 enum SchedulingEnergyLevel {
@@ -2708,6 +2803,41 @@ model Subscription {
   @@index([creemProductId])
   @@index([stripeCustomerId])
   @@index([stripePaymentIntentId])
+}
+
+model LifetimeHold {
+  id              String                            @id @default(cuid())
+  userId          String                            @unique
+  user            User                              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestId       String                            @unique
+  creemCheckoutId String?                           @unique
+  checkoutUrl     String?
+  status          LifetimeCheckoutReservationStatus @default(CREATING)
+  lastCheckedAt   DateTime?
+  createdAt       DateTime                          @default(now())
+  updatedAt       DateTime                          @updatedAt
+
+  @@index([status, updatedAt])
+  @@map("LifetimeCheckoutReservation")
+}
+
+model TrialGrant {
+  id             String    @id @default(cuid())
+  emailKey       String    @unique
+  userId         String?   @unique
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  startedAt      DateTime
+  endsAt         DateTime
+  day11ClaimedAt DateTime?
+  day11SentAt    DateTime?
+  day14ClaimedAt DateTime?
+  day14SentAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([endsAt])
+  @@index([day11SentAt, startedAt])
+  @@index([day14SentAt, endsAt])
 }
 
 model CreemWebhookEvent {

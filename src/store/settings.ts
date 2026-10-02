@@ -92,6 +92,7 @@ const defaultSettings: Settings & { accounts: ConnectedAccount[] } = {
       eventReminders: true,
     },
     defaultReminderTiming: [30], // 30 minutes before
+    webPushConfigured: false,
     webPushEnabled: false,
     webPushSubscription: null,
   },
@@ -136,6 +137,7 @@ const defaultSettings: Settings & { accounts: ConnectedAccount[] } = {
     logRetention: undefined,
     logDestination: "db",
     disableHomepage: false,
+    requireEmailVerificationBeforeAccess: false,
   },
   accounts: [],
 };
@@ -226,9 +228,7 @@ export const useSettingsStore = create<SettingsStore>()(
               eventUpdates: newSettings.notifyFor.eventUpdates,
               eventCancellations: newSettings.notifyFor.eventCancellations,
               eventReminders: newSettings.notifyFor.eventReminders,
-              defaultReminderTiming: JSON.stringify(
-                newSettings.defaultReminderTiming
-              ),
+              defaultReminderTiming: newSettings.defaultReminderTiming,
               webPushEnabled: newSettings.webPushEnabled,
               webPushSubscription: newSettings.webPushSubscription,
             }),
@@ -451,19 +451,20 @@ export const useSettingsStore = create<SettingsStore>()(
             refreshInterval: calendarSettings.refreshInterval,
           });
 
-          get().updateNotificationSettings({
-            emailNotifications: notificationSettings.emailNotifications,
-            dailyEmailEnabled: notificationSettings.dailyEmailEnabled,
-            notifyFor: {
-              eventInvites: notificationSettings.eventInvites,
-              eventUpdates: notificationSettings.eventUpdates,
-              eventCancellations: notificationSettings.eventCancellations,
-              eventReminders: notificationSettings.eventReminders,
+          set((state) => ({
+            notifications: {
+              ...state.notifications,
+              emailNotifications: notificationSettings.emailNotifications,
+              dailyEmailEnabled: notificationSettings.dailyEmailEnabled,
+              notifyFor: notificationSettings.notifyFor,
+              defaultReminderTiming: notificationSettings.defaultReminderTiming,
+              webPushConfigured:
+                notificationSettings.webPushConfigured === true,
+              webPushEnabled: notificationSettings.webPushEnabled === true,
+              webPushSubscription:
+                notificationSettings.webPushSubscription ?? null,
             },
-            defaultReminderTiming: JSON.parse(
-              notificationSettings.defaultReminderTiming
-            ),
-          });
+          }));
 
           get().updateIntegrationSettings({
             googleCalendar: {
@@ -509,6 +510,8 @@ export const useSettingsStore = create<SettingsStore>()(
             logRetention: systemSettings.logRetention,
             logDestination: systemSettings.logDestination,
             disableHomepage: systemSettings.disableHomepage,
+            requireEmailVerificationBeforeAccess:
+              systemSettings.requireEmailVerificationBeforeAccess,
           });
         } catch (error) {
           logger.error(
@@ -534,10 +537,19 @@ export const useSettingsStore = create<SettingsStore>()(
             theme: normalizeThemeMode(persisted.user?.theme),
             systemTheme: normalizeSystemThemePair(persisted.user?.systemTheme),
           },
+          notifications: {
+            ...currentState.notifications,
+            ...persisted.notifications,
+            webPushConfigured: false,
+          },
         };
       },
       partialize: (state) => ({
         ...state,
+        notifications: {
+          ...state.notifications,
+          webPushConfigured: false,
+        },
         system: {
           ...state.system,
           googleClientId: undefined,

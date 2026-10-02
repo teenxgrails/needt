@@ -58,7 +58,7 @@ describe("Settings search contract", () => {
 
   it("keeps launch pricing and hides numeric AI usage from the UI", () => {
     expect(NEEDT_PRICING.pro.month.amountCents).toBe(700);
-    expect(NEEDT_PRICING.pro.year.amountCents).toBe(6_000);
+    expect(NEEDT_PRICING.pro.year.amountCents).toBe(5_900);
     expect(NEEDT_PRICING.lifetime.amountCents).toBe(14_900);
     expect(billingSource).not.toContain("summary.usage.aiActions");
     expect(billingSource).not.toContain("Hosted AI actions this month");

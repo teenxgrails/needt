@@ -139,6 +139,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   2026-08-24.
 - Ops: `www.needt.app` now 301-redirects to the apex domain with the query
   string preserved, via a Cloudflare redirect rule on a proxied CNAME.
+- Updated Pro monthly to $7 and Lifetime to $149, hid hosted-AI usage counts
+  from product surfaces, and added private input/output token accounting for
+  hosted provider calls alongside the action count.
+- Lifetime checkout now closes after 300 buyers with concurrency-safe holds,
+  idempotent retries, and provider-confirmed expiry. The cap is enforced when a
+  checkout is created; a payment Creem has already taken always grants the
+  plan, and a completion whose reservation is missing or expired is recorded as
+  `processed_without_lifetime_reservation` instead of being refused.
+- Added non-blocking email confirmation with one 14-day Pro trial per canonical
+  email, OAuth trial activation, day-11/day-14 worker emails, safe Free expiry,
+  and verified-owner gates for booking publication and outbound guest email.
+- Added a complete account archive and a re-authenticated, seven-day account
+  deletion flow that removes personal data while preserving scrubbed,
+  authorless shared-workspace tombstones.
+- Kept hosted AI available in a bounded slower mode after its normal allowance,
+  while preserving uncapped BYOK access and hiding usage counts from chat.
 - Added an admin-only System settings route and account-menu links for system
   credentials and operations, with a contract check preventing orphaned
   admin-only settings components.
@@ -176,6 +192,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refunds and chargebacks now take the plan back. `refund.created` and
+  `dispute.created` were enabled in Creem and handled nowhere, so a customer
+  who charged back kept Pro or Lifetime silently and with no record. A refund
+  smaller than what was paid leaves access alone; a Lifetime refund returns the
+  seat to the 300 automatically, because the cap counts subscription rows.
+
+- New accounts now start with auto-scheduling defaults, actionable empty states
+  across primary routes, and recoverable calendar connection errors; calendar
+  OAuth callbacks are bound to the user who started the connection.
+- Page block writes now defer to an active collaboration session and persist
+  its CRDT state and relational block projection atomically, preventing stale
+  REST autosaves from overwriting live edits. A versioned collaboration room
+  also prevents pre-fix offline documents from resurrecting removed blocks.
+- Notification settings now preserve saved browser-push and reminder-timing
+  preferences while reporting unavailable delivery, and reminder workers warn
+  once per process with the missing VAPID variable names.
 - Google sign-in now requests only basic identity scopes; Calendar access is
   requested separately when connecting a calendar, while Google Tasks sync is
   explicitly deferred with an actionable connection error.

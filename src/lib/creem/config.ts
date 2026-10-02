@@ -10,7 +10,7 @@ export const NEEDT_PRICING = {
       productEnv: "CREEM_PRODUCT_PRO_MONTHLY",
     },
     year: {
-      amountCents: 6_000,
+      amountCents: 5_900,
       productEnv: "CREEM_PRODUCT_PRO_YEARLY",
     },
   },

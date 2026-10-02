@@ -5,8 +5,10 @@ import { hash } from "bcryptjs";
 import { z } from "zod";
 
 import { isPublicSignupEnabled } from "@/lib/auth/public-signup";
+import { sendEmailVerification } from "@/lib/email/email-verification";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
+import { publicRequestUrl } from "@/lib/public-url";
 import {
   accountRule,
   enforceRateLimits,
@@ -86,6 +88,14 @@ export async function POST(request: NextRequest) {
             timeZone: "UTC",
           },
         },
+        autoScheduleSettings: {
+          create: {
+            workDays: "[1,2,3,4,5]",
+            workHourStart: 9,
+            workHourEnd: 17,
+            bufferMinutes: 15,
+          },
+        },
       },
       select: { id: true },
     });
@@ -95,7 +105,25 @@ export async function POST(request: NextRequest) {
       { userId: user.id },
       LOG_SOURCE
     );
-    return NextResponse.json({ success: true }, { status: 201 });
+    try {
+      await sendEmailVerification({
+        userId: user.id,
+        baseUrl: publicRequestUrl(request).origin,
+      });
+    } catch (error) {
+      logger.error(
+        "Initial email verification delivery failed",
+        {
+          userId: user.id,
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+        LOG_SOURCE
+      );
+    }
+    return NextResponse.json(
+      { success: true, emailVerificationPending: true },
+      { status: 201 }
+    );
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

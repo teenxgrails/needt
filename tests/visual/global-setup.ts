@@ -1,6 +1,7 @@
 import { WorkspaceKind, WorkspaceRole } from "@prisma/client";
 import { hash } from "bcryptjs";
 
+import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
 import { prepareE2eEnvironment } from "../e2e/environment";
@@ -152,16 +153,22 @@ export async function resetVisualSettings(userId: string) {
 export default async function globalSetup() {
   await prepareE2eEnvironment();
   const passwordHash = await hash(VISUAL_TEST_PASSWORD, 8);
+  // The app shell gates unverified accounts behind EmailVerificationGate,
+  // which covers the surfaces these specs screenshot and swallows their
+  // clicks. The gate is not what the visual suite is testing.
+  const emailVerified = newDate();
   const user = await prisma.user.upsert({
     where: { email: VISUAL_TEST_EMAIL },
     update: {
       name: "Visual QA",
       role: "admin",
+      emailVerified,
     },
     create: {
       email: VISUAL_TEST_EMAIL,
       name: "Visual QA",
       role: "admin",
+      emailVerified,
     },
   });
   const workspace = await prisma.workspace.upsert({
