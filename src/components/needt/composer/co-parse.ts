@@ -411,6 +411,8 @@ export function coParse(
     marks,
     (match, span) => {
       const words = match[1].toLowerCase();
+      // Weekday stems are a module constant.
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
       const weekdayStem = new RegExp(`^every (${DOW_STEMS})day$`).exec(words);
       const cadence: CoCadence = weekdayStem
         ? "weekday"
@@ -498,6 +500,8 @@ export function coParse(
     ? scan(
         body,
         taken,
+        // Project names are the person's own words, run through escape() first, so the pattern holds literals and no quantifier they could introduce.
+        // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
         new RegExp(`\\b(${projectWords.map(escape).join("|")})\\b`),
         "project",
         marks,
@@ -523,6 +527,8 @@ export function coParse(
     const labelWords = [...vocabulary.labels].sort(
       (a, b) => b.length - a.length
     );
+    // Label names, escaped the same way.
+    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
     const source = new RegExp(`\\b(${labelWords.map(escape).join("|")})\\b`);
     const makeLabel = (
       match: RegExpExecArray,
