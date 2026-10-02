@@ -205,6 +205,11 @@ function scan<T extends CoFacet>(
   marks: CoMark[],
   make: (match: RegExpExecArray, span: CoSpan) => T | null
 ): T | null {
+  // Every pattern here is assembled from module constants — weekday and
+  // month stems, the priority vocabulary — never from anything a person
+  // typed, and none nests a quantifier. The rule sees a non-literal
+  // argument; there is no input to inject and nothing to back off on.
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   const re = new RegExp(source.source, "gi");
   let hit = re.exec(body);
   while (hit) {
@@ -245,10 +250,7 @@ function weekdayFromStem(stem: string): number {
  * neighbouring year, which is what makes "31 Dec" read correctly on 1 January.
  * Two copies of that rule would disagree every New Year.
  */
-function readDay(
-  words: string,
-  now: Date
-): { on: Date; label: string } | null {
+function readDay(words: string, now: Date): { on: Date; label: string } | null {
   const word = words.toLowerCase().trim();
 
   const dayMonth = /^(\d{1,2})\s+([a-z]{3,})$/.exec(word);
@@ -351,21 +353,23 @@ const PRIORITY_LABELS: Readonly<Record<CoPriority, string>> = Object.freeze({
   whenever: "Whenever",
 });
 
+// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
 const RE_REPEAT = new RegExp(
   `\\b(every day|every week|every month|every (?:${DOW_STEMS})day|daily|weekly|monthly)\\b`
 );
 const RE_DAY_WORDS = `today|tonight|tomorrow|tom|this weekend|next week|in \\d+ days?|\\d{1,2} (?:${MONTH_STEMS})[a-z]*|(?:${MONTH_STEMS})[a-z]* \\d{1,2}|(?:${DOW_STEMS})(?:day)?`;
+// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
 const RE_DEADLINE = new RegExp(`\\b(?:by|due) (${RE_DAY_WORDS})\\b`);
 const RE_DURATION = new RegExp(
   "\\bfor (\\d+)\\s?(m|min|mins|minute|minutes|h|hr|hrs|hour|hours)\\b"
 );
+// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
 const RE_DATE = new RegExp(`\\b(${RE_DAY_WORDS})\\b`);
 const RE_TIME = new RegExp(
   "\\b(?:at )?(\\d{1,2}(?::\\d{2})?\\s?(?:am|pm)|\\d{1,2}:\\d{2}|noon|midnight)\\b"
 );
-const RE_PRIORITY = new RegExp(
-  `\\b(${Object.keys(PRIORITIES).join("|")})\\b`
-);
+// nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
+const RE_PRIORITY = new RegExp(`\\b(${Object.keys(PRIORITIES).join("|")})\\b`);
 
 const RE_EVENT =
   /\b(meeting|call with|lunch|dinner|sync|standup|stand-up|1:1|interview)\b/i;
@@ -399,24 +403,31 @@ export function coParse(
   const taken: CoSpan[] = [];
   const marks: CoMark[] = [];
 
-  const repeat = scan(body, taken, RE_REPEAT, "repeat", marks, (match, span) => {
-    const words = match[1].toLowerCase();
-    const weekdayStem = new RegExp(`^every (${DOW_STEMS})day$`).exec(words);
-    const cadence: CoCadence = weekdayStem
-      ? "weekday"
-      : /week/.test(words)
-        ? "week"
-        : /month/.test(words)
-          ? "month"
-          : "day";
-    return {
-      text: match[0],
-      label: words,
-      span,
-      cadence,
-      weekday: weekdayStem ? weekdayFromStem(weekdayStem[1]) : null,
-    };
-  });
+  const repeat = scan(
+    body,
+    taken,
+    RE_REPEAT,
+    "repeat",
+    marks,
+    (match, span) => {
+      const words = match[1].toLowerCase();
+      const weekdayStem = new RegExp(`^every (${DOW_STEMS})day$`).exec(words);
+      const cadence: CoCadence = weekdayStem
+        ? "weekday"
+        : /week/.test(words)
+          ? "week"
+          : /month/.test(words)
+            ? "month"
+            : "day";
+      return {
+        text: match[0],
+        label: words,
+        span,
+        cadence,
+        weekday: weekdayStem ? weekdayFromStem(weekdayStem[1]) : null,
+      };
+    }
+  );
 
   const deadline = scan(
     body,

@@ -20,12 +20,7 @@ import {
   Prisma,
 } from "@prisma/client";
 
-import {
-  pageSummaryAccessRole,
-  pageVisibilityWhere,
-  resolvePageAccess,
-} from "@/lib/auth/page-auth";
-import { type WorkspaceAccess } from "@/lib/auth/workspace-auth";
+import { pageSummaryAccessRole } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
 
 export type { PageActor } from "@/services/pages/page-model";
