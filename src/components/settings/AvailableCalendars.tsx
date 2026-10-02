@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { logger } from "@/lib/logger";
 
-import { extractCalendarFetchError } from "./available-calendars-error";
+import { extractCalendarFetchFailure } from "./available-calendars-error";
 
 const LOG_SOURCE = "AvailableCalendars";
 
@@ -28,6 +28,7 @@ export function AvailableCalendars({ accountId, provider }: Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [calendars, setCalendars] = useState<AvailableCalendar[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [addingCalendars, setAddingCalendars] = useState<Set<string>>(
     new Set()
   );
@@ -36,6 +37,7 @@ export function AvailableCalendars({ accountId, provider }: Props) {
     try {
       setIsLoading(true);
       setErrorMessage(null);
+      setErrorCode(null);
       let endpoint;
 
       switch (provider) {
@@ -56,7 +58,9 @@ export function AvailableCalendars({ accountId, provider }: Props) {
       if (!response.ok) {
         // Surface the server's classified error (e.g. the CalDAV
         // connection-vs-auth message) instead of a generic empty state.
-        setErrorMessage(await extractCalendarFetchError(response));
+        const failure = await extractCalendarFetchFailure(response);
+        setErrorMessage(failure.message);
+        setErrorCode(failure.code ?? null);
         setCalendars([]);
         return;
       }
@@ -69,6 +73,7 @@ export function AvailableCalendars({ accountId, provider }: Props) {
         LOG_SOURCE
       );
       setErrorMessage("Failed to load available calendars");
+      setErrorCode(null);
     } finally {
       setIsLoading(false);
     }
@@ -84,6 +89,7 @@ export function AvailableCalendars({ accountId, provider }: Props) {
       try {
         setAddingCalendars((prev) => new Set(prev).add(calendar.id));
         setErrorMessage(null);
+        setErrorCode(null);
         let endpoint;
 
         switch (provider) {
@@ -116,9 +122,12 @@ export function AvailableCalendars({ accountId, provider }: Props) {
         if (!response.ok) {
           // Surface the server's classified error (e.g. the CalDAV
           // connection-vs-auth message) so a failed add is not silent.
-          setErrorMessage(
-            await extractCalendarFetchError(response, "Failed to add calendar")
+          const failure = await extractCalendarFetchFailure(
+            response,
+            "Failed to add calendar"
           );
+          setErrorMessage(failure.message);
+          setErrorCode(failure.code ?? null);
           return;
         }
 
@@ -144,7 +153,8 @@ export function AvailableCalendars({ accountId, provider }: Props) {
           },
           LOG_SOURCE
         );
-        setErrorMessage("Failed to add calendar");
+      setErrorMessage("Failed to add calendar");
+      setErrorCode(null);
       } finally {
         setAddingCalendars((prev) => {
           const next = new Set(prev);
@@ -176,6 +186,9 @@ export function AvailableCalendars({ accountId, provider }: Props) {
   }
 
   if (errorMessage) {
+    const reconnectRequired =
+      errorCode === "CALENDAR_REAUTHORIZATION_REQUIRED" &&
+      provider !== "CALDAV";
     return (
       <div className="space-y-3">
         <div className="rounded-[var(--control-radius)] border border-[var(--border-control)] bg-[var(--surface-raised)] p-3 text-[13px] text-[var(--text-secondary)]">
@@ -185,10 +198,21 @@ export function AvailableCalendars({ accountId, provider }: Props) {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadAvailableCalendars}
+            onClick={() => {
+              if (reconnectRequired) {
+                window.location.href =
+                  provider === "GOOGLE"
+                    ? "/api/calendar/google/auth"
+                    : "/api/calendar/outlook/auth";
+                return;
+              }
+              void loadAvailableCalendars();
+            }}
             disabled={isLoading}
           >
-            Retry
+            {reconnectRequired
+              ? `Reconnect ${provider === "GOOGLE" ? "Google" : "Outlook"}`
+              : "Retry"}
           </Button>
         </div>
       </div>

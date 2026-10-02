@@ -60,7 +60,11 @@ export async function getBookingSlots(
   options: { from?: Date; days?: number } = {}
 ) {
   const page = await prisma.bookingPage.findFirst({
-    where: { slug, isActive: true },
+    where: {
+      slug,
+      isActive: true,
+      user: { emailVerified: { not: null } },
+    },
     select: {
       id: true,
       userId: true,
@@ -184,7 +188,11 @@ export async function createBooking(input: {
   timeZone: string;
 }) {
   const page = await prisma.bookingPage.findFirst({
-    where: { slug: input.slug, isActive: true },
+    where: {
+      slug: input.slug,
+      isActive: true,
+      user: { emailVerified: { not: null } },
+    },
   });
   if (!page) return null;
   const operation = `CREATE_BOOKING:${page.id}`;

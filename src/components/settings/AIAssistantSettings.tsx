@@ -223,7 +223,13 @@ export function AIAssistantSettings() {
         body: JSON.stringify({ text: brainDump }),
       });
       if (!response.ok) throw new Error("Failed to parse tasks");
-      const data = (await response.json()) as { tasks: ParsedTaskPreview[] };
+      const data = (await response.json()) as {
+        tasks: ParsedTaskPreview[];
+        notice?: string;
+      };
+      if (data.notice) {
+        notify.info(data.notice, { dedupeKey: "hosted-ai-status" });
+      }
       setParsedTasks(data.tasks);
     } catch (error) {
       notify.error("Could not parse the brain dump", {
@@ -490,18 +496,6 @@ export function AIAssistantSettings() {
                   </p>
                 )}
               </div>
-            </SettingsCard>
-          )}
-          {settings.usage && settings.provider === "NONE" && (
-            <SettingsCard className="p-3">
-              <div className="text-sm font-medium">
-                {settings.usage.remaining}/{settings.usage.limit} actions left
-                this month
-              </div>
-              <p className="mt-1 text-xs text-[var(--text-secondary)]">
-                Hosted actions reset monthly. Bring your own provider key below
-                for unlimited usage.
-              </p>
             </SettingsCard>
           )}
           {settings.provider !== "NONE" && (

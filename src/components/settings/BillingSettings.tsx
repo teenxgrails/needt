@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { Check, Loader2 } from "lucide-react";
-import { notify } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +12,8 @@ import {
   NEEDT_PRICING,
   formatBillingPrice,
 } from "@/lib/creem/config";
+import { failedPaymentMessage } from "@/lib/creem/failed-payment";
+import { notify } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 import { SettingsSection } from "./SettingsSection";
@@ -37,11 +38,14 @@ interface UsageStatus {
 interface BillingSummary {
   configured: boolean;
   plan: Plan;
+  isTrial: boolean;
+  trialEndsAt: string | null;
   status: BillingStatus;
   interval: "month" | "year" | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   canManageBilling: boolean;
+  lifetimeAvailable: boolean;
   usage: {
     calendars: UsageStatus;
     autoScheduledTasks: UsageStatus;
@@ -78,6 +82,12 @@ function usageLabel(usage: { used: number; limit: number | null }) {
 }
 
 function periodLabel(summary: BillingSummary) {
+  if (summary.isTrial && summary.trialEndsAt) {
+    const date = new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+    }).format(new Date(summary.trialEndsAt));
+    return `Pro trial ends ${date}`;
+  }
   if (summary.plan === "LIFETIME") return "One-time purchase";
   if (summary.plan === "FREE") return "No payment method required";
   if (!summary.currentPeriodEnd) {
@@ -86,6 +96,9 @@ function periodLabel(summary: BillingSummary) {
   const date = new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(new Date(summary.currentPeriodEnd));
+  if (summary.status === "PAST_DUE" || summary.status === "PAYMENT_FAILED") {
+    return `Paid access through ${date}`;
+  }
   return summary.cancelAtPeriodEnd
     ? `Access continues until ${date}`
     : `Renews ${date}`;
@@ -216,7 +229,7 @@ export function BillingSettings() {
                   {PLAN_NAMES[summary.plan]}
                 </span>
                 <span className="rounded-full bg-[var(--surface-control)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)]">
-                  {STATUS_LABELS[summary.status]}
+                  {summary.isTrial ? "Trial" : STATUS_LABELS[summary.status]}
                 </span>
                 {summary.cancelAtPeriodEnd && (
                   <span className="rounded-full bg-[var(--surface-control)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)]">
@@ -251,6 +264,18 @@ export function BillingSettings() {
             plan and planner data are unaffected.
           </div>
         )}
+        {(summary.status === "PAST_DUE" ||
+          summary.status === "PAYMENT_FAILED") && (
+          <div
+            className="mt-3 rounded-[var(--control-radius)] border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-3 text-[13px] text-[var(--text-secondary)]"
+            role="alert"
+          >
+            {failedPaymentMessage({
+              effectivePlan: summary.plan,
+              currentPeriodEnd: summary.currentPeriodEnd,
+            })}
+          </div>
+        )}
       </SettingsSection>
 
       <SettingsSection
@@ -275,7 +300,7 @@ export function BillingSettings() {
               )}
               onClick={() => setInterval(value)}
             >
-              {value === "month" ? "Monthly" : "Yearly · 2 months free"}
+              {value === "month" ? "Monthly" : "Yearly · 29% off"}
             </button>
           ))}
         </div>
@@ -292,13 +317,17 @@ export function BillingSettings() {
             features={[
               "Unlimited calendars, boards, and auto-scheduling",
               "Up to 3 mailboxes",
-              "AI agent and hosted AI actions",
+              "AI agent",
               "Focus scores, streaks, and weekly analytics",
             ]}
-            actionLabel={summary.plan === "PRO" ? "Current plan" : "Choose Pro"}
+            actionLabel={
+              summary.plan === "PRO" && !summary.isTrial
+                ? "Current plan"
+                : "Choose Pro"
+            }
             disabled={
               !summary.configured ||
-              summary.plan === "PRO" ||
+              (summary.plan === "PRO" && !summary.isTrial) ||
               summary.plan === "LIFETIME" ||
               pendingAction !== null
             }
@@ -316,11 +345,16 @@ export function BillingSettings() {
               "Lifetime plan badge",
             ]}
             actionLabel={
-              summary.plan === "LIFETIME" ? "Current plan" : "Get Lifetime"
+              summary.plan === "LIFETIME"
+                ? "Current plan"
+                : summary.lifetimeAvailable
+                  ? "Get Lifetime"
+                  : "Lifetime is closed"
             }
             disabled={
               !summary.configured ||
               summary.plan === "LIFETIME" ||
+              !summary.lifetimeAvailable ||
               pendingAction !== null
             }
             loading={pendingAction === "lifetime"}
@@ -349,14 +383,6 @@ export function BillingSettings() {
           <UsageRow
             label="Mailboxes"
             value={usageLabel(summary.usage.mailboxes)}
-          />
-          <UsageRow
-            label="Hosted AI actions this month"
-            value={
-              summary.usage.aiActions.limit === 0
-                ? "Available on Pro and Lifetime"
-                : `${summary.usage.aiActions.used} of ${summary.usage.aiActions.limit}`
-            }
           />
         </div>
         {!planIsPaid && (

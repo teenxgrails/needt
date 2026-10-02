@@ -4,6 +4,7 @@ import { getHostedAiUsage } from "@/services/ai/usage";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { isCreemConfigured } from "@/lib/creem/config";
+import { isLifetimeCheckoutAvailable } from "@/lib/creem/lifetime-cap";
 import {
   canAddCalendar,
   canAddMailbox,
@@ -13,6 +14,7 @@ import {
   canViewFocusStats,
   getPlan,
 } from "@/lib/entitlements";
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -25,6 +27,7 @@ export async function GET(request: NextRequest) {
 
     const [
       subscription,
+      trialGrant,
       plan,
       calendars,
       autoScheduledTasks,
@@ -33,6 +36,7 @@ export async function GET(request: NextRequest) {
       aiAgent,
       focusStats,
       aiUsage,
+      lifetimeAvailable,
     ] = await Promise.all([
       prisma.subscription.findUnique({
         where: { userId: auth.userId },
@@ -45,6 +49,10 @@ export async function GET(request: NextRequest) {
           creemCustomerId: true,
         },
       }),
+      prisma.trialGrant.findUnique({
+        where: { userId: auth.userId },
+        select: { startedAt: true, endsAt: true },
+      }),
       getPlan(auth.userId),
       canAddCalendar(auth.userId),
       canAutoScheduleMore(auth.userId),
@@ -53,16 +61,24 @@ export async function GET(request: NextRequest) {
       canUseAiAgent(auth.userId),
       canViewFocusStats(auth.userId),
       getHostedAiUsage(auth.userId),
+      isLifetimeCheckoutAvailable(auth.userId),
     ]);
 
     return NextResponse.json({
       configured: isCreemConfigured(),
       plan,
+      isTrial:
+        plan === "PRO" &&
+        Boolean(trialGrant?.endsAt && trialGrant.endsAt > newDate()) &&
+        subscription?.plan !== "PRO" &&
+        subscription?.plan !== "LIFETIME",
+      trialEndsAt: trialGrant?.endsAt ?? null,
       status: subscription?.status ?? "ACTIVE",
       interval: subscription?.interval ?? null,
       currentPeriodEnd: subscription?.currentPeriodEnd ?? null,
       cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
       canManageBilling: Boolean(subscription?.creemCustomerId),
+      lifetimeAvailable,
       usage: {
         calendars,
         autoScheduledTasks,

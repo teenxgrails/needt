@@ -2,6 +2,8 @@
 
 import { type CSSProperties, useEffect, useState } from "react";
 
+import Link from "next/link";
+
 import { Check, Flame, Pause, Play, Square } from "lucide-react";
 
 import { HabitPanel } from "@/components/focus/HabitPanel";
@@ -273,9 +275,21 @@ export function FocusTimerPanel({ task }: FocusTimerPanelProps) {
               <h1 className="mt-2 line-clamp-1 text-xl font-semibold sm:text-2xl">
                 {boundTask?.title || intention || "Make this block count"}
               </h1>
-              <p className="mt-1 line-clamp-1 text-xs text-[var(--text-muted)]">
-                {nextTask ? `Next: ${nextTask.title}` : "Your queue is clear"}
-              </p>
+              {nextTask ? (
+                <p className="mt-1 line-clamp-1 text-xs text-[var(--text-muted)]">
+                  Next: {nextTask.title}
+                </p>
+              ) : (
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-[var(--text-muted)]">
+                  <span>Your queue is clear.</span>
+                  <Link
+                    href="/tasks"
+                    className="font-medium text-[var(--text-primary)] underline-offset-4 hover:underline"
+                  >
+                    Create a task
+                  </Link>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 py-1.5 text-xs text-[var(--text-secondary)]">
               <span>{modeLabel}</span>

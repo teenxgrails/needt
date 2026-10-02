@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { APP_NAME } from "@/lib/app-config";
 import { isPublicSignupEnabledClient } from "@/lib/auth/client-public-signup";
 import { safeCallbackPath } from "@/lib/auth/callback-url";
+import { oauthErrorMessage } from "@/lib/auth/oauth-error";
 import { logger } from "@/lib/logger";
 
 const LOG_SOURCE = "SignInForm";
@@ -57,8 +58,10 @@ export function SignInForm({
   const [oauthLoading, setOauthLoading] = useState<OAuthProviderId | null>(
     null
   );
+  const [verificationSending, setVerificationSending] = useState(false);
   const router = useRouter();
   const safeCallbackUrl = safeCallbackPath(callbackUrl);
+  const authErrorMessage = oauthErrorMessage(error);
 
   useEffect(() => {
     void isPublicSignupEnabledClient().then(setPublicSignupEnabled);
@@ -198,6 +201,37 @@ export function SignInForm({
     }
   };
 
+  const resendVerification = async () => {
+    if (!email.trim()) {
+      notify.error("Enter your email first");
+      return;
+    }
+    setVerificationSending(true);
+    try {
+      const response = await fetch("/api/auth/email-verification/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      if (!response.ok) throw new Error("Could not send verification email");
+      notify.success("If the account needs confirmation, an email is on its way.");
+    } catch (verificationError) {
+      logger.error(
+        "Email verification resend failed",
+        {
+          error:
+            verificationError instanceof Error
+              ? verificationError.message
+              : "Unknown error",
+        },
+        LOG_SOURCE
+      );
+      notify.error("Could not send verification email");
+    } finally {
+      setVerificationSending(false);
+    }
+  };
+
   return (
     <Card className="mx-auto w-full max-w-md">
       <CardHeader>
@@ -226,9 +260,9 @@ export function SignInForm({
 
           <TabsContent value="signin">
             <form onSubmit={handleEmailSignIn} className="space-y-4">
-              {error && (
+              {authErrorMessage && (
                 <p className="text-sm text-destructive" role="alert">
-                  We couldn&apos;t sign you in. Please try again.
+                  {authErrorMessage}
                 </p>
               )}
               <div className="space-y-2">
@@ -254,7 +288,16 @@ export function SignInForm({
                   onChange={(event) => setPassword(event.target.value)}
                   required
                 />
-                <div className="text-right">
+                <div className="flex justify-between gap-3">
+                  <Button
+                    variant="link"
+                    className="h-auto p-0 text-sm text-muted-foreground"
+                    onClick={() => void resendVerification()}
+                    disabled={verificationSending}
+                    type="button"
+                  >
+                    {verificationSending ? "Sending…" : "Resend confirmation"}
+                  </Button>
                   <Button
                     variant="link"
                     className="h-auto p-0 text-sm text-muted-foreground"

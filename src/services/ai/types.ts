@@ -10,7 +10,12 @@ import {
 import { CalibrationContext } from "@/services/time-tracking/calibration";
 
 export type AIProviderName =
-  "NONE" | "ANTHROPIC" | "OPENAI" | "GROK" | "GLM" | "CUSTOM";
+  | "NONE"
+  | "ANTHROPIC"
+  | "OPENAI"
+  | "GROK"
+  | "GLM"
+  | "CUSTOM";
 
 export interface SchedulingContext {
   tasks: SchedulableTask[];
@@ -78,6 +83,11 @@ export interface AIChatToolCall {
   arguments: Record<string, unknown>;
 }
 
+export interface AIProviderUsage {
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface AIChatRequest {
   systemPrompt: string;
   messages: AIChatMessage[];
@@ -100,4 +110,6 @@ export interface SchedulerAIConfig {
   model?: string | null;
   timeoutMs?: number;
   soulPreset?: "business" | "coach";
+  onUsage?: (usage: AIProviderUsage) => void | Promise<void>;
+  maxTokens?: number;
 }

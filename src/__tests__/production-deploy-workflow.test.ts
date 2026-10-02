@@ -1,8 +1,53 @@
 import { readFileSync } from "node:fs";
 
 const workflow = readFileSync(".github/workflows/docker-publish.yml", "utf8");
+const deployScript = readFileSync("scripts/trigger-coolify-deploy.sh", "utf8");
 
 describe("production deployment workflow", () => {
+  it("accepts privileged workflow runs only from a successful main push in this repository", () => {
+    expect(workflow).toContain("github.event.workflow_run.event == 'push'");
+    expect(workflow).toContain(
+      "github.event.workflow_run.head_repository.full_name == github.repository"
+    );
+    expect(workflow).toContain(
+      "github.event.workflow_run.head_branch == github.event.repository.default_branch"
+    );
+    expect(workflow).toContain(
+      "github.event.workflow_run.conclusion == 'success'"
+    );
+    expect(workflow).toContain(
+      "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
+    );
+    // Every checkout pins the release commit, deploy-web's included.
+    expect(workflow.match(/ref: \$\{\{ env\.RELEASE_SHA \}\}/g)).toHaveLength(
+      4
+    );
+    expect(workflow).not.toContain(
+      "ref: ${{ github.event.repository.default_branch }}"
+    );
+    expect(workflow.match(/Verify checked-out release commit/g)).toHaveLength(
+      3
+    );
+    expect(workflow).toContain("context: git");
+    expect(workflow).toContain("type=raw,value=main");
+    expect(workflow).not.toContain("enable={{is_default_branch}}");
+    expect(
+      workflow.match(
+        /DEPLOY_SHA: \$\{\{ github\.event\.workflow_run\.head_sha \|\| github\.sha \}\}/g
+      )
+    ).toHaveLength(2);
+  });
+
+  it("pins every third-party action to an immutable commit", () => {
+    const actionRefs = [
+      ...workflow.matchAll(/^\s*-?\s*uses:\s*([^\s]+)$/gm),
+    ].map(([, ref]) => ref);
+    expect(actionRefs.length).toBeGreaterThan(0);
+    for (const ref of actionRefs) {
+      expect(ref).toMatch(/^[^@]+@[0-9a-f]{40}$/);
+    }
+  });
+
   it("fails closed when required deployment configuration is missing", () => {
     expect(workflow).toContain(
       "${WEB_HOOK:?COOLIFY_WEB_WEBHOOK_URL is required}"
@@ -24,10 +69,18 @@ describe("production deployment workflow", () => {
   });
 
   it("uses authenticated Coolify deploy webhooks and manual native rollback", () => {
+    // Every redeploy goes through the one script, which posts, falls back to
+    // GET only on 405, and fails the job on anything else.
     expect(
-      workflow.match(/Authorization: Bearer \$COOLIFY_TOKEN/g)
+      workflow.match(/\.\/scripts\/trigger-coolify-deploy\.sh/g)
     ).toHaveLength(3);
-    expect(workflow.match(/--request GET/g)).toHaveLength(3);
+    expect(workflow).not.toContain("--request GET");
+    // Both deploy jobs run the script, so both must check the repo out.
+    expect(workflow.match(/actions\/checkout@/g)).toHaveLength(4);
+    expect(deployScript).toContain("request POST");
+    expect(deployScript).toContain("Authorization: Bearer $COOLIFY_TOKEN");
+    expect(deployScript).toContain('"405"');
+    expect(deployScript).toContain("exit 1");
     expect(workflow).not.toContain("COOLIFY_ROLLBACK_WEBHOOK_URL");
     expect(workflow).not.toContain("?sha=$DEPLOY_SHA");
     expect(workflow).toContain("Record current healthy web SHA");

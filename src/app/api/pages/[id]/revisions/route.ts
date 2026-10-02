@@ -4,6 +4,10 @@ import {
   listPageRevisions,
   restorePageRevision,
 } from "@/services/pages/page-service";
+import {
+  PageCollaborationActiveError,
+  PageRevisionConflictError,
+} from "@/services/pages/page-write-path";
 import { PageAccessRole } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
@@ -66,6 +70,15 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
     return NextResponse.json({ page });
   } catch (error) {
+    if (
+      error instanceof PageCollaborationActiveError ||
+      error instanceof PageRevisionConflictError
+    ) {
+      return NextResponse.json(
+        { error: error.code, repairable: true },
+        { status: 409 }
+      );
+    }
     return routeErrorResponse(
       error,
       "Failed to restore page revision",

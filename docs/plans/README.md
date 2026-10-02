@@ -3,41 +3,50 @@
 Plans are sequential releases with their own migrations and gates. **Do not
 start a later active plan before the earlier one is deployed and smoke-tested.**
 
-| # | Plan | Status | Model | Ships |
-|---|------|--------|-------|-------|
-| 01 | [Scheduling and task lifecycle](01-scheduling.md) | Complete | Sol High | Hard deadlines, archive, recurrence rework |
-| 02 | [Workspaces, projects, security](02-workspaces.md) | Complete | Sol High | Tenancy boundary — riskiest, feature-flagged |
-| 03 | [Animation, notifications, Space](03-motion-ui.md) | Complete | Terra Medium | Visual only, no schema |
-| 04 | [Pages](04-pages.md) | Complete | Terra High | Extends the existing editor |
-| 05 | [Moodboard](05-moodboard.md) | Complete | Terra High | Excalidraw canvas |
-| 06 | [Product gap audit](06-product-gap-audit.md) | Backlog | Mixed | Audited opportunities, not implementation authorization |
-| 07 | [Sol High track](07-sol-high.md) | Complete except deferred S11 | Sol High | Security, data, architecture, scheduling, adversarial review |
-| 08 | [Terra High track](08-terra-high.md) | Complete except deferred T8 | Terra High | UI, tests, CI, responsive quality, copy and docs |
-| 09 | [Public launch track](09-launch.md) | **Active — governing plan** | Mixed | Release unblock, production readiness, billing, launch, post-launch |
-| 10 | [Design identity track](10-design.md) | Active — parallel | Terra High | Identity spike, motion language, signature reflow, foundations, navigation, rollout |
-| 11 | [Task shape and starting friction](11-task-model.md) | Backlog | Mixed | Progress counter, part-cut, mini-entry; streaks parked |
+| #   | Plan                                                            | Status                                    | Model        | Ships                                                                               |
+| --- | --------------------------------------------------------------- | ----------------------------------------- | ------------ | ----------------------------------------------------------------------------------- |
+| 01  | [Scheduling and task lifecycle](01-scheduling.md)               | Complete                                  | Sol High     | Hard deadlines, archive, recurrence rework                                          |
+| 02  | [Workspaces, projects, security](02-workspaces.md)              | Complete                                  | Sol High     | Tenancy boundary — riskiest, feature-flagged                                        |
+| 03  | [Animation, notifications, Space](03-motion-ui.md)              | Complete                                  | Terra Medium | Visual only, no schema                                                              |
+| 04  | [Pages](04-pages.md)                                            | Complete                                  | Terra High   | Extends the existing editor                                                         |
+| 05  | [Moodboard](05-moodboard.md)                                    | Complete                                  | Terra High   | Excalidraw canvas                                                                   |
+| 06  | [Product gap audit](06-product-gap-audit.md)                    | Backlog                                   | Mixed        | Audited opportunities, not implementation authorization                             |
+| 07  | [Sol High track](07-sol-high.md)                                | Complete except deferred S11              | Sol High     | Security, data, architecture, scheduling, adversarial review                        |
+| 08  | [Terra High track](08-terra-high.md)                            | Complete except deferred T8               | Terra High   | UI, tests, CI, responsive quality, copy and docs                                    |
+| 09  | [Public launch track](09-launch.md)                             | Active — reference only, L0–L5 superseded | Mixed        | What each launch phase _means_; its sequencing is out of date                       |
+| 10  | [Design identity track](10-design.md)                           | Active — parallel                         | Terra High   | Identity spike, motion language, signature reflow, foundations, navigation, rollout |
+| 11  | [Task shape and starting friction](11-task-model.md)            | Backlog                                   | Mixed        | Progress counter, part-cut, mini-entry; streaks parked                              |
+| 12  | [Remaining work to the first paying user](12-remaining-work.md) | **Active — governing plan**               | Mixed        | Verified production state, P0 defects, launch queue                                 |
+| 12a | [Codex prompts](12-codex-prompts.md)                            | Companion to 12                           | Sol High     | One paste-ready prompt per queued task, in order                                    |
 
-Plans 01–05 are implemented. Plans 07 and 08 ran to their final gates; their
-deferred S11/T8 items are sequenced by plan 09, not by 07/08 directly. Plan 06
-remains research input and does not independently authorize schema or product
-scope. Plan 11 is owner-captured product intent, also not an authorization —
-its items are sequenced by plan 09's L7 gate.
+Plans 01–05 are implemented. Plans 07 and 08 ran to their final gates, and their
+deferred S11/T8 items merged into `origin/main` on 2026-08-24 — nothing is
+waiting on them any more. Plan 06 remains research input and does not
+independently authorize schema or product scope. Plan 11 is owner-captured
+product intent, also not an authorization — its items wait on a stable
+production week.
 
-**Plan 09 is the governing plan.** Start there. **Plan 10 runs in parallel** and
-may never delay 09: D0–D3 are safe to run alongside the launch work, but the
-screen rollout waits until production is live and stable. The table below is the
-historical 07/08 execution order, retained for context.
+**Plan 12 is the governing plan. Start there.** It was written on 2026-08-24
+against verified production state and it supersedes plan 09's L0–L5 sequencing:
+S11 and T8 are merged, the Figma capture script is gone, all three services run
+one SHA, and backups run — plan 09 still lists those as open work. Read 09 for
+what a launch phase means, never for what is left to do.
 
-| Phase | Tasks |
-|-------|-------|
-| Hardening contracts | S1 -> S2; T1 and T2 may run after file ownership is agreed |
-| Offline/realtime | S3 -> S4; then T3 and T4 |
-| Hardening gate | S5 |
-| Workspace | S6 -> T5 |
-| Pages | S7 -> T6 -> S8 |
-| Route completion | S9 and S10 may run with T7 |
-| Later product work | S11 contract -> matching T8 UI (now sequenced by plan 09 L0.3 and L7) |
-| Final gate | T9 -> T10 -> S12 |
+**Plan 10 runs in parallel** and may never delay the launch queue: D0–D3 are
+safe to run alongside it, but the screen rollout waits until production is live
+and stable. The table below is the historical 07/08 execution order, retained
+for context.
+
+| Phase               | Tasks                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| Hardening contracts | S1 -> S2; T1 and T2 may run after file ownership is agreed            |
+| Offline/realtime    | S3 -> S4; then T3 and T4                                              |
+| Hardening gate      | S5                                                                    |
+| Workspace           | S6 -> T5                                                              |
+| Pages               | S7 -> T6 -> S8                                                        |
+| Route completion    | S9 and S10 may run with T7                                            |
+| Later product work  | S11 contract -> matching T8 UI (now sequenced by plan 09 L0.3 and L7) |
+| Final gate          | T9 -> T10 -> S12                                                      |
 
 A final security pass (Sol High) runs at the end of 02, 04, and 05 — not as a
 separate plan. It reviews only workspace isolation, invites, entitlement

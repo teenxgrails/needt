@@ -30,10 +30,19 @@ describe("agent prompt assembly", () => {
 });
 
 describe("hosted AI metering", () => {
-  it("stops at the configured cap", () => {
+  it("uses normal, slow, and blocked modes at the configured boundaries", () => {
     const cap = hostedUsageStatus(Number.MAX_SAFE_INTEGER, "PRO").limit;
-    expect(hostedUsageStatus(cap - 1, "PRO").allowed).toBe(true);
-    expect(hostedUsageStatus(cap, "PRO").allowed).toBe(false);
+    expect(hostedUsageStatus(cap - 1, "PRO", 2).mode).toBe("normal");
+    expect(hostedUsageStatus(cap, "PRO", 2)).toMatchObject({
+      allowed: true,
+      mode: "slow",
+    });
+    expect(hostedUsageStatus(cap * 2 - 1, "PRO", 2).mode).toBe("slow");
+    expect(hostedUsageStatus(cap * 2, "PRO", 2)).toMatchObject({
+      allowed: false,
+      mode: "blocked",
+    });
+    expect(hostedUsageStatus(0, "FREE", 2).mode).toBe("blocked");
   });
 
   it("prefers BYOK and only falls back to hosted while allowance remains", () => {

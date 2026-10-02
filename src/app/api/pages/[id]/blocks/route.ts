@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   PageBlockIdentityError,
-  replacePageBlocks,
-} from "@/services/pages/page-service";
+  PageCollaborationActiveError,
+  PageRevisionConflictError,
+  writePageBlocks,
+} from "@/services/pages/page-write-path";
 import { PageAccessRole, PageAuthor, PageBlockType } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
@@ -14,7 +16,6 @@ import {
   claimOfflineMutation,
   completeOfflineMutation,
   failOfflineMutation,
-  offlineRevisionConflict,
   replayOfflineMutation,
 } from "@/lib/pwa/offline-mutation";
 
@@ -74,7 +75,7 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     const documentFormatVersion = body.documentFormatVersion === 2 ? 2 : 1;
     const current = await prisma.page.findFirst({
       where: { id, trashedAt: null },
-      select: { updatedAt: true },
+      select: { contentRevision: true },
     });
     if (!current)
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
@@ -85,8 +86,6 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
       operation,
     });
     if (replay) return replay;
-    const conflict = offlineRevisionConflict(request, current.updatedAt);
-    if (conflict) return conflict;
     const claim = await claimOfflineMutation({
       request,
       userId: auth.userId,
@@ -94,15 +93,38 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     });
     if (claim.response) return claim.response;
     offlineRecordId = claim.recordId;
-    const page = await replacePageBlocks(
+    const revisionHeader = request.headers
+      .get("if-match")
+      ?.replace(/^"|"$/g, "");
+    const requestedRevision = revisionHeader
+      ? Number.parseInt(revisionHeader, 10)
+      : null;
+    if (
+      revisionHeader &&
+      (!/^\d+$/.test(revisionHeader) || !Number.isSafeInteger(requestedRevision))
+    ) {
+      return NextResponse.json(
+        { error: "If-Match must be a page content revision" },
+        { status: 400 }
+      );
+    }
+    const expectedContentRevision =
+      requestedRevision ??
+      (request.headers.has("x-needt-offline-scope")
+        ? -1
+        : current.contentRevision);
+    const page = await writePageBlocks(
       auth,
       id,
       blocks,
       PageAuthor.HUMAN,
-      documentFormatVersion
+      documentFormatVersion,
+      expectedContentRevision
     );
-    if (!page)
+    if (!page) {
+      await failOfflineMutation(offlineRecordId);
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
+    }
     await completeOfflineMutation(offlineRecordId);
     return NextResponse.json({ page });
   } catch (error) {
@@ -110,6 +132,22 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     if (error instanceof PageBlockIdentityError) {
       return NextResponse.json(
         { error: error.code, message: error.message, repairable: true },
+        { status: 409 }
+      );
+    }
+    if (error instanceof PageCollaborationActiveError) {
+      return NextResponse.json(
+        {
+          error: error.code,
+          message: "This page is being edited live. Reconnect to continue.",
+          repairable: true,
+        },
+        { status: 409 }
+      );
+    }
+    if (error instanceof PageRevisionConflictError) {
+      return NextResponse.json(
+        { error: error.code, repairable: true },
         { status: 409 }
       );
     }

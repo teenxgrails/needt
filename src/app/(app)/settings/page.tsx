@@ -25,6 +25,7 @@ import {
   SlidersHorizontal,
   UserRound,
   UsersRound,
+  X,
 } from "lucide-react";
 
 import { AIAssistantSettings } from "@/components/settings/AIAssistantSettings";
@@ -53,6 +54,10 @@ import { WorkspaceSettings } from "@/components/settings/WorkspaceSettings";
 import { Input } from "@/components/ui/input";
 
 import { cn } from "@/lib/utils";
+import {
+  calendarConnectionNotice,
+  type CalendarConnectionNotice,
+} from "@/lib/calendar-connection-status";
 
 import { useSettingsStore } from "@/store/settings";
 
@@ -210,6 +215,8 @@ export default function SettingsPage() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [mobileOverview, setMobileOverview] = useState(true);
   const [search, setSearch] = useState("");
+  const [connectionNotice, setConnectionNotice] =
+    useState<CalendarConnectionNotice | null>(null);
   const initializeSettings = useSettingsStore(
     (state) => state.initializeSettings
   );
@@ -244,6 +251,17 @@ export default function SettingsPage() {
       }
     };
     readHash();
+    const searchParams = new URLSearchParams(window.location.search);
+    const notice = calendarConnectionNotice(
+      searchParams.get("calendarError"),
+      searchParams.get("calendarSuccess"),
+      searchParams.get("provider")
+    );
+    if (notice) {
+      setConnectionNotice(notice);
+      setActiveTab("calendars");
+      setMobileOverview(false);
+    }
     window.addEventListener("hashchange", readHash);
     setIsHydrated(true);
     return () => window.removeEventListener("hashchange", readHash);
@@ -427,6 +445,51 @@ export default function SettingsPage() {
               !isHydrated && "opacity-0"
             )}
           >
+            {activeTab === "calendars" && connectionNotice && (
+              <div
+                className={cn(
+                  "mb-5 flex items-start gap-3 rounded-[var(--panel-radius)] border p-4 text-sm",
+                  connectionNotice.tone === "error"
+                    ? "border-[color-mix(in_srgb,var(--color-danger)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-danger)_7%,transparent)]"
+                    : "border-[color-mix(in_srgb,var(--color-success)_35%,transparent)] bg-[color-mix(in_srgb,var(--color-success)_7%,transparent)]"
+                )}
+                role={connectionNotice.tone === "error" ? "alert" : "status"}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{connectionNotice.title}</p>
+                  <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
+                    {connectionNotice.description}
+                  </p>
+                  {connectionNotice.tone === "error" &&
+                    connectionNotice.provider && (
+                      <button
+                        type="button"
+                        className="mt-3 min-h-11 text-[13px] font-medium underline-offset-4 hover:underline"
+                        onClick={() => {
+                          window.location.href = `/api/calendar/${connectionNotice.provider}/auth`;
+                        }}
+                      >
+                        Reconnect {connectionNotice.provider === "google" ? "Google" : "Outlook"} Calendar
+                      </button>
+                    )}
+                </div>
+                <button
+                  type="button"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--control-radius)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]"
+                  aria-label="Dismiss calendar connection message"
+                  onClick={() => {
+                    setConnectionNotice(null);
+                    window.history.replaceState(
+                      null,
+                      "",
+                      `${window.location.pathname}#calendars`
+                    );
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             <SettingsPanelBoundary resetKey={activeTab}>
               {renderTabContent()}
             </SettingsPanelBoundary>
