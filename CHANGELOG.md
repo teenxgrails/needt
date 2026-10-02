@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Updated Pro monthly to $7 and Lifetime to $149, hid hosted-AI usage counts
+  from product surfaces, and added private input/output token accounting for
+  hosted provider calls alongside the action count.
+- Lifetime checkout now closes after 300 buyers with concurrency-safe holds,
+  idempotent retries, and provider-confirmed expiry. The cap is enforced when a
+  checkout is created; a payment Creem has already taken always grants the
+  plan, and a completion whose reservation is missing or expired is recorded as
+  `processed_without_lifetime_reservation` instead of being refused.
+- Added non-blocking email confirmation with one 14-day Pro trial per canonical
+  email, OAuth trial activation, day-11/day-14 worker emails, safe Free expiry,
+  and verified-owner gates for booking publication and outbound guest email.
+- Added a complete account archive and a re-authenticated, seven-day account
+  deletion flow that removes personal data while preserving scrubbed,
+  authorless shared-workspace tombstones.
+- Kept hosted AI available in a bounded slower mode after its normal allowance,
+  while preserving uncapped BYOK access and hiding usage counts from chat.
+- Added an admin-only System settings route and account-menu links for system
+  credentials and operations, with a contract check preventing orphaned
+  admin-only settings components.
 - L0 release line is tagged `v0.4.0`; production image verification is provided
   by the required `docker-publish` CI workflow on the same SHA rather than a
   local Docker Desktop build.
@@ -41,6 +60,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- New accounts now start with auto-scheduling defaults, actionable empty states
+  across primary routes, and recoverable calendar connection errors; calendar
+  OAuth callbacks are bound to the user who started the connection.
+- Page block writes now defer to an active collaboration session and persist
+  its CRDT state and relational block projection atomically, preventing stale
+  REST autosaves from overwriting live edits. A versioned collaboration room
+  also prevents pre-fix offline documents from resurrecting removed blocks.
+- Notification settings now preserve saved browser-push and reminder-timing
+  preferences while reporting unavailable delivery, and reminder workers warn
+  once per process with the missing VAPID variable names.
+- Google sign-in now requests only basic identity scopes; Calendar access is
+  requested separately when connecting a calendar, while Google Tasks sync is
+  explicitly deferred with an actionable connection error.
 - Release automation now permits a repair deployment when the currently live web health endpoint is unavailable, and publishes the native AMD64 image only. Local Compose starts the matching web, private worker, collaboration, PostgreSQL, and Redis topology.
 - Tasks now show a private seven-day capacity summary and an explainable,
   reversible schedule preview with unscheduled-task and stale-preview recovery.
@@ -84,6 +116,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Made the admin System settings page SSR-safe and restored its middleware and
+  database-backed authorization checks, including protection against stale
+  deactivated-admin sessions.
+- Made Creem webhook handling replay-safe and order-aware, preserved paid
+  access only through documented retry/grace periods, and surfaced actionable
+  failed-payment status in Billing settings.
+- Restored Prisma migration/schema compatibility without rewriting user data:
+  retained five legacy AI indexes and promoted the existing Page–tag join
+  unique pair to Prisma's composite primary-key representation.
+- Restricted privileged publish/deploy workflow runs to successful default-
+  branch pushes from this repository, made source-consuming jobs verify the
+  exact immutable CI release SHA, and made deploys use that SHA.
 - On phones, Space now offers working Task List and Board fallbacks instead of
   directing people to a desktop-only canvas.
 - Pages can now be organized with workspace-scoped folders and tags, and users

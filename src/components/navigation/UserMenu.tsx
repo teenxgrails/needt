@@ -6,6 +6,7 @@ import { signOut } from "next-auth/react";
 import Link from "next/link";
 
 import {
+  Activity,
   Building2,
   Check,
   CircleDot,
@@ -14,6 +15,7 @@ import {
   Monitor,
   Moon,
   Settings,
+  SlidersHorizontal,
   Sun,
 } from "lucide-react";
 
@@ -173,6 +175,26 @@ export function UserMenu() {
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
+        {session.user?.role === "admin" && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="px-2 py-1 text-xs font-medium text-[var(--text-secondary)]">
+              Admin
+            </DropdownMenuLabel>
+            <DropdownMenuItem asChild>
+              <Link href="/admin/operations" className="cursor-pointer">
+                <Activity className="mr-2 h-4 w-4" />
+                <span>Operations</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/admin/system" className="cursor-pointer">
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                <span>System settings</span>
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuItem asChild>
           <a
             href="https://github.com/dotnetfactory/fluid-calendar"

@@ -17,6 +17,8 @@ async function handleEvent(
   object: FlatCheckoutCompleted | FlatSubscriptionEvent<string>
 ) {
   const result = await processCreemBillingEvent({
+    id: object.webhookId,
+    createdAt: object.webhookCreatedAt,
     eventType,
     object: object as unknown as Record<string, unknown>,
   });
@@ -52,6 +54,8 @@ export async function POST(request: NextRequest) {
     webhookSecret,
     onCheckoutCompleted: (event) => handleEvent("checkout.completed", event),
     onSubscriptionActive: (event) => handleEvent("subscription.active", event),
+    onSubscriptionTrialing: (event) =>
+      handleEvent("subscription.trialing", event),
     onSubscriptionPaid: (event) => handleEvent("subscription.paid", event),
     onSubscriptionCanceled: (event) =>
       handleEvent("subscription.canceled", event),

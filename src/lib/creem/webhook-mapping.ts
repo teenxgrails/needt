@@ -6,6 +6,7 @@ import { newDate } from "@/lib/date-utils";
 export type CreemBillingEventType =
   | "checkout.completed"
   | "subscription.active"
+  | "subscription.trialing"
   | "subscription.paid"
   | "subscription.canceled"
   | "subscription.scheduled_cancel"
@@ -16,6 +17,8 @@ export type CreemBillingEventType =
   | "subscription.update";
 
 export type CreemBillingEvent = {
+  id: string;
+  createdAt: number;
   eventType: CreemBillingEventType;
   object: Record<string, unknown>;
 };
@@ -24,6 +27,9 @@ export type CreemSubscriptionMutation = {
   userId: string | null;
   creemCustomerId: string | null;
   creemSubscriptionId: string | null;
+  checkoutId: string | null;
+  checkoutRequestId: string | null;
+  lifetimeReservationId: string | null;
   data: {
     plan: SubscriptionPlan;
     status: SubscriptionStatus;
@@ -72,6 +78,13 @@ function metadataUserId(object: Record<string, unknown>): string | null {
   );
 }
 
+function metadataValue(
+  object: Record<string, unknown>,
+  key: string
+): string | null {
+  return stringValue(asRecord(object.metadata)?.[key]);
+}
+
 function dateValue(value: unknown): Date | null {
   if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
   const raw = stringValue(value);
@@ -108,12 +121,10 @@ function statusForEvent(
   eventType: CreemBillingEventType,
   object: Record<string, unknown>
 ): SubscriptionStatus {
-  if (
-    eventType === "subscription.past_due" ||
-    eventType === "subscription.unpaid"
-  ) {
+  if (eventType === "subscription.past_due") {
     return "PAST_DUE";
   }
+  if (eventType === "subscription.unpaid") return "PAYMENT_FAILED";
   if (
     eventType === "subscription.canceled" ||
     eventType === "subscription.expired" ||
@@ -123,7 +134,8 @@ function statusForEvent(
   }
   if (eventType === "subscription.update") {
     const status = stringValue(object.status);
-    if (status === "past_due" || status === "unpaid") return "PAST_DUE";
+    if (status === "past_due") return "PAST_DUE";
+    if (status === "unpaid") return "PAYMENT_FAILED";
     if (status === "canceled" || status === "expired" || status === "paused") {
       return "CANCELED";
     }
@@ -170,6 +182,16 @@ export function mapCreemEventToSubscription(
     userId: metadataUserId(object),
     creemCustomerId: customerId,
     creemSubscriptionId: subscriptionId,
+    checkoutId:
+      event.eventType === "checkout.completed" ? entityId(object.id) : null,
+    checkoutRequestId:
+      event.eventType === "checkout.completed"
+        ? stringValue(field(object, "requestId", "request_id"))
+        : null,
+    lifetimeReservationId:
+      plan === "LIFETIME"
+        ? metadataValue(object, "lifetimeReservationId")
+        : null,
     data: {
       plan,
       status: statusForEvent(event.eventType, object),

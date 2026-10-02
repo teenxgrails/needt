@@ -1,3 +1,12 @@
+import {
+  finalizeAccountDeletion,
+  finalizeDueAccountDeletions,
+} from "@/services/account/account-deletion";
+import {
+  expireAccountExports,
+  processAccountExport,
+} from "@/services/account/account-export";
+import { deleteExpiredReauthentications } from "@/services/account/account-reauthentication";
 import { syncBugReportToGithub } from "@/services/bug-reports/bug-report-service";
 import { generateProactiveNudges } from "@/services/nudges/proactive-assist";
 import { collectOperationsHealth } from "@/services/operations/health";
@@ -7,10 +16,12 @@ import {
 } from "@/services/reminders/reminder-delivery";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 import { executeSchedulingRun } from "@/services/scheduling/runs";
+import { processTrialLifecycle } from "@/services/trials/trial-lifecycle";
 import {
   startWorkerHealthServer,
   stopWorkerHealthServer,
 } from "@/worker/health-server";
+import { runWorkerStartupChecks } from "@/worker/startup";
 import * as Sentry from "@sentry/node";
 import { ConnectionOptions, Job, Worker } from "bullmq";
 import { randomUUID } from "node:crypto";
@@ -21,6 +32,7 @@ import {
   updateCalendarFeedSyncState,
 } from "@/lib/calendar-db";
 import { renewCalendarWebhooks } from "@/lib/calendar-webhooks/renew";
+import { reconcileLifetimeCheckoutReservations } from "@/lib/creem/lifetime-reconciliation";
 import { newDate } from "@/lib/date-utils";
 import { syncGoogleCalendar } from "@/lib/google-sync";
 import {
@@ -54,19 +66,25 @@ import {
 } from "@/lib/queue/enqueue";
 import {
   closeQueues,
+  getAccountLifecycleQueue,
   getBugReportSyncQueue,
+  getLifetimeCheckoutReconciliationQueue,
   getNudgeQueue,
   getReminderQueue,
+  getTrialQueue,
   getWebhookRenewQueue,
 } from "@/lib/queue/queues";
 import {
+  AccountLifecycleJobData,
   BugReportSyncJobData,
   CalendarSyncJobData,
+  LifetimeCheckoutReconciliationJobData,
   MailSyncJobData,
   NudgeJobData,
   QUEUE_NAMES,
   ReminderJobData,
   RescheduleJobData,
+  TrialJobData,
   WebhookRenewJobData,
 } from "@/lib/queue/types";
 import { publishRealtimeEvent } from "@/lib/realtime/publish";
@@ -194,6 +212,28 @@ async function processNudges() {
   await generateProactiveNudges();
 }
 
+async function processLifetimeCheckoutReconciliation() {
+  await reconcileLifetimeCheckoutReservations();
+}
+
+async function processTrials() {
+  await processTrialLifecycle();
+}
+
+async function processAccountLifecycle(job: Job<AccountLifecycleJobData>) {
+  if (job.data.kind === "export") {
+    await processAccountExport(job.data.requestId);
+    return;
+  }
+  if (job.data.kind === "delete") {
+    await finalizeAccountDeletion(job.data.requestId);
+    return;
+  }
+  await expireAccountExports();
+  await deleteExpiredReauthentications();
+  await finalizeDueAccountDeletions();
+}
+
 // BullMQ and the app can resolve distinct compatible ioredis patch versions,
 // so bridge their nominal types at this boundary.
 const connection = getRedisConnection() as unknown as ConnectionOptions;
@@ -232,6 +272,20 @@ const workers = [
     connection,
     concurrency: 1,
   }),
+  new Worker<LifetimeCheckoutReconciliationJobData>(
+    QUEUE_NAMES.lifetimeCheckoutReconciliation,
+    processLifetimeCheckoutReconciliation,
+    { connection, concurrency: 1 }
+  ),
+  new Worker<TrialJobData>(QUEUE_NAMES.trials, processTrials, {
+    connection,
+    concurrency: 1,
+  }),
+  new Worker<AccountLifecycleJobData>(
+    QUEUE_NAMES.accountLifecycle,
+    processAccountLifecycle,
+    { connection, concurrency: 1 }
+  ),
 ];
 
 for (const worker of workers) {
@@ -258,7 +312,8 @@ for (const worker of workers) {
   });
 }
 
-async function start(): Promise<void> {
+export async function start(): Promise<void> {
+  await runWorkerStartupChecks();
   if (isGitBuildSha(BUILD_SHA)) {
     releaseHeartbeatRedis =
       getRedisConnection() as unknown as ReleaseHealthRedis;
@@ -308,6 +363,21 @@ async function start(): Promise<void> {
     "proactive-nudge-sweep",
     { every: 15 * 60_000 },
     { name: "sweep-nudges", data: { kind: "sweep" } }
+  );
+  await getLifetimeCheckoutReconciliationQueue().upsertJobScheduler(
+    "lifetime-checkout-reconciliation",
+    { every: 15 * 60_000 },
+    { name: "sweep-lifetime-checkouts", data: { kind: "sweep" } }
+  );
+  await getTrialQueue().upsertJobScheduler(
+    "trial-lifecycle-sweep",
+    { every: 60 * 60_000 },
+    { name: "sweep-trials", data: { kind: "sweep" } }
+  );
+  await getAccountLifecycleQueue().upsertJobScheduler(
+    "account-lifecycle-sweep",
+    { every: 60 * 60_000 },
+    { name: "sweep-account-lifecycle", data: { kind: "sweep" } }
   );
   const mailAccountIds = await listActiveMailAccountIds();
   await Promise.all(
@@ -370,12 +440,14 @@ process.once("SIGINT", () => {
   void shutdown("SIGINT").finally(() => process.exit(0));
 });
 
-void start().catch(async (error) => {
-  await logger.error(
-    "Needt background worker could not start",
-    { error: error instanceof Error ? error.message : String(error) },
-    LOG_SOURCE
-  );
-  await shutdown("startup-error");
-  process.exit(1);
-});
+if (process.env.NODE_ENV !== "test") {
+  void start().catch(async (error) => {
+    await logger.error(
+      "Needt background worker could not start",
+      { error: error instanceof Error ? error.message : String(error) },
+      LOG_SOURCE
+    );
+    await shutdown("startup-error");
+    process.exit(1);
+  });
+}

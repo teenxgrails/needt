@@ -38,6 +38,7 @@ export interface NotificationSettings {
     eventReminders: boolean;
   };
   defaultReminderTiming: number[]; // minutes before event, multiple allowed
+  webPushConfigured: boolean;
   webPushEnabled: boolean;
   webPushSubscription?: PushSubscriptionJSON | null;
 }
@@ -97,6 +98,7 @@ export interface SystemSettings {
   logDestination?: string; // "db", "file", or "both"
   disableHomepage?: boolean; // Whether to disable the homepage and redirect to login/calendar
   publicSignup?: boolean; // Whether public signup is enabled
+  requireEmailVerificationBeforeAccess?: boolean;
   resendApiKey?: string; // API key for Resend email service
 }
 
