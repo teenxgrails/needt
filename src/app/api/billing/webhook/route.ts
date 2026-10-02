@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   type FlatCheckoutCompleted,
+  type FlatDisputeCreated,
+  type FlatRefundCreated,
   type FlatSubscriptionEvent,
   Webhook,
 } from "@creem_io/nextjs";
 
+import {
+  type CreemRevocationEventType,
+  processCreemRevocationEvent,
+} from "@/lib/creem/revocation";
 import { CreemBillingEventType } from "@/lib/creem/webhook-mapping";
 import { processCreemBillingEvent } from "@/lib/creem/webhook-processor";
 import { logger } from "@/lib/logger";
@@ -41,6 +47,27 @@ async function handleEvent(
   );
 }
 
+async function handleRevocation(
+  eventType: CreemRevocationEventType,
+  object: FlatRefundCreated | FlatDisputeCreated
+) {
+  const result = await processCreemRevocationEvent({
+    id: object.webhookId,
+    createdAt: object.webhookCreatedAt,
+    eventType,
+    object: object as unknown as Record<string, unknown>,
+  });
+  await logger.warn(
+    "Handled Creem revocation event",
+    {
+      eventType,
+      outcome: result.outcome,
+      webhookId: object.webhookId,
+    },
+    LOG_SOURCE
+  );
+}
+
 export async function POST(request: NextRequest) {
   const webhookSecret = process.env.CREEM_WEBHOOK_SECRET?.trim();
   if (!webhookSecret) {
@@ -68,6 +95,8 @@ export async function POST(request: NextRequest) {
       handleEvent("subscription.expired", event),
     onSubscriptionPaused: (event) => handleEvent("subscription.paused", event),
     onSubscriptionUpdate: (event) => handleEvent("subscription.update", event),
+    onRefundCreated: (event) => handleRevocation("refund.created", event),
+    onDisputeCreated: (event) => handleRevocation("dispute.created", event),
   });
 
   const response = await handler(request);
