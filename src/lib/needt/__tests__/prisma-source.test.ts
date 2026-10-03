@@ -43,6 +43,7 @@ function taskRow(id: string, dependsOnId: string | null = null): NeedtTaskRow {
     noSlot: false,
     activities: [],
     lastTouchedAt: null,
+    updatedAt: newDateFromYMD(2026, 8, 20),
     assigneeId: null,
     globalStage: null,
     dependsOnId,

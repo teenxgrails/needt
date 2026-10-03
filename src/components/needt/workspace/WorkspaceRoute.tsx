@@ -161,9 +161,11 @@ export function WorkspaceRoute() {
       if (!task) return;
       pendingTaskIds.current.add(id);
       try {
-        await updateTaskRequest(id, {
-          status: task.done ? TaskStatus.TODO : TaskStatus.COMPLETED,
-        });
+        await updateTaskRequest(
+          id,
+          { status: task.done ? TaskStatus.TODO : TaskStatus.COMPLETED },
+          task.revision
+        );
         await refresh();
       } catch {
         notify.error("Could not update this task");

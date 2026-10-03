@@ -40,8 +40,12 @@ import { TaskStatus } from "@/types/task";
 import { MobileCalendarDay } from "../mobile";
 import { Glyph } from "../shell/chrome";
 import { CalendarEventDialog } from "./CalendarEventDialog";
-import { CalendarScreen, type CalendarOpts, type CalendarView } from "./CalendarScreen";
-import { entriesOnDay, type CalendarEntry } from "./entries";
+import {
+  type CalendarOpts,
+  CalendarScreen,
+  type CalendarView,
+} from "./CalendarScreen";
+import { type CalendarEntry, entriesOnDay } from "./entries";
 
 interface CalendarPayload {
   workspaceId: string;
@@ -123,12 +127,18 @@ export function CalendarRoute() {
   );
   const [data, setData] = React.useState<CalendarPayload | null>(null);
   const [error, setError] = React.useState(false);
-  const [eventEntry, setEventEntry] = React.useState<CalendarEntry | null>(null);
+  const [eventEntry, setEventEntry] = React.useState<CalendarEntry | null>(
+    null
+  );
   const [eventOpen, setEventOpen] = React.useState(false);
   const pendingTaskIds = React.useRef(new Set<string>());
 
   React.useEffect(() => {
-    if (storedView === "day" || storedView === "week" || storedView === "month") {
+    if (
+      storedView === "day" ||
+      storedView === "week" ||
+      storedView === "month"
+    ) {
       setView(storedView);
     }
   }, [storedView]);
@@ -175,18 +185,23 @@ export function CalendarRoute() {
       setEventOpen(true);
       return;
     }
-    router.push(`/tasks?task=${encodeURIComponent(entry.sourceId ?? entry.id)}`);
+    router.push(
+      `/tasks?task=${encodeURIComponent(entry.sourceId ?? entry.id)}`
+    );
   };
 
   const toggleTask = async (entry: CalendarEntry) => {
-    if (!data?.canEdit || entry.kind === "event" || entry.kind === "busy") return;
+    if (!data?.canEdit || entry.kind === "event" || entry.kind === "busy")
+      return;
     const taskId = entry.sourceId ?? entry.id;
     if (pendingTaskIds.current.has(taskId)) return;
     pendingTaskIds.current.add(taskId);
     try {
-      await updateTaskRequest(taskId, {
-        status: entry.done ? TaskStatus.TODO : TaskStatus.COMPLETED,
-      });
+      await updateTaskRequest(
+        taskId,
+        { status: entry.done ? TaskStatus.TODO : TaskStatus.COMPLETED },
+        entry.revision
+      );
       await refresh();
     } catch {
       notify.error("Could not update this task");
@@ -201,14 +216,15 @@ export function CalendarRoute() {
     at: number,
     duration = entry.est ?? 30
   ) => {
-    if (!data?.canEdit || entry.kind === "event" || entry.kind === "busy") return;
+    if (!data?.canEdit || entry.kind === "event" || entry.kind === "busy")
+      return;
     const start = dateAt(day, at);
     const end = newDate(start.getTime() + duration * 60_000);
-    await updateTaskRequest(entry.sourceId ?? entry.id, {
-      scheduledStart: start,
-      scheduledEnd: end,
-      scheduleLocked: true,
-    });
+    await updateTaskRequest(
+      entry.sourceId ?? entry.id,
+      { scheduledStart: start, scheduledEnd: end, scheduleLocked: true },
+      entry.revision
+    );
   };
 
   const placeTask = async (
@@ -227,7 +243,9 @@ export function CalendarRoute() {
 
   const shedTasks = async (entries: readonly CalendarEntry[], day: Date) => {
     if (!data?.canEdit) return;
-    const unique = new Map(entries.map((entry) => [entry.sourceId ?? entry.id, entry]));
+    const unique = new Map(
+      entries.map((entry) => [entry.sourceId ?? entry.id, entry])
+    );
     try {
       await Promise.all(
         [...unique.values()].map((entry) =>
@@ -326,12 +344,17 @@ export function CalendarRoute() {
             <Glyph of={LuChevronRight} size={16} />
           </button>
         </div>
-        <div className="hidden items-center gap-1 sm:flex" aria-label="Calendar view">
+        <div
+          className="hidden items-center gap-1 sm:flex"
+          aria-label="Calendar view"
+        >
           {VIEWS.map((name) => (
             <button
               key={name}
               type="button"
-              className={view === name ? "chip nt-chip is-accent" : "chip nt-chip"}
+              className={
+                view === name ? "chip nt-chip is-accent" : "chip nt-chip"
+              }
               aria-pressed={view === name}
               onClick={() => selectView(name)}
             >
@@ -378,17 +401,24 @@ export function CalendarRoute() {
           opts={data.options}
           dark={dark}
           onOpen={openEntry}
-          onToggle={data.canEdit ? (entry) => void toggleTask(entry) : undefined}
+          onToggle={
+            data.canEdit ? (entry) => void toggleTask(entry) : undefined
+          }
           onSelectDay={(date) => {
             setStoredDate(date);
             selectView("day");
           }}
           onPickShelf={
             data.canEdit
-              ? (entry, gapStart, day) => void placeTask(entry, day, gapStart, 2)
+              ? (entry, gapStart, day) =>
+                  void placeTask(entry, day, gapStart, 2)
               : undefined
           }
-          onShed={data.canEdit ? (entries, day) => void shedTasks(entries, day) : undefined}
+          onShed={
+            data.canEdit
+              ? (entries, day) => void shedTasks(entries, day)
+              : undefined
+          }
         />
       </div>
 
@@ -397,7 +427,10 @@ export function CalendarRoute() {
         data-calendar-view="day"
       >
         {mobileAllDay.length ? (
-          <div className="mx-4 mb-2 flex flex-col gap-1" aria-label="All-day events">
+          <div
+            className="mx-4 mb-2 flex flex-col gap-1"
+            aria-label="All-day events"
+          >
             {mobileAllDay.map((entry) => (
               <button
                 key={entry.id}
@@ -421,7 +454,9 @@ export function CalendarRoute() {
           day={storedDate}
           today={now}
           onOpen={openEntry}
-          onToggle={data.canEdit ? (entry) => void toggleTask(entry) : undefined}
+          onToggle={
+            data.canEdit ? (entry) => void toggleTask(entry) : undefined
+          }
         />
       </div>
 

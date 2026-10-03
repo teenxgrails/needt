@@ -110,6 +110,7 @@ export function toNeedtTask(
 
   return {
     id: row.id,
+    revision: row.updatedAt.toISOString(),
     title: row.title,
     project: row.project?.name ?? null,
     time: row.scheduledStart

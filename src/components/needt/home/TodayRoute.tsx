@@ -15,6 +15,7 @@ import type { NeedtHabit, NeedtProject, NeedtTask } from "@/lib/needt/types";
 import { notify } from "@/lib/notifications";
 import { updateTaskRequest } from "@/lib/task-api";
 import { resolveThemeMode } from "@/lib/theme";
+
 import { useTaskStore } from "@/store/task";
 
 import type { ResolvedThemeMode } from "@/types/settings";
@@ -125,7 +126,11 @@ export function TodayRoute() {
       );
       let persisted = false;
       try {
-        await updateTaskRequest(id, { status: toggledTaskStatus(task) });
+        await updateTaskRequest(
+          id,
+          { status: toggledTaskStatus(task) },
+          task.revision
+        );
         persisted = true;
         await refresh();
       } catch {
@@ -219,7 +224,9 @@ export function TodayRoute() {
       );
     try {
       await Promise.all(
-        updates.map(({ task, update }) => updateTaskRequest(task.id, update))
+        updates.map(({ task, update }) =>
+          updateTaskRequest(task.id, update, task.revision)
+        )
       );
       await refresh();
       notify.success("Overdue tasks moved to today");

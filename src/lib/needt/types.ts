@@ -69,6 +69,10 @@ export interface WaitsOn {
  */
 export interface NeedtTask {
   id: string;
+  /** Server revision, echoed back as `If-Match` so a write cannot clobber a
+   *  newer one. The offline service worker stamps every mutation with its
+   *  scope, and the API rejects a scoped write that carries no revision. */
+  revision?: string;
   title: string;
   /** Project name, id or alias. `null`/absent = no project. */
   project?: string | null;

@@ -1,15 +1,16 @@
 import { newDate } from "@/lib/date-utils";
 
 import {
+  type CalendarEventViewRow,
   toCalendarEventEntries,
   toCalendarTaskEntries,
-  type CalendarEventViewRow,
 } from "../calendar-view";
 import type { NeedtTaskRow } from "../task-view";
 
 function taskRow(): NeedtTaskRow {
   return {
     id: "task-1",
+    updatedAt: newDate("2026-09-19T12:00:00.000Z"),
     title: "Split launch review",
     status: "todo",
     scheduledStart: null,
@@ -200,6 +201,8 @@ describe("calendar production adapter", () => {
       "2026-09-21T09:00:00.000Z",
       "2026-09-22T09:00:00.000Z",
     ]);
-    expect(entries.find((entry) => entry.sourceId === "replacement")?.est).toBe(60);
+    expect(entries.find((entry) => entry.sourceId === "replacement")?.est).toBe(
+      60
+    );
   });
 });
