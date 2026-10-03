@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Needt — design prototypes</title>
+<style>
+:root{
+  --bg:#17150F; --panel:#211E17; --line:#332E24; --line2:#4A4338;
+  --text:#EDE7DA; --dim:#9A9184; --muted:#6E675C; --accent:#C96442;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);padding:48px 24px 80px;
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif}
+.wrap{max-width:760px;margin:0 auto}
+h1{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+.lead{color:var(--dim);font-size:14px;margin-bottom:36px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);margin:34px 0 12px;font-weight:500}
+a.card{display:block;text-decoration:none;color:inherit;padding:14px 16px;
+  border:1px solid var(--line);border-radius:8px;margin-bottom:8px;
+  transition:background 160ms ease,border-color 160ms ease}
+a.card:hover{background:var(--panel);border-color:var(--line2)}
+.n{color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px;
+  margin-right:10px}
+.t{font-weight:500}
+.d{color:var(--dim);font-size:13.5px;margin-top:3px}
+.tag{display:inline-block;font-size:11px;color:var(--accent);
+  border:1px solid var(--accent);border-radius:4px;padding:1px 6px;
+  margin-left:8px;vertical-align:1px}
+.note{color:var(--muted);font-size:13px;margin-top:28px;
+  border-top:1px solid var(--line);padding-top:16px}
+</style></head><body><div class="wrap">
+
+<h1>Needt — прототипы</h1>
+<p class="lead">Открывай любой. 1–13 восстановлены из дизайн-сессии,
+14–15 сделаны 23 августа.</p>
+
+<h2>Свежие — целевой Today</h2>
+
+<a class="card" href="15-today-light.html">
+  <span class="n">15</span><span class="t">Today — светлая база</span>
+  <span class="tag">последний</span>
+  <div class="d">Песочный фон, документ карточкой как у Craft, иконки в
+  сайдбаре, подсказки в пустых секциях. Рейка на блоке = подвижность.</div></a>
+
+<a class="card" href="14-today-target.html">
+  <span class="n">14</span><span class="t">Today — тёмная база</span>
+  <div class="d">Тот же экран на тёплом угле, один непрерывный холст без
+  карточки. Первая версия с четырьмя разделами и слитым Day/Week.</div></a>
+
+<h2>Экраны целиком</h2>
+
+<a class="card" href="12-today-full-screen-new-direction.html">
+  <span class="n">12</span><span class="t">Today — полный экран</span>
+  <div class="d">Первая проработка выбранного направления целиком.</div></a>
+
+<a class="card" href="13-today-v2-busy-day-inverted-marking.html">
+  <span class="n">13</span><span class="t">Today — забитый день</span>
+  <div class="d">Тот же экран, когда блоков много. Проверка инверсной
+  маркировки на плотности, а не на пустом дне.</div></a>
+
+<a class="card" href="09-merged-day-week-canvas.html">
+  <span class="n">09</span><span class="t">Слитый холст Day / Week</span>
+  <div class="d">Today и Календарь как один холст с переключателем.</div></a>
+
+<a class="card" href="08-workspace-lens-over-schedule.html">
+  <span class="n">08</span><span class="t">Workspace как линза</span>
+  <div class="d">Не список задач, а взгляд на расписание. Группы Now ·
+  Later today · Tomorrow · Needs a slot.</div></a>
+
+<a class="card" href="10-inbox-with-pinned-people.html">
+  <span class="n">10</span><span class="t">Inbox с закреплёнными людьми</span>
+  <div class="d">Почта, где человек — это фильтр, а шапка показывает
+  расписание с ним.</div></a>
+
+<a class="card" href="11-focus-as-mode-transition.html">
+  <span class="n">11</span><span class="t">Focus как режим</span>
+  <div class="d">Не отдельный экран: тот же элемент вырастает, остальной день
+  гаснет до 7%.</div></a>
+
+<h2>Отдельные решения</h2>
+
+<a class="card" href="01-schedule-reflow-signature-moment.html">
+  <span class="n">01</span><span class="t">Signature reflow</span>
+  <div class="d">Блоки едут на новое время, неподвижные стоят абсолютно,
+  текст объясняет причину, рядом undo.</div></a>
+
+<a class="card" href="06-calendar-task-block-two-variants.html">
+  <span class="n">06</span><span class="t">Блоки календаря — два варианта</span>
+  <div class="d">Как отличается зафиксированная встреча от того, что
+  поставил планировщик.</div></a>
+
+<a class="card" href="07-sidebar-new-structure-no-minicalendar.html">
+  <span class="n">07</span><span class="t">Сайдбар без мини-календаря</span>
+  <div class="d">Четыре раздела вместо семи, проекты цветными метками.</div></a>
+
+<a class="card" href="02-sidebar-macos-concept-with-shared-indicator.html">
+  <span class="n">02</span><span class="t">Сайдбар со светофором macOS</span>
+  <div class="d">Кнопки окна поверх сайдбара, один скользящий
+  индикатор.</div></a>
+
+<a class="card" href="05-primary-button-press-physics.html">
+  <span class="n">05</span><span class="t">Физика нажатия кнопки</span>
+  <div class="d">90ms вниз, 340ms обратно с перелётом, световая линия 1px
+  сверху вместо свечения.</div></a>
+
+<a class="card" href="03-settings-toggle-live-preview.html">
+  <span class="n">03</span><span class="t">Тумблеры настроек с превью</span>
+  <div class="d">Окно 124×76 рядом с тумблером показывает результат
+  в миниатюре, а не иконку.</div></a>
+
+<a class="card" href="04-palette-directions-three-options.html">
+  <span class="n">04</span><span class="t">Три направления палитры</span>
+  <div class="d">Тёплый уголь, светлый песок, тёмные чернила — рядом.</div></a>
+
+<p class="note">Значения из них зафиксированы в
+<code>design-refs/prototypes/README.md</code>. Принятые решения —
+в <code>design-refs/design-decisions-2026-08-23.md</code>.</p>
+
+</div></body></html>

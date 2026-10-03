@@ -1,3 +1,5 @@
-import { PagesHome } from "@/components/pages/PagesHome";
+import { DocsRoute } from "@/components/needt/docs";
 
-export default function PagesPage() { return <PagesHome />; }
+export default function PagesPage() {
+  return <DocsRoute />;
+}

@@ -1,5 +1,9 @@
 import { formatInTimeZone } from "@/lib/date-utils";
-import { isRangeBlocked, type BlockingOverride } from "@/lib/flexible-hours-guard";
+import {
+  isDateWholeDayBlocked,
+  isRangeBlocked,
+  type BlockingOverride,
+} from "@/lib/flexible-hours-guard";
 import { prisma } from "@/lib/prisma";
 
 // The Node process's own local timezone almost never matches the user's —
@@ -22,10 +26,11 @@ async function resolveUserTimeZone(userId: string): Promise<string> {
 
 // Server-side counterpart to the client guard, so a direct API call can't
 // place a task inside blocked hours that the calendar UI already prevents.
-export async function isTaskPlacementBlocked(
+export async function isPlacementBlocked(
   userId: string,
   start: Date,
-  end: Date
+  end: Date,
+  allDay = false
 ): Promise<boolean> {
   const timeZone = await resolveUserTimeZone(userId);
   const dateKey = formatInTimeZone(start, timeZone, "yyyy-MM-dd");
@@ -39,5 +44,15 @@ export async function isTaskPlacementBlocked(
     startTime: override.startTime,
     endTime: override.endTime,
   }));
-  return isRangeBlocked(start, end, blockingOverrides, timeZone);
+  return allDay
+    ? isDateWholeDayBlocked(start, blockingOverrides, timeZone)
+    : isRangeBlocked(start, end, blockingOverrides, timeZone);
+}
+
+export async function isTaskPlacementBlocked(
+  userId: string,
+  start: Date,
+  end: Date
+): Promise<boolean> {
+  return isPlacementBlocked(userId, start, end);
 }

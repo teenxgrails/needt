@@ -337,7 +337,7 @@ export function BillingSettings() {
           <PlanCard
             name={NEEDT_PRICING.lifetime.name}
             price={`${formatBillingPrice(NEEDT_PRICING.lifetime.amountCents)} once`}
-            description="One payment, lifetime access"
+            description="One payment, lifetime access for the first 300 buyers"
             features={[
               "Everything in Pro",
               "No recurring subscription",

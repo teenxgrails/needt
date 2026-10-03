@@ -1,7 +1,7 @@
 "use client";
 
-import { TaskDescription } from "@/components/tasks/TaskDescription";
-import { TaskTimer } from "@/components/tasks/TaskTimer";
+import { TaskDescription } from "@/components/task-editor/TaskDescription";
+import { TaskTimer } from "@/components/task-editor/TaskTimer";
 import { Badge } from "@/components/ui/badge";
 
 import { format } from "@/lib/date-utils";

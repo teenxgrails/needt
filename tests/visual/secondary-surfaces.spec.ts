@@ -28,7 +28,11 @@ async function applyTheme(page: import("@playwright/test").Page, theme: Theme) {
   // The Settings route hydrates the persisted settings store from the API;
   // this mirrors the actual Appearance control before visiting app surfaces.
   await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
-  await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+  // "light" is the legacy alias the product migrates to the Paper palette.
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-theme",
+    theme === "light" ? "paper" : theme
+  );
 }
 
 test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
@@ -46,10 +50,12 @@ test("Pages, Focus, Mail, and AI share the responsive Needt system", async ({
     await applyTheme(page, theme);
 
     await page.goto("/pages", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Pages" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Documents", exact: true })
+    ).toBeVisible();
     const visualDesignPage = page
       .getByRole("link", { name: /Visual design notes/ })
-      .last();
+      .first();
     await expect(visualDesignPage).toBeVisible();
     await settleSurface(page);
 

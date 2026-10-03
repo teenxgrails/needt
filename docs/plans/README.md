@@ -1,41 +1,32 @@
 # Plans — Needt delivery sequence
 
-Plans are sequential releases with their own migrations and gates. **Do not
-start a later active plan before the earlier one is deployed and smoke-tested.**
+**Start at [00 — Roadmap](00-roadmap.md).** It was rewritten on 2026-09-15
+against verified production state, and it is the only file that says what is
+left and in what order. The chapters below hold detail.
 
-| #   | Plan                                                            | Status                                    | Model        | Ships                                                                               |
-| --- | --------------------------------------------------------------- | ----------------------------------------- | ------------ | ----------------------------------------------------------------------------------- |
-| 01  | [Scheduling and task lifecycle](01-scheduling.md)               | Complete                                  | Sol High     | Hard deadlines, archive, recurrence rework                                          |
-| 02  | [Workspaces, projects, security](02-workspaces.md)              | Complete                                  | Sol High     | Tenancy boundary — riskiest, feature-flagged                                        |
-| 03  | [Animation, notifications, Space](03-motion-ui.md)              | Complete                                  | Terra Medium | Visual only, no schema                                                              |
-| 04  | [Pages](04-pages.md)                                            | Complete                                  | Terra High   | Extends the existing editor                                                         |
-| 05  | [Moodboard](05-moodboard.md)                                    | Complete                                  | Terra High   | Excalidraw canvas                                                                   |
-| 06  | [Product gap audit](06-product-gap-audit.md)                    | Backlog                                   | Mixed        | Audited opportunities, not implementation authorization                             |
-| 07  | [Sol High track](07-sol-high.md)                                | Complete except deferred S11              | Sol High     | Security, data, architecture, scheduling, adversarial review                        |
-| 08  | [Terra High track](08-terra-high.md)                            | Complete except deferred T8               | Terra High   | UI, tests, CI, responsive quality, copy and docs                                    |
-| 09  | [Public launch track](09-launch.md)                             | Active — reference only, L0–L5 superseded | Mixed        | What each launch phase _means_; its sequencing is out of date                       |
-| 10  | [Design identity track](10-design.md)                           | Active — parallel                         | Terra High   | Identity spike, motion language, signature reflow, foundations, navigation, rollout |
-| 11  | [Task shape and starting friction](11-task-model.md)            | Backlog                                   | Mixed        | Progress counter, part-cut, mini-entry; streaks parked                              |
-| 12  | [Remaining work to the first paying user](12-remaining-work.md) | **Active — governing plan**               | Mixed        | Verified production state, P0 defects, launch queue                                 |
-| 12a | [Codex prompts](12-codex-prompts.md)                            | Companion to 12                           | Sol High     | One paste-ready prompt per queued task, in order                                    |
+| #   | Plan | Status | Ships |
+| --- | --- | --- | --- |
+| 00  | [Roadmap](00-roadmap.md) | **Governing** | What is true, what is left, in what order |
+| 01  | [Scheduling and task lifecycle](01-scheduling.md) | Complete | Hard deadlines, archive, recurrence rework |
+| 02  | [Workspaces, projects, security](02-workspaces.md) | Complete | The tenancy boundary small teams use |
+| 04  | [Pages](04-pages.md) | Complete | Extends the existing editor |
+| 06  | [Product gap audit](06-product-gap-audit.md) | Backlog | Research input, not authorization |
+| 07  | [Sol High track](07-sol-high.md) | Complete | Security, data, architecture, scheduling |
+| 08  | [Terra High track](08-terra-high.md) | Complete | UI, tests, CI, responsive quality |
+| 11  | [Task shape and starting friction](11-task-model.md) | Backlog | T-1, T-2, T-4; T-3 settled by habits in the design port |
+| 12  | [Remaining work to the first paying user](12-remaining-work.md) | Detail chapter | What each launch blocker means and how to verify it |
+| 13  | [Pricing and plans](13-pricing.md) | **Active** | Prices, trial and hidden AI limits: what changes in code, Creem and copy |
 
-Plans 01–05 are implemented. Plans 07 and 08 ran to their final gates, and their
-deferred S11/T8 items merged into `origin/main` on 2026-08-24 — nothing is
-waiting on them any more. Plan 06 remains research input and does not
-independently authorize schema or product scope. Plan 11 is owner-captured
-product intent, also not an authorization — its items wait on a stable
-production week.
+**Archived to `docs/_old/` on 2026-09-15:** 03 animation and notifications
+(complete), 05 moodboard (complete), 09 launch track (its sequencing was
+superseded in August), 10 design identity (replaced by the Claude Design port),
+12a Codex prompts (written for a queue that has since moved).
 
-**Plan 12 is the governing plan. Start there.** It was written on 2026-08-24
-against verified production state and it supersedes plan 09's L0–L5 sequencing:
-S11 and T8 are merged, the Figma capture script is gone, all three services run
-one SHA, and backups run — plan 09 still lists those as open work. Read 09 for
-what a launch phase means, never for what is left to do.
+**The design** is not a plan in this folder. It lives in `docs/handoff/`:
+`PORT.md`, `design-reconciliation-2026-09-11.md`, and `CODEX-NEXT.md` for the
+port's remaining steps.
 
-**Plan 10 runs in parallel** and may never delay the launch queue: D0–D3 are
-safe to run alongside it, but the screen rollout waits until production is live
-and stable. The table below is the historical 07/08 execution order, retained
-for context.
+The table below is the historical 07/08 execution order, retained for context.
 
 | Phase               | Tasks                                                                 |
 | ------------------- | --------------------------------------------------------------------- |
