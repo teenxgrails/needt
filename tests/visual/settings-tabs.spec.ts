@@ -74,7 +74,7 @@ test("Billing stays visually consistent", async ({ page }) => {
   // The ported screen names the open section instead of repeating "Settings";
   // billing lives inside Account.
   await expect(
-    page.getByRole("heading", { name: "Account", level: 2 })
+    page.getByRole("heading", { name: "Account", exact: true, level: 2 })
   ).toBeVisible();
   await expect(page.getByText("Choose a plan", { exact: true })).toBeVisible();
   await settleSettings(page);
@@ -106,7 +106,7 @@ test("unavailable browser push stays honest in Settings", async ({ page }) => {
   await page.goto("/settings#notifications", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/#notifications$/);
   await expect(
-    page.getByRole("heading", { name: "Notifications", level: 1 })
+    page.locator("#settings-panel > h2").filter({ hasText: "Alerts" })
   ).toBeVisible();
 
   const browserNotifications = page
