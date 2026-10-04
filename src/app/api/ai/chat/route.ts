@@ -27,6 +27,7 @@ import {
   AIChatToolCall,
   SchedulerAI,
 } from "@/services/ai/types";
+import { publicHostedAiUsage } from "@/services/ai/usage";
 import {
   finalizeSession,
   getActiveSession,
@@ -1035,7 +1036,7 @@ export async function POST(request: NextRequest) {
             ? "HOSTED_LIMIT_REACHED"
             : "AI_UNAVAILABLE",
         upgradeRequired,
-        usage: configured.usage,
+        usage: publicHostedAiUsage(configured.usage),
       },
       { status: upgradeRequired ? 403 : 409 }
     );
@@ -1133,7 +1134,7 @@ export async function POST(request: NextRequest) {
             ? "HOSTED_LIMIT_REACHED"
             : "AI_UNAVAILABLE",
         upgradeRequired,
-        usage,
+        usage: publicHostedAiUsage(usage),
       },
       { status: upgradeRequired ? 403 : 409 }
     );

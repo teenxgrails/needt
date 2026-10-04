@@ -3,19 +3,44 @@ import { randomUUID } from "crypto";
 import { newDate } from "@/lib/date-utils";
 import { getPlan } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
+
 import { AIProviderUsage } from "./types";
 
 export const HOSTED_AI_CONFIG = {
   monthlyActionCaps: {
-    FREE: 0,
+    /**
+     * A free account gets a small allowance rather than nothing. The agent is
+     * the product's own headline, and a person who has never seen it work has
+     * no reason to pay for it.
+     */
+    FREE: Number(process.env.NEEDT_AI_FREE_ACTION_CAP || 20),
     PRO: Number(process.env.NEEDT_AI_MONTHLY_ACTION_CAP || 300),
-    LIFETIME: Number(process.env.NEEDT_AI_LIFETIME_ACTION_CAP || 3_000),
+    LIFETIME: Number(process.env.NEEDT_AI_LIFETIME_ACTION_CAP || 300),
   },
   ceilingMultiplier: Number(process.env.NEEDT_AI_CEILING_MULTIPLIER || 2),
   baseUrl:
-    process.env.NEEDT_AI_BASE_URL?.trim() || "https://api.deepseek.com/v1",
-  model: process.env.NEEDT_AI_MODEL?.trim() || "deepseek-chat",
+    process.env.NEEDT_AI_BASE_URL?.trim() || "https://openrouter.ai/api/v1",
+  model: process.env.NEEDT_AI_MODEL?.trim() || "z-ai/glm-5.3-flash",
 } as const;
+
+/**
+ * Gateway routing for the hosted key.
+ *
+ * `data_collection: "deny"` is the load-bearing part: it keeps the request
+ * away from hosts that may retain or train on it, and it holds whatever the
+ * provider slugs happen to be called. The allow-list narrows it further to
+ * named hosts and is left to configuration, because a slug this code guessed
+ * wrong would refuse every request instead of routing it.
+ */
+export function hostedAiRoutingBody(): Record<string, unknown> {
+  const allowList = (process.env.NEEDT_AI_GATEWAY_PROVIDERS ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const provider: Record<string, unknown> = { data_collection: "deny" };
+  if (allowList.length > 0) provider.only = allowList;
+  return { provider };
+}
 
 export type HostedAiUsageMode = "normal" | "slow" | "blocked";
 
@@ -77,6 +102,25 @@ export async function getHostedAiUsage(userId: string) {
     getPlan(userId),
   ]);
   return hostedUsageStatus(row?.actionCount ?? 0, plan);
+}
+
+/**
+ * What a client is allowed to learn about someone's hosted AI usage.
+ *
+ * The counts are deliberately absent from product surfaces, and
+ * `scripts/check-ui-contracts.mjs` guards that. Sending them anyway only moved
+ * the leak to the network tab, so the boundary drops them here instead: the UI
+ * needs the mode, never the number.
+ */
+export function publicHostedAiUsage(
+  status: Awaited<ReturnType<typeof getHostedAiUsage>>
+) {
+  return {
+    plan: status.plan,
+    allowed: status.allowed,
+    slowMode: status.slowMode,
+    exhausted: status.exhausted,
+  };
 }
 
 export async function canUseHostedAi(userId: string) {
