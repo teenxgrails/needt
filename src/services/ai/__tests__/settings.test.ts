@@ -36,6 +36,10 @@ jest.mock("../usage", () => ({
     model: "hosted-model",
   },
   getHostedAiUsage: jest.fn(),
+  hostedAiRoutingBody: jest.fn(() => ({
+    provider: { data_collection: "deny" },
+  })),
+  publicHostedAiUsage: jest.fn((status) => status),
   claimHostedAiAction: jest.fn(),
   releaseHostedAiAction: jest.fn(),
   resolveAiAccessMode: jest.fn((input) => {

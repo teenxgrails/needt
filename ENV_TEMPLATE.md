@@ -73,13 +73,30 @@ OPENAI_API_KEY=""
 AI_CUSTOM_URL=""
 AI_ENCRYPTION_KEY=""
 NEEDT_AI_API_KEY=""
-NEEDT_AI_MODEL="deepseek-chat"
-NEEDT_AI_BASE_URL="https://api.deepseek.com/v1"
+NEEDT_AI_MODEL="z-ai/glm-5.3-flash"
+NEEDT_AI_BASE_URL="https://openrouter.ai/api/v1"
+NEEDT_AI_GATEWAY_PROVIDERS=""
+NEEDT_AI_FREE_ACTION_CAP="20"
 NEEDT_AI_MONTHLY_ACTION_CAP="300"
-NEEDT_AI_LIFETIME_ACTION_CAP="3000"
+NEEDT_AI_LIFETIME_ACTION_CAP="300"
 NEEDT_AI_CEILING_MULTIPLIER="2"
 NEEDT_ALERT_EMAIL=""
 ```
+
+`NEEDT_AI_API_KEY` is the deployment-wide hosted key. The defaults point at
+OpenRouter serving GLM 5.3 Flash; any OpenAI-compatible endpoint works by
+setting `NEEDT_AI_BASE_URL` and `NEEDT_AI_MODEL`.
+
+Hosted requests always ask the gateway to skip providers that may retain or
+train on the data. `NEEDT_AI_GATEWAY_PROVIDERS` narrows routing further to a
+comma-separated allow-list of gateway provider slugs — set it to pin inference
+to named hosts in particular countries. Leave it empty to let the gateway
+choose among the hosts that already satisfy the no-retention requirement; a
+slug that does not exist would refuse every request, so verify a value against
+a live key before relying on it.
+
+A key the user brings themselves is never metered, never capped and never
+slowed, and it is honoured on every plan including Free.
 
 `NEEDT_ALERT_EMAIL` receives critical operations alerts — queue backlogs, missed cron windows — through the same Resend sender as product email. Leave it empty and critical alerts stay in Sentry only; warnings never email regardless.
 

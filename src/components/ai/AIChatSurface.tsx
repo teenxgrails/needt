@@ -45,10 +45,6 @@ interface AISettingsResponse {
   hostedAvailable?: boolean;
   usage?: {
     plan: "FREE" | "PRO" | "LIFETIME";
-    used: number;
-    limit: number;
-    ceiling: number;
-    remaining: number;
     allowed: boolean;
     slowMode: boolean;
     exhausted: boolean;
