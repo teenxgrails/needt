@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
+  SchedulePreviewConflictError,
   applyReschedulePreview,
   createReschedulePreview,
-  SchedulePreviewConflictError,
   undoReschedulePreview,
 } from "@/services/ai/reschedule-preview";
+import { WorkspaceRole } from "@prisma/client";
 import { z } from "zod";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
@@ -21,7 +22,9 @@ const requestSchema = z.discriminatedUnion("action", [
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) return auth.response;
     const input = requestSchema.parse(await request.json());
     if (input.action === "preview") {

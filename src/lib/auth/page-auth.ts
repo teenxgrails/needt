@@ -11,6 +11,28 @@ export type PageAccessActor = {
   workspace?: WorkspaceAccess;
 };
 
+export function pageSummaryAccessRole(
+  actor: PageAccessActor | string,
+  page: {
+    // Null once the owner's account is deleted; such a page grants nothing by
+    // ownership and falls through to its explicit grants and visibility.
+    userId: string | null;
+    isPrivate: boolean;
+    accessGrants: readonly { role: PageAccessRole }[];
+  }
+) {
+  if (typeof actor === "string" || page.userId === actor.userId) {
+    return PageAccessRole.FULL_ACCESS;
+  }
+  const directRole = page.accessGrants[0]?.role;
+  return (
+    directRole ??
+    (page.isPrivate || !actor.workspace
+      ? PageAccessRole.VIEWER
+      : inheritedPageRole(actor.workspace.role))
+  );
+}
+
 const ROLE_RANK: Record<PageAccessRole, number> = {
   [PageAccessRole.VIEWER]: 0,
   [PageAccessRole.EDITOR]: 1,

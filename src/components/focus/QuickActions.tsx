@@ -5,7 +5,7 @@ import { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { HiArchive, HiClock, HiPencil } from "react-icons/hi";
 
-import { TaskModal } from "@/components/tasks/TaskModal";
+import { TaskModal } from "@/components/task-editor/TaskModal";
 import { Button } from "@/components/ui/button";
 
 import { logger } from "@/lib/logger";

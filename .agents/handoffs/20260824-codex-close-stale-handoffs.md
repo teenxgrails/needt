@@ -9,7 +9,7 @@ objective: Close obsolete delivery handoffs using current Git ancestry and green
 
 ## Scope
 
-- Governing plan/spec: `docs/plans/12-remaining-work.md` P1.3 and prompt 4 in `docs/plans/12-codex-prompts.md`.
+- Governing plan/spec: `docs/plans/12-remaining-work.md` P1.3 and prompt 4 in `docs/_old/12-codex-prompts.md`.
 - In scope: the three named stale handoffs and factual Git/CI evidence for their current outcomes.
 - Out of scope: product code, baseline updates, Terra/P2 work, Coolify, deployment, and production operations.
 

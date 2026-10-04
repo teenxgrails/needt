@@ -11,6 +11,7 @@ export type PageSummary = {
   contentRevision: number;
   updatedAt: string;
   database: { id: string } | null;
+  accessRole?: "FULL_ACCESS" | "EDITOR" | "VIEWER";
 };
 
 export type PageBlock = {

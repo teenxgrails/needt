@@ -1,5 +1,9 @@
-import { redirect } from "next/navigation";
+import { MailPage } from "@/components/mail/MailPage";
 
 export default function MailRoute() {
-  redirect("/tasks?view=mail");
+  return (
+    <div className="h-full">
+      <MailPage />
+    </div>
+  );
 }
