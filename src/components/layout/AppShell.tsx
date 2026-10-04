@@ -67,6 +67,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div
       className={cn(
         "needt-page-depth relative flex min-h-dvh",
+        /* The shell's root is `height: 100%`, and a percentage height needs a
+           definite one above it — against `min-h-dvh` alone it resolves to the
+           content and the whole page collapses. */
+        !compact && "h-dvh overflow-hidden",
         (pathname === "/today" || pathname.startsWith("/moodboards/")) &&
           "xl:h-dvh xl:overflow-hidden"
       )}
@@ -99,7 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NeedtAppShell enabled={!compact}>
               <main
                 className={cn(
-                  "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
+                  "needt-route-content relative min-h-0 min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
                   pathname.startsWith("/settings") &&
                     "max-lg:h-dvh max-lg:overflow-hidden max-lg:pb-0",
                   (pathname === "/today" ||

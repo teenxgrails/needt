@@ -145,29 +145,35 @@ export function NeedtAppShell({
   const name = session?.user?.name ?? "You";
   const screen = screenForPath(pathname);
 
+  /* The shell's root is a flex container with `height: 100%` and no width of
+     its own, so it has to be a *block* child to fill the page: as a flex item
+     it sizes to its content, which squeezed the workspace to 725px of a
+     1920px window and collapsed its columns to nothing. */
   return (
-    <AppShell
-      today={data ? newDate(data.now) : newDate()}
-      tasks={data?.tasks ?? []}
-      people={data?.people ?? []}
-      pinned={data?.pinned ?? []}
-      account={{
-        name,
-        initials: initialsOf(name),
-        email: session?.user?.email ?? "",
-      }}
-      dark={resolved === "dark" || resolved === "dim"}
-      onCycleTheme={cycleTheme}
-      screen={screen ?? "today"}
-      onScreen={(next) => router.push(PATH_BY_SCREEN[next])}
-      onOpenTask={(task) =>
-        router.push(`/tasks?task=${encodeURIComponent(task.id)}`)
-      }
-      /* ⌘K and ? already belong to the command palette and the shortcuts
+    <div className="h-full min-w-0 flex-1">
+      <AppShell
+        today={data ? newDate(data.now) : newDate()}
+        tasks={data?.tasks ?? []}
+        people={data?.people ?? []}
+        pinned={data?.pinned ?? []}
+        account={{
+          name,
+          initials: initialsOf(name),
+          email: session?.user?.email ?? "",
+        }}
+        dark={resolved === "dark" || resolved === "dim"}
+        onCycleTheme={cycleTheme}
+        screen={screen ?? "today"}
+        onScreen={(next) => router.push(PATH_BY_SCREEN[next])}
+        onOpenTask={(task) =>
+          router.push(`/tasks?task=${encodeURIComponent(task.id)}`)
+        }
+        /* ⌘K and ? already belong to the command palette and the shortcuts
          modal that ship today. Two handlers on one chord fire both. */
-      bindKeys={false}
-    >
-      {children}
-    </AppShell>
+        bindKeys={false}
+      >
+        {children}
+      </AppShell>
+    </div>
   );
 }
