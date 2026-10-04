@@ -17,6 +17,7 @@ import {
   Settings,
   SlidersHorizontal,
   Sun,
+  Sunset,
 } from "lucide-react";
 
 import { useTheme } from "@/components/providers/ThemeProvider";
@@ -210,10 +211,11 @@ export function UserMenu() {
           <div className="mb-2 text-xs font-medium text-[var(--text-secondary)]">
             Theme
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             {[
-              { id: "light", label: "Light", icon: Sun },
-              { id: "graphite", label: "Graphite", icon: CircleDot },
+              { id: "paper", label: "Paper", icon: Sun },
+              { id: "warm", label: "Warm", icon: Sunset },
+              { id: "dim", label: "Dim", icon: CircleDot },
               { id: "dark", label: "Dark", icon: Moon },
               { id: "system", label: "System", icon: Monitor },
             ].map((item) => {

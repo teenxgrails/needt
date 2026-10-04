@@ -16,10 +16,40 @@ mistakes and token spend; they never replace `type-check`, `lint`, tests, or CI.
 |---|---|
 | `.codex/config.toml` | Project-scoped MCP servers: Context7 and Playwright |
 | `.codex/skills/*/SKILL.md` | Seven design skills (ui-styling, design-system, brand, …) |
+| `.agents/skills/*/SKILL.md` | Project-shared agent skills, including the taste-skill collection |
 | `AGENTS.md` | Project instructions, including the output rules that control token spend |
 | `docs/STACK.md` | Authoritative stack, quality gates, UI contracts |
 
 Nothing below modifies application code.
+
+---
+
+## 0.1 Taste-skill collection
+
+The `Leonxlnx/taste-skill` collection is installed in `.agents/skills` and
+recorded in `skills-lock.json`. It is available to contributors whose agent
+supports project skills after they pull these files. Ask for a skill by name in
+the prompt, for example: *"Use `design-taste-frontend` to design this landing
+page."*
+
+- Use `design-taste-frontend` for landing pages, portfolios, and redesigns;
+  use `design-taste-frontend-v1` only when its legacy behaviour is required.
+- The remaining specialist skills are `brandkit`, `image-to-code`,
+  `imagegen-frontend-mobile`, `imagegen-frontend-web`, `minimalist-ui`,
+  `industrial-brutalist-ui`, `high-end-visual-design`,
+  `redesign-existing-projects`, `stitch-design-taste`, `gpt-taste`, and
+  `full-output-enforcement`.
+- `AGENTS.md`, `design-refs/ui-conventions.md`, accessibility requirements, and
+  the existing component system always override a skill's style directives.
+  In particular, do not apply a taste skill automatically to Needt's dense app
+  UI; choose it only when its stated scope matches the request.
+
+If a supported agent does not discover project skills, run this from the
+repository root to restore the locked collection:
+
+```bash
+npx skills add Leonxlnx/taste-skill
+```
 
 ---
 

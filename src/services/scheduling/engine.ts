@@ -346,7 +346,8 @@ function hasConflict(
 
 function sortTasks(tasks: SchedulableTask[], now: Date): SchedulableTask[] {
   const sortedByPriority = [...tasks].sort((a, b) => {
-    const asapDelta = Number(b.priority === "URGENT") - Number(a.priority === "URGENT");
+    const asapDelta =
+      Number(b.priority === "URGENT") - Number(a.priority === "URGENT");
     if (asapDelta !== 0) return asapDelta;
 
     const hardDeadlineDelta =
@@ -377,7 +378,8 @@ function sortTasks(tasks: SchedulableTask[], now: Date): SchedulableTask[] {
       (b.availableFrom?.getTime() ?? now.getTime());
     if (availableFromDelta !== 0) return availableFromDelta;
 
-    const recurrenceDelta = Number(Boolean(b.isRecurring)) - Number(Boolean(a.isRecurring));
+    const recurrenceDelta =
+      Number(Boolean(b.isRecurring)) - Number(Boolean(a.isRecurring));
     if (recurrenceDelta !== 0) return recurrenceDelta;
 
     const createdAtDelta =
@@ -546,6 +548,15 @@ function findSlot(
   return null;
 }
 
+/**
+ * Earliest hour overflow may reach into. A hard deadline outranks the work
+ * schedule — that is deliberate, and covered by tests — but it does not outrank
+ * sleep. Without this the search walked the clock minute by minute and would
+ * happily return 03:00, which no one acts on and which reads as a bug rather
+ * than as urgency.
+ */
+const OVERFLOW_EARLIEST_HOUR = 7;
+
 function findHardDeadlineOverflowSlot(
   chunk: TaskChunk,
   occupied: OccupiedBlock[],
@@ -564,6 +575,25 @@ function findHardDeadlineOverflowSlot(
 
   while (cursor < searchEnd) {
     const end = addMinutes(cursor, chunk.minutes);
+    const dayStart = setTime(cursor, `0${OVERFLOW_EARLIEST_HOUR}:00`);
+    const dayEnd = setTime(cursor, prefs.hardStopTime);
+
+    if (cursor < dayStart) {
+      // Too early in the day: jump to the first acceptable minute rather than
+      // stepping through the small hours one slot at a time.
+      cursor = dayStart;
+      continue;
+    }
+    if (end > dayEnd) {
+      // Past the hard stop: move to the next morning instead of running into
+      // the night.
+      cursor = setTime(
+        addMinutes(startOfDay(cursor), 24 * 60),
+        `0${OVERFLOW_EARLIEST_HOUR}:00`
+      );
+      continue;
+    }
+
     if (
       end <= searchEnd &&
       !hasConflict(cursor, end, occupied, spacingMinutes)

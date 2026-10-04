@@ -22,7 +22,10 @@ import { useCalendarStore } from "@/store/calendar";
 import { useProjectStore } from "@/store/project";
 import { useTaskStore } from "@/store/task";
 
-import { reportWorkspaceBootstrapFailure } from "./workspace-bootstrap";
+import {
+  loadWorkspaceStores,
+  reportWorkspaceBootstrapFailure,
+} from "./workspace-bootstrap";
 
 const ACTIVE_WORKSPACE_STORAGE_KEY = "needt-active-workspace-id";
 
@@ -137,6 +140,26 @@ export function WorkspaceProvider({ children }: PropsWithChildren) {
     previousWorkspaceIdRef.current = activeWorkspaceId;
     queryClient.clear();
     resetWorkspaceStores();
+    useTaskStore.setState({ loading: true });
+    useProjectStore.setState({ loading: true });
+    const workspaceId = activeWorkspaceId;
+    void loadWorkspaceStores()
+      .then(({ projects, tags, tasks }) => {
+        if (activeWorkspaceIdRef.current !== workspaceId) return;
+        useTaskStore.setState({ tasks, tags, loading: false, error: null });
+        useProjectStore.setState({
+          projects,
+          activeProject: null,
+          loading: false,
+          error: null,
+        });
+      })
+      .catch((error) => {
+        if (activeWorkspaceIdRef.current !== workspaceId) return;
+        useTaskStore.setState({ loading: false, error: error as Error });
+        useProjectStore.setState({ loading: false, error: error as Error });
+        void reportWorkspaceBootstrapFailure(error);
+      });
   }, [activeWorkspaceId, queryClient]);
 
   useLayoutEffect(() => {

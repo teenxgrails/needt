@@ -12,6 +12,18 @@ describe("public route middleware", () => {
     expect(response.headers.get("x-middleware-next")).toBe("1");
   });
 
+  it("does not expose the retired design preview as a public route", async () => {
+    const response = await middleware(
+      new NextRequest("http://needt.test/design-preview")
+    );
+
+    const location = response.headers.get("location");
+    expect(location).not.toBeNull();
+    const redirect = new URL(location!);
+    expect(redirect.pathname).toBe("/auth/signin");
+    expect(redirect.searchParams.get("callbackUrl")).toBe("/design-preview");
+  });
+
   it("allows the email confirmation landing without a session", async () => {
     const response = await middleware(
       new NextRequest("http://needt.test/auth/confirm-email?token=example")

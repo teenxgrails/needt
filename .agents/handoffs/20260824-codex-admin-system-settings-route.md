@@ -9,7 +9,7 @@ objective: Make the system credential settings reachable only to administrators 
 
 ## Scope
 
-- Governing plan/spec: `docs/plans/12-remaining-work.md` P0.1 and prompt 1 in `docs/plans/12-codex-prompts.md`.
+- Governing plan/spec: `docs/plans/12-remaining-work.md` P0.1 and prompt 1 in `docs/_old/12-codex-prompts.md`.
 - In scope: `/admin/system`, its existing admin navigation surface, the UI-contract invariant, focused unit coverage, browser verification, prompt gates, and a scoped PR.
 - Out of scope: Prisma changes, system-settings API contract changes, credential fields, calendar API code, credentials, production operations, deployment, and merge.
 

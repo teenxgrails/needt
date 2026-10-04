@@ -1,7 +1,9 @@
-import { TaskReminderKind } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
+import { TaskReminderKind, WorkspaceRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
+import { newDate } from "@/lib/date-utils";
 import { canAddTaskReminder } from "@/lib/entitlements";
 import { prisma } from "@/lib/prisma";
 
@@ -21,7 +23,9 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function POST(request: NextRequest, { params }: RouteContext) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
   const { id } = await params;
   const body = (await request.json()) as {
@@ -43,7 +47,8 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     where: { id, userId: auth.userId },
     select: { id: true },
   });
-  if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  if (!task)
+    return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
   const existing = await prisma.taskReminder.findUnique({
     where: {
@@ -96,15 +101,20 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const auth = await authenticateRequest(request, LOG_SOURCE);
+  const auth = await authenticateRequest(request, LOG_SOURCE, {
+    requiredRole: WorkspaceRole.EDITOR,
+  });
   if ("response" in auth) return auth.response;
   const reminderId = request.nextUrl.searchParams.get("reminderId");
   if (!reminderId) {
-    return NextResponse.json({ error: "reminderId is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "reminderId is required" },
+      { status: 400 }
+    );
   }
   await prisma.taskReminder.updateMany({
     where: { id: reminderId, userId: auth.userId },
-    data: { canceledAt: new Date() },
+    data: { canceledAt: newDate() },
   });
   return new NextResponse(null, { status: 204 });
 }

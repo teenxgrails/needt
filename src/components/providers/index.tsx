@@ -13,7 +13,7 @@ import { WorkspaceProvider } from "./WorkspaceProvider";
 export function Providers({ children }: PropsWithChildren) {
   return (
     <TanstackQueryProvider>
-      <ThemeProvider attribute="data-theme" enableSystem={true}>
+      <ThemeProvider enableSystem={true}>
         <CustomizationRuntime>
           <MotionRuntime>
             <SessionProvider>

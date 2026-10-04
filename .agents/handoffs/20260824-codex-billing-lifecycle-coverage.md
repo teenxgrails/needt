@@ -9,7 +9,7 @@ objective: Prove and harden the complete Creem billing lifecycle with recorded f
 
 ## Scope
 
-- Governing plan/spec: `docs/plans/12-remaining-work.md` P0.2 and prompt 5 in `docs/plans/12-codex-prompts.md`.
+- Governing plan/spec: `docs/plans/12-remaining-work.md` P0.2 and prompt 5 in `docs/_old/12-codex-prompts.md`.
 - In scope: current Creem documentation audit, recorded webhook fixtures/tests, lifecycle mapping and persistence, replay/out-of-order/tamper protection, failed-payment semantics, and server entitlement checks.
 - Out of scope: live Creem API/dashboard operations, prices, production data/secrets, Swiss tax/invoice decisions, deployment, Terra/P2 work, and LIFETIME semantic changes.
 

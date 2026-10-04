@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>focus as mode transition — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">11 · focus as mode transition</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Focus as a mode in Needt: the same canvas transforms, the current block comes forward and the rest of the day recedes</h2>
+
+<div style="background:var(--surface-1);border-radius:12px;padding:10px;">
+<div style="background:#17150F;border:0.5px solid #332E24;border-radius:8px;padding:12px 14px;position:relative;overflow:hidden;">
+
+  <div id="bar" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;transition:opacity 200ms ease;">
+    <div style="font-size:14px;color:#EDE7DA;">Tuesday, 25 August</div>
+    <button id="go" style="margin-left:auto;height:28px;border:none;border-radius:7px;position:relative;overflow:hidden;background:#C96442;color:#1A0F0A;font-size:12px;padding:0 14px;transition:transform 90ms cubic-bezier(.4,0,.2,1);">
+      <span style="position:absolute;left:0;right:0;top:0;height:1px;background:rgba(255,255,255,.28);"></span>Focus
+    </button>
+  </div>
+
+  <div id="cv" style="position:relative;height:284px;"></div>
+
+  <div id="hud" style="position:absolute;left:0;right:0;bottom:14px;text-align:center;opacity:0;transform:translateY(8px);transition:opacity 260ms ease,transform 380ms cubic-bezier(.22,1,.32,1);pointer-events:none;">
+    <div style="font-size:11px;color:#6F675B;">Next · Lunch 12:00</div>
+    <button id="out" style="margin-top:9px;height:26px;border:0.5px solid #332E24;background:transparent;color:#9A9184;font-size:11px;border-radius:6px;padding:0 12px;pointer-events:auto;">Leave focus</button>
+  </div>
+
+</div>
+</div>
+
+<script>
+(function(){
+  var H=30, on=false;
+  var cv=document.getElementById('cv'), bar=document.getElementById('bar');
+  var go=document.getElementById('go'), out=document.getElementById('out'), hud=document.getElementById('hud');
+
+  var items=[
+    {t:'Standup',s:0,d:.5,k:0},
+    {t:'Design review',s:.75,d:1.25,k:1,cur:1},
+    {t:'Lunch',s:3,d:1,k:0},
+    {t:'Deep work',s:4.25,d:1.75,k:1},
+    {t:'Retro',s:7,d:1,k:0}
+  ];
+
+  var nodes=[];
+  items.forEach(function(x){
+    var el=document.createElement('div');
+    el.__x=x;
+    el.style.cssText='position:absolute;left:36px;right:6px;top:'+(x.s*H+1)+'px;height:'+(x.d*H-3)+'px;'+
+      'box-sizing:border-box;padding:4px 8px;overflow:hidden;'+
+      (x.k?'background:transparent;border:1px dashed #C96442;border-radius:4px;':'background:#211E17;border:0.5px solid #332E24;border-left:2px solid #9A9184;')+
+      'transition:top 460ms cubic-bezier(.22,1,.32,1),height 460ms cubic-bezier(.22,1,.32,1),left 460ms cubic-bezier(.22,1,.32,1),right 460ms cubic-bezier(.22,1,.32,1),opacity 300ms ease,padding 460ms ease;';
+    el.innerHTML='<div class="ttl" style="font-size:10.5px;color:#EDE7DA;line-height:1.25;transition:font-size 400ms cubic-bezier(.22,1,.32,1);">'+x.t+'</div>'+
+      '<div class="tm" style="font-size:9px;font-variant-numeric:tabular-nums;color:#6F675B;margin-top:2px;transition:font-size 400ms ease;">'+(9+Math.floor(x.s))+':'+((x.s%1)*60<10?'0':'')+((x.s%1)*60)+'</div>'+
+      '<div class="tmr" style="font-size:34px;font-variant-numeric:tabular-nums;color:#EDE7DA;letter-spacing:-.02em;opacity:0;height:0;overflow:hidden;transition:opacity 300ms ease;">42:10</div>';
+    cv.appendChild(el);
+    nodes.push(el);
+  });
+
+  var grid=document.createElement('div');
+  grid.style.cssText='position:absolute;inset:0;transition:opacity 300ms ease;';
+  var g='';
+  for(var i=0;i<9;i++){
+    g+='<div style="position:absolute;left:0;right:0;top:'+(i*H)+'px;border-top:0.5px solid #332E24;"></div>';
+    g+='<div style="position:absolute;left:0;top:'+(i*H+3)+'px;font-size:9px;font-variant-numeric:tabular-nums;color:#6F675B;">'+(9+i)+':00</div>';
+  }
+  grid.innerHTML=g;
+  cv.insertBefore(grid,cv.firstChild);
+
+  function enter(){
+    on=true;
+    grid.style.opacity='0';
+    bar.style.opacity='0';
+    nodes.forEach(function(el){
+      var x=el.__x;
+      if(x.cur){
+        el.style.left='14%'; el.style.right='14%';
+        el.style.top='84px'; el.style.height='116px';
+        el.style.padding='18px 20px';
+        el.style.borderStyle='solid'; el.style.borderColor='#C96442';
+        el.querySelector('.ttl').style.fontSize='15px';
+        el.querySelector('.tm').style.fontSize='11px';
+        var t=el.querySelector('.tmr'); t.style.height='auto'; t.style.opacity='1'; t.style.marginTop='10px';
+      } else {
+        el.style.opacity='0.07';
+      }
+    });
+    hud.style.opacity='1'; hud.style.transform='translateY(0)';
+  }
+  function leave(){
+    on=false;
+    grid.style.opacity='1';
+    bar.style.opacity='1';
+    hud.style.opacity='0'; hud.style.transform='translateY(8px)';
+    nodes.forEach(function(el){
+      var x=el.__x;
+      el.style.opacity='1';
+      el.style.left='36px'; el.style.right='6px';
+      el.style.top=(x.s*H+1)+'px'; el.style.height=(x.d*H-3)+'px';
+      el.style.padding='4px 8px';
+      if(x.k){ el.style.borderStyle='dashed'; }
+      el.querySelector('.ttl').style.fontSize='10.5px';
+      el.querySelector('.tm').style.fontSize='9px';
+      var t=el.querySelector('.tmr'); t.style.opacity='0'; t.style.height='0'; t.style.marginTop='0';
+    });
+  }
+
+  go.addEventListener('pointerdown',function(){go.style.transition='transform 90ms cubic-bezier(.4,0,.2,1)';go.style.transform='scale(.98)';});
+  ['pointerup','pointerleave'].forEach(function(e){go.addEventListener(e,function(){go.style.transition='transform 340ms cubic-bezier(.34,1.4,.5,1)';go.style.transform='scale(1)';});});
+  go.onclick=enter; out.onclick=leave;
+})();
+</script>
+</div></body></html>

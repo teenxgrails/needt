@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { PageAccessRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { pageVisibilityWhere, resolvePageAccess } from "@/lib/auth/page-auth";
 import { prisma } from "@/lib/prisma";
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
-  if (!(await resolvePageAccess(auth, pageId))) {
+  if (!(await resolvePageAccess(auth, pageId, PageAccessRole.EDITOR))) {
     return NextResponse.json({ error: "Page access denied" }, { status: 403 });
   }
   const page = await prisma.page.findFirst({

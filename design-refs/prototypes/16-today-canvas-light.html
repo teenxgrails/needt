@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16 — Today, timeline as canvas, light — Needt prototype</title>
+<style>
+/* Structure taken from prototype 12 (owner's pick, 2026-08-23):
+   the TIMELINE is the canvas — wide, centre. The agenda is a narrow text rail
+   on the right. Dense thing in the wide column, sparse thing in the narrow one.
+   Prototypes 14 and 15 had this inverted, which is why their centre was empty.
+
+   Marking follows the 2026-08-23 revision, NOT prototype 12: 12 outlines every
+   Needt block in dashed clay, but on a real day 7–8 of 10 blocks come from
+   Needt, so the majority would be marked. The minority is marked instead —
+   fixed commitments get a grey rail, Needt-placed blocks carry project colour.
+
+   Light base, all sans, icons in the sidebar — decisions of 2026-08-23. */
+:root{
+  --canvas:#F2EEE4;
+  --raised:#FAF8F3;
+  --ambient:linear-gradient(to bottom, rgba(255,255,255,.5) 0%, transparent 38%);
+  --control:#E7E1D4;
+  --control-hover:#DFD8C7;
+  --hover:rgba(31,29,24,.045);
+  --line:#E0D9C9;
+  --line-strong:#C7BFAB;
+  --text:#1F1D18;
+  --secondary:#5F5849;
+  --muted:#8F8878;
+  --accent:#B4543A;
+  --accent-wash:rgba(180,84,58,.12);
+  --now:#C2603F;
+  --p-needt:#B4543A; --p-resale:#8A6A2F; --p-beats:#4A7A68;
+  --radius:8px; --card:4px;
+  --press-in:90ms cubic-bezier(.4,0,.2,1);
+  --press-out:340ms cubic-bezier(.34,1.4,.5,1);
+  --reposition:480ms cubic-bezier(.22,1,.32,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--canvas);background-image:var(--ambient);
+  background-repeat:no-repeat;color:var(--text);overflow:hidden;
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:196px minmax(0,1fr) 268px;height:100vh}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────── */
+.side{border-right:1px solid var(--line);display:flex;flex-direction:column;
+  padding:12px 0 10px;min-height:0}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 14px 16px}
+.lights{display:flex;gap:7px}
+.lights i{width:11px;height:11px;border-radius:50%;background:var(--line-strong)}
+.brand b{font-size:13.5px;font-weight:600;margin-left:4px}
+.mk{margin:0 12px 14px}
+/* one filled button, at the start of the flow */
+.create{display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;background:var(--accent);color:#FAF8F3;border:0;
+  border-radius:var(--radius);font:inherit;font-weight:500;font-size:13.5px;
+  padding:9px;cursor:pointer;position:relative;
+  transition:transform var(--press-out)}
+.create:before{content:"";position:absolute;inset:0 0 auto;height:1px;
+  border-radius:var(--radius) var(--radius) 0 0;background:rgba(255,255,255,.30)}
+.create:active{transform:scale(.98);transition:transform var(--press-in)}
+.create kbd{font:inherit;font-size:11.5px;opacity:.72}
+.nav{padding:0 8px;display:flex;flex-direction:column;gap:1px}
+.nav a{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;
+  border-radius:7px;color:var(--secondary);text-decoration:none;font-size:13.5px;
+  transition:background 140ms ease,color 140ms ease}
+.nav a:hover{background:var(--hover);color:var(--text)}
+.nav a[aria-current]{background:var(--control);color:var(--text);font-weight:500}
+.nav svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;opacity:.8}
+.nav a[aria-current] svg{opacity:1}
+.nav .n{margin-left:auto;font-size:11.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+.sec{padding:22px 18px 7px;font-size:13px;font-weight:600;color:var(--text)}
+.hint{padding:0 18px 4px;font-size:12.5px;font-style:italic;color:var(--muted)}
+.proj{display:flex;align-items:center;gap:10px;height:27px;padding:0 18px;
+  font-size:13px;color:var(--secondary);cursor:default;transition:color 140ms ease}
+.proj:hover{color:var(--text)}
+.proj i{width:7px;height:7px;border-radius:2px;flex:none}
+.proj b{margin-left:auto;font-weight:400;font-size:11.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+.foot{margin-top:auto;padding:0 12px}
+.ghost{display:flex;align-items:center;gap:9px;width:100%;background:none;
+  border:1px solid var(--line-strong);border-radius:var(--radius);
+  color:var(--secondary);font:inherit;font-size:13px;padding:8px 11px;
+  cursor:pointer;margin-bottom:10px;
+  transition:background 160ms ease,color 160ms ease}
+.ghost:hover{background:var(--control);color:var(--text)}
+.ghost svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6}
+.me{display:flex;align-items:center;gap:9px;padding:8px 6px 2px;
+  border-top:1px solid var(--line);font-size:13px;color:var(--secondary)}
+.me i{width:22px;height:22px;border-radius:50%;background:var(--accent-wash);
+  color:var(--accent);font-size:10px;font-style:normal;font-weight:600;
+  display:grid;place-items:center;flex:none}
+
+/* ── Canvas: the timeline ─────────────────────────────────────────────── */
+.canvas{display:flex;flex-direction:column;min-width:0;min-height:0}
+.top{display:flex;align-items:center;padding:15px 24px 0;flex:none}
+.top h1{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.seg{margin-left:auto;display:flex;border:1px solid var(--line);
+  border-radius:var(--radius);padding:2px}
+.seg button{background:none;border:0;color:var(--secondary);font:inherit;
+  font-size:12.5px;padding:4px 13px;border-radius:6px;cursor:pointer;
+  transition:background 160ms ease}
+.seg button[aria-pressed="true"]{background:var(--control);color:var(--text)}
+.strip{display:flex;gap:1px;padding:12px 24px 10px;
+  border-bottom:1px solid var(--line);flex:none}
+.d{flex:1;text-align:center;padding:5px 0;border-radius:7px;font-size:14px;
+  color:var(--secondary);cursor:pointer;font-variant-numeric:tabular-nums;
+  transition:background 160ms ease}
+.d small{display:block;font-size:10.5px;color:var(--muted);margin-bottom:2px}
+.d:hover{background:var(--hover)}
+.d[aria-current]{background:var(--control);color:var(--text);font-weight:500}
+.d[aria-current] small{color:var(--accent)}
+.grid{position:relative;flex:1;min-height:0;overflow-y:auto;
+  overscroll-behavior:contain;padding:0 24px 40px 24px}
+.hr{height:56px;border-top:1px solid var(--line);position:relative;
+  margin-left:44px}
+.hr b{position:absolute;left:-44px;top:-7px;width:38px;text-align:right;
+  font-size:11px;color:var(--muted);font-weight:400;
+  font-variant-numeric:tabular-nums}
+/* blocks span the canvas — the grid reads as a day, not a rail */
+.ev{position:absolute;left:68px;right:24px;border-radius:var(--card);
+  padding:6px 11px;border:1px solid var(--line);background:var(--raised);
+  transition:transform var(--reposition),background 160ms ease}
+.ev:hover{background:var(--control)}
+.ev .t{font-size:13.5px;line-height:18px}
+.ev .w{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.ev:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  border-radius:var(--card) 0 0 var(--card)}
+/* minority marked: grey rail = fixed. project colour = Needt placed it */
+.ev[data-move="fixed"]:before{background:var(--line-strong)}
+.ev[data-move="auto"][data-p="needt"]:before{background:var(--p-needt)}
+.ev[data-move="auto"][data-p="resale"]:before{background:var(--p-resale)}
+.ev[data-move="auto"][data-p="beats"]:before{background:var(--p-beats)}
+.ev[data-slim]{padding:3px 11px}
+.ev[data-slim] .w{display:none}
+.ev[data-past]{opacity:.42}
+.now{position:absolute;left:68px;right:24px;height:1px;background:var(--now);z-index:3}
+.now:before{content:"";position:absolute;left:-4px;top:-3px;width:7px;height:7px;
+  border-radius:50%;background:var(--now)}
+.legend{padding:9px 24px;border-top:1px solid var(--line);font-size:11.5px;
+  color:var(--muted);display:flex;align-items:center;gap:7px;flex:none}
+.legend i{width:3px;height:11px;background:var(--line-strong);border-radius:1px}
+
+/* ── Agenda: the day as text ──────────────────────────────────────────── */
+.agenda{border-left:1px solid var(--line);display:flex;flex-direction:column;
+  min-width:0;min-height:0;padding:15px 18px 14px;overflow-y:auto;
+  overscroll-behavior:contain}
+.ah{font-size:11px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:11px}
+.lead{font-size:14.5px;line-height:21px;margin-bottom:6px}
+.lead+.lead{color:var(--secondary);margin-bottom:20px}
+.moved{padding:9px 11px;border:1px solid var(--line);
+  border-left:2px solid var(--accent);border-radius:var(--card);
+  background:var(--raised);margin-bottom:22px;font-size:12.5px;
+  line-height:18px;color:var(--secondary)}
+.moved b{font-weight:500;color:var(--text)}
+.moved button{background:none;border:0;font:inherit;font-size:12.5px;
+  color:var(--accent);cursor:pointer;padding:0;margin-top:5px;display:block}
+.moved button:hover{text-decoration:underline}
+.ah.warn{color:var(--accent)}
+.slot{display:flex;align-items:center;gap:9px;padding:7px 8px;margin:0 -8px;
+  border-radius:var(--card);font-size:13.5px;transition:background 160ms ease}
+.slot:hover{background:var(--hover)}
+.slot i{width:7px;height:7px;border-radius:2px;flex:none}
+.slot span{flex:1}
+.slot b{font-weight:400;font-size:12px;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+.new{color:var(--muted);font-size:13.5px;padding:9px 0 0 16px}
+@media (prefers-reduced-motion:reduce){*{transition-duration:1ms!important}}
+</style></head><body>
+<div class="app">
+
+  <aside class="side">
+    <div class="brand"><div class="lights"><i></i><i></i><i></i></div><b>Needt</b></div>
+    <div class="mk"><button class="create">Create<kbd>⌘N</kbd></button></div>
+    <nav class="nav">
+      <a href="#" aria-current="page">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
+        Day</a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h9"/></svg>
+        Work<span class="n">4</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M3 12h5l2 3h4l2-3h5M3 12l2.5-7h13L21 12v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg>
+        Inbox<span class="n">2</span></a>
+      <a href="#"><svg viewBox="0 0 24 24"><path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7z"/><path d="M14 3v4h4"/></svg>
+        Docs</a>
+    </nav>
+    <div class="sec">Projects</div>
+    <div class="proj"><i style="background:var(--p-needt)"></i>Needt v1<b>6</b></div>
+    <div class="proj"><i style="background:var(--p-resale)"></i>Resale<b>3</b></div>
+    <div class="proj"><i style="background:var(--p-beats)"></i>Beats<b>1</b></div>
+    <div class="sec">Pinned</div>
+    <div class="hint">Pin a project to keep it on top.</div>
+    <div class="foot">
+      <button class="ghost">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+        Focus</button>
+      <div class="me"><i>MX</i>Maxim</div>
+    </div>
+  </aside>
+
+  <main class="canvas">
+    <div class="top">
+      <h1>Tuesday, 25 August</h1>
+      <div class="seg"><button aria-pressed="true">Day</button><button aria-pressed="false">Week</button></div>
+    </div>
+    <div class="strip">
+      <div class="d"><small>Mon</small>24</div>
+      <div class="d" aria-current="date"><small>Tue</small>25</div>
+      <div class="d"><small>Wed</small>26</div>
+      <div class="d"><small>Thu</small>27</div>
+      <div class="d"><small>Fri</small>28</div>
+      <div class="d"><small>Sat</small>29</div>
+      <div class="d"><small>Sun</small>30</div>
+    </div>
+    <div class="grid" id="grid"><div class="now" id="now"></div></div>
+    <div class="legend"><i></i>Grey rail — fixed, cannot move</div>
+  </main>
+
+  <aside class="agenda">
+    <div class="ah">Agenda</div>
+    <p class="lead">Ship the pricing page.</p>
+    <p class="lead">Everything else can slip.</p>
+
+    <div class="moved">
+      Moved <b>Deep work</b> to 13:15 to free 11:00 for the design review.
+      <button>Undo</button>
+    </div>
+
+    <div class="ah warn">Needs a slot</div>
+    <div class="slot"><i style="background:var(--p-needt)"></i>
+      <span>Rewrite onboarding copy</span><b>45m</b></div>
+    <div class="slot"><i style="background:var(--p-resale)"></i>
+      <span>Call the accountant</span><b>15m</b></div>
+    <div class="new">Write another line…</div>
+  </aside>
+
+</div>
+<script>
+(function(){
+  var H0=8,H1=19,PX=56,g=document.getElementById('grid');
+  var f=document.createDocumentFragment();
+  for(var h=H0;h<=H1;h++){
+    var r=document.createElement('div'); r.className='hr';
+    var b=document.createElement('b'); b.textContent=(h<10?'0':'')+h+':00';
+    r.appendChild(b); f.appendChild(r);
+  }
+  g.insertBefore(f,g.firstChild);
+  var ev=[
+    {t:'Standup',        s:9.00, e:9.50, p:'needt', move:'fixed', past:1},
+    {t:'Design review',  s:9.75, e:10.75,p:'needt', move:'fixed', past:1},
+    {t:'Lunch',          s:12.00,e:12.75,p:'none',  move:'fixed'},
+    {t:'Deep work',      s:13.25,e:15.00,p:'needt', move:'auto'},
+    {t:'Photograph the drop', s:15.25,e:16.00,p:'resale', move:'auto'},
+    {t:'Retro',          s:16.00,e:16.75,p:'needt', move:'fixed'},
+    {t:'Beat sketch',    s:17.00,e:17.50,p:'beats', move:'auto'}
+  ];
+  function p2(n){return (n<10?'0':'')+n}
+  function fmt(v){return p2(Math.floor(v))+':'+p2(Math.round((v%1)*60))}
+  ev.forEach(function(e){
+    var el=document.createElement('div'), h=(e.e-e.s)*PX;
+    el.className='ev'; el.dataset.p=e.p; el.dataset.move=e.move;
+    if(e.past) el.dataset.past='';
+    if(h<28) el.dataset.slim='';
+    el.style.top=((e.s-H0)*PX)+'px'; el.style.height=(h-4)+'px';
+    el.innerHTML='<div class="t">'+e.t+'</div><div class="w">'+fmt(e.s)+'–'+fmt(e.e)+'</div>';
+    g.appendChild(el);
+  });
+  var nowV=11.4, n=document.getElementById('now');
+  n.style.top=((nowV-H0)*PX)+'px';
+  requestAnimationFrame(function(){
+    g.scrollTop=Math.max(0,n.offsetTop-g.clientHeight*0.30);
+  });
+})();
+</script>
+</body></html>
