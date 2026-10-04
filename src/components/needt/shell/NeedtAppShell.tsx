@@ -94,9 +94,16 @@ function initialsOf(name: string): string {
  * Each ported route draws its own `ScreenFrame`, so the page is passed as
  * children and the shell does not frame it a second time.
  */
-export function NeedtAppShell({ children }: { children: React.ReactNode }) {
+export function NeedtAppShell({
+  children,
+  /** Off where the chrome belongs to something else, such as a phone. */
+  enabled = true,
+}: {
+  children: React.ReactNode;
+  enabled?: boolean;
+}) {
   const pathname = usePathname();
-  const bare = isBare(pathname);
+  const bare = !enabled || isBare(pathname);
   const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const { data: session } = useAppSession();

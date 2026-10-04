@@ -8,6 +8,7 @@ import { AIActionCursor } from "@/components/ai/AIActionCursor";
 import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
 import { AICompanion } from "@/components/ai/AICompanion";
 import { DndProvider } from "@/components/dnd/DndProvider";
+import { AppNav } from "@/components/navigation/AppNav";
 import { NeedtAppShell } from "@/components/needt/shell/NeedtAppShell";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { PrivacyProvider } from "@/components/providers/PrivacyProvider";
@@ -21,6 +22,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/utils";
 
+import { useIsMobile } from "@/hooks/use-is-mobile";
 import { usePageTitle } from "@/hooks/use-page-title";
 
 import { useShortcutsStore } from "@/store/shortcuts";
@@ -29,6 +31,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
   const pathname = usePathname();
+  /* The design's shell is a desktop rail, and the design's phone is a
+     different set of screens altogether. Below `lg` the dock that has always
+     been there stays, and the shell waits for the mobile surfaces to be
+     wired rather than leaving a phone with no navigation at all. */
+  const compact = useIsMobile(1024);
   const { isOpen: shortcutsOpen, setOpen: setShortcutsOpen } =
     useShortcutsStore();
 
@@ -86,7 +93,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               isOpen={shortcutsOpen}
               onClose={() => setShortcutsOpen(false)}
             />
-            <NeedtAppShell>
+            {compact ? (
+              <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
+            ) : null}
+            <NeedtAppShell enabled={!compact}>
               <main
                 className={cn(
                   "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
