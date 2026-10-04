@@ -11,6 +11,7 @@ import {
   type BillingCheckoutSelection,
   NEEDT_PRICING,
   formatBillingPrice,
+  formatBillingPriceExact,
 } from "@/lib/creem/config";
 import { failedPaymentMessage } from "@/lib/creem/failed-payment";
 import { notify } from "@/lib/notifications";
@@ -311,7 +312,11 @@ export function BillingSettings() {
             price={`${formatBillingPrice(proPrice)}/${interval === "year" ? "year" : "month"}`}
             description={
               interval === "year"
-                ? "$5/month billed annually"
+                ? // Derived, so it cannot drift from the yearly price again:
+                  // it read "$5/month" long after the year became $59.
+                  `${formatBillingPriceExact(
+                    Math.round(NEEDT_PRICING.pro.year.amountCents / 12)
+                  )}/month billed annually`
                 : "Flexible monthly subscription"
             }
             features={[

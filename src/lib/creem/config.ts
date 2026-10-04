@@ -76,3 +76,13 @@ export function isCreemWebhookConfigured(): boolean {
 export function formatBillingPrice(amountCents: number): string {
   return `$${Math.round(amountCents / 100)}`;
 }
+
+/**
+ * Whole dollars when the amount is whole, cents when it is not. The plan
+ * prices are round; a monthly equivalent derived from a yearly one is not,
+ * and rounding $4.92 up to $5 overstates what the yearly plan costs.
+ */
+export function formatBillingPriceExact(amountCents: number): string {
+  const dollars = amountCents / 100;
+  return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`;
+}

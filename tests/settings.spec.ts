@@ -256,7 +256,9 @@ test("Settings keeps real account billing behind the ported navigation", async (
     .click();
 
   await expect(page).toHaveURL(/#account$/);
-  await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Account", exact: true })
+  ).toBeVisible();
   await expect(page.getByText("Trial", { exact: true })).toBeVisible();
   await expect(page.getByText(/Pro trial ends/)).toBeVisible();
   await expect(page.getByText("$7/month", { exact: true })).toBeVisible();
@@ -264,9 +266,9 @@ test("Settings keeps real account billing behind the ported navigation", async (
   await expect(page.getByText("Hosted AI actions this month")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Yearly · 29% off" }).click();
-  await expect(page.getByText("$60/year", { exact: true })).toBeVisible();
+  await expect(page.getByText("$59/year", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("$5/month billed annually", { exact: true })
+    page.getByText("$4.92/month billed annually", { exact: true })
   ).toBeVisible();
 });
 
