@@ -1,4 +1,25 @@
+> **SUPERSEDED — 2026-09-11.** The design was replaced wholesale. The
+> authority is now `needt-app/HANDOFF.md` inside the Claude Design project
+> `Content height and label fixes`
+> (`260768ff-eb30-4609-b2f7-d75b353033ed`), mirrored locally under
+> `needt-app-design/` once the bundle is downloaded. See
+> `docs/handoff/design-reconciliation-2026-09-11.md` for what changed.
+> Nothing below decides anything. It is kept as the record of how the product
+> got here, and for measurements that the new design does not restate.
+
 # Motion UI — reference spec (Calendar · Task create · Settings)
+
+> **SUPERSEDED as a visual target, 2026-08-31 — `/DESIGN.md` is the authority.**
+>
+> **Still useful:** this is a measured teardown of a real competitor's layout —
+> the three-zone calendar, the two-column task modal, the settings structure.
+> Take the composition logic; that is what it was captured for.
+>
+> **Dead:** the "Mina Liquid Glass" overlay written throughout — glass panels
+> instead of flat cards, glow on event chips by priority or energy, the
+> `#07070d` canvas, the 16/20/24 radii. None of that is the product any more.
+> Also note the file's own baseline is Motion's dark UI at 14px; Needt's chrome
+> runs at 13 and 12, and 14px does not exist in it.
 
 > Снято с живого Motion (app.usemotion.com) 2026-07-08. Это референс **раскладки и структуры**.
 > Motion выглядит плоско/утилитарно (тёмный, плотный, почти без скруглений и теней) — берём его

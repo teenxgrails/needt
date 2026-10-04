@@ -3,9 +3,12 @@ id: 20260815-codex-mail-focused-splits
 owner: codex
 branch: codex/design-completion
 status: complete
-updated: 2026-08-23T00:42:52Z
+updated: 2026-09-15T23:19:29Z
 objective: Deliver T8.5 user-defined focused Mail splits as private, user-scoped rules.
 ---
+
+Closed on 2026-09-15. The feature shipped; the remaining check against the
+later Linux baselines moved to `docs/plans/00-roadmap.md` §3 B.
 
 ## Scope
 
@@ -20,6 +23,8 @@ objective: Deliver T8.5 user-defined focused Mail splits as private, user-scoped
 - Added authenticated split list/create/delete routes, with split message filtering that fails closed for a forged or deleted split instead of falling back to the inbox.
 - Added the existing Mail view's focused sender action, private split list, selection, and removal controls without changing the layout system.
 - Updated T8.5 status in `docs/plans/08-terra-high.md`.
+- Committed as `2109bfc`; verified 2026-09-15 as an ancestor of `origin/main`
+  and production `e93d61a`.
 - Closed L0.1 on `codex/launch-l0`: the production-server Mail visual spec
   passes at desktop, tablet, and mobile, and the complete visual matrix passes.
   No baseline changed.
@@ -37,7 +42,8 @@ objective: Deliver T8.5 user-defined focused Mail splits as private, user-scoped
   targeted production-server `style-lab` (15/15, with one transient tablet
   timeout passing on immediate focused rerun); complete production-server
   visual matrix (65 passed, 4 intentional skips). No baseline was updated.
-- Not run / still required: none for this workstream.
+- Not run / still required: `/mail` against the later authoritative Linux CI
+  baselines from #21/#22; the earlier production-server visual matrix passed.
 
 ## Decisions and constraints
 
@@ -50,5 +56,5 @@ objective: Deliver T8.5 user-defined focused Mail splits as private, user-scoped
 
 ## Next action
 
-- None for this completed workstream. Continue plan 09 at L0.2 in
-  `.agents/handoffs/20260822-codex-launch-l0.md`.
+- None. Closed. Confirm `/mail` against the Linux visual baselines from
+  `docs/plans/00-roadmap.md`.

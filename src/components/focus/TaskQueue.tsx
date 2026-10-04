@@ -221,23 +221,36 @@ export function TaskQueue() {
         {queuedTasks.length === 0 &&
           pastDueTasks.length === 0 &&
           postponedTasks.length === 0 &&
-          recentlyCompletedTasks.length === 0 && (
-            <div className="py-7 text-center text-sm text-[var(--text-muted)]">
-              <Target className="mx-auto mb-3 h-6 w-6 opacity-70" />
-              <p>No tasks available</p>
-              <p className="mt-1 text-xs">
-                Create a task, then add it to your focus queue.
+          recentlyCompletedTasks.length === 0 &&
+          (allTasks.length === 0 ? (
+            <div className="px-3 py-7 text-center">
+              <Target className="mx-auto mb-3 h-6 w-6 text-[var(--text-muted)]" />
+              <p className="text-[13px] font-medium text-[var(--text-primary)]">
+                Nothing to focus on yet
               </p>
-              <Button
-                asChild
-                className="mt-4 min-h-11"
-                size="sm"
-                variant="outline"
-              >
-                <Link href="/tasks">Create task</Link>
+              <p className="mt-1 text-[12px] leading-5 text-[var(--text-secondary)]">
+                Add a task and it shows up here. You can also start a free
+                session and log the time without attaching anything.
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-4">
+                <Link href="/tasks">Add a task</Link>
               </Button>
             </div>
-          )}
+          ) : (
+            <div className="px-3 py-7 text-center">
+              <Target className="mx-auto mb-3 h-6 w-6 text-[var(--text-muted)]" />
+              <p className="text-[13px] font-medium text-[var(--text-primary)]">
+                Nothing needs attention
+              </p>
+              <p className="mt-1 text-[12px] leading-5 text-[var(--text-secondary)]">
+                No task is queued, past due or postponed. Pick one from Tasks to
+                work on it now.
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-4">
+                <Link href="/tasks">Open tasks</Link>
+              </Button>
+            </div>
+          ))}
       </div>
     </div>
   );

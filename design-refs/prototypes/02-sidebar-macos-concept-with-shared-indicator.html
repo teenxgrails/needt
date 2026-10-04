@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sidebar macos concept with shared indicator — Needt prototype</title>
+<style>
+:root{
+  --surface-0:#17150F; --surface-1:#211E17; --surface-2:#2A2620; --surface-3:#332E24;
+  --border:#332E24; --border-strong:#4A4338; --border-accent:#C96442;
+  --text-primary:#EDE7DA; --text-secondary:#9A9184; --text-muted:#6E675C;
+  --text-accent:#C96442; --bg-accent:#2A1F19; --fill-accent:#C96442;
+  --fill-ghost-selected:rgba(201,100,66,.14); --now:#D8734F;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;background:var(--surface-0);color:var(--text-primary);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;}
+button{background:var(--surface-2);color:var(--text-primary);border:.5px solid var(--border-strong);
+  border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer;
+  transition:transform 90ms cubic-bezier(.4,0,.2,1),background 160ms ease;}
+button:hover{background:var(--surface-3)}
+button:active{transform:scale(.98)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.proto-head{max-width:900px;margin:0 auto 16px;color:var(--text-secondary);font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.proto-wrap{max-width:900px;margin:0 auto}
+</style></head><body>
+<div class="proto-head">02 · sidebar macos concept with shared indicator</div>
+<div class="proto-wrap">
+<h2 class="sr-only">Концепт левого сайдбара Needt: зона под кнопки macOS, логотип, скользящий индикатор активного пункта и всплывающее меню аккаунта</h2>
+
+<div style="background: var(--surface-1); border-radius: 12px; padding: 10px;">
+ <div style="display:flex; height:440px; background:var(--surface-2); border:0.5px solid var(--border); border-radius:8px; overflow:hidden;">
+
+  <div id="side" style="width:232px; flex:none; border-right:0.5px solid var(--border); display:flex; flex-direction:column; transition:width 320ms cubic-bezier(.22,1,.32,1);">
+
+    <div style="height:38px; display:flex; align-items:center; padding-left:12px; gap:7px; border-bottom:0.5px solid var(--border);">
+      <span style="width:11px;height:11px;border-radius:50%;background:#ED9A93;"></span>
+      <span style="width:11px;height:11px;border-radius:50%;background:#EBC06B;"></span>
+      <span style="width:11px;height:11px;border-radius:50%;background:#9BC97F;"></span>
+      <span id="wordmark" style="margin-left:8px;font-size:13px;font-weight:500;color:var(--text-primary);letter-spacing:-0.01em;white-space:nowrap;transition:opacity 200ms ease;">Needt</span>
+    </div>
+
+    <div style="position:relative; padding:8px 8px 0; flex:1;">
+      <div id="pill" style="position:absolute; left:8px; right:8px; height:30px; background:var(--fill-ghost-selected, var(--surface-1)); border-radius:6px; transform:translateY(0px); transition:transform 340ms cubic-bezier(.22,1,.32,1); pointer-events:none;"></div>
+      <div id="nav" style="position:relative;"></div>
+    </div>
+
+    <div style="border-top:0.5px solid var(--border); padding:8px; position:relative;">
+      <div id="acct" style="display:flex;align-items:center;gap:8px;padding:6px;border-radius:6px;cursor:pointer;">
+        <span style="width:22px;height:22px;border-radius:50%;background:var(--bg-accent);color:var(--text-accent);font-size:10px;display:flex;align-items:center;justify-content:center;flex:none;">MX</span>
+        <span class="lbl" style="font-size:13px;color:var(--text-primary);white-space:nowrap;">Максим</span>
+        <i class="ti ti-selector lbl" style="margin-left:auto;font-size:15px;color:var(--text-muted);" aria-hidden="true"></i>
+      </div>
+      <div id="menu" style="position:absolute;left:8px;bottom:52px;width:200px;background:var(--surface-3, var(--surface-2));border:0.5px solid var(--border);border-radius:8px;padding:4px;opacity:0;transform:translateY(4px) scale(.98);transform-origin:bottom left;transition:opacity 160ms ease, transform 160ms cubic-bezier(.22,1,.32,1);pointer-events:none;"></div>
+    </div>
+
+  </div>
+
+  <div style="flex:1; padding:14px 16px; min-width:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div id="title" style="font-size:15px;color:var(--text-primary);">Сегодня</div>
+      <button id="tog" style="font-size:12px;padding:3px 9px;">Свернуть</button>
+    </div>
+    <div id="skel"></div>
+  </div>
+
+ </div>
+</div>
+
+<script>
+(function(){
+  var items=[
+    {i:'ti-sun',t:'Сегодня'},{i:'ti-calendar',t:'Календарь'},
+    {i:'ti-circle-check',t:'Задачи',b:'4'},{i:'ti-folder',t:'Проекты'},
+    {i:'ti-target',t:'Фокус'},{i:'ti-layout-board',t:'Мудборды'},
+    {i:'ti-file-text',t:'Заметки'}
+  ];
+  var nav=document.getElementById('nav'), pill=document.getElementById('pill');
+  var title=document.getElementById('title'), side=document.getElementById('side');
+  var wm=document.getElementById('wordmark'), tog=document.getElementById('tog');
+  var acct=document.getElementById('acct'), menu=document.getElementById('menu');
+  var active=0, collapsed=false;
+
+  items.forEach(function(it,ix){
+    var r=document.createElement('div');
+    r.style.cssText='position:relative;display:flex;align-items:center;gap:9px;height:30px;padding:0 8px;border-radius:6px;cursor:pointer;color:'+(ix===0?'var(--text-primary)':'var(--text-secondary)')+';transition:color 160ms ease;';
+    r.innerHTML='<i class="ti '+it.i+'" style="font-size:16px;flex:none;" aria-hidden="true"></i>'+
+      '<span class="lbl" style="font-size:13px;white-space:nowrap;">'+it.t+'</span>'+
+      (it.b?'<span class="lbl" style="margin-left:auto;font-size:11px;font-variant-numeric:tabular-nums;color:var(--text-muted);">'+it.b+'</span>':'');
+    r.addEventListener('click',function(){
+      active=ix;
+      pill.style.transform='translateY('+(ix*32)+'px)';
+      Array.prototype.forEach.call(nav.children,function(c,ci){
+        c.style.color= ci===ix ? 'var(--text-primary)' : 'var(--text-secondary)';
+      });
+      title.textContent=it.t;
+    });
+    r.addEventListener('mouseenter',function(){ if(active!==ix) r.style.color='var(--text-primary)'; });
+    r.addEventListener('mouseleave',function(){ if(active!==ix) r.style.color='var(--text-secondary)'; });
+    nav.appendChild(r);
+    var sp=document.createElement('div'); sp.style.height='2px'; nav.appendChild(sp);
+  });
+
+  var mi=[['ti-settings','Настройки'],['ti-user','Аккаунт'],['ti-credit-card','Подписка'],['ti-logout','Выйти']];
+  mi.forEach(function(m){
+    var e=document.createElement('div');
+    e.style.cssText='display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:5px;font-size:13px;color:var(--text-secondary);cursor:pointer;';
+    e.innerHTML='<i class="ti '+m[0]+'" style="font-size:15px;" aria-hidden="true"></i>'+m[1];
+    e.addEventListener('mouseenter',function(){e.style.background='var(--surface-1)';e.style.color='var(--text-primary)';});
+    e.addEventListener('mouseleave',function(){e.style.background='transparent';e.style.color='var(--text-secondary)';});
+    menu.appendChild(e);
+  });
+
+  var open=false;
+  acct.addEventListener('click',function(ev){
+    ev.stopPropagation(); open=!open;
+    menu.style.opacity=open?'1':'0';
+    menu.style.transform=open?'translateY(0) scale(1)':'translateY(4px) scale(.98)';
+    menu.style.pointerEvents=open?'auto':'none';
+  });
+  document.addEventListener('click',function(){
+    if(!open) return; open=false;
+    menu.style.opacity='0'; menu.style.transform='translateY(4px) scale(.98)'; menu.style.pointerEvents='none';
+  });
+
+  tog.addEventListener('click',function(){
+    collapsed=!collapsed;
+    side.style.width=collapsed?'60px':'232px';
+    wm.style.opacity=collapsed?'0':'1';
+    document.querySelectorAll('.lbl').forEach(function(l){
+      l.style.transition='opacity 140ms ease';
+      l.style.opacity=collapsed?'0':'1';
+    });
+    tog.textContent=collapsed?'Развернуть':'Свернуть';
+  });
+
+  var sk=document.getElementById('skel');
+  [88,64,72].forEach(function(w,i){
+    var b=document.createElement('div');
+    b.style.cssText='height:44px;border:0.5px solid var(--border);border-left:2px solid var(--border-accent);border-radius:0;margin-bottom:8px;padding:7px 10px;';
+    b.innerHTML='<div style="height:8px;width:'+w+'%;background:var(--surface-1);border-radius:2px;"></div>'+
+      '<div style="height:7px;width:26%;background:var(--surface-1);border-radius:2px;margin-top:7px;"></div>';
+    sk.appendChild(b);
+  });
+})();
+</script>
+</div></body></html>

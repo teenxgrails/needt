@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { WorkspaceRole } from "@prisma/client";
+
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { toWorkspaceBusyEvent } from "@/lib/calendar-privacy";
 import { newDate } from "@/lib/date-utils";
+import { isPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -106,7 +109,9 @@ export async function GET(request: NextRequest) {
 // Create a new event
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -129,6 +134,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
+      );
+    }
+
+    const startsAt = newDate(start);
+    const endsAt = newDate(end);
+    if (
+      Number.isNaN(startsAt.getTime()) ||
+      Number.isNaN(endsAt.getTime()) ||
+      endsAt <= startsAt
+    ) {
+      return NextResponse.json(
+        { error: "Event end must be after its start" },
+        { status: 400 }
+      );
+    }
+    if (await isPlacementBlocked(userId, startsAt, endsAt, Boolean(allDay))) {
+      return NextResponse.json(
+        { error: "This time is blocked out" },
+        { status: 409 }
       );
     }
 
@@ -159,8 +183,8 @@ export async function POST(request: NextRequest) {
         feedId,
         title,
         description,
-        start: newDate(start),
-        end: newDate(end),
+        start: startsAt,
+        end: endsAt,
         location,
         isRecurring: isRecurring || false,
         recurrenceRule,
@@ -187,7 +211,9 @@ export async function POST(request: NextRequest) {
 // Update an event
 export async function PATCH(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }
@@ -236,6 +262,29 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+
+    const startsAt = start ? newDate(start) : existingEvent.start;
+    const endsAt = end ? newDate(end) : existingEvent.end;
+    const nextAllDay = allDay ?? existingEvent.allDay;
+    if (
+      Number.isNaN(startsAt.getTime()) ||
+      Number.isNaN(endsAt.getTime()) ||
+      endsAt <= startsAt
+    ) {
+      return NextResponse.json(
+        { error: "Event end must be after its start" },
+        { status: 400 }
+      );
+    }
+    if (
+      await isPlacementBlocked(userId, startsAt, endsAt, Boolean(nextAllDay))
+    ) {
+      return NextResponse.json(
+        { error: "This time is blocked out" },
+        { status: 409 }
+      );
+    }
+
     const event = await prisma.calendarEvent.update({
       where: { id },
       data: {
@@ -270,7 +319,9 @@ export async function PATCH(request: NextRequest) {
 // Delete an event
 export async function DELETE(request: NextRequest) {
   try {
-    const auth = await authenticateRequest(request, LOG_SOURCE);
+    const auth = await authenticateRequest(request, LOG_SOURCE, {
+      requiredRole: WorkspaceRole.EDITOR,
+    });
     if ("response" in auth) {
       return auth.response;
     }

@@ -3,9 +3,13 @@ id: 20260816-codex-release-boundary-audit
 owner: codex
 branch: codex/design-completion
 status: complete
-updated: 2026-08-24T18:12:53Z
+updated: 2026-09-15T23:19:29Z
 objective: Keep the current release branch aligned with the plan's deployment-gated S11/T8 boundary.
 ---
+
+Closed on 2026-09-15. The deferred S11/T8 release was integrated into `main`
+on 2026-08-24; missing feature-specific browser journeys moved to
+`docs/plans/00-roadmap.md` §3 B.
 
 ## Scope
 
@@ -31,6 +35,8 @@ objective: Keep the current release branch aligned with the plan's deployment-ga
 - Passed: `npm run agent:context`; current-branch ancestry and left/right commit audit; inspection of the S11/T8 plan prerequisites; read-only three-way merge and deferred route/test review.
 - Not run / still required: authorized deployment and smoke test of the current release before beginning the next S11/T8 release integration; browser E2E coverage for each new S11/T8 user journey after reconciliation.
 - Resolution evidence: both scoped branch-tip ancestry checks exit 0; both shipped models are present in the current schema; plan 12 records production web/worker SHA parity at `e93d61a`; GitHub Actions run `32759055915` passed E2E and full visual/style suites.
+- Not run: feature-specific browser journeys for Saved Views, reschedule
+  preview and health journal. Carried to the roadmap.
 
 ## Decisions and constraints
 

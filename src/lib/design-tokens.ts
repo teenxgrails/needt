@@ -1,4 +1,4 @@
-import { getThemeClassNames } from "@/lib/theme";
+import { applyThemeToRoot } from "@/lib/theme-init";
 
 export type DesignTokens = {
   name: string;
@@ -79,15 +79,10 @@ export function parseDesignTokens(value: unknown): DesignTokens | null {
 }
 
 export function applyDesignTokens(root: HTMLElement, tokens: DesignTokens) {
-  root.classList.remove(
-    "light",
-    "dark",
-    "theme-gray",
-    "theme-graphite",
-    "theme-dark"
-  );
-  root.classList.add(...getThemeClassNames(tokens.mode));
-  root.dataset.theme = tokens.mode;
+  // The lab keeps the palette names it was authored with; applyThemeToRoot
+  // migrates them (light -> paper, graphite -> dim) and owns the classes and
+  // the data-theme attribute.
+  applyThemeToRoot(root, { theme: tokens.mode, systemPrefersDark: false });
 
   const values: Record<(typeof DESIGN_TOKEN_VARIABLES)[number], string> = {
     "--surface-canvas": tokens.canvas,

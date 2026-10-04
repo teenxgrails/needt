@@ -15,6 +15,9 @@
 # Rationale: the model's training data lags the repo. It has already produced
 # code against Next 15.3 while this project runs 15.5, and against an older
 # Prisma API. Context7 removes that class of error.
+sandbox_mode = "workspace-write"
+web_search = "indexed"
+model_reasoning_summary = "auto"
 [mcp_servers.context7]
 command = "npx"
 args = ["-y", "@upstash/context7-mcp@latest"]
@@ -27,3 +30,23 @@ args = ["-y", "@upstash/context7-mcp@latest"]
 [mcp_servers.playwright]
 command = "npx"
 args = ["-y", "@playwright/mcp@latest"]
+
+[sandbox_workspace_write]
+network_access = true
+
+# Chrome DevTools MCP — console errors, network requests, performance traces
+# and Core Web Vitals from a real Chrome, as tool calls.
+# Rationale: Playwright proves a screen renders and responds; it does not show
+# why a page is slow or what failed in the console. The design port lives on
+# animation and scroll-driven motion, where that is exactly the question.
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest"]
+
+# Sentry MCP — production errors and stack traces for the running app.
+# Left disabled: it needs a Sentry auth token, and a token does not belong in a
+# file that is committed. To enable, add this block to ~/.codex/config.toml with
+# the token in `env`, not here.
+# [mcp_servers.sentry]
+# command = "npx"
+# args = ["-y", "@sentry/mcp-server@latest"]

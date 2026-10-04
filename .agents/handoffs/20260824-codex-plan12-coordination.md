@@ -9,7 +9,7 @@ objective: Execute every workstream in plan 12a through verified PRs and continu
 
 ## Scope
 
-- Governing plan/spec: `docs/plans/12-remaining-work.md` and `docs/plans/12-codex-prompts.md`.
+- Governing plan/spec: `docs/plans/12-remaining-work.md` and `docs/_old/12-codex-prompts.md`.
 - In scope: committing the plan inputs, coordinating isolated Sol/Terra worktrees, dependency ordering, PR/CI evidence, and final requirement audit.
 - Out of scope: production deploy/data operations, owner credentials, legal approval, dashboard configuration, and design direction.
 

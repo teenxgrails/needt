@@ -1,5 +1,9 @@
 import { FocusSessionMode, IdempotencyStatus, Prisma } from "@prisma/client";
 
+import {
+  type WorkspaceAccess,
+  workspaceDataScopeWhere,
+} from "@/lib/auth/workspace-auth";
 import { formatInTimeZone, newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
@@ -11,6 +15,7 @@ export class OutsideWorkHoursError extends Error {}
 
 export async function startTaskNow(input: {
   userId: string;
+  workspace?: WorkspaceAccess;
   taskId: string;
   durationMinutes: number;
   startFocus: boolean;
@@ -31,7 +36,11 @@ export async function startTaskNow(input: {
 
   const [task, activeFocus] = await Promise.all([
     prisma.task.findFirst({
-      where: { id: input.taskId, userId: input.userId, isArchived: false },
+      where: {
+        id: input.taskId,
+        ...workspaceDataScopeWhere(input.workspace, input.userId),
+        isArchived: false,
+      },
       select: { id: true, scheduleId: true },
     }),
     input.startFocus

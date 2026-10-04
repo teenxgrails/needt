@@ -4,18 +4,15 @@ import { VISUAL_TEST_NOW } from "./fixtures";
 import { signInVisualUser } from "./helpers";
 
 const SETTINGS_TABS = [
-  ["calendars", "Calendars"],
-  ["auto-scheduling", "Auto-scheduling"],
-  ["task-defaults", "Task defaults"],
   ["theme", "Appearance"],
-  ["timezone", "Timezone"],
-  ["schedules", "Schedules"],
-  ["desktop", "Desktop app"],
-  ["integrations", "Integrations"],
-  ["api", "API"],
-  ["privacy", "Privacy"],
-  ["ai", "AI Assistant"],
-  ["account", "Account settings"],
+  ["auto-scheduling", "Your day"],
+  ["calendars", "Calendars"],
+  ["task-defaults", "Tasks"],
+  ["focus", "Focus"],
+  ["notifications", "Alerts"],
+  ["desktop", "Shortcuts"],
+  ["billing", "Account"],
+  ["ai", "Data"],
 ] as const;
 
 async function settleSettings(page: import("@playwright/test").Page) {
@@ -74,8 +71,10 @@ test("Billing stays visually consistent", async ({ page }) => {
   await prepareSettings(page);
   await page.goto("/settings#billing", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/#billing$/);
+  // The ported screen names the open section instead of repeating "Settings";
+  // billing lives inside Account.
   await expect(
-    page.getByRole("heading", { name: "Billing", level: 1 })
+    page.getByRole("heading", { name: "Account", exact: true, level: 2 })
   ).toBeVisible();
   await expect(page.getByText("Choose a plan", { exact: true })).toBeVisible();
   await settleSettings(page);
@@ -91,7 +90,10 @@ test("every Settings tab stays visually consistent", async ({ page }) => {
     await expect(page).toHaveURL(new RegExp(`#${tab}$`));
 
     await expect(
-      page.getByRole("heading", { name: label, level: 1 })
+      page.getByRole("heading", { name: "Settings", level: 1 })
+    ).toBeVisible();
+    await expect(
+      page.locator("#settings-panel > h2").filter({ hasText: label })
     ).toBeVisible();
 
     await settleSettings(page);
@@ -104,7 +106,7 @@ test("unavailable browser push stays honest in Settings", async ({ page }) => {
   await page.goto("/settings#notifications", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/#notifications$/);
   await expect(
-    page.getByRole("heading", { name: "Notifications", level: 1 })
+    page.locator("#settings-panel > h2").filter({ hasText: "Alerts" })
   ).toBeVisible();
 
   const browserNotifications = page
