@@ -52,10 +52,9 @@ interface BillingSummary {
     boards: UsageStatus;
     mailboxes: UsageStatus;
     aiActions: {
-      used: number;
-      limit: number;
-      remaining: number;
       allowed: boolean;
+      slowMode: boolean;
+      exhausted: boolean;
       plan: Plan;
     };
   };
