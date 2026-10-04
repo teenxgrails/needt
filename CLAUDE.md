@@ -8,6 +8,31 @@ Needt is a multi-user intelligent planner product built from the FluidCalendar
 fork. It has one unified Next.js application plus a BullMQ worker built from
 the same image and SHA.
 
+## What Needt is for
+
+Needt is not an AI calendar. The calendar and the scheduling engine are the
+first surface, not the product. Needt is the place a person keeps everything
+they are working on and thinking about, and connects everything else to: their
+calendars, tasks, documents, mail, boards, habits, focus time, and whatever
+tool they already use. The scheduling engine is one thing that reads that
+store; it is not what the store exists for.
+
+Two consequences shape every decision:
+
+- **Breadth of use is the goal, not a side effect.** People should be able to
+  run genuinely different parts of their life and work in Needt, not just one
+  workflow we designed for. Prefer a general mechanism a person can aim at
+  their own problem over a narrow feature that solves exactly one.
+- **The data must be reachable from outside.** Anything a person puts into
+  Needt should be readable and writable through our own API, so they can wire
+  Needt to other tools and build on top of it. A feature that only works
+  inside our UI is unfinished.
+
+When a change would make the product narrower — tied to one workflow, one
+provider, or reachable only through our own screens — say so and offer the
+general form instead. When scope is genuinely ambiguous, the planner reading
+is the safe default, but do not assume the planner is the whole product.
+
 ## Commands
 
 ```bash
