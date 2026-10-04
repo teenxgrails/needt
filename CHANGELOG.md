@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Diagnostics: error reports now carry their stack frames. An exception used to
+  reach Sentry as a bare type with no file, function or line, which is not
+  enough to act on. The frames name our own source only — locals and source
+  context are still dropped, and so are the exception message and the event
+  message, because either can quote the data that caused the error.
+- Diagnostics: `POST /api/admin/sentry-check` sends one deliberate exception and
+  returns its event id, so delivery can be confirmed instead of assumed.
+
 - Updated Pro monthly to $7 and Lifetime to $149, hid hosted-AI usage counts
   from product surfaces, and added private input/output token accounting for
   hosted provider calls alongside the action count.
