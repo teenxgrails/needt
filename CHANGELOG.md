@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Legal: `/terms` and `/privacy` carry real documents instead of placeholders.
+  The privacy notice names every service that receives data, derived from the
+  outbound integrations that exist in the code rather than from memory, and
+  says which of them receive nothing unless you connect them. The terms cover
+  plans, the trial, the Lifetime cap, cancellation, refunds including the
+  consumer withdrawal period, acceptable use, content ownership and liability.
+- Legal: the details only the business can supply — entity, address, contacts,
+  governing law — are a typed value, not placeholder prose. While any is
+  missing both pages say they are drafts, list what is outstanding, and keep
+  themselves out of search engines.
+
 - Updated Pro monthly to $7 and Lifetime to $149, hid hosted-AI usage counts
   from product surfaces, and added private input/output token accounting for
   hosted provider calls alongside the action count.
