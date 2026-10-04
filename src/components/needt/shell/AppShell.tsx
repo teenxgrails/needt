@@ -293,25 +293,27 @@ export function AppShell({
       }}
     >
       {settings ? null : (
-        <Sidebar
-          today={today}
-          tasks={tasks}
-          people={people}
-          pinned={pinned}
-          account={account}
-          screen={screen}
-          onScreen={goScreen}
-          onOpenPalette={() => setPaletteOpen(true)}
-          onOpenTask={onOpenTask}
-          onOpenKeys={() => setKeysOpen(true)}
-          onSignOut={() => goScreen("settings")}
-          selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
-          focus={focus}
-          onStartFocus={(session) => setFocus({ ...session, elapsed: 0 })}
-          onStopFocus={() => setFocus(null)}
-          dark={dark}
-        />
+        <div className="hidden lg:contents">
+          <Sidebar
+            today={today}
+            tasks={tasks}
+            people={people}
+            pinned={pinned}
+            account={account}
+            screen={screen}
+            onScreen={goScreen}
+            onOpenPalette={() => setPaletteOpen(true)}
+            onOpenTask={onOpenTask}
+            onOpenKeys={() => setKeysOpen(true)}
+            onSignOut={() => goScreen("settings")}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            focus={focus}
+            onStartFocus={(session) => setFocus({ ...session, elapsed: 0 })}
+            onStopFocus={() => setFocus(null)}
+            dark={dark}
+          />
+        </div>
       )}
 
       {/* The corners breathe in the accent while a session runs. It never
@@ -334,12 +336,14 @@ export function AppShell({
         }}
       >
         {settings ? null : (
-          <TabRail
-            screen={screen}
-            onScreen={goScreen}
-            onNew={() => setComposerOpen(true)}
-            dueToday={dueToday}
-          />
+          <div className="hidden lg:contents">
+            <TabRail
+              screen={screen}
+              onScreen={goScreen}
+              onNew={() => setComposerOpen(true)}
+              dueToday={dueToday}
+            />
+          </div>
         )}
 
         {/* Keyed on the screen so the entrance replays on every swap, which is
