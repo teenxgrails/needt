@@ -2,9 +2,11 @@
 
 import * as React from "react";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import {
+  LuCalendarPlus,
   LuChevronLeft,
   LuChevronRight,
   LuPlus,
@@ -13,6 +15,7 @@ import {
 
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useWorkspace } from "@/components/providers/WorkspaceProvider";
+import { TaskModal } from "@/components/task-editor/TaskModal";
 
 import {
   addCalendarDays,
@@ -31,10 +34,14 @@ import { notify } from "@/lib/notifications";
 import { updateTaskRequest } from "@/lib/task-api";
 import { resolveThemeMode } from "@/lib/theme";
 
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { useTaskMutations } from "@/hooks/useTaskMutations";
+
 import { useViewStore } from "@/store/calendar";
 import { useTaskStore } from "@/store/task";
 
 import type { ResolvedThemeMode } from "@/types/settings";
+import type { NewTask } from "@/types/task";
 import { TaskStatus } from "@/types/task";
 
 import { MobileCalendarDay } from "../mobile";
@@ -120,6 +127,14 @@ export function CalendarRoute() {
   const storedView = useViewStore((state) => state.view);
   const setStoredView = useViewStore((state) => state.setView);
   const scheduleAllTasks = useTaskStore((state) => state.scheduleAllTasks);
+  const tags = useTaskStore((state) => state.tags);
+  const createTag = useTaskStore((state) => state.createTag);
+  const fetchTags = useTaskStore((state) => state.fetchTags);
+  const { createTask } = useTaskMutations();
+  // The phone canvas is always a single day, while the view chips that pick
+  // week or month are desktop-only. Stepping by `view` there moved the header
+  // a week at a time under a screen showing one day.
+  const isPhone = useIsMobile(640);
   const [view, setView] = React.useState<CalendarView>(() =>
     storedView === "day" || storedView === "week" || storedView === "month"
       ? storedView
@@ -131,6 +146,7 @@ export function CalendarRoute() {
     null
   );
   const [eventOpen, setEventOpen] = React.useState(false);
+  const [taskOpen, setTaskOpen] = React.useState(false);
   const pendingTaskIds = React.useRef(new Set<string>());
 
   React.useEffect(() => {
@@ -273,11 +289,23 @@ export function CalendarRoute() {
     }
   };
 
+  const openNewTask = () => {
+    void fetchTags();
+    setTaskOpen(true);
+  };
+
+  const saveNewTask = async (task: NewTask) => {
+    await createTask(task);
+    setTaskOpen(false);
+    await refresh();
+  };
+
   const shellStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
     height: "100%",
     minHeight: 0,
+    position: "relative",
     background: "var(--background)",
     color: "var(--text-primary)",
     font: "var(--type-ui)",
@@ -315,6 +343,10 @@ export function CalendarRoute() {
   const mobileAllDay = entriesOnDay(data.entries, storedDate, now).filter(
     (entry) => entry.allDay
   );
+  // A first run has no feeds and nothing scheduled: say so once, over the grid,
+  // instead of handing the user an empty week and no way forward.
+  const isCalendarEmpty =
+    data.entries.length === 0 && Object.keys(data.calendars).length === 0;
 
   return (
     <div className="needt-v2" data-theme={theme} style={shellStyle}>
@@ -324,7 +356,9 @@ export function CalendarRoute() {
             type="button"
             className="btn-icon nt-icon-button"
             aria-label="Previous period"
-            onClick={() => setStoredDate(moveAnchor(storedDate, view, -1))}
+            onClick={() =>
+              setStoredDate(moveAnchor(storedDate, isPhone ? "day" : view, -1))
+            }
           >
             <Glyph of={LuChevronLeft} size={16} />
           </button>
@@ -339,7 +373,9 @@ export function CalendarRoute() {
             type="button"
             className="btn-icon nt-icon-button"
             aria-label="Next period"
-            onClick={() => setStoredDate(moveAnchor(storedDate, view, 1))}
+            onClick={() =>
+              setStoredDate(moveAnchor(storedDate, isPhone ? "day" : view, 1))
+            }
           >
             <Glyph of={LuChevronRight} size={16} />
           </button>
@@ -459,6 +495,54 @@ export function CalendarRoute() {
           }
         />
       </div>
+
+      {isCalendarEmpty ? (
+        <div
+          className="pointer-events-none absolute inset-x-4 top-20 z-10 flex justify-center sm:top-24"
+          data-testid="calendar-empty-state"
+        >
+          <div className="pointer-events-auto w-full max-w-sm rounded-[var(--radius-lg)] bg-[var(--surface-raised)] p-5 text-center shadow-[var(--shadow-ring)]">
+            <div className="flex justify-center text-[var(--text-muted)]">
+              <Glyph of={LuCalendarPlus} size={24} />
+            </div>
+            <h2 className="mt-3 text-sm font-semibold">
+              Start with your first plan
+            </h2>
+            <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
+              Connect a calendar or create a task and let Needt schedule it.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                className="min-h-11 rounded-[var(--radius-md)] px-3 text-[13px] font-medium text-[var(--accent)] shadow-[var(--shadow-ring)]"
+                onClick={openNewTask}
+              >
+                Create task
+              </button>
+              <Link
+                href="/settings#calendars"
+                className="inline-flex min-h-11 items-center rounded-[var(--radius-md)] px-3 text-[13px] font-medium shadow-[var(--shadow-ring)]"
+              >
+                Connect calendar
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {taskOpen ? (
+        <TaskModal
+          isOpen
+          tags={tags}
+          onClose={() => setTaskOpen(false)}
+          onSave={saveNewTask}
+          onCreateTag={async (name, color) => {
+            const tag = await createTag({ name, color });
+            await fetchTags();
+            return tag;
+          }}
+        />
+      ) : null}
 
       <CalendarEventDialog
         open={eventOpen}

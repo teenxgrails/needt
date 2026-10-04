@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Calendar: a first run shows the empty-state card again — "Create task" opens
+  the task editor and schedules what it saves, and "Connect calendar" links to
+  the calendar settings — so a new account is not handed a blank week.
+- Calendar: on a phone the header arrows step one day at a time, matching the
+  single-day canvas, instead of jumping a week because the week/month chips
+  that set the step are desktop-only.
+- Settings: the calendar OAuth return banner is back. Connecting or failing to
+  connect Google or Outlook once again says so on the Calendars section, with
+  a reconnect action on failure, instead of returning to a silent screen.
+
 - Workspace: saved views are back on Tasks and Projects — apply, save and remove
   a view from the workspace header — and the project health journal is readable
   again from the project manager, with posting kept behind edit access.

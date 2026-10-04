@@ -5,7 +5,7 @@ import * as React from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 
-import { LuSettings } from "react-icons/lu";
+import { LuSettings, LuX } from "react-icons/lu";
 
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAppSession } from "@/components/providers/app-session-context";
@@ -32,6 +32,10 @@ import { TaskDefaultsSettings } from "@/components/settings/TaskDefaultsSettings
 import { UserSettings } from "@/components/settings/UserSettings";
 import { WorkspaceSettings } from "@/components/settings/WorkspaceSettings";
 
+import {
+  type CalendarConnectionNotice,
+  calendarConnectionNotice,
+} from "@/lib/calendar-connection-status";
 import { clearNeedtOfflineData } from "@/lib/pwa/offline-client";
 import { resolveThemeMode } from "@/lib/theme";
 
@@ -40,6 +44,7 @@ import { useSettingsStore } from "@/store/settings";
 import type { ResolvedThemeMode } from "@/types/settings";
 
 import { ScreenFrame } from "../shell/ScreenFrame";
+import { Glyph } from "../shell/chrome";
 import { SettingsScreen } from "./SettingsScreen";
 import type { SettingsSectionId } from "./sections";
 
@@ -119,6 +124,59 @@ function BoundSection({
   );
 }
 
+/**
+ * A calendar OAuth round trip comes back to /settings with its outcome in the
+ * query string. Without this the user is returned to a silent screen and has
+ * no way to tell a connected calendar from a refused one.
+ */
+function CalendarConnectionBanner({
+  notice,
+  onDismiss,
+}: {
+  notice: CalendarConnectionNotice;
+  onDismiss: () => void;
+}) {
+  const error = notice.tone === "error";
+  return (
+    <div
+      className="flex items-start gap-3 rounded-[var(--radius-lg)] p-4 text-sm shadow-[var(--shadow-ring)]"
+      style={{
+        background: `color-mix(in oklab, ${
+          error ? "var(--color-danger)" : "var(--color-success)"
+        } 8%, var(--surface-raised))`,
+      }}
+      role={error ? "alert" : "status"}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="font-medium">{notice.title}</p>
+        <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
+          {notice.description}
+        </p>
+        {error && notice.provider ? (
+          <button
+            type="button"
+            className="mt-3 min-h-11 text-[13px] font-medium text-[var(--accent)] underline-offset-4 hover:underline"
+            onClick={() => {
+              window.location.href = `/api/calendar/${notice.provider}/auth`;
+            }}
+          >
+            Reconnect {notice.provider === "google" ? "Google" : "Outlook"}{" "}
+            Calendar
+          </button>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        className="btn-icon nt-icon-button"
+        aria-label="Dismiss calendar connection message"
+        onClick={onDismiss}
+      >
+        <Glyph of={LuX} size={16} />
+      </button>
+    </div>
+  );
+}
+
 export function SettingsRoute() {
   const theme = useResolvedTheme();
   const { data: session } = useAppSession();
@@ -126,6 +184,8 @@ export function SettingsRoute() {
     (state) => state.initializeSettings
   );
   const [section, setSection] = React.useState<SettingsSectionId>("appearance");
+  const [connectionNotice, setConnectionNotice] =
+    React.useState<CalendarConnectionNotice | null>(null);
 
   React.useEffect(() => {
     initializeSettings();
@@ -137,8 +197,27 @@ export function SettingsRoute() {
       setSection(HASH_TO_SECTION[hash] ?? "appearance");
     };
     readHash();
+    const query = new URLSearchParams(window.location.search);
+    const notice = calendarConnectionNotice(
+      query.get("calendarError"),
+      query.get("calendarSuccess"),
+      query.get("provider")
+    );
+    if (notice) {
+      setConnectionNotice(notice);
+      setSection("calendars");
+    }
     window.addEventListener("hashchange", readHash);
     return () => window.removeEventListener("hashchange", readHash);
+  }, []);
+
+  const dismissConnectionNotice = React.useCallback(() => {
+    setConnectionNotice(null);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}#calendars`
+    );
   }, []);
 
   const selectSection = React.useCallback((next: SettingsSectionId) => {
@@ -168,6 +247,12 @@ export function SettingsRoute() {
       ),
       calendars: (
         <BoundSection id="calendars">
+          {connectionNotice ? (
+            <CalendarConnectionBanner
+              notice={connectionNotice}
+              onDismiss={dismissConnectionNotice}
+            />
+          ) : null}
           <AccountManager />
           <CalendarSettings />
           <IntegrationSettings />
@@ -219,7 +304,7 @@ export function SettingsRoute() {
         </BoundSection>
       ),
     }),
-    []
+    [connectionNotice, dismissConnectionNotice]
   );
 
   const name = session?.user?.name ?? "You";
