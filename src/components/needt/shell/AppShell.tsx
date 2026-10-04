@@ -83,6 +83,26 @@ export interface AppShellProps {
    * a frame saying what is missing is honest, and a blank pane is not.
    */
   screenSlots?: Partial<Record<NeedtScreenId, React.ReactNode>>;
+  /**
+   * Which screen is showing, when something outside owns that.
+   *
+   * Mounted in the app, the URL decides, so the shell follows `pathname`
+   * rather than holding its own state — otherwise the rail and the address
+   * bar can disagree, and a deep link lands on the wrong screen. Left out,
+   * the shell owns the switch as before, which is what the design preview
+   * and the tests use.
+   */
+  screen?: NeedtScreenId;
+  /** Called instead of switching internally, when `screen` is supplied. */
+  onScreen?: (next: NeedtScreenId) => void;
+  /**
+   * The page itself. Each ported route already draws its own `ScreenFrame`,
+   * so when children are given the shell renders them directly rather than
+   * framing them a second time.
+   */
+  children?: React.ReactNode;
+  /** Off when the host app already binds ⌘K and ?. */
+  bindKeys?: boolean;
   cornerSlot?: React.ReactNode;
   /** The app's own hand: over everything, clickable through. */
   agentCursorSlot?: React.ReactNode;
@@ -118,6 +138,10 @@ export function AppShell({
   dark,
   onCycleTheme,
   screenSlots,
+  screen: screenProp,
+  onScreen,
+  children,
+  bindKeys = true,
   cornerSlot,
   agentCursorSlot,
   composerSlot,
@@ -126,7 +150,9 @@ export function AppShell({
   onOpenTask,
   focusTickMs = 1000,
 }: AppShellProps) {
-  const [screen, setScreen] = React.useState<NeedtScreenId>("today");
+  const [ownScreen, setScreen] = React.useState<NeedtScreenId>("today");
+  const controlled = screenProp !== undefined;
+  const screen = screenProp ?? ownScreen;
   const [routing, setRouting] = React.useState<NeedtScreenId | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<Date>(() =>
     startOfDay(today)
@@ -144,18 +170,27 @@ export function AppShell({
     today: true,
   });
 
-  const goScreen = React.useCallback((next: NeedtScreenId) => {
-    if (next === at.current) return;
-    at.current = next;
-    if (built.current[next]) {
-      setScreen(next);
-      return;
-    }
-    built.current[next] = true;
-    setRouting(next);
-    window.setTimeout(() => setScreen(next), 240);
-    window.setTimeout(() => setRouting(null), 560);
-  }, []);
+  const goScreen = React.useCallback(
+    (next: NeedtScreenId) => {
+      if (next === at.current) return;
+      at.current = next;
+      if (controlled) {
+        /* The router owns the swap, and it paints the new screen itself; a
+           veil here would only cover a transition that already happened. */
+        onScreen?.(next);
+        return;
+      }
+      if (built.current[next]) {
+        setScreen(next);
+        return;
+      }
+      built.current[next] = true;
+      setRouting(next);
+      window.setTimeout(() => setScreen(next), 240);
+      window.setTimeout(() => setRouting(null), 560);
+    },
+    [controlled, onScreen]
+  );
 
   /* A session ticks one second at a time. `focusTickMs` only changes how long
      a second takes on the wall clock. */
@@ -232,7 +267,8 @@ export function AppShell({
         }
       },
       [closeTop, goScreen, onCycleTheme, onPlan]
-    )
+    ),
+    bindKeys
   );
 
   const dueToday = React.useMemo(() => {
@@ -318,23 +354,25 @@ export function AppShell({
             flexDirection: "column",
           }}
         >
-          <ScreenFrame
-            id={screen}
-            glyph={SCREEN_GLYPHS[screen]}
-            actions={
-              settings ? (
-                <button
-                  type="button"
-                  className="btn btn-flat"
-                  onClick={() => goScreen("today")}
-                >
-                  Back
-                </button>
-              ) : null
-            }
-          >
-            {screenSlots?.[screen]}
-          </ScreenFrame>
+          {children ?? (
+            <ScreenFrame
+              id={screen}
+              glyph={SCREEN_GLYPHS[screen]}
+              actions={
+                settings ? (
+                  <button
+                    type="button"
+                    className="btn btn-flat"
+                    onClick={() => goScreen("today")}
+                  >
+                    Back
+                  </button>
+                ) : null
+              }
+            >
+              {screenSlots?.[screen]}
+            </ScreenFrame>
+          )}
         </div>
 
         <KeySheet open={keysOpen} onClose={() => setKeysOpen(false)} />

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Shell: the application now wears the new design's shell — the wordmark, the
+  search, the month, the task rail, focus and the account, with Home,
+  Workspace, Calendar and Documents across the top. It was built in September
+  and only ever shown on the design preview, so until now every ported screen
+  was being drawn inside the old chrome. Sign-in and first-run setup stay
+  bare.
+
 - Phone: task cards show their project again on Today, Tasks and Projects. The
   card builder falls back to the design kit's sample projects when it is not
   given the real ones, and three phone surfaces were not passing them, so no

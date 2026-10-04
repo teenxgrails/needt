@@ -8,7 +8,7 @@ import { AIActionCursor } from "@/components/ai/AIActionCursor";
 import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
 import { AICompanion } from "@/components/ai/AICompanion";
 import { DndProvider } from "@/components/dnd/DndProvider";
-import { AppNav } from "@/components/navigation/AppNav";
+import { NeedtAppShell } from "@/components/needt/shell/NeedtAppShell";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { PrivacyProvider } from "@/components/providers/PrivacyProvider";
 import { SetupCheck } from "@/components/setup/SetupCheck";
@@ -86,31 +86,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               isOpen={shortcutsOpen}
               onClose={() => setShortcutsOpen(false)}
             />
-            <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
-            <main
-              className={cn(
-                "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
-                pathname.startsWith("/settings") &&
-                  "max-lg:h-dvh max-lg:overflow-hidden max-lg:pb-0",
-                (pathname === "/today" ||
-                  pathname.startsWith("/moodboards/")) &&
-                  "xl:h-dvh xl:min-h-0 xl:overflow-hidden"
-              )}
-            >
-              <NotificationProvider>
-                <div
-                  key={pathname}
-                  className={cn(
-                    "needt-mobile-route-fallback relative z-[1] min-h-full",
-                    (pathname === "/today" ||
-                      pathname.startsWith("/moodboards/")) &&
-                      "xl:h-full xl:min-h-0 xl:overflow-hidden"
-                  )}
-                >
-                  {children}
-                </div>
-              </NotificationProvider>
-            </main>
+            <NeedtAppShell>
+              <main
+                className={cn(
+                  "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
+                  pathname.startsWith("/settings") &&
+                    "max-lg:h-dvh max-lg:overflow-hidden max-lg:pb-0",
+                  (pathname === "/today" ||
+                    pathname.startsWith("/moodboards/")) &&
+                    "xl:h-dvh xl:min-h-0 xl:overflow-hidden"
+                )}
+              >
+                <NotificationProvider>
+                  <div
+                    key={pathname}
+                    className={cn(
+                      "needt-mobile-route-fallback relative z-[1] min-h-full",
+                      (pathname === "/today" ||
+                        pathname.startsWith("/moodboards/")) &&
+                        "xl:h-full xl:min-h-0 xl:overflow-hidden"
+                    )}
+                  >
+                    {children}
+                  </div>
+                </NotificationProvider>
+              </main>
+            </NeedtAppShell>
             <AIChatOverlay
               open={chatOverlayOpen}
               onOpenChange={setChatOverlayOpen}
