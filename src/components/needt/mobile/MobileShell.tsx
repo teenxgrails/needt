@@ -21,10 +21,11 @@ import { LuPlus } from "react-icons/lu";
 import { newDate } from "@/lib/date-utils";
 import { isOverdue } from "@/lib/needt/derive";
 import {
+  projects as fixtureProjects,
   tasks as fixtureTasks,
   today as fixtureToday,
 } from "@/lib/needt/fixture";
-import type { NeedtTask } from "@/lib/needt/types";
+import type { NeedtProject, NeedtTask } from "@/lib/needt/types";
 
 import type { ResolvedThemeMode } from "@/types/settings";
 
@@ -57,6 +58,8 @@ export interface MobileShellProps {
   /** Defaults to the fixture's tasks and "today" — never a bare `new Date()`,
    * per repository convention. */
   tasks?: readonly NeedtTask[];
+  /** Defaults to the fixture's projects, for the same reason `tasks` does. */
+  projects?: readonly NeedtProject[];
   now?: Date;
   /** Which stage to open on — the palette's own "jump to sign-in / setup". */
   initialStage?: MobileStage;
@@ -66,6 +69,7 @@ export interface MobileShellProps {
 
 export function MobileShell({
   tasks: initialTasks = fixtureTasks,
+  projects = fixtureProjects,
   now = fixtureToday,
   initialStage = "app",
   initialTab = "home",
@@ -167,6 +171,7 @@ export function MobileShell({
   const body =
     tab === "home" ? (
       <MobileHome
+        projects={projects}
         tasks={tasks}
         now={now}
         onOpenTask={(task) => setOpenTaskId(task.id)}

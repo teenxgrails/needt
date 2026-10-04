@@ -320,6 +320,7 @@ export function TodayRoute() {
         ) : null}
         <div className="scroll-inner min-h-0 flex-1 overflow-auto">
           <MobileHome
+            projects={data.projects}
             tasks={data.tasks}
             now={now}
             onOpenTask={openTask}

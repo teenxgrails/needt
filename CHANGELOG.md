@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Phone: task cards show their project again on Today, Tasks and Projects. The
+  card builder falls back to the design kit's sample projects when it is not
+  given the real ones, and three phone surfaces were not passing them, so no
+  card matched a project and every one lost its colour and label. The argument
+  is now required, so a surface cannot forget it again.
+
 - Calendar: a first run shows the empty-state card again — "Create task" opens
   the task editor and schedules what it saves, and "Connect calendar" links to
   the calendar settings — so a new account is not handed a blank week.

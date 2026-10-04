@@ -17,7 +17,7 @@ import * as React from "react";
 
 import { LuChevronRight, LuPlus } from "react-icons/lu";
 
-import type { NeedtTask } from "@/lib/needt/types";
+import type { NeedtProject, NeedtTask } from "@/lib/needt/types";
 
 import { RichBlock } from "../RichBlock";
 import { homeParted } from "../home";
@@ -27,6 +27,12 @@ import { mobileDayLists } from "./mobile-logic";
 
 export interface MobileHomeProps {
   tasks: readonly NeedtTask[];
+  /**
+   * The workspace's real projects. Without them `rbShape` falls back to the
+   * kit's fixture, which matches no real project id, so every card silently
+   * loses its project colour and label.
+   */
+  projects: readonly NeedtProject[];
   now: Date;
   onOpenTask?: (task: NeedtTask) => void;
   onToggleTask?: (id: string) => void;
@@ -35,11 +41,13 @@ export interface MobileHomeProps {
 
 function MobileTaskCard({
   task,
+  projects,
   atRisk,
   onOpen,
   onToggle,
 }: {
   task: NeedtTask;
+  projects: readonly NeedtProject[];
   atRisk?: boolean;
   onOpen?: () => void;
   onToggle?: () => void;
@@ -48,7 +56,7 @@ function MobileTaskCard({
   return (
     <RichBlock
       touch
-      block={rbShape(input, { layout: "card" })}
+      block={rbShape(input, { layout: "card", projects })}
       weight="open"
       fit
       onOpen={onOpen}
@@ -59,6 +67,7 @@ function MobileTaskCard({
 
 export function MobileHome({
   tasks,
+  projects,
   now,
   onOpenTask,
   onToggleTask,
@@ -144,6 +153,7 @@ export function MobileHome({
           {debtOpen
             ? debt.map((task) => (
                 <MobileTaskCard
+                  projects={projects}
                   key={task.id}
                   task={task}
                   atRisk
@@ -210,6 +220,7 @@ export function MobileHome({
               </span>
             ) : (
               <MobileTaskCard
+                projects={projects}
                 key={row.task.id}
                 task={row.task}
                 onOpen={onOpenTask ? () => onOpenTask(row.task) : undefined}

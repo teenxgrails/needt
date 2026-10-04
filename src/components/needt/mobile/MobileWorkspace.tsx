@@ -138,7 +138,7 @@ export function MobileWorkspace({
                 <RichBlock
                   touch
                   key={task.id}
-                  block={rbShape(input, { layout: "card" })}
+                  block={rbShape(input, { layout: "card", projects })}
                   weight="open"
                   fit
                   onOpen={() => onOpenTask(task)}
