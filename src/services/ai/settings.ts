@@ -12,6 +12,8 @@ import {
   HOSTED_AI_CONFIG,
   claimHostedAiAction,
   getHostedAiUsage,
+  hostedAiRoutingBody,
+  publicHostedAiUsage,
   recordHostedAiTokens,
   releaseHostedAiAction,
   resolveAiAccessMode,
@@ -114,7 +116,7 @@ export async function publicAISettingsWithOAuth(
       connected: Boolean(connection),
       expiresAt: connection?.expiresAt?.toISOString() || null,
     }),
-    usage: await getHostedAiUsage(settings.userId),
+    usage: publicHostedAiUsage(await getHostedAiUsage(settings.userId)),
   };
 }
 
@@ -170,7 +172,8 @@ export async function getConfiguredSchedulerAI(userId: string) {
   const hostedKey = process.env.NEEDT_AI_API_KEY?.trim() || null;
   const usage = await getHostedAiUsage(userId);
   const source = resolveAiAccessMode({
-    hasByok: usage.plan !== "FREE" && Boolean(byokKey),
+    // A key the person pays for costs us nothing, so the plan does not gate it.
+    hasByok: Boolean(byokKey),
     hostedAvailable: Boolean(hostedKey),
     hostedAllowed: usage.allowed,
   });
@@ -181,9 +184,11 @@ export async function getConfiguredSchedulerAI(userId: string) {
           apiKey: hostedKey,
           baseUrl: HOSTED_AI_CONFIG.baseUrl,
           model: HOSTED_AI_CONFIG.model,
+          extraBody: hostedAiRoutingBody(),
           timeoutMs: settings.requestTimeoutSeconds * 1000,
           soulPreset: settings.soulPreset === "coach" ? "coach" : "business",
-          onUsage: (providerUsage) => recordProviderUsage(userId, providerUsage),
+          onUsage: (providerUsage) =>
+            recordProviderUsage(userId, providerUsage),
         }
       : {
           provider:
@@ -262,6 +267,7 @@ export async function getPreparedSchedulerAI(
       apiKey: hostedKey,
       baseUrl: HOSTED_AI_CONFIG.baseUrl,
       model: HOSTED_AI_CONFIG.model,
+      extraBody: hostedAiRoutingBody(),
       timeoutMs: configured.settings.requestTimeoutSeconds * 1000,
       soulPreset:
         configured.settings.soulPreset === "coach" ? "coach" : "business",

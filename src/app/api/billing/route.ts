@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getHostedAiUsage } from "@/services/ai/usage";
+import { getHostedAiUsage, publicHostedAiUsage } from "@/services/ai/usage";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { isCreemConfigured } from "@/lib/creem/config";
 import { isLifetimeCheckoutAvailable } from "@/lib/creem/lifetime-cap";
+import { newDate } from "@/lib/date-utils";
 import {
   canAddCalendar,
   canAddMailbox,
@@ -14,7 +15,6 @@ import {
   canViewFocusStats,
   getPlan,
 } from "@/lib/entitlements";
-import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
 
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         mailboxes,
         aiAgent,
         focusStats,
-        aiActions: aiUsage,
+        aiActions: publicHostedAiUsage(aiUsage),
       },
     });
   } catch (error) {
