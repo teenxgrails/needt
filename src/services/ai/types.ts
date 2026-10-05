@@ -112,4 +112,10 @@ export interface SchedulerAIConfig {
   soulPreset?: "business" | "coach";
   onUsage?: (usage: AIProviderUsage) => void | Promise<void>;
   maxTokens?: number;
+  /**
+   * Extra fields merged into an OpenAI-compatible request body. Used for
+   * gateway-specific options such as OpenRouter provider routing; explicit
+   * fields always win over anything passed here.
+   */
+  extraBody?: Record<string, unknown>;
 }

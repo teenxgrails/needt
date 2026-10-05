@@ -153,19 +153,23 @@ test.describe("clean-database first run", () => {
       });
       await expectNoHorizontalOverflow(page);
 
+      // The ported workspace has a real phone surface, so /tasks no longer
+      // sends a phone to a desktop-only disclaimer.
       await page.goto("/tasks");
       await expect(
-        page.getByRole("heading", { name: "Space is best on desktop" })
-      ).toBeVisible();
-      await page.getByRole("button", { name: "Open Task List" }).click();
-      await expect(page.getByText("No tasks yet.")).toBeVisible();
+        page
+          .getByText("Start with the next thing you need to do.")
+          .filter({ visible: true })
+          .first()
+      ).toBeVisible({ timeout: 30_000 });
       await expectNoHorizontalOverflow(page);
 
+      // Phone copy, as the ported screens now word it.
       const emptyStates = [
-        ["/today", "A clear day. Write anywhere or type /task."],
-        ["/projects", "Create your first project"],
+        ["/today", "Nothing is due today."],
+        ["/projects", "Start with the next thing you need to do."],
         ["/focus", "Your queue is clear."],
-        ["/pages", "Quick start"],
+        ["/pages", "Nothing here yet."],
         ["/moodboards", "Start a visual workspace"],
         ["/mail", "Mail is not configured"],
       ] as const;
@@ -180,6 +184,14 @@ test.describe("clean-database first run", () => {
         ).toBeVisible({ timeout: 30_000 });
         await expectNoHorizontalOverflow(page);
       }
+
+      // Settings is the heaviest route in the suite. Pay its dev compile here,
+      // rather than inside the post-verification navigation window, but stop at
+      // the server response: hydrating it twice is what blew the test budget.
+      await page.goto("/settings", {
+        timeout: 120_000,
+        waitUntil: "commit",
+      });
 
       const rawToken = `onboarding-token-${viewport}-${runId}`;
       const token = createHash("sha256").update(rawToken).digest("hex");
@@ -313,9 +325,13 @@ test.describe("clean-database first run", () => {
       for (let day = 0; day < daysUntilScheduled; day += 1) {
         await page.getByRole("button", { name: "Next period" }).click();
       }
+      // The database says the run finished before the browser does: the page
+      // is still finishing its own scheduling pass and refetching. When the
+      // task lands on a later day the loop above forces that refetch on the
+      // way there, which is why this only shows up for a task placed today.
       await expect(
         page.getByText(taskTitle).filter({ visible: true }).first()
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30_000 });
       await expectNoHorizontalOverflow(page);
     });
   }

@@ -344,6 +344,7 @@ export class OpenAIProvider implements SchedulerAI {
           Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: JSON.stringify({
+          ...(this.config.extraBody ?? {}),
           model: this.config.model || this.defaultModel,
           max_tokens: this.config.maxTokens,
           temperature: 0,
@@ -386,6 +387,7 @@ export class OpenAIProvider implements SchedulerAI {
           Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: JSON.stringify({
+          ...(this.config.extraBody ?? {}),
           model: this.config.model || this.defaultModel,
           max_tokens: this.config.maxTokens,
           temperature: 0,
@@ -440,6 +442,7 @@ export class OpenAIProvider implements SchedulerAI {
           Authorization: `Bearer ${this.config.apiKey}`,
         },
         body: JSON.stringify({
+          ...(this.config.extraBody ?? {}),
           model: this.config.model || this.defaultModel,
           max_tokens: this.config.maxTokens,
           temperature: 0.2,

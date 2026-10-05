@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test";
 import { VISUAL_TEST_NOW } from "./fixtures";
 import { signInVisualUser } from "./helpers";
 
-const THEMES = ["light", "graphite", "dark"] as const;
+const THEMES = ["paper", "dim", "dark"] as const;
 
-test("Light, Graphite and Dark keep their palettes at every breakpoint", async ({
+test("Paper, Dim and Dark keep their palettes at every breakpoint", async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -19,9 +19,9 @@ test("Light, Graphite and Dark keep their palettes at every breakpoint", async (
   expect(resetResponse.ok()).toBeTruthy();
   await page.goto("/settings#theme", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Monday", { exact: true })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "paper");
   await expect(page.getByRole("combobox", { name: "Theme" })).toHaveText(
-    "Light"
+    "Paper"
   );
 
   for (const theme of THEMES) {
@@ -29,12 +29,7 @@ test("Light, Graphite and Dark keep their palettes at every breakpoint", async (
     await themeRow.getByRole("combobox").click();
     await page
       .getByRole("option", {
-        name:
-          theme === "graphite"
-            ? "Graphite"
-            : theme === "dark"
-              ? "Dark"
-              : "Light",
+        name: theme === "dim" ? "Dim" : theme === "dark" ? "Dark" : "Paper",
         exact: true,
       })
       .last()

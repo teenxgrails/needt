@@ -1,10 +1,31 @@
 export type TimeFormat = "12h" | "24h";
 export type WeekStartDay = "monday" | "sunday";
-export type ThemeMode = "light" | "graphite" | "dark" | "system";
+/**
+ * The four themes a person can pick outright. "Drift" is orthogonal to these
+ * and is not a theme; it never appears in this union.
+ */
+export type ResolvedThemeMode = "paper" | "warm" | "dim" | "dark";
+
+/**
+ * System is a pair, not a theme: the person chooses which theme fills the
+ * light half of the OS preference and which fills the dark half.
+ */
+export interface SystemThemePair {
+  light: ResolvedThemeMode;
+  dark: ResolvedThemeMode;
+}
+
+export type ThemeMode = ResolvedThemeMode | "system";
 export type CalendarView = "day" | "week" | "month" | "agenda";
 
 export interface UserSettings {
   theme: ThemeMode;
+  /**
+   * Which pair "system" resolves to. Client-only: the Prisma UserSettings row
+   * has no column for it, so it is stripped before the settings PATCH and
+   * lives in the persisted zustand blob the anti-FOUC script also reads.
+   */
+  systemTheme?: SystemThemePair;
   defaultView: CalendarView;
   timeZone: string;
   secondaryTimeZone: string | null;

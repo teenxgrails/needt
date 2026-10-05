@@ -57,17 +57,29 @@ reduced motion positions update instantly and the explanation stays.
 In production this is Motion's `layout` prop driven by real `TimeSlotManager`
 output — not hand-computed positions.
 
-## 2. Calendar blocks — variant B approved
+## 2. Calendar blocks — inverted marking (revised 2026-08-23)
 
-Scheduled tasks and calendar events must be distinguishable at a glance:
+**The earlier dashed-task variant is withdrawn.** It marked the majority: on a
+real Needt day most blocks are auto-scheduled, so 7–8 of 10 would carry a dashed
+outline and the canvas becomes noise. Verified by drawing a fully booked day.
+
+**Mark the minority — the immovable events.** Same information, roughly four
+times fewer marks.
 
 ```
-task   background: transparent;  border: 1px dashed var(--color-accent);  radius 4px
-event  background: panel;  border: .5px solid line;  border-left: 2px solid dim
+fixed event      background: panel;   border: .5px solid line;  border-left: 2px solid dim
+Needt-scheduled  background: #1C1913; border: .5px solid line;  border-left: 2px solid <project colour>
 ```
 
-The dash encodes mobility: a task can move, an event is fixed. The user learns
-what is draggable before trying, and the reflow stops being surprising.
+Consequences:
+
+- **Project colour now appears on the calendar**, which is where it earns its
+  keep. Previously colour lived only in the sidebar, decoratively — a direct
+  violation of the "colour encodes meaning" rule.
+- Movability is communicated by a one-line legend under the canvas plus the drag
+  cursor, not by a border style repeated on every block.
+- A grey rail therefore means "cannot move"; any coloured rail means "Needt
+  placed this and can move it".
 
 Rules that apply to both:
 
@@ -189,6 +201,26 @@ Two decisions, both approved:
    rather than the week. It no longer collapses, because it is now a primary
    surface rather than a note.
 
+**Panel states that must be designed, not implied** (the first draft showed
+static text and was rejected):
+
+- A task line carries a checkbox tinted with its project colour, the scheduled
+  time pulled from the scheduler, and strikethrough plus muted text when done.
+- Free prose and task lines interleave in the same flow — that is the whole
+  point. Prose is not a separate "notes" section.
+- A persistent empty line invites typing; it is the primary capture path on this
+  screen.
+
+**Open items still unresolved — decide before implementing:**
+
+- **Narrow widths.** Sidebar 168px + panel 172px = 340px of chrome. Below roughly
+  1100px the canvas is squeezed. Define the collapse order (panel first, then
+  sidebar to icons) — the "never collapses" decision above was made for Week
+  view, not for small windows.
+- **"Needs a slot" appears in both this panel and Workspace.** Pick one as
+  authoritative or they will drift. Recommendation: Workspace owns the full list;
+  the panel shows a count plus the top two.
+
 ## 8. Focus — a mode, not a screen
 
 Entering Focus must not be a route change. The current block **is the same
@@ -231,11 +263,39 @@ box rather than decoration.
 
 ---
 
-## Reproducing these
+## The running prototypes
 
-These prototypes were built as throwaway HTML in a design session. The values
-above are the deliverable — rebuild against real components in `/style` rather
-than porting prototype markup, which used hardcoded colours by necessity.
+Recovered 2026-08-23 from the design session transcript and saved here as
+standalone HTML — thirteen files, `01-*.html` through `13-*.html`, plus
+`index.html` linking all of them. Open `index.html` in a browser; no build step,
+no dependencies, each file is self-contained.
+
+| # | File | Concept |
+|---|------|---------|
+| 01 | `01-schedule-reflow-signature-moment.html` | §1 schedule reflow |
+| 02 | `02-sidebar-macos-concept-with-shared-indicator.html` | §3 sidebar, traffic lights |
+| 03 | `03-settings-toggle-live-preview.html` | §10 settings toggles |
+| 04 | `04-palette-directions-three-options.html` | palette comparison |
+| 05 | `05-primary-button-press-physics.html` | §9 primary action button |
+| 06 | `06-calendar-task-block-two-variants.html` | §2 calendar blocks |
+| 07 | `07-sidebar-new-structure-no-minicalendar.html` | §3 sidebar structure |
+| 08 | `08-workspace-lens-over-schedule.html` | §5 Workspace |
+| 09 | `09-merged-day-week-canvas.html` | §4 merged Day/Week |
+| 10 | `10-inbox-with-pinned-people.html` | §6 Inbox |
+| 11 | `11-focus-as-mode-transition.html` | §8 Focus as a mode |
+| 12 | `12-today-full-screen-new-direction.html` | full Today, chosen direction |
+| 13 | `13-today-v2-busy-day-inverted-marking.html` | Today on a busy day, inverted marking |
+
+**These are reference, not source.** They were written against the design
+session's host stylesheet; the recovered files carry a `:root` block that maps
+that stylesheet's variable names onto the warm-charcoal palette above, so they
+render as intended in a plain browser. Do not port this markup into the app —
+rebuild against real components in `/style`. The numbers in this document remain
+the contract; the files exist so nobody has to imagine what the numbers feel
+like.
+
+Prototype 13 is the one to check against real data: the open question about a
+busy day (7–8 of 10 blocks from Needt) is exactly what it models.
 
 Everything in production goes through `src/lib/motion.ts` and `MotionRuntime`,
 so OS, user and hidden-tab reduced-motion settings still disable it.

@@ -1,8 +1,7 @@
-import * as Sentry from "@sentry/node";
+import { raiseOperationsAlert } from "@/services/operations/alerts";
 import { Queue } from "bullmq";
 
 import { prisma } from "@/lib/prisma";
-import { getRedisConnection } from "@/lib/queue/connection";
 import {
   getBugReportSyncQueue,
   getCalendarSyncQueue,
@@ -34,22 +33,7 @@ export function operationsQueues(): Queue[] {
   ];
 }
 
-async function alertOnce(key: string, level: "warning" | "critical", message: string) {
-  const redis = getRedisConnection();
-  const acquired = await redis.set(
-    `needt:operations-alert:${key}:${level}`,
-    "1",
-    "EX",
-    300,
-    "NX"
-  );
-  if (!acquired) return;
-  Sentry.captureMessage(message, level === "critical" ? "fatal" : "warning");
-}
-
-export async function collectOperationsHealth(options?: {
-  alert?: boolean;
-}) {
+export async function collectOperationsHealth(options?: { alert?: boolean }) {
   const queueMetrics = await Promise.all(
     operationsQueues().map(async (queue) => {
       const [counts, oldest] = await Promise.all([
@@ -67,7 +51,7 @@ export async function collectOperationsHealth(options?: {
             ? "warning"
             : "healthy";
       if (options?.alert && severity !== "healthy") {
-        await alertOnce(
+        await raiseOperationsAlert(
           `queue:${queue.name}`,
           severity,
           `${queue.name} queue is ${severity}: ${counts.waiting} waiting, oldest ${Math.round(oldestWaitingAgeMs / 1000)}s`
@@ -85,7 +69,9 @@ export async function collectOperationsHealth(options?: {
     })
   );
 
-  const cronStates = await prisma.cronState.findMany({ orderBy: { id: "asc" } });
+  const cronStates = await prisma.cronState.findMany({
+    orderBy: { id: "asc" },
+  });
   const cronHealth = cronStates.map((cron) => {
     const interval =
       CRON_INTERVALS_MS[cron.id] ??
@@ -107,7 +93,7 @@ export async function collectOperationsHealth(options?: {
       cronHealth
         .filter((cron) => cron.overdue)
         .map((cron) =>
-          alertOnce(
+          raiseOperationsAlert(
             `cron:${cron.id}`,
             "critical",
             `${cron.id} cron missed its execution window`

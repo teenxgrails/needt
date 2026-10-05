@@ -10,7 +10,27 @@ type SentryEventLike = {
   environment?: string;
   type?: unknown;
   tags?: Record<string, unknown>;
-  exception?: { values?: Array<{ type?: string }> };
+  exception?: {
+    values?: Array<{
+      type?: string;
+      module?: string;
+      stacktrace?: { frames?: Array<SentryFrameLike> };
+    }>;
+  };
+};
+
+/**
+ * A stack frame as Sentry models it. Only the fields naming our own source are
+ * copied forward; `vars` in particular is never carried, because local
+ * variables are where a user's data would be sitting.
+ */
+type SentryFrameLike = {
+  filename?: string;
+  function?: string;
+  module?: string;
+  lineno?: number;
+  colno?: number;
+  in_app?: boolean;
 };
 
 type SentrySpanLike = {
@@ -30,9 +50,25 @@ function omitUndefined<T extends Record<string, unknown>>(value: T): T {
   ) as T;
 }
 
+function scrubFrame(frame: SentryFrameLike): SentryFrameLike {
+  return omitUndefined({
+    filename: frame.filename,
+    function: frame.function,
+    module: frame.module,
+    lineno: frame.lineno,
+    colno: frame.colno,
+    in_app: frame.in_app,
+  });
+}
+
 /**
- * Keep error events useful for release-level triage without exporting request,
- * page, mail, token, or account data to a third-party service.
+ * Keep error events useful for triage without exporting request, page, mail,
+ * token, or account data to a third-party service.
+ *
+ * Stack frames are carried because they name our own source — file, function,
+ * line — and an exception type on its own cannot be acted on. The exception's
+ * `value` and the event `message` are still dropped: those are written by our
+ * code and by libraries, and either can quote the data that caused the error.
  */
 export function scrubSentryEvent<T extends SentryEventLike>(event: T): T {
   const service = event.tags?.service;
@@ -50,7 +86,17 @@ export function scrubSentryEvent<T extends SentryEventLike>(event: T): T {
     type: event.type,
     tags: typeof service === "string" ? { service } : undefined,
     exception: event.exception?.values
-      ? { values: event.exception.values.map(({ type }) => ({ type })) }
+      ? {
+          values: event.exception.values.map((value) =>
+            omitUndefined({
+              type: value.type,
+              module: value.module,
+              stacktrace: value.stacktrace?.frames
+                ? { frames: value.stacktrace.frames.map(scrubFrame) }
+                : undefined,
+            })
+          ),
+        }
       : undefined,
   }) as T;
 }

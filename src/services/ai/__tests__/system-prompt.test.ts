@@ -42,7 +42,15 @@ describe("hosted AI metering", () => {
       allowed: false,
       mode: "blocked",
     });
-    expect(hostedUsageStatus(0, "FREE", 2).mode).toBe("blocked");
+    // A free account now carries a small allowance of its own, so an unused
+    // one is in normal mode, and only exhausting it blocks.
+    const freeCap = hostedUsageStatus(Number.MAX_SAFE_INTEGER, "FREE").limit;
+    expect(freeCap).toBeGreaterThan(0);
+    expect(hostedUsageStatus(0, "FREE", 2).mode).toBe("normal");
+    expect(hostedUsageStatus(freeCap * 2, "FREE", 2)).toMatchObject({
+      allowed: false,
+      mode: "blocked",
+    });
   });
 
   it("prefers BYOK and only falls back to hosted while allowance remains", () => {

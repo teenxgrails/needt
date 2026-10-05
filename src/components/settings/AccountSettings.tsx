@@ -31,12 +31,14 @@ export function AccountSettings() {
       .then(async (response) => {
         if (!response.ok) throw new Error("Failed to load account lifecycle");
         return (await response.json()) as {
-          providers: string[];
-          deletion: { scheduledFor: string } | null;
+          providers?: string[];
+          deletion?: { scheduledFor: string } | null;
         };
       })
       .then((data) => {
-        setProviders(data.providers);
+        // A payload without providers used to take the whole section down —
+        // and this section holds account deletion and the data export.
+        setProviders(Array.isArray(data.providers) ? data.providers : []);
         setScheduledFor(data.deletion?.scheduledFor ?? null);
       })
       .catch(() => notify.error("Could not load account deletion status"));
