@@ -83,6 +83,26 @@ export interface AppShellProps {
    * a frame saying what is missing is honest, and a blank pane is not.
    */
   screenSlots?: Partial<Record<NeedtScreenId, React.ReactNode>>;
+  /**
+   * Which screen is showing, when something outside owns that.
+   *
+   * Mounted in the app, the URL decides, so the shell follows `pathname`
+   * rather than holding its own state — otherwise the rail and the address
+   * bar can disagree, and a deep link lands on the wrong screen. Left out,
+   * the shell owns the switch as before, which is what the design preview
+   * and the tests use.
+   */
+  screen?: NeedtScreenId;
+  /** Called instead of switching internally, when `screen` is supplied. */
+  onScreen?: (next: NeedtScreenId) => void;
+  /**
+   * The page itself. Each ported route already draws its own `ScreenFrame`,
+   * so when children are given the shell renders them directly rather than
+   * framing them a second time.
+   */
+  children?: React.ReactNode;
+  /** Off when the host app already binds ⌘K and ?. */
+  bindKeys?: boolean;
   cornerSlot?: React.ReactNode;
   /** The app's own hand: over everything, clickable through. */
   agentCursorSlot?: React.ReactNode;
@@ -90,6 +110,19 @@ export interface AppShellProps {
   composerSlot?: ShellOverlay;
   /** ⌘K. */
   commandPaletteSlot?: ShellOverlay;
+  /**
+   * Where the rail's search bar goes when the host already ships a command
+   * palette of its own. Supplied, the shell hands the press over and never
+   * opens `commandPaletteSlot`; left out, it opens its own — which is what
+   * the design preview does.
+   */
+  onOpenPalette?: () => void;
+  /**
+   * Logging out. The preview has nowhere to go, so it falls back to opening
+   * Settings; an application that can actually end the session supplies this
+   * and the menu item stops lying about what it does.
+   */
+  onSignOut?: () => void;
   /**
    * ⌘⇧P. PORT.md §9: "Plan my day" plays a placement, it does not solve one.
    * Real placement belongs to `src/services/scheduling/`, so the shell only
@@ -107,6 +140,17 @@ export interface AppShellProps {
    * can be judged without waiting out fifty real minutes.
    */
   focusTickMs?: number;
+  /**
+   * A session the host already owns, server-side and durable. Left out, the
+   * shell runs one of its own in memory — which is what the design preview
+   * wants and what a real application must not have, because a timer that
+   * only exists in this tab is a timer the rest of the product cannot see.
+   */
+  focus?: FocusSession | null;
+  onStartFocus?: (session: Omit<FocusSession, "elapsed">) => void;
+  onStopFocus?: () => void;
+  /** See `FocusControl` — only a host with a real session has one. */
+  focusExitIn?: number | null;
 }
 
 export function AppShell({
@@ -118,20 +162,34 @@ export function AppShell({
   dark,
   onCycleTheme,
   screenSlots,
+  screen: screenProp,
+  onScreen,
+  children,
+  bindKeys = true,
   cornerSlot,
   agentCursorSlot,
   composerSlot,
   commandPaletteSlot,
+  onOpenPalette,
+  onSignOut,
   onPlan,
   onOpenTask,
   focusTickMs = 1000,
+  focus: focusProp,
+  onStartFocus,
+  onStopFocus,
+  focusExitIn,
 }: AppShellProps) {
-  const [screen, setScreen] = React.useState<NeedtScreenId>("today");
+  const [ownScreen, setScreen] = React.useState<NeedtScreenId>("today");
+  const controlled = screenProp !== undefined;
+  const screen = screenProp ?? ownScreen;
   const [routing, setRouting] = React.useState<NeedtScreenId | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<Date>(() =>
     startOfDay(today)
   );
-  const [focus, setFocus] = React.useState<FocusSession | null>(null);
+  const [ownFocus, setOwnFocus] = React.useState<FocusSession | null>(null);
+  const focusControlled = focusProp !== undefined;
+  const focus = focusControlled ? focusProp : ownFocus;
   const [keysOpen, setKeysOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [composerOpen, setComposerOpen] = React.useState(false);
@@ -140,36 +198,70 @@ export function AppShell({
      a closure over either is the bug §8 names. */
   const at = React.useRef<NeedtScreenId>(screen);
   at.current = screen;
+  /* ⌘⇧F toggles, and the listener is registered once — it must not answer
+     with the session of the render that made it. */
+  const atFocus = React.useRef<boolean>(focus !== null);
+  atFocus.current = focus !== null;
   const built = React.useRef<Partial<Record<NeedtScreenId, true>>>({
     today: true,
   });
 
-  const goScreen = React.useCallback((next: NeedtScreenId) => {
-    if (next === at.current) return;
-    at.current = next;
-    if (built.current[next]) {
-      setScreen(next);
+  const goScreen = React.useCallback(
+    (next: NeedtScreenId) => {
+      if (next === at.current) return;
+      at.current = next;
+      if (controlled) {
+        /* The router owns the swap, and it paints the new screen itself; a
+           veil here would only cover a transition that already happened. */
+        onScreen?.(next);
+        return;
+      }
+      if (built.current[next]) {
+        setScreen(next);
+        return;
+      }
+      built.current[next] = true;
+      setRouting(next);
+      window.setTimeout(() => setScreen(next), 240);
+      window.setTimeout(() => setRouting(null), 560);
+    },
+    [controlled, onScreen]
+  );
+
+  const startFocus = React.useCallback(
+    (session: Omit<FocusSession, "elapsed">) => {
+      if (focusControlled) {
+        onStartFocus?.(session);
+        return;
+      }
+      setOwnFocus({ ...session, elapsed: 0 });
+    },
+    [focusControlled, onStartFocus]
+  );
+
+  const stopFocus = React.useCallback(() => {
+    if (focusControlled) {
+      onStopFocus?.();
       return;
     }
-    built.current[next] = true;
-    setRouting(next);
-    window.setTimeout(() => setScreen(next), 240);
-    window.setTimeout(() => setRouting(null), 560);
-  }, []);
+    setOwnFocus(null);
+  }, [focusControlled, onStopFocus]);
 
   /* A session ticks one second at a time. `focusTickMs` only changes how long
-     a second takes on the wall clock. */
+     a second takes on the wall clock. A controlled session is the host's to
+     count: it has a server-side start time, and a second clock running beside
+     it would only drift away from it. */
   React.useEffect(() => {
-    if (!focus) return undefined;
+    if (focusControlled || !focus) return undefined;
     const id = window.setInterval(() => {
-      setFocus((live) =>
+      setOwnFocus((live) =>
         live && live.elapsed < live.planned * 60
           ? { ...live, elapsed: live.elapsed + 1 }
           : live
       );
     }, focusTickMs);
     return () => window.clearInterval(id);
-  }, [focus, focusTickMs]);
+  }, [focus, focusControlled, focusTickMs]);
 
   /* Escape closes ONE thing, the one in front. Read through a ref for the
      same reason `at` is a ref: the listener is registered once and must not
@@ -197,22 +289,15 @@ export function AppShell({
       (action) => {
         switch (action.kind) {
           case "palette":
-            setPaletteOpen(true);
+            if (onOpenPalette) onOpenPalette();
+            else setPaletteOpen(true);
             return;
           case "new":
             setComposerOpen(true);
             return;
           case "focus":
-            setFocus((live) =>
-              live
-                ? null
-                : {
-                    intention: "",
-                    planned: 50,
-                    elapsed: 0,
-                    taskId: null,
-                  }
-            );
+            if (atFocus.current) stopFocus();
+            else startFocus({ intention: "", planned: 50, taskId: null });
             return;
           case "plan":
             onPlan?.();
@@ -231,8 +316,17 @@ export function AppShell({
             return;
         }
       },
-      [closeTop, goScreen, onCycleTheme, onPlan]
-    )
+      [
+        closeTop,
+        goScreen,
+        onCycleTheme,
+        onOpenPalette,
+        onPlan,
+        startFocus,
+        stopFocus,
+      ]
+    ),
+    bindKeys
   );
 
   const dueToday = React.useMemo(() => {
@@ -249,33 +343,36 @@ export function AppShell({
 
   return (
     <div
+      className="flex"
       style={{
         position: "relative",
-        display: "flex",
         height: "100%",
         minHeight: 0,
       }}
     >
       {settings ? null : (
-        <Sidebar
-          today={today}
-          tasks={tasks}
-          people={people}
-          pinned={pinned}
-          account={account}
-          screen={screen}
-          onScreen={goScreen}
-          onOpenPalette={() => setPaletteOpen(true)}
-          onOpenTask={onOpenTask}
-          onOpenKeys={() => setKeysOpen(true)}
-          onSignOut={() => goScreen("settings")}
-          selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
-          focus={focus}
-          onStartFocus={(session) => setFocus({ ...session, elapsed: 0 })}
-          onStopFocus={() => setFocus(null)}
-          dark={dark}
-        />
+        <div className="hidden lg:contents">
+          <Sidebar
+            today={today}
+            tasks={tasks}
+            people={people}
+            pinned={pinned}
+            account={account}
+            screen={screen}
+            onScreen={goScreen}
+            onOpenPalette={onOpenPalette ?? (() => setPaletteOpen(true))}
+            onOpenTask={onOpenTask}
+            onOpenKeys={() => setKeysOpen(true)}
+            onSignOut={onSignOut ?? (() => goScreen("settings"))}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            focus={focus}
+            onStartFocus={startFocus}
+            onStopFocus={stopFocus}
+            focusExitIn={focusExitIn}
+            dark={dark}
+          />
+        </div>
       )}
 
       {/* The corners breathe in the accent while a session runs. It never
@@ -284,12 +381,11 @@ export function AppShell({
       {agentCursorSlot}
 
       <main
+        className="flex flex-col"
         style={{
           flex: 1,
           minWidth: 0,
           position: "relative",
-          display: "flex",
-          flexDirection: "column",
           padding: "0 20px 20px",
           backgroundColor: "var(--background)",
           backgroundImage: "var(--canvas-veil)",
@@ -298,43 +394,45 @@ export function AppShell({
         }}
       >
         {settings ? null : (
-          <TabRail
-            screen={screen}
-            onScreen={goScreen}
-            onNew={() => setComposerOpen(true)}
-            dueToday={dueToday}
-          />
+          <div className="hidden lg:contents">
+            <TabRail
+              screen={screen}
+              onScreen={goScreen}
+              onNew={() => setComposerOpen(true)}
+              dueToday={dueToday}
+            />
+          </div>
         )}
 
         {/* Keyed on the screen so the entrance replays on every swap, which is
             what `.screen-enter` and its per-child stagger are for. */}
         <div
           key={screen}
-          className="screen-enter"
+          className="screen-enter flex flex-col"
           style={{
             flex: 1,
             minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
           }}
         >
-          <ScreenFrame
-            id={screen}
-            glyph={SCREEN_GLYPHS[screen]}
-            actions={
-              settings ? (
-                <button
-                  type="button"
-                  className="btn btn-flat"
-                  onClick={() => goScreen("today")}
-                >
-                  Back
-                </button>
-              ) : null
-            }
-          >
-            {screenSlots?.[screen]}
-          </ScreenFrame>
+          {children ?? (
+            <ScreenFrame
+              id={screen}
+              glyph={SCREEN_GLYPHS[screen]}
+              actions={
+                settings ? (
+                  <button
+                    type="button"
+                    className="btn btn-flat"
+                    onClick={() => goScreen("today")}
+                  >
+                    Back
+                  </button>
+                ) : null
+              }
+            >
+              {screenSlots?.[screen]}
+            </ScreenFrame>
+          )}
         </div>
 
         <KeySheet open={keysOpen} onClose={() => setKeysOpen(false)} />

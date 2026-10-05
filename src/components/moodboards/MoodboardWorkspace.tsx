@@ -346,7 +346,7 @@ export function MoodboardWorkspace({ moodboardId }: { moodboardId: string }) {
         {canManage && (
           <Button
             aria-label="Open version history"
-            className="h-11 w-11"
+            className="h-11 w-11 min-h-[44px] min-w-[44px]"
             onClick={() => {
               setHistoryOpen((open) => !open);
               if (!historyOpen) void loadSnapshots();
@@ -360,7 +360,7 @@ export function MoodboardWorkspace({ moodboardId }: { moodboardId: string }) {
         )}
         <Button
           aria-label="Export moodboard"
-          className="h-11 w-11"
+          className="h-11 w-11 min-h-[44px] min-w-[44px]"
           onClick={() => void exportScene("png")}
           size="icon"
           title="Export PNG"
@@ -370,7 +370,7 @@ export function MoodboardWorkspace({ moodboardId }: { moodboardId: string }) {
         </Button>
         <Button
           aria-label="Export SVG"
-          className="h-11 w-11"
+          className="h-11 w-11 min-h-[44px] min-w-[44px]"
           onClick={() => void exportScene("svg")}
           size="icon"
           title="Export SVG"
@@ -380,7 +380,7 @@ export function MoodboardWorkspace({ moodboardId }: { moodboardId: string }) {
         </Button>
         <Button
           aria-label="Export Excalidraw file"
-          className="h-11 w-11"
+          className="h-11 w-11 min-h-[44px] min-w-[44px]"
           onClick={() => void exportScene("json")}
           size="icon"
           title="Export Excalidraw file"
