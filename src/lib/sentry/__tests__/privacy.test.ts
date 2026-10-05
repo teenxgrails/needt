@@ -20,24 +20,7 @@ describe("Sentry privacy filtering", () => {
       transaction: "/mail/private-thread",
       exception: {
         values: [
-          {
-            type: "Error",
-            value: "secret",
-            module: "app",
-            stacktrace: {
-              frames: [
-                {
-                  filename: "src/lib/mail/send.ts",
-                  function: "sendThread",
-                  lineno: 42,
-                  colno: 7,
-                  in_app: true,
-                  vars: { recipient: "person@example.com", token: "secret" },
-                  pre_context: ["const body = privateMailBody;"],
-                },
-              ],
-            },
-          },
+          { type: "Error", value: "secret", stacktrace: { frames: [] } },
         ],
       },
     });
@@ -48,59 +31,7 @@ describe("Sentry privacy filtering", () => {
       release: "abc123",
       environment: "production",
       tags: { service: "worker" },
-      exception: {
-        values: [
-          {
-            type: "Error",
-            module: "app",
-            stacktrace: {
-              frames: [
-                {
-                  filename: "src/lib/mail/send.ts",
-                  function: "sendThread",
-                  lineno: 42,
-                  colno: 7,
-                  in_app: true,
-                },
-              ],
-            },
-          },
-        ],
-      },
-    });
-  });
-
-  it("carries a frame's location but never its locals or source context", () => {
-    const event = scrubSentryEvent({
-      exception: {
-        values: [
-          {
-            type: "TypeError",
-            value: "Cannot read properties of undefined (reading 'filter')",
-            stacktrace: {
-              frames: [
-                {
-                  filename: "src/components/settings/AccountSettings.tsx",
-                  function: "loadProviders",
-                  lineno: 62,
-                  in_app: true,
-                  vars: { data: { providers: undefined } },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    });
-
-    const [value] = event.exception?.values ?? [];
-    expect(value).not.toHaveProperty("value");
-    const [frame] = value?.stacktrace?.frames ?? [];
-    expect(frame).toEqual({
-      filename: "src/components/settings/AccountSettings.tsx",
-      function: "loadProviders",
-      lineno: 62,
-      in_app: true,
+      exception: { values: [{ type: "Error" }] },
     });
   });
 

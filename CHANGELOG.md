@@ -7,13 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Diagnostics: error reports now carry their stack frames. An exception used to
-  reach Sentry as a bare type with no file, function or line, which is not
-  enough to act on. The frames name our own source only — locals and source
-  context are still dropped, and so are the exception message and the event
-  message, because either can quote the data that caused the error.
-- Diagnostics: `POST /api/admin/sentry-check` sends one deliberate exception and
-  returns its event id, so delivery can be confirmed instead of assumed.
 - AI: the hosted agent now runs on GLM 5.3 Flash through OpenRouter instead of
   DeepSeek, and every hosted request asks the gateway to skip providers that
   may retain or train on the data. `NEEDT_AI_GATEWAY_PROVIDERS` pins inference
