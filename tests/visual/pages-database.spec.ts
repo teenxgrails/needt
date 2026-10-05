@@ -93,6 +93,7 @@ test("Page database views share editable records, filters, sorting and grouping"
 
   await page.goto(`/pages/${pageId}`, { waitUntil: "domcontentloaded" });
   const workspace = page.getByTestId("database-view");
+  const viewSwitcher = workspace.locator("..");
   await expect(page.getByRole("button", { name: "Table" })).toBeVisible();
   const recordNames = page.getByLabel("Record name");
   await expect(recordNames).toHaveCount(2);
@@ -106,7 +107,9 @@ test("Page database views share editable records, filters, sorting and grouping"
   await expect(page.getByLabel("Record name").first()).toHaveValue(
     "Alpha launch"
   );
-  await page.getByRole("button", { name: "Calendar" }).click();
+  // The shell's tab rail has a Calendar tab of its own on desktop, so the
+  // database's own view switcher has to be named rather than guessed at.
+  await viewSwitcher.getByRole("button", { name: "Calendar" }).click();
   await expect(workspace.getByText("2026-07-23")).toBeVisible();
   await page.getByRole("button", { name: "Timeline" }).click();
   await expect(workspace.getByText("Alpha launch")).toBeVisible();
@@ -119,7 +122,8 @@ test("Page database views share editable records, filters, sorting and grouping"
 
   await page.getByRole("button", { name: "Table" }).click();
   await page.getByLabel("Filter database records").fill("");
-  await page.getByRole("button", { name: "New", exact: true }).click();
+  // "New" is also the shell's composer button, so name the database's own.
+  await viewSwitcher.getByRole("button", { name: "New", exact: true }).click();
   await expect(recordNames.last()).toHaveValue("Untitled");
   await page.getByLabel("Record name").last().fill("Gamma");
   await page.getByLabel("Record name").last().blur();

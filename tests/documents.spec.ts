@@ -146,7 +146,11 @@ test("Documents searches, persists a favorite, opens, and creates", async ({
   await page.getByRole("button", { name: "More" }).click();
   await page.getByRole("menuitem", { name: "Star" }).click();
   await expect.poll(state.favoritePayload).toEqual({ isFavorite: true });
-  await expect(page.getByText("Pinned")).toBeVisible();
+  // The shell's rail has a Pinned section of its own, so scope this to the
+  // document list rather than the page.
+  await expect(
+    page.getByRole("main").getByText("Pinned").first()
+  ).toBeVisible();
 
   // The editor's own endpoints are not mocked here, so it bounces back to the
   // list; watch for the navigation itself rather than the settled URL.

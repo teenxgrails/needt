@@ -46,6 +46,15 @@ export interface FocusControlProps {
   dark: boolean;
   onStart: (session: Omit<FocusSession, "elapsed">) => void;
   onStop: () => void;
+  /**
+   * Seconds left on the product's early-exit delay, or `null` when no exit
+   * has been asked for. The design has one press to stop; the product makes
+   * you ask first and wait a few seconds, so that you reconsider. The control
+   * keeps its single button and reports the wait instead of hiding it — a
+   * press that appears to do nothing for five seconds is worse than a press
+   * that says what it started.
+   */
+  exitIn?: number | null;
 }
 
 export function FocusControl({
@@ -54,6 +63,7 @@ export function FocusControl({
   dark,
   onStart,
   onStop,
+  exitIn = null,
 }: FocusControlProps) {
   const [open, setOpen] = React.useState(false);
   const [intention, setIntention] = React.useState("");
@@ -130,7 +140,13 @@ export function FocusControl({
           whiteSpace: "nowrap",
         }}
       >
-        {running ? focus.intention || "In focus" : "Focus"}
+        {!running
+          ? "Focus"
+          : exitIn === null
+            ? focus.intention || "In focus"
+            : exitIn > 0
+              ? "Ending\u2026"
+              : "Press to end"}
       </span>
       <span
         style={{
@@ -142,7 +158,11 @@ export function FocusControl({
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {running ? clock(left) : "⌘⇧F"}
+        {!running
+          ? "⌘⇧F"
+          : exitIn !== null && exitIn > 0
+            ? clock(exitIn)
+            : clock(left)}
       </span>
     </button>
   );

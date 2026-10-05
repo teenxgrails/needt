@@ -30,11 +30,20 @@ function isTyping(target: EventTarget | null): boolean {
   return /^(input|textarea|select)$/i.test(target.tagName);
 }
 
-export function useNeedtKeys(onAction: NeedtKeyHandler): void {
+export function useNeedtKeys(
+  onAction: NeedtKeyHandler,
+  /**
+   * Off when something else already owns these chords. Mounted in the app,
+   * ⌘K and ? are taken by the command palette and the shortcuts modal that
+   * already ship, and two handlers on one chord fire both.
+   */
+  enabled = true
+): void {
   const live = React.useRef(onAction);
   live.current = onAction;
 
   React.useEffect(() => {
+    if (!enabled) return undefined;
     /* The lead key lives in the effect rather than in state: a sequence in
        flight is not something anything renders, and putting it in state would
        repaint the whole shell on the way to "g". */
@@ -72,5 +81,5 @@ export function useNeedtKeys(onAction: NeedtKeyHandler): void {
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [enabled]);
 }
