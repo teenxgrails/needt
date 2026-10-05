@@ -285,7 +285,7 @@ export function AppShell({
 
   return (
     <div
-      className="flex max-lg:contents"
+      className="flex"
       style={{
         position: "relative",
         height: "100%",
@@ -322,7 +322,7 @@ export function AppShell({
       {agentCursorSlot}
 
       <main
-        className="flex flex-col max-lg:contents"
+        className="flex flex-col"
         style={{
           flex: 1,
           minWidth: 0,
@@ -349,7 +349,7 @@ export function AppShell({
             what `.screen-enter` and its per-child stagger are for. */}
         <div
           key={screen}
-          className="screen-enter flex flex-col max-lg:contents"
+          className="screen-enter flex flex-col"
           style={{
             flex: 1,
             minHeight: 0,

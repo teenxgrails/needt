@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         /* The shell's root is `height: 100%`, and a percentage height needs
            a definite one above it — against `min-h-dvh` alone it resolves to
            the content and the whole page collapses. */
-        "lg:h-dvh lg:overflow-hidden",
+        "h-dvh overflow-hidden",
         (pathname === "/today" || pathname.startsWith("/moodboards/")) &&
           "xl:h-dvh xl:overflow-hidden"
       )}
