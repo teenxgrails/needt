@@ -325,9 +325,13 @@ test.describe("clean-database first run", () => {
       for (let day = 0; day < daysUntilScheduled; day += 1) {
         await page.getByRole("button", { name: "Next period" }).click();
       }
+      // The database says the run finished before the browser does: the page
+      // is still finishing its own scheduling pass and refetching. When the
+      // task lands on a later day the loop above forces that refetch on the
+      // way there, which is why this only shows up for a task placed today.
       await expect(
         page.getByText(taskTitle).filter({ visible: true }).first()
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 30_000 });
       await expectNoHorizontalOverflow(page);
     });
   }
