@@ -5,7 +5,6 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import type { IconType } from "react-icons";
 import {
   LuCalendarPlus,
   LuChevronLeft,
@@ -116,27 +115,21 @@ function moveAnchor(date: Date, view: CalendarView, direction: -1 | 1) {
   );
 }
 
-function StepButton({
-  className,
-  label,
-  glyph,
-  onClick,
-}: {
-  className: string;
-  label: string;
-  glyph: IconType;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`btn-icon nt-icon-button ${className}`}
-      aria-label={label}
-      onClick={onClick}
-    >
-      <Glyph of={glyph} size={16} />
-    </button>
-  );
+/**
+ * What one press of the header arrows moves.
+ *
+ * The phone canvas is a single day, and the chips that pick week or month are
+ * desktop-only, so an arrow has to move a day there. Asked at the moment of
+ * the press rather than held in state: a hook reports the breakpoint only
+ * after it mounts, so the first presses after a page load moved a week under
+ * a screen showing one day — and a second, hidden button would collide with
+ * the first by name.
+ */
+function stepUnit(view: CalendarView): CalendarView {
+  const phone =
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 639px)").matches;
+  return phone ? "day" : view;
 }
 
 export function CalendarRoute() {
@@ -371,21 +364,16 @@ export function CalendarRoute() {
     <div className="needt-v2" data-theme={theme} style={shellStyle}>
       <header className="flex flex-none flex-wrap items-center gap-2 px-4 pb-2 pt-4 sm:px-5">
         <div className="flex items-center gap-1">
-          {/* Two pairs, chosen by the same breakpoint that chooses the canvas.
-              A hook cannot do this: it reports desktop until it mounts, so the
-              first clicks after a page load would step by the wrong unit. */}
-          <StepButton
-            className="sm:hidden"
-            label="Previous period"
-            glyph={LuChevronLeft}
-            onClick={() => setStoredDate(moveAnchor(storedDate, "day", -1))}
-          />
-          <StepButton
-            className="hidden sm:inline-flex"
-            label="Previous period"
-            glyph={LuChevronLeft}
-            onClick={() => setStoredDate(moveAnchor(storedDate, view, -1))}
-          />
+          <button
+            type="button"
+            className="btn-icon nt-icon-button"
+            aria-label="Previous period"
+            onClick={() =>
+              setStoredDate(moveAnchor(storedDate, stepUnit(view), -1))
+            }
+          >
+            <Glyph of={LuChevronLeft} size={16} />
+          </button>
           <button
             type="button"
             className="min-h-9 rounded-[var(--radius-md)] px-2 text-sm font-medium shadow-[var(--shadow-ring)]"
@@ -393,21 +381,16 @@ export function CalendarRoute() {
           >
             {label}
           </button>
-          <StepButton
-            className="sm:hidden"
-            label="Next period"
-            glyph={LuChevronRight}
-            onClick={() => setStoredDate(moveAnchor(storedDate, "day", 1))}
-          />
-          <StepButton
-            className="hidden sm:inline-flex"
-            label="Next period"
-            glyph={LuChevronRight}
-            onClick={() => setStoredDate(moveAnchor(storedDate, view, 1))}
-          />
-          <span hidden>
+          <button
+            type="button"
+            className="btn-icon nt-icon-button"
+            aria-label="Next period"
+            onClick={() =>
+              setStoredDate(moveAnchor(storedDate, stepUnit(view), 1))
+            }
+          >
             <Glyph of={LuChevronRight} size={16} />
-          </span>
+          </button>
         </div>
         <div
           className="hidden items-center gap-1 sm:flex"
