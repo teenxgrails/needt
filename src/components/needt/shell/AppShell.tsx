@@ -228,6 +228,11 @@ export function AppShell({
     [controlled, onScreen]
   );
 
+  /* `main` only when this shell owns the page: given `children`, the page
+     inside brings its own landmark, and two on one document leave a screen
+     reader asking which is the main one. */
+  const Frame = children ? "div" : "main";
+
   const startFocus = React.useCallback(
     (session: Omit<FocusSession, "elapsed">) => {
       if (focusControlled) {
@@ -380,7 +385,7 @@ export function AppShell({
       {focus ? <div className="focus-aura" aria-hidden="true" /> : null}
       {agentCursorSlot}
 
-      <main
+      <Frame
         className="flex flex-col"
         style={{
           flex: 1,
@@ -446,7 +451,7 @@ export function AppShell({
         })}
         {cornerSlot}
         <RouteVeil to={routing} />
-      </main>
+      </Frame>
     </div>
   );
 }
