@@ -143,6 +143,9 @@ export function CalendarRoute() {
   const storedView = useViewStore((state) => state.view);
   const setStoredView = useViewStore((state) => state.setView);
   const scheduleAllTasks = useTaskStore((state) => state.scheduleAllTasks);
+  const scheduleRevision = useTaskStore(
+    (state) => state.scheduleAnimationRevision
+  );
   const tags = useTaskStore((state) => state.tags);
   const createTag = useTaskStore((state) => state.createTag);
   const fetchTags = useTaskStore((state) => state.fetchTags);
@@ -198,6 +201,25 @@ export function CalendarRoute() {
       current = false;
     };
   }, [activeWorkspaceId, storedDate]);
+
+  /**
+   * Scheduling finishes after the write that triggered it.
+   *
+   * Creating a task returns as soon as the task exists; the placement runs
+   * behind it and the store announces the finished run. Without listening for
+   * that, a task scheduled into today never appears — the grid still holds
+   * what was fetched before the scheduler ran, and only a change of date
+   * refetches. A task placed on a later day hid the bug, because stepping to
+   * that day refetched on the way.
+   */
+  const seenRevision = React.useRef(scheduleRevision);
+  React.useEffect(() => {
+    if (seenRevision.current === scheduleRevision) return;
+    seenRevision.current = scheduleRevision;
+    void refresh().catch(() => {
+      /* The grid keeps what it has; the next navigation will refetch. */
+    });
+  }, [refresh, scheduleRevision]);
 
   const selectView = (next: CalendarView) => {
     setView(next);
