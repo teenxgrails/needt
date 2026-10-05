@@ -9,6 +9,7 @@ import { AIChatOverlay } from "@/components/ai/AIChatOverlay";
 import { AICompanion } from "@/components/ai/AICompanion";
 import { DndProvider } from "@/components/dnd/DndProvider";
 import { AppNav } from "@/components/navigation/AppNav";
+import { NeedtAppShell } from "@/components/needt/shell/NeedtAppShell";
 import { NotificationProvider } from "@/components/providers/NotificationProvider";
 import { PrivacyProvider } from "@/components/providers/PrivacyProvider";
 import { SetupCheck } from "@/components/setup/SetupCheck";
@@ -60,6 +61,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div
       className={cn(
         "needt-page-depth relative flex min-h-dvh",
+        /* The shell's root is `height: 100%`, and a percentage height needs
+           a definite one above it — against `min-h-dvh` alone it resolves to
+           the content and the whole page collapses. */
+        "h-dvh overflow-hidden",
         (pathname === "/today" || pathname.startsWith("/moodboards/")) &&
           "xl:h-dvh xl:overflow-hidden"
       )}
@@ -86,31 +91,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               isOpen={shortcutsOpen}
               onClose={() => setShortcutsOpen(false)}
             />
-            <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
-            <main
-              className={cn(
-                "needt-route-content relative min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
-                pathname.startsWith("/settings") &&
-                  "max-lg:h-dvh max-lg:overflow-hidden max-lg:pb-0",
-                (pathname === "/today" ||
-                  pathname.startsWith("/moodboards/")) &&
-                  "xl:h-dvh xl:min-h-0 xl:overflow-hidden"
-              )}
+            {/* One tree at every width: the shell's own rail hides itself
+                below `lg` and this dock takes over there. Choosing between
+                them in JavaScript remounted the page once after hydration on
+                every phone and tablet, which cancelled any navigation in
+                flight.
+
+                The phone is the design's own bottom bar now
+                (`NeedtMobileTabs`, inside `NeedtAppShell`), so this dock is
+                the tablet's alone. The design has no tablet bar to port. */}
+            <div className="hidden sm:block lg:hidden">
+              <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
+            </div>
+            <NeedtAppShell
+              onOpenPalette={() => setCommandPaletteOpen(true)}
             >
-              <NotificationProvider>
-                <div
-                  key={pathname}
-                  className={cn(
-                    "needt-mobile-route-fallback relative z-[1] min-h-full",
-                    (pathname === "/today" ||
-                      pathname.startsWith("/moodboards/")) &&
-                      "xl:h-full xl:min-h-0 xl:overflow-hidden"
-                  )}
-                >
-                  {children}
-                </div>
-              </NotificationProvider>
-            </main>
+              <main
+                className={cn(
+                  "needt-route-content relative min-h-0 min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",
+                  pathname.startsWith("/settings") &&
+                    "max-lg:h-dvh max-lg:overflow-hidden max-lg:pb-0",
+                  (pathname === "/today" ||
+                    pathname.startsWith("/moodboards/")) &&
+                    "xl:h-dvh xl:min-h-0 xl:overflow-hidden"
+                )}
+              >
+                <NotificationProvider>
+                  <div
+                    key={pathname}
+                    className={cn(
+                      "needt-mobile-route-fallback relative z-[1] min-h-full",
+                      (pathname === "/today" ||
+                        pathname.startsWith("/moodboards/")) &&
+                        "xl:h-full xl:min-h-0 xl:overflow-hidden"
+                    )}
+                  >
+                    {children}
+                  </div>
+                </NotificationProvider>
+              </main>
+            </NeedtAppShell>
             <AIChatOverlay
               open={chatOverlayOpen}
               onOpenChange={setChatOverlayOpen}

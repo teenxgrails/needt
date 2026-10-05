@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Shell: Log out logs you out. In the account menu it opened Settings —
+  the design preview had no session to end, and the application never
+  replaced that stand-in.
+- Shell: the rail's search bar opens the command palette again. It was
+  wired to the shell's own palette, which the application never mounts
+  because it already ships one, so pressing it did nothing at all.
+- Focus: starting a session from the shell's rail now starts the product's
+  own session. The ported control kept its timer in the page, so a session
+  begun there was invisible to the Focus screen, to the history and to the
+  stats, and a reload threw it away. Ending one early asks first and waits a
+  few seconds, the same as the Focus screen does, and the control says so
+  rather than appearing to ignore the press.
+- Phone: the bottom bar is the design's own — Home, Calendar, Workspace and
+  Docs, with a dot on Home while something is still open today. The shell
+  hides its rail below large screens, so the phone had been left with the
+  pre-port dock and its five destinations; that dock is the tablet's alone
+  now. Focus and anything else without a tab stay reachable from the command
+  palette.
+- Shell: the application now wears the new design's shell — the wordmark, the
+  search, the month, the task rail, focus and the account, with Home,
+  Workspace, Calendar and Documents across the top. It was built in September
+  and only ever shown on the design preview, so until now every ported screen
+  was being drawn inside the old chrome. Sign-in and first-run setup stay
+  bare.
 - Diagnostics: error reports now carry their stack frames. An exception used to
   reach Sentry as a bare type with no file, function or line, which is not
   enough to act on. The frames name our own source only — locals and source
