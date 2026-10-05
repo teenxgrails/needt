@@ -118,6 +118,12 @@ export interface AppShellProps {
    */
   onOpenPalette?: () => void;
   /**
+   * Logging out. The preview has nowhere to go, so it falls back to opening
+   * Settings; an application that can actually end the session supplies this
+   * and the menu item stops lying about what it does.
+   */
+  onSignOut?: () => void;
+  /**
    * ⌘⇧P. PORT.md §9: "Plan my day" plays a placement, it does not solve one.
    * Real placement belongs to `src/services/scheduling/`, so the shell only
    * reports the press.
@@ -165,6 +171,7 @@ export function AppShell({
   composerSlot,
   commandPaletteSlot,
   onOpenPalette,
+  onSignOut,
   onPlan,
   onOpenTask,
   focusTickMs = 1000,
@@ -356,7 +363,7 @@ export function AppShell({
             onOpenPalette={onOpenPalette ?? (() => setPaletteOpen(true))}
             onOpenTask={onOpenTask}
             onOpenKeys={() => setKeysOpen(true)}
-            onSignOut={() => goScreen("settings")}
+            onSignOut={onSignOut ?? (() => goScreen("settings"))}
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
             focus={focus}

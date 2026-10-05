@@ -4,6 +4,8 @@ import * as React from "react";
 
 import { usePathname, useRouter } from "next/navigation";
 
+import { signOut } from "next-auth/react";
+
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useAppSession } from "@/components/providers/app-session-context";
 
@@ -187,6 +189,9 @@ export function NeedtAppShell({
         onStopFocus={focusSession.stop}
         focusExitIn={focusSession.exitIn}
         onOpenPalette={onOpenPalette}
+        onSignOut={() => {
+          void signOut({ callbackUrl: "/auth/signin" });
+        }}
         bindKeys={false}
       >
         {children}

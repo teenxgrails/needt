@@ -26,3 +26,15 @@ test("The rail's controls reach the application, not an empty slot", async ({
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 10_000 });
 });
+
+test("Log out ends the session instead of opening Settings", async ({
+  page,
+}) => {
+  await signInVisualUser(page);
+  await page.goto("/today");
+
+  await page.getByRole("button", { name: /account/i }).click();
+  await page.getByText("Log out").click();
+
+  await expect(page).toHaveURL(/\/auth\/signin/, { timeout: 30_000 });
+});

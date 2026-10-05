@@ -356,6 +356,7 @@ export function Sidebar({
           trigger={
             <button
               type="button"
+              aria-label="Account"
               onClick={() => setAccountOpen((was) => !was)}
               style={{
                 display: "flex",

@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Shell: Log out logs you out. In the account menu it opened Settings —
+  the design preview had no session to end, and the application never
+  replaced that stand-in.
 - Shell: the rail's search bar opens the command palette again. It was
   wired to the shell's own palette, which the application never mounts
   because it already ships one, so pressing it did nothing at all.
