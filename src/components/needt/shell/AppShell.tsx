@@ -127,6 +127,17 @@ export interface AppShellProps {
    * can be judged without waiting out fifty real minutes.
    */
   focusTickMs?: number;
+  /**
+   * A session the host already owns, server-side and durable. Left out, the
+   * shell runs one of its own in memory — which is what the design preview
+   * wants and what a real application must not have, because a timer that
+   * only exists in this tab is a timer the rest of the product cannot see.
+   */
+  focus?: FocusSession | null;
+  onStartFocus?: (session: Omit<FocusSession, "elapsed">) => void;
+  onStopFocus?: () => void;
+  /** See `FocusControl` — only a host with a real session has one. */
+  focusExitIn?: number | null;
 }
 
 export function AppShell({
@@ -149,6 +160,10 @@ export function AppShell({
   onPlan,
   onOpenTask,
   focusTickMs = 1000,
+  focus: focusProp,
+  onStartFocus,
+  onStopFocus,
+  focusExitIn,
 }: AppShellProps) {
   const [ownScreen, setScreen] = React.useState<NeedtScreenId>("today");
   const controlled = screenProp !== undefined;
@@ -157,7 +172,9 @@ export function AppShell({
   const [selectedDate, setSelectedDate] = React.useState<Date>(() =>
     startOfDay(today)
   );
-  const [focus, setFocus] = React.useState<FocusSession | null>(null);
+  const [ownFocus, setOwnFocus] = React.useState<FocusSession | null>(null);
+  const focusControlled = focusProp !== undefined;
+  const focus = focusControlled ? focusProp : ownFocus;
   const [keysOpen, setKeysOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [composerOpen, setComposerOpen] = React.useState(false);
@@ -166,6 +183,10 @@ export function AppShell({
      a closure over either is the bug §8 names. */
   const at = React.useRef<NeedtScreenId>(screen);
   at.current = screen;
+  /* ⌘⇧F toggles, and the listener is registered once — it must not answer
+     with the session of the render that made it. */
+  const atFocus = React.useRef<boolean>(focus !== null);
+  atFocus.current = focus !== null;
   const built = React.useRef<Partial<Record<NeedtScreenId, true>>>({
     today: true,
   });
@@ -192,19 +213,40 @@ export function AppShell({
     [controlled, onScreen]
   );
 
+  const startFocus = React.useCallback(
+    (session: Omit<FocusSession, "elapsed">) => {
+      if (focusControlled) {
+        onStartFocus?.(session);
+        return;
+      }
+      setOwnFocus({ ...session, elapsed: 0 });
+    },
+    [focusControlled, onStartFocus]
+  );
+
+  const stopFocus = React.useCallback(() => {
+    if (focusControlled) {
+      onStopFocus?.();
+      return;
+    }
+    setOwnFocus(null);
+  }, [focusControlled, onStopFocus]);
+
   /* A session ticks one second at a time. `focusTickMs` only changes how long
-     a second takes on the wall clock. */
+     a second takes on the wall clock. A controlled session is the host's to
+     count: it has a server-side start time, and a second clock running beside
+     it would only drift away from it. */
   React.useEffect(() => {
-    if (!focus) return undefined;
+    if (focusControlled || !focus) return undefined;
     const id = window.setInterval(() => {
-      setFocus((live) =>
+      setOwnFocus((live) =>
         live && live.elapsed < live.planned * 60
           ? { ...live, elapsed: live.elapsed + 1 }
           : live
       );
     }, focusTickMs);
     return () => window.clearInterval(id);
-  }, [focus, focusTickMs]);
+  }, [focus, focusControlled, focusTickMs]);
 
   /* Escape closes ONE thing, the one in front. Read through a ref for the
      same reason `at` is a ref: the listener is registered once and must not
@@ -238,16 +280,8 @@ export function AppShell({
             setComposerOpen(true);
             return;
           case "focus":
-            setFocus((live) =>
-              live
-                ? null
-                : {
-                    intention: "",
-                    planned: 50,
-                    elapsed: 0,
-                    taskId: null,
-                  }
-            );
+            if (atFocus.current) stopFocus();
+            else startFocus({ intention: "", planned: 50, taskId: null });
             return;
           case "plan":
             onPlan?.();
@@ -266,7 +300,7 @@ export function AppShell({
             return;
         }
       },
-      [closeTop, goScreen, onCycleTheme, onPlan]
+      [closeTop, goScreen, onCycleTheme, onPlan, startFocus, stopFocus]
     ),
     bindKeys
   );
@@ -309,8 +343,9 @@ export function AppShell({
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
             focus={focus}
-            onStartFocus={(session) => setFocus({ ...session, elapsed: 0 })}
-            onStopFocus={() => setFocus(null)}
+            onStartFocus={startFocus}
+            onStopFocus={stopFocus}
+            focusExitIn={focusExitIn}
             dark={dark}
           />
         </div>

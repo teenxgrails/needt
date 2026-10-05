@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Focus: starting a session from the shell's rail now starts the product's
+  own session. The ported control kept its timer in the page, so a session
+  begun there was invisible to the Focus screen, to the history and to the
+  stats, and a reload threw it away. Ending one early asks first and waits a
+  few seconds, the same as the Focus screen does, and the control says so
+  rather than appearing to ignore the press.
 - Phone: the bottom bar is the design's own — Home, Calendar, Workspace and
   Docs, with a dot on Home while something is still open today. The shell
   hides its rail below large screens, so the phone had been left with the

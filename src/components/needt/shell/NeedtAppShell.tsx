@@ -17,6 +17,7 @@ import { AppShell } from "./AppShell";
 import { NeedtMobileTabs } from "./NeedtMobileTabs";
 import type { PinnedDoc } from "./Sidebar";
 import type { NeedtScreenId } from "./screens";
+import { useNeedtFocusSession } from "./useNeedtFocusSession";
 
 interface ShellPayload {
   now: string;
@@ -109,6 +110,9 @@ export function NeedtAppShell({
   const { theme, setTheme, systemTheme } = useTheme();
   const { data: session } = useAppSession();
   const [data, setData] = React.useState<ShellPayload | null>(null);
+  /* The rail's focus control drives the real session, not a timer of its
+     own — see `useNeedtFocusSession`. */
+  const focusSession = useNeedtFocusSession(!bare);
 
   React.useEffect(() => {
     let live = true;
@@ -174,6 +178,10 @@ export function NeedtAppShell({
         }
         /* ⌘K and ? already belong to the command palette and the shortcuts
          modal that ship today. Two handlers on one chord fire both. */
+        focus={focusSession.focus}
+        onStartFocus={focusSession.start}
+        onStopFocus={focusSession.stop}
+        focusExitIn={focusSession.exitIn}
         bindKeys={false}
       >
         {children}

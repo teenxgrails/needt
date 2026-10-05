@@ -97,6 +97,8 @@ export interface SidebarProps {
   focus: FocusSession | null;
   onStartFocus: (session: Omit<FocusSession, "elapsed">) => void;
   onStopFocus: () => void;
+  /** See `FocusControl`'s own prop — the host's early-exit countdown. */
+  focusExitIn?: number | null;
   dark: boolean;
 
   /* ── SLOTS ─────────────────────────────────────────────────────────────
@@ -132,6 +134,7 @@ export function Sidebar({
   focus,
   onStartFocus,
   onStopFocus,
+  focusExitIn,
   dark,
   dragProps = null,
   accountNote = null,
@@ -341,6 +344,7 @@ export function Sidebar({
             dark={dark}
             onStart={onStartFocus}
             onStop={onStopFocus}
+            exitIn={focusExitIn}
           />
         </div>
 
