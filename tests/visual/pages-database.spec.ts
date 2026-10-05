@@ -122,7 +122,8 @@ test("Page database views share editable records, filters, sorting and grouping"
 
   await page.getByRole("button", { name: "Table" }).click();
   await page.getByLabel("Filter database records").fill("");
-  await page.getByRole("button", { name: "New", exact: true }).click();
+  // "New" is also the shell's composer button, so name the database's own.
+  await viewSwitcher.getByRole("button", { name: "New", exact: true }).click();
   await expect(recordNames.last()).toHaveValue("Untitled");
   await page.getByLabel("Record name").last().fill("Gamma");
   await page.getByLabel("Record name").last().blur();
