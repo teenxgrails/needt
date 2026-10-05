@@ -14,6 +14,7 @@ import { resolveThemeMode } from "@/lib/theme";
 import type { ThemeMode } from "@/types/settings";
 
 import { AppShell } from "./AppShell";
+import { NeedtMobileTabs } from "./NeedtMobileTabs";
 import type { PinnedDoc } from "./Sidebar";
 import type { NeedtScreenId } from "./screens";
 
@@ -144,6 +145,9 @@ export function NeedtAppShell({
 
   const name = session?.user?.name ?? "You";
   const screen = screenForPath(pathname);
+  const today = data ? newDate(data.now) : newDate();
+  const tasks = data?.tasks ?? [];
+  const goScreen = (next: NeedtScreenId) => router.push(PATH_BY_SCREEN[next]);
 
   /* The shell's root is a flex container with `height: 100%` and no width of
      its own, so it has to be a *block* child to fill the page: as a flex item
@@ -152,8 +156,8 @@ export function NeedtAppShell({
   return (
     <div className="h-full min-w-0 flex-1">
       <AppShell
-        today={data ? newDate(data.now) : newDate()}
-        tasks={data?.tasks ?? []}
+        today={today}
+        tasks={tasks}
         people={data?.people ?? []}
         pinned={data?.pinned ?? []}
         account={{
@@ -164,7 +168,7 @@ export function NeedtAppShell({
         dark={resolved === "dark" || resolved === "dim"}
         onCycleTheme={cycleTheme}
         screen={screen ?? "today"}
-        onScreen={(next) => router.push(PATH_BY_SCREEN[next])}
+        onScreen={goScreen}
         onOpenTask={(task) =>
           router.push(`/tasks?task=${encodeURIComponent(task.id)}`)
         }
@@ -174,6 +178,12 @@ export function NeedtAppShell({
       >
         {children}
       </AppShell>
+      <NeedtMobileTabs
+        screen={screen}
+        onScreen={goScreen}
+        tasks={tasks}
+        now={today}
+      />
     </div>
   );
 }

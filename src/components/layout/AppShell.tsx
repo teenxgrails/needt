@@ -91,12 +91,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               isOpen={shortcutsOpen}
               onClose={() => setShortcutsOpen(false)}
             />
-            {/* One tree at every width: the shell's own rail and tabs hide
-                themselves below `lg`, and this dock takes over there. Choosing
-                between them in JavaScript remounted the page once after
-                hydration on every phone and tablet, which cancelled any
-                navigation in flight. */}
-            <div className="lg:hidden">
+            {/* One tree at every width: the shell's own rail hides itself
+                below `lg` and this dock takes over there. Choosing between
+                them in JavaScript remounted the page once after hydration on
+                every phone and tablet, which cancelled any navigation in
+                flight.
+
+                The phone is the design's own bottom bar now
+                (`NeedtMobileTabs`, inside `NeedtAppShell`), so this dock is
+                the tablet's alone. The design has no tablet bar to port. */}
+            <div className="hidden sm:block lg:hidden">
               <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
             </div>
             <NeedtAppShell>

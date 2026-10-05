@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Phone: the bottom bar is the design's own — Home, Calendar, Workspace and
+  Docs, with a dot on Home while something is still open today. The shell
+  hides its rail below large screens, so the phone had been left with the
+  pre-port dock and its five destinations; that dock is the tablet's alone
+  now. Focus and anything else without a tab stay reachable from the command
+  palette.
 - Shell: the application now wears the new design's shell — the wordmark, the
   search, the month, the task rail, focus and the account, with Home,
   Workspace, Calendar and Documents across the top. It was built in September
