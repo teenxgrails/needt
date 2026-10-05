@@ -5,6 +5,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import type { IconType } from "react-icons";
 import {
   LuCalendarPlus,
   LuChevronLeft,
@@ -34,7 +35,6 @@ import { notify } from "@/lib/notifications";
 import { updateTaskRequest } from "@/lib/task-api";
 import { resolveThemeMode } from "@/lib/theme";
 
-import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
 import { useViewStore } from "@/store/calendar";
@@ -116,6 +116,29 @@ function moveAnchor(date: Date, view: CalendarView, direction: -1 | 1) {
   );
 }
 
+function StepButton({
+  className,
+  label,
+  glyph,
+  onClick,
+}: {
+  className: string;
+  label: string;
+  glyph: IconType;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`btn-icon nt-icon-button ${className}`}
+      aria-label={label}
+      onClick={onClick}
+    >
+      <Glyph of={glyph} size={16} />
+    </button>
+  );
+}
+
 export function CalendarRoute() {
   const router = useRouter();
   const theme = useResolvedTheme();
@@ -131,10 +154,6 @@ export function CalendarRoute() {
   const createTag = useTaskStore((state) => state.createTag);
   const fetchTags = useTaskStore((state) => state.fetchTags);
   const { createTask } = useTaskMutations();
-  // The phone canvas is always a single day, while the view chips that pick
-  // week or month are desktop-only. Stepping by `view` there moved the header
-  // a week at a time under a screen showing one day.
-  const isPhone = useIsMobile(640);
   const [view, setView] = React.useState<CalendarView>(() =>
     storedView === "day" || storedView === "week" || storedView === "month"
       ? storedView
@@ -352,16 +371,21 @@ export function CalendarRoute() {
     <div className="needt-v2" data-theme={theme} style={shellStyle}>
       <header className="flex flex-none flex-wrap items-center gap-2 px-4 pb-2 pt-4 sm:px-5">
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            className="btn-icon nt-icon-button"
-            aria-label="Previous period"
-            onClick={() =>
-              setStoredDate(moveAnchor(storedDate, isPhone ? "day" : view, -1))
-            }
-          >
-            <Glyph of={LuChevronLeft} size={16} />
-          </button>
+          {/* Two pairs, chosen by the same breakpoint that chooses the canvas.
+              A hook cannot do this: it reports desktop until it mounts, so the
+              first clicks after a page load would step by the wrong unit. */}
+          <StepButton
+            className="sm:hidden"
+            label="Previous period"
+            glyph={LuChevronLeft}
+            onClick={() => setStoredDate(moveAnchor(storedDate, "day", -1))}
+          />
+          <StepButton
+            className="hidden sm:inline-flex"
+            label="Previous period"
+            glyph={LuChevronLeft}
+            onClick={() => setStoredDate(moveAnchor(storedDate, view, -1))}
+          />
           <button
             type="button"
             className="min-h-9 rounded-[var(--radius-md)] px-2 text-sm font-medium shadow-[var(--shadow-ring)]"
@@ -369,16 +393,21 @@ export function CalendarRoute() {
           >
             {label}
           </button>
-          <button
-            type="button"
-            className="btn-icon nt-icon-button"
-            aria-label="Next period"
-            onClick={() =>
-              setStoredDate(moveAnchor(storedDate, isPhone ? "day" : view, 1))
-            }
-          >
+          <StepButton
+            className="sm:hidden"
+            label="Next period"
+            glyph={LuChevronRight}
+            onClick={() => setStoredDate(moveAnchor(storedDate, "day", 1))}
+          />
+          <StepButton
+            className="hidden sm:inline-flex"
+            label="Next period"
+            glyph={LuChevronRight}
+            onClick={() => setStoredDate(moveAnchor(storedDate, view, 1))}
+          />
+          <span hidden>
             <Glyph of={LuChevronRight} size={16} />
-          </button>
+          </span>
         </div>
         <div
           className="hidden items-center gap-1 sm:flex"
