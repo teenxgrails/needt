@@ -103,7 +103,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="hidden sm:block lg:hidden">
               <AppNav onOpenChatOverlay={() => setChatOverlayOpen(true)} />
             </div>
-            <NeedtAppShell>
+            <NeedtAppShell
+              onOpenPalette={() => setCommandPaletteOpen(true)}
+            >
               <main
                 className={cn(
                   "needt-route-content relative min-h-0 min-w-0 flex-1 max-lg:pb-[calc(68px+env(safe-area-inset-bottom))] max-sm:pb-[calc(92px+env(safe-area-inset-bottom))]",

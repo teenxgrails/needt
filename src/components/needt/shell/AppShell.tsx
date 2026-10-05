@@ -111,6 +111,13 @@ export interface AppShellProps {
   /** ⌘K. */
   commandPaletteSlot?: ShellOverlay;
   /**
+   * Where the rail's search bar goes when the host already ships a command
+   * palette of its own. Supplied, the shell hands the press over and never
+   * opens `commandPaletteSlot`; left out, it opens its own — which is what
+   * the design preview does.
+   */
+  onOpenPalette?: () => void;
+  /**
    * ⌘⇧P. PORT.md §9: "Plan my day" plays a placement, it does not solve one.
    * Real placement belongs to `src/services/scheduling/`, so the shell only
    * reports the press.
@@ -157,6 +164,7 @@ export function AppShell({
   agentCursorSlot,
   composerSlot,
   commandPaletteSlot,
+  onOpenPalette,
   onPlan,
   onOpenTask,
   focusTickMs = 1000,
@@ -274,7 +282,8 @@ export function AppShell({
       (action) => {
         switch (action.kind) {
           case "palette":
-            setPaletteOpen(true);
+            if (onOpenPalette) onOpenPalette();
+            else setPaletteOpen(true);
             return;
           case "new":
             setComposerOpen(true);
@@ -300,7 +309,15 @@ export function AppShell({
             return;
         }
       },
-      [closeTop, goScreen, onCycleTheme, onPlan, startFocus, stopFocus]
+      [
+        closeTop,
+        goScreen,
+        onCycleTheme,
+        onOpenPalette,
+        onPlan,
+        startFocus,
+        stopFocus,
+      ]
     ),
     bindKeys
   );
@@ -336,7 +353,7 @@ export function AppShell({
             account={account}
             screen={screen}
             onScreen={goScreen}
-            onOpenPalette={() => setPaletteOpen(true)}
+            onOpenPalette={onOpenPalette ?? (() => setPaletteOpen(true))}
             onOpenTask={onOpenTask}
             onOpenKeys={() => setKeysOpen(true)}
             onSignOut={() => goScreen("settings")}

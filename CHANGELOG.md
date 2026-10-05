@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Shell: the rail's search bar opens the command palette again. It was
+  wired to the shell's own palette, which the application never mounts
+  because it already ships one, so pressing it did nothing at all.
 - Focus: starting a session from the shell's rail now starts the product's
   own session. The ported control kept its timer in the page, so a session
   begun there was invisible to the Focus screen, to the history and to the

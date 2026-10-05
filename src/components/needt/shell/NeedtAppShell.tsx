@@ -100,9 +100,13 @@ export function NeedtAppShell({
   children,
   /** Off where the chrome belongs to something else, such as a phone. */
   enabled = true,
+  onOpenPalette,
 }: {
   children: React.ReactNode;
   enabled?: boolean;
+  /** The application's own command palette. The rail's search bar presses
+   * this rather than the shell's unmounted one. */
+  onOpenPalette?: () => void;
 }) {
   const pathname = usePathname();
   const bare = !enabled || isBare(pathname);
@@ -182,6 +186,7 @@ export function NeedtAppShell({
         onStartFocus={focusSession.start}
         onStopFocus={focusSession.stop}
         focusExitIn={focusSession.exitIn}
+        onOpenPalette={onOpenPalette}
         bindKeys={false}
       >
         {children}
