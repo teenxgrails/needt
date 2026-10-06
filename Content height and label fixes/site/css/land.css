@@ -1,0 +1,1351 @@
+/* THE LANDING — Genie's daylight language, Needt's face.
+ *
+ * The app is an instrument panel: flat colour, ring-first depth, 13px chrome.
+ * That is correct for a thing you live in and wrong for the one page that has
+ * to make someone want to. The design system says as much by omission — it
+ * describes no marketing surface — so the landing is the one place this
+ * language is allowed, and it stops at the app's door.
+ *
+ * From Genie: the pale sky canvas, 32px cards with no shadow at all (the card
+ * reads by the colour step from canvas to surface), 9999px pills, flat pastel
+ * washes as the only colour, and display type that is enormous but never
+ * bolder than its one weight.
+ *
+ * From Needt: the face. Instrument Serif carries the identity, the sky is the
+ * one from the icon at landing size, and every claim on the page is shown with
+ * the real product rather than a picture of it.
+ *
+ * What is deliberately NOT taken from Genie: 3D illustrations. We have no
+ * illustrator and a rendered smiling cloud drawn in CSS would be the one
+ * dishonest object on the page. The sky does that work.
+ */
+
+/* ── GROUND ───────────────────────────────────────────────────────────────*/
+:root {
+  /* What makes `block-size: auto` an animatable value rather than a jump —
+     the FAQ's closing animation depends on it (see .l-faq). Declared here
+     because it is inherited, and a panel deep in the page cannot opt itself
+     in. */
+  interpolate-size: allow-keywords;
+  --sky-tint: #ebf5ff;
+  --bone: #fafdff;
+  --paper: #ffffff;
+  --mist: #f6f7f8;
+  --ink: #0a0d12;
+  --charcoal: #181d27;
+  --graphite: #535862;
+  --fog: #666b77;
+  /* The lightest grey still allowed, and only for marks that are not read as
+     text: it clears 3:1 and nothing here depends on it. */
+  --fog-faint: #8b9099;
+  --lavender: #f1e6ff;
+  --mint: #d3f6e3;
+  --powder: #cce7ff;
+  --peach: #fff2eb;
+  --solar: #fff9e0;
+  --land-radius: 32px;
+}
+
+html, body { margin: 0; background: var(--sky-tint); }
+/* THE GROUND CHANGES HUE BY SECTION, never by line. One gradient over the
+   whole document, so each stretch of the page takes its own pale tint and
+   the next one arrives without an edge: sky under the week, lavender under
+   the brief, mint under projects, butter under the facts, back to sky before
+   the closing weather. Every stop is pale enough that body text clears it,
+   and nothing tiles, so there is nothing to seam. */
+body {
+  background: linear-gradient(180deg,
+    #EBF5FF 0%,
+    #EAF3FE 10%,
+    #F3F1FC 22%,
+    #F5F2FC 30%,
+    #EAF6F0 42%,
+    #EEF7F2 50%,
+    #FBF6E7 62%,
+    #FCF3EC 72%,
+    #F1F1FB 84%,
+    #E4EFFC 100%);
+}
+/* ── THE ROOM ──────────────────────────────────────────────────────────────
+ * The weather behind the whole page. It has been wrong twice, both times for
+ * the same reason, and the fix is the only interesting thing here.
+ *
+ * MEASURED, NOT ASSUMED: this document is 10,993px — 12.5 viewports. A mass
+ * drawn 300px tall and placed at "38%" therefore covers 2.7% of the page, and
+ * a linear ramp spread over the whole document shifts by 8% of its range per
+ * screen. So both earlier versions computed to the same thing on screen: one
+ * faint speck per screen on a ground that did not visibly change. Fixed, the
+ * field never moved; absolute, it moved and there was nothing in it.
+ *
+ * THE FIELD TILES. Each cloud layer carries its own background-size in vh, so
+ * the weather repeats on a band of a screen and a half rather than once per
+ * document — every screen now gets a full arrangement, and the masses are
+ * placed as a fraction of the BAND, where a percentage means something.
+ *
+ * TWO PERIODS THAT DO NOT AGREE: 163vh and 227vh. Their alignment recurs
+ * every ~22 screens, which is longer than the page, so the eye never finds
+ * the repeat — one period alone would read as wallpaper by the third screen.
+ *
+ * NO SEAMS, BY CONSTRUCTION — AND IT IS RADII. The sizes in radial-gradient
+ * are the ellipse's RADII, not its diameter, so a mass reaches centre ±
+ * (vertical radius × fade stop). Those vertical radii are in vh, the same unit
+ * as the tile, so the ratio of mass to tile is fixed at every viewport height:
+ * each one was solved so that reach stays inside its band with 10% to spare.
+ * In px they were only seamless at the height they were drawn at — at a 540px
+ * window the 163vh tile is 880px and the top mass crossed its edge by 76px,
+ * which was the straight line across the page.
+ * That is also why the slow warm shift stays on its own document-tall layer —
+ * a linear ramp cannot tile without a hard line where it wraps.
+ *
+ * NO JAVASCRIPT AND NO ANIMATION. Painted once, composited on scroll; this
+ * page already pays for three live app frames, and the ground must not cost
+ * scrolling.
+ */
+body { position: relative; }
+body::before {
+  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background-repeat: repeat-y;
+  background-size:
+    100% 163vh, 100% 163vh, 100% 163vh, 100% 163vh, 100% 163vh,
+    100% 163vh, 100% 163vh, 100% 163vh,
+    100% 227vh, 100% 227vh, 100% 227vh, 100% 227vh,
+    100% 100%;
+  background-image:
+    /* Band A — the near bank: bigger, brighter, lower in the frame. */
+    radial-gradient(700px 33.3vh at 22% 18%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.3) 52%, rgba(255, 255, 255, 0) 78%),
+    radial-gradient(520px 24.4vh at 78% 34%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.24) 54%, rgba(255, 255, 255, 0) 80%),
+    radial-gradient(860px 37.8vh at 44% 58%, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.26) 52%, rgba(255, 255, 255, 0) 78%),
+    radial-gradient(420px 20vh at 8% 72%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 80%),
+    radial-gradient(600px 26.7vh at 88% 80%, rgba(255, 252, 244, 0.72) 0%, rgba(255, 252, 244, 0) 80%),
+    /* The undersides — flat, cool, a little below each near mass. */
+    radial-gradient(640px 12.2vh at 22% 27%, rgba(112, 146, 186, 0.22) 0%, rgba(112, 146, 186, 0) 74%),
+    radial-gradient(780px 14.4vh at 44% 68%, rgba(112, 146, 186, 0.24) 0%, rgba(112, 146, 186, 0) 74%),
+    radial-gradient(480px 10vh at 78% 41%, rgba(112, 146, 186, 0.18) 0%, rgba(112, 146, 186, 0) 76%),
+    /* Band B — the far bank on a longer period: thinner, warmer, higher, so
+       the two banks read as distance rather than as two copies. */
+    radial-gradient(980px 28.9vh at 62% 14%, rgba(255, 251, 240, 0.66) 0%, rgba(255, 251, 240, 0) 76%),
+    radial-gradient(760px 24.4vh at 16% 40%, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 78%),
+    radial-gradient(1100px 33.3vh at 84% 62%, rgba(255, 253, 246, 0.62) 0%, rgba(255, 253, 246, 0) 76%),
+    radial-gradient(700px 22.2vh at 34% 82%, rgba(255, 255, 255, 0.54) 0%, rgba(255, 255, 255, 0) 80%),
+    /* The day itself, once over the whole scroll: cool at both ends, warm
+       through the middle third where the content is densest. One light source,
+       followed from the hero's sky to the footer's. */
+    linear-gradient(180deg,
+      #BFDAF1 0%, #C6DEF3 8%, #CDE2F4 17%, #C9E0F4 25%,
+      #D2E5F5 33%, #DAE8F4 41%, #E3ECF3 49%, #DAE7F4 56%,
+      #CFE2F3 64%, #C8DEF3 73%, #C1DAF1 83%, #BAD5EF 92%, #B3D1ED 100%);
+}
+/* ── THE GRAIN ─────────────────────────────────────────────────────────────
+ * What separates an expensive ground from a cheap one: not more gradients —
+ * tooth. Nine soft masses with no grain over them is an airbrush, and an
+ * airbrush is the look of a template. It also breaks the banding the ramp
+ * would otherwise show on a wide screen.
+ *
+ * TWO FREQUENCIES, BECAUSE PAPER HAS TWO. A single tile reads as digital
+ * noise; a coarse tooth with a fine one inside it reads as a surface. 168px
+ * and 47px, sizes that share no common factor, so the pair never lines up
+ * into a visible weave.
+ *
+ * MULTIPLY, NOT AN OVERLAY. Unblended, grey noise at low opacity lightens
+ * the ground into haze — the first version was invisible for exactly that
+ * reason. Multiply darkens the troughs and leaves the peaks, which is what a
+ * tooth is.
+ *
+ * Scrolling with the page, not fixed: a fixed blended layer is re-blended
+ * against a moving backdrop on every scroll frame. Absolute, it scrolls as
+ * one piece with what it sits on.
+ */
+body::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  opacity: 0.85; mix-blend-mode: multiply;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='168'%3E%3Cfilter id='c'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.62' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='168' height='168' filter='url(%23c)' opacity='0.2'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='47' height='47'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='47' height='47' filter='url(%23f)' opacity='0.13'/%3E%3C/svg%3E");
+  background-size: 168px 168px, 47px 47px;
+}
+
+/* The glide owns vertical movement, so the platform must not also animate it:
+   `scroll-behavior: smooth` on the root would run its own easing underneath
+   and the two would visibly disagree on every anchor. */
+html { scroll-behavior: auto; }
+/* And the page never rubber-bands past its own ends, because a glide that
+   overshoots into the bounce arrives back late. */
+html, body { overscroll-behavior-y: none; }
+body {
+  color: var(--ink);
+  font: 500 17px / 1.5 var(--font-sans);
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+a { color: inherit; text-decoration: none; }
+/* The app's accent focus ring, off — the site states its own below. */
+.l-btn:focus-visible, .l-navlink:focus-visible, .nv-trigger:focus-visible,
+.l-btn:focus, .l-navlink:focus, .nv-trigger:focus { box-shadow: none; outline: none; }
+.l-btn:focus-visible, .l-navlink:focus-visible, .nv-trigger:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink) 55%, transparent);
+  outline-offset: 3px;
+}
+/* A click must not leave the mark behind: the page's hover and press already
+   say what was pressed. */
+.l-btn:focus:not(:focus-visible),
+.l-navlink:focus:not(:focus-visible),
+.nv-trigger:focus:not(:focus-visible) { outline: none; }
+a:hover { text-decoration: none; }
+::selection { background: var(--powder); }
+
+/* THE `padding-top: 0` CONVENTION IS FOR SECTIONS THAT FOLLOW A PINNED SCENE.
+   A pin's last frame already fills the screen, so its own height is the gap.
+   After an ordinary section it means the next heading arrives touching the
+   previous block, and two claims that touch read as one — which is why focus,
+   agent, price and the FAQ carry the scale at both ends instead. The FAQ gets
+   a little more below because what follows it is the closing sky, and a
+   question list that runs into the sky reads as part of it. */
+#faq { padding-bottom: clamp(80px, min(13vw, 20vh), 210px); }
+
+.l-wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+/* The fixed cluster floats over the page, so the first screen owes it room. */
+body { padding-top: 0; }
+.l-section { padding: clamp(64px, min(11vw, 17vh), 190px) 0; }
+.l-stack { display: flex; flex-direction: column; gap: 20px; }
+.l-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.l-center { align-items: center; text-align: center; }
+
+/* ── THE LIVING WORDMARK ──────────────────────────────────────────────────
+ * The product's own variable face, one axis. It is loaded here rather than
+ * referenced from the app's stylesheet because the app's copy also carries the
+ * app's layout rules, and a landing page has no business inheriting those.
+ */
+@font-face {
+  font-family: "Exposure VAR";
+  src: url("../../needt-app/ExposureTrialVAR.woff2") format("woff2-variations");
+  font-display: block;
+}
+.l-display.l-expo, .l-expo {
+  font-family: "Exposure VAR", Georgia, serif; font-weight: 400;
+  background: linear-gradient(177deg, #0c1117 0%, #16212d 38%, #263749 68%, #3f5670 100%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+}
+/* Letters are written to directly by the engine, so they must not also carry a
+   transition — a transition on a value written every frame is a queue. */
+.ew-letter { display: inline-block; white-space: pre; font-variation-settings: "EXPO" 0; }
+
+/* ── TYPE ─────────────────────────────────────────────────────────────────
+ * Genie's display tier is enormous and fixed at one weight, so it reads as
+ * engraved rather than shouted. Ours is a serif, which gets the same result
+ * from contrast instead of from mass — and tracking stays at -0.02em because
+ * a display line at 120px needs its letters closer, not looser.
+ */
+.l-display, .l-h2, .l-h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.96;
+  text-wrap: balance;
+  color: var(--ink);
+}
+.l-display { font-size: clamp(54px, min(11vw, 17.5vh), 156px); }
+.l-h2 { font-size: clamp(32px, min(4.4vw, 7vh), 66px); line-height: 1.04; }
+.l-h3 { font-size: clamp(21px, min(2vw, 3.2vh), 29px); line-height: 1.14; text-wrap: balance; }
+
+.l-lead { margin: 0; max-width: 30ch; font: 500 clamp(17px, min(1.5vw, 2.4vh), 21px) / 1.42 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite); text-wrap: pretty; }
+.l-body { margin: 0; max-width: 62ch; font: 500 17px / 1.5 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite); text-wrap: pretty; }
+.l-small { font: 500 14px / 1.42 var(--font-sans); color: var(--fog); }
+.l-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* THE INLINE HIGHLIGHT IS THE SYSTEM'S ACCENT.
+   It was #0099ff — Genie's Sky Blue, taken from the reference sheet along with
+   the rest of that language. On white it measures 2.94:1, and two of its uses
+   are real links, so it failed the floor in the one place a colour must not:
+   text you are meant to click. The bound system's accent is #2E6DE9 and
+   measures 4.59:1 on the same ground. Borrowing a colour from a reference is
+   how the palette drifts; the reference gave us its geometry and its air, not
+   its hues. */
+.l-hl { color: var(--accent); }
+
+/* A pill tag: Genie's one label shape. */
+.l-tag {
+  display: inline-flex; align-self: flex-start; align-items: center; gap: 7px;
+  height: 30px; padding: 0 14px; border-radius: 9999px;
+  background: var(--paper);
+  font: 500 13px / 1 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite);
+}
+
+/* ── BUTTONS ──────────────────────────────────────────────────────────────
+ * His pick: the white pill from the identity hero, which is the app's raised
+ * button at landing scale — a light surface lifted off the ground by layered
+ * shadow, no colour. Genie's dark pill is the alternative and was declined;
+ * the white one already reads on the sky, and it keeps the site's one dense
+ * object identical to the product's primary control.
+ *
+ * Press settles it toward the page instead of darkening it, which is the
+ * app's rule and the only reason a button feels physical.
+ */
+.l-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  height: 52px; padding: 0 24px; border: 0; cursor: pointer;
+  border-radius: 14px;
+  background: var(--surface-raised, #fff);
+  color: var(--ink);
+  font: 500 16px / 1 var(--font-sans); letter-spacing: -0.01em;
+  text-decoration: none;
+  /* The product's own raised stack, by token — so the site cannot drift from
+     the app when the app's elevation changes. The extra layer is the one this
+     page needs and the app does not: a landing button sits on a coloured sky
+     rather than on a near-white canvas, and without it the object has nothing
+     to be lifted off. */
+  box-shadow: var(--shadow-raised), 0 14px 30px -14px rgba(10, 13, 18, 0.22);
+  transition: box-shadow var(--transition-hover, 0.15s ease), transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.l-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-raised-hover), 0 20px 40px -16px rgba(10, 13, 18, 0.26);
+  text-decoration: none;
+}
+.l-btn:active, .l-btn.is-hot {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-inset-ring, inset 0 0 0 1px rgba(10, 13, 18, 0.08)),
+    inset 0 1px 3px rgba(10, 13, 18, 0.12);
+}
+.l-btn-ghost { background: transparent; box-shadow: none; color: var(--graphite); border-radius: 14px; }
+.l-btn-ghost:hover { background: rgba(255, 255, 255, 0.58); box-shadow: none; transform: none; color: var(--ink); }
+.l-btn-ghost:active, .l-btn-ghost.is-hot { background: rgba(10, 13, 18, 0.05); box-shadow: none; transform: none; }
+/* Position is written straight to the element on the one page frame, so the
+   compositor gets a hint and the main thread gets no layout. */
+.l-sky-par, .l-sky-body, .o-slot { will-change: transform; }
+.l-btn-sm { height: 38px; padding: 0 16px; font-size: 15px; border-radius: 11px; }
+/* On the sky the ghost needs a ground of its own to stay legible. */
+/* On the sky the quiet one needs a ground of its own to stay legible. */
+/* AND SO DOES EVERY MUTED GREY. The rule stated last turn — pitch a token
+   against the darkest ground it appears on — was applied to the canvas and the
+   bone white and stopped there, but `--fog` also carries the citation and the
+   footer's eyebrows over the SKY, which is darker than both: 3.65:1 on its mid
+   band against the 4.5:1 that small text owes. The sky already has a scope for
+   exactly this — it is where the quiet button is re-pitched — so the greys are
+   re-pitched in the same place rather than through a second token. 5.47:1 on
+   the sky's mid band, and still unmistakably muted beside the ink. */
+.l-on-sky { --fog: #4a4f5a; --graphite: #3a4150; }
+.l-on-sky .l-btn-ghost { background: rgba(255, 255, 255, 0.5); color: #24303f; }
+.l-on-sky .l-btn-ghost:hover { background: rgba(255, 255, 255, 0.76); color: var(--ink); }
+
+/* ── NAV ──────────────────────────────────────────────────────────────────*/
+.l-nav { position: fixed; left: 0; right: 0; top: 0; z-index: 40; display: flex; justify-content: center; pointer-events: none; padding: 14px 16px 0; }
+.l-nav-inner {
+  pointer-events: auto;
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 7px 7px 8px;
+  /* THE CLUSTER'S CORNERS ANSWER TO THE BUTTON INSIDE IT, not to a pill. A
+     9999px radius on a container holding an 11px-radius button is two corner
+     languages in one object, and the eye reads the mismatch before it reads
+     the links. The relationship is arithmetic: an outer radius is the inner
+     radius plus the padding between them — 11 + 7 — so the two curves stay
+     concentric rather than merely both being round. */
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--sky-tint) 80%, transparent);
+  backdrop-filter: saturate(1.5) blur(22px);
+  box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.05), 0 10px 30px -16px rgba(10, 13, 18, 0.22);
+}
+/* The mark takes no width until it is wanted, so nothing shifts when it
+   arrives — it grows out of the left edge of the cluster. */
+.l-mark {
+  display: inline-flex; align-items: center; overflow: hidden;
+  max-width: 0; opacity: 0; margin-right: 0;
+  font-family: var(--font-display); font-size: 24px; line-height: 1; letter-spacing: -0.02em; color: var(--ink);
+  transition: max-width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease, margin-right 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.is-scrolled .l-mark { max-width: 90px; opacity: 1; margin-right: 10px; padding-left: 8px; }
+.l-navlinks { display: flex; align-items: center; gap: 2px; }
+.l-navlink {
+  display: inline-flex; align-items: center; height: 38px; padding: 0 15px; border-radius: 9999px;
+  font: 500 15px / 1 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite);
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.l-navlink:hover { background: rgba(10, 13, 18, 0.05); color: var(--ink); text-decoration: none; }
+.l-avatar { width: 42px; height: 42px; border-radius: 9999px; display: grid; place-items: center; background: var(--paper); box-shadow: 0 1px 2px rgba(10,13,18,0.1), 0 6px 16px -8px rgba(10,13,18,0.2); font: 500 14px var(--font-sans); color: var(--graphite); }
+
+/* ── CARDS AND TILES ──────────────────────────────────────────────────────
+ * Genie's rule, kept exactly: 32px radius, no border, NO SHADOW. The card is
+ * defined by the step from canvas to surface and by the radius. Adding a
+ * shadow here is the single fastest way to lose the daylight.
+ */
+.l-card { display: flex; flex-direction: column; gap: 14px; padding: clamp(26px, 3vw, 40px); border-radius: var(--land-radius); background: var(--bone); }
+.l-tile { display: flex; flex-direction: column; gap: 16px; padding: clamp(24px, 2.6vw, 34px); border-radius: var(--land-radius); }
+.l-tile-lavender { background: var(--lavender); }
+.l-tile-mint { background: var(--mint); }
+.l-tile-powder { background: var(--powder); }
+.l-tile-peach { background: linear-gradient(180deg, #fff2eb 0%, #ffd1b8 100%); }
+.l-grid { display: grid; gap: 20px; }
+#week .l-grid { gap: 12px; }
+
+/* ── THE WEEK'S THREE TILES ───────────────────────────────────────────────
+ * Three shapes, not three copies. The grid is six columns so each tile can
+ * claim a different fraction of the row, which is what makes the set read as
+ * three arguments rather than as a feature list: a tall one for a thing read
+ * top to bottom, a wide one for a thing whose point is breadth, and a
+ * side-by-side one where the picture answers before the sentence asks. */
+.w-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+.w-tall { grid-column: span 2; }
+.w-wide { grid-column: span 4; }
+.w-side { grid-column: span 6; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(20px, 3vw, 44px); align-items: center; }
+.w-side .l-stack { align-self: center; }
+/* A zoomed shot owns its own height, because only part of the app is inside
+   the frame — the ratio of the whole app is no longer the frame's business. */
+.w-tall div.w-shot, .w-wide div.w-shot { flex: 1 1 auto; height: auto; min-height: clamp(190px, 22vw, 300px); }
+.w-side .w-shot { height: clamp(230px, 26vw, 340px); margin: 0; }
+/* The habits tile is a plain card rather than one of the week's three shapes,
+   so its shot needs its own height — .w-shot alone carries none. */
+#focus .w-shot { height: clamp(240px, 28vw, 360px); }
+/* A still in a tile. THE ASSET IS CROPPED, NOT THE FRAME — the first attempt
+   framed the whole screenshot and asked `object-fit: cover` to hide the rest,
+   which does nothing when the frame's aspect matches the source's: the crop
+   existed only in the comment, the panel rendered at 0.28 of life size, and
+   the top half of the tile showed completed tasks belonging to another
+   feature. The file is now the composer and nothing else, measured to the
+   tooltip's own rightmost pixel.
+   With the crop in the asset the frame just shows all of it: no object-fit,
+   no object-position, and the scale follows from the aspect — 0.72 of life
+   size in a 527px tile, which puts the app's 13px rows near 9px and matches
+   the 0.75 and 0.78 the live tiles either side of it run at. */
+/* A PICTURE IS NEVER STRETCHED, so it does not take the growth rule written
+   for the live frames. Those are `<div>` wrappers with no intrinsic aspect,
+   and `flex: 1 1 auto` is what lets them fill the row the grid stretches to
+   match the taller tile beside them. An `<img>` inherits the same grow and
+   gets 39px it has no room for — and because `object-fit` defaults to `fill`
+   on an image, the picture distorts rather than the box letterboxing. An
+   18% vertical stretch is fatal here specifically: the tile's whole argument
+   is that the interface in it is true.
+
+   So the image holds its aspect and the TILE absorbs the slack — see
+   `.w-wide` below, which spaces its two children apart instead of stretching
+   one of them. The alternatives both cost something real: `object-fit: cover`
+   would crop 15% off the width, which is exactly where the tooltip sits, and
+   leaving the image un-grown without giving the tile a distribution rule
+   would park the slack under it as dead pastel. */
+.w-still {
+  border-radius: 16px; background: var(--paper);
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.07);
+  display: block; flex: 0 0 auto; width: 100%; height: auto;
+}
+/* The tile with the still pushes its text to the top and its picture to the
+   bottom, so the row the grid stretched is filled by the gap between them
+   rather than by deforming either one. */
+.w-wide:has(.w-still) { justify-content: space-between; }
+
+.w-act-flow { position: static; transform: none; align-self: flex-start; }
+@media (max-width: 900px) {
+  /* Below this the six-column split gives every tile a column too narrow for
+     its own screenshot, so they stack and the shapes stop meaning anything. */
+  .w-tall, .w-wide, .w-side { grid-column: span 6; }
+  .w-side { grid-template-columns: minmax(0, 1fr); }
+}
+.l-grid-2 { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+.l-grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+/* A real app view, framed as an object. Inside a pastel tile it sits on paper,
+   so the product never has a pastel ground — that is the app's ground and it
+   is white. */
+.l-frame { position: relative; overflow: hidden; border-radius: 20px; background: var(--paper); box-shadow: 0 1px 2px rgba(10,13,18,0.08), 0 20px 50px -24px rgba(10,13,18,0.28); }
+/* The scaled app is a 1440x980 document painted inside a ~380px box. Without
+   containment its repaints belong to the landing's own layer, so every frame
+   the app draws invalidates a region of the page around it. This makes the
+   box its own paint root. Size is deliberately NOT contained — the
+   miniature's height is measured from the box. */
+[data-mini] { position: relative; overflow: hidden; contain: layout paint style; }
+[data-mini] > iframe { position: absolute; left: 0; top: 0; transform-origin: 0 0; border: 0; }
+.l-mini > iframe { pointer-events: none; }
+.l-mini { border-radius: 16px; background: var(--paper); box-shadow: 0 1px 2px rgba(10,13,18,0.07); }
+
+/* ── THE SKY ──────────────────────────────────────────────────────────────
+ * The icon's weather at landing size: sun upper right, a near bank of five
+ * masses, a middle distance, three far specks near the horizon, flat cool
+ * bases, and haze above the horizon line. Distance is the whole subject —
+ * size, height and strength all fall off together.
+ */
+.l-sky-host { position: relative; overflow: hidden; isolation: isolate; }
+/* On a short window the hero still gets its whole screen, but the words move
+   off centre before they would touch the fade. */
+@media (max-height: 620px) {
+  .l-sky-body { padding-top: 78px !important; padding-bottom: 58px !important; }
+}
+/* Room under the words for the window that comes up into the sky. */
+/* The hero's own bottom padding: the space a following block is pulled up
+   into. With nothing pulled up into it, it is the hero's breathing room and
+   half as deep — the extra was room for the film, not for the sentence. */
+.l-sky-host[data-parallax] .l-sky-body { padding-bottom: clamp(96px, 13vh, 170px) !important; }
+.l-sky-par { position: absolute; inset: 0; z-index: 0; will-change: transform; }
+.l-sky {
+  position: absolute; inset: -8%; z-index: 0;
+  background:
+    radial-gradient(38% 58% at 82% 4%, rgba(255,248,232,0.9) 0%, rgba(255,248,232,0) 60%),
+    radial-gradient(22% 30% at 14% 74%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 54%, rgba(255,255,255,0) 78%),
+    radial-gradient(27% 38% at 33% 80%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.46) 52%, rgba(255,255,255,0) 76%),
+    radial-gradient(19% 26% at 49% 71%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.36) 54%, rgba(255,255,255,0) 80%),
+    radial-gradient(24% 33% at 68% 78%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 53%, rgba(255,255,255,0) 77%),
+    radial-gradient(17% 24% at 86% 74%, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.32) 55%, rgba(255,255,255,0) 80%),
+    radial-gradient(12% 15% at 24% 56%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0) 78%),
+    radial-gradient(15% 18% at 57% 52%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 76%),
+    radial-gradient(10% 13% at 76% 58%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 80%),
+    radial-gradient(7% 5% at 40% 45%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 82%),
+    radial-gradient(6% 4% at 65% 43%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0) 82%),
+    radial-gradient(5% 3.5% at 14% 47%, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0) 84%),
+    radial-gradient(24% 9% at 14% 86%, rgba(122,152,188,0.62) 0%, rgba(122,152,188,0) 74%),
+    radial-gradient(29% 11% at 33% 93%, rgba(122,152,188,0.66) 0%, rgba(122,152,188,0) 72%),
+    radial-gradient(20% 8% at 49% 83%, rgba(122,152,188,0.56) 0%, rgba(122,152,188,0) 74%),
+    radial-gradient(25% 10% at 68% 91%, rgba(122,152,188,0.6) 0%, rgba(122,152,188,0) 73%),
+    linear-gradient(180deg, rgba(255,255,255,0) 28%, rgba(246,250,254,0.62) 47%, rgba(255,255,255,0) 56%),
+    linear-gradient(178deg, #8fc0e8 0%, #a6cdec 22%, #bcd9f2 38%, #f4efe4 47%, #c3dcf2 54%, #a9cfec 72%, #93c1e6 100%);
+}
+/* The air in front: banks blurred far past any letter's strokes, so it is
+   never read as a shape. */
+.l-fog {
+  position: absolute; inset: -12%; z-index: 4; pointer-events: none;
+  transform: rotate(-1.6deg); filter: blur(30px);
+  background:
+    radial-gradient(30% 9% at 44% 44%, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.2) 56%, rgba(255,255,255,0) 80%),
+    radial-gradient(20% 6.5% at 71% 40%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 82%),
+    radial-gradient(23% 7% at 20% 39%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 82%);
+}
+.l-sky-body { position: relative; z-index: 3; }
+/* In front of the words. Pointer-transparent, so it veils without catching. */
+.l-haze {
+  position: absolute; left: -14%; right: -14%; top: var(--haze-top, 12%); height: var(--haze-h, 20%); z-index: 5;
+  pointer-events: none; filter: blur(24px); opacity: 0.66;
+  background:
+    radial-gradient(34% 26% at 22% 62%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.34) 52%, rgba(255,255,255,0) 78%),
+    radial-gradient(26% 19% at 58% 40%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 56%, rgba(255,255,255,0) 80%),
+    radial-gradient(30% 22% at 84% 66%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.26) 54%, rgba(255,255,255,0) 79%),
+    radial-gradient(22% 14% at 42% 78%, rgba(246,250,254,0.62) 0%, rgba(246,250,254,0) 82%);
+}
+@keyframes l-haze-drift {
+  0%   { transform: translate3d(-6%, 1.4%, 0) scale(1.04); }
+  50%  { transform: translate3d(6%, -1.2%, 0) scale(1.1); }
+  100% { transform: translate3d(-6%, 1.4%, 0) scale(1.04); }
+}
+/* 43 seconds against the bank's 58 and the near fog's 31: no two share a
+   factor, so the arrangement never comes back round. */
+.l-haze { animation: l-haze-drift 43s cubic-bezier(0.37, 0, 0.63, 1) infinite; will-change: transform; }
+/* A thinner, faster wisp — the thing that actually reads as movement, because
+   it crosses the letters rather than the whole plate. */
+.l-wisp {
+  position: absolute; left: -20%; right: -20%; top: var(--wisp-top, 17%); height: var(--wisp-h, 12%); z-index: 6;
+  pointer-events: none; filter: blur(16px); opacity: 0.52;
+  background:
+    radial-gradient(40% 34% at 30% 50%, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.18) 58%, rgba(255,255,255,0) 82%),
+    radial-gradient(28% 24% at 72% 44%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 80%);
+  animation: l-haze-drift 19s cubic-bezier(0.37, 0, 0.63, 1) infinite reverse;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) { .l-haze, .l-wisp { animation: none; } }
+/* Where the sky meets the canvas below it, it dissolves rather than ending on
+   a line — the hero is a window onto the same afternoon, not a photograph
+   pasted at the top of the page. */
+.l-sky-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 34%; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(235,245,255,0) 0%,
+    rgba(235,245,255,0.18) 34%,
+    rgba(235,245,255,0.55) 62%,
+    rgba(235,245,255,0.88) 84%,
+    var(--sky-tint) 100%); }
+
+@keyframes l-sky-drift {
+  0%   { transform: translate3d(-2.2%, -0.8%, 0) scale(1.06); }
+  50%  { transform: translate3d(2.2%, 0.6%, 0) scale(1.1); }
+  100% { transform: translate3d(-2.2%, -0.8%, 0) scale(1.06); }
+}
+@keyframes l-fog-drift {
+  0%   { transform: rotate(-1.6deg) translate3d(4%, 0.8%, 0); }
+  50%  { transform: rotate(-1.6deg) translate3d(-4%, -0.6%, 0); }
+  100% { transform: rotate(-1.6deg) translate3d(4%, 0.8%, 0); }
+}
+/* 58 seconds: slow enough that you never catch it moving, fast enough that
+   the sky is not the same picture two minutes later. */
+.l-sky { animation: l-sky-drift 58s cubic-bezier(0.37, 0, 0.63, 1) infinite; will-change: transform; }
+.l-fog { animation: l-fog-drift 31s cubic-bezier(0.37, 0, 0.63, 1) infinite; will-change: transform; }
+
+/* ── MOTION ───────────────────────────────────────────────────────────────*/
+/* Sections rise once. The product's own settle: the thing that arrives moves,
+   nothing around it does. */
+.l-rise { opacity: 0; transform: translateY(22px); transition: opacity 0.62s ease, transform 0.62s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.l-rise.is-in { opacity: 1; transform: none; }
+
+/* ── THE FAQ ──────────────────────────────────────────────────────────────
+ *
+ * WHY THIS SECTION USED TO STUTTER, because the fix only makes sense with the
+ * cause written down.
+ *
+ * `grid-template-rows: 0fr → 1fr` is a LAYOUT animation: every frame changes
+ * the height of the panel and therefore the position of everything below it.
+ * On this page that is expensive twice over — the scroll loop reads
+ * `getBoundingClientRect()` every frame for the pins and the facts band, and
+ * a rect read against a dirty layout forces the browser to finish the layout
+ * synchronously. Half a second at 120fps is ~55 forced reflows of a document
+ * whose footer holds a full-screen sky, three fixed layers and a 440px
+ * wordmark.
+ *
+ * Three changes, in order of how much they mattered:
+ *
+ *   1. `contain: paint` on each panel. Paint containment only — and the
+ *      distinction is the whole lesson. `contain: layout` was tried first and
+ *      it killed the animation outright: layout containment promises that the
+ *      content inside does not affect the size outside, and measuring its own
+ *      content is precisely this panel's job, so `1fr` had nothing to resolve
+ *      against and the height snapped. Paint containment makes no claim about
+ *      size; it keeps the repaint — the text, the 40px shadow — inside the
+ *      panel's own box, which is the part that was actually cheap to win.
+ *      The reflow below the panel stays, because it is real: the page below a
+ *      growing box genuinely does move.
+ *   2. The shadow stopped transitioning. A 40px-blur shadow crossfading over
+ *      the same 0.24s is a full-size repaint per frame, landing on exactly
+ *      the frames that were already doing the most work. It now switches on
+ *      the instant the panel opens, which is when it should appear anyway.
+ *   3. The list is isolated. `isolation: isolate` keeps the opening panel's
+ *      paint out of the page's stacking context, so nothing behind it — the
+ *      sky, the fixed layers — is repainted because a panel grew.
+ *
+ * What is NOT done: replacing the grid animation. It is the only honest way
+ * to open a box to its content's height without measuring the content, and
+ * measuring it in script would trade a contained reflow for a scripted one. */
+.l-faq { display: flex; flex-direction: column; gap: 12px; isolation: isolate; }
+.l-faq details {
+  background: var(--bone); border-radius: var(--land-radius); padding: 0 clamp(22px, 2.4vw, 34px);
+  /* Paint only — see above. Layout containment breaks the auto-height this
+     animation is built on. */
+  contain: paint;
+}
+.l-faq summary { display: flex; align-items: center; gap: 16px; padding: 26px 0; cursor: pointer; list-style: none; font: 500 19px / 1.3 var(--font-sans); letter-spacing: -0.01em; color: var(--ink); }
+.l-faq summary::-webkit-details-marker { display: none; }
+.l-faq summary::after { content: ""; margin-left: auto; flex: none; width: 13px; height: 13px; background: currentColor; opacity: 0.4;
+  clip-path: polygon(46% 0, 54% 0, 54% 46%, 100% 46%, 100% 54%, 54% 54%, 54% 100%, 46% 100%, 46% 54%, 0 54%, 0 46%, 46% 46%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.l-faq details[open] summary::after { transform: rotate(45deg); }
+/* THE OPENING. 0fr → 1fr on a grid row is the only way to animate to a
+   content height without measuring it, and that part was right. What was
+   wrong was everything around it:
+   · `ease` over 0.65s on a height is the slowest possible middle — it leaves
+     and arrives lazily, so a panel that is fully open still looks like it is
+     settling. A decelerating curve arrives, and 0.46s is long enough to be
+     read as a movement.
+   · The answer had no treatment of its own, so the text was at full ink from
+     the first pixel of the opening and the box appeared to be dragged down
+     over already-finished type. It now rises a few pixels and fades in behind
+     the box's own edge, one beat later.
+   · Closing is FASTER than opening (0.34s), because a panel being dismissed
+     should get out of the way; equal times make closing feel sticky. */
+.l-faq-body { display: block; }
+
+/* THE GRID OPENS; A SCRIPT CLOSES. The one thing native <details> cannot do
+   is close smoothly: a closed one stops rendering its content, so the moment
+   the attribute goes there is no box left to animate down.
+
+   ::details-content was tried for it and is a dead end, worth recording so it
+   is not tried a third time. While the closed state is content-visibility:
+   hidden, that pseudo-element's `block-size: auto` resolves against skipped
+   content — that is, against nothing — so the transition runs 0 → 0 and the
+   discrete visibility flip is scheduled at the midpoint of a run that changes
+   nothing. The panel then never opens at all, and no @supports test can catch
+   it, because every feature involved is genuinely supported.
+
+   So the grid keeps the opening, and land.js holds the element open for the
+   length of one closing run: it cancels the summary's default action, puts
+   .is-closing on the details, and drops the attribute when the row reaches
+   zero. Both halves are then the same 0fr↔1fr mechanism, and the element is
+   still a real <details> — keyboard, find-in-page and no-JS all keep working,
+   and without the script it simply closes the way it always did. */
+.l-faq-body p {
+  margin: 0 0 26px; max-width: 74ch; font: 500 16px / 1.55 var(--font-sans); color: var(--fog);
+}
+
+/* The card acknowledges the press: a step of ground, on the same 0.15s the
+   design system gives every hover. The row is the button, so the whole row
+   answers rather than just the glyph at its end. */
+/* Only the colour crossfades. The shadow appears with the panel rather than
+   fading in over it: a 40px blur transitioning across the same frames as a
+   layout animation is a full-size repaint per frame, and it was landing on
+   precisely the frames that were already the most expensive. */
+.l-faq details { transition: background-color 0.28s cubic-bezier(0.16, 0.84, 0.28, 1), box-shadow 0.28s cubic-bezier(0.16, 0.84, 0.28, 1); }
+/* Open is a ground shift, not a lift; the shadow belongs to the hand. */
+.l-faq details:hover { background: var(--paper); box-shadow: 0 1px 2px rgba(10, 13, 18, 0.05), 0 14px 32px -22px rgba(10, 13, 18, 0.22); }
+.l-faq details[open] { background: var(--paper); }
+/* The plus turns into a cross on the panel's own curve, so the two read as
+   one gesture instead of a fast mark on a slow box. */
+.l-faq summary::after { transition: transform 0.44s cubic-bezier(0.16, 0.84, 0.28, 1), opacity 0.2s ease; }
+.l-faq summary:hover::after { opacity: 0.7; }
+
+/* The counted numbers. They start at their end value in the markup, so a
+   visitor with JS off reads the fact rather than a zero. */
+.l-figure { font-family: var(--font-display); font-size: clamp(54px, 6vw, 86px); line-height: 1; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* The agent's cursor in the hero. Genuine macOS proportions — 20×24 — because
+   a pointer larger than the system's stops reading as a pointer and starts
+   reading as an illustration of one. */
+.l-cursor { position: absolute; left: 0; top: 0; z-index: 8; width: 20px; height: 24px; pointer-events: none; opacity: 0; }
+.l-cursor > svg { display: block; filter: drop-shadow(0 2px 5px rgba(10, 13, 18, 0.35)); transform-origin: 2.6px 1.6px; transition: transform 0.12s cubic-bezier(0.2, 0.9, 0.24, 1); }
+.l-cursor.is-press > svg { transform: scale(0.86); }
+
+/* ── FOOTER ───────────────────────────────────────────────────────────────*/
+/* The last screen is a room, not a strip: a full screen of sky, so the page
+   closes on the same weather it opened on, and the giant name at its floor is
+   what the scroll arrives at — the reason to keep going past the links. */
+.l-footer { position: relative; min-height: 100svh; display: flex; flex-direction: column; }
+.l-footer > .l-sky-body { flex: 1; display: flex; flex-direction: column; }
+/* The footer's own weather. Three changes from the hero's: the sun is pushed
+   INTO the upper-right corner so its arc ends at the edge instead of hanging
+   in the middle of the plate; the ground darkens toward the floor — a sky at
+   the end of a page is a sky at the end of a day; and the cloud bank lifts
+   into the upper half to leave that band clear.
+
+   THE LAYER ORDER IS THE WHOLE FIX. CSS paints the FIRST-listed background
+   layer on top, so with the radials listed first, five full-opacity white
+   clouds sat directly over the darkening and the floor rendered light. The
+   darkening is listed first now: in front of the clouds, and transparent
+   above the midline so the sun is untouched. */
+.l-footer .l-sky {
+  background:
+    linear-gradient(180deg, rgba(16,34,58,0) 42%, rgba(16,34,58,0.1) 66%, rgba(13,28,48,0.2) 84%, rgba(10,22,40,0.34) 100%),
+    radial-gradient(30% 44% at 99% -7%, rgba(255,248,232,0.96) 0%, rgba(255,248,232,0.3) 44%, rgba(255,248,232,0) 66%),
+    radial-gradient(22% 26% at 14% 34%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 54%, rgba(255,255,255,0) 78%),
+    radial-gradient(27% 32% at 33% 42%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.46) 52%, rgba(255,255,255,0) 76%),
+    radial-gradient(19% 22% at 49% 30%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.36) 54%, rgba(255,255,255,0) 80%),
+    radial-gradient(24% 28% at 68% 40%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 53%, rgba(255,255,255,0) 77%),
+    radial-gradient(17% 20% at 86% 32%, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.32) 55%, rgba(255,255,255,0) 80%),
+    radial-gradient(15% 15% at 57% 20%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0) 76%),
+    radial-gradient(12% 12% at 24% 22%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0) 78%),
+    linear-gradient(178deg, #9cc7ea 0%, #b2d2ee 18%, #c8dcf2 32%, #f2ecdf 42%, #b8d3ee 56%, #8bb3da 78%, #6b96c3 100%);
+}
+/* The clouds moved up, so the air in front of them moves with them — left
+   where it was, it would have hazed the very band that has to go dark. */
+.l-footer .l-fog { inset: -12% -12% 52%; }
+/* THE MIRROR OF THE HERO'S FADE. The footer has to arrive out of the page at
+   its top, or its base colour meets the page on a hard full-width line.
+   It is done by MASKING the sky, not by painting a colour over it: the page
+   ground above now changes hue by section (lavender here), so a painted fade
+   in any one colour is itself the seam. A mask has no colour — the sky simply
+   becomes transparent toward its top edge and the page's own ground shows
+   through, whatever that ground is. */
+.l-footer .l-sky-fade-top { display: none; }
+.l-footer > .l-sky-par,
+.l-footer > .l-fog {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 12%, rgba(0,0,0,0.7) 26%, #000 40%);
+          mask-image: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 12%, rgba(0,0,0,0.7) 26%, #000 40%);
+}
+.l-footer-cols { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); padding: 44px 0 26px; }
+.l-footer-col { display: flex; flex-direction: column; gap: 11px; }
+.l-footer-col a { font: 500 15px var(--font-sans); color: var(--graphite); }
+.l-footer-col a:hover { color: var(--ink); }
+.l-footer-eyebrow { font: 500 12px / 1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fog); }
+.l-footer-base { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 20px 0 26px; }
+
+/* No thread, and no rule above the base line either: two hairlines that close
+   together on a darkening ground read as the page ending twice, and the giant
+   name below them is a far stronger edge than either. The floor is the edge. */
+
+/* THE NAME AT THE FLOOR.
+ *
+ * What those landings do at the end is give the last scroll something worth
+ * arriving at, and the strongest thing this page owns is its name. So it is
+ * set at the full width of the screen and CROPPED BY THE BOTTOM EDGE — the
+ * crop is the whole effect: a word that ends at the glass reads as continuing
+ * past it, where a word with air beneath it reads as a caption.
+ *
+ * It is the app's variable face, so it breathes on the same axis as the mark
+ * in the rail and the one in the hero — one object, three sizes, one life. */
+/* THE NAME AT THE FLOOR, bigger: it is the last thing the page says, and at
+   the scale of the screen it is the only thing on it.
+
+   THE CROP MUST COME OFF ONE EDGE ONLY, and the number that decides it cannot
+   be authored. The air between a line box's top and the top of the capitals is
+   `fontBoundingBoxAscent − actualBoundingBoxAscent` — a property of the font
+   FILE, not of this layout. Pull by less and the letters sit in a band of air;
+   pull by more and the ink crosses the box's own top edge, where the crop
+   slices the N, the d and the t. Two authored values in a row landed on the
+   wrong side of it by 15px and then by 7px, which is what guessing at a font
+   metric looks like.
+
+   So the pull is measured at runtime and arrives as `--floor-pull` (see the
+   floor block in land.js, which re-measures on resize and after the face
+   loads). Line-height 1.2 keeps half-leading non-negative; the measured pull
+   removes exactly the air above the caps and not a pixel more; every
+   overflowing pixel is then at the bottom, by construction rather than by
+   luck. */
+.l-floor { position: relative; z-index: 2; overflow: hidden; margin-top: auto; height: 0.52em; font-size: clamp(128px, 26vw, 440px); }
+.l-floor-word {
+  display: block; text-align: center; white-space: nowrap;
+  font-family: "Exposure VAR", Georgia, serif; font-weight: 400;
+  font-size: 1em; line-height: 1.2; margin-top: var(--floor-pull, 0px); letter-spacing: -0.02em;
+  color: color-mix(in oklab, var(--ink) 86%, transparent);
+}
+.l-floor-word .ew-letter { display: inline-block; white-space: pre; font-variation-settings: "EXPO" 0; }
+
+/* ── THE CLOSING LINE HAS WEIGHT ───────────────────────────────────────
+ * Two motions, and they are kept on two elements on purpose: the breath is a
+ * scale that never stops, the drag is a translate written per frame from the
+ * scroll's own velocity. On one element they would be one transform and the
+ * per-frame write would erase the keyframe every frame. */
+@keyframes l-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+.l-breathe { display: inline-block; animation: l-breathe 5.2s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
+.l-heavy { display: block; will-change: transform; }
+
+/* ── THE PHONE'S STANDING ACTION ──────────────────────────────────────────*/
+.l-dock { display: none; }
+@media (max-width: 760px) {
+  .l-dock {
+    position: fixed; left: 14px; right: 14px; bottom: 14px; z-index: 60;
+    display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 8px 0 20px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.86); backdrop-filter: saturate(1.5) blur(24px);
+    box-shadow: 0 2px 4px rgba(10,13,18,0.06), 0 16px 40px -12px rgba(10,13,18,0.28);
+  }
+  .l-dock-say { flex: 1; min-width: 0; font: 500 16px var(--font-sans); color: var(--ink); }
+  .l-navlinks { display: none; }
+  .l-nav-inner { height: 62px; }
+  body { padding-bottom: 88px; }
+  .l-lead { font-size: 19px; }
+}
+
+/* The blanket rule lives in land-motion.css; these are the resting states it
+   needs so a stopped page is a complete one. */
+@media (prefers-reduced-motion: reduce) {
+  .l-rise { opacity: 1; transform: none; }
+}
+
+
+/* ══ THE FIRST SCREEN NEVER STOPS ══════════════════════════════════════════
+ *
+ * Genie's hero is alive because its SUBJECT changes: "Designs" becomes
+ * "Designers" becomes "Teams", with an inline mark changing beside it. The
+ * sentence stays, the thing it is about rotates — so the claim is read three
+ * times without being repeated once, and the screen is never the same twice.
+ *
+ * Ours rotates what MOVES, because that is the page's first claim: a meeting,
+ * a deadline, a morning, everything. The inline mark is one of the product's
+ * own rail chips rather than a rendered toy — the same reasoning as the belt:
+ * our characters are the objects the app actually draws.
+ */
+.l-rot { display: inline; }
+/* The slot holds the width of whichever subject is showing, and animates
+   between them — otherwise the whole centred line jumps sideways on every
+   swap, which is the one thing that makes a rotator look broken. */
+.l-rot { align-self: stretch; margin-left: auto; margin-right: auto; }
+.l-rot-slot.is-block {
+  display: block; width: auto; height: auto;
+  transition: min-height 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* In flow, so the slot has intrinsic size; the outgoing one overlays it. */
+.l-rot-slot.is-block .l-rot-item.is-on { position: relative; }
+.l-rot-slot.is-block .l-rot-item {
+  left: 0; right: 0; justify-content: center; flex-wrap: wrap; white-space: normal;
+  text-wrap: balance;
+}
+.l-rot-slot {
+  position: relative; display: inline-block; vertical-align: baseline;
+  height: 1.1em; overflow: visible;
+  transition: width 0.52s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: width;
+}
+.l-rot-item {
+  position: absolute; left: 0; top: 0; display: inline-flex; align-items: center; gap: 0.34em;
+  white-space: nowrap; opacity: 0; transform: translateY(0.3em);
+  transition: opacity 0.42s ease, transform 0.52s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+.l-rot-item.is-on { opacity: 1; transform: none; }
+/* A phrase carries its own spacing in its strings; the gap exists for the
+   chip-and-word pair and would otherwise separate the full stop. */
+.l-rot-item.is-phrase { gap: 0; }
+/* Leaving upward while the next arrives from below: two directions read as a
+   turn, one direction reads as a queue. */
+.l-rot-item.is-out { opacity: 0; transform: translateY(-0.3em); }
+
+/* The inline mark: the app's own block, shrunk to the height of a capital.
+   Its hue is the subject's — so the colour is carrying which thing moved,
+   which is exactly what the rail does inside the product. */
+.l-rot-chip {
+  display: inline-flex; align-items: stretch; flex: none;
+  width: 1.5em; height: 0.92em; border-radius: 0.26em; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 2px rgba(10,13,18,0.1), 0 4px 10px -4px rgba(10,13,18,0.2);
+  transition: box-shadow 0.4s ease;
+}
+.l-rot-chip i { display: block; flex: none; width: 0.2em; background: var(--rot-hue, #FF7A45); transition: background-color 0.5s ease; }
+.l-rot-chip span { display: block; flex: 1; margin: 0.2em 0.22em; border-radius: 0.08em; background: rgba(10,13,18,0.1); }
+
+/* ── THE PRODUCT PEEKS INTO THE FIRST SCREEN ──────────────────────────────
+   Kept for the archived film block: where that block sits directly after the
+   hero, it is pulled up into the sky's lower band, so a full-screen sky says
+   there is something below AND shows what it is. Scoped to that adjacency —
+   on a page where the block stands on its own, a −150px pull would hoist it
+   off the top edge. */
+.l-sky-host + #day { margin-top: -150px; }
+#day { position: relative; z-index: 10; }
+#day .l-frame { transition: box-shadow 0.5s ease; }
+
+
+
+
+/* ── THE OFFER STRIP ──────────────────────────────────────────────────────
+ * Above the name, because the offer has to land before the brand does: a
+ * visitor decides whether to keep reading in about a second, and a word they
+ * have never seen is not what decides it.
+ *
+ * It rotates for the same reason the hero's subject does — the page is about
+ * a day that will not hold still — and it is small, quiet and pill-shaped so
+ * it reads as a line of information rather than as an advertisement. One
+ * static tail, so there is always something to press.
+ */
+.l-nav { flex-direction: column; align-items: center; gap: 9px; }
+.l-strip {
+  pointer-events: auto;
+  display: inline-flex; align-items: center; gap: 0.55em;
+  height: 32px; padding: 0 13px 0 15px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: saturate(1.5) blur(18px);
+  box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.04), 0 6px 18px -12px rgba(10, 13, 18, 0.3);
+  font: 500 13.5px / 1 var(--font-sans); letter-spacing: -0.01em; color: var(--ink);
+  white-space: nowrap;
+}
+.l-strip .l-rot-slot { height: 1.05em; }
+.l-strip-dot { flex: none; width: 6px; height: 6px; border-radius: 9999px; background: #2E6DE9; }
+.l-strip-go { display: inline-flex; align-items: center; gap: 3px; color: var(--graphite); transition: color 0.15s ease; }
+.l-strip-go:hover { color: var(--ink); }
+@media (max-width: 760px) {
+  /* On a phone the cluster already fills the width, and two stacked pills eat
+     the first screen the sky is there to own. */
+  .l-strip { display: none; }
+}
+
+
+/* ══ LIVE TYPE ═════════════════════════════════════════════════════════════
+ *
+ * The claim no longer rotates — it is one sentence, and what moves is the
+ * sentence itself. Letters rise toward the pointer as it passes, so the line
+ * is never quite still and never says anything different: motion instead of
+ * substitution, which is what he asked for and the better instinct anyway. A
+ * rotating claim asks to be read three times; a living one asks to be read
+ * once and touched.
+ *
+ * Each letter is its own inline-block with nothing but a transform written to
+ * it, so the line's metrics never change and nothing reflows while it moves.
+ */
+.lt { display: inline-block; will-change: transform; }
+.lt-sp { display: inline-block; white-space: pre; }
+/* A word is one box: letters inside it can lift, but a line break can only
+   fall between words. */
+.lt-w { display: inline-block; white-space: nowrap; }
+
+/* ── THE BATTERY ──────────────────────────────────────────────────────────
+   On the word it belongs to. It charges rather than drains, because the claim
+   is that the time comes back — a draining battery beside "save your time"
+   would argue with its own sentence. */
+.bat {
+  display: inline-flex; align-items: center; vertical-align: -0.1em;
+  width: 1.62em; height: 0.92em; margin: 0 0.16em 0 0.04em;
+  border-radius: 0.2em; padding: 0.2em;
+  /* The shell is a container: quieter than what it holds. */
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, currentColor 40%, transparent);
+  position: relative; flex: none;
+}
+.bat::after {
+  content: ""; position: absolute; right: -0.16em; top: 50%; transform: translateY(-50%);
+  width: 0.09em; height: 0.34em; border-radius: 0 0.06em 0.06em 0;
+  background: color-mix(in oklab, currentColor 40%, transparent);
+}
+.bat i {
+  display: block; height: 100%; border-radius: 0.06em;
+  /* The charge, in the colour the product uses for a thing that is done. */
+  background: var(--success, #0B9E5B);
+  animation: bat-fill 6.5s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+@keyframes bat-fill {
+  0%   { width: 16%; }
+  62%  { width: 100%; }
+  80%  { width: 100%; }
+  100% { width: 16%; }
+}
+
+/* The source, stated small: a number this specific either has a citation or it
+   is decoration, and decoration is the one thing it must not be. */
+.l-cite { font: 500 12.5px / 1.4 var(--font-sans); color: var(--fog); }
+.l-cite a { color: var(--fog); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.l-cite a:hover { color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lt { transform: none !important; }
+  .bat i { animation: none; width: 100%; }
+}
+
+
+
+
+/* ══ THREE THINGS YOU GET BACK ═════════════════════════════════════════════
+ *
+ * The old three were facts about the software — hours on a grid, bytes on a
+ * server — and a fact about software is not a reason to install it. These are
+ * three things the reader gets, and each carries its mechanism in small print
+ * underneath: a number with nothing behind it lasts until the first person
+ * asks where it came from.
+ *
+ * Each takes a project hue, so the colour means here what it means in the
+ * blocks two scenes above and in the deck of steps between them — one
+ * vocabulary, three uses.
+ */
+.f-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 16px; }
+.f-fact {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: clamp(22px, 2.6vw, 32px);
+  border-radius: var(--land-radius);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--fx) 13%, var(--paper)) 0%, var(--paper) 64%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fx) 16%, transparent);
+  /* Written per frame from the band's own position: the card rises as it is
+     reached, so the arrival is tied to the scroll rather than to a duration a
+     fast scroll overruns. */
+  opacity: var(--f-in, 1); transform: translateY(calc((1 - var(--f-in, 1)) * 26px));
+}
+
+/* The label answers the number BEFORE it is read. That inversion is the whole
+   fix: a figure with its caption underneath asks a question and answers it a
+   second later, which is exactly how the old section read as a riddle. */
+.f-top { display: flex; align-items: center; gap: 9px; }
+.f-ico {
+  flex: none; display: grid; place-items: center; width: 30px; height: 30px;
+  border-radius: 9px;
+  background: color-mix(in oklab, var(--fx) 16%, transparent);
+  color: color-mix(in oklab, var(--fx) 78%, var(--ink));
+}
+.f-ico svg { width: 17px; height: 17px; display: block; }
+.f-label {
+  font: 500 13px / 1 var(--font-sans); letter-spacing: 0.04em; text-transform: uppercase;
+  color: color-mix(in oklab, var(--fx) 62%, var(--ink));
+}
+
+.f-fig { position: relative; display: flex; align-items: baseline; gap: 4px; min-height: 76px; }
+.f-num {
+  font-family: var(--font-display); font-weight: 400; line-height: 0.92;
+  font-size: clamp(58px, min(6vw, 9vh), 88px); letter-spacing: -0.02em;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.f-unit { font-family: var(--font-display); font-size: 0.42em; color: color-mix(in oklab, var(--fx) 70%, var(--ink)); }
+.f-why { display: block; margin-top: 7px; font-size: 15px; color: var(--fog); }
+
+/* ── THE THREE SMALL OBJECTS ──────────────────────────────────────────────
+   Each performs its own claim, so the number is demonstrated rather than
+   asserted. All three are CSS: four small keyframes cost nothing beside the
+   live app frames further down the page, and a script driving them would be a
+   second timeline to keep in step with the page's one. */
+
+/* Hours: a ring that fills. */
+.f-ring { position: absolute; right: 4px; top: 2px; width: 52px; height: 52px; opacity: 0.9; }
+.f-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.f-ring circle { fill: none; stroke-width: 3.2; stroke-linecap: round; }
+.f-ring-t { stroke: color-mix(in oklab, var(--fx) 16%, transparent); }
+.f-ring-v {
+  stroke: var(--fx); stroke-dasharray: 119.4;
+  /* Drawn by the scroll: 119.4 is the circumference, so the offset IS the
+     remaining fraction. Nothing here runs on its own clock. */
+  stroke-dashoffset: calc(119.4 - 85 * var(--f-p, 0));
+}
+
+/* One decision: a press, and the ripple it leaves. */
+.f-press {
+  position: absolute; right: 10px; top: 12px; width: 34px; height: 34px; border-radius: 11px;
+  background: var(--fx); opacity: 0.9;
+  /* The press happens at one point in the scroll and springs back after it,
+     so the gesture belongs to a position on the page rather than to a timer
+     that fires whether you are looking or not. */
+  transform: scale(var(--f-press, 1));
+}
+.f-press::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: 0 0 0 calc(18px * var(--f-ring-r, 0)) color-mix(in oklab, var(--fx) calc(40% * (1 - var(--f-ring-r, 0))), transparent);
+}
+
+/* Nought: a queue that fills while the number does not move. */
+.f-stack { position: absolute; right: 6px; top: 8px; display: flex; flex-direction: column; gap: 5px; width: 46px; }
+.f-stack i {
+  display: block; height: 9px; border-radius: 3px;
+  background: color-mix(in oklab, var(--fx) 34%, transparent);
+  transform-origin: 100% 50%;
+  transform: scaleX(var(--f-s, 0));
+}
+.f-stack i:nth-child(1) { --f-s: var(--f-s1, 0); }
+.f-stack i:nth-child(2) { --f-s: var(--f-s2, 0); }
+.f-stack i:nth-child(3) { --f-s: var(--f-s3, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .f-ring-v { stroke-dashoffset: 34; }
+  .f-press { transform: none; }
+  .f-stack i { transform: scaleX(1); }
+  .f-fact { opacity: 1; transform: none; }
+}
+
+
+/* A phrase and the punctuation that closes it are one unit — the comma after
+   "one day" was wrapping alone onto the next line, which reads as a typo. */
+.s2-title .l-it { white-space: nowrap; }
+.s2-title { text-wrap: balance; }
+
+
+
+/* ══ THE OFFER ════════════════════════════════════════════════════════════
+ *
+ * It was a wrapped parcel that opened on the first press; that is reverted. A
+ * gift box is a strong object and it held its place for a while, but it made
+ * the second hero action a puzzle before it was an offer, and the page's job
+ * is to state the offer.
+ *
+ * What survives is what was inside it: the plated word and the numeral. The
+ * tag is a MARK — solid accent is legal on a mark and forbidden on a button
+ * or a surface, which is why the plate is accent and the button around it is
+ * not. The 14 is a numeral because it is a quantity: "fourteen" is a word you
+ * read, 14 is a figure you take at a glance.
+ */
+.l-gift-tag {
+  flex: none; display: inline-flex; align-items: center;
+  height: 22px; padding: 0 8px; border-radius: 7px;
+  background: var(--accent);
+  color: #fff;
+  font: 500 12px / 1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+.l-gift-num { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 760px) {
+}
+
+
+/* ── NO BLUE ON HOVER ─────────────────────────────────────────────────────
+ * The design system's base stylesheet paints every hovered link accent blue
+ * (`a:hover { color: var(--accent) }`, specificity 0,1,1). That beats a
+ * class-only rule (0,1,0), so every control on the site that is an <a> —
+ * buttons, nav rows, cards — turned its text blue under the pointer unless
+ * its own :hover happened to restate a colour. Each control now restates its
+ * own ink on hover at 0,2,1, so the only thing hover changes is what the
+ * control's own :hover rule says it changes. Prose links are untouched. */
+a.l-btn:hover, a.l-btn-ghost:hover, a.l-mark:hover, a.s-mark:hover,
+a.k-more:hover, a.l-navlink:hover, a.s-navlink:hover,
+a.s-btn-ghost:hover, a.s-btn-flat:hover { color: var(--ink); }
+a.s-btn:hover { color: #0A0D12; }
+a.s-btn-dark:hover { color: #FFFFFF; }
+a.s-avatar:hover { color: var(--graphite); }
+a.nv-item:hover, a.nv-head:hover, a.s-card:hover { color: inherit; }
+
+
+/* ══ CLOUDS IN THE MARGINS ═════════════════════════════════════════════════
+ *
+ * Real clouds, not cut-outs. A flat cloud shape is a sticker; what makes one
+ * read as weather is that it has no edge — it is a heap of soft masses, lit
+ * white on top and taking the colour of the air underneath. So each cloud is
+ * five overlapping lumps and a flat, tinted base, blurred until no outline is
+ * left, and the base borrows the ground's own hue so a cloud over mint is
+ * greenish underneath and one over butter is warm.
+ *
+ * THEY LIVE IN THE MARGINS, never behind a line of text: they are placed at
+ * the page's left and right edges and hang half off-screen, so the column
+ * where people read stays clear.
+ *
+ * THEY DRIFT, slowly and each on its own period, so no two move in step —
+ * clouds moving together read as one pane of glass sliding.
+ *
+ * Layered at z-index -1 inside <body>'s own stacking context: above the
+ * body's gradient, below every section. The old full-page ground on
+ * body::before is switched off, because the same stacking context would
+ * otherwise bring it back on top of the gradient.
+ */
+body::before { display: none; }
+.l-clouds { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; isolation: isolate; }
+.l-cloud {
+  position: absolute; width: var(--cw, 460px); aspect-ratio: 2.4;
+  --tint: rgba(236, 228, 252, 0.9);
+  filter: blur(var(--cb, 14px));
+  opacity: 0.92;
+  animation: l-cloud-drift var(--cp, 80s) ease-in-out infinite alternate;
+  animation-delay: var(--cd, 0s);
+  will-change: transform;
+}
+.l-cloud::before, .l-cloud::after { content: ""; position: absolute; inset: 0; border-radius: 50%; }
+/* The heap: lumps of different sizes, brightest where the sun hits the top. */
+.l-cloud::before {
+  background:
+    radial-gradient(28% 56% at 30% 46%, #fff 0%, rgba(255,255,255,0.96) 58%, rgba(255,255,255,0) 72%),
+    radial-gradient(22% 46% at 52% 34%, #fff 0%, rgba(255,255,255,0.97) 60%, rgba(255,255,255,0) 74%),
+    radial-gradient(20% 42% at 70% 48%, #fff 0%, rgba(255,255,255,0.94) 58%, rgba(255,255,255,0) 72%),
+    radial-gradient(16% 32% at 14% 62%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 72%),
+    radial-gradient(16% 32% at 86% 64%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 72%);
+}
+/* The base: flat, a little below the heap, in the colour of the air. */
+.l-cloud::after {
+  background: radial-gradient(46% 22% at 50% 76%, var(--tint) 0%, rgba(255,255,255,0) 74%);
+}
+.l-cloud.t-sky    { --tint: rgba(214, 232, 252, 0.95); }
+.l-cloud.t-lav    { --tint: rgba(234, 224, 252, 0.95); }
+.l-cloud.t-mint   { --tint: rgba(214, 240, 226, 0.95); }
+.l-cloud.t-butter { --tint: rgba(250, 234, 206, 0.95); }
+.l-cloud.t-peach  { --tint: rgba(252, 226, 214, 0.95); }
+@keyframes l-cloud-drift {
+  from { transform: translate3d(calc(var(--dx, 40px) * -1), 0, 0); }
+  to   { transform: translate3d(var(--dx, 40px), -8px, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .l-cloud { animation: none; } }
+
+
+/* ── WHITE GROUND BELOW THE HERO ───────────────────────────────────────────
+ * The page continues the hero's paper instead of turning to sky: one white
+ * sheet with the same whisper of grain, so the hero's floor no longer reads as
+ * a seam. Done by re-pointing --sky-tint, which every fade on the page
+ * already resolves to, rather than chasing each fade by hand. The torn-paper
+ * scraps and clouds stay; the closing sky keeps its own gradient. */
+body.l-white {
+  --sky-tint: #FFFFFF;
+  background-color: #FFFFFF;
+  background-image: none;
+  background-size: 160px 160px;
+}
+
+/* ── TWO NIGHT BANDS ───────────────────────────────────────────────────────
+ * The white page breathes in two places: the line "Your plan breaks…" and the
+ * agent. Both are inset sheets of the product's dark theme with the sheet
+ * radius, not full-bleed stripes — on a page this airy a black band edge to
+ * edge reads as a different site, an inset sheet reads as the same paper
+ * turned over. A faint accent light sits in one corner of each so the dark is
+ * a room, not a hole. The rhythm is white · dark · white · dark · white. */
+.l-dark {
+  position: relative; isolation: isolate; color: #F4F5F7;
+  margin: clamp(24px, 4vw, 56px) clamp(10px, 1.6vw, 22px);
+  border-radius: 32px; overflow: hidden;
+  background:
+    radial-gradient(60% 70% at 88% 0%, rgba(113,178,255,0.16) 0%, rgba(113,178,255,0) 62%),
+    radial-gradient(50% 60% at 6% 100%, rgba(142,155,234,0.12) 0%, rgba(142,155,234,0) 64%),
+    #0E1116;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 40px 90px -50px rgba(10,13,18,0.5);
+}
+.l-dark .sc, .l-dark .cl { display: none; }
+/* The read-out line: unlit words are dim ink on dark, lit words are white. */
+.l-dark .o-read .o-w { color: rgba(244,245,247,0.2); }
+.l-dark .o-read .o-w.is-lit { color: #F4F5F7; }
+@media (prefers-reduced-motion: reduce) { .l-dark .o-read .o-w { color: #F4F5F7; } }
+/* Type on dark. */
+.l-dark .l-h2, .l-dark .l-h3 { color: #F4F5F7; }
+.l-dark .l-body, .l-dark .l-lead { color: rgba(244,245,247,0.68); }
+.l-dark .l-tag { background: rgba(255,255,255,0.08); color: rgba(244,245,247,0.8); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+.l-dark .l-btn-ghost { background: rgba(255,255,255,0.08); color: #F4F5F7; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+.l-dark .l-btn-ghost:hover { background: rgba(255,255,255,0.14); color: #F4F5F7; }
+/* The agent's stage: the app fragment stays white (it is the product), on a
+   raised dark plate instead of the pale one. */
+.l-dark .o-hand { background: #171B22; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+/* The app fragment inside a dark band is the product, and the product is
+   white with dark ink — the dark-band text rule must not reach into it. */
+.l-dark .o-hand-app, .l-dark .o-hand-app .l-h3, .l-dark .o-hand-app .l-body { color: var(--ink, #0A0D12); }
+.l-dark .o-hand-app .l-small { color: rgba(10,13,18,0.55); }
+
+/* ══ THE PAGE SPEAKS THE HERO'S LANGUAGE ═══════════════════════════════════
+ * Below the hero the sections were still in the first landing's voice: a
+ * condensed serif, bare-text eyebrows, near-invisible pale cards. They now
+ * take the hero's three choices, so the page reads as one sheet:
+ *   · headings in Exposure VAR at weight 500, EXPO -25, tight tracking —
+ *     the hero title's face at section size;
+ *   · body in Figtree 400, the hero sub-line's face;
+ *   · objects as white cards on a hairline ring with a soft drop, the way the
+ *     app's own cards sit in the hero window.
+ * Scoped to body.l-white so the inner pages are untouched. */
+body.l-white .l-h2, body.l-white .l-h3, body.l-white .k-title, body.l-white .o-read {
+  font-family: "Exposure VAR", Georgia, serif; font-weight: 500;
+  font-variation-settings: "EXPO" -25; letter-spacing: -0.045em; line-height: 1.06;
+  -webkit-font-smoothing: antialiased; }
+body.l-white .l-h3 { letter-spacing: -0.035em; line-height: 1.12; }
+body.l-white .l-body, body.l-white .l-lead, body.l-white .k-claim p, body.l-white .l-faq-body p {
+  font-family: "Figtree", var(--font-sans); font-weight: 400; }
+body.l-white .l-lead { color: rgba(14,21,32,0.72); }
+body.l-white .l-body { color: rgba(14,21,32,0.66); }
+
+/* Eyebrows as the hero's chip: a small raised pill, uppercase, quiet. */
+body.l-white .l-tag, body.l-white .k-eyebrow {
+  display: inline-flex; align-items: center; align-self: flex-start; height: 28px; padding: 0 12px;
+  border-radius: 9999px; background: #fff;
+  font: 600 11.5px / 1 "Figtree", var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(14,21,32,0.6);
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.07), 0 1px 2px rgba(10,13,18,0.05); }
+body.l-white #instead .l-tag, body.l-white .l-center .l-tag { align-self: center; }
+
+/* Objects: white on a ring with a soft drop — readable on white, unlike the
+   old bone (#fafdff) plates that vanished into it. */
+body.l-white .l-card, body.l-white .l-faq details, body.l-white .o-hand:not(.l-dark .o-hand) {
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.07), 0 2px 4px rgba(10,13,18,0.04), 0 22px 44px -30px rgba(10,30,60,0.3); }
+body.l-white .l-faq details { border-radius: 20px; transition: box-shadow 0.25s ease; }
+body.l-white .l-faq details:hover {
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.09), 0 4px 8px rgba(10,13,18,0.05), 0 28px 52px -30px rgba(10,30,60,0.36); }
+body.l-white .l-faq summary { font-family: "Figtree", var(--font-sans); font-weight: 500; }
+
+/* The habits frame: no empty pale plate around a blank embed — the shot sits
+   on the same white card with the ring. */
+body.l-white #focus .l-mini, body.l-white #focus .w-shot {
+  border-radius: 20px; background: #fff;
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.07), 0 22px 44px -30px rgba(10,30,60,0.3); }
+
+/* The comparison sheet on white needs its ring too. */
+body.l-white #instead .sp, body.l-white #instead .sp-scroll {
+  border-radius: 24px; background: #fff;
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.07), 0 26px 60px -38px rgba(10,30,60,0.3); }
+/* Dark bands keep their own ink: the light-page restyle above outranks the
+   band rules by specificity, so the band restates them one level higher. */
+body.l-white .l-dark .l-body, body.l-white .l-dark .l-lead, body.l-white .l-dark .k-claim p { color: rgba(244,245,247,0.68); }
+body.l-white .l-dark .l-h2, body.l-white .l-dark .l-h3:not(.o-hand-app .l-h3), body.l-white .l-dark .k-title { color: #F4F5F7; }
+body.l-white .l-dark .l-tag, body.l-white .l-dark .k-eyebrow {
+  background: rgba(255,255,255,0.08); color: rgba(244,245,247,0.8);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+
+/* ══ ONE GROUND, FOUR WEATHERS ══════════════════════════════════════════════
+ * The page under the hero is no longer one white sheet: each section takes a
+ * palette tint, and the tints MELT into each other instead of meeting at a
+ * line — every section fades from transparent at its top edge into its own
+ * colour, so the seam is a gradient the height of a screen, never an edge.
+ *   unplaced  sky      #E7F2FF
+ *   week      lavender #F1EAFF
+ *   focus     mint     #E3F7EC
+ *   instead   peach    #FFEFE5
+ *   faq       sky again, closing into the footer's sky
+ * The agent band stays dark: it is the turn-over in the middle.
+ * The old torn-paper scraps and side clouds go — on tinted ground they were
+ * a third texture fighting two others. */
+body.l-white { background-color: #FFFFFF; }
+body.l-white .sc, body.l-white main .cl, body.l-white section > .cl { display: none; }
+body.l-white #scene-unplaced, body.l-white #week, body.l-white #focus, body.l-white #instead, body.l-white #faq { position: relative; isolation: isolate; }
+body.l-white #scene-unplaced::before, body.l-white #week::before, body.l-white #focus::before,
+body.l-white #instead::before, body.l-white #faq::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -38vh; bottom: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, var(--sec-from, rgba(255,255,255,0)) 0, var(--sec) 38vh, var(--sec) calc(100% - 20vh), var(--sec-to, var(--sec)) 100%); }
+body.l-white #scene-unplaced { --sec: #E7F2FF; --sec-from: rgba(231,242,255,0); }
+body.l-white #week           { --sec: #F1EAFF; --sec-from: rgba(241,234,255,0); }
+body.l-white #focus          { --sec: #E3F7EC; --sec-from: rgba(227,247,236,0); }
+body.l-white #instead        { --sec: #FFEFE5; --sec-from: rgba(255,239,229,0); }
+body.l-white #faq            { --sec: #E7F2FF; --sec-from: rgba(231,242,255,0); }
+/* The dark agent band sits on the mint below focus, so the gap around its
+   rounded sheet is tinted rather than a white strip. */
+body.l-white { background-color: #E3F7EC; }
+body.l-white #instead::before { top: 0; }
+/* Cards stay white so they lift off the tint. */
+
+body.l-white .l-dark { overflow: visible; }
+body.l-white .l-dark::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  inset: calc(-1 * clamp(24px, 4vw, 56px) - 1px) calc(-1 * clamp(10px, 1.6vw, 22px) - 1px);
+  background: var(--band-ground, #F1EAFF); border-radius: 0; }
+/* The band's own dark fill must sit above that frame: it moves to an inner
+   layer that keeps the radius and the clip. */
+body.l-white .l-dark { background: none; box-shadow: none; }
+body.l-white .l-dark::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: 32px;
+  background:
+    radial-gradient(60% 70% at 88% 0%, rgba(113,178,255,0.16) 0%, rgba(113,178,255,0) 62%),
+    radial-gradient(50% 60% at 6% 100%, rgba(142,155,234,0.12) 0%, rgba(142,155,234,0) 64%),
+    #0E1116;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 40px 90px -50px rgba(10,13,18,0.5); }
+body.l-white #agent { --band-ground: #E3F7EC; }
+/* The page-level drifting clouds never cross the dark sheets. */
+body.l-white .l-dark { z-index: 2; }
+body.l-white .l-clouds { display: none; }
+body.l-white .l-dark:not(#agent)::before { background: linear-gradient(180deg, #F1EAFF 0%, #F1EAFF 20%, #E3F7EC 80%, #E3F7EC 100%); }

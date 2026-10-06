@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attic — the three facts band</title>
+<link rel="stylesheet" href="../css/land.css?v=56">
+<link rel="stylesheet" href="../css/emphasis.css?v=11">
+</head>
+<body style="background:#F7FAFD">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE THREE FACTS BAND
+     Lifted from site/index.html, where it sat between the steps deck and
+     "the rest of the week". Retired 15 September 2026 at the owner's request.
+
+     WHAT IT NEEDS FROM A HOST PAGE
+     · css/land.css — .f-band, .f-grid, .f-fact, .f-label and the arrival
+       transform live there, under the "THREE FACTS" heading.
+     · js/land.js — the block starting "THE THREE CARDS ARRIVE WITH THE
+       SCROLL" (removed with this band). It wrote --f-in per card from the
+       band's own position, plus --f-p / --f-press / --f-s1..3 for the three
+       objects, and counted any [data-count] up from zero.
+     · Without that script the cards need --f-in: 1, or they stay invisible:
+       the arrival is authored as hidden-then-revealed.
+
+     WHAT WAS CUT FROM IT, AND WHY IT MATTERS IF IT RETURNS
+     It carried three figures — 5h, 1, 0 — each with a counter and its own
+     animated object (a filling ring, a pressed button, a stacking queue).
+     They were removed on 15 September because no source could be given for
+     any of them; the copy rule is that a number without a source does not go
+     on the page. The animated objects went with them. What is left here is
+     the version that shipped: an icon, a label, a sentence.
+     ══════════════════════════════════════════════════════════════════════ -->
+
+<!-- ── THREE THINGS YOU GET BACK ───────────────────────────────────────────
+     Not facts about the software — facts about the reader's week, each with
+     its mechanism named underneath. A number with no mechanism behind it
+     lasts until the first person asks where it came from. -->
+<section class="l-section f-band" id="facts">
+  <div class="l-wrap">
+    <div class="f-grid">
+
+      <!-- Hours: the ring fills as the number counts, so the quantity is seen
+           before it is read. -->
+      <article class="f-fact" data-fact="0" style="--fx: #FF7A45">
+        <span class="f-big" aria-hidden="true" style="display:block;color:var(--fx);width:clamp(50px,5vw,68px);height:clamp(50px,5vw,68px)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        </span>
+        <span class="f-label">Stop replanning by hand</span>
+        <p class="l-body">When the day breaks, Needt rebuilds it. You just check it.</p>
+      </article>
+
+      <!-- One decision: the press is the whole mechanism, so the object is a
+           button that gets pressed. -->
+      <article class="f-fact" data-fact="1" style="--fx: #4C8DFF">
+        <span class="f-big" aria-hidden="true" style="display:block;color:var(--fx);width:clamp(50px,5vw,68px);height:clamp(50px,5vw,68px)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%"><path d="M9 11V6.5a2 2 0 0 1 4 0V11"/><path d="M13 11V9.5a2 2 0 0 1 4 0V12"/><path d="M17 12v-1a2 2 0 0 1 4 0v5a5 5 0 0 1-5 5h-3a6 6 0 0 1-6-6v-4.5a2 2 0 0 1 4 0"/></svg>
+        </span>
+        <span class="f-label">One button, whole day</span>
+        <p class="l-body">Press &ldquo;Plan my day&rdquo; and everything is laid out.</p>
+      </article>
+
+      <!-- Nought: the queue behind it fills, and the number stays where it is.
+           A zero that holds while something accumulates is the claim. -->
+      <article class="f-fact" data-fact="2" style="--fx: #2FD08A">
+        <span class="f-big" aria-hidden="true" style="display:block;color:var(--fx);width:clamp(50px,5vw,68px);height:clamp(50px,5vw,68px)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%"><path d="M4 6.5h16M4 12h16M4 17.5h10"/></svg>
+        </span>
+        <span class="f-label">Nothing gets lost</span>
+        <p class="l-body">Everything you capture stays on screen, with or without a time.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+
+</body></html>

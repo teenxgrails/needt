@@ -1,0 +1,291 @@
+/* The comparison table on the homepage, under "You already have something
+ * for this."
+ *
+ * TWO SETS, ONE TABLE. Six competitors will not fit across a page, and a
+ * fourteen-column table that scrolls sideways is a table nobody reads. So the
+ * rivals come in named groups of three — the schedulers, then the lists —
+ * while OUR column and the row labels stay put. The set advances on its own
+ * every few seconds, because a reader who does not know there is a second set
+ * never presses anything; the moment they press a tab themselves, the
+ * rotation stops for good. Their choice outranks the demo.
+ *
+ * WHY grid-auto-flow: column. Rows have to line up across columns that can
+ * disappear. Filling the grid column by column with `grid-template-rows`
+ * gives real row alignment — every row is as tall as its tallest cell in any
+ * visible column — and a hidden set is `display: none` on a wrapper that is
+ * otherwise `display: contents`, so its cells leave the grid entirely rather
+ * than leaving a hole. A row-major grid cannot do this: hiding one column
+ * would shift every cell after it.
+ *
+ * WHERE THE COLOUR GOES. One idea: our column is in full ink and everything
+ * else is muted. That is not a trick — it is what the table is for, and it
+ * beats painting the competitors red, which reads as a smear and makes a
+ * reader defend them. Green marks what is genuinely there, a grey dash an
+ * absence. Nothing is coloured twice, and there is no winner badge: a page
+ * that has to award itself a prize has lost the argument already.
+ */
+.sp-wrap { --sp-accent: #2E6DE9; --sp-good: #0F8F5B; --sp-bad: #C2372C; display: flex; flex-direction: column; gap: 14px; }
+.sp-wrap > input { position: absolute; width: 1px; height: 1px; opacity: 0; margin: 0; }
+
+/* ── The set picker ──────────────────────────────────────────────────── */
+.sp-tabs {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr;
+  align-self: center; padding: 3px; border-radius: 12px; background: var(--mist);
+}
+.sp-tabs::before {
+  content: ""; position: absolute; z-index: 0;
+  left: 3px; top: 3px; bottom: 3px; width: calc(50% - 3px);
+  border-radius: 9px; background: var(--paper);
+  box-shadow: 0 1px 2px rgba(10, 13, 18, 0.07), inset 0 0 0 1px rgba(10, 13, 18, 0.05);
+  transition: transform 0.36s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.sp-s2:checked ~ .sp-tabs::before { transform: translateX(100%); }
+.sp-tab {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: 7px; height: 34px; padding: 0 13px;
+  border-radius: 9px; cursor: pointer;
+  font: 500 13px/1 var(--font-sans); color: var(--graphite);
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.sp-tab:hover { color: var(--ink); }
+/* The glyph carries the tab's own colour, so it strengthens with the label
+   rather than being a second, differently-weighted mark beside it. */
+.sp-tab-i {
+  flex: none; width: 15px; height: 15px;
+  fill: none; stroke: currentColor; stroke-width: 1.75;
+  stroke-linecap: round; stroke-linejoin: round;
+  opacity: 0.55; transition: opacity 0.18s ease;
+}
+.sp-s1:checked ~ .sp-tabs [for="sp-set-1"] .sp-tab-i,
+.sp-s2:checked ~ .sp-tabs [for="sp-set-2"] .sp-tab-i { opacity: 1; }
+.sp-tab:hover .sp-tab-i { opacity: 0.85; }
+.sp-s1:checked ~ .sp-tabs [for="sp-set-1"],
+.sp-s2:checked ~ .sp-tabs [for="sp-set-2"] { color: var(--ink); font-weight: 600; }
+.sp-s1:focus-visible ~ .sp-tabs [for="sp-set-1"],
+.sp-s2:focus-visible ~ .sp-tabs [for="sp-set-2"] { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Two kinds of mark in one slot. Ours is a monogram — there is a real icon,
+   but at 22px on a pale cell it needs its own tile, which is what
+   .sp-mark-img below is for; the competitors are their own artwork.
+   The LETTER form keeps the gradient and the ring so a monogram still reads
+   as a tile lit from above, like every other tile in this product. */
+.sp-mark {
+  flex: none; display: grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 7px;
+  background: linear-gradient(180deg,
+    color-mix(in oklab, var(--mk) 88%, white) 0%,
+    color-mix(in oklab, var(--mk) 96%, black) 100%);
+  box-shadow: inset 0 0 0 0.5px rgba(10, 13, 18, 0.16);
+  color: #fff; font: 600 11px / 1 var(--font-sans); letter-spacing: 0.01em;
+}
+/* A real mark brings its own colour and its own silhouette, so it takes none
+   of the letter form's gradient or ink. The radius stays — two of the six
+   files are opaque tiles (Todoist's red square, Notion's cube on white) and
+   it clips those while doing nothing to the transparent ones — and so does
+   the hairline, which is what keeps a white-on-white mark from floating.
+   `contain`, not `cover`: these six are different aspect ratios, and cover
+   would crop the wider ones to a square. */
+.sp-mark-img {
+  background: none; box-shadow: inset 0 0 0 0.5px rgba(10, 13, 18, 0.1);
+  object-fit: contain; display: block;
+}
+
+/* ── The grid ────────────────────────────────────────────────────────── */
+.sp-scroll { overflow-x: auto; margin: 0 -20px; padding: 0 20px 6px; scrollbar-width: thin; }
+.sp {
+  --sp-label: 172px;
+  min-width: 860px; display: grid;
+  grid-auto-flow: column;
+  /* Eight explicit rows and a fixed first column: the cells fill DOWN one
+     column, then start the next, so a column is a run of eight siblings and
+     every row is as tall as its tallest cell across all visible columns. */
+  grid-template-rows: auto repeat(7, auto);
+  grid-template-columns: var(--sp-label);
+  grid-auto-columns: minmax(0, 1fr);
+  border-radius: 20px; background: var(--paper);
+  box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.07);
+  overflow: hidden; text-align: left;
+}
+/* Both wrappers are pass-through: the cells, not the boxes, are the grid's
+   items. A set that is off is display:none, so its cells leave the grid
+   entirely rather than leaving a hole. */
+.sp-col { display: contents; }
+.sp-set { display: contents; }
+.sp-s1:checked ~ .sp-scroll .sp-set-2, .sp-s2:checked ~ .sp-scroll .sp-set-1 { display: none; }
+
+/* ── THE SET CHANGE ──────────────────────────────────────────────────────
+ * The swap was one frame: the outgoing set went to `display: none` and the
+ * incoming one appeared already finished, so three columns of numbers changed
+ * identity with nothing in between and the eye had to re-read the whole table
+ * to find out what happened.
+ *
+ * IT IS AN ANIMATION, NOT A TRANSITION, and that is forced rather than
+ * chosen: `display` is what has to change — the grid must not hold six
+ * competitor columns while one set is on its way out — and there is no
+ * transition from `none`. An animation, though, runs the moment an element
+ * becomes rendered, so the ARRIVAL can be shaped even when the departure
+ * cannot. The departure is left instant on purpose: a set fading out while
+ * its replacement fades in puts two different numbers in one cell.
+ *
+ * The cells animate, not the set: `.sp-set` is `display: contents` and has
+ * no box of its own to move. Staggered by column, left to right, so the
+ * three arrive as a sequence the eye can follow instead of a single flash.
+ *
+ * THE VISIBLE STATE IS AUTHORED; THE SCRIPT ARMS THE ANIMATION. The first
+ * version put the animation on the cells unconditionally with `fill: both`,
+ * which makes `opacity: 0` the cells' resting value — so the table was blank
+ * until the animation's clock advanced, and in a background tab, where that
+ * clock does not run at all, thirty-six cells of numbers rendered empty and
+ * stayed empty. `fill: none` does not save it either: at t=0 the animation is
+ * already in its active phase. The only correct shape is the one this project
+ * has paid for twice — the table is visible with no animation in the CSS at
+ * all, and land.js adds `.is-swap` for the length of one arrival. No script,
+ * no JS, background tab, print: the table is simply there.
+ */
+@keyframes sp-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+.sp-wrap.is-swap .sp-set .sp-c { animation: sp-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sp-wrap.is-swap .sp-set .sp-col:nth-child(2) .sp-c { animation-delay: 0.055s; }
+.sp-wrap.is-swap .sp-set .sp-col:nth-child(3) .sp-c { animation-delay: 0.11s; }
+@media (prefers-reduced-motion: reduce) { .sp-wrap.is-swap .sp-set .sp-c { animation: none; } }
+
+.sp-c { position: relative; display: flex; flex-direction: column; gap: 5px; padding: 14px 16px; min-width: 0; }
+/* Rules drawn by the cells themselves — the wrapper paints nothing. */
+.sp-c:not(.sp-head) { box-shadow: inset 0 1px 0 rgba(10, 13, 18, 0.05); }
+.sp-c-edge:not(.sp-head) { box-shadow: inset 0 1px 0 rgba(10, 13, 18, 0.05), inset 1px 0 0 rgba(10, 13, 18, 0.05); }
+.sp-c-edge.sp-head { box-shadow: inset 1px 0 0 rgba(10, 13, 18, 0.05); }
+
+.sp-head { padding: 16px 16px 13px; }
+/* ── THE NAME ROW ────────────────────────────────────────────────────────
+ * Every column carries a mark, which is the only arrangement in which a mark
+ * belongs here. One icon in one cell of a header row whose job is to be
+ * scanned across pushes its own name 32px right of the others, and reserving
+ * empty lead on the rest so that one icon has somewhere to sit makes six
+ * columns pay for one decoration. Seven marks cost nothing and do the work the
+ * header could not: you find the app you use before you read a word.
+ *
+ * They are monograms, not logos — the real marks are other companies'
+ * trademarks, they were never in this repository, and tracing them at 22px
+ * produces a wrong silhouette that reads as a broken glyph. The colour does
+ * the recognising; the letter names it. */
+.sp-name { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.sp-who { font: 600 16px/1.2 var(--font-sans); letter-spacing: -0.015em; color: var(--graphite); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-what { font: 400 12px/1.35 var(--font-sans); color: var(--fog); }
+.sp-lab { font: 500 13px/1.35 var(--font-sans); color: var(--graphite); }
+
+/* Everything outside our column is one ink level down, so the eye lands in
+   the column that matters without anything shouting. */
+.sp-v { font: 500 13px/1.4 var(--font-sans); color: var(--graphite); text-wrap: pretty; }
+.sp-v-m { font-family: var(--font-mono); font-size: 14px; font-weight: 500; letter-spacing: -0.01em; }
+.sp-sub { font: 400 11px/1.35 var(--font-sans); color: var(--fog); text-wrap: pretty; }
+.sp-off { color: var(--fog); font-weight: 400; }
+
+/* ── Our column ──────────────────────────────────────────────────────── */
+.sp-c-mine { background: #F2F7FF; }
+.sp-c-mine .sp-v { color: var(--ink); font-weight: 600; font-size: 14px; }
+/* OUR COLUMN'S INK IS DERIVED FROM ITS OWN GROUND, not borrowed from the six
+   white ones. Every value here was pitched on white and then reused on the
+   column's rgb(242,247,255) tint, where the same ink loses about half a point:
+   the accent fell to 4.36:1 and the slate to 4.04:1, both under the 4.5:1
+   floor. The competitors' `--graphite` and `--fog` pass on white at 7.14 and
+   5.34 and are untouched.
+   One derivation, one step toward black, applied to both — so the next time
+   the tint or the accent moves, the ink moves with them instead of having to
+   be re-picked by eye. */
+.sp-c-mine {
+  --sp-ink: color-mix(in oklab, var(--sp-accent) 88%, black);   /* 5.77:1 */
+  --sp-ink-quiet: color-mix(in oklab, #5b7ba6 84%, black);      /* 5.99:1 */
+}
+.sp-c-mine .sp-sub { color: #4a6484; }
+.sp-c-mine .sp-who { color: var(--sp-ink); }
+.sp-c-mine .sp-what { color: var(--sp-ink-quiet); }
+.sp-c-mine.sp-head::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--sp-accent);
+}
+
+/* ── Marks ───────────────────────────────────────────────────────────────
+ * A 14px disc before the value: a green tick where the thing is there, a red
+ * cross where it is not. The grey disc that used to stand for "no" was the
+ * defect — grey is the colour of "not applicable", so a reader scanning the
+ * table saw absence and unknown as the same mark, and the one column that is
+ * all ticks did not stand out from the ones that are mostly crosses.
+ *
+ * BOTH MARKS ARE DRAWN THE SAME WAY: strokes as background-images on a single
+ * pseudo-element, sized in per cent of it. A border-built tick — what the
+ * green one was — is two edges of a 3.4×6.4px box, and at that size the join
+ * lands between device pixels and the corner frays; gradients rasterise as
+ * one shape, so the mark is crisp at any zoom and the cross can be two
+ * strokes without a second element.
+ *
+ * The COLOUR IS ON THE MARK, NOT THE ROW. Red type in eleven cells would read
+ * as eleven errors on our own page; the words stay in the ink they earned and
+ * only the 14px disc carries the verdict.
+ */
+.sp-m { position: relative; display: inline-flex; align-items: center; gap: 8px; padding-left: 21px; }
+.sp-m::before {
+  content: ""; position: absolute; left: 0; top: 50%; margin-top: -7px;
+  width: 14px; height: 14px; border-radius: 9999px;
+  background: rgba(10, 13, 18, 0.05); box-shadow: inset 0 0 0 1px rgba(10, 13, 18, 0.09);
+}
+.sp-m::after {
+  content: ""; position: absolute; left: 0; top: 50%; margin-top: -7px;
+  width: 14px; height: 14px; background-repeat: no-repeat;
+}
+.sp-yes::before { background: rgba(15, 143, 91, 0.13); box-shadow: inset 0 0 0 1px rgba(15, 143, 91, 0.32); }
+/* The tick is ONE SHAPE, not two strokes stood at an angle. Two bars joined
+   at a right angle and rotated is a chevron: the corner lands mid-height and
+   the arms come out at equal lengths, so it reads as ">" or as a slash — both
+   tried, both wrong. A clipped polygon states the letterform directly: the
+   corner sits low, the short arm is a third of the long one, and the stroke
+   keeps one width along its whole length. No rotation, so nothing can drift.
+   (The cross below stays two strokes: a cross IS two equal bars at right
+   angles, and there the mechanism is exactly right.) */
+.sp-yes::after {
+  background: var(--sp-good);
+  clip-path: polygon(17% 52%, 38% 74%, 84% 25%, 76% 17%, 38% 58%, 24% 44%);
+}
+.sp-no::before { background: rgba(194, 55, 44, 0.12); box-shadow: inset 0 0 0 1px rgba(194, 55, 44, 0.3); }
+/* The cross: the same two strokes at right angles, on one element. */
+.sp-no::after {
+  background-image:
+    linear-gradient(var(--sp-bad), var(--sp-bad)),
+    linear-gradient(var(--sp-bad), var(--sp-bad));
+  background-size: 1.7px 7.6px, 7.6px 1.7px;
+  background-position: 6.15px 3.2px, 3.2px 6.15px;
+  transform: rotate(45deg);
+}
+.sp-no { color: var(--graphite); font-weight: 400; }
+.sp-c-mine .sp-no { color: var(--graphite); }
+
+.sp-note { margin: 0; font: 400 13px/1.55 var(--font-sans); color: var(--fog); text-wrap: pretty; }
+.sp-note a { color: var(--graphite); text-underline-offset: 3px; }
+.sp-note a:hover { color: var(--ink); }
+
+@media (max-width: 860px) {
+  .sp-scroll { margin: 0 -16px; padding: 0 16px 6px; }
+  .sp { --sp-label: 128px; min-width: 780px; }  .sp-c { padding: 12px 13px; }
+  .sp-tab { height: 32px; padding: 0 11px; font-size: 12px; }
+}
+/* ── THE PICKER STACKS BEFORE ITS LABELS BREAK ────────────────────────────
+ * Two equal columns are what let the pill slide, and they are also what takes
+ * away the wrap that used to save the picker on a phone: at 342px of room each
+ * label gets 167px, and "The auto-schedulers" needs two lines inside a 34px
+ * pill while "The lists and notes" keeps one — two halves of one control with
+ * visibly different typography.
+ *
+ * So the axis turns rather than the strings getting shorter: one column, full
+ * width, and the pill travels on Y. The mechanism is untouched — it is still
+ * one element moving 100% of its own size — which is why this costs three
+ * declarations instead of a second picker.
+ *
+ * 460px, not a device: that is where the wider label stops fitting one line at
+ * 13px with the page's own padding either side. */
+@media (max-width: 460px) {
+  .sp-tabs { grid-template-columns: 1fr; }
+  .sp-tabs::before { width: calc(100% - 6px); height: calc(50% - 3px); bottom: auto; }
+  .sp-s2:checked ~ .sp-tabs::before { transform: translateY(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) { .sp-tab, .sp-tabs::before { transition: none; } }

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attic — the price section</title>
+<link rel="stylesheet" href="../css/land.css?v=56">
+<link rel="stylesheet" href="../css/land-life.css?v=20">
+<link rel="stylesheet" href="../css/emphasis.css?v=17">
+</head>
+<body style="background:#F7FAFD">
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE PRICE SECTION
+     Lifted from site/index.html, where it sat between the comparison table
+     and the FAQ. Retired 16 September 2026 at the owner's request.
+
+     WHAT IT NEEDS FROM A HOST PAGE
+     · css/land.css — .l-section, .l-wrap, .l-stack, .l-grid-3, .l-card,
+       .l-btn and the .l-rise arrival.
+     · css/land-life.css — the "PLAN TABLE" block: .p-table, .p-row, .p-head,
+       .p-what, .p-col, .p-yes, .p-no and their 620px column collapse. Left in
+       place in that file; nothing else on the site uses those five classes, so
+       they can be deleted with this page if it is never brought back.
+     · css/emphasis.css — .l-em.l-hl-grow on "three hundred people".
+     · js/land.js — the .l-rise observer, which is what reveals the two lagged
+       cards and the table. Without it they need --rise-in: 1 or they stay
+       hidden: the arrival is authored as hidden-then-revealed.
+
+     WHAT THE NUMBERS ARE
+     Pro $7 a month or $60 a year, Life $149 once for the first 300 backers,
+     fourteen days of trial with no card. Those are the owner's figures as of
+     11 September 2026 and they also live on pricing.html, which is still in
+     the site and still linked from the nav — retiring this section did not
+     remove the price from the site, only from the landing.
+
+     The demo column is deliberately a DEMO and not a free tier: one real day,
+     and the three things that only mean anything over weeks (saved data,
+     calendars, the agent) are the ones it does not carry.
+═══════════════════════════════════════════════════════════════════════ -->
+
+<!-- ── PRICE ───────────────────────────────────────────────────────────────*/ -->
+<section class="l-section" id="price">
+  <div class="l-wrap l-stack" style="gap:44px">
+    <div class="l-stack l-rise" style="gap:18px">
+      <span class="l-tag">Price</span>
+      <h2 class="l-h2" style="max-width:20ch">Less than a coffee a week.</h2>
+      <p class="l-lead" style="max-width:40ch"><span class="l-strong">Only 300 spots for early backers.</span>
+      Then it closes.</p>
+    </div>
+    <div class="l-grid l-grid-3">
+      <article class="l-card">
+        <span class="l-small" style="color:var(--graphite)">Demo</span>
+        <span class="l-h3" style="font-size:46px">Free</span>
+        <p class="l-body">Open it, place a day, see whether the thing is for you. Not a tier that quietly never
+        ends — a demo, with a real day in it.</p>
+        <a class="l-btn l-btn-ghost l-btn-sm" href="download.html" style="align-self:flex-start">Open the demo →</a>
+      </article>
+      <article class="l-card l-rise" data-lag="1" style="transition-delay:0.08s;background:var(--paper)">
+        <span class="l-small" style="color:#0069e0">Pro</span>
+        <span class="l-row" style="align-items:baseline;gap:8px">
+          <span class="l-h3" style="font-size:46px">$7</span><span class="l-small">per month · $60 a year</span>
+        </span>
+        <p class="l-body">Everything in the product, on every machine you use. Fourteen days to try it, and no
+        card until the fourteenth.</p>
+        <a class="l-btn l-btn-sm" href="pricing.html" style="align-self:flex-start">Start a trial</a>
+      </article>
+      <article class="l-card l-rise" data-lag="2" style="transition-delay:0.16s;background:linear-gradient(180deg,#fff9e0 0%,#ffeca3 100%)">
+        <span class="l-small" style="color:#7a5a12">Life · first 300</span>
+        <span class="l-row" style="align-items:baseline;gap:8px">
+          <span class="l-h3" style="font-size:46px">$149</span><span class="l-small" style="color:#8a6a24">once</span>
+        </span>
+        <p class="l-body" style="color:#5d4a1c">Pro for as long as Needt exists, paid once, for the <span class="l-em l-hl-grow">three hundred people</span>
+        who back it before it is finished. Then it closes.</p>
+        <a class="l-btn l-btn-sm" href="pricing.html" style="align-self:flex-start">Take a seat</a>
+      </article>
+    </div>
+    <!-- What each plan is, as facts rather than as adjectives. The demo is a
+         demo: one real day, and the three capabilities that only mean
+         something over weeks are the ones it does not carry. -->
+    <div class="p-table l-rise">
+      <div class="p-row p-head">
+        <span class="p-what">What is in each plan</span>
+        <span class="p-col">Demo</span><span class="p-col">Pro</span><span class="p-col">Life</span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">The day, the week, the month</span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Finding the time — fitting work into free hours</span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Tasks with parts and a two-minute entry</span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Focus sessions</span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">More than one day</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Your own data, saved</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Calendars — Google, Apple, Outlook</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">The AI agent, and outside assistants</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Sync across machines</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Projects, dependencies, the flow</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">Habits, and the last 14 days</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+      <div class="p-row">
+        <span class="p-what">A hand in what gets built</span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-no" aria-label="not included"></span></span>
+        <span class="p-col"><span class="p-yes" aria-label="included"></span></span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     THE PRICE PLATE
+     The one-line stand-in that replaced the section above in the footer of
+     the landing on 16 September 2026, and was retired the same day. It sat
+     under "Your day, finally planned.", between the heading and the two
+     buttons, and linked to pricing.html.
+
+     Its CSS travelled with it — the block below is the whole of it, lifted
+     out of css/land-life.css. Nothing else on the site uses .l-plate.
+
+     It needs a light ground to sit on: it is authored for the footer's sky,
+     which is why it is solid paper with full-strength ink rather than a
+     translucent surface.
+═══════════════════════════════════════════════════════════════════════ -->
+<style>
+/* ── THE PRICE PLATE ───────────────────────────────────────────────────────
+ * One line of facts under the closing heading, standing in for the price
+ * section that was retired on 16 September. A plate, not a card: it has to
+ * read on the sky, and the only thing that reads on weather is solid paper
+ * with full-strength ink on it.
+ *
+ * The figures are set in the mono face — the same rule as everywhere else in
+ * the product: numbers that must be compared are tabular, and these are
+ * compared against whatever the reader already pays.
+ *
+ * It wraps into a column on a narrow screen rather than shrinking its type:
+ * three facts at 11px is a disclaimer, and this is the offer.
+ */
+.l-plate {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 6px 14px; max-width: min(100%, 560px);
+  padding: 13px 20px; border-radius: 16px; text-decoration: none;
+  background: var(--paper);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(10, 13, 18, 0.07),
+    0 2px 5px rgba(10, 13, 18, 0.07),
+    0 14px 30px -16px rgba(10, 13, 18, 0.24);
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.l-plate:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(10, 13, 18, 0.07),
+    0 3px 7px rgba(10, 13, 18, 0.08),
+    0 22px 42px -18px rgba(10, 13, 18, 0.28);
+}
+.l-plate-fact {
+  display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap;
+  font: 500 15px / 1.2 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite);
+}
+.l-plate-num { font: 600 17px / 1.1 var(--font-mono); letter-spacing: -0.02em; color: var(--ink); }
+/* The separator is a dot, not a slash: a slash between two prices reads as
+   division. It disappears when the row wraps, because a dot at the end of a
+   line is a dropped full stop. */
+.l-plate-dot { width: 4px; height: 4px; border-radius: 9999px; background: rgba(10, 13, 18, 0.22); }
+@media (max-width: 560px) {
+  .l-plate { flex-direction: column; gap: 7px; padding: 15px 22px; }
+  .l-plate-dot { display: none; }
+}
+</style>
+<div style="display:flex;justify-content:center;padding:48px 20px;background:linear-gradient(180deg,#bcd9f2,#e8ddc9)">
+<!-- The price, as a plate rather than as a section: the landing carries
+     the three figures on one line and pricing.html carries the argument.
+     Full-opacity ink on a solid plate, because this sits on the sky and
+     muted type on weather is unreadable at any size. -->
+<a class="l-plate" href="pricing.html">
+  <span class="l-plate-fact"><span class="l-plate-num">$7</span> a month</span>
+  <span class="l-plate-dot" aria-hidden="true"></span>
+  <span class="l-plate-fact">14 days free, no card</span>
+  <span class="l-plate-dot" aria-hidden="true"></span>
+  <span class="l-plate-fact"><span class="l-plate-num">$149</span> once · first 300</span>
+</a>
+</div>
+
+</body></html>

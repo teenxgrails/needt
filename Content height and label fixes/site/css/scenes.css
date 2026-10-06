@@ -1,0 +1,189 @@
+/* ══ THE PINNED SCENES ═════════════════════════════════════════════════════
+ *
+ * A pin is exactly one viewport held still while the page keeps scrolling, and
+ * the distance travelled during the hold is the dial for one timeline inside
+ * it. That is the whole mechanism — the drawing is what fills the frame, not
+ * what makes it move, which is why the third scene here has no illustration at
+ * all and still reads as choreographed.
+ *
+ * Lengths from the measured table: 1.2 viewports for the setup, 2.0 for the
+ * claim, 1.0 for the proof. The longest scrub carries the central claim and
+ * nothing competes with it for length.
+ *
+ * Pinned and free alternate. A page that scrubs everywhere is a slideshow you
+ * cannot escape, and the free sections are where it breathes.
+ *
+ * Built with sticky positioning inside a spacer of explicit length rather than
+ * a scroll library: the hold and the progress are two lines of arithmetic, and
+ * a second library would be a second clock to keep in step with the page's own
+ * frame.
+ *
+ * RESTING STATE IS THE CONTENT. Nothing here is hidden by default — every
+ * element is authored in its finished position and the scrub moves it from
+ * there. A missing class costs an animation, never a blank scene. (This page
+ * lost six headings that way once.)
+ */
+
+/* The spacer's height is set from script as (1 + n) × viewport, so the pin
+   holds for exactly n viewports of scroll. The fallback here is what a page
+   with no scripting gets: an ordinary section of its own height. */
+.pin { position: relative; }
+.pin-stage {
+  position: sticky; top: 0;
+  height: 100vh; min-height: 520px;
+  display: flex; align-items: center;
+  overflow: hidden;
+}
+.pin-in { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+.pin-say {
+  position: absolute; left: 0; right: 0; bottom: clamp(22px, 4vh, 54px);
+  text-align: center; font: 500 15px / 1.4 var(--font-sans); color: var(--graphite);
+}
+.pin-num {
+  position: absolute; left: 24px; top: clamp(74px, 11vh, 120px);
+  font-family: var(--font-mono); font-size: 12px; color: var(--fog);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── SCENE 2 · FOUR TASKS WITH NOWHERE TO BE ──────────────────────────────
+   They begin scattered in the air, at four depths, and the scroll brings them
+   into the one column the product calls the unplaced queue. The setup, so it
+   gets the shortest hold. */
+.s2 { position: relative; height: min(66vh, 560px); }
+#scene-unplaced + section { padding-top: clamp(200px, 34vh, 460px) !important; padding-bottom: clamp(120px, 18vh, 260px) !important; }
+.s2-title { text-align: center; margin-bottom: clamp(18px, 3vh, 40px); }
+.s2-block { position: absolute; left: 50%; top: 50%; width: min(300px, 78vw); will-change: transform; }
+.s2-queue {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(336px, 84vw);
+  /* --s2-h is written from the block count, so the ghost always holds them. */
+  height: var(--s2-h, 232px);
+  border-radius: 18px; background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(10, 13, 18, 0.05);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+/* Outside the ghost: the ghost is scaffolding that fades, the word is the
+   scene's label and stays. Positioned off the same centre so it sits above
+   whatever height the queue turns out to be. */
+.s2-label {
+  position: absolute; left: 50%; top: 50%; z-index: 2;
+  transform: translate(-50%, calc(-50% - var(--s2-h, 232px) / 2 - 26px));
+  font: 500 12px / 1 var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--fog);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+/* ── THE THIRD BEAT: EACH ONE GETS A TIME ─────────────────────────────────
+ * Not "done" — the scene is about things with no hour, and a tick would say
+ * the work was finished rather than placed. The estimate is replaced by a
+ * time, the rail turns accent to say the scheduler put it there, and the
+ * circle fills to acknowledge it. Events are skipped: they already had one.
+ */
+.s2-when {
+  display: inline-block; overflow: hidden; white-space: nowrap;
+  max-width: 0; opacity: 0;
+  color: var(--hl, #2E6DE9);
+  transition: max-width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease, color 0.7s ease 0.25s;
+  color: var(--accent, #2E6DE9);
+}
+.s2-block.is-placed .s2-when { max-width: 8em; opacity: 1; color: inherit; }
+.s2-est { display: inline-block; overflow: hidden; white-space: nowrap; max-width: 8em; opacity: 1;
+  transition: max-width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.26s ease; }
+.s2-block.is-placed .s2-est { max-width: 0; opacity: 0; }
+/* The rail keeps its project's hue: colour here means whose work this is, and
+   overwriting it with one accent blue would trade a standing meaning for a
+   momentary one. The time arriving is the placing, and it is enough. */
+.s2-block.is-placed .o-block { box-shadow: 0 1px 2px rgba(10,13,18,0.06), 0 10px 26px -16px rgba(10,13,18,0.3); }
+.o-block { transition: box-shadow 0.3s ease; }
+
+/* The heading's own marks: the count in the display serif at the size of the
+   line it sits in, the day in an oblique, and the phrase that stops being
+   true struck through as the scene resolves. */
+.s2-num { font-variant-numeric: lining-nums; }
+.s2-strike { position: relative; display: inline-block; }
+.s2-strike::after {
+  content: ""; position: absolute; left: -0.02em; right: -0.02em; top: 54%;
+  height: 0.055em; border-radius: 0.05em; background: currentColor;
+  transform: scaleX(0) rotate(-0.6deg); transform-origin: 0 50%;
+  transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+.s2-title.is-done .s2-strike::after { transform: scaleX(1) rotate(-0.6deg); }
+.s2-title.is-done .s2-strike { color: var(--fog); transition: color 0.5s ease; }
+
+/* ── SCENE 4 · THE DAY ASSEMBLES ──────────────────────────────────────────
+   The product's claim, performed: the blocks leave the air and land in the
+   hours that are free; then a meeting lands and the day reflows around it —
+   and the reflow is shown before it is kept, which is the part that matters.
+   Two viewports, because this is the sentence the whole page is about. */
+.s4-day {
+  position: relative; width: 100%; max-width: 1040px; margin: 0 auto;
+  height: min(66vh, 560px);
+  border-radius: 26px; background: #fff;
+  box-shadow: 0 1px 2px rgba(10,13,18,0.06), 0 30px 80px -40px rgba(10,13,18,0.3);
+  overflow: hidden;
+}
+.s4-hour { position: absolute; left: 0; right: 0; box-shadow: rgba(10,13,18,0.06) 0 -1px 0 0 inset; }
+.s4-hour span {
+  position: absolute; left: 18px; top: -8px; padding: 0 6px; background: #fff;
+  font-family: var(--font-mono); font-size: 11px; color: var(--fog); font-variant-numeric: tabular-nums;
+}
+.s4-slot { position: absolute; left: 92px; right: 22px; will-change: transform; }
+.s4-ghost {
+  position: absolute; left: 92px; right: 22px; height: 42px;
+  border-radius: 12px; background: rgba(10,13,18,0.03);
+  box-shadow: inset 0 0 0 1px rgba(10,13,18,0.05);
+}
+/* The meeting that arrives: an event, so it is filled rather than railed —
+   the product's own distinction between what you agreed to and what can be
+   moved. */
+.s4-meet { position: absolute; left: 92px; right: 22px; will-change: transform; z-index: 5; }
+/* Shown before it is kept. The pair appears with the reflow and states the two
+   things you can do about it. */
+.s4-ask {
+  position: absolute; right: 22px; bottom: 18px; z-index: 8;
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px 9px 14px; border-radius: 9999px;
+  background: rgba(255,255,255,0.96); backdrop-filter: saturate(1.4) blur(10px);
+  box-shadow: 0 1px 2px rgba(10,13,18,0.08), 0 14px 34px -18px rgba(10,13,18,0.3);
+  font: 500 13px / 1 var(--font-sans); color: var(--ink); white-space: nowrap;
+  opacity: 0; transform: translateY(8px); transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2,0.8,0.2,1);
+}
+.s4-ask.is-on { opacity: 1; transform: none; }
+.s4-ask b { font-weight: 500; color: var(--graphite); }
+.s4-keep { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 9999px; background: var(--ink); color: #fff; font: 500 12.5px / 1 var(--font-sans); }
+.s4-undo { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 9999px; color: var(--graphite); font: 500 12.5px / 1 var(--font-sans); }
+.s4-now { position: absolute; left: 0; right: 0; height: 0; z-index: 6; border-top: 1px solid #2E6DE9; }
+.s4-now::before { content: ""; position: absolute; left: 74px; top: -3px; width: 7px; height: 7px; border-radius: 9999px; background: #2E6DE9; }
+
+/* ── SCENE 6 · THE RAIL ───────────────────────────────────────────────────
+   No illustration at all — three rows, their rails, and a sentence. It proves
+   the point the measured table makes: holding the frame still while its
+   contents change IS the effect. */
+.s6 { display: flex; flex-direction: column; gap: 14px; max-width: 620px; margin: 0 auto; }
+.s6-row { display: flex; align-items: center; gap: 0; }
+.s6-row .o-block { flex: 1; }
+.s6-rail { transition: background-color 0.45s ease; }
+.s6-note {
+  margin-top: clamp(18px, 3vh, 34px); text-align: center;
+  font: 500 clamp(16px, min(1.6vw, 2.6vh), 21px) / 1.45 var(--font-sans); color: var(--graphite);
+  max-width: 46ch; margin-left: auto; margin-right: auto;
+}
+.s6-lock {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; margin-left: 11px; border-radius: 9999px;
+  background: rgba(10,13,18,0.06); color: var(--graphite);
+  opacity: 0; transition: opacity 0.4s ease;
+}
+.s6-lock svg { display: block; }
+
+/* ── STILLNESS: NO PINS AT ALL ────────────────────────────────────────────
+   Every scene renders in its finished, assembled state and the page scrolls
+   normally. A pin with no scrub is a screen of dead scroll. */
+@media (prefers-reduced-motion: reduce) {
+  .pin { height: auto !important; }
+  .pin-stage { position: static; height: auto; min-height: 0; padding: 64px 0; }
+  .s2-block { position: relative; left: auto; top: auto; transform: none !important; margin: 0 auto 10px; }
+  .s2 { height: auto; }
+  .s2-queue, .s2-label { display: none; }
+  .s4-slot, .s4-meet { transform: none !important; opacity: 1 !important; }
+  .s4-ask { opacity: 1; transform: none; }
+  .s6-lock { opacity: 1; }
+}

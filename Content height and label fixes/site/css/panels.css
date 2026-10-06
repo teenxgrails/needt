@@ -1,0 +1,350 @@
+/* ══ THE THREE PANELS — capture, connect, habits ═══════════════════════════
+ *
+ * Replaces the week's live-app tiles. Those embedded the whole product in an
+ * iframe per tile: they cropped mid-word, rendered in the app's dark theme on
+ * a pastel ground, and each one booted React — which is where the lag was.
+ *
+ * Each panel is now one argument in two halves: the claim on the left
+ * (eyebrow, serif headline, one paragraph, one action), and on the right a
+ * grid of white cards that prove it. Every card is DRAWN from the product's
+ * own parts — a chip, a row, a checkbox — at exactly the size where the one
+ * thing it shows is legible, and nothing else is inside it.
+ *
+ * VISIBLE BY DEFAULT. Each card's content is authored in its finished state;
+ * the motion is armed by panels.js only while the panel is on screen, and
+ * under reduced motion it is never armed at all.
+ */
+
+.k-stack { display: flex; flex-direction: column; gap: clamp(20px, 2.4vw, 32px); }
+
+.k-panel {
+  --k-ground: #EFE4FF; --k-ink: #3D3452; --k-soft: #D9C7F7;
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.5fr);
+  gap: clamp(28px, 4vw, 64px); align-items: center;
+  padding: clamp(32px, 4.6vw, 72px);
+  border-radius: 40px;
+  background: var(--k-ground);
+}
+/* The grain from the references: a fine noise at low opacity, blended in, so
+   a flat pastel reads as paper rather than as a CSS colour. */
+.k-panel::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.32; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.k-panel > * { position: relative; }
+.k-lavender { --k-ground: #EDE3FF; --k-ink: #3B3150; --k-soft: #DCCBFA; --k-hue: #7C5CE0; }
+.k-mint     { --k-ground: #CDEFD9; --k-ink: #22402E; --k-soft: #B3E3C4; --k-hue: #1F9D5B; }
+.k-butter   { --k-ground: #FCEBB0; --k-ink: #4A3A12; --k-soft: #F5DC8C; --k-hue: #C28A00; }
+
+/* ── The claim ───────────────────────────────────────────────────────────── */
+.k-claim { display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+.k-eyebrow { font: 600 13px / 1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in oklab, var(--k-ink) 72%, transparent); }
+.k-title {
+  margin: 0; font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(38px, min(4.4vw, 7vh), 64px); line-height: 1.02; letter-spacing: -0.02em;
+  color: var(--ink); text-wrap: balance;
+}
+.k-body { margin: 0; max-width: 34ch; font: 500 17px / 1.5 var(--font-sans); letter-spacing: -0.01em; color: color-mix(in oklab, var(--k-ink) 86%, transparent); text-wrap: pretty; }
+.k-more {
+  display: inline-flex; align-items: center; height: 48px; padding: 0 26px; margin-top: 10px;
+  border-radius: 9999px; text-decoration: none;
+  background: color-mix(in oklab, #fff 62%, var(--k-ground));
+  font: 600 15px / 1 var(--font-sans); color: var(--ink);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 1px 2px rgba(10,13,18,0.08), 0 10px 24px -14px rgba(10,13,18,0.3);
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.k-more:hover { background: color-mix(in oklab, #fff 80%, var(--k-ground)); box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 2px 4px rgba(10,13,18,0.1), 0 14px 30px -14px rgba(10,13,18,0.34); }
+
+/* ── The cards ───────────────────────────────────────────────────────────── */
+.k-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.k-wide { grid-column: span 2; }
+.k-card {
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  padding: 22px 24px 24px; border-radius: 26px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 2px rgba(10,13,18,0.06), 0 18px 40px -26px rgba(10,13,18,0.34);
+}
+.k-head { display: flex; align-items: center; gap: 11px; font: 600 16px / 1 var(--font-sans); letter-spacing: -0.01em; color: var(--ink); }
+.k-head svg { flex: none; width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.k-sub { margin-left: auto; font: 500 13px / 1 var(--font-sans); color: #7A7F88; font-variant-numeric: tabular-nums; }
+
+/* Chips — the product's own, at landing scale. */
+.k-chip { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 8px; font: 500 12px / 1 var(--font-sans); white-space: nowrap; }
+.k-chip-blue   { background: #E3EDFF; color: #2E6DE9; }
+.k-chip-orange { background: #FFE9DE; color: #C8521C; }
+.k-chip-green  { background: #DDF4E6; color: #1C8A50; }
+.k-chip-grey   { background: #F0F1F3; color: #6B7079; }
+
+/* ── CAPTURE: the listening line ─────────────────────────────────────────── */
+.k-listen { display: flex; align-items: center; gap: 14px; }
+.k-wave { flex: none; display: flex; align-items: center; gap: 3px; height: 26px; }
+.k-wave i { display: block; width: 3px; height: 40%; border-radius: 2px; background: var(--k-hue); transform-origin: 50% 50%; }
+.k-said { min-width: 0; font: 500 16px / 1.45 var(--font-sans); color: #2A2E35; }
+.k-said b { font-weight: 600; color: var(--k-hue); }
+
+/* The sorted rows. */
+.k-rows { display: flex; flex-direction: column; gap: 6px; }
+.k-row { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; border-radius: 12px; background: #F7F7F9; font: 500 14px / 1.3 var(--font-sans); color: #22262C; }
+.k-row > .k-ring + span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k-ring { flex: 0 0 15px; width: 15px; height: 15px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px #B7BBC2; }
+
+/* The brief. */
+.k-page { display: flex; flex-direction: column; gap: 8px; }
+.k-page h4 { margin: 0; font: 600 17px / 1.2 var(--font-sans); color: #1A1C1E; }
+.k-page p { margin: 0; font: 400 14px / 1.5 var(--font-sans); color: #4A4F57; }
+.k-page .k-needt { color: #2E6DE9; }
+.k-caret { display: inline-block; width: 2px; height: 1em; margin-left: 1px; vertical-align: -2px; background: #2E6DE9; }
+
+/* ── CONNECT: the logo grid ──────────────────────────────────────────────── */
+.k-logos { display: grid; grid-template-columns: repeat(4, var(--k-tile)); justify-content: space-between; row-gap: 14px; --k-tile: clamp(52px, 5vw, 72px); }
+/* A tile holds the brand's own SVG when one is supplied; until then its
+   initial on the brand's colour — the same fallback the comparison table
+   uses, so the page never shows a broken image. */
+.k-logo {
+  position: relative; width: var(--k-tile, 28px); height: var(--k-tile, 28px); border-radius: 22%;
+  display: grid; place-items: center; overflow: hidden;
+  background: var(--c, #1A1C1E); color: #fff;
+  font: 700 calc(var(--k-tile, 28px) * 0.4) / 1 var(--font-sans); letter-spacing: -0.02em;
+  box-shadow: 0 1px 2px rgba(10,13,18,0.14), 0 6px 14px -8px rgba(10,13,18,0.4);
+}
+.k-logo.is-light { color: #1A1C1E; box-shadow: inset 0 0 0 1px rgba(10,13,18,0.08), 0 6px 14px -8px rgba(10,13,18,0.25); }
+.k-logo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* A supplied mark sits on a white tile at the size an app icon draws its own
+   glyph — about half the tile — so marks with and without their own ground
+   read at one weight. */
+.k-logo.is-mark { background: #fff; box-shadow: inset 0 0 0 1px rgba(10,13,18,0.07), 0 1px 2px rgba(10,13,18,0.08), 0 6px 14px -8px rgba(10,13,18,0.28); }
+.k-logo.is-mark img { inset: 24%; width: 52%; height: 52%; object-fit: contain; }
+.k-logo::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 0 rgba(31, 157, 91, 0.55); }
+
+/* Calendars. */
+.k-cals { display: flex; flex-direction: column; gap: 8px; }
+.k-cal { display: flex; align-items: center; gap: 11px; font: 500 14px / 1 var(--font-sans); color: #22262C; }
+.k-cal .k-logo { --k-tile: 28px; border-radius: 8px; }
+.k-switch { margin-left: auto; flex: none; width: 34px; height: 20px; border-radius: 9999px; background: var(--k-hue); position: relative; }
+.k-switch::after { content: ""; position: absolute; top: 2px; left: 16px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+/* The agent's note. */
+.k-agent { display: flex; gap: 10px; align-items: flex-start; }
+.k-agent .k-logo { --k-tile: 28px; flex: none; border-radius: 8px; }
+.k-agent p { margin: 0; font: 400 14px / 1.5 var(--font-sans); color: #3A3F46; }
+.k-agent em { font-style: normal; color: #6B4FD8; }
+
+/* ── HABITS ──────────────────────────────────────────────────────────────── */
+.k-habits { display: flex; flex-direction: column; gap: 6px; }
+.k-habit { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 0 10px; border-radius: 12px; background: #F7F7F9; font: 500 14px / 1 var(--font-sans); color: #22262C; }
+.k-tick { flex: none; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 6px; background: var(--k-hue); }
+.k-tick::after { content: ""; width: 7px; height: 4px; margin-top: -2px; border-left: 1.8px solid #fff; border-bottom: 1.8px solid #fff; transform: rotate(-45deg); }
+.k-tick.is-open { background: transparent; box-shadow: inset 0 0 0 1.5px #B7BBC2; }
+.k-tick.is-open::after { display: none; }
+.k-habit .k-time { margin-left: auto; font: 500 12px / 1 var(--font-mono); color: #8A8F97; }
+
+.k-field { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; }
+.k-field i { aspect-ratio: 1; border-radius: 4px; background: #ECEDEF; }
+.k-field i.on { background: var(--k-hue); }
+.k-ratio { display: flex; align-items: baseline; gap: 8px; }
+.k-ratio b { font-family: var(--font-display); font-weight: 400; font-size: 44px; line-height: 1; letter-spacing: -0.02em; color: #1A1C1E; }
+.k-ratio span { font: 500 14px / 1.3 var(--font-sans); color: #6B7079; }
+
+.k-focus { display: flex; align-items: center; gap: 14px; }
+.k-dial { flex: none; width: 58px; height: 58px; }
+.k-dial circle { fill: none; stroke-width: 5; }
+.k-dial .bg { stroke: #ECEDEF; }
+.k-dial .fg { stroke: var(--k-hue); stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 157; stroke-dashoffset: 55; }
+.k-focus-t { display: flex; flex-direction: column; gap: 4px; }
+.k-focus-t b { font: 600 22px / 1 var(--font-mono); color: #1A1C1E; font-variant-numeric: tabular-nums; }
+.k-focus-t span { font: 500 13px / 1.3 var(--font-sans); color: #6B7079; }
+
+/* ── HOVER: the same gesture as the highlighted phrases ───────────────────
+   On the pastel ground, not the white cards: a lift of a pixel, a deeper
+   shadow, and a white sheen that follows the pointer across the panel — the
+   highlight's own recipe, at the size of the panel. The white reads here
+   because the ground is coloured. Position comes from panels.js, one write
+   per frame. */
+.k-panel { isolation: isolate;
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.32s ease; }
+.k-panel::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(38% 60% at var(--hx, 50%) var(--hy, 50%),
+    rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.18) 46%, rgba(255, 255, 255, 0) 74%);
+  opacity: 0; transition: opacity 0.35s ease;
+}
+.k-panel:hover { transform: translateY(-1px);
+  box-shadow: inset 0 0 0 1px rgba(10, 13, 18, 0.05),
+    calc(var(--sx, 0px) * 0.1) calc(var(--sy, 0px) * 0.1) 4px rgba(10,13,18,0.035),
+    calc(var(--sx, 0px) * 0.6) calc(var(--sy, 0px) * 0.6) 90px -20px rgba(10,13,18,0.12); }
+/* The cards cast the same way, at card scale. */
+.k-card { transition: box-shadow 0.35s ease; }
+.k-panel:hover .k-card {
+  box-shadow: 0 1px 2px rgba(10,13,18,0.06),
+    calc(var(--sx, 0px) * 0.3) calc(var(--sy, 0px) * 0.3) 36px -14px rgba(10,13,18,0.12);
+}
+.k-panel:hover::after { opacity: 1; }
+.k-panel > .k-claim, .k-panel > .k-grid { z-index: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .k-panel { transition: none; }
+  .k-panel:hover { transform: none; }
+  .k-panel::after { display: none; }
+}
+
+/* ══ MOTION — one live action per card, only while its panel is on screen ═ */
+.k-armed .k-wave i { animation: k-wave 0.9s ease-in-out infinite; }
+.k-armed .k-wave i:nth-child(2) { animation-delay: -0.15s; }
+.k-armed .k-wave i:nth-child(3) { animation-delay: -0.3s; }
+.k-armed .k-wave i:nth-child(4) { animation-delay: -0.45s; }
+.k-armed .k-wave i:nth-child(5) { animation-delay: -0.6s; }
+.k-armed .k-wave i:nth-child(6) { animation-delay: -0.75s; }
+@keyframes k-wave { 0%, 100% { transform: scaleY(0.45); } 50% { transform: scaleY(1.7); } }
+
+/* The sorted rows arrive one after another, then hold, then reset — the
+   sentence above them becoming three tasks. */
+.k-armed .k-row { animation: k-row 7s cubic-bezier(0.16, 0.84, 0.28, 1) infinite both; }
+.k-armed .k-row:nth-child(2) { animation-delay: 0.35s; }
+.k-armed .k-row:nth-child(3) { animation-delay: 0.7s; }
+@keyframes k-row {
+  0%, 6%   { opacity: 0; transform: translateY(8px); }
+  14%, 88% { opacity: 1; transform: none; }
+  96%, 100% { opacity: 0; transform: translateY(-4px); }
+}
+
+.k-armed .k-caret { animation: k-blink 1s steps(2, end) infinite; }
+@keyframes k-blink { 50% { opacity: 0; } }
+
+/* One tile at a time answers, the way a connection is used — never all at
+   once, which would read as a loading state. */
+.k-armed .k-logos .k-logo::after { animation: k-ping 8s ease-out infinite; }
+.k-armed .k-logos .k-logo:nth-child(2)::after { animation-delay: 1s; }
+.k-armed .k-logos .k-logo:nth-child(3)::after { animation-delay: 2s; }
+.k-armed .k-logos .k-logo:nth-child(4)::after { animation-delay: 3s; }
+.k-armed .k-logos .k-logo:nth-child(5)::after { animation-delay: 4s; }
+.k-armed .k-logos .k-logo:nth-child(6)::after { animation-delay: 5s; }
+.k-armed .k-logos .k-logo:nth-child(7)::after { animation-delay: 6s; }
+.k-armed .k-logos .k-logo:nth-child(8)::after { animation-delay: 7s; }
+@keyframes k-ping { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.9); } 9% { box-shadow: 0 0 0 5px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 5px rgba(255,255,255,0); } }
+
+.k-armed .k-agent p em { animation: k-ink 6s ease-in-out infinite; }
+@keyframes k-ink { 0%, 100% { background: transparent; } 30%, 70% { background: rgba(107, 79, 216, 0.1); } }
+
+/* Today's open habit gets kept, holds, and resets. */
+.k-armed .k-keep { animation: k-keep 6s ease infinite; }
+.k-armed .k-keep::after { animation: k-keep-mark 6s ease infinite; }
+@keyframes k-keep { 0%, 30% { background: transparent; box-shadow: inset 0 0 0 1.5px #B7BBC2; } 36%, 90% { background: var(--k-hue); box-shadow: none; } 100% { background: transparent; box-shadow: inset 0 0 0 1.5px #B7BBC2; } }
+@keyframes k-keep-mark { 0%, 30% { opacity: 0; } 36%, 90% { opacity: 1; } 100% { opacity: 0; } }
+.k-keep::after { display: block !important; }
+
+/* The field's last square is today, and it fills with the habit above. */
+.k-armed .k-field .k-today { animation: k-today 6s ease infinite; }
+@keyframes k-today { 0%, 32% { background: #ECEDEF; } 38%, 90% { background: var(--k-hue); } 100% { background: #ECEDEF; } }
+
+.k-armed .k-dial .fg { animation: k-dial 12s linear infinite; }
+@keyframes k-dial { from { stroke-dashoffset: 110; } to { stroke-dashoffset: 20; } }
+
+/* ── THE PAIR ────────────────────────────────────────────────────────────
+   Connect and Habits sit side by side, each half the width. Three full-width
+   panels stacked read as a list; one wide claim followed by two halves reads
+   as a main argument and its two supports. At half width a panel has no room
+   for claim and cards side by side, so it stacks them. */
+.k-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(20px, 2.4vw, 32px); align-items: stretch; }
+.k-half { grid-template-columns: minmax(0, 1fr); align-items: start; align-content: start; gap: clamp(24px, 2.6vw, 36px); }
+.k-half .k-title { font-size: clamp(32px, min(3.2vw, 5.6vh), 48px); }
+.k-half .k-body { max-width: 40ch; }
+.k-half .k-logos { --k-tile: clamp(44px, 3.6vw, 60px); }
+/* The calendars share the card with the agents, under their own small head. */
+.k-head-sub { margin-top: 6px; padding-top: 16px; box-shadow: inset 0 1px 0 rgba(10,13,18,0.06); }
+.k-logos-row { grid-template-columns: repeat(3, minmax(0, 1fr)); justify-content: stretch; column-gap: 6px; }
+.k-logos-row .k-logo { width: 100%; height: auto; aspect-ratio: 1; }
+
+/* ── Layout below the two-column width ───────────────────────────────────── */
+@media (max-width: 960px) {
+  .k-pair { grid-template-columns: minmax(0, 1fr); }
+  .k-panel { grid-template-columns: minmax(0, 1fr); border-radius: 32px; }
+  .k-body { max-width: 52ch; }
+}
+@media (max-width: 560px) {
+  .k-grid { grid-template-columns: minmax(0, 1fr); }
+  .k-wide { grid-column: auto; }
+  .k-panel { padding: 26px 18px; border-radius: 28px; }
+}
+
+/* Green's third card: two things you can say to it, drawn as the reference's
+   tinted pills — the panel's own hue, one step deeper on hover. */
+.k-prompts { display: flex; flex-direction: column; gap: 8px; }
+.k-prompt {
+  display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 14px;
+  border-radius: 14px; background: var(--k-soft);
+  font: 600 14px / 1 var(--font-sans); color: var(--k-ink); white-space: nowrap;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.k-prompt:hover { background: color-mix(in oklab, var(--k-soft) 82%, var(--k-ink)); box-shadow: 0 6px 14px -8px rgba(10,13,18,0.3); }
+.k-sub-line { margin-left: 0; font-size: 13px; line-height: 1.35; }
+/* The pair no longer forces equal heights: each half is as tall as its own
+   argument, so a short panel does not carry a strip of empty pastel. */
+.k-pair { align-items: start; }
+
+
+/* ── MORE TILES, NO DEAD GROUND ────────────────────────────────────────────
+   Four fixed columns with space-between left 130px of nothing between 72px
+   tiles. Six columns that share the width fill the card, and the tile is as
+   wide as its column up to the size a dock icon reads at. */
+.k-wide .k-logos { grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: 6px; row-gap: 6px; justify-content: stretch; }
+.k-wide .k-logos .k-logo { width: 100%; height: auto; aspect-ratio: 1; max-width: none; justify-self: stretch; }
+.k-armed .k-logos .k-logo:nth-child(n+9)::after { animation-delay: 8s; }
+@media (max-width: 620px) { .k-wide .k-logos { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* ── HOVER: EACH CARD ANSWERS THE HAND ─────────────────────────────────────
+   The card lifts a step; the tile under the pointer rises and names itself;
+   the others step back, so the one you are on is the only one in front. */
+.k-card { transition: box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.k-card:hover { transform: translateY(-3px); box-shadow: 0 2px 4px rgba(10,13,18,0.05), 0 22px 44px -22px rgba(10,13,18,0.28); }
+
+.k-logo { transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.25, 1.2), box-shadow 0.28s ease, opacity 0.25s ease, filter 0.25s ease; }
+.k-logos:hover .k-logo { opacity: 0.55; filter: saturate(0.6); }
+.k-logos:hover .k-logo:hover { opacity: 1; filter: none; transform: translateY(-5px) scale(1.08); z-index: 2;
+  box-shadow: inset 0 0 0 1px rgba(10,13,18,0.06), 0 4px 8px rgba(10,13,18,0.1), 0 16px 26px -12px rgba(10,13,18,0.38); }
+.k-logo { overflow: visible; }
+.k-logo img, .k-logo::after { border-radius: inherit; }
+.k-logo::before {
+  content: attr(data-name); position: absolute; left: 50%; bottom: calc(100% + 8px);
+  transform: translate(-50%, 4px); opacity: 0; pointer-events: none; white-space: nowrap;
+  padding: 5px 9px; border-radius: 8px; background: #16181B; color: #fff;
+  font: 500 12px / 1 var(--font-sans); transition: opacity 0.18s ease, transform 0.22s ease;
+}
+.k-logo:hover::before { opacity: 1; transform: translate(-50%, 0); }
+
+.k-prompt { position: relative; display: flex; align-items: center; justify-content: center; gap: 0;
+  transition: background-color 0.2s ease, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, gap 0.25s ease; cursor: default; }
+.k-prompt i { font-style: normal; display: inline-block; max-width: 0; opacity: 0; overflow: hidden;
+  transition: max-width 0.25s ease, opacity 0.2s ease, transform 0.25s ease; transform: translateX(-6px); }
+.k-prompt:hover { background: #9CDDB9; transform: translateY(-2px); gap: 8px; box-shadow: 0 10px 20px -12px rgba(28,110,70,0.5); }
+.k-prompt:hover i { max-width: 1.2em; opacity: 1; transform: none; }
+.k-prompt:active { transform: translateY(0); box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .k-card:hover, .k-logos:hover .k-logo:hover, .k-prompt:hover { transform: none; }
+}
+
+/* Until their files arrive, the initial tiles wear the mark tile's white
+   ground with the initial in the brand's colour — twelve read as one set,
+   instead of four solid squares reading as broken images.
+   The letter is sized by the TILE, not the viewport: the tile has no fixed
+   width now, so a vw clamp drew an 18px letter in a 118px tile while the SVG
+   marks beside it filled half their tile. A container unit keeps the letter
+   the same share of the tile at every width. */
+.k-wide .k-logos .k-logo:not(.is-mark) {
+  container-type: inline-size;
+  background: #fff; color: var(--c);
+  font: 700 18px / 1 var(--font-sans); letter-spacing: -0.02em;
+  box-shadow: inset 0 0 0 1px rgba(10,13,18,0.07), 0 1px 2px rgba(10,13,18,0.08), 0 6px 14px -8px rgba(10,13,18,0.28);
+}
+.k-wide .k-logos .k-logo:not(.is-mark) { min-height: 0; overflow: hidden; }
+.k-init { display: block; line-height: 1; }
+@supports (font-size: 1cqi) {
+  .k-wide .k-logos .k-logo:not(.is-mark) .k-init { font-size: 44cqi; }
+}
+
+/* The header's count, turned into a link: same muted weight at rest so the
+   card head still reads as one line, the ink and the arrow come up on hover. */
+.k-sub-link { display: inline-flex; align-items: center; gap: 2px; text-decoration: none; color: inherit; transition: color 0.15s ease; }
+.k-sub-link svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.2s ease; }
+.k-sub-link:hover { color: #1A1C1E; text-decoration: none; }
+.k-sub-link:hover svg { transform: translateX(2px); }
