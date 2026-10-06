@@ -113,6 +113,23 @@ shipped rather than on what was true in September.
 Tokens are a few small files, which is what makes that direction cheap. Screens
 are not, which is what makes the other direction one-way.
 
+### Which copy of the tokens the code actually reads
+
+`scripts/sync-design-tokens.mjs` reads `_ds/<project>/tokens/` **inside the
+app bundle**, not the design-system project. The export embeds a snapshot of
+the linked system, and on 6 October that snapshot and the live
+`Needt Design System Main` carried the same values — so the chain works, but
+only through an export.
+
+The consequence, which is easy to get wrong: **a token changed in the design
+system does not reach the code until the app is exported again.** Change it
+there, export, commit the bundle, run the sync. If that is too slow for a one
+-token change, fetch the file straight into `_ds/<project>/tokens/` with
+DesignSync and run the sync against that — same destination, one step instead
+of three, and the next export overwrites it with the same value.
+
+### Tokens going the other way
+
 This has been written down since September and has not happened once, because
 nothing asks for it at the moment it is due. **It belongs in the pull request
 that lands the token**, beside the changelog entry, not in a doc somebody
