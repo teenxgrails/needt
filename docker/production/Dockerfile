@@ -18,9 +18,14 @@ RUN npx prisma generate
 COPY . .
 
 # Build application
-# Leave headroom for Alpine, Next build workers, and Docker Desktop's
-# constrained Linux VM instead of reserving the whole configured memory limit.
-ENV NODE_OPTIONS=--max-old-space-size=2560
+# 2560 MiB was headroom for Docker Desktop's constrained Linux VM. The build
+# outgrew it: the publish job died three minutes in with "Ineffective
+# mark-compacts near heap limit", while the same `npm run build` on the CI
+# runner — which has no explicit cap — passed, and production sat two merges
+# behind because of it. The runner has 16 GiB and the image build is the only
+# heavy thing on it. A laptop with less will swap; a release that cannot be
+# built does not happen at all.
+ENV NODE_OPTIONS=--max-old-space-size=8192
 RUN --mount=type=secret,id=sentry_auth_token,required=true \
     --mount=type=secret,id=sentry_org,required=true \
     --mount=type=secret,id=sentry_project,required=true \
