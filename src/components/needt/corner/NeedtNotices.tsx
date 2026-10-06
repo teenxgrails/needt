@@ -36,7 +36,10 @@ export function NeedtNotices() {
     <NeedtNoticeProvider>
       <Sink />
       <div
-        className="needt-v2"
+        /* `needt-v2` for the tokens, `needt-notices` so a selector can
+           say "the application's own scope" and not catch this one: it is
+           chrome the app mounts beside every screen, not a screen. */
+        className="needt-v2 needt-notices"
         data-theme={theme}
         /* `.nf-stack` is 348px wide and positions itself against the nearest
            positioned ancestor, so this anchor is the right-hand strip and
