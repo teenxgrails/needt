@@ -47,3 +47,40 @@ test("A failure from the product lands in the corner stack, and interrupts", asy
   await stack.getByRole("button", { name: "Dismiss notification" }).click();
   await expect(stack).toBeHidden({ timeout: 10_000 });
 });
+
+/* The stack is anchored to a fixed strip down the right-hand side, and the
+ * right-hand side of several screens is where the buttons are — "Plan my
+ * day" on Today, the calendar's own controls, half of Settings. A layer that
+ * swallowed a press there would be invisible in every screenshot and obvious
+ * to the first person who tried to use the product. */
+test("The corner's strip does not swallow the buttons behind it", async ({
+  page,
+}) => {
+  await signInVisualUser(page);
+  await page.goto("/today");
+
+  const plan = page.getByRole("button", { name: "Plan my day" });
+  await expect(plan).toBeVisible({ timeout: 20_000 });
+
+  // It sits inside the strip: the right edge of the window, where the stack
+  // anchors. With nothing raised, the press has to reach it.
+  const box = await plan.boundingBox();
+  const width = page.viewportSize()?.width ?? 0;
+  expect(box, "Plan my day should be laid out").not.toBeNull();
+  expect(width - (box!.x + box!.width)).toBeLessThan(388);
+
+  await plan.click({ timeout: 10_000 });
+
+  // And the card, when there is one, takes its own presses.
+  await page.route("**/api/tasks/**", (route) =>
+    route.request().method() === "PUT"
+      ? route.fulfill({ status: 500, json: { error: "nope" } })
+      : route.continue()
+  );
+  await page.goto("/tasks");
+  await page.getByRole("checkbox").first().click();
+  const stack = page.getByRole("region", { name: "Needt notifications" });
+  await expect(stack).toBeVisible({ timeout: 20_000 });
+  await stack.getByRole("button", { name: "Dismiss notification" }).click();
+  await expect(stack).toBeHidden({ timeout: 10_000 });
+});
