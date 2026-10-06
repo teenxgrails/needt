@@ -1,0 +1,281 @@
+/* ── THE HERO: a sky, a short serif line, and the app rising out of torn paper.
+ *
+ * The window is the real app (Columns), framed as a desktop window. It starts
+ * tilted back and low, and as you scroll it rises and flattens toward you, then
+ * Needt's own cursor places a task in it. Scraps of the same grained paper the
+ * inner pages use are torn around its lower edge, and the services Needt talks
+ * to float around it, leaning away from the pointer.
+ */
+/* White paper, not sky: the same grain the inner pages use, at a whisper. */
+.hx { position: relative; overflow: hidden; isolation: isolate; min-height: 100svh;
+  display: flex; flex-direction: column; align-items: center;
+  background-color: #FFFFFF;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px; }
+/* On white the torn white scrap needs an edge to exist at all. */
+.hx-tear-w { background-color: #EEF1F5; }
+
+/* The line. Exposure, one weight, one oblique word. */
+.hx-head { position: relative; z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 22px;
+  padding: clamp(118px, 17vh, 170px) 24px 0; text-align: center; }
+.hx-title { margin: 0; max-width: 15ch; color: #0E1520;
+  font-family: "Exposure VAR", Georgia, serif; font-weight: 500; font-variation-settings: "EXPO" -25;
+  font-size: clamp(46px, min(6.6vw, 10.4vh), 104px); line-height: 1.02; letter-spacing: -0.05em;
+  text-wrap: balance; -webkit-font-smoothing: antialiased; }
+/* Exposure ships no italic, and a synthesised slant shows its shear at this
+   size — so the word leans as a box, with its baseline untouched. */
+.hx-title em { display: inline-block; font-style: normal; transform: skewX(-10deg); margin-right: 0.04em; }
+.hx-sub { margin: 0; max-width: 46ch; color: rgba(14, 21, 32, 0.72);
+  font: 400 clamp(17px, min(1.45vw, 2.4vh), 21px) / 1.45 "Figtree", var(--font-sans); text-wrap: pretty; }
+.hx-cta { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
+
+/* The stage: everything below the line, cropped by the hero's floor. */
+.hx-stage { position: relative; z-index: 4; width: 100%; flex: 1 1 auto;
+  min-height: clamp(380px, 60vh, 760px); margin-top: clamp(30px, 6vh, 70px); perspective: 1600px; }
+
+/* ── THE WINDOW ─────────────────────────────────────────────────────────── */
+.hx-win { position: absolute; left: 50%; top: 0; width: min(960px, 70vw);
+  transform-origin: 50% 0;
+  transform: translate3d(-50%, var(--hx-y, 70px), 0) rotateX(var(--hx-rx, 16deg)) scale(var(--hx-s, 0.93));
+  border-radius: 18px 18px 0 0; overflow: hidden; background: #fff;
+  box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.07), 0 2px 4px rgba(10, 13, 18, 0.05), 0 40px 90px -40px rgba(10, 30, 60, 0.45);
+  will-change: transform; }
+.hx-bar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px;
+  background: #F6F7F9; box-shadow: inset 0 -1px 0 rgba(10, 13, 18, 0.06); }
+.hx-bar i { width: 12px; height: 12px; border-radius: 50%; background: #FF5F57; }
+.hx-bar i:nth-child(2) { background: #FEBC2E; }
+.hx-bar i:nth-child(3) { background: #28C840; }
+.hx-bar b { margin-left: auto; margin-right: auto; padding: 0 14px; height: 24px; line-height: 24px; border-radius: 8px;
+  background: #fff; box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.07);
+  font: 500 12px "Figtree", var(--font-sans); color: rgba(14, 21, 32, 0.6); }
+
+/* ── THE TORN PAPER ─────────────────────────────────────────────────────────
+ * Each scrap is a flat colour with the shared grain blended in; its torn edge
+ * is a polygon written by hero.js so every edge is irregular in its own way. */
+.hx-tear { position: absolute; z-index: -1; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px; background-blend-mode: soft-light;
+  transform: translate3d(0, var(--hx-ty, 0px), 0); will-change: transform; }
+.hx-tear-l { left: -2%; width: 34%; top: 34%; height: 80%; background-color: #8E9BEA; }
+.hx-tear-w { left: 6%; width: 30%; top: 12%; height: 30%; background-color: #FFFFFF; }
+.hx-tear-r { right: -2%; width: 30%; top: 22%; height: 90%; background-color: #F7DF7A;
+  background-image: repeating-linear-gradient(176deg, transparent 0 46px, rgba(120, 90, 20, 0.28) 46px 47.5px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: auto, 160px 160px; }
+.hx-tear-k { right: 9%; width: 20%; top: 4%; height: 24%; background-color: #1D2026; }
+.hx-tear-g { right: 16%; width: 18%; top: 10%; height: 40%; background-color: #C9CDD4; }
+
+/* ── THE SERVICES ───────────────────────────────────────────────────────── */
+@property --hy { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --hs { syntax: "<number>"; inherits: false; initial-value: 1; }
+.hx-logo { position: absolute; z-index: 5; width: clamp(54px, 5.4vw, 78px); aspect-ratio: 1; border-radius: 22%;
+  display: grid; place-items: center; background: #fff;
+  box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.06), 0 2px 4px rgba(10, 13, 18, 0.06), 0 18px 34px -18px rgba(10, 30, 60, 0.45);
+  transform: translate3d(var(--px, 0px), calc(var(--py, 0px) + var(--fy, 0px) + var(--hy)), 0) rotate(var(--r, 0deg)) scale(var(--hs));
+  transition: --hy 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), --hs 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.45s ease; will-change: transform; }
+.hx-logo img { width: 58%; height: 58%; object-fit: contain; }
+.hx-logo:hover { --hy: -8px; --hs: 1.07; box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.08), 0 4px 8px rgba(10, 13, 18, 0.08), 0 26px 44px -18px rgba(10, 30, 60, 0.55); }
+.hx-logo.is-dark { background: #111317; }
+
+@media (max-width: 760px) {
+  .hx-win { width: 90vw; }
+  .hx-logo { width: 46px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hx-win { transform: translate3d(-50%, 0, 0); }
+}
+
+/* ── THE DRAWN APP ──────────────────────────────────────────────────────────
+ * Built from the product's own parts at the product's own sizes — 13px and
+ * 12px chrome, white cards with a coloured tile, events as a tinted wash — so
+ * it reads as the app without booting it. */
+.hc { position: relative; display: grid; grid-template-columns: 214px minmax(0, 1fr); height: clamp(420px, 56vh, 600px);
+  font-family: "Figtree", var(--font-sans); color: #1A1C1E; background: #FCFDFE; }
+.hc-side { display: flex; flex-direction: column; gap: 4px; padding: 14px 10px; background: #F7F8FA;
+  box-shadow: inset -1px 0 0 rgba(26,28,30,0.06); }
+.hc-nav { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.hc-nav span { height: 30px; line-height: 30px; padding: 0 10px; border-radius: 8px; font-size: 13px; color: rgba(26,28,30,0.7); }
+.hc-nav span.is-on { background: rgba(26,28,30,0.06); color: #1A1C1E; font-weight: 600; }
+.hc-sec { display: flex; justify-content: space-between; padding: 10px 10px 4px; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase; color: rgba(26,28,30,0.4); }
+.hc-sec em { font-style: normal; font-variant-numeric: tabular-nums; }
+.hc-queue { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
+.hc-habit { display: flex; justify-content: space-between; align-items: center; height: 28px; padding: 0 10px; font-size: 12.5px; color: rgba(26,28,30,0.85); }
+.hc-dots { display: flex; gap: 3px; }
+.hc-dots i { width: 7px; height: 7px; border-radius: 2px; background: #6B8FE8; }
+.hc-dots i.is-off { background: rgba(26,28,30,0.1); }
+
+.hc-main { display: flex; flex-direction: column; min-width: 0; padding: 14px 16px 0; }
+.hc-top { display: flex; align-items: center; gap: 12px; height: 34px; margin-bottom: 12px; }
+.hc-top b { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.hc-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 9999px; background: rgba(26,28,30,0.05); margin-left: auto; }
+.hc-seg i { font-style: normal; font-size: 12px; padding: 4px 10px; border-radius: 9999px; color: rgba(26,28,30,0.6); }
+.hc-seg i.is-on { background: #fff; color: #1A1C1E; box-shadow: 0 0 0 1px rgba(26,28,30,0.06), 0 1px 2px rgba(26,28,30,0.08); }
+.hc-plan { height: 30px; line-height: 30px; padding: 0 12px; border-radius: 10px; font-size: 12.5px; font-weight: 600; background: #fff;
+  box-shadow: 0 0 0 1px rgba(26,28,30,0.07), 0 1px 2px rgba(26,28,30,0.08), 0 4px 10px -6px rgba(26,28,30,0.25);
+  transition: transform .14s ease, box-shadow .14s ease; }
+.hc-plan.is-press { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(26,28,30,0.18), 0 0 0 1px rgba(26,28,30,0.07); }
+
+.hc-cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; flex: 1; min-height: 0; }
+.hc-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hc-day { display: flex; align-items: baseline; gap: 6px; padding: 0 4px 4px; font-size: 12px; color: rgba(26,28,30,0.5); }
+.hc-day b { font-size: 15px; font-weight: 600; color: #1A1C1E; }
+.hc-col.is-today .hc-day, .hc-col.is-today .hc-day b { color: #2E6DE9; }
+
+.hc-card { display: flex; gap: 8px; align-items: flex-start; padding: 8px 9px; border-radius: 10px; background: #fff;
+  box-shadow: 0 0 0 1px rgba(26,28,30,0.07), 0 1px 2px rgba(26,28,30,0.05); }
+.hc-tile { flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 5px; }
+.hc-ops { background: linear-gradient(180deg, #FF946A, #FF7A45); }
+.hc-ds { background: linear-gradient(180deg, #73A6FF, #4C8DFF); }
+.hc-life { background: linear-gradient(180deg, #FFD46A, #FFC53D); }
+.hc-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hc-t b, .hc-ev b { font-size: 12.5px; font-weight: 600; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hc-t em, .hc-ev em { font-style: normal; font-size: 11px; color: rgba(26,28,30,0.5); font-variant-numeric: tabular-nums; }
+.hc-ev { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; }
+.hc-ev-work { background: rgba(46,109,233,0.12); }
+.hc-ev-family { background: rgba(47,208,138,0.16); }
+.hc-slot { height: 48px; border-radius: 10px; box-shadow: inset 0 0 0 1.5px rgba(46,109,233,0); transition: box-shadow .3s ease, background-color .3s ease; }
+.hc-slot.is-aim { background: rgba(46,109,233,0.06); box-shadow: inset 0 0 0 1.5px rgba(46,109,233,0.45); }
+.hc-card.is-flying { position: absolute; z-index: 20; margin: 0;
+  box-shadow: 0 0 0 1px rgba(26,28,30,0.08), 0 18px 34px -14px rgba(10,30,60,0.45); }
+.hc-cursor { position: absolute; left: 0; top: 0; z-index: 30; opacity: 0; pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
+@media (max-width: 760px) {
+  .hc { grid-template-columns: 1fr; }
+  .hc-side { display: none; }
+  .hc-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hc-col:nth-child(n+4) { display: none; }
+}
+
+/* The secondary action on white: the same raised white object as Log in, so
+   the pair reads as two buttons rather than a button and a caption. */
+.hx .hx-cta .l-btn-ghost { background: #fff; color: #0A0D12;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.08), 0 1px 2px rgba(10,13,18,0.1), 0 8px 22px -12px rgba(10,13,18,0.28); }
+.hx .hx-cta .l-btn-ghost:hover { background: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.08), 0 2px 4px rgba(10,13,18,0.12), 0 16px 34px -14px rgba(10,13,18,0.32); }
+/* Clear the floating nav at every height: the sky's short-viewport rule must
+   not reach the hero's own top padding. */
+.hx .hx-head { padding-top: max(118px, min(17vh, 170px)) !important; }
+
+/* The window sits in front of the services: they tuck behind its edges and
+   never cover the product. */
+.hx-win { z-index: 6; }
+.hx-logo { z-index: 5; }
+/* The hero's floor dissolves into the page's ground, so there is no straight
+   edge where the window is cropped. */
+.hx::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: clamp(120px, 18vh, 200px);
+  z-index: 7; pointer-events: none;
+  background: linear-gradient(180deg, rgba(235,245,255,0) 0%, rgba(235,245,255,0.7) 55%, var(--sky-tint, #ebf5ff) 100%); }
+
+/* The still: the screen's own pixels at 2×, so it scales down crisply. */
+.hx-screen { aspect-ratio: 1440 / 900; height: auto !important; }
+.hx-shot { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+
+/* ── THE DRAWN APP, MATCHED TO THE REAL SCREEN ─────────────────────────────
+ * Same structure as Calendar → Columns in the product: a 268px rail (wordmark,
+ * find, month, unplaced queue, habits), a tab row, the sort control, and day
+ * columns cut into morning / afternoon / evening. Light theme, the product's
+ * own values: #FCFDFE canvas, #FFFFFF cards on a hairline ring, squircle
+ * project tiles with a glyph, 13/12px chrome. */
+.ha { grid-template-columns: 236px minmax(0, 1fr); height: clamp(440px, 58vh, 620px); font-family: "Inter", system-ui, sans-serif; background: #FCFDFE; color: #1A1C1E; }
+.ha-side { display: flex; flex-direction: column; gap: 6px; padding: 12px 10px; background: #FCFDFE; box-shadow: inset -1px 0 0 rgba(26,28,30,0.08); overflow: hidden; }
+.ha-mark { text-align: center; font-family: "Exposure VAR", Georgia, serif; font-size: 26px; line-height: 1; letter-spacing: -0.02em; padding: 2px 0 6px; }
+.ha-find { display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 9px; border-radius: 10px; background: rgba(26,28,30,0.03); box-shadow: inset 0 0 0 1px rgba(26,28,30,0.08); font-size: 12px; color: rgba(26,28,30,0.55); }
+.ha-find em { margin-left: auto; font-style: normal; font-family: "JetBrains Mono", monospace; font-size: 10px; color: rgba(26,28,30,0.4); }
+.ha svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.ha-month { padding: 4px 2px 2px; }
+.ha-mh { font-size: 12px; font-weight: 600; padding: 2px 4px 6px; }
+.ha-mg { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 3px; text-align: center; font-size: 10.5px; color: rgba(26,28,30,0.7); font-variant-numeric: tabular-nums; }
+.ha-mg span { height: 17px; line-height: 17px; border-radius: 5px; }
+.ha-mg .ha-dow { color: rgba(26,28,30,0.4); font-size: 9.5px; }
+.ha-mg .is-out { color: rgba(26,28,30,0.25); }
+.ha-mg .is-on { background: rgba(46,109,233,0.12); color: #2E6DE9; font-weight: 600; }
+.ha-sec { display: flex; justify-content: space-between; padding: 8px 4px 2px; font-size: 12px; font-weight: 500; color: rgba(26,28,30,0.55); }
+.ha-sec em { font-style: normal; color: rgba(26,28,30,0.4); font-variant-numeric: tabular-nums; }
+.ha-queue { display: flex; flex-direction: column; gap: 6px; }
+.ha-habit { display: flex; justify-content: space-between; padding: 4px 4px 0; font-size: 12px; }
+.ha-habit em { font-style: normal; font-family: "JetBrains Mono", monospace; font-size: 10px; color: rgba(26,28,30,0.5); }
+.ha-dots { display: flex; align-items: center; gap: 2.5px; padding: 0 4px; }
+.ha-dots i { width: 6px; height: 6px; border-radius: 50%; background: #9B6BF2; }
+.ha-dots-b i { background: #2FA36B; }
+.ha-dots i.is-off { background: rgba(26,28,30,0.12); }
+.ha-dots span { margin-left: 6px; font-size: 10.5px; color: rgba(26,28,30,0.55); }
+
+.ha-main { display: flex; flex-direction: column; min-width: 0; padding: 10px 14px 0; overflow: hidden; }
+.ha-tabs { display: flex; align-items: center; gap: 4px; height: 32px; font-size: 12.5px; color: rgba(26,28,30,0.7); }
+.ha-tabs > span { padding: 6px 10px; border-radius: 8px; white-space: nowrap; }
+.ha-tabs .ha-new { color: #1A1C1E; background: #fff; box-shadow: 0 0 0 1px rgba(26,28,30,0.08), 0 1px 2px rgba(26,28,30,0.06); margin-right: 6px; }
+.ha-tabs .is-on { background: rgba(46,109,233,0.12); color: #2E6DE9; font-weight: 500; }
+.ha-right { margin-left: auto; display: flex !important; align-items: center; gap: 4px; padding: 0 !important; }
+.ha-right i, .ha-right b { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 8px; border-radius: 8px; font-style: normal; font-weight: 500; font-size: 12px; color: #1A1C1E;
+  background: #fff; box-shadow: 0 0 0 1px rgba(26,28,30,0.08), 0 1px 2px rgba(26,28,30,0.06); }
+.ha-right .ha-wand { padding: 0; width: 26px; line-height: 26px; height: 26px; }
+.ha-sort { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; height: 28px; padding: 0 10px; margin: 8px 0 10px; border-radius: 10px; font-size: 12px;
+  box-shadow: inset 0 0 0 1px rgba(26,28,30,0.08); background: rgba(26,28,30,0.02); }
+.ha-cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; flex: 1; min-height: 0; }
+.ha-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ha-head { font-size: 13px; font-weight: 600; padding: 0 2px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ha-head em { font-style: normal; font-weight: 500; color: rgba(26,28,30,0.4); margin-left: 4px; }
+.is-today .ha-head { color: #2E6DE9; }
+.is-today .ha-head em { color: #E6000C; }
+.ha-eye { display: flex; align-items: center; gap: 6px; font-size: 9.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(26,28,30,0.4); padding: 2px 2px 0; }
+.ha-eye::after { content: ""; flex: 1; height: 1px; background: rgba(26,28,30,0.08); }
+
+.ha .ha-card { display: grid; grid-template-columns: auto auto minmax(0, 1fr); column-gap: 7px; row-gap: 5px; align-items: center; padding: 8px 9px; border-radius: 12px; background: #fff;
+  box-shadow: 0 0 0 1px rgba(26,28,30,0.08), 0 1px 2px rgba(26,28,30,0.04); }
+.ha .ha-card.is-due { box-shadow: 0 0 0 1.5px rgba(230,0,12,0.55), 0 1px 2px rgba(26,28,30,0.04); }
+.ha-ring { width: 13px; height: 13px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px currentColor; }
+.ha-r-ops { color: #FF7A45; } .ha-r-res { color: #2FB874; } .ha-r-ds { color: #4C8DFF; } .ha-r-gen { color: rgba(26,28,30,0.35); }
+.ha-tile { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; color: #fff; }
+.ha-tile svg { width: 13px; height: 13px; stroke-width: 2.1; }
+.ha-ops { background: linear-gradient(180deg, #FF946A, #FF7A45); }
+.ha-res { background: linear-gradient(180deg, #4CD292, #2FB874); }
+.ha-ds  { background: linear-gradient(180deg, #73A6FF, #4C8DFF); }
+.ha-gen { background: linear-gradient(180deg, #A5A9B0, #8B9097); }
+.ha .hc-t b { font-size: 12px; font-weight: 500; }
+.ha .hc-t em { font-size: 10.5px; color: rgba(26,28,30,0.55); }
+.ha-proj { grid-column: 1 / -1; font-size: 10.5px; color: rgba(26,28,30,0.5); }
+.ha-due { grid-column: 1 / -1; display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500; }
+.ha-due::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #E6000C; }
+.ha-entry { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; justify-self: start; max-width: 100%; height: 24px; padding: 0 8px; border-radius: 8px; font-size: 11px; font-weight: 500; overflow: hidden; white-space: nowrap;
+  background: #fff; box-shadow: 0 0 0 1px rgba(26,28,30,0.08), 0 1px 2px rgba(26,28,30,0.06); }
+.ha-entry svg { width: 11px; height: 11px; color: #FF7A45; }
+.ha-entry em { font-style: normal; color: rgba(26,28,30,0.45); }
+.ha .hc-slot { height: 56px; }
+@media (max-width: 900px) {
+  .ha { grid-template-columns: minmax(0, 1fr); }
+  .ha-side { display: none; }
+  .ha-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ha-col:nth-child(n+3) { display: none; }
+}
+
+/* Titles get the room: the ring goes (the tile already says what the card is),
+   and a title may take two lines before it ellipsizes. */
+.ha .ha-ring { display: none; }
+.ha .ha-card { grid-template-columns: auto minmax(0, 1fr); }
+.ha .hc-t b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Three columns until there is room for four. */
+@media (max-width: 1200px) { .ha-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ha-col:nth-child(4) { display: none; } }
+/* The rail fits: a compact month, and the window tall enough for the habits. */
+.ha { height: clamp(500px, 64vh, 640px); }
+.ha-mg { row-gap: 1px; }
+.ha-mg span { height: 15px; line-height: 15px; }
+.ha-month { padding: 0 2px; }
+/* The pill keeps its duration and ellipsizes its label. */
+.ha-entry { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+.ha-entry > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The floor fade sits under the window, never over it. */
+.hx::after { z-index: 3; }
+
+/* The window has to fit inside what the hero shows: bar plus app at most the
+   stage's own height, so nothing in it sits below the hero's floor. */
+.ha { height: clamp(420px, 52vh, 600px); }
+.ha-side { overflow: hidden; }
+
+/* The window is absolutely positioned, so the stage could not grow with it and
+   the hero's overflow:hidden cut its lower part off. The stage now reserves
+   the window's own height plus the room above it, so the hero's floor is
+   always below the window's bottom edge. */
+.hx-stage { height: auto !important; min-height: calc(clamp(420px, 52vh, 600px) + 40px + 90px) !important; }
+.ha-queue { min-height: 0; overflow: hidden; }
+.ha-empty { display: block; padding: 6px 2px; font: italic 400 12px / 1.4 var(--font-sans); color: rgba(26,28,30,0.45); }
+

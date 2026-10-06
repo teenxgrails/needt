@@ -13,17 +13,17 @@ version, whose design section described a system that no longer exists.
 
 ### Production
 
-| Service | State, 2026-09-15 | How checked |
-| --- | --- | --- |
-| `use.needt.app` web | live, **`72eeef6`** since 2026-09-15 22:59 UTC, database ok | `/api/health` |
-| worker | live, same SHA `72eeef6` | `/api/health` → `workerBuildSha` |
-| `collaboration.use.needt.app` | HTTP 200 | curl |
-| `needt.app` landing | live, static, deployed from branch `landing`. Shows $6 / $60 / $79 (was $149), "first 100 people", "14 days · no card" | curl, Coolify |
-| `www.needt.app` | 301 to the apex | curl |
-| Postgres and Redis | running, healthy | Coolify API |
-| Database backups | daily, last success 2026-09-15; weekly, last success 2026-09-13; both to S3. **Never restored** | Coolify API |
-| Last deploy of any app | 2026-09-15: web, worker and collaboration all moved to `72eeef6`. Web crashed once at 22:33 UTC and restarted itself while worker and collaboration built in parallel; the whole host stopped answering HTTP for about 20 minutes | Coolify API, curl |
-| Coolify service `metamcp` | exited | Coolify API |
+| Service                       | State, 2026-09-15                                                                                                                                                                                                                 | How checked                      |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `use.needt.app` web           | live, **`72eeef6`** since 2026-09-15 22:59 UTC, database ok                                                                                                                                                                       | `/api/health`                    |
+| worker                        | live, same SHA `72eeef6`                                                                                                                                                                                                          | `/api/health` → `workerBuildSha` |
+| `collaboration.use.needt.app` | HTTP 200                                                                                                                                                                                                                          | curl                             |
+| `needt.app` landing           | live, static, deployed from branch `landing`. Shows $6 / $60 / $79 (was $149), "first 100 people", "14 days · no card"                                                                                                            | curl, Coolify                    |
+| `www.needt.app`               | 301 to the apex                                                                                                                                                                                                                   | curl                             |
+| Postgres and Redis            | running, healthy                                                                                                                                                                                                                  | Coolify API                      |
+| Database backups              | daily, last success 2026-09-15; weekly, last success 2026-09-13; both to S3. **Never restored**                                                                                                                                   | Coolify API                      |
+| Last deploy of any app        | 2026-09-15: web, worker and collaboration all moved to `72eeef6`. Web crashed once at 22:33 UTC and restarted itself while worker and collaboration built in parallel; the whole host stopped answering HTTP for about 20 minutes | Coolify API, curl                |
+| Coolify service `metamcp`     | exited                                                                                                                                                                                                                            | Coolify API                      |
 
 Not checked on 2026-09-15: production environment variables, because the
 read-only token has no `read:sensitive`. P0.3's VAPID state is as last recorded
@@ -31,11 +31,11 @@ on 2026-08-24.
 
 ### Code
 
-| Line | State |
-| --- | --- |
-| `origin/main` | `72eeef6` (2026-08-26), deployed to production on 2026-09-15. It carries billing hardening (#27), the `/admin/system` credentials screen (#26) and the Linux visual baselines (#21, #22) |
-| `codex/design-completion` | The design port, owned by Codex. Merge `ca2d034` contains `origin/main`; before this docs commit it was 26 commits ahead, 0 behind, with no tracked dirt |
-| Open PRs | #24 push config (audited, fails) · #29 design reference set · #30 T-4 answers · #31 D7 concepts · #32 React landing · #33 the previous roadmap |
+| Line                      | State                                                                                                                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `origin/main`             | `72eeef6` (2026-08-26), deployed to production on 2026-09-15. It carries billing hardening (#27), the `/admin/system` credentials screen (#26) and the Linux visual baselines (#21, #22) |
+| `codex/design-completion` | The design port, owned by Codex. Merge `ca2d034` contains `origin/main`; before this docs commit it was 26 commits ahead, 0 behind, with no tracked dirt                                 |
+| Open PRs                  | #24 push config (audited, fails) · #29 design reference set · #30 T-4 answers · #31 D7 concepts · #32 React landing · #33 the previous roadmap                                           |
 
 ### The design
 
@@ -53,15 +53,16 @@ Figma Make are history.
 
 ## 2. Owner decisions, 2026-09-15
 
-| Question | Decision |
-| --- | --- |
-| Prices | Free $0 · Pro $7/month or $60/year · **Lifetime $149 once, forever, first 300 buyers, then it closes** |
-| Trial | Pro, 14 days, **no card**; afterwards the account drops to Free and keeps its data |
-| AI limits | Enforced but **never shown** to users. Pro and Lifetime get the same allowance; past it, AI slows down and suggests the user's own key |
-| "Demo" | Means the Free plan. There is no demo without an account |
-| Audience | One person's work and personal life, freelancers, small businesses, small teams |
-| Teams | Small teams through shared workspaces (the plan 02 model). Each member holds their own plan; no seat billing |
-| Old plans | This roadmap governs. Plans 03, 05, 09, 10 and 12a are archived to `docs/_old/` |
+| Question     | Decision                                                                                                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Prices       | Free $0 · Pro $7/month or $60/year · **Lifetime $149 once, forever, first 300 buyers, then it closes**                                                                                                                                           |
+| Demo fixture | The ported `fixture.ts` is twelve tasks behind the prototype's `Data.js`. Demo data, not product behaviour — `prototype-parity.test.ts` counts the gap and fails on any ported task that drifts, or on any task the port invents. Not scheduled. |
+| Trial        | Pro, 14 days, **no card**; afterwards the account drops to Free and keeps its data                                                                                                                                                               |
+| AI limits    | Enforced but **never shown** to users. Pro and Lifetime get the same allowance; past it, AI slows down and suggests the user's own key                                                                                                           |
+| "Demo"       | Means the Free plan. There is no demo without an account                                                                                                                                                                                         |
+| Audience     | One person's work and personal life, freelancers, small businesses, small teams                                                                                                                                                                  |
+| Teams        | Small teams through shared workspaces (the plan 02 model). Each member holds their own plan; no seat billing                                                                                                                                     |
+| Old plans    | This roadmap governs. Plans 03, 05, 09, 10 and 12a are archived to `docs/_old/`                                                                                                                                                                  |
 
 The €9 / €180 / "20 months" figures in older landing drafts are wrong.
 
@@ -87,21 +88,21 @@ Detail and verification steps live in
 [`12-remaining-work.md`](12-remaining-work.md). None of this runs in the port
 checkout: use a separate worktree from `origin/main`.
 
-| ID | Item | State, 2026-09-15 | Who |
-| --- | --- | --- | --- |
-| — | Deploy `main` | **Done 2026-09-15**: web, worker and collaboration on `72eeef6` | — |
-| P0.1 | Google and Azure credentials screen | Deployed 2026-09-15; `/admin/system` is reachable. **Secrets still not entered** | owner |
-| P0.2 | Billing lifecycle spec, `tests/billing.spec.ts` | Lifecycle hardened in #27; spec not rechecked | agent |
-| P0.3 | Push reminders fail silently (VAPID) | Not rechecked; fix PR #24 was audited as failing | agent, owner for keys |
-| P0.4 | Account deletion and data export | **Missing.** No deletion route in `src/`; `src/app/api/export/` holds `tasks` only | agent |
-| P0.5 | One row per Creem subscription; refund and dispute events | Not started | agent |
-| **P0.6** | **14-day Pro trial without a card** | **Missing.** No trial logic in `src/`, yet the live landing promises it | agent; owner decides whether the landing line comes off until it ships |
-| **P0.7** | **Prices and hidden AI limits** | `src/lib/creem/config.ts` says $6 and $79; the Lifetime AI cap is 3000 against Pro's 300; AI counts are shown in four places; the live landing says $79 and "first 100". Whether the checkout enforces the 300 cap is not checked. Spec: [`13-pricing.md`](13-pricing.md) | agent for code and landing; owner for the Creem prices |
-| P1.2 | First run on a clean database, `tests/onboarding.spec.ts` | Waits on P0.1 | agent |
-| P1.3 | Close the stale handoffs | **Done 2026-09-15** | — |
-| P1.4 | Restore drill | Backups succeed; never restored | agent |
-| P1.5 | Legal copy | After P0.4 | owner |
-| P2 | Alerting, funnel signal, release rehearsal, Sentry | Not started | agent |
+| ID       | Item                                                      | State, 2026-09-15                                                                                                                                                                                                                                                         | Who                                                                    |
+| -------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| —        | Deploy `main`                                             | **Done 2026-09-15**: web, worker and collaboration on `72eeef6`                                                                                                                                                                                                           | —                                                                      |
+| P0.1     | Google and Azure credentials screen                       | Deployed 2026-09-15; `/admin/system` is reachable. **Secrets still not entered**                                                                                                                                                                                          | owner                                                                  |
+| P0.2     | Billing lifecycle spec, `tests/billing.spec.ts`           | Lifecycle hardened in #27; spec not rechecked                                                                                                                                                                                                                             | agent                                                                  |
+| P0.3     | Push reminders fail silently (VAPID)                      | Not rechecked; fix PR #24 was audited as failing                                                                                                                                                                                                                          | agent, owner for keys                                                  |
+| P0.4     | Account deletion and data export                          | **Missing.** No deletion route in `src/`; `src/app/api/export/` holds `tasks` only                                                                                                                                                                                        | agent                                                                  |
+| P0.5     | One row per Creem subscription; refund and dispute events | Not started                                                                                                                                                                                                                                                               | agent                                                                  |
+| **P0.6** | **14-day Pro trial without a card**                       | **Missing.** No trial logic in `src/`, yet the live landing promises it                                                                                                                                                                                                   | agent; owner decides whether the landing line comes off until it ships |
+| **P0.7** | **Prices and hidden AI limits**                           | `src/lib/creem/config.ts` says $6 and $79; the Lifetime AI cap is 3000 against Pro's 300; AI counts are shown in four places; the live landing says $79 and "first 100". Whether the checkout enforces the 300 cap is not checked. Spec: [`13-pricing.md`](13-pricing.md) | agent for code and landing; owner for the Creem prices                 |
+| P1.2     | First run on a clean database, `tests/onboarding.spec.ts` | Waits on P0.1                                                                                                                                                                                                                                                             | agent                                                                  |
+| P1.3     | Close the stale handoffs                                  | **Done 2026-09-15**                                                                                                                                                                                                                                                       | —                                                                      |
+| P1.4     | Restore drill                                             | Backups succeed; never restored                                                                                                                                                                                                                                           | agent                                                                  |
+| P1.5     | Legal copy                                                | After P0.4                                                                                                                                                                                                                                                                | owner                                                                  |
+| P2       | Alerting, funnel signal, release rehearsal, Sentry        | Not started                                                                                                                                                                                                                                                               | agent                                                                  |
 
 Carried over from the handoffs closed on 2026-09-15:
 
@@ -175,11 +176,11 @@ no audio transcription, no new integrations.
 
 ## 7. Where things live
 
-| Need | File |
-| --- | --- |
-| Launch blocker detail | [`12-remaining-work.md`](12-remaining-work.md) |
-| Prices, trial, AI limits | [`13-pricing.md`](13-pricing.md) |
-| Design port steps | [`docs/handoff/CODEX-NEXT.md`](../handoff/CODEX-NEXT.md) |
-| Design values, and why | `docs/handoff/PORT.md`, `docs/handoff/design-reconciliation-2026-09-11.md` |
-| Plan index | [`README.md`](README.md) |
-| Archived plans | `docs/_old/` |
+| Need                     | File                                                                       |
+| ------------------------ | -------------------------------------------------------------------------- |
+| Launch blocker detail    | [`12-remaining-work.md`](12-remaining-work.md)                             |
+| Prices, trial, AI limits | [`13-pricing.md`](13-pricing.md)                                           |
+| Design port steps        | [`docs/handoff/CODEX-NEXT.md`](../handoff/CODEX-NEXT.md)                   |
+| Design values, and why   | `docs/handoff/PORT.md`, `docs/handoff/design-reconciliation-2026-09-11.md` |
+| Plan index               | [`README.md`](README.md)                                                   |
+| Archived plans           | `docs/_old/`                                                               |

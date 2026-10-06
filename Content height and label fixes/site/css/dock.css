@@ -1,0 +1,25 @@
+/* THE DOCK — the services Needt reads, wired into the window.
+ * Wide screens: three tiles on a gentle arc in each gutter, each joined to the
+ * window by a thin wire with a dot travelling in along it — the tools feed the
+ * day. Narrow screens: no arcs (the gutters cannot hold them honestly), just a
+ * quiet row of small marks under the buttons. Every tile is on screen. */
+.hx-dock { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.hx-wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.hx-wire { fill: none; stroke: rgba(14,21,32,0.14); stroke-width: 1.2; }
+.hx-pulse { fill: #2E6DE9; }
+.hx-tile { position: absolute; width: 58px; height: 58px; pointer-events: auto;
+  animation: hx-float 7s ease-in-out infinite; animation-delay: var(--d, 0s); }
+.hx-tile > span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 16px; background: #fff;
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.06), 0 2px 4px rgba(10,13,18,0.05), 0 14px 28px -16px rgba(10,30,60,0.35);
+  transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.4s ease; }
+.hx-tile.is-dark > span { background: #111317; }
+.hx-tile img { width: 54%; height: 54%; object-fit: contain; }
+.hx-tile:hover > span { transform: translateY(-6px);
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.07), 0 4px 8px rgba(10,13,18,0.06), 0 22px 36px -16px rgba(10,30,60,0.42); }
+@keyframes hx-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+.hx-works { display: none; justify-content: center; gap: 10px; flex-wrap: wrap; padding-top: 10px; }
+.hx-works img { width: 22px; height: 22px; object-fit: contain; opacity: 0.75; }
+.hx-dock.is-off { display: none; }
+.hx-dock.is-off ~ * {} 
+.is-narrow .hx-works { display: flex; }
+@media (prefers-reduced-motion: reduce) { .hx-tile { animation: none; } .hx-pulse { display: none; } }

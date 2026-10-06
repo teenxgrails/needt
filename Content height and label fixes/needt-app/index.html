@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — planner</title>
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="exposure-wordmark.css?v=6">
+<link rel="stylesheet" href="themes.css?v=4">
+<link rel="stylesheet" href="composer.css?v=2">
+<link rel="stylesheet" href="app.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/_ds_bundle.js"></script>
+<script type="module" src="needt-icons.js?v=6"></script>
+<style>
+/* The shell fills whatever window it is opened in — the way the real app will.
+   It was pinned to 1440×900 to make measurement reproducible; the floor keeps
+   the two-pane layout honest, and below it the page scrolls rather than
+   crushing the rail. Measure with --measure-at on <html> when a fixed size is
+   needed again. */
+html,body{height:100%;background:var(--background)}
+body{margin:0;overflow:auto;display:flex;align-items:stretch;justify-content:flex-start}
+#root{width:100%;min-width:1180px;height:100%;min-height:720px;flex:none;overflow:hidden}
+html[data-measure="1440x900"] body{overflow:hidden;align-items:flex-start}
+html[data-measure="1440x900"] #root{width:1440px;height:900px;min-width:0;min-height:0}
+</style>
+</head><body><div id="root"></div>
+<script src="Data.js?v=4"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="Drag.jsx?v=2"></script>
+<script type="text/babel" src="BlockDesigns.jsx?v=2"></script>
+<script type="text/babel" src="Miniature.jsx?v=1"></script>
+<script type="text/babel" src="Brief.jsx?v=2"></script>
+<script type="text/babel" src="Notifications.jsx?v=1"></script>
+<script type="text/babel" src="Chat.jsx?v=3"></script>
+<script type="text/babel" src="Composer.jsx?v=3"></script>
+<script type="text/babel" src="AgentCursor.jsx?v=6"></script>
+<script type="text/babel" src="Sidebar.jsx"></script>
+
+<script type="text/babel" src="HomeToday.jsx?v=4"></script>
+<script type="text/babel" src="TodayScreen.jsx"></script>
+<script type="text/babel" src="ExposureWordmark.jsx?v=6"></script>
+<script type="text/babel" src="Drift.jsx?v=2"></script>
+<script type="text/babel" src="Flame.jsx"></script>
+<script type="text/babel" src="SettingsScreen.jsx?v=3"></script>
+<script type="text/babel" src="AuthScreen.jsx?v=2"></script>
+<script type="text/babel" src="Team.jsx?v=2"></script>
+<script type="text/babel" src="Flow.jsx?v=4"></script>
+<script type="text/babel" src="WorkspaceScreen.jsx?v=3"></script>
+<script type="text/babel" src="RichBlock.jsx?v=5"></script>
+<script type="text/babel" src="Habits.jsx?v=8"></script>
+<script type="text/babel" src="ColumnsView.jsx?v=8"></script>
+<script type="text/babel" src="TaskRow.jsx?v=3"></script>
+<script type="text/babel" src="ColumnsScreen.jsx?v=5"></script>
+<script type="text/babel" src="Minutes.jsx?v=2"></script>
+<script type="text/babel" src="Help.jsx?v=1"></script>
+<script type="text/babel" src="Bug.jsx?v=1"></script>
+<script type="text/babel" src="CalendarScreen.jsx?v=2"></script>
+<script type="text/babel" src="DocsScreen.jsx"></script>
+<script type="text/babel" src="Dialogs.jsx"></script>
+<script type="text/babel" src="App.jsx"></script>
+<script>
+/* Measurement harness: content height per screen, sidebar and fixed elements
+   excluded. Used to check that a screen fills the canvas it is given. */
+window.measure = function () {
+  const main = document.querySelector("main");
+  const mr = main.getBoundingClientRect();
+  let content = mr.top, surface = mr.top;
+  main.querySelectorAll("*").forEach((el) => {
+    if (el.closest(".nt-scrim, .floating, .nt-tooltip")) return;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === "hidden" || cs.opacity === "0" || cs.position === "fixed") return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
+    const b = Math.min(r.bottom, mr.bottom);
+    const painted = cs.backgroundColor !== "rgba(0, 0, 0, 0)" || cs.boxShadow !== "none";
+    const hasText = Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent.trim());
+    const leaf = el.children.length === 0 && (painted || parseFloat(cs.borderTopWidth) > 0);
+    if (painted || hasText) { if (b > surface) surface = b; }
+    if (hasText || leaf) { if (b > content) content = b; }
+  });
+  return { content: Math.round(content - mr.top), surface: Math.round(surface - mr.top), of: Math.round(mr.height) };
+};
+</script>
+</body></html>

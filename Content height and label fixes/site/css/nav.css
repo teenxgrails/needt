@@ -1,0 +1,302 @@
+/* The product's variable face, declared here as well as in land.css, because
+   the header is on every page and land.css is only on one. */
+@font-face {
+  font-family: "Exposure VAR";
+  src: url("../../needt-app/ExposureTrialVAR.woff2") format("woff2-variations");
+  font-display: block;
+}
+/* ══ THE HEADER'S MENUS ════════════════════════════════════════════════════
+ *
+ * Dark panels on a light header and on a dark one alike. On the pale sky a
+ * pale panel would need a border to exist at all; a dark one is its own
+ * boundary — the same argument that makes the landing's primary button
+ * near-black. And because the panel is dark in both themes, the menu is one
+ * object across the site rather than two that have to be kept in step.
+ */
+/* The positioned shell: fixed, centred, floating over the page rather than
+   banding it. Declared here rather than assumed from the host page. */
+.nv-nav {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 40;
+  display: flex; justify-content: center; pointer-events: none;
+  padding: 14px 16px 0;
+  background: none; box-shadow: none; backdrop-filter: none;
+}
+.nv-nav .nv-inner {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 7px 7px 16px;
+}
+/* The live mark is five inline-block letters, not one text run, so a 0-width
+   rest state would wrap them one per line and grow the whole cluster to 134px.
+   It must never wrap. */
+.nv-nav .s-mark, .nv-nav .s-mark .nv-expo { white-space: nowrap; }
+.nv-nav .s-mark .nv-expo { display: inline-block; font-family: "Exposure VAR", Georgia, serif; font-weight: 400; }
+.nv-nav .s-mark .ew-letter { display: inline-block; white-space: pre; font-variation-settings: "EXPO" 0; }
+.nv-nav .s-mark {
+  display: inline-flex; align-items: center; margin-right: 10px;
+  font-family: var(--font-display); font-weight: 400; font-size: 24px; line-height: 1;
+  letter-spacing: -0.02em; color: var(--ink); text-decoration: none;
+}
+.nv-nav .s-navlinks { display: flex; align-items: center; gap: 2px; }
+.nv-nav .s-navlink {
+  display: inline-flex; align-items: center; height: 38px; padding: 0 15px;
+  border-radius: 9999px; background: transparent; text-decoration: none;
+  font: 500 15px / 1 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+/* THESE RULES MUST BE THEME-BLIND. nav.css loads last, so a literal here
+   beats `.s-dusk` at equal specificity and the theme's override becomes dead
+   code — which is how the Login button ended up white-on-white on the dark
+   pages. The
+   answer is not more specificity on the theme side: it is that a
+   self-sufficient component must not name a light-theme value at all. Every
+   value below resolves through a token that flips with the ground. */
+.nv-nav .s-navlink:hover,
+.nv-nav .s-navlink[aria-current="page"] { background: color-mix(in oklab, var(--ink) 7%, transparent); color: var(--ink); }
+/* The header's pill is the page's pill at the header's size: it states its
+   geometry and nothing about its appearance, so the two cannot drift. */
+/* The same object as the landing's `.l-btn.l-btn-sm`, by the same numbers:
+   38px tall, 11px radius. It was a 42px pill on a hand-written shadow, which
+   is why it read as a different button on the page next door — and a 9999px
+   radius inside a 22px shell puts two unrelated curvatures 7px apart.
+   COMPLETE, NOT INHERITED: index.html links land.css and this file and NOT
+   pages.css, so a rule that states only geometry leaves the main page's
+   button with no face at all.
+   LITERAL face and ink. The pill is white in all three themes, so its ink is
+   a constant — `var(--ink)` means "ink on the page ground", and the night
+   sheet flips it to near-white, which is white text on a white button.
+   TOKEN cast, with a daylight fallback: --btn-cast is what the night sheet
+   deepens, and it is undefined on the landing. */
+.nv-nav .s-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  height: 38px; padding: 0 16px; border: 0; cursor: pointer; border-radius: 11px;
+  background: #FFFFFF; color: #0A0D12; text-decoration: none;
+  font: 500 15px / 1 var(--font-sans); letter-spacing: -0.01em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    var(--btn-cast, 0 1px 2px rgba(10, 13, 18, 0.1) , 0 8px 22px -12px rgba(10, 13, 18, 0.28));
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.nv-nav .s-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    var(--btn-cast-hover, 0 2px 4px rgba(10, 13, 18, 0.12), 0 16px 34px -14px rgba(10, 13, 18, 0.32));
+}
+.nv-nav .s-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(10, 13, 18, 0.16); }
+.nv-nav .s-avatar {
+  width: 38px; height: 38px; border-radius: 9999px; display: grid; place-items: center;
+  background: var(--paper); box-shadow: 0 1px 2px rgba(0,0,0,0.14), 0 6px 16px -8px rgba(0,0,0,0.26);
+  font: 500 13px var(--font-sans); color: var(--graphite);
+}
+.nv-shell {
+  position: relative; pointer-events: auto;
+  display: inline-flex; flex-direction: column;
+  /* The login button's 11px plus the 7px of padding it sits in: concentric
+     with it, which is what makes the two corners look like one radius. */
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: saturate(1.5) blur(22px);
+  box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.05), 0 10px 30px -16px rgba(10, 13, 18, 0.22);
+}
+/* The cluster keeps its geometry and gives up its surface — the shell is the
+   surface now, and a second one inside it would be a card on a card. */
+.nv-nav .nv-inner {
+  position: relative; z-index: 2;
+  background: none; box-shadow: none; backdrop-filter: none; border-radius: 18px;
+}
+
+/* The trigger is the same row as a link, plus a caret that turns. */
+.nv-nav .s-btn:focus, .nv-nav .s-navlink:focus, .nv-trigger:focus { box-shadow: inherit; outline: none; }
+.nv-nav .s-btn:focus-visible, .nv-nav .s-navlink:focus-visible, .nv-trigger:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink) 55%, transparent); outline-offset: 3px;
+}
+.nv-trigger {
+  border: 0; cursor: pointer; font: inherit;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.nv-caret {
+  width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: translateY(-2px) rotate(45deg); opacity: 0.55;
+  transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.18s ease;
+}
+.nv-trigger.is-on .nv-caret { transform: translateY(1px) rotate(225deg); opacity: 0.9; }
+
+/* ── THE PANEL ────────────────────────────────────────────────────────────
+ * Hung under the cluster and centred on it, so it reads as belonging to the
+ * header rather than to the page. It grows from its own top edge: a panel
+ * that fades in place has no origin, and a menu with no origin feels like it
+ * arrived rather than opened.
+ */
+.nv-panel {
+  /* The pane is the SHELL's surface, one step more opaque — not a black sheet.
+     It drops out of a pale blurred cluster, so a dark pane is a second design
+     appearing from behind the first. The three inks are the page's own, by
+     token, which is what makes the pane follow the ground instead of fighting
+     it. */
+  --nv-title-ink: var(--ink);
+  --nv-note-ink: var(--fog);
+  --nv-head-ink: var(--fog);
+  position: absolute; left: 50%; top: calc(100% + 6px); z-index: 1;
+  /* Its own width, asked of its own contents — centred on the cluster, but
+     never sized by it. */
+  width: max-content; max-width: calc(100vw - 32px); min-width: 100%;
+  padding: 6px;
+  /* Its rows are 12px inside 6px of padding — the same arithmetic. */
+  border-radius: 18px;
+  /* OPAQUE. At 86% the FAQ headings behind it read straight through the panel
+     and the whole thing looked broken — a menu is an object in front of the
+     page, and an object you can read the page through is a pane of glass with
+     type on it. Blur cannot save a translucent fill here: the text behind is
+     large and high-contrast, and blurring it just makes it a ghost.
+     The saturate stays, on a nearly solid fill, so the sky at the edges warms
+     the panel a shade rather than sitting behind it. */
+  background: rgba(255, 255, 255, 0.985);
+  backdrop-filter: saturate(1.4) blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 0 0 1px rgba(10, 13, 18, 0.06),
+    0 26px 60px -22px rgba(10, 13, 18, 0.28);
+  isolation: isolate;
+  /* It emerges from behind the cluster's lower edge: back a little, small a
+     little, then home. One curve for both, so it reads as one movement. */
+  transform: translate(-50%, -14px) scale(0.96);
+  transform-origin: 50% 0;
+  opacity: 0;
+  transition: transform 0.34s cubic-bezier(0.22, 0.9, 0.26, 1), opacity 0.2s ease;
+}
+.nv-panel.is-open { transform: translate(-50%, 0) scale(1); opacity: 1; }
+/* The grain, over the fill and under the content. Turbulence rather than a
+   repeating dot: a tiled pattern shows its tile at this scale, and noise has
+   no tile to show. */
+.nv-panel::after {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.1; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+.nv-panel > .nv-cols { position: relative; z-index: 1; min-height: 0; }
+
+.nv-cols { display: grid; gap: 10px 18px; padding: 14px 8px 16px; }
+.nv-cols-1 { grid-template-columns: minmax(300px, 1fr); }
+.nv-cols-3 { grid-template-columns: repeat(3, minmax(252px, 1fr)); }
+.nv-col { display: flex; flex-direction: column; gap: 2px; }
+.nv-head {
+  padding: 0 10px 8px;
+  font: 500 12px / 1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--nv-head-ink);
+}
+
+/* A row is a target, not a link in a list: the whole rectangle lights, which
+   is how a header menu behaves everywhere it is done well. */
+.nv-item {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 9px 10px; border-radius: 12px;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+.nv-item:hover { background: color-mix(in oklab, var(--ink) 6%, transparent); }
+.nv-glyph {
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px;
+  border-radius: 9px;
+  background: rgba(46, 109, 233, 0.12); color: #2E6DE9;
+}
+.nv-glyph svg { width: 17px; height: 17px; display: block; }
+.nv-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nv-title { font: 500 15px / 1.2 var(--font-sans); letter-spacing: -0.01em; color: var(--nv-title-ink); }
+.nv-note { font: 500 13px / 1.35 var(--font-sans); color: var(--nv-note-ink); text-wrap: pretty; }
+
+/* The login button is pushed to the right edge by the links taking the slack,
+   so Pricing and Download sit at the right of the row — which is what he
+   asked for, and also where a price link belongs. */
+.nv-links { flex: 1 1 auto; justify-content: flex-end; }
+.nv-login { flex: none; margin-left: 8px; }
+/* The shell is as wide as its widest row, so the cluster inherits the panel's
+   width — the reason nothing has to be measured. */
+
+
+@media (max-width: 900px) {
+  /* Below this the three columns are narrower than their own notes, so the
+     menu stacks — and the triggers stay, because on a phone the panel is the
+     only way to reach seven of the eleven pages. */
+  .nv-cols-3 { grid-template-columns: minmax(0, 1fr); }
+  .nv-shell { width: calc(100vw - 32px); }
+  .nv-panel > .nv-cols { max-height: 62vh; overflow-y: auto; }
+  .nv-links { display: flex; }
+  .nv-links .s-navlink:not(.nv-trigger) { display: none; }
+}
+
+/* ── THE SHELL GOES DARK WHEN IT OPENS ────────────────────────────────────
+ * The panel's ink is pitched for a dark pane, and the menu is meant to be
+ * dark. Since the shell is now the only surface, the shell is what darkens —
+ * so the cluster and the menu stay one object AND the menu is dark, instead
+ * of one ask cancelling the other.
+ *
+ * It is the same argument as the primary button: on an airy page the dense
+ * object is the one you can find, and an open menu is the densest thing on
+ * the page while it is open. The transition is the same 0.24s the shadow
+ * already uses, so the cluster darkens and grows as one movement.
+ */
+.nv-shell.has-menu { box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.06), 0 22px 54px -22px rgba(10, 13, 18, 0.34); }
+.nv-shell { transition: background-color 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.24s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* Everything in the cluster takes the dark pane's ink while it is open — the
+   links, the mark, and the hairline under the row. */
+/* The button inverts with the ground beneath it, for the same reason it
+   inverts on the night pages: the dense object is the light one on a dark
+   pane. */
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-panel, .nv-caret { transition: none; }
+}
+
+/* ── ON THE LANDING ───────────────────────────────────────────────────────
+ * The same header, on the pale ground. The shell takes the surface that
+ * `.l-nav-inner` used to carry, for the same reason it takes the inner page's:
+ * the shell is the object, and a second surface inside it is a card on a card.
+ */
+.l-nav .nv-inner { background: none; box-shadow: none; backdrop-filter: none; }
+.l-nav .nv-links { flex: 1 1 auto; justify-content: flex-end; }
+/* The landing's mark stays out of the cluster until the hero's wordmark has
+   scrolled away — six times the size, right there, so a second copy in the
+   header would be the same word twice. The built markup uses `.s-mark`, so
+   that behaviour is keyed to the class the header actually renders. */
+.l-nav .s-mark {
+  display: inline-flex; align-items: center; overflow: hidden;
+  max-width: 0; opacity: 0; margin-right: 0; padding-left: 0;
+  font-family: var(--font-display); font-size: 24px; line-height: 1;
+  letter-spacing: -0.02em; color: var(--ink);
+  transition: max-width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease,
+    margin-right 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), padding-left 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.is-scrolled .l-nav .s-mark { max-width: 90px; opacity: 1; margin-right: 10px; padding-left: 8px; }
+
+/* ── THE HEADER, IN THE PAPER STYLE ─────────────────────────────────────────
+ * Highlights share Log in's corner: 11px, not a pill — one corner language in
+ * the cluster. */
+.nv-nav .s-navlink { border-radius: 11px; }
+
+/* The menu: each column is a tinted sheet of its own paper colour, the glyph
+   sits on a white tile in that colour's ink, the title takes the heading face,
+   and a row lifts onto white when you reach for it. The rows arrive in a short
+   stagger as the panel drops, so the menu reads as dealt rather than flashed. */
+.nv-cols { gap: 8px; padding: 6px; }
+.nv-col { --c: #CCE7FF; --c-ink: #1F5FB8; padding: 12px 8px 10px; border-radius: 14px;
+  background: color-mix(in oklab, var(--c) 55%, transparent); }
+.nv-col:nth-child(3n+1) { --c: #D3F6E3; --c-ink: #17794A; }
+.nv-col:nth-child(3n+2) { --c: #F1E6FF; --c-ink: #6B3FC4; }
+.nv-col:nth-child(3n+3) { --c: #FFE6DA; --c-ink: #B5501E; }
+.nv-head { font-family: "Figtree", var(--font-sans); color: var(--c-ink); opacity: 0.85; padding: 0 10px 10px; }
+.nv-item { border-radius: 11px; transition: background-color .18s ease, box-shadow .18s ease, transform .22s cubic-bezier(.2,.8,.2,1); }
+.nv-item:hover { background: #fff; transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(10,13,18,.05), 0 1px 2px rgba(10,13,18,.06), 0 10px 22px -14px rgba(10,13,18,.3); }
+.nv-glyph { width: 34px; height: 34px; border-radius: 10px; background: #fff; color: var(--c-ink);
+  box-shadow: 0 0 0 1px rgba(10,13,18,.05), 0 1px 2px rgba(10,13,18,.06); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.nv-item:hover .nv-glyph { transform: rotate(-6deg) scale(1.06); background: var(--c); }
+.nv-title { font-family: "Exposure VAR", serif; font-weight: 500; font-variation-settings: "EXPO" -15; font-size: 17px; letter-spacing: -0.02em; }
+.nv-note { font-family: "Figtree", var(--font-sans); font-weight: 400; }
+@keyframes nv-deal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.nv-panel.is-open .nv-item { animation: nv-deal .38s cubic-bezier(.2,.8,.2,1) both; }
+.nv-panel.is-open .nv-col:nth-child(1) .nv-item:nth-of-type(1) { animation-delay: .04s; }
+.nv-panel.is-open .nv-col:nth-child(1) .nv-item:nth-of-type(2) { animation-delay: .08s; }
+.nv-panel.is-open .nv-col:nth-child(2) .nv-item:nth-of-type(1) { animation-delay: .07s; }
+.nv-panel.is-open .nv-col:nth-child(2) .nv-item:nth-of-type(2) { animation-delay: .11s; }
+.nv-panel.is-open .nv-col:nth-child(3) .nv-item:nth-of-type(1) { animation-delay: .10s; }
+.nv-panel.is-open .nv-col:nth-child(3) .nv-item:nth-of-type(2) { animation-delay: .14s; }
+@media (prefers-reduced-motion: reduce) { .nv-panel.is-open .nv-item { animation: none; } .nv-item, .nv-glyph { transition: none; } }

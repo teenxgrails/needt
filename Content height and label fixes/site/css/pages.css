@@ -1,0 +1,818 @@
+/* THE INNER PAGES, IN THE LANDING'S LANGUAGE
+ *
+ * Ten pages were built in an earlier vocabulary — `s-*` classes on a sheet of
+ * their own, in the app's instrument-panel register (since deleted: a dead
+ * stylesheet is a trap, because the next person links it back). The landing since moved to the
+ * daylight language, and the result was that every link off the home page led
+ * somewhere that looked like a different product.
+ *
+ * This file is the bridge, and it is a bridge on purpose rather than ten
+ * rewrites: the language then lives in ONE place. Ten rewritten pages are ten
+ * copies of a decision, and ten copies drift — the next person to adjust a
+ * button radius adjusts it in one file and misses nine. Every page keeps its
+ * own markup and changes only what it links.
+ *
+ * It is loaded AFTER land.css, whose tokens and `l-*` objects it reuses
+ * verbatim: the header cluster, the black pill, the serif scale, the 32px
+ * card, the pale sky canvas. Nothing here invents a value that land.css
+ * already holds — where a number appears below, it is because the `s-*`
+ * geometry needs a different one (a 64px nav on an inner page has no hero
+ * wordmark to defer to, so its mark is always out).
+ */
+
+/* ── GROUND ───────────────────────────────────────────────────────────────
+   The canvas, the ink and the type come from the landing's own body rules; an
+   inner page differs only in that the header is not floating over a sky, so it
+   needs room reserved for the cluster it holds.
+
+   One token of its own: the site's blue. It is NOT the app's `--accent` — a
+   page that describes the product must not borrow a colour that changes when
+   the product's theme does, which is exactly how a `dark` scope under these
+   pages once rendered the accent at 2.16:1 on a bone card. */
+:root { --hl: #0069e0; }
+body { padding-top: 92px; }
+
+/* ── SHELL ────────────────────────────────────────────────────────────────*/
+.s-wrap { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+.s-section { padding: clamp(64px, min(9vw, 14vh), 150px) 0; }
+/* The `padding-top: 0` between consecutive sections is right here for the same
+   reason it is wrong on the landing: these pages are one continuous document
+   under one heading, not a sequence of separate claims. */
+.s-section + .s-section { padding-top: 0; }
+.s-stack { display: flex; flex-direction: column; gap: 20px; }
+.s-row { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; }
+
+/* ── THE HEADER IS THE LANDING'S CLUSTER ──────────────────────────────────
+   Centred, only as wide as what it holds, floating over the page rather than
+   banding it — and the corners are concentric with the button inside, 11 + 7.
+   The mark is always present, because an inner page has no six-times-size
+   wordmark for it to defer to. */
+.s-nav {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 40;
+  display: flex; justify-content: center; pointer-events: none;
+  padding: 14px 16px 0; background: none; box-shadow: none; backdrop-filter: none;
+}
+.s-nav .s-wrap { width: auto; max-width: none; padding: 0; }
+.s-nav-inner {
+  pointer-events: auto;
+  display: flex; align-items: center; gap: 6px; height: auto;
+  padding: 7px 7px 7px 16px; border-radius: 18px;
+  background: color-mix(in oklab, var(--sky-tint) 80%, transparent);
+  backdrop-filter: saturate(1.5) blur(22px);
+  box-shadow: 0 0 0 1px rgba(10, 13, 18, 0.05), 0 10px 30px -16px rgba(10, 13, 18, 0.22);
+}
+.s-mark {
+  display: inline-flex; align-items: center; margin-right: 10px;
+  font-family: var(--font-display); font-weight: 400; font-size: 24px; line-height: 1;
+  letter-spacing: -0.02em; color: var(--ink);
+}
+.s-mark:hover { color: var(--ink); }
+.s-navlinks { display: flex; align-items: center; gap: 2px; margin-left: 0; }
+.s-navlink {
+  display: inline-flex; align-items: center; height: 38px; padding: 0 15px;
+  border-radius: 9999px; background: transparent;
+  font: 500 15px / 1 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.s-navlink:hover, .s-navlink[aria-current="page"] { background: rgba(10, 13, 18, 0.05); color: var(--ink); }
+.s-avatar {
+  width: 38px; height: 38px; border-radius: 9999px; display: grid; place-items: center;
+  background: var(--paper); box-shadow: 0 1px 2px rgba(10,13,18,0.1), 0 6px 16px -8px rgba(10,13,18,0.2);
+  font: 500 13px var(--font-sans); color: var(--graphite);
+}
+
+/* ── ONE BUTTON, TWO VOLUMES ──────────────────────────────────────────────
+   The landing's dark pill, verbatim: it is the only dense weight on an airy
+   page, which is what makes it read as the thing to press. Two primary
+   treatments on one site would mean neither is primary. */
+:root {
+  /* How deep a raised pill casts. The night sheet deepens it; nothing
+     overrides a declaration to do so. */
+  --btn-cast: 0 1px 2px rgba(0, 0, 0, 0.28), 0 8px 22px -12px rgba(0, 0, 0, 0.4);
+  --btn-cast-hover: 0 2px 4px rgba(0, 0, 0, 0.3), 0 14px 30px -14px rgba(0, 0, 0, 0.45);
+}
+
+/* The app's accent focus ring belongs to the app — a 2px inset ring is right
+   inside an instrument panel and wrong on a page, where it survives a mouse
+   click and reads as a glow the button grew on hover. The site draws its own,
+   and only for the keyboard. */
+.s-btn:focus, .s-navlink:focus, .s-faq summary:focus { box-shadow: none; outline: none; }
+.s-btn:focus-visible, .s-navlink:focus-visible, .s-faq summary:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ink) 55%, transparent); outline-offset: 3px;
+}
+
+.s-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  height: 52px; padding: 0 28px; border: 0; cursor: pointer;
+  border-radius: 9999px;
+  /* Literal, and deliberately so: this pill is the same object on every page
+     and in both themes. A value that follows the ground would give it two
+     appearances, and a primary action that looks different depending on where
+     you met it is two actions. */
+  background: #FFFFFF; color: #0A0D12;
+  font: 500 16px / 1 var(--font-sans); letter-spacing: -0.01em; text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), var(--btn-cast);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* It lifts on hover and settles INTO the page on press, rather than
+   darkening — the app's rule, and the only reason a button feels physical. */
+.s-btn:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), var(--btn-cast-hover); }
+.s-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(10, 13, 18, 0.16), 0 0 0 1px rgba(10, 13, 18, 0.06); }
+
+/* The black variant, for where a light pill would disappear into a light
+   card — same geometry, same motion, inverted ink. */
+.s-btn-dark { background: #12161D; color: #FFFFFF; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), var(--btn-cast); }
+.s-btn-dark:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), var(--btn-cast-hover); }
+.s-btn-dark:active { box-shadow: inset 0 2px 4px rgba(0,0,0,0.45); }
+/* The quiet one is the same object without the fill — never a second shape. */
+.s-btn-ghost, .s-btn-flat {
+  background: transparent; color: var(--ink);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink) 14%, transparent);
+}
+.s-btn-ghost:hover, .s-btn-flat:hover { background: color-mix(in oklab, var(--paper) 62%, transparent); box-shadow: 0 0 0 1px color-mix(in oklab, var(--ink) 20%, transparent); color: var(--ink); }
+.s-btn-sm { height: 42px; padding: 0 20px; font-size: 15px; border-radius: 9999px; }
+
+/* ── TYPE ─────────────────────────────────────────────────────────────────
+   The serif display scale, bound to both axes the way the landing's is: a
+   window that is wide but short must not get type sized for a full-height
+   monitor. */
+.s-h1, .s-h2, .s-h3, .s-eyebrow-serif {
+  margin: 0; font-family: var(--font-display); font-weight: 400;
+  letter-spacing: -0.02em; line-height: 1.02; color: var(--ink); text-wrap: balance;
+}
+.s-h1 { font-size: clamp(40px, min(6vw, 9vh), 88px); line-height: 0.98; }
+.s-h2 { font-size: clamp(30px, min(4vw, 6.4vh), 58px); }
+.s-h3 { font-size: clamp(21px, min(2vw, 3.2vh), 29px); line-height: 1.14; }
+.s-lead { margin: 0; max-width: 52ch; font: 500 clamp(17px, min(1.5vw, 2.4vh), 21px) / 1.42 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite); text-wrap: pretty; }
+.s-body { margin: 0; max-width: 68ch; font: 500 17px / 1.55 var(--font-sans); letter-spacing: -0.01em; color: var(--graphite); text-wrap: pretty; }
+.s-meta { font: 500 14px / 1.42 var(--font-sans); color: var(--fog); }
+.s-mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+/* The eyebrow becomes the landing's tag: the uppercase string was the app's
+   register, and a pill is the site's. */
+/* BASE FIRST, VARIANTS AFTER. Both of the rules below this one lost to their
+   own base rule for a whole round because they were written above it: at equal
+   specificity source order decides, so a variant placed earlier in the file
+   silently does nothing. */
+.s-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  /* LOAD-BEARING. `inline-flex` is blockified for a flex item, so it does not
+     size to content on the cross axis — and every parent this pill sits in is
+     a column with the default stretch. Without this line the pill fills the
+     column, which is 868px in a section and 378px in a card. */
+  align-self: flex-start;
+  height: 30px; padding: 0 14px; border-radius: 9999px;
+  background: var(--paper);
+  font: 500 13px / 1 var(--font-sans); letter-spacing: -0.01em; text-transform: none; color: var(--graphite);
+}
+
+/* ── OBJECTS ──────────────────────────────────────────────────────────────
+   Genie's card, kept exactly: 32px radius, no border, NO SHADOW. The card is
+   defined by the step from canvas to surface and by the radius, and adding a
+   shadow here is the fastest way to lose the daylight. */
+.s-card {
+  display: flex; flex-direction: column; gap: 14px;
+  padding: clamp(22px, 2.6vw, 34px); border-radius: var(--land-radius, 32px);
+  background: var(--bone); box-shadow: none;
+}
+/* The site's own blue, not the app's accent token: these pages describe the
+   product rather than living inside it, and a borrowed token is a colour that
+   changes when the product's theme does. */
+.s-hl { color: var(--hl, #0069e0); }
+
+/* The recommended plan. It wore a ring built from the app's `--accent-rgb`,
+   which is the same borrow. The site's own blue instead, and the card goes
+   paper so the pick reads by ground as well as by outline: bone is the
+   ordinary card, paper is the one being pointed at. */
+.s-card-pick { background: var(--paper); box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--hl) 38%, transparent); }
+
+.s-grid { display: grid; gap: 16px; }
+.s-grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.s-grid-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+
+/* A framed app screen is an object on the page: radius, ring, one shadow —
+   never full-bleed, because a full-bleed screenshot reads as the page. */
+.s-frame, .s-mini {
+  position: relative; overflow: hidden; border-radius: 20px;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(10,13,18,0.08), 0 20px 50px -24px rgba(10,13,18,0.28);
+}
+
+/* ── THE FAQ ──────────────────────────────────────────────────────────────
+   The landing's accordion, including the `grid-template-rows` transition —
+   the one way to open a box to its content's height without measuring it. */
+.s-faq { display: flex; flex-direction: column; gap: 12px; border-top: 0; }
+.s-faq details { background: var(--bone); border: 0; border-bottom: 0; border-radius: var(--land-radius, 32px); padding: 0 clamp(22px, 2.4vw, 34px); }
+.s-faq summary {
+  display: flex; align-items: center; gap: 16px; padding: 26px 0; cursor: pointer; list-style: none;
+  font: 500 19px / 1.3 var(--font-sans); letter-spacing: -0.01em; color: var(--ink);
+}
+.s-faq summary::-webkit-details-marker { display: none; }
+.s-faq summary::after {
+  content: ""; margin-left: auto; flex: none; width: 13px; height: 13px; background: currentColor; opacity: 0.4;
+  clip-path: polygon(46% 0, 54% 0, 54% 46%, 100% 46%, 100% 54%, 54% 54%, 54% 100%, 46% 100%, 46% 54%, 0 54%, 0 46%, 46% 46%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.s-faq details[open] summary::after { transform: rotate(45deg); }
+/* 0.65s of `ease` is the slowest possible middle — a panel that is fully
+   open still looks like it is settling. A decelerating curve arrives, and
+   0.46s is long enough to read as a movement. */
+.s-faq-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.46s cubic-bezier(0.16, 0.84, 0.28, 1); }
+.s-faq details[open] .s-faq-body { grid-template-rows: 1fr; }
+/* The closing run, held open by site.js for exactly its length. Faster than
+   the opening: a panel being dismissed should get out of the way, and equal
+   times make closing feel sticky. */
+.s-faq details.is-closing .s-faq-body {
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.s-faq-body > div { overflow: hidden; }
+.s-faq-body p { margin: 0 0 26px; max-width: 74ch; font: 500 16px / 1.55 var(--font-sans); color: var(--fog); }
+/* A safety net for any FAQ added later without the wrapper: it restores the
+   answer's typography, though not the transition — the transition IS the
+   wrapper, so this is a floor and not an alternative. */
+.s-faq details > p { margin: 0 0 26px; max-width: 74ch; font: 500 16px / 1.55 var(--font-sans); color: var(--fog); }
+
+/* ── THE FOOTER'S SKY ─────────────────────────────────────────────────────
+   The page closes on the same weather the landing does, so the whole site
+   opens and closes on one afternoon — and the muted greys are re-pitched for
+   it, because the sky is a darker ground than the canvas and a token owes its
+   contrast to the darkest ground it appears on.
+
+   ONE GROUND, ONE PITCH. The landing's footer darkens toward its floor, and it
+   can: the only thing down there is a near-black wordmark at the scale of the
+   screen. This footer's floor holds 14px of muted text, so a gradient that
+   keeps going takes that text below 4.5:1 no matter what the pitch is — which
+   is how the same contrast defect came back three times, each time one band
+   lower. The gradient therefore stops while the sky is still pale and the
+   darkening overlay is gone, so a single pitch covers the whole footer and
+   nothing added to it later can land in an unpitched band. */
+.s-footer {
+  position: relative; overflow: hidden; isolation: isolate;
+  padding-top: clamp(80px, 10vw, 150px);
+  --fog: #4a4f5a; --graphite: #3a4150;
+}
+.s-footer::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(30% 44% at 99% -7%, rgba(255,248,232,0.94) 0%, rgba(255,248,232,0) 64%),
+    radial-gradient(24% 26% at 20% 30%, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0) 78%),
+    radial-gradient(26% 28% at 62% 36%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 77%),
+    linear-gradient(180deg, var(--sky-tint) 0%, rgba(235,245,255,0.5) 18%, #c4dcf3 52%, #b3d2ef 78%, #a9cfec 100%);
+}
+.s-footer::after { content: none; }
+.s-footer-inner { position: relative; }
+.s-footer-cols { display: grid; gap: 26px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); padding: 44px 0 26px; }
+.s-footer-col { display: flex; flex-direction: column; gap: 11px; }
+.s-footer-col a { font: 500 15px var(--font-sans); color: var(--graphite); }
+.s-footer-col a:hover { color: var(--ink); }
+.s-footer-eyebrow, .s-footer-col .s-eyebrow {
+  height: auto; padding: 0; background: none;
+  font: 500 12px / 1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--fog);
+}
+/* No hairline above the base line: the sky is already darkening, and one more
+   rule reads as the page ending twice. */
+.s-footer-base { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 20px 0 30px; box-shadow: none; }
+
+/* ── THE PHONE'S STANDING ACTION ──────────────────────────────────────────*/
+.s-dock { display: none; }
+@media (max-width: 760px) {
+  body { padding-top: 78px; }
+  .s-navlinks { display: none; }
+  .s-dock {
+    position: fixed; left: 14px; right: 14px; bottom: 14px; z-index: 60;
+    display: flex; align-items: center; gap: 12px; height: 60px; padding: 0 8px 0 20px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.86); backdrop-filter: saturate(1.5) blur(24px);
+    box-shadow: 0 2px 4px rgba(10,13,18,0.06), 0 16px 40px -12px rgba(10,13,18,0.28);
+  }
+  /* The label takes the slack, which is what puts the button at the bar's
+     right edge. With both children content-sized the contents left-pack and
+     the one control that never scrolls away on a phone ends up in the middle
+     of the bar. */
+  .s-dock-say { flex: 1 1 0; min-width: 0; font: 500 16px var(--font-sans); letter-spacing: -0.01em; color: var(--ink); }
+  .s-dock .s-btn-sm { flex: none; }
+  body:has(.s-dock) { padding-bottom: 88px; }
+}
+
+/* ── REVEAL ───────────────────────────────────────────────────────────────
+   Once, then the observer lets the element go — a section that re-animates
+   every time it scrolls past is a section that never finishes. */
+.js-reveal .s-reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.62s ease, transform 0.62s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.js-reveal .s-reveal.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal .s-reveal { opacity: 1; transform: none; transition: none; }
+  .s-faq-body, .s-faq details.is-closing .s-faq-body { transition: none; }
+}
+
+
+/* ── THE COMPARISON (BRIEF.md) ───────────────────────────────────────────── */
+.pt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pt-head { padding-bottom: 0; }
+.pt-head .s-eyebrow { align-self: center; }
+/* The header and the comparison are both .s-section, so the stacked-section
+   rule zeroes this seam; with the sheet no longer first, the gold strip would
+   sit on the lead. The seam owns the gap. */
+.pt-head + .pt-section { padding-top: clamp(36px, 6vh, 64px); }
+/* The flame's bloom, the edge glow and the smoke all reach past the strip's
+   right end. The section clips them at the page edge; clip, not hidden, so it
+   does not become a scroll container and the reveal keeps working. */
+.pt-section { overflow-x: clip; }
+.pt-sheet { max-width: 940px; margin: 0 auto; border-radius: 26px; background: var(--paper, #fff); box-shadow: 0 1px 2px rgba(10,13,18,0.05), 0 30px 70px -40px rgba(10,13,18,0.3); padding: clamp(24px, 3vw, 40px) clamp(18px, 3vw, 40px) clamp(12px, 1.6vw, 20px); }
+.pt { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.pt .pt-corner { width: 44%; }
+.pt thead th { text-align: center; vertical-align: top; padding: 0 16px 24px; font-weight: 400; }
+.pt-plan { display: block; font-family: "Exposure VAR", var(--font-display); font-size: clamp(34px, 3.4vw, 46px); line-height: 1; letter-spacing: -0.02em; }
+.pt-price { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 12px 0 16px; }
+.pt-num { font-family: "Exposure VAR", var(--font-display); font-size: 26px; line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.pt-num-sm { font-size: 26px; }
+.pt-per { font: 400 13px / 1.3 var(--font-sans); opacity: 0.7; }
+.pt-btn { display: inline-flex; }
+.pt-trial { display: block; margin-top: 10px; font: 400 13px / 1.3 var(--font-sans); opacity: 0.65; }
+/* The one quiet emphasis the brief allows on the paid column: a ground, not a colour. */
+.pt .pt-pro { background: color-mix(in oklab, currentColor 4%, transparent); }
+.pt thead .pt-pro { border-radius: 18px 18px 0 0; padding-top: 22px; }
+.pt thead th:not(.pt-pro) { padding-top: 22px; }
+.pt tbody th, .pt tbody td { padding: 14px 16px; border-top: 1px solid color-mix(in oklab, currentColor 9%, transparent); text-align: center; vertical-align: middle; }
+.pt tbody th { padding-left: 0; font-weight: 400; text-align: left; }
+.pt tbody:last-of-type tr:last-child .pt-pro { border-radius: 0 0 18px 18px; }
+.pt-label { display: block; font: 600 15px / 1.3 var(--font-sans); }
+.pt-note { display: block; margin-top: 3px; font: 400 13px / 1.35 var(--font-sans); opacity: 0.6; }
+.pt td { font: 400 15px / 1.3 var(--font-sans); opacity: 0.82; }
+.pt-yes { display: inline-flex; }
+.pt-yes svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.pt-no { opacity: 0.35; }
+.pt tbody tr { transition: background-color 0.15s ease; }
+.pt tbody tr:hover th, .pt tbody tr:hover td:not(.pt-pro) { background: color-mix(in oklab, currentColor 3%, transparent); }
+.pt-cards { display: none; }
+@media (max-width: 760px) {
+  .pt { display: none; }
+  .pt-cards { display: grid; gap: 16px; }
+  .pt-sheet { padding: 0; background: none; box-shadow: none; }
+  .pt-card { padding: 26px 22px; border-radius: 22px; background: var(--paper, #fff); box-shadow: 0 1px 2px rgba(10,13,18,0.05), 0 20px 50px -34px rgba(10,13,18,0.3); }
+  .pt-card dl { margin: 22px 0 0; }
+  .pt-card dl div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid color-mix(in oklab, currentColor 9%, transparent); }
+  .pt-card dt { font: 600 15px / 1.3 var(--font-sans); }
+  .pt-card dd { margin: 0; font: 400 15px / 1.3 var(--font-sans); opacity: 0.82; text-align: right; }
+}
+
+/* Group headings: one icon per group, not per row — the brief's objection to an
+   icon on every line stands; a group needs a mark, a row needs its words. */
+.pt .pt-group th { padding: 30px 0 10px; border-top: 0; text-align: left; background: none; }
+.pt .pt-group th > * { vertical-align: middle; }
+.pt-gicon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; margin-right: 9px; opacity: 0.75; }
+.pt .pt-group span { font: 600 12px / 1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; }
+.pt tbody:first-of-type .pt-group th { padding-top: 6px; }
+.pt-logos { display: flex; gap: 7px; margin-top: 9px; }
+.pt-logos img { width: 24px; height: 24px; padding: 3px; box-sizing: border-box; border-radius: 6px; background: #fff; box-shadow: 0 0 0 1px rgba(10,13,18,0.06); opacity: 0.92; transition: opacity .2s ease, transform .2s ease; }
+.pt-logos img:hover { opacity: 1; transform: translateY(-1px); }
+.pt-cgroup { display: flex; align-items: center; margin-top: 22px; font: 600 12px / 1 var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; }
+.pt-cgroup .pt-gicon { width: 16px; height: 16px; }
+.pt-card dl { margin: 8px 0 0; }
+
+
+/* ── THE SHEET, AFTER THE CRAFT REFERENCE ──────────────────────────────────
+ * A white object on the night page — the sheet is paper whatever the ground,
+ * so its ink is set here and every derived grey inside follows it. Plan heads
+ * sit left-aligned over their own column, the rows are tall and ruled by air
+ * rather than lines, labels are heavy and values are quiet. Later in the file,
+ * so these win over the first pass without a specificity contest. */
+.pt-sheet { max-width: 1000px; background: #fff; color: #1A1C1E; border-radius: 32px;
+  padding: clamp(32px, 4.4vw, 64px) clamp(22px, 4.4vw, 64px) clamp(20px, 3vw, 40px);
+  box-shadow: 0 1px 2px rgba(10,13,18,0.06), 0 40px 90px -50px rgba(0,0,0,0.55); }
+.pt .pt-corner { width: 40%; }
+.pt thead th { text-align: left; padding: 0 20px 34px; }
+.pt thead th:not(.pt-pro), .pt thead .pt-pro { padding-top: 0; border-radius: 0; }
+.pt .pt-pro { background: none; }
+.pt-plan { font-size: clamp(40px, 4.6vw, 62px); }
+.pt-price { flex-direction: row; align-items: baseline; justify-content: flex-start; gap: 6px; margin: 14px 0 18px; }
+.pt-num { font-family: var(--font-sans); font-size: 16px; font-weight: 500; letter-spacing: 0; }
+.pt-per { font-size: 16px; opacity: 1; }
+.pt-price .pt-per::before { content: "·"; margin-right: 6px; opacity: 0.4; }
+.pt-btn, .pt thead .s-btn, .pt thead .s-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  height: 38px; padding: 0 16px; border: 0; border-radius: 11px;
+  background: #FFFFFF; color: #0A0D12; text-decoration: none;
+  font: 500 15px / 1 var(--font-sans); letter-spacing: -0.01em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.07), 0 1px 2px rgba(10,13,18,0.1), 0 8px 22px -12px rgba(10,13,18,0.28);
+  transition: transform 0.2s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.2s cubic-bezier(0.2,0.8,0.2,1); }
+.pt thead .s-btn:hover, .pt thead .s-btn-ghost:hover { background: #FFFFFF; color: #0A0D12; transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.08), 0 2px 4px rgba(10,13,18,0.12), 0 16px 34px -14px rgba(10,13,18,0.32); }
+.pt thead .s-btn:active, .pt thead .s-btn-ghost:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(10,13,18,0.16), 0 0 0 1px rgba(10,13,18,0.08); }
+.pt-trial { margin-top: 12px; }
+/* Rows ruled by air: no dividers, generous height, heavy label, quiet value. */
+.pt tbody th, .pt tbody td { border-top: 0; padding: 22px 20px; text-align: left; }
+.pt tbody th { padding-left: 0; }
+.pt-label { font: 600 17px / 1.3 var(--font-sans); }
+.pt td { font: 400 16px / 1.3 var(--font-sans); color: color-mix(in oklab, currentColor 62%, transparent); opacity: 1; }
+.pt-yes { color: #1A1C1E; }
+.pt-yes svg { width: 22px; height: 22px; stroke-width: 2.2; }
+.pt tbody tr:hover th, .pt tbody tr:hover td:not(.pt-pro), .pt tbody tr:hover td { background: none; }
+.pt .pt-group th { padding: 40px 0 6px; }
+.pt tbody:first-of-type .pt-group th { padding-top: 0; }
+.pt-gicon { opacity: 0.85; }
+@media (max-width: 760px) {
+  .pt-card { background: #fff; color: #1A1C1E; }
+  .pt-card .pt-btn { background: #FFFFFF; color: #0A0D12; box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.07), 0 1px 2px rgba(10,13,18,0.1), 0 8px 22px -12px rgba(10,13,18,0.28); }
+  .pt-card dl div { border-top: 0; padding: 12px 0; }
+}
+.pt-price { white-space: nowrap; }
+body:not(.s-dusk) .pt-sheet { box-shadow: 0 0 0 1px rgba(10,13,18,0.06), 0 1px 2px rgba(10,13,18,0.05), 0 30px 70px -40px rgba(10,13,18,0.25); }
+/* The sheet is its own layer above the burning strip, so the strip's cast
+   falls behind the paper instead of staining the plan heads; softer on day. */
+.pt-sheet { position: relative; z-index: 1; }
+.pt-trial { text-wrap: balance; }
+
+/* ── PRICING GROUND, AFTER THE TORN-SKY REFERENCE ───────────────────────────
+ * A pale sky with a sheet of deeper blue torn across it, rising to the right,
+ * grained like paper, with a cloud caught in the tear.
+ *
+ * A FIXED BAND, anchored at the top of the page, not a percentage of the
+ * comparison: sized to the 2000px table, the tear slid wherever the rows
+ * ended and landed under the opaque sheet. 760px from the top of the header
+ * puts the ragged edge through the open band around the heading and the
+ * margins beside the strip, where it is actually seen, and it no longer moves
+ * when a row is added. */
+/* Room beside the sheet on wide screens, where the torn blue runs in the
+   margins the way it does in the reference. */
+@media (min-width: 1200px) { .pt-sheet, .pt-life { max-width: 900px; } }
+/* The lead sits on the torn blue now, so it takes a deep navy ink instead of
+   the muted grey meant for pale ground. */
+body:not(.s-dusk) .pt-head .s-lead { color: #0E2236; }
+
+/* ── THE TORN PAPER, THE WHOLE PAGE ───────────────────────────────────────
+ * A flat pale-blue ground, and a sheet of deeper grained blue torn across the
+ * first screen that then carries on down the entire page, behind every block
+ * to the footer. No clouds, no sky gradient — just the two papers.
+ * The layer is the body's full height; the tear is placed in svh from the top
+ * so it stays in the first screen however long the page gets. */
+body.p-pricing { position: relative; isolation: isolate; background: #B9DEF6; }
+body.p-pricing::before {
+  /* land.css retires the landing's old ground with a bare body::before { display: none }; this page turns it back on. */
+  display: block;
+  content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none;
+  clip-path: polygon(0.00% 62.20svh, 1.79% 63.22svh, 3.57% 63.58svh, 5.36% 63.73svh, 7.14% 62.95svh, 8.93% 62.29svh, 10.71% 60.98svh, 12.50% 62.06svh, 14.29% 61.37svh, 16.07% 60.36svh, 17.86% 59.86svh, 19.64% 58.96svh, 21.43% 55.77svh, 23.21% 56.31svh, 25.00% 54.19svh, 26.79% 52.06svh, 28.57% 51.72svh, 30.36% 49.98svh, 32.14% 50.23svh, 33.93% 47.84svh, 35.71% 46.72svh, 37.50% 46.53svh, 39.29% 44.52svh, 41.07% 39.83svh, 42.86% 39.07svh, 44.64% 38.05svh, 46.43% 37.53svh, 48.21% 36.02svh, 50.00% 37.48svh, 51.79% 36.64svh, 53.57% 38.58svh, 55.36% 36.93svh, 57.14% 39.72svh, 58.93% 38.78svh, 60.71% 40.68svh, 62.50% 39.92svh, 64.29% 39.72svh, 66.07% 38.98svh, 67.86% 39.01svh, 69.64% 37.60svh, 71.43% 37.42svh, 73.21% 36.40svh, 75.00% 35.67svh, 76.79% 33.86svh, 78.57% 33.55svh, 80.36% 32.19svh, 82.14% 30.25svh, 83.93% 28.62svh, 85.71% 26.62svh, 87.50% 25.43svh, 89.29% 24.94svh, 91.07% 25.27svh, 92.86% 22.31svh, 94.64% 21.05svh, 96.43% 19.51svh, 98.21% 20.01svh, 100.00% 18.43svh, 100% 100%, 0 100%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(170deg, #6CB0E9 0%, #5AA2E3 30%, #4F98DE 100%);
+  background-size: 160px 160px, auto;
+  background-blend-mode: soft-light, normal;
+}
+/* Everything that sits on this ground reads in dark ink. */
+body.p-pricing .pt-head .s-lead { color: #0E2236; }
+body.p-pricing .pt-head .s-eyebrow { color: #0E2236; opacity: 0.8; }
+/* On the deep blue the page's muted greys drop below contrast, so the text
+   that sits directly on it takes the dark navy ink. */
+body.p-pricing .s-faq summary, body.p-pricing .s-faq p, body.p-pricing section > .s-wrap > .s-h2 { color: #0E2236; }
+/* The footer's own sky is the last sky on the page; it goes, so the torn
+   paper runs unbroken to the bottom, and the footer ink goes dark on it. */
+body.p-pricing .s-footer::before, body.p-pricing .s-footer::after { display: none; }
+body.p-pricing .s-footer { background: none; }
+body.p-pricing .s-footer, body.p-pricing .s-footer a, body.p-pricing .s-footer h2,
+body.p-pricing .s-footer p, body.p-pricing .s-footer span { color: #0E2236; }
+body.p-pricing .s-footer [class*="eyebrow"] { color: #0E2236; opacity: 0.72; }
+/* ── TYPE, AFTER THE REFERENCE CARD ───────────────────────────────────────
+ * A calm book serif for headings — Newsreader, with its optical size on so the
+ * display cut is the display cut — over a soft humanist sans for the lines
+ * under them. Scoped to Pricing. */
+/* The owner's heading spec, verbatim; -0.04em for the smaller heads. */
+body.p-pricing h1, body.p-pricing h2, body.p-pricing .s-h1, body.p-pricing .s-h2, body.p-pricing .pt-plan {
+  font-family: "Exposure VAR", serif;
+  font-weight: 500;
+  /* Lighter than the spec's -25: less ink in the counters. */
+  font-variation-settings: "EXPO" -5;
+  letter-spacing: -0.05em;
+  line-height: 1.12;
+  text-wrap: balance;
+  -webkit-font-smoothing: antialiased;
+}
+body.p-pricing h2, body.p-pricing .s-h2, body.p-pricing .pt-plan { letter-spacing: -0.04em; }
+body.p-pricing .s-h1 { font-size: clamp(44px, 6vw, 76px); }
+body.p-pricing .pt-plan { font-size: clamp(38px, 4.2vw, 56px); }
+body.p-pricing, body.p-pricing .s-lead, body.p-pricing .s-body, body.p-pricing .pt-label, body.p-pricing .pt td,
+body.p-pricing .pt-per, body.p-pricing .pt-num, body.p-pricing .pt-trial, body.p-pricing .pt-note,
+body.p-pricing .s-faq summary, body.p-pricing .s-faq p, body.p-pricing .pt-life-body, body.p-pricing .pt-life-kicker {
+  font-family: "Figtree", var(--font-sans); }
+body.p-pricing .s-lead { font-size: clamp(18px, 1.6vw, 22px); font-weight: 400; line-height: 1.4; }
+
+/* ── LIFETIME, THE TICKET ───────────────────────────────────────────────────
+ * Two pieces of paper, each with half-notches cut out of the corners they
+ * share, so the holes are real and the torn ground shows through them.
+ * mask-image longhand, never the mask shorthand — the shorthand resets
+ * mask-composite to add, which fills both holes back in. */
+.lt { position: relative; z-index: 1; max-width: 900px; margin: 0 auto 22px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; color: #1A1C1E;
+  }
+.lt::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 26px; pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.06), 0 18px 30px -10px rgba(10,13,18,0.16);
+  transition: box-shadow 0.5s ease, transform 0.55s cubic-bezier(0.2,0.8,0.2,1); }
+.lt-main, .lt-stub { position: relative; isolation: isolate; }
+.lt-main::before, .lt-stub::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #fff; }
+.lt-main::before { border-radius: 26px 0 0 26px;
+    -webkit-mask-image: radial-gradient(circle 11px at 100% 0, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 100% 100%, transparent 11px, #000 11.5px); mask-image: radial-gradient(circle 11px at 100% 0, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 100% 100%, transparent 11px, #000 11.5px);
+    -webkit-mask-composite: source-in; mask-composite: intersect; }
+.lt-stub::before { border-radius: 0 26px 26px 0;
+    -webkit-mask-image: radial-gradient(circle 11px at 0 0, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 0 100%, transparent 11px, #000 11.5px); mask-image: radial-gradient(circle 11px at 0 0, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 0 100%, transparent 11px, #000 11.5px);
+    -webkit-mask-composite: source-in; mask-composite: intersect; }
+.lt-stub::after { content: ""; position: absolute; left: -0.75px; top: 16px; bottom: 16px; border-left: 1.5px dashed rgba(26,28,30,0.18); }
+.lt-main { display: flex; flex-direction: column; gap: 8px; padding: clamp(24px, 3vw, 36px) clamp(22px, 3.2vw, 44px); }
+.lt-eyebrow { font: 600 12px / 1 "Figtree", var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(26,28,30,0.55); }
+.lt-title { margin: 0; font-family: "Exposure VAR", serif; font-weight: 500; font-variation-settings: "EXPO" -5;
+  font-size: clamp(30px, 3.4vw, 44px); line-height: 1.12; letter-spacing: -0.04em; text-wrap: balance; }
+.lt-body { margin: 0; max-width: 48ch; font: 400 16px / 1.5 "Figtree", var(--font-sans); color: rgba(26,28,30,0.68); }
+.lt-stub { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;
+  padding: clamp(24px, 3vw, 36px) clamp(26px, 3.4vw, 46px); min-width: 230px; }
+.lt-price { font-family: "Exposure VAR", serif; font-weight: 500; font-variation-settings: "EXPO" -5;
+  font-size: clamp(44px, 4.6vw, 60px); line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.lt-per { font: 400 14px / 1.3 "Figtree", var(--font-sans); color: rgba(26,28,30,0.55); margin-bottom: 14px; }
+.lt-btn { display: inline-flex; align-items: center; height: 38px; padding: 0 18px; border-radius: 11px;
+  background: #fff; color: #0A0D12; font: 500 15px / 1 "Figtree", var(--font-sans); text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.08), 0 1px 2px rgba(10,13,18,0.1), 0 8px 22px -12px rgba(10,13,18,0.28);
+  transition: transform 0.2s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.2s cubic-bezier(0.2,0.8,0.2,1); }
+.lt-btn:hover { color: #0A0D12; transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.08), 0 2px 4px rgba(10,13,18,0.12), 0 16px 34px -14px rgba(10,13,18,0.32); }
+.lt-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(10,13,18,0.16), 0 0 0 1px rgba(10,13,18,0.08); }
+@media (max-width: 680px) {
+  .lt { grid-template-columns: 1fr; }
+  .lt-stub { min-width: 0; }
+  .lt-main::before { border-radius: 26px 26px 0 0;
+    -webkit-mask-image: radial-gradient(circle 11px at 0 100%, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 100% 100%, transparent 11px, #000 11.5px); mask-image: radial-gradient(circle 11px at 0 100%, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 100% 100%, transparent 11px, #000 11.5px);
+    -webkit-mask-composite: source-in; mask-composite: intersect; }
+  .lt-stub::before { border-radius: 0 0 26px 26px;
+    -webkit-mask-image: radial-gradient(circle 11px at 0 0, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 100% 0, transparent 11px, #000 11.5px); mask-image: radial-gradient(circle 11px at 0 0, transparent 11px, #000 11.5px), radial-gradient(circle 11px at 100% 0, transparent 11px, #000 11.5px);
+    -webkit-mask-composite: source-in; mask-composite: intersect; }
+  .lt-stub::after { left: 16px; right: 16px; top: -0.75px; bottom: auto; border-left: 0; border-top: 1.5px dashed rgba(26,28,30,0.18); }
+}
+
+/* ── THE TICKET, HANDLED ────────────────────────────────────────────────────
+ * On hover it lifts off the page, takes a soft sky glow, and folds along the
+ * perforation the way a real ticket does: the stub hinges back from the
+ * dashed line, the main part leans a little the other way, and the paper
+ * darkens toward the crease so the fold reads as a fold. */
+.lt:hover::before { transform: translateY(-8px);
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.06), 0 30px 40px -12px rgba(10,13,18,0.2); }
+.lt-main, .lt-stub { transition: transform 0.55s cubic-bezier(0.2,0.8,0.2,1); }
+.lt-stub { transform-origin: 0 50%; }
+.lt-main { transform-origin: 100% 50%; }
+.lt:hover .lt-stub { transform: translateY(-8px) perspective(900px) rotateY(-16deg); }
+.lt:hover .lt-main { transform: translateY(-8px) perspective(1100px) rotateY(3deg); }
+/* The crease shading, on a layer of its own so the white paper stays the
+   paper and only the light changes. */
+.lt-stub > * { position: relative; }
+.lt-main::after, .lt-stub .lt-crease { content: ""; }
+.lt-shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity 0.55s ease; }
+.lt-stub .lt-shade { background: linear-gradient(90deg, rgba(20,40,70,0.07) 0, rgba(20,40,70,0) 80px); }
+.lt-main .lt-shade { background: linear-gradient(270deg, rgba(20,40,70,0.07) 0, rgba(20,40,70,0) 80px); }
+.lt:hover .lt-shade { opacity: 1; }
+@media (max-width: 680px) {
+  .lt-stub { transform-origin: 50% 0; }
+  .lt-main { transform-origin: 50% 100%; }
+  .lt:hover .lt-stub { transform: translateY(-8px) perspective(900px) rotateX(16deg); }
+  .lt:hover .lt-main { transform: translateY(-8px) perspective(1100px) rotateX(-3deg); }
+  .lt-stub .lt-shade { background: linear-gradient(180deg, rgba(20,40,70,0.07) 0, rgba(20,40,70,0) 80px); }
+  .lt-main .lt-shade { background: linear-gradient(0deg, rgba(20,40,70,0.07) 0, rgba(20,40,70,0) 80px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lt, .lt-main, .lt-stub { transition: none; }
+  .lt:hover, .lt:hover .lt-main, .lt:hover .lt-stub { transform: none; }
+}
+/* The button folds with the stub, a touch further than the paper it sits on,
+   so it reads as part of the bent sheet rather than a flat sticker on it. */
+.lt-btn { transform-origin: 0 50%; }
+.lt:hover .lt-btn { transform: perspective(700px) rotateY(-12deg); }
+.lt:hover .lt-btn:hover { transform: perspective(700px) rotateY(-12deg) translateY(-1px); }
+.lt:hover .lt-btn:active { transform: perspective(700px) rotateY(-12deg) translateY(1px); }
+@media (max-width: 680px) {
+  .lt-btn { transform-origin: 50% 0; }
+  .lt:hover .lt-btn { transform: perspective(700px) rotateX(12deg); }
+  .lt:hover .lt-btn:hover { transform: perspective(700px) rotateX(12deg) translateY(-1px); }
+  .lt:hover .lt-btn:active { transform: perspective(700px) rotateX(12deg) translateY(1px); }
+}
+@media (prefers-reduced-motion: reduce) { .lt:hover .lt-btn, .lt:hover .lt-btn:hover, .lt:hover .lt-btn:active { transform: none; } }
+
+
+/* The floor word in the page's dark ink, like the landing's footer. */
+body.p-pricing .l-floor-word { color: #16202C; }
+body.p-pricing .s-footer { padding-bottom: 0; }
+
+/* ── PRICING'S BUTTONS ARE THE HEADER'S LOG IN ──────────────────────────────
+ * The page ended on the old 52px pills while its header and its sheet use
+ * the Log in button. Same object throughout: white, 11–12px radius, inset
+ * highlight and a thin ring, lift on hover, settle on press. The quiet one is
+ * the same shape on a translucent white fill — no outline ring on the sky. */
+body.p-pricing .s-btn {
+  height: 44px; padding: 0 20px; border: 0; border-radius: 12px;
+  background: #FFFFFF; color: #0A0D12;
+  font: 500 16px / 1 "Figtree", var(--font-sans); letter-spacing: -0.01em; text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.07), 0 1px 2px rgba(10,13,18,0.1), 0 8px 22px -12px rgba(10,13,18,0.28);
+  transition: transform 0.2s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.2s cubic-bezier(0.2,0.8,0.2,1), background-color 0.2s ease;
+}
+body.p-pricing .s-btn:hover { background: #FFFFFF; color: #0A0D12; transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(10,13,18,0.08), 0 2px 4px rgba(10,13,18,0.12), 0 16px 34px -14px rgba(10,13,18,0.32); }
+body.p-pricing .s-btn:active { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(10,13,18,0.16), 0 0 0 1px rgba(10,13,18,0.08); }
+body.p-pricing .s-btn-ghost { background: rgba(255,255,255,0.34); color: #0A0D12; box-shadow: none; }
+body.p-pricing .s-btn-ghost:hover { background: rgba(255,255,255,0.56); color: #0A0D12; box-shadow: none; transform: translateY(-1px); }
+body.p-pricing .s-btn-ghost:active { background: rgba(255,255,255,0.46); box-shadow: none; transform: translateY(1px); }
+body.p-pricing .s-btn-sm { height: 38px; padding: 0 16px; border-radius: 11px; font-size: 15px; }
+
+/* ── THE DEMO, AS A TICKET ─────────────────────────────────────────────────
+ * The Lifetime ticket at button size: the action on the main part, "Free" on
+ * a stub torn off by a perforation, with real half-notches cut from both
+ * pieces' shared corners so the sky shows through. The shadow is an outer
+ * box-shadow on a layer of its own, so it never lines the notches.
+ * On hover the pieces lift and the stub folds back; the link itself stays
+ * put, so the hover area never moves out from under the cursor. */
+.tk-btn { position: relative; display: inline-flex; align-items: stretch; height: 44px; isolation: isolate;
+  color: #0A0D12; text-decoration: none; font: 500 16px / 1 "Figtree", var(--font-sans); letter-spacing: -0.01em; }
+.tk-btn::after { content: ""; position: absolute; inset: 0; z-index: -2; border-radius: 12px; pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.07), 0 1px 2px rgba(10,13,18,0.1), 0 8px 22px -12px rgba(10,13,18,0.28);
+  transition: transform 0.35s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.35s ease; }
+.tk-main, .tk-stub { position: relative; display: inline-flex; align-items: center; transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1); }
+.tk-main::before, .tk-stub::before { content: ""; position: absolute; inset: 0; z-index: -1; background: #fff; }
+.tk-main { padding: 0 18px 0 20px; transform-origin: 100% 50%; }
+.tk-main::before { border-radius: 12px 0 0 12px; -webkit-mask-image: radial-gradient(circle 6px at 100% 0, transparent 6px, #000 6.5px), radial-gradient(circle 6px at 100% 100%, transparent 6px, #000 6.5px); mask-image: radial-gradient(circle 6px at 100% 0, transparent 6px, #000 6.5px), radial-gradient(circle 6px at 100% 100%, transparent 6px, #000 6.5px); -webkit-mask-composite: source-in; mask-composite: intersect; }
+.tk-stub { padding: 0 16px 0 15px; transform-origin: 0 50%;
+  font: 600 12px / 1 "Figtree", var(--font-sans); letter-spacing: 0.08em; text-transform: uppercase; color: rgba(26,28,30,0.55); }
+.tk-stub::before { border-radius: 0 12px 12px 0; -webkit-mask-image: radial-gradient(circle 6px at 0 0, transparent 6px, #000 6.5px), radial-gradient(circle 6px at 0 100%, transparent 6px, #000 6.5px); mask-image: radial-gradient(circle 6px at 0 0, transparent 6px, #000 6.5px), radial-gradient(circle 6px at 0 100%, transparent 6px, #000 6.5px); -webkit-mask-composite: source-in; mask-composite: intersect; }
+.tk-stub::after { content: ""; position: absolute; left: -0.75px; top: 8px; bottom: 8px; border-left: 1.5px dashed rgba(26,28,30,0.2); }
+.tk-btn:hover { color: #0A0D12; }
+.tk-btn:hover::after { transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.08), 0 2px 4px rgba(10,13,18,0.12), 0 16px 30px -14px rgba(10,13,18,0.32); }
+.tk-btn:hover .tk-main { transform: translateY(-2px); }
+.tk-btn:hover .tk-stub { transform: translateY(-2px) perspective(300px) rotateY(-14deg); }
+.tk-btn:active .tk-main, .tk-btn:active .tk-stub { transform: translateY(0); }
+.tk-btn:active::after { transform: none; box-shadow: 0 0 0 1px rgba(10,13,18,0.08), inset 0 1px 3px rgba(10,13,18,0.14); }
+.tk-btn:focus-visible { outline: none; }
+.tk-btn:focus-visible::after { box-shadow: 0 0 0 2px rgba(46,109,233,0.5), 0 8px 22px -12px rgba(10,13,18,0.28); }
+@media (prefers-reduced-motion: reduce) {
+  .tk-main, .tk-stub, .tk-btn::after { transition: none; }
+  .tk-btn:hover .tk-main, .tk-btn:hover .tk-stub, .tk-btn:hover::after { transform: none; }
+}
+
+/* ── THE GIFT TICKET, COLOURED AND FOLDING ─────────────────────────────────
+ * Each visit prints the ticket in one of three inks — red, green or violet —
+ * picked once on load (site.js). Paper and ink are two variables, so every
+ * piece of the ticket reads from one place. On hover both halves bend about
+ * the perforation, like the Lifetime ticket: the stub folds back, the main
+ * part leans a little the other way, and each side darkens toward the crease. */
+.tk-btn { --tk-paper: #fff; --tk-ink: #0A0D12; --tk-soft: rgba(26,28,30,0.55); --tk-perf: rgba(26,28,30,0.2); color: var(--tk-ink); }
+.tk-btn[data-tone="red"]    { --tk-paper: #E86A6F; --tk-glow: rgba(232,106,111,0.45); }
+.tk-btn[data-tone="green"]  { --tk-paper: #2FA36B; --tk-glow: rgba(47,163,107,0.55); }
+.tk-btn[data-tone="violet"] { --tk-paper: #7C5CE6; --tk-glow: rgba(124,92,230,0.55); }
+.tk-btn[data-tone] { --tk-ink: #FFFFFF; --tk-soft: rgba(255,255,255,0.78); --tk-perf: rgba(255,255,255,0.5); }
+.tk-btn:hover, .tk-btn:hover .tk-main { color: var(--tk-ink); }
+.tk-stub { color: var(--tk-soft); }
+.tk-stub::after { border-left-color: var(--tk-perf); }
+.tk-main::before, .tk-stub::before { background: var(--tk-paper); transition: background 0.4s ease; }
+.tk-btn[data-tone]::after { box-shadow: 0 1px 2px rgba(10,13,18,0.12), 0 8px 22px -12px var(--tk-glow); }
+.tk-btn[data-tone]:hover::after { box-shadow: 0 2px 4px rgba(10,13,18,0.14), 0 16px 30px -12px var(--tk-glow); }
+.tk-btn:hover .tk-main { transform: translateY(-2px) perspective(400px) rotateY(4deg); }
+.tk-btn:hover .tk-stub { transform: translateY(-2px) perspective(300px) rotateY(-18deg); }
+.tk-btn:hover .tk-main::before { background: linear-gradient(270deg, rgba(0,0,0,0.1) 0, rgba(0,0,0,0) 40px), var(--tk-paper); }
+.tk-btn:hover .tk-stub::before { background: linear-gradient(90deg, rgba(0,0,0,0.12) 0, rgba(0,0,0,0) 40px), var(--tk-paper); }
+@media (prefers-reduced-motion: reduce) { .tk-btn:hover .tk-main, .tk-btn:hover .tk-stub { transform: none; } }
+
+/* The halos, as filters, so they reach into the notches. */
+.tk-btn { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); transition: filter 0.35s ease; }
+.tk-btn:hover { filter: drop-shadow(0 0 12px rgba(170,215,255,0.85)); }
+.tk-btn[data-tone]:hover { filter: drop-shadow(0 0 12px var(--tk-glow)); }
+.lt { filter: drop-shadow(0 0 0 rgba(0,0,0,0)); transition: filter 0.5s ease; }
+.lt:hover { filter: drop-shadow(0 0 18px rgba(170,215,255,0.9)); }
+
+/* ── ONE SHADOW, FOLLOWING THE PAPER ───────────────────────────────────────
+ * The bottom notch sat half inside the ticket and half over the cast shadow
+ * below it, so it showed as a split disc: clean on top, tinted underneath.
+ * A box-shadow can only ever be painted outside a rectangle, so it cannot
+ * agree with a hole in the rectangle's edge. Every shadow moves to the
+ * drop-shadow filter, which follows the paper's real outline — notches
+ * included — and the shadow layer keeps only the focus ring. */
+.tk-btn::after, .tk-btn:hover::after, .tk-btn:active::after,
+.tk-btn[data-tone]::after, .tk-btn[data-tone]:hover::after { box-shadow: none; transform: none; }
+.tk-btn:focus-visible::after { box-shadow: 0 0 0 2px rgba(46,109,233,0.5); }
+.tk-btn { filter: drop-shadow(0 1px 1.5px rgba(10,13,18,0.14)) drop-shadow(0 6px 10px rgba(10,13,18,0.1)); }
+.tk-btn:hover { filter: drop-shadow(0 3px 3px rgba(10,13,18,0.14)) drop-shadow(0 12px 16px rgba(10,13,18,0.14)) drop-shadow(0 0 12px rgba(170,215,255,0.85)); }
+.tk-btn:active { filter: drop-shadow(0 1px 1px rgba(10,13,18,0.16)); }
+.tk-btn[data-tone] { filter: drop-shadow(0 1px 1.5px rgba(10,13,18,0.16)) drop-shadow(0 6px 12px var(--tk-glow)); }
+.tk-btn[data-tone]:hover { filter: drop-shadow(0 3px 3px rgba(10,13,18,0.16)) drop-shadow(0 12px 18px var(--tk-glow)) drop-shadow(0 0 12px var(--tk-glow)); }
+.tk-btn[data-tone]:active { filter: drop-shadow(0 1px 1px rgba(10,13,18,0.18)); }
+
+.lt::before, .lt:hover::before { box-shadow: none; }
+.lt { filter: drop-shadow(0 0 0.6px rgba(10,13,18,0.25)) drop-shadow(0 16px 22px rgba(10,13,18,0.12)); }
+.lt:hover { filter: drop-shadow(0 0 0.6px rgba(10,13,18,0.25)) drop-shadow(0 28px 30px rgba(10,13,18,0.16)) drop-shadow(0 0 18px rgba(170,215,255,0.9)); }
+
+/* ── SOFTER INKS, AND SHADOWS THAT READ ON THE SKY ─────────────────────────
+ * The gift ticket takes the landing's pastel washes instead of saturated
+ * inks — rose, mint, lavender — with the page's dark ink on them, so it sits
+ * in the same family as the panels rather than shouting over them.
+ *
+ * A shadow tuned on white paper nearly vanishes on the blue sky, because a
+ * neutral black at 10% is almost the ground's own value. Both closing buttons
+ * now cast a deeper, sky-tinted shadow by default, so they read as lifted off
+ * the page the way Buy once does on the white sheet. */
+.tk-btn[data-tone="red"]    { --tk-paper: #F7D9D6; --tk-glow: rgba(214,120,112,0.42); }
+.tk-btn[data-tone="green"]  { --tk-paper: #D5EEDF; --tk-glow: rgba(88,170,124,0.42); }
+.tk-btn[data-tone="violet"] { --tk-paper: #E7DCFB; --tk-glow: rgba(140,112,220,0.42); }
+.tk-btn[data-tone] { --tk-ink: #0E2236; --tk-soft: rgba(14,34,54,0.6); --tk-perf: rgba(14,34,54,0.26); }
+/* The footer's blanket ink rule outranks the ticket's own classes. */
+body.p-pricing .s-footer .tk-btn, body.p-pricing .s-footer .tk-main { color: var(--tk-ink); }
+body.p-pricing .s-footer .tk-stub { color: var(--tk-soft); }
+
+.tk-btn, .tk-btn[data-tone] {
+  filter: drop-shadow(0 1px 1.5px rgba(14,34,54,0.16)) drop-shadow(0 10px 14px rgba(14,34,54,0.2)); }
+.tk-btn:hover, .tk-btn[data-tone]:hover {
+  filter: drop-shadow(0 2px 3px rgba(14,34,54,0.16)) drop-shadow(0 16px 22px rgba(14,34,54,0.24)) drop-shadow(0 0 12px var(--tk-glow, rgba(170,215,255,0.85))); }
+.tk-btn:active, .tk-btn[data-tone]:active { filter: drop-shadow(0 1px 1.5px rgba(14,34,54,0.2)); }
+
+body.p-pricing .s-footer .s-btn {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(14,34,54,0.06), 0 2px 4px rgba(14,34,54,0.12), 0 12px 26px -10px rgba(14,34,54,0.38); }
+body.p-pricing .s-footer .s-btn:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9), 0 0 0 1px rgba(14,34,54,0.07), 0 3px 6px rgba(14,34,54,0.14), 0 20px 36px -14px rgba(14,34,54,0.42); }
+body.p-pricing .s-footer .s-btn:active {
+  box-shadow: inset 0 1px 3px rgba(14,34,54,0.18), 0 0 0 1px rgba(14,34,54,0.08); }
+
+/* Lighter and softer: two wide, low-opacity layers instead of a tight dark
+   one, so the ticket floats rather than sits in a pool of shadow. */
+.tk-btn, .tk-btn[data-tone] {
+  filter: drop-shadow(0 1px 1px rgba(14,34,54,0.08)) drop-shadow(0 10px 18px rgba(14,34,54,0.1)); }
+.tk-btn:hover, .tk-btn[data-tone]:hover {
+  filter: drop-shadow(0 2px 2px rgba(14,34,54,0.08)) drop-shadow(0 16px 26px rgba(14,34,54,0.12)) drop-shadow(0 0 14px var(--tk-glow, rgba(170,215,255,0.7))); }
+.tk-btn:active, .tk-btn[data-tone]:active { filter: drop-shadow(0 1px 1.5px rgba(14,34,54,0.12)); }
+
+/* ── TWO MORE TEARS ─────────────────────────────────────────────────────────
+ * The pale ground breaks back through the deep sheet twice: once from the
+ * left around the middle of the page, once along the very bottom. Each is an
+ * element of its own, positioned against the page's real sections, so it
+ * stays where it belongs however long the page gets. Grain matches the deep
+ * sheet so both read as the same paper. */
+body.p-pricing .p-tear { position: absolute; left: 0; right: 0; z-index: -1; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #C4E3F8 0%, #B4DAF4 100%);
+  background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+/* From the left only: the right edge is clipped back so it never spans the page. */
+body.p-pricing .p-tear-mid { right: 6%; top: 60%; height: 900px; clip-path: polygon(0.00% 2.54%, 2.00% 2.96%, 4.00% 2.15%, 6.00% 2.98%, 8.00% 4.07%, 10.00% 3.37%, 12.00% 4.07%, 14.00% 4.63%, 16.00% 5.17%, 18.00% 5.00%, 20.00% 5.22%, 22.00% 6.73%, 24.00% 6.35%, 26.00% 6.43%, 28.00% 7.25%, 30.00% 7.32%, 32.00% 7.45%, 34.00% 8.69%, 36.00% 8.47%, 38.00% 8.85%, 40.00% 8.84%, 42.00% 10.40%, 44.00% 9.81%, 46.00% 11.09%, 48.00% 10.89%, 50.00% 10.94%, 52.00% 11.82%, 54.00% 11.92%, 56.00% 12.79%, 58.00% 13.02%, 60.00% 12.67%, 62.00% 13.17%, 64.00% 13.86%, 66.00% 13.73%, 68.00% 15.45%, 70.00% 14.93%, 72.00% 15.68%, 74.00% 16.01%, 76.00% 16.82%, 78.00% 16.31%, 80.00% 16.84%, 81.98% 17.31%, 83.93% 18.04%, 85.96% 18.34%, 87.69% 20.46%, 89.45% 22.27%, 91.01% 24.70%, 92.51% 27.20%, 94.26% 29.33%, 95.05% 33.13%, 96.22% 36.27%, 97.55% 39.38%, 98.35% 43.08%, 98.97% 46.93%, 99.25% 50.95%, 99.29% 55.00%, 99.08% 59.01%, 98.67% 62.94%, 98.07% 66.75%, 97.77% 70.82%, 96.27% 73.78%, 95.22% 77.12%, 93.88% 80.00%, 92.61% 83.02%, 91.24% 85.95%, 89.59% 88.22%, 87.62% 89.22%, 85.99% 91.87%, 84.04% 93.02%, 81.97% 92.43%, 80.00% 93.05%, 78.00% 92.97%, 76.00% 92.61%, 74.00% 93.99%, 72.00% 93.37%, 70.00% 94.08%, 68.00% 93.80%, 66.00% 93.76%, 64.00% 93.41%, 62.00% 94.47%, 60.00% 94.73%, 58.00% 93.98%, 56.00% 95.16%, 54.00% 94.07%, 52.00% 94.97%, 50.00% 95.08%, 48.00% 95.15%, 46.00% 95.57%, 44.00% 94.80%, 42.00% 95.77%, 40.00% 94.97%, 38.00% 96.31%, 36.00% 95.09%, 34.00% 96.53%, 32.00% 95.98%, 30.00% 96.52%, 28.00% 96.66%, 26.00% 95.81%, 24.00% 96.42%, 22.00% 95.93%, 20.00% 96.37%, 18.00% 96.79%, 16.00% 96.32%, 14.00% 96.85%, 12.00% 96.80%, 10.00% 97.02%, 8.00% 97.84%, 6.00% 97.05%, 4.00% 97.21%, 2.00% 98.51%, 0.00% 98.10%); }
+body.p-pricing .p-tear-bot { bottom: 0; height: var(--tear-bot-h, 720px); clip-path: polygon(0% 100%, 0.00% 60.83%, 1.79% 60.72%, 3.57% 59.11%, 5.36% 57.05%, 7.14% 56.77%, 8.93% 55.43%, 10.71% 54.91%, 12.50% 54.40%, 14.29% 52.10%, 16.07% 49.13%, 17.86% 49.42%, 19.64% 49.97%, 21.43% 47.37%, 23.21% 45.32%, 25.00% 43.47%, 26.79% 43.60%, 28.57% 43.62%, 30.36% 39.90%, 32.14% 40.40%, 33.93% 38.68%, 35.71% 39.25%, 37.50% 37.26%, 39.29% 34.62%, 41.07% 32.86%, 42.86% 33.81%, 44.64% 32.33%, 46.43% 30.99%, 48.21% 30.89%, 50.00% 27.61%, 51.79% 28.38%, 53.57% 27.68%, 55.36% 28.31%, 57.14% 25.05%, 58.93% 24.57%, 60.71% 24.41%, 62.50% 23.66%, 64.29% 24.21%, 66.07% 22.89%, 67.86% 21.52%, 69.64% 22.38%, 71.43% 21.98%, 73.21% 21.08%, 75.00% 19.97%, 76.79% 18.72%, 78.57% 18.89%, 80.36% 18.49%, 82.14% 17.76%, 83.93% 17.51%, 85.71% 17.48%, 87.50% 16.48%, 89.29% 16.42%, 91.07% 15.83%, 92.86% 16.62%, 94.64% 15.23%, 96.43% 17.03%, 98.21% 15.42%, 100.00% 14.77%, 100% 100%); }
+@media (max-width: 760px) {
+  body.p-pricing .p-tear-mid { right: 0; height: 640px; }
+
+}
+
+/* ══ THE PAPER, ON EVERY INNER PAGE ═════════════════════════════════════════
+ * Pricing is the reference. Every inner page wears the same two-paper ground —
+ * a pale sheet and a deeper grained one torn across the first screen — in its
+ * own colour and with its own tear: a mesa, a long climb, or low hills. The
+ * pale/deep pair is one hue at two depths, so text on either keeps one ink. */
+body.p-pricing.pal-mint { background: #D7F1E0; }
+body.p-pricing.pal-mint::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(170deg, #A9DDB5 0%, #97D2A6 30%, #8BC99B 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-mint .p-tear { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #D7F1E0 0%, #D7F1E0 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-mint .pt-head .s-lead, body.p-pricing.pal-mint .pt-head .s-eyebrow, body.p-pricing.pal-mint .s-faq summary, body.p-pricing.pal-mint .s-faq p,
+body.p-pricing.pal-mint section > .s-wrap > .s-h2, body.p-pricing.pal-mint .s-footer, body.p-pricing.pal-mint .s-footer a, body.p-pricing.pal-mint .s-footer h2,
+body.p-pricing.pal-mint .s-footer p, body.p-pricing.pal-mint .s-footer span, body.p-pricing.pal-mint .s-lead, body.p-pricing.pal-mint .s-h1 { color: #123222; }
+body.p-pricing.pal-peri { background: #C6D2F5; }
+body.p-pricing.pal-peri::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(170deg, #A7B8EE 0%, #98ABEA 30%, #8DA1E6 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-peri .p-tear { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #C6D2F5 0%, #C6D2F5 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-peri .pt-head .s-lead, body.p-pricing.pal-peri .pt-head .s-eyebrow, body.p-pricing.pal-peri .s-faq summary, body.p-pricing.pal-peri .s-faq p,
+body.p-pricing.pal-peri section > .s-wrap > .s-h2, body.p-pricing.pal-peri .s-footer, body.p-pricing.pal-peri .s-footer a, body.p-pricing.pal-peri .s-footer h2,
+body.p-pricing.pal-peri .s-footer p, body.p-pricing.pal-peri .s-footer span, body.p-pricing.pal-peri .s-lead, body.p-pricing.pal-peri .s-h1 { color: #141E3E; }
+body.p-pricing.pal-peach { background: #FCE6D7; }
+body.p-pricing.pal-peach::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(170deg, #F6C3A4 0%, #F0B08C 30%, #EBA27C 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-peach .p-tear { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #FCE6D7 0%, #FCE6D7 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-peach .pt-head .s-lead, body.p-pricing.pal-peach .pt-head .s-eyebrow, body.p-pricing.pal-peach .s-faq summary, body.p-pricing.pal-peach .s-faq p,
+body.p-pricing.pal-peach section > .s-wrap > .s-h2, body.p-pricing.pal-peach .s-footer, body.p-pricing.pal-peach .s-footer a, body.p-pricing.pal-peach .s-footer h2,
+body.p-pricing.pal-peach .s-footer p, body.p-pricing.pal-peach .s-footer span, body.p-pricing.pal-peach .s-lead, body.p-pricing.pal-peach .s-h1 { color: #3A1E10; }
+body.p-pricing.pal-lilac { background: #EBE1FB; }
+body.p-pricing.pal-lilac::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(170deg, #D2BCF6 0%, #C4A9F2 30%, #B99BEE 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-lilac .p-tear { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #EBE1FB 0%, #EBE1FB 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-lilac .pt-head .s-lead, body.p-pricing.pal-lilac .pt-head .s-eyebrow, body.p-pricing.pal-lilac .s-faq summary, body.p-pricing.pal-lilac .s-faq p,
+body.p-pricing.pal-lilac section > .s-wrap > .s-h2, body.p-pricing.pal-lilac .s-footer, body.p-pricing.pal-lilac .s-footer a, body.p-pricing.pal-lilac .s-footer h2,
+body.p-pricing.pal-lilac .s-footer p, body.p-pricing.pal-lilac .s-footer span, body.p-pricing.pal-lilac .s-lead, body.p-pricing.pal-lilac .s-h1 { color: #24163E; }
+body.p-pricing.pal-butter { background: #FBF1CC; }
+body.p-pricing.pal-butter::before { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(170deg, #F3DC92 0%, #EED17A 30%, #E9C76A 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-butter .p-tear { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"), linear-gradient(180deg, #FBF1CC 0%, #FBF1CC 100%); background-size: 160px 160px, auto; background-blend-mode: soft-light, normal; }
+body.p-pricing.pal-butter .pt-head .s-lead, body.p-pricing.pal-butter .pt-head .s-eyebrow, body.p-pricing.pal-butter .s-faq summary, body.p-pricing.pal-butter .s-faq p,
+body.p-pricing.pal-butter section > .s-wrap > .s-h2, body.p-pricing.pal-butter .s-footer, body.p-pricing.pal-butter .s-footer a, body.p-pricing.pal-butter .s-footer h2,
+body.p-pricing.pal-butter .s-footer p, body.p-pricing.pal-butter .s-footer span, body.p-pricing.pal-butter .s-lead, body.p-pricing.pal-butter .s-h1 { color: #33280C; }
+body.p-pricing.edge-mesa::before { clip-path: polygon(0.00% 65.93svh, 1.67% 61.94svh, 3.33% 54.43svh, 5.00% 53.59svh, 6.67% 53.67svh, 8.33% 53.55svh, 10.00% 54.01svh, 11.67% 53.70svh, 13.33% 54.44svh, 15.00% 54.36svh, 16.67% 52.96svh, 18.33% 52.93svh, 20.00% 53.54svh, 21.67% 53.51svh, 23.33% 52.61svh, 25.00% 53.26svh, 26.67% 53.06svh, 28.33% 53.11svh, 30.00% 53.09svh, 31.67% 51.81svh, 33.33% 49.07svh, 35.00% 44.44svh, 36.67% 41.85svh, 38.33% 40.70svh, 40.00% 40.42svh, 41.67% 40.08svh, 43.33% 41.44svh, 45.00% 41.91svh, 46.67% 40.62svh, 48.33% 40.72svh, 50.00% 41.42svh, 51.67% 44.26svh, 53.33% 48.94svh, 55.00% 53.85svh, 56.67% 55.93svh, 58.33% 55.27svh, 60.00% 56.34svh, 61.67% 56.39svh, 63.33% 57.58svh, 65.00% 57.66svh, 66.67% 58.20svh, 68.33% 59.07svh, 70.00% 58.62svh, 71.67% 59.05svh, 73.33% 60.17svh, 75.00% 61.78svh, 76.67% 61.60svh, 78.33% 62.58svh, 80.00% 63.63svh, 81.67% 64.46svh, 83.33% 64.14svh, 85.00% 65.15svh, 86.67% 71.60svh, 88.33% 74.71svh, 90.00% 71.85svh, 91.67% 70.91svh, 93.33% 70.62svh, 95.00% 69.01svh, 96.67% 67.00svh, 98.33% 66.94svh, 100.00% 66.06svh, 100% 100%, 0 100%); }
+body.p-pricing.edge-climb::before { clip-path: polygon(0.00% 80.29svh, 1.67% 80.03svh, 3.33% 79.42svh, 5.00% 78.51svh, 6.67% 77.72svh, 8.33% 76.35svh, 10.00% 74.95svh, 11.67% 74.40svh, 13.33% 74.28svh, 15.00% 73.54svh, 16.67% 67.71svh, 18.33% 62.28svh, 20.00% 60.23svh, 21.67% 59.86svh, 23.33% 58.86svh, 25.00% 59.37svh, 26.67% 58.51svh, 28.33% 57.67svh, 30.00% 57.08svh, 31.67% 56.01svh, 33.33% 54.60svh, 35.00% 53.86svh, 36.67% 52.48svh, 38.33% 51.94svh, 40.00% 51.17svh, 41.67% 51.02svh, 43.33% 50.89svh, 45.00% 50.06svh, 46.67% 49.43svh, 48.33% 50.96svh, 50.00% 52.27svh, 51.67% 51.72svh, 53.33% 51.47svh, 55.00% 50.47svh, 56.67% 48.63svh, 58.33% 46.28svh, 60.00% 44.02svh, 61.67% 43.99svh, 63.33% 44.28svh, 65.00% 43.21svh, 66.67% 42.43svh, 68.33% 42.08svh, 70.00% 40.13svh, 71.67% 38.40svh, 73.33% 37.08svh, 75.00% 36.59svh, 76.67% 35.16svh, 78.33% 33.06svh, 80.00% 32.01svh, 81.67% 31.78svh, 83.33% 30.93svh, 85.00% 30.11svh, 86.67% 29.98svh, 88.33% 30.30svh, 90.00% 28.19svh, 91.67% 27.41svh, 93.33% 27.50svh, 95.00% 25.32svh, 96.67% 25.01svh, 98.33% 23.86svh, 100.00% 24.74svh, 100% 100%, 0 100%); }
+body.p-pricing.edge-hills::before { clip-path: polygon(0.00% 76.29svh, 1.67% 76.00svh, 3.33% 75.34svh, 5.00% 74.37svh, 6.67% 73.59svh, 8.33% 72.31svh, 10.00% 71.13svh, 11.67% 70.96svh, 13.33% 71.32svh, 15.00% 71.93svh, 16.67% 71.33svh, 18.33% 71.93svh, 20.00% 73.05svh, 21.67% 73.29svh, 23.33% 73.03svh, 25.00% 74.29svh, 26.67% 74.12svh, 28.33% 73.75svh, 30.00% 73.44svh, 31.67% 72.52svh, 33.33% 71.17svh, 35.00% 70.44svh, 36.67% 69.09svh, 38.33% 68.64svh, 40.00% 68.08svh, 41.67% 68.29svh, 43.33% 68.44svh, 45.00% 67.30svh, 46.67% 65.81svh, 48.33% 65.72svh, 50.00% 65.15svh, 51.67% 63.11svh, 53.33% 62.43svh, 55.00% 62.29svh, 56.67% 62.25svh, 58.33% 62.07svh, 60.00% 61.81svh, 61.67% 63.11svh, 63.33% 64.15svh, 65.00% 64.18svh, 66.67% 64.78svh, 68.33% 65.95svh, 70.00% 65.58svh, 71.67% 65.38svh, 73.33% 65.44svh, 75.00% 66.19svh, 76.67% 65.84svh, 78.33% 64.65svh, 80.00% 64.32svh, 81.67% 64.61svh, 83.33% 64.07svh, 85.00% 63.32svh, 86.67% 63.08svh, 88.33% 63.74svh, 90.00% 62.16svh, 91.67% 61.90svh, 93.33% 62.46svh, 95.00% 60.70svh, 96.67% 60.72svh, 98.33% 59.78svh, 100.00% 60.74svh, 100% 100%, 0 100%); }
+
+/* Every line of prose takes the page's ink, not just Pricing's selector set:
+   legal, blog and security pages put long paragraphs straight on the deep
+   sheet, where the muted grey falls below contrast. */
+body.p-pricing.pal-mint :is(.s-body, p, li, dd, dt, td, th, .s-meta, .s-small, .s-card p, article p, article li) { color: #123222; }
+body.p-pricing.pal-peri :is(.s-body, p, li, dd, dt, td, th, .s-meta, .s-small, .s-card p, article p, article li) { color: #141E3E; }
+body.p-pricing.pal-peach :is(.s-body, p, li, dd, dt, td, th, .s-meta, .s-small, .s-card p, article p, article li) { color: #3A1E10; }
+body.p-pricing.pal-lilac :is(.s-body, p, li, dd, dt, td, th, .s-meta, .s-small, .s-card p, article p, article li) { color: #24163E; }
+body.p-pricing.pal-butter :is(.s-body, p, li, dd, dt, td, th, .s-meta, .s-small, .s-card p, article p, article li) { color: #33280C; }
+body.p-pricing[class*="pal-"] :is(.s-meta, .s-small) { opacity: 0.78; }
+
+/* ── SPACING AND TYPE, CARRIED TO EVERY PAPER PAGE ─────────────────────────
+ * Room under the fixed header for the first line, a real gap between the
+ * hero and what follows (the stacked-section zero made the lead touch the
+ * cards), and the same rhythm between the rest of the sections. */
+body.p-pricing > header.s-section { padding-top: clamp(130px, 19vh, 210px); }
+body.p-pricing > header.s-section + .s-section { padding-top: clamp(56px, 9vh, 104px); }
+body.p-pricing:not(:has(.pt-section)) .s-section + .s-section { padding-top: clamp(48px, 8vh, 96px); }
+body.p-pricing .s-card { gap: 12px; }
+/* The new heading face on every heading, card titles included — the condensed
+   serif was the old system showing through on h3. */
+body.p-pricing h3, body.p-pricing .s-h3, body.p-pricing h4 {
+  font-family: "Exposure VAR", serif; font-weight: 500; font-variation-settings: "EXPO" -25;
+  letter-spacing: -0.035em; line-height: 1.14; text-wrap: balance; -webkit-font-smoothing: antialiased; }
+/* And the sans everywhere text runs. */
+body.p-pricing :is(p, li, dd, dt, td, th, summary, label, .s-body, .s-meta, .s-small, .s-eyebrow, .s-card p) { font-family: "Figtree", var(--font-sans); }
+body.p-pricing .s-body, body.p-pricing .s-card p { font-weight: 400; }

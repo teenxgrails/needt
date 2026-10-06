@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+  <script src="_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/_ds_bundle.js"></script>
+  <script src="site/js/pop.js"></script>
+  <script src="site/js/cloud.js"></script>
+  <script src="site/js/cloud-v2.js"></script>
+  <script src="site/js/mascots-more.js"></script>
+  <style>body{margin:0;background:var(--background)} a{color:var(--accent)} a:hover{color:var(--text-primary)}</style>
+</helmet>
+<div style="min-height:100vh;background:var(--background);color:var(--foreground);font-family:var(--font-sans, Inter, system-ui, sans-serif);padding:32px;box-sizing:border-box;display:flex;flex-direction:column;gap:32px">
+  <header style="display:flex;flex-direction:column;gap:5px">
+    <div style="font-size:12px;font-weight:500;letter-spacing:.04em;color:var(--text-tertiary)">NEEDT</div>
+    <h1 style="margin:0;font-size:22px;font-weight:600;letter-spacing:-.01em">Mascots</h1>
+    <p style="margin:0;font-size:13px;line-height:16px;color:var(--text-secondary);text-wrap:pretty">Eyes follow the cursor. Hover one to make it react, click to change its mood.</p>
+  </header>
+  <sc-for list="{{ cast }}" as="c" hint-placeholder-count="3">
+    <section style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px">
+        <h2 style="margin:0;font-size:15px;font-weight:600;line-height:18px">{{ c.name }}</h2>
+        <span style="font-family:var(--font-mono, 'JetBrains Mono', monospace);font-size:12px;color:var(--text-tertiary);white-space:nowrap">&lt;{{ c.tag }}&gt; · js/{{ c.file }}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:16px">
+        <sc-for list="{{ c.variants }}" as="v" hint-placeholder-count="2">
+          <div style="background:var(--surface-raised);border-radius:16px;box-shadow:0 0 0 1px var(--fill-6, rgba(26,28,30,.08));padding:32px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:16px">
+            <x-import component-from-global-scope="{{ c.tag }}" variant="{{ v.id }}" size="{{ size }}" hint-size="180px,180px"></x-import>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <span style="font-size:12px;line-height:14.4px;color:var(--text-secondary)">{{ v.label }}</span>
+              <span style="font-family:var(--font-mono, 'JetBrains Mono', monospace);font-size:12px;line-height:14.4px;color:var(--text-tertiary)">variant="{{ v.id }}"</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;size&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;120&quot;,&quot;180&quot;,&quot;240&quot;],&quot;default&quot;:&quot;180&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const v = (id, label) => ({ id, label });
+    return {
+      size: String(this.props.size ?? 180),
+      cast: [
+        { name: 'Pop', tag: 'needt-pop', file: 'pop.js', variants: [v('cheer', 'Cheer'), v('dance', 'Dance')] },
+        { name: 'Cloud', tag: 'needt-cloud', file: 'cloud.js', variants: [v('float', 'Float'), v('rain', 'Rain')] },
+        { name: 'Cloud v2', tag: 'needt-cloud-v2', file: 'cloud-v2.js', variants: [v('calm', 'Calm'), v('hello', 'Hello')] },
+        { name: 'Sun', tag: 'needt-sun', file: 'mascots-more.js', variants: [v('shine', 'Shine'), v('nap', 'Nap')] },
+        { name: 'Sprout', tag: 'needt-sprout', file: 'mascots-more.js', variants: [v('grow', 'Grow'), v('wave', 'Wave')] },
+        { name: 'Ember', tag: 'needt-ember', file: 'mascots-more.js', variants: [v('spark', 'Spark'), v('calm', 'Calm')] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
