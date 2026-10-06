@@ -55,7 +55,7 @@ Figma Make are history.
 
 | Question | Decision |
 | --- | --- |
-| Prices | Free $0 · Pro $7/month or $60/year · **Lifetime $149 once, forever, first 300 buyers, then it closes** |
+| Prices | Free $0 · Pro $7/month or $59/year · **Lifetime $149 once, forever, first 300 buyers, then it closes** |
 | Trial | Pro, 14 days, **no card**; afterwards the account drops to Free and keeps its data |
 | AI limits | Enforced but **never shown** to users. Pro and Lifetime get the same allowance; past it, AI slows down and suggests the user's own key |
 | "Demo" | Means the Free plan. There is no demo without an account |
@@ -151,7 +151,7 @@ Carried over from the handoffs closed on 2026-09-15:
 
 - Enter the Google and Azure client secrets at `/admin/system`, then connect a
   real calendar and watch events land in `CalendarEvent`.
-- Set the Creem products to Pro $7/month ($60/year unchanged) and Lifetime $149.
+- Set the Creem products to Pro $7/month ($59/year) and Lifetime $149.
   Confirm the Swiss-seller tax fields.
 - Approve the legal copy. Record the Google OAuth verification video (not a
   launch blocker).
