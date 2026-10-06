@@ -129,12 +129,14 @@ test.describe("clean-database first run", () => {
       const password = "Needt-onboarding-Password1";
       createdEmails.push(email);
 
-      await page.getByRole("tab", { name: "Create Account" }).click();
-      await page.getByLabel("Name").fill(`Onboarding ${viewport}`);
-      await page.getByLabel("Email").fill(email);
-      await page.getByLabel("Password", { exact: true }).fill(password);
-      await page.getByLabel("Confirm password").fill(password);
-      await page.getByRole("button", { name: "Create Account" }).click();
+      /* The ported sign-in has no tabs and no second password field: the
+         show/hide eye covers the typo the confirmation guarded against, and
+         the name is asked for in Settings. The switch at the bottom only
+         appears where public sign-up is allowed, which a clean database is. */
+      await page.getByRole("button", { name: "Create one" }).click();
+      await page.getByPlaceholder("you@example.com").fill(email);
+      await page.getByPlaceholder("At least 8 characters").fill(password);
+      await page.getByRole("button", { name: "Create account" }).click();
       await expect(page).toHaveURL(/\/calendar$/, { timeout: 30_000 });
 
       const user = await prisma.user.findUniqueOrThrow({

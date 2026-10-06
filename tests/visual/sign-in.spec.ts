@@ -73,3 +73,31 @@ test("Sign-in wears the design and still signs you in", async ({ page }) => {
      landmark is the one proof of arrival that every width shares. */
   await expect(page.getByRole("main")).toBeVisible({ timeout: 40_000 });
 });
+
+/* The onboarding suite signs a new account up through this screen, and the
+ * controls it reaches for only exist where public sign-up is allowed. The
+ * names are asserted here so that suite fails on this file rather than on a
+ * four-minute timeout. */
+test("Sign-up offers itself only where it is allowed", async ({ page }) => {
+  await page.route("**/api/auth/public-signup", (route) =>
+    route.fulfill({ json: { enabled: false } })
+  );
+  await page.goto("/auth/signin");
+  await expect(page.getByText("Welcome back.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create one" })).toHaveCount(0);
+
+  await page.unroute("**/api/auth/public-signup");
+  await page.route("**/api/auth/public-signup", (route) =>
+    route.fulfill({ json: { enabled: true } })
+  );
+  await page.goto("/auth/signin");
+  await page.getByRole("button", { name: "Create one" }).click();
+
+  await expect(page.getByPlaceholder("you@example.com")).toBeVisible();
+  await expect(page.getByPlaceholder("At least 8 characters")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Create account" })
+  ).toBeVisible();
+  // The design drops both of these; the onboarding suite must not look for them.
+  await expect(page.getByLabel("Confirm password")).toHaveCount(0);
+});
