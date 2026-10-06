@@ -182,6 +182,10 @@ export function NotificationStack({
   return (
     <div
       className="nf-stack"
+      /* The companion keeps clear of this; a card it sat on top of could not
+         be read or dismissed. The marker belongs on the stack, which is the
+         size of the cards, not on the frame that anchors it. */
+      data-assistant-avoid
       role="region"
       aria-label="Needt notifications"
       aria-live={urgent ? "assertive" : "polite"}

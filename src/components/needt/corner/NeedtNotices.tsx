@@ -38,12 +38,17 @@ export function NeedtNotices() {
       <div
         className="needt-v2"
         data-theme={theme}
-        /* The companion is draggable and keeps clear of anything marked
-           this way; a card it sat on top of could not be read or dismissed. */
-        data-assistant-avoid
+        /* `.nf-stack` is 348px wide and positions itself against the nearest
+           positioned ancestor, so this anchor is the right-hand strip and
+           nothing more. It covered the viewport in the first cut, which put
+           a transparent layer over every pixel of every screen and marked
+           the whole window as somewhere the companion must keep clear of. */
         style={{
           position: "fixed",
-          inset: 0,
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 388,
           zIndex: 480,
           pointerEvents: "none",
         }}
