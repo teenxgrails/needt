@@ -34,7 +34,6 @@ import { notify } from "@/lib/notifications";
 import { updateTaskRequest } from "@/lib/task-api";
 import { resolveThemeMode } from "@/lib/theme";
 
-import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useTaskMutations } from "@/hooks/useTaskMutations";
 
 import { useViewStore } from "@/store/calendar";
@@ -116,6 +115,23 @@ function moveAnchor(date: Date, view: CalendarView, direction: -1 | 1) {
   );
 }
 
+/**
+ * What one press of the header arrows moves.
+ *
+ * The phone canvas is a single day, and the chips that pick week or month are
+ * desktop-only, so an arrow has to move a day there. Asked at the moment of
+ * the press rather than held in state: a hook reports the breakpoint only
+ * after it mounts, so the first presses after a page load moved a week under
+ * a screen showing one day — and a second, hidden button would collide with
+ * the first by name.
+ */
+function stepUnit(view: CalendarView): CalendarView {
+  const phone =
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 639px)").matches;
+  return phone ? "day" : view;
+}
+
 export function CalendarRoute() {
   const router = useRouter();
   const theme = useResolvedTheme();
@@ -134,10 +150,6 @@ export function CalendarRoute() {
   const createTag = useTaskStore((state) => state.createTag);
   const fetchTags = useTaskStore((state) => state.fetchTags);
   const { createTask } = useTaskMutations();
-  // The phone canvas is always a single day, while the view chips that pick
-  // week or month are desktop-only. Stepping by `view` there moved the header
-  // a week at a time under a screen showing one day.
-  const isPhone = useIsMobile(640);
   const [view, setView] = React.useState<CalendarView>(() =>
     storedView === "day" || storedView === "week" || storedView === "month"
       ? storedView
@@ -379,7 +391,7 @@ export function CalendarRoute() {
             className="btn-icon nt-icon-button"
             aria-label="Previous period"
             onClick={() =>
-              setStoredDate(moveAnchor(storedDate, isPhone ? "day" : view, -1))
+              setStoredDate(moveAnchor(storedDate, stepUnit(view), -1))
             }
           >
             <Glyph of={LuChevronLeft} size={16} />
@@ -396,7 +408,7 @@ export function CalendarRoute() {
             className="btn-icon nt-icon-button"
             aria-label="Next period"
             onClick={() =>
-              setStoredDate(moveAnchor(storedDate, isPhone ? "day" : view, 1))
+              setStoredDate(moveAnchor(storedDate, stepUnit(view), 1))
             }
           >
             <Glyph of={LuChevronRight} size={16} />
