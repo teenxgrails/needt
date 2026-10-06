@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Notifications now appear in the corner the rest of the product speaks
+  from, as the design's own cards, instead of as toasts in the opposite
+  one. Everything in the app raises a message through one facade, so
+  nothing else changed to move them. A repeated status replaces the last
+  one of its name rather than stacking beside it, a failure interrupts a
+  screen reader instead of waiting politely, and a message that carries a
+  button still carries it.
+
 - Sign in wears the design. It was the last screen still drawn in the
   pre-port chrome, and the first one anybody sees. The behaviour underneath
   is the same one that shipped before — the same providers, the same
