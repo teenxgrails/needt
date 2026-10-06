@@ -14,6 +14,17 @@
  * that is always "taken", one password that is always "wrong") so the
  * refusal states stay reachable without a caller wiring anything — a real
  * caller passes its own `onSubmit` and this default is never reached.
+ *
+ * Everything an application needs that a prototype does not is optional, and
+ * absent it behaves exactly as the preview always has: which third-party
+ * logins exist (`providers`), a message the page was opened with
+ * (`notice`), whether signing up is even offered (`allowSignup`), and two
+ * slots for the things a real account has and a mock does not — recovering a
+ * password, resending a confirmation, the terms you are agreeing to.
+ *
+ * `LivePlate` is a 1440px luxury. Below `lg` it is gone and the column takes
+ * the screen, which is what the phone port does too; see the note in
+ * `../mobile/MobileAuthScreen`.
  */
 import * as React from "react";
 
@@ -41,6 +52,16 @@ export type AuthRefusalReason = "taken" | "wrong";
 export interface AuthResult {
   readonly ok: boolean;
   readonly reason?: AuthRefusalReason;
+  /** What to say instead of the two canned refusals — a real server has more
+   * ways to say no than a mock does. */
+  readonly message?: string;
+}
+
+/** A third-party login the host actually has configured. */
+export interface AuthProvider {
+  readonly id: string;
+  readonly label: string;
+  readonly icon: IconType;
 }
 
 export interface AuthScreenSeed {
@@ -64,7 +85,29 @@ export interface AuthScreenProps {
   }) => Promise<AuthResult> | AuthResult;
   seed?: AuthScreenSeed;
   embedded?: boolean;
+  /** The third-party logins to offer. Left out, the preview's own three. */
+  providers?: readonly AuthProvider[];
+  onProvider?: (id: string) => void;
+  /** Which provider is mid-redirect, so the row can say so. */
+  providerBusy?: string | null;
+  /** A message the page was opened with, such as a failed OAuth return. It
+   * sits where a refusal sits, because it is one. */
+  notice?: string | null;
+  /** Off where the host does not accept public sign-ups: the switch at the
+   * bottom would otherwise offer a door that is locked. */
+  allowSignup?: boolean;
+  /** Under the password: recovering it, resending a confirmation. */
+  aside?: React.ReactNode;
+  /** Under the whole column: the terms this is agreeing to. */
+  footer?: React.ReactNode;
 }
+
+/* What the preview offers when a caller names no providers of its own. */
+const PREVIEW_PROVIDERS: readonly AuthProvider[] = Object.freeze([
+  { id: "google", label: "Google", icon: LuChrome },
+  { id: "apple", label: "Apple", icon: LuApple },
+  { id: "github", label: "GitHub", icon: LuGithub },
+]);
 
 const MOCK_SUBMIT_DELAY_MS = 900;
 /* The kit's own two reachable refusals, so both are demoable without a
@@ -123,6 +166,13 @@ export function AuthScreen({
   onSubmit = defaultAuthSubmit,
   seed,
   embedded = false,
+  providers,
+  onProvider,
+  providerBusy = null,
+  notice = null,
+  allowSignup = true,
+  aside,
+  footer,
 }: AuthScreenProps) {
   const signup = mode !== "login";
   const [mail, setMail] = React.useState(seed?.mail ?? "");
@@ -133,6 +183,9 @@ export function AuthScreen({
     seed?.refused ?? null
   );
   const [touched, setTouched] = React.useState(!!seed?.touched);
+  /** What the server said, when it said something the two canned refusals
+   * cannot express. */
+  const [said, setSaid] = React.useState<string | null>(null);
 
   const short = pass.length > 0 && pass.length < 8;
   const badMail = touched && mail.length > 0 && mail.indexOf("@") < 1;
@@ -150,17 +203,22 @@ export function AuthScreen({
     setBusy(false);
     if (!result.ok) {
       setRefused(result.reason ?? null);
+      setSaid(result.message ?? null);
       return;
     }
     onDone();
   }
 
+  const offered = providers ?? PREVIEW_PROVIDERS;
+
   const refusal =
-    refused === "taken"
+    said ??
+    (refused === "taken"
       ? "That address already has an account. Sign in instead."
       : refused === "wrong"
         ? "That email and password do not match."
-        : null;
+        : null) ??
+    notice;
 
   return (
     <div
@@ -187,13 +245,15 @@ export function AuthScreen({
       }
     >
       <div
+        /* 392px is the design's column. A phone has no second pane to leave
+           room for, so the column takes the screen and keeps its own
+           gutter. */
+        className="w-full flex-none px-5 sm:w-[392px] sm:px-10"
         style={{
-          flex: "0 0 auto",
-          width: 392,
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
-          padding: "0 40px",
+          overflowY: "auto",
         }}
       >
         <Wordmark size={64} />
@@ -218,34 +278,45 @@ export function AuthScreen({
             : "Welcome back. Your day is where you left it."}
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <OAuthButton icon={LuChrome} onClick={onDone}>
-            Continue with Google
-          </OAuthButton>
-          <OAuthButton icon={LuApple} onClick={onDone}>
-            Continue with Apple
-          </OAuthButton>
-          <OAuthButton icon={LuGithub} onClick={onDone}>
-            Continue with GitHub
-          </OAuthButton>
-        </div>
+        {offered.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {offered.map((provider) => (
+              <OAuthButton
+                key={provider.id}
+                icon={provider.icon}
+                onClick={() => (onProvider ? onProvider(provider.id) : onDone())}
+              >
+                {providerBusy === provider.id
+                  ? `Continuing with ${provider.label}\u2026`
+                  : `Continue with ${provider.label}`}
+              </OAuthButton>
+            ))}
+          </div>
+        ) : null}
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 11,
-            margin: "21px 0",
-          }}
-        >
-          <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
-          <span
-            style={{ font: "var(--type-meta)", color: "var(--text-disabled)" }}
+        {offered.length > 0 ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 11,
+              margin: "21px 0",
+            }}
           >
-            or
-          </span>
-          <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
-        </div>
+            <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            <span
+              style={{
+                font: "var(--type-meta)",
+                color: "var(--text-disabled)",
+              }}
+            >
+              or
+            </span>
+            <span style={{ flex: 1, height: 1, background: "var(--border)" }} />
+          </div>
+        ) : (
+          <div style={{ height: 21 }} />
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -265,6 +336,7 @@ export function AuthScreen({
               }
               onChange={(event) => {
                 setRefused(null);
+                setSaid(null);
                 setMail(event.target.value);
               }}
               placeholder="you@example.com"
@@ -306,6 +378,7 @@ export function AuthScreen({
                 aria-invalid={short || refused === "wrong" ? "true" : undefined}
                 onChange={(event) => {
                   setRefused(null);
+                  setSaid(null);
                   setPass(event.target.value);
                 }}
                 placeholder="At least 8 characters"
@@ -331,9 +404,14 @@ export function AuthScreen({
                 : "Must be at least 8 characters."}
             </span>
           </label>
+          {aside}
           {refusal ? (
-            <span
+            /* A refusal is the one thing on this screen that has to reach
+               somebody who cannot see it. */
+            <p
+              role="alert"
               style={{
+                margin: 0,
                 display: "flex",
                 alignItems: "flex-start",
                 gap: 6,
@@ -346,7 +424,7 @@ export function AuthScreen({
             >
               <Glyph of={LuCircleAlert} size={13} />
               {refusal}
-            </span>
+            </p>
           ) : null}
           <button
             type="button"
@@ -369,34 +447,41 @@ export function AuthScreen({
               "Sign in"
             )}
           </button>
-          <p
-            style={{
-              margin: 0,
-              textAlign: "center",
-              font: "var(--type-meta)",
-              color: "var(--text-muted)",
-            }}
-          >
-            {signup ? "Already have an account? " : "New here? "}
-            <button
-              type="button"
-              onClick={() => onMode(signup ? "login" : "signup")}
+          {allowSignup ? (
+            <p
               style={{
-                border: 0,
-                background: "none",
-                padding: 0,
-                cursor: "default",
-                font: "var(--type-meta-medium)",
-                color: "var(--accent)",
+                margin: 0,
+                textAlign: "center",
+                font: "var(--type-meta)",
+                color: "var(--text-muted)",
               }}
             >
-              {signup ? "Sign in" : "Create one"}
-            </button>
-          </p>
+              {signup ? "Already have an account? " : "New here? "}
+              <button
+                type="button"
+                onClick={() => onMode(signup ? "login" : "signup")}
+                style={{
+                  border: 0,
+                  background: "none",
+                  padding: 0,
+                  cursor: "default",
+                  font: "var(--type-meta-medium)",
+                  color: "var(--accent)",
+                }}
+              >
+                {signup ? "Sign in" : "Create one"}
+              </button>
+            </p>
+          ) : null}
+          {footer}
         </div>
       </div>
 
-      <LivePlate hours calendars placed={6} />
+      {/* The running day is what a wide window is for. Below `lg` it would
+          take the half of the screen the keyboard is about to take. */}
+      <div className="hidden min-w-0 flex-1 lg:flex">
+        <LivePlate hours calendars placed={6} />
+      </div>
     </div>
   );
 }

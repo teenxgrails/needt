@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Sign in wears the design. It was the last screen still drawn in the
+  pre-port chrome, and the first one anybody sees. The behaviour underneath
+  is the same one that shipped before — the same providers, the same
+  register endpoint, the same public-sign-up switch — and recovering a
+  password and resending a confirmation are still there, under the password
+  field. The separate "confirm password" box is gone, since the show/hide
+  eye covers the typo it guarded against, and the optional name at sign-up
+  moves to Settings. On a phone the running-day panel steps aside and the
+  column takes the screen.
+- Shell: the frame no longer claims a second `main` landmark when it wraps a
+  page that has one. Two on a document leave a screen reader asking which is
+  the main one.
+
 - Shell: Log out logs you out. In the account menu it opened Settings —
   the design preview had no session to end, and the application never
   replaced that stand-in.
