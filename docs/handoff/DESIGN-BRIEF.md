@@ -220,14 +220,48 @@ this product at three sizes. A full chat screen has to read as the same voice
 made larger, not as a second assistant. If the right answer is that the panel
 simply grows and there is no separate screen, say so.
 
-### 5.6 Smaller, still unowned
+### 5.6 The upgrade sheet
+
+The screen where somebody pays. It is a landing page that happens to live
+inside the application, and it is the one surface here that is allowed to
+behave like one: the deep sheet torn across a pale ground that
+`site/css/paper.css` already draws, the same stock the marketing pages are
+printed on. Craft does this and it is right — a page asking for money should
+not look like a settings panel.
+
+**Two rules bend for it, and only two.** Rule 5, elevation-is-ring-first, does
+not apply: paper has grain and a torn edge and that is the point. Rule 2, the
+13/12 type scale, holds everywhere except the headline — a price is a display
+figure, not chrome. Every other rule stands, including the accent one: the
+price is a mark, not a filled button.
+
+**Where it opens from:** Settings → Billing, and at the end of the trial.
+**Not** when an AI limit is reached — the limits are not shown to anybody
+(decided 15 September), and a paywall that appears the moment you hit an
+invisible ceiling teaches people the ceiling exists.
+
+Six states, all of them real:
+
+| State            | What the sheet says                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| Trial running    | How much is left, without counting down at them                                           |
+| Trial ended      | What stopped working, and what it costs to start it again                                 |
+| Already Pro      | Not a sales page — what they have, and the way out                                        |
+| Already Lifetime | The same, and nothing to buy                                                              |
+| Lifetime closed  | The first 300 are gone. Say so plainly; do not hide the option as though it never existed |
+| Checkout failed  | The thing that went wrong, and the way to try again                                       |
+
+Prices as configured today: **$7 a month, $59 a year, $149 lifetime** for the
+first 300.
+
+### 5.7 Smaller, still unowned
 
 - **Quick add** — a single capture surface, reachable from outside the app.
 - **Admin** — operations and system pages. Internal, but they should not look
   like a different product.
 - **Password reset** — the one auth screen the design never covered.
 
-### 5.7 The phone
+### 5.8 The phone
 
 The phone has the design's bottom bar and the desktop screens underneath it.
 Five phone screens are drawn and unmounted. The original brief also listed as
@@ -241,7 +275,7 @@ A phone fits one pane where the desktop fits two. The rail's four jobs already
 go four directions: navigation to the bottom bar, capture to a sheet, the
 queue into Home, focus into the header. Keep that split.
 
-#### 5.8 Onboarding — decided, and narrower than it looks
+### 5.9 Onboarding — decided, and narrower than it looks
 
 A five-step wizard is drawn — name and time zone, working hours, the shape
 you want the day in, calendars, first tasks — and has never been mounted. The
