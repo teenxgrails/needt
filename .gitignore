@@ -79,6 +79,25 @@ design-refs/fonts/
 needt-app-design/**/*.woff2
 Needt Design System/**/*.woff2
 
+# Skills: the project's own live in .claude/skills and are tracked; everything
+# else there is a personal or third-party set that belongs to the machine.
+.claude/skills/*
+!.claude/skills/banner-design/
+!.claude/skills/brand/
+!.claude/skills/design/
+!.claude/skills/design-system/
+!.claude/skills/hallmark/
+!.claude/skills/needt-critique/
+!.claude/skills/slides/
+!.claude/skills/ui-styling/
+!.claude/skills/ui-ux-pro-max/
+!.claude/skills/implement-github-issue/
+!.claude/skills/openspec-apply-change/
+!.claude/skills/openspec-archive-change/
+!.claude/skills/openspec-explore/
+!.claude/skills/openspec-propose/
+!.claude/skills/review-merge-port-pr/
+
 # A Claude Design export carries its own working material: the images the
 # board was assembled from, and its screenshots. Measured 6 Oct 2026, that is
 # 193 MB of a 197 MB bundle — the design itself is about 4 MB. Track the

@@ -4,10 +4,21 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
+    # Only the default branch can release. Without this every pull request's
+    # CI run also started a run here, which then skipped at the `gates` gate
+    # after taking a slot in the concurrency queue below.
+    branches: [main]
   workflow_dispatch:
 
+# `workflow_run` fires for EVERY branch's CI, not just the default one, and
+# on that event `github.ref` is always the default branch — so a single group
+# held the real release and every pull request's no-op trigger together.
+# Queued runs in one group cancel each other as newer ones arrive, which is
+# how a merge to main could finish CI and never be published. Key the group
+# on the branch whose CI actually ran.
 concurrency:
-  group: needt-production-${{ github.ref }}
+  group: >-
+    needt-production-${{ github.event.workflow_run.head_branch || github.ref }}
   cancel-in-progress: false
 
 env:
