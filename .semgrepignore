@@ -1,0 +1,27 @@
+# Semgrep's own defaults are replaced wholesale by this file, so the usual
+# exclusions are restated here rather than inherited.
+node_modules/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+
+# The Claude Design export. It is a downloaded artefact we read and port from,
+# never code we ship or can fix: classic-script React, a pre-minified design
+# bundle, and the design tool's own host runtime. Scanning it reports on the
+# tool that produced it — `support.js` trips prototype-pollution on its own
+# renderer — and none of it reaches a user.
+Content height and label fixes/
+Needt - Design : App, Landing/
+
+# Design references and retired code, kept readable but not shipped.
+design-refs/
+Needt Design System/
+needt-app-design/
+_archive-figma-make/
+_superseded/
+
+# Self-contained sub-projects with their own tooling.
+landing/
+pf-sync/
