@@ -10,6 +10,31 @@ the same image and SHA.
 
 What is left, and in what order: `docs/plans/00-roadmap.md` (2026-09-15).
 
+## What Needt is for
+
+Needt is not an AI calendar. The calendar and the scheduling engine are the
+first surface, not the product. Needt is the place a person keeps everything
+they are working on and thinking about, and connects everything else to: their
+calendars, tasks, documents, mail, boards, habits, focus time, and whatever
+tool they already use. The scheduling engine is one thing that reads that
+store; it is not what the store exists for.
+
+Two consequences shape every decision:
+
+- **Breadth of use is the goal, not a side effect.** People should be able to
+  run genuinely different parts of their life and work in Needt, not just one
+  workflow we designed for. Prefer a general mechanism a person can aim at
+  their own problem over a narrow feature that solves exactly one.
+- **The data must be reachable from outside.** Anything a person puts into
+  Needt should be readable and writable through our own API, so they can wire
+  Needt to other tools and build on top of it. A feature that only works
+  inside our UI is unfinished.
+
+When a change would make the product narrower — tied to one workflow, one
+provider, or reachable only through our own screens — say so and offer the
+general form instead. When scope is genuinely ambiguous, the planner reading
+is the safe default, but do not assume the planner is the whole product.
+
 ## Commands
 
 ```bash
@@ -84,7 +109,7 @@ server-controlled through `src/lib/feature-flags.ts`.
 - **API route handlers** (Next 15): `params` is a Promise - `async function GET(req, { params }: { params: Promise<{ id: string }> }) { const { id } = await params; }`.
 - **Admin-only**: API routes use `requireAdmin` middleware from `@/lib/auth/api-auth` (do not call `getServerSession` and check role by hand); UI uses the `useAdmin` hook or `<AdminOnly>` wrapper with `<AccessDeniedMessage>`.
 - **shadcn/ui**: add components with `npx shadcn@latest add`. Icons via `react-icons`.
-- **Design authority (2026-09-11), in this order**: `docs/handoff/PORT.md` first — it is the newest brief and the only one that records *why* each decision beat the obvious alternative, so read it before touching any design work; then `Content height and label fixes/needt-app/HANDOFF.md` in the downloaded bundle for per-subsystem detail; then the bound design system under `Content height and label fixes/_ds/`. Where the two briefs disagree, `docs/handoff/design-reconciliation-2026-09-11.md` holds the rulings, and where either disagrees with the vendored CSS the CSS wins, because it is the shipped artefact. `/DESIGN.md` and everything in `design-refs/` are superseded and carry a banner saying so; read them for history, never for a value.
+- **Design authority (2026-09-11), in this order**: `docs/handoff/PORT.md` first — it is the newest brief and the only one that records _why_ each decision beat the obvious alternative, so read it before touching any design work; then `Content height and label fixes/needt-app/HANDOFF.md` in the downloaded bundle for per-subsystem detail; then the bound design system under `Content height and label fixes/_ds/`. Where the two briefs disagree, `docs/handoff/design-reconciliation-2026-09-11.md` holds the rulings, and where either disagrees with the vendored CSS the CSS wins, because it is the shipped artefact. `/DESIGN.md` and everything in `design-refs/` are superseded and carry a banner saying so; read them for history, never for a value.
 - **Design work flows one way per artefact**: screens move from Claude Design into `src/`, tokens move back up to the design-system project. A shipped screen is edited in code, never re-exported. See `docs/handoff/design-workflow.md`.
 - **Do not re-derive a design decision from its result.** PORT.md §0 and §6 may not be changed without asking the owner. Five alternatives that look like improvements and are not: a damped spring for the agent cursor (it oscillates, people do not sway), a toast instead of the growing island (a second object arriving is what makes toasts ignorable), a sheet under a whole screen (then every object on it is a card on a card), a count above rows that are already visible (a tally of what you can see is noise), and a `ResizeObserver` per card (it fires through entry staggers and re-measures everything).
 - **Four rules outrank everything**: every grey is one text colour at a ladder alpha; the chrome type scale is 13px and 12px with no 14px; the accent is never a solid fill on a button or surface, only on a mark; one form-row geometry, and a label that does not fit gets shortened rather than the column widened.
