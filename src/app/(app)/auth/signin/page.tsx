@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
 
-import { SignInForm } from "@/components/auth/SignInForm";
+import { SignInRoute } from "@/components/needt/auth/SignInRoute";
 
 import { APP_NAME } from "@/lib/app-config";
 import { getAuthOptions } from "@/lib/auth/auth-options";
@@ -28,9 +28,6 @@ export default async function SignInPage({
 
   const { callbackUrl, error } = await searchParams;
 
-  return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <SignInForm callbackUrl={callbackUrl} error={error} />
-    </div>
-  );
+  // The screen draws its own full-bleed frame, so the page adds none.
+  return <SignInRoute callbackUrl={callbackUrl} error={error} />;
 }
