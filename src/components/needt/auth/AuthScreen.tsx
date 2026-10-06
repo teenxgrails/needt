@@ -406,8 +406,12 @@ export function AuthScreen({
           </label>
           {aside}
           {refusal ? (
-            <span
+            /* A refusal is the one thing on this screen that has to reach
+               somebody who cannot see it. */
+            <p
+              role="alert"
               style={{
+                margin: 0,
                 display: "flex",
                 alignItems: "flex-start",
                 gap: 6,
@@ -420,7 +424,7 @@ export function AuthScreen({
             >
               <Glyph of={LuCircleAlert} size={13} />
               {refusal}
-            </span>
+            </p>
           ) : null}
           <button
             type="button"

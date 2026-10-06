@@ -56,6 +56,14 @@ test("Sign-in wears the design and still signs you in", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByText("Include an @ in the address.")).toBeVisible();
 
+  /* A failed OAuth return arrives as a query parameter and has to be
+     announced, not just drawn — `tests/onboarding.spec.ts` pins the role. */
+  await page.goto("/auth/signin?error=OAuthAccountNotLinked");
+  await expect(page.locator("p[role=alert]")).toContainText(
+    "method you used before"
+  );
+
+  await page.goto("/auth/signin");
   await email.fill(VISUAL_TEST_EMAIL);
   await password.fill(VISUAL_TEST_PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();

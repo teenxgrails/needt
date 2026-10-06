@@ -42,6 +42,7 @@ const eslintConfig = [
       // and the react plugin all report on the format rather than on a defect.
       // `npm run tokens:sync` vendors the parts the app uses.
       "Content height and label fixes/**",
+      "Needt - Design : App, Landing/**",
       "needt-app-design/**",
       // Retired in place rather than deleted, so the history stays recoverable
       // while the port runs. Nothing here is built or shipped.
