@@ -4,6 +4,7 @@ import {
   authenticateConnectorToken,
   authorizeConnectorWorkspace,
 } from "@/services/connectors/auth";
+import { isConnectorControlAction } from "@/services/connectors/control-actions";
 import { scheduleAllTasksForUser } from "@/services/scheduling/TaskSchedulingService";
 import { WorkspaceKind, WorkspaceRole } from "@prisma/client";
 
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json()) as Record<string, unknown>;
   const action = body.action;
+  if (!isConnectorControlAction(action)) {
+    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+  }
   const auth = await authorizeConnectorWorkspace(
     request,
     userId,
