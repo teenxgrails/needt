@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Ask Coolify to redeploy one application from its image's `main` tag.
+# Ask Coolify to redeploy one application from the image CI pushed.
 #
 # Images are built and pushed by CI; Coolify only pulls and restarts.
 # Building on the production host is what used to starve the running site:
 # three Node builds per merge on the same four cores as Postgres and the app.
 #
-# Each Coolify resource pulls `ghcr.io/teenxgrails/needt-<app>:main`. CI
-# moves `main` to the release SHA when it pushes the images (and back to an
-# older SHA for a rollback), so deploying needs only the token's `deploy`
-# ability; changing the resource's configured tag would need `write`.
-# Whether the right build came up is checked afterwards against the exact
-# SHA in each service's health endpoint, never assumed.
+# Each Coolify resource builds `docker/runtime/<app>.Dockerfile`, which is
+# a single `FROM ghcr.io/teenxgrails/needt-<app>:${SOURCE_COMMIT}`: Coolify
+# passes the commit it deploys, so the "build" is a pull of the image CI
+# pushed for that exact commit. Deploying needs only the token's `deploy`
+# ability. Whether the right build came up is checked afterwards against the
+# exact SHA in each service's health endpoint, never assumed.
 #
 # Usage: coolify-deploy-image.sh <application-uuid>
 # Needs COOLIFY_API_URL (e.g. https://coolify.needt.app) and COOLIFY_TOKEN.
