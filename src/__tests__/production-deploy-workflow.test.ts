@@ -29,7 +29,13 @@ describe("production deployment workflow", () => {
       "github.ref == format('refs/heads/{0}', github.event.repository.default_branch)"
     );
     // Every later job hangs off `changes`, so none can run without the gate.
-    for (const name of ["gates", "images", "deploy-web", "deploy-runtimes"]) {
+    for (const name of [
+      "gates",
+      "images",
+      "promote-rollback",
+      "deploy-web",
+      "deploy-runtimes",
+    ]) {
       expect(job(name)).toMatch(/needs: (changes|\[changes)/);
     }
     expect(workflow).not.toContain(
@@ -114,18 +120,21 @@ describe("production deployment workflow", () => {
     expect(workflow).not.toContain("NEEDT_PRODUCTION_WORKER_HEALTH_URL");
   });
 
-  it("deploys a prebuilt tag through one authenticated script", () => {
+  it("deploys the main tag through one script that needs only deploy rights", () => {
     expect(
       workflow.match(/\.\/scripts\/coolify-deploy-image\.sh/g)
     ).toHaveLength(3);
     expect(workflow).not.toContain("trigger-coolify-deploy.sh");
     expect(deployScript).toContain("Authorization: Bearer $COOLIFY_TOKEN");
-    expect(deployScript).toContain("docker_registry_image_tag");
-    expect(deployScript).toContain("--request PATCH");
+    expect(deployScript).toContain("/api/v1/deploy?uuid=");
     expect(deployScript).toContain("exit 1");
-    // The tag is set before the deploy is asked for, never after.
-    expect(deployScript.indexOf("--request PATCH")).toBeLessThan(
-      deployScript.indexOf("/deploy?uuid=")
+    // Changing a resource's configured tag needs the token's `write`
+    // ability, which the release token does not have (HTTP 403 on
+    // 2026-10-08). CI moves the `main` tag instead.
+    expect(deployScript).not.toContain("PATCH");
+    expect(deployScript).not.toContain("docker_registry_image_tag");
+    expect(job("images")).toContain(
+      "${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:main"
     );
   });
 
@@ -144,7 +153,9 @@ describe("production deployment workflow", () => {
     const web = job("deploy-web");
     const runtimes = job("deploy-runtimes");
     expect(web).toContain('healthy_sha" = "$DEPLOY_SHA');
-    expect(runtimes).toContain("needs: [changes, images, deploy-web]");
+    expect(runtimes).toContain(
+      "needs: [changes, images, promote-rollback, deploy-web]"
+    );
     expect(runtimes).toContain("needs.deploy-web.result != 'failure'");
     expect(runtimes).toContain("needs.deploy-web.result != 'cancelled'");
   });
@@ -166,8 +177,12 @@ describe("production deployment workflow", () => {
     const changes = job("changes");
     expect(changes).toContain('[[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]');
     expect(job("gates")).toContain("needs.changes.outputs.rollback != 'true'");
+    const promote = job("promote-rollback");
+    expect(promote).toContain("needs.changes.outputs.rollback == 'true'");
+    expect(promote).toContain("docker buildx imagetools create");
+    expect(promote).toContain('"$IMAGE_PREFIX-$image:main"');
     expect(job("deploy-web")).toContain(
-      "needs.changes.outputs.rollback == 'true'"
+      "needs.promote-rollback.result == 'success'"
     );
     expect(workflow).toContain(
       "gh workflow run docker-publish.yml -f rollback_sha="

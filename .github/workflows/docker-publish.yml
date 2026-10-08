@@ -225,14 +225,47 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.target }}
           cache-to: type=gha,scope=${{ matrix.target }},mode=max
 
+  promote-rollback:
+    # Coolify pulls each image's `main` tag. A rollback moves `main` back to
+    # an already-published SHA; nothing is built.
+    needs: changes
+    if: needs.changes.outputs.rollback == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      ROLLBACK_SHA: ${{ needs.changes.outputs.sha }}
+      SERVICES: ${{ inputs.services }}
+    steps:
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Point main at the rollback SHA
+        run: |
+          case "$SERVICES" in
+            web) images="web" ;;
+            runtimes) images="worker collaboration" ;;
+            *) images="web worker collaboration" ;;
+          esac
+          for image in $images; do
+            # Fails, and so stops the rollback, if that SHA was never published.
+            docker buildx imagetools create \
+              --tag "$IMAGE_PREFIX-$image:main" "$IMAGE_PREFIX-$image:$ROLLBACK_SHA"
+          done
+
   deploy-web:
-    needs: [changes, images]
+    needs: [changes, images, promote-rollback]
     # A rollback skips `gates` and `images`; it redeploys a tag that exists.
     if: >-
       always() &&
       needs.changes.outputs.deploy == 'true' &&
       (needs.images.result == 'success' ||
-       (needs.changes.outputs.rollback == 'true' && inputs.services != 'runtimes'))
+       (needs.promote-rollback.result == 'success' && inputs.services != 'runtimes'))
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -254,7 +287,7 @@ jobs:
       # Web goes first: its entrypoint applies the database migrations the
       # worker and collaboration images of the same release expect.
       - name: Deploy the web image
-        run: ./scripts/coolify-deploy-image.sh "$WEB_UUID" "$DEPLOY_SHA"
+        run: ./scripts/coolify-deploy-image.sh "$WEB_UUID"
       - name: Wait for the exact web SHA and database health
         run: |
           # Pulling and restarting a prebuilt image takes a minute or two;
@@ -288,14 +321,14 @@ jobs:
           echo "::error::Production deployment failed; see the run summary for the rollback command."
 
   deploy-runtimes:
-    needs: [changes, images, deploy-web]
+    needs: [changes, images, promote-rollback, deploy-web]
     if: >-
       always() &&
       needs.changes.outputs.deploy == 'true' &&
       needs.deploy-web.result != 'failure' &&
       needs.deploy-web.result != 'cancelled' &&
       (needs.images.result == 'success' ||
-       (needs.changes.outputs.rollback == 'true' && inputs.services != 'web'))
+       (needs.promote-rollback.result == 'success' && inputs.services != 'web'))
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -324,9 +357,9 @@ jobs:
           : "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
           : "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
       - name: Deploy the worker image
-        run: ./scripts/coolify-deploy-image.sh "$WORKER_UUID" "$DEPLOY_SHA"
+        run: ./scripts/coolify-deploy-image.sh "$WORKER_UUID"
       - name: Deploy the collaboration image
-        run: ./scripts/coolify-deploy-image.sh "$COLLABORATION_UUID" "$DEPLOY_SHA"
+        run: ./scripts/coolify-deploy-image.sh "$COLLABORATION_UUID"
       - name: Wait for all runtime SHAs
         env:
           RUNTIME_SHA_TIMEOUT_MS: "600000"
