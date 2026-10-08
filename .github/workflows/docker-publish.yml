@@ -36,6 +36,8 @@ concurrency:
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/teenxgrails/needt
+  # Only `changes` reads this; every later job uses the SHA it decided.
+  HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 # Production runs prebuilt images. CI builds web, worker and collaboration
 # here and pushes them tagged with the full commit SHA; Coolify only pulls the
@@ -63,11 +65,10 @@ jobs:
     env:
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
       ROLLBACK_SHA: ${{ inputs.rollback_sha }}
-      HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ env.HEAD_SHA }}
           # The diff below runs against whatever production last served,
           # which can be several merges back.
           fetch-depth: 0
