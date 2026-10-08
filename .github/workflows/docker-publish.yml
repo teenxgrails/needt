@@ -9,18 +9,6 @@ on:
     # after taking a slot in the concurrency queue below.
     branches: [main]
   workflow_dispatch:
-    inputs:
-      rollback_sha:
-        description: >-
-          Redeploy an already-published release (40-character SHA) without
-          building. Leave empty to release the head of main.
-        required: false
-        default: ""
-      services:
-        description: Which applications a rollback redeploys.
-        type: choice
-        options: [all, web, runtimes]
-        default: all
 
 # `workflow_run` fires for EVERY branch's CI, not just the default one, and
 # on that event `github.ref` is always the default branch — so a single group
@@ -60,11 +48,9 @@ jobs:
     outputs:
       sha: ${{ steps.decide.outputs.sha }}
       deploy: ${{ steps.decide.outputs.deploy }}
-      rollback: ${{ steps.decide.outputs.rollback }}
       previous_sha: ${{ steps.decide.outputs.previous_sha }}
     env:
       WEB_HEALTH_URL: ${{ secrets.NEEDT_PRODUCTION_HEALTH_URL }}
-      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -85,19 +71,7 @@ jobs:
           fi
           echo "previous_sha=$previous_sha" >> "$GITHUB_OUTPUT"
 
-          if [ -n "$ROLLBACK_SHA" ]; then
-            if ! [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-              echo "::error::rollback_sha must be a full 40-character lowercase SHA"
-              exit 1
-            fi
-            echo "sha=$ROLLBACK_SHA" >> "$GITHUB_OUTPUT"
-            echo "rollback=true" >> "$GITHUB_OUTPUT"
-            echo "deploy=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
           echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
-          echo "rollback=false" >> "$GITHUB_OUTPUT"
           # Compare against what production actually runs, not HEAD~1, so
           # merges that landed while a release was skipped are never lost.
           # Unknown history means deploy: a skipped release is the worse error.
@@ -117,7 +91,7 @@ jobs:
 
   gates:
     needs: changes
-    if: needs.changes.outputs.deploy == 'true' && needs.changes.outputs.rollback != 'true'
+    if: needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -227,12 +201,6 @@ jobs:
 
   deploy-web:
     needs: [changes, images]
-    # A rollback skips `gates` and `images`; it redeploys a tag that exists.
-    if: >-
-      always() &&
-      needs.changes.outputs.deploy == 'true' &&
-      (needs.images.result == 'success' ||
-       (needs.changes.outputs.rollback == 'true' && inputs.services != 'runtimes'))
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -254,7 +222,7 @@ jobs:
       # Web goes first: its entrypoint applies the database migrations the
       # worker and collaboration images of the same release expect.
       - name: Deploy the web image
-        run: ./scripts/coolify-deploy-image.sh "$WEB_UUID" "$DEPLOY_SHA"
+        run: ./scripts/coolify-deploy-image.sh "$WEB_UUID"
       - name: Wait for the exact web SHA and database health
         run: |
           # Pulling and restarting a prebuilt image takes a minute or two;
@@ -282,20 +250,12 @@ jobs:
             echo
             echo "Previous healthy web SHA: \`${previous:-unknown}\`."
             echo "Inspect the current production SHA before acting; a newer healthy release must not be rolled back."
-            echo "To roll back: \`gh workflow run docker-publish.yml -f rollback_sha=$previous\`."
-            echo "Migrations only move forward, so a rollback is safe only across additive schema changes."
+            echo "To roll back, use the resource's Deployments view in Coolify; Migrations only move forward, so a rollback is safe only across additive schema changes."
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::error::Production deployment failed; see the run summary for the rollback command."
+          echo "::error::Production deployment failed; see the run summary."
 
   deploy-runtimes:
     needs: [changes, images, deploy-web]
-    if: >-
-      always() &&
-      needs.changes.outputs.deploy == 'true' &&
-      needs.deploy-web.result != 'failure' &&
-      needs.deploy-web.result != 'cancelled' &&
-      (needs.images.result == 'success' ||
-       (needs.changes.outputs.rollback == 'true' && inputs.services != 'web'))
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -324,9 +284,9 @@ jobs:
           : "${WEB_HEALTH_URL:?NEEDT_PRODUCTION_HEALTH_URL is required}"
           : "${COLLABORATION_HEALTH_URL:?NEEDT_PRODUCTION_COLLABORATION_HEALTH_URL is required}"
       - name: Deploy the worker image
-        run: ./scripts/coolify-deploy-image.sh "$WORKER_UUID" "$DEPLOY_SHA"
+        run: ./scripts/coolify-deploy-image.sh "$WORKER_UUID"
       - name: Deploy the collaboration image
-        run: ./scripts/coolify-deploy-image.sh "$COLLABORATION_UUID" "$DEPLOY_SHA"
+        run: ./scripts/coolify-deploy-image.sh "$COLLABORATION_UUID"
       - name: Wait for all runtime SHAs
         env:
           RUNTIME_SHA_TIMEOUT_MS: "600000"
@@ -341,6 +301,6 @@ jobs:
             echo
             echo "Previous healthy web SHA: \`${previous:-unknown}\`."
             echo "Inspect the current production SHAs before acting; a newer healthy release must not be rolled back."
-            echo "To roll back the runtimes: \`gh workflow run docker-publish.yml -f rollback_sha=$previous -f services=runtimes\`."
+            echo "To roll back, use each runtime's Deployments view in Coolify."
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "::error::Runtime deployment failed; see the run summary for the rollback command."
+          echo "::error::Runtime deployment failed; see the run summary."

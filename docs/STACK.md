@@ -103,9 +103,10 @@ Production runs **prebuilt images**. `.github/workflows/docker-publish.yml`
 builds web (`production` target), worker and collaboration from the root
 `Dockerfile` in GitHub Actions and pushes them to
 `ghcr.io/teenxgrails/needt-{web,worker,collaboration}:<full SHA>`. Each Coolify
-resource uses the Docker Image build pack; `scripts/coolify-deploy-image.sh`
-sets its image tag through the Coolify API and asks for a deploy, so the
-production host only pulls and restarts. Building there used to cost ~17
+resource builds `docker/runtime/<app>.Dockerfile`, a single
+`FROM ghcr.io/teenxgrails/needt-<app>:${SOURCE_COMMIT}`, so its "build" is a
+pull of the image CI pushed for that exact commit;
+`scripts/coolify-deploy-image.sh` only asks for the deploy. Building there used to cost ~17
 minutes of CPU per merge on the same four cores as Postgres, and two outages
 when builds overlapped.
 
@@ -119,9 +120,7 @@ when builds overlapped.
 - A merge that touches only documentation (`docs/`, `openspec/`, `.agents/`,
   `.claude/`, `design-refs/`, `*.md`) since the SHA production serves does not
   release.
-- Roll back with `gh workflow run docker-publish.yml -f rollback_sha=<sha>`
-  (optionally `-f services=web|runtimes`). It redeploys the published tag
-  without building. Migrations only move forward, so this is safe only across
-  additive schema changes.
+- Roll back from the resource's Deployments view in Coolify. Migrations only
+  move forward, so this is safe only across additive schema changes.
 - The server pulls from GHCR with a read-only `read:packages` login made once
   over SSH (`docker login ghcr.io`).
