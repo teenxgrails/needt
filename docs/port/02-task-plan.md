@@ -31,11 +31,15 @@ Source: `docs/port/prototype/` in this repo (below: `$P`; frozen 2026-10-09 from
 - The stream that owns a screen owns its CSS file (§2.5). `app.css` / `base.css` / `shell.css` are S1/S2 only.
 
 ### 2.2 Components (`src/components/needt3/`)
-- `<Task task layout="row|card|block" onToggle onOpen draggable dense? />`: one component, three layouts. Source: `$P/task.jsx` (`TkRow` 205, `TkCard` 293, `TkBlock` 353, `Task` 403; `TaskCheck` 117; `TkPartRing` 188), plus the Home row `HdTask` (`$P/HomeToday.jsx:65`). Its prop type is `NeedtTask` from `src/lib/needt/types.ts`, extended rather than forked.
+- `<Task task layout="row|card|block" onToggle onOpen draggable dense? />`: one component, three layouts. Source: `$P/task.jsx` (`TkRow` 205, `TkCard` 293, `TkBlock` 353, `Task` 403; `TaskCheck` 117; `TkPartRing` 188), plus the Home row `HdTask` (`$P/HomeToday.jsx:65`). **Its prop type is `V3Task` from `src/lib/needt3/map.ts`** (what `hooks/tasks.ts` returns; decided 2026-10-10). `NeedtTask` is the old v2 model and is not used by v3. Parts and waits: `V3Task.parts` / `V3Task.waits` come with the parts/waits API (owned by lane B as card T06b); until then `<Task>` renders without the part ring and wait chip, and never fakes part writes. Completing a task = `useToggleTask` (sets status `completed`); a task with open parts can still be completed.
 - `<Sheet open onClose side="right|bottom|center" from?: DOMRect>`, `<Menu>` / `<RichMenu items>` (`$P/popovers.jsx` `RichMenu` 161, `RichRow` 124, `SmallRow` 149), `<CtxLayer>` (`$P/ctx.jsx:116`) are built on Radix (`dropdown-menu`, `popover`, `dialog` already in `src/components/ui`) and styled with v3 classes. `useExit(open, ms)` is ported from `$P/motion.js`.
 - `<StScreen query={…} kind="list|grid|doc|calendar">`: every screen body mounts inside it (§T08).
 - **Portals stay inside the scope.** Every v3 stylesheet selector starts with `.needt-v3`, so a Radix portal into `document.body` renders unstyled. Pass `container={useV3PortalContainer()}` (an element inside `<V3Root>`) to every Radix `Portal` (Dialog, Popover, DropdownMenu, Tooltip, ContextMenu).
 - Toasts: only `notify` from `src/lib/notifications.ts` (CLAUDE.md). Undo = `notify.success(msg, { action: { label: "Undo", onClick } })`. Port no `ToastLayer`.
+
+- **Shell mount:** `V3Root` renders `children` directly. Lane A (T05) adds the one-line mount of `V3Shell` inside `V3Root.tsx` in its T05 PR — S1 grants that edit. Search: `useSearch(query)` in `src/lib/needt3/hooks/search.ts` (`/api/search`, v3 links: project → `/projects/[id]`, task → `/tasks?task=<id>`).
+- **Motion corrections** go in the hand-written `src/styles/v3-overrides/motion.css` (loaded after the vendored CSS), never in `src/styles/v3/` (generated). Lanes may add a rule there for their own selectors.
+- **Offline queue:** `NEEDT_OFFLINE_STATE` messages carry `scopeKey`; `null` means every scope (sign-out reset). Ignore a message whose `scopeKey` is neither `null` nor the tab's own.
 
 ### 2.3 Data and query keys
 - One file, `src/lib/needt3/query-keys.ts` (S1, hour 1):
@@ -172,6 +176,10 @@ Every task card: **Src → Target → Deps → Accept.**
 - Target: `needt3/task/{Task,TaskCheck,PartRing,chips}.tsx` per §2.2.
 - Deps: T01, T04 types.
 - Accept: a `/style`-like fixture page with row/card/block × {plain, parts, waiting, overdue, fixed, done, long title, no project} matches `$P/blocks.html`-equivalent rows in `index.html`; jest on derived labels.
+
+**T06b Parts and waits API (S3, lane B, delegated from S1)**
+- Target: `GET /api/tasks` and `GET /api/tasks/[id]` include `parts` (ordered by `position`) and open `waits` (`resolvedAt: null`, with the waited-on user's id/name/image). New routes: `POST /api/tasks/[id]/parts`, `PATCH|DELETE /api/tasks/[id]/parts/[partId]`, `POST /api/tasks/[id]/waits`, `PATCH /api/tasks/[id]/waits/[waitId]` (resolve). Same auth/workspace scope as `/api/tasks/[id]`. `map.ts` adds `parts: {id,title,done}[]` and `waits: {id,on,onName,for}[]` to `V3Task`; `hooks/tasks.ts` adds `useTaskParts`/`useTaskWaits` mutations with undo.
+- Deps: T04. Accept: jest for the mapping and route auth (another workspace's task → 404); type-check; lint.
 
 **T07 Composer (S3)**
 - Src: `$P/Composer.jsx` (490: `Composer` 267, `CoShelf` 207, `CoChip` 141, `CoMenu2` 177, `CoDrafts` 236), `$P/composer.css`; parser: existing `src/components/needt/composer/co-parse.ts` (reuse, extend). `SCREENS.md` 251–260.
