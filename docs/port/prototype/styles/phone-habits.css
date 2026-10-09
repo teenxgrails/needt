@@ -90,7 +90,6 @@ button.phb-dot.is-today:focus-visible { outline: 2px solid var(--v2p-lav); outli
 .phb-mb-stage { position: absolute; inset: 0; }
 .phb-mb-stage.is-board { animation: phb-in 0.3s cubic-bezier(0.2, 0.9, 0.24, 1); }
 @keyframes phb-in { from { transform: translate3d(24px, 0, 0); } to { transform: none; } }
-.phb-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* the boards list */
 .phb-boards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; padding-bottom: 8px; }

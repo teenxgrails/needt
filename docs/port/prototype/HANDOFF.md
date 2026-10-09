@@ -91,7 +91,7 @@ Built on the Tasks layout, full width, no document card.
 
 Used by: Connections, Templates and Shared headers, paywall, auth/onboarding, Settings promo, sidebar Pro strip, mobile paywall.
 
-- `PxSky` canvas sky; current look = **6A** in `backgrounds.html`: `horizon="cloudsea"` + `clouds="wispy"` (both defaults). 6B = haze, 6C = puff clouds (comparison only).
+- `PxSky` canvas sky; current look = **6A** in `_archive/labs/backgrounds.html` (archived comparison page): `horizon="cloudsea"` + `clouds="wispy"` (both defaults). 6B = haze, 6C = puff clouds (comparison only).
 - **Daily mood**, one per local date per theme family — light: clear, haze, lilac, golden, silver; dark: night, slate, harbor. Debug `__skyMood`, `__skyHorizon`, `__skyClouds`.
 - Cloud edges and sides dissolve into a **halftone dot screen** (4 px pitch, 12 sizes); static **paper grain** tile (128 px, opacity .03).
 - Ink on the sky: `--px-ink` dark in light moods, white in dark moods, ≥ 4.5:1.

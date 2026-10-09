@@ -25,7 +25,7 @@
  * from a menu you have to read first.
  */
 const CoNS = window.NeedtDesignSystem_25d3c8;
-const { Icon: CoIcon, IconButton: CoIconButton, Menu: CoMenu, MenuItem: CoMenuItem, MenuLabel: CoMenuLabel, MenuSeparator: CoMenuSep, Tooltip: CoTooltip } = CoNS;
+const { Icon: CoIcon, IconButton: CoIconButton, Tooltip: CoTooltip } = CoNS;
 
 const CO_PROJECTS = ["Operations", "Design system", "German", "Resale", "Life"];
 const CO_LABELS = ["errand", "money", "deep work", "admin", "reading"];

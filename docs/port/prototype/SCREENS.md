@@ -72,19 +72,11 @@ Verified against the `<script>` tags of `index.html` and `mobile.html` (07.10.26
 
 | File | What it was |
 | --- | --- |
-| `film.jsx`, `film.html` | film / "underground" motion study |
-| `columns.jsx`, `columns.html` | Columns lab |
-| `blocks-sheets.jsx`, `blocks.html` | block inventory sheets |
-| `rich-block.jsx`, `rich-block.html` | RichBlock lab |
-| `accent-studio.jsx`, `accent-studio.html` | accent picker lab |
-| `animations-v3.jsx` | motion study (film.html only) |
-| `CalendarScreen.jsx` | old Week/Month grid, 46 px/hour — mounted by neither page (mobile uses `calendar2.jsx`) |
-| `TaskRow.jsx` | old Workspace table row (blocks.html / spec.html only) |
-| `Flame.jsx` | category flame (blocks.html / film.html only) |
-| `_archive/` | `ColumnsScreen`, `Flow`, `Minutes`, `Team`, `WorkspaceScreen`, `tweaks-panel`, `fire-skin.txt` |
+| `_archive/labs/` | the lab pages, moved out of the app folder (port-prune, 09.10.26): `film.jsx` / `film.html` (motion study), `columns.jsx` / `columns.html` (Columns lab), `blocks-sheets.jsx` / `blocks.html` (block inventory), `rich-block.jsx` / `rich-block.html` (RichBlock lab), `accent-studio.jsx` / `accent-studio.html` (accent picker lab), `animations-v3.jsx`, `TaskRow.jsx`, `Flame.jsx`, `identity.html`, `spec.html`, `motion-lab.html`, `composer-lab.html`, `exposure-wordmark.html`, `icons.html`, `backgrounds.html` (sky comparison 6A / 6B / 6C) — design reference only, they may not open from there |
+| `_archive/port-prune/removed/` | `CalendarScreen.jsx` (old 46 px/hour grid), `BlockDesigns.jsx`, `RichBlock.jsx` |
+| `_archive/` | `ColumnsScreen`, `Flow`, `Minutes`, `Team`, `WorkspaceScreen`, `tweaks-panel`, `fire-skin.txt`, the old phone (`Mobile.legacy.jsx`) |
 | `_orig/` | pre-edit backups of `App`, `DocsScreen`, `Sidebar`, `app.css` |
-| `identity.html`, `spec.html`, `motion-lab.html`, `composer-lab.html`, `exposure-wordmark.html`, `icons.html`, `auth.html` | standalone labs / old spec pages |
-| `backgrounds.html` | sky comparison (6A / 6B / 6C) — design reference only |
+| `auth.html` | Sign in / onboarding on their own (kept in the app folder) |
 
 **Mounted but legacy — do not port as screens**
 
@@ -156,7 +148,7 @@ scripts `index.html` and `mobile.html` mount — handlers, `__app.updateTask` /
 | Pause / Resume · +5 min | Focus window (running) | FocusSession | update | pause parks `planned` at elapsed, keeps `plannedFull`; +5 → `planned += 5` | No | mock |
 | Stop focus | Focus window → Stop, or the clock runs out | FocusSession | update | end the session (`endedAt=now`); logs `{d, m, t}` to `needt.focus.log` | No | mock — log is localStorage |
 | Tick a subtask in focus | Focus window → Subtasks | Task | update | `TaskPart[i].done` | No | via `__app.updateTask` |
-| Session notes | Focus window → Notes (debounced 500 ms + blur) | Task | update | `description` | No | via `__app.updateTask` → `NEEDT.applyTaskPatch` |
+| Session notes | Focus window → Notes (debounced 500 ms + blur) | Task | update | `notes` (plain text) | No | via `__app.updateTask` → `NEEDT.applyTaskPatch` |
 | Ambient sound · Hide other tasks | Focus window (setup; sound chip while running) | UserPrefs (focus) | update | `focusAmbient` (off/rain/cafe/noise), `focusHideOthers` | No | mock — no audio, hide is stored only |
 | Take a 5-min break | Focus window end → What next | FocusSession | create | `intention="Break"`, `planned=5`, `isBreak=true` | No | ends back in setup with the next task chosen |
 | Day menu: Start the day later · Finish early · Block out hours · Block out the whole day · Unblock the day | mini-month date ▾ | DayBlock / Planner | — | — | — | not wired (menu only closes) |
@@ -183,7 +175,7 @@ UI only — no API: place tiles and More menu (navigation), mini-month day selec
 
 The Focus pill in the sidebar foot opens a **window over the app** (720 wide, up to 760 tall; scrim + blur), painted in the Connections world: `PxSky` lavender sky with clouds, `GlassCard` cards, Exposure titles. One window, three views (260 ms rise+fade between them; reduced motion: fades only):
 - **Setup** — kicker "Focus session", title **Focus**; glass card with *What is this session for?* and *Length* (25 / 50 / 90 min / Custom 1–240, error line when out of range); *Choose a task* — up to six glass cards (project colour ring, title, project · estimate), chosen one ringed with a check, click again to clear; options card — *Ambient sound* Off / Rain / Café / White noise and *Hide other tasks* switch; primary **Start N min**; the scheduler rule as an info line. Esc / × / backdrop close.
-- **Running** — kicker In focus / Paused / On a break, the task title, the clock huge on the sky (mm:ss left), a progress bar and "50 min session · ends 16:17"; Pause/Resume (primary) · +5 min · Stop · sound chip (click cycles); a glass card with the task's subtasks (tick) and **Notes** (writes `task.description`). **Minimise** (round button, Esc, or backdrop) folds the window into the sidebar pill, which keeps the running clock and ring; clicking the pill reopens the window on the clock.
+- **Running** — kicker In focus / Paused / On a break, the task title, the clock huge on the sky (mm:ss left), a progress bar and "50 min session · ends 16:17"; Pause/Resume (primary) · +5 min · Stop · sound chip (click cycles); a glass card with the task's subtasks (tick) and **Notes** (writes `task.notes`). **Minimise** (round button, Esc, or backdrop) folds the window into the sidebar pill, which keeps the running clock and ring; clicking the pill reopens the window on the clock.
 - **End** — kicker Session complete / Session ended, title "50 min", "on Draft the launch brief"; stats strip (sessions today with pips, minutes focused today, days in a row — from `needt.focus.log`); **What next**: Next task (back to setup with it chosen) · Take a 5-min break (a break session, then setup) · Done for now (close).
 
 State: the session is still App's `focus` (`{intention, planned, elapsed, taskId}`; App ticks it); the window's own state (`open`, `view`, `preset`, `summary`) is `window.focusUi` (`open(preset?)`, `close()`, `get`, `sub`). A session started anywhere (drag onto the pill, Home's Start focus, ⌘⇧F) opens the window on its clock. Nothing animates while the window is closed; the sky runs only while it is open (PxSky's own perf logic).
@@ -252,14 +244,14 @@ UI only — no API: Open, Open in New Tab (doc / project / place), Copy link (cl
 
 | Action | Trigger | Entity | Operation | Fields changed | Undo? | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| Add task | type a sentence → Enter / "Add task" | Task | create | `id`, `title` (parsed), `projectId` (project chip → `projectIdOf`), `status="todo"` *(not in DB)*, `estimatedMinutes` (duration chip, default 30), `dueDate` (date chip, default today), `done=false`, `TaskPart` (parsed parts, ids `n<ts>.<n>`) | No | the sheet stays open for the next line. Kind is honoured (event / doc / habit); time → `scheduledStart` + `isFixed`, deadline → `dueDate`, priority → `priority`, label → `labels`, note → `description`. Title = unparsed words (`rest`). |
+| Add task | type a sentence → Enter / "Add task" | Task | create | `id`, `title` (parsed), `projectId` (project chip → `projectIdOf`), `status="todo"` *(not in DB)*, `estimatedMinutes` (duration chip, default 30), `dueDate` (date chip, default today), `done=false`, `TaskPart` (parsed parts, ids `n<ts>.<n>`) | No | the sheet stays open for the next line. Kind is honoured (event / doc / habit); time → `scheduledStart` + `isFixed`, deadline → `dueDate`, priority → `priority`, label → `labels`, note → `notes`. Title = unparsed words (`rest`). |
 | Dictate → Add N | mic → drafts → Add N | Task (several) | create | as Add task, per draft | No | mock: drafts come from a fixture (`CO_HEARD`) |
 
 UI only — no API: kind segment (Task / Event / Doc), chip menus (pick / clear), "+" insert menu, Drop a draft, Discard, Cancel, Esc.
 
 ### Task dialog (`Dialogs.jsx` → `TaskDialog`, opens from any task row)
 
-Compact card (08.10.26 rebuild): ~560 px, one column, centred. Head = round checkbox · title (Enter saves, wraps) · ⋯ · ×. Under it one chip row: Date · Duration · Project · Priority · Labels · Repeat (+ Who only when another person holds the task). Empty chips read "+ Date" etc.; each opens a small popover. Body: notes (format bar only over a selection), subtasks, First step. Footer: "Created … · Updated …", Attach, "Saved". Every edit autosaves through `onChange(patch)` → App `patchTask` → `NEEDT.applyTaskPatch` and stamps `updatedAt`; closing shows "Changes saved" with one Undo that puts the whole record back as it was when the card opened (not after Delete / Convert, which have their own Undo). Esc closes the innermost popover, then the card; ⌘Enter ticks the task.
+Compact card (08.10.26 rebuild): ~560 px, one column, centred. Head = round checkbox · title (Enter saves, wraps) · ⋯ · ×. Under it one chip row: Date · Duration · Project · Priority · Labels · Repeat (+ Who only when another person holds the task). Empty chips read "+ Date" etc.; each opens a small popover. Body: Scheduling (⋯ → Scheduling…, or the summary line), notes (plain text), subtasks, First step (an editable one-line field). Footer: "Created … · Updated …", Attach, "Saved". Every edit autosaves through `onChange(patch)` → App `patchTask` → `NEEDT.applyTaskPatch` and stamps `updatedAt`; closing shows "Changes saved" with one Undo that puts the whole record back as it was when the card opened (not after Delete / Convert, which have their own Undo). Esc closes the innermost popover, then the card; ⌘Enter ticks the task.
 
 | Action | Trigger | Entity | Operation | Fields changed | Undo? | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -274,7 +266,7 @@ Compact card (08.10.26 rebuild): ~560 px, one column, centred. Head = round chec
 | Labels | Labels chip → tick / type + Enter / Create "…" | Task | update | `labels` (string[]) | Yes (on close) | pool = defaults + every task's labels |
 | Repeat | Repeat chip | Task | update | `repeat` = null/`daily`/`weekdays`/`weekly`/`monthly` *(not in DB)* | Yes (on close) | no recurrence engine yet |
 | Who | Who chip (only when `holder` ≠ you) | Task | update | `holder` | Yes (on close) | |
-| Notes | notes field; B / I / S / list / link on selection | Task | update | `description` (sanitised HTML: b i s a ul ol li br; null when empty) | Yes (on close) | legacy `note` is read when `description` is missing |
+| Notes | notes field (plain text, grows) | Task | update | `notes` (plain text; null when empty) | Yes (on close) | older `description` (HTML or text) / `note` are migrated into `notes` by `NEEDT.migrateTask` |
 | Subtasks | tick, inline title edit, Enter = new row below, Backspace on empty = remove, × , drag to reorder, "Add subtask" | Task | update | `TaskPart` (`[{id,title,done}]`, order = array order) | Yes (on close) | last part ticked closes the parent (`applyTaskPatch`) |
 | Scheduling | ⋯ → Scheduling… / summary chip | Task | update | Placement Auto/Fixed → `isFixed`, `auto`; Min. work block → `chunk`; Deadline → `deadline` ("YYYY-MM-DD") + `hardDeadline`; Hours → `hours` = `work`/`personal`/`any` | Yes (on close) | `auto`, `chunk`, `deadline`, `hardDeadline`, `hours` *(not in DB)*. Section open/closed in `needtSettings.taskSchedOpen`. Summary chip under the chips only when not default ("Fixed 09:00 · min block 25 min · hard deadline 10 Sep · personal") |
 | In progress / To do | ⋯ (only when `status` exists) | Task | update | `status`, `Stage` | Yes (on close) | |
@@ -283,7 +275,8 @@ Compact card (08.10.26 rebuild): ~560 px, one column, centred. Head = round chec
 | Convert to document | ⋯ → Convert to document | Doc + Task | create + archive | `docs.create({title, projectId, hue, body:[notes text]})`; task `trashedAt=now` | Yes | |
 | Delete | ⋯ → Delete | Task | archive (trash) | `NEEDT.trashTask` → `trashedAt=now` | Yes (`trashedAt=null`) | closes the card |
 | Attach | footer → Attach (file picker) | Task | update | `attachments += {id, name, size}` *(not in DB; mock, no upload)* | Yes (on close) | × removes |
-| First step → Start focus | First step row | Focus | — | `__app.setFocus({intention, planned, taskId})` | — | text = `entry` or first open subtask |
+| First step | First step row: one-line field | Task | update | `entry` (null when empty) | Yes (on close) | placeholder = first open subtask |
+| First step → Start focus | First step row → Start focus | Focus | — | `__app.setFocus({intention, planned, taskId})` | — | text = `entry` or first open subtask |
 
 UI only — no API: Close, Esc, scrim click, Copy link (`needt.app/t/<id>` to clipboard + toast), popovers, month navigation. Opened with no task (new-task mode) it edits a local draft and nothing is written. Dropped from the old dialog: Workspace row, Task/Event/Document tab row (→ Convert to…), Template, Remind, "More settings".
 
@@ -792,16 +785,20 @@ UI only — no API: Connections row (→ Connections), Plan rows (→ Paywall), 
 
 UI only — no API: row tap (→ Task sheet), close.
 
-### Task sheet (`MbTask`)
+### Task sheet (`PkTaskSheet`, phone-overlays.jsx; was `MbTask`)
 
 | Action | Trigger | Entity | Operation | Fields changed | Undo? | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | Done / Reopen | header check; Done / Reopen button | Task | update | `done=!done` | No | queues offline |
 | Tick subtask | part check | Task | update | `TaskPart[i].done` | No | parent does not auto-close |
 | Add a subtask | "Add a subtask" field → Enter | Task | update | `TaskPart += {id, title, done:false}` | No | |
-| First step | field | Task | update | `entry` *(not in DB)* | No | per keystroke |
+| First step | one-line field under the title | Task | update | `entry` *(not in DB)*, null when empty | No | per keystroke |
+| Notes | Notes field | Task | update | `notes` (plain text) | No | per keystroke |
 | Duration | value tap (cycles) | Task | update | `estimatedMinutes`; `scheduledEnd` recomputed | No | |
-| Minimum work block | value tap (cycles) | Task | update | `chunk` *(not in DB)* | No | inside the Scheduling fold |
+| Placement | Scheduling → Placement → picker sheet | Task | update | `isFixed` + `auto` *(not in DB)* | No | inside the Scheduling card |
+| Minimum work block | Scheduling → Min. work block → picker sheet | Task | update | `chunk` *(not in DB)*: 15 / 25 / 30 / 45 / 60 / 90, null = Don’t split | No | inside the Scheduling card |
+| Deadline | Scheduling → Deadline → picker sheet (Today … In 2 weeks, No deadline; Hard deadline switch) | Task | update | `deadline` (ISO day), `hardDeadline` *(not in DB)* | No | inside the Scheduling card |
+| Hours | Scheduling → Hours → picker sheet | Task | update | `hours` = work / personal / any *(not in DB)* | No | inside the Scheduling card |
 | Start focus | button | FocusSession | create | — | No | mock (snack) |
 | Delete | button | Task | delete | row removed | Yes | not queued offline |
 
@@ -857,7 +854,7 @@ Still open:
 | --- | --- | --- |
 | `priority` | `"urgent" \| "important" \| "whenever"` \| absent | Composer chip (shown read-only in Task dialog) |
 | `labels` | `string[]` | Composer label chip |
-| `description` | `string` | Composer second line (note) |
+| `notes` | `string` | Composer second line (note), plain text |
 | `trashedAt` | ISO datetime \| null | Delete → Trash |
 
 ## Entities & endpoints summary
@@ -1023,7 +1020,7 @@ flowchart TD
 | ‹ › · sideways swipe · Today | pages a week / back to today | inline | — |
 | Week-strip day / month cell | that day | inline | — |
 | Now / next plate, timeline row (task) | Task sheet | sheet | swipe down · scrim |
-| Now / next plate, timeline row (event) | Event sheet (`PkEventSheet`: Time · Length · Calendar · Overlaps) | sheet | Done · swipe down · scrim |
+| Now / next plate, timeline row (event) | Event sheet (`PkEventSheet`: Time · Length · Calendar · Overlaps — only when it collides with a calendar event; two tasks overlapping each other are never marked, the scheduler spreads them) | sheet | Done · swipe down · scrim |
 | No time / Earlier today header | folds or unfolds | inline | — |
 | Pull down at the top | search tasks · add to today | pull-down | as Home |
 
@@ -1100,7 +1097,7 @@ flowchart TD
 ### Sheets and layers (`phone-overlays.jsx`)
 | Layer | Tap targets → result | Back |
 | --- | --- | --- |
-| **Task sheet** (`PkTaskSheet`) | ring / Done / Reopen → inline · title, notes → autosave ("Saved") · Date / Time / Duration / Project / Priority / Labels → a row of choices under the fact · subtasks: ring, Add a subtask (Enter / blur) · Start focus (primary) → closes + snack · Delete task → closes + snack with Undo (→ Trash) | swipe down · scrim · Esc |
+| **Task sheet** (`PkTaskSheet`) | ring / Done / Reopen → inline · title, First step (`entry`), notes (`notes`) → autosave ("Saved") · Scheduling card (folded, summary line; remembered as `taskSchedOpen`) → Placement / Min. work block / Deadline (+ Hard) / Hours rows → a picker sheet over the task sheet (Esc / scrim closes the picker only), writing `isFixed`+`auto`, `chunk`, `deadline`+`hardDeadline`, `hours` like the desktop · Date / Time / Duration / Project / Priority / Labels → a row of choices under the fact · subtasks: ring, Add a subtask (Enter / blur) · Start focus (primary) → closes + snack · Delete task → closes + snack with Undo (→ Trash) | swipe down · scrim · Esc |
 | **Composer** (`PkComposer`, grows out of menu A's pill and goes back into it — `PkSheet from=pkPillRect`) | one line parsed by `coParse` (date, time, duration, project, priority, label) · Date / Project / Priority chips write words into the line · Attachment → file picker, files as chips · Add / Enter → `pkDay.create`, snack "Added to today" / "Added — <day>" | swipe down · scrim · Esc |
 | **Ask** (`PkAsk`) | suggestion → reply · field → Send; offline / AI paused → a note, field off | swipe down · scrim · Esc |
 | **Paywall** (`PkPaywall` → `paywall.jsx` phone) | plans · Monthly / Yearly · Start 14-day free trial → trial, closes, snack (Lifetime → snack "Checkout opens here") | Close · swipe down · scrim |

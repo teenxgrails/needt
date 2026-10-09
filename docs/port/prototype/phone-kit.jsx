@@ -58,9 +58,6 @@
  *     scroller.
  *
  * ── Material ──────────────────────────────────────────────────────────────
- *   <PkPlate as="section"|"button"|… className …rest>  a plate (32px radius,
- *     plate shadow; usePkPlate's class — inverse in light, muted in dark).
- *     Extra props pass through (onClick, data-*).
  *   <PkNumber value className label />  rolling digits (each digit a 0–9
  *     strip, a transition on change only). value may hold non-digits ("9 h").
  *   <PkButton kind icon small block disabled onClick className …rest>
@@ -124,12 +121,10 @@
  *   control share a row above the title) and a small one before the
  *   compact title;
  *   PkSection glyph="place" puts a small one before the label.
- *   pkFogDrift(getDots) → { scroll(y), stop() }  the fog's halftone answers
- *     the scroll: dots slide with it and part with its speed, then spring
- *     back; nothing at rest. PkScreen's bottom fog and menu A's card use it;
- *     a custom scroller with <PkFog fogRef> can too.
- *   pkPlaceHue(place) → the CSS colour of a place (var(--…)), for a dot or a
- *   ring that should match its glyph.
+ *   pkFogLive(el) → cleanup  the fog's halftone drifts like the sky (CSS,
+ *     compositor-only) while the band is live: marks el data-pk-live while
+ *     it is on screen and the tab is visible. <PkFog> does it itself; menu
+ *     A's card fog does the same by hand. The scroll does not move the dots.
  *
  * ── Lists ─────────────────────────────────────────────────────────────────
  *   <PkSection title count tone="late" action folded onFold big>rows</PkSection>
@@ -156,8 +151,7 @@
  *     pkDay.nextUp.
  *   <PkChips className label>chips</PkChips>  a horizontal strip whose
  *     left / right edges fade into a progressive blur (only on the side that
- *     has more). <PkChip on hue onClick label />  a small inverse chip with a
- *     hue ring (habits).
+ *     has more).
  *
  * ── Sheets ────────────────────────────────────────────────────────────────
  *   <PkSheet open onClose title meta head footer detents label className
@@ -185,7 +179,7 @@
  *     custom scroller (the doc reader, a board), never hand-written spans.
  *
  * ── Hold → actions (wave 3; was Mobile.jsx MbHold / MbActSheet / MbHueTile /
- *    mbOwnGesture — those names stay as window aliases) ─────────────────────
+ *    mbOwnGesture) ─────────────────────────────────────────────────────────
  *   <PkHold onHold className data disabled>children</PkHold>
  *     a box that fires onHold after a 450 ms press that has not travelled
  *     (8 px), or on contextmenu (a mouse's right click, iOS's own long
@@ -342,7 +336,7 @@ const pkDay = {
     if (prio) t.priority = pkDay.prio(prio);
     const label = f.labels || say("label");
     if (label) t.labels = Array.isArray(label) ? label : [label];
-    if (f.note) t.description = f.note;
+    if (f.note) t.notes = f.note;
     t = N.sync ? N.sync(t) : t;
     pkStore().set((l) => [t].concat(l));
     return id;
@@ -418,12 +412,6 @@ function PkNumber({ value, className, label }) {
 }
 
 /* ══ Material ═════════════════════════════════════════════════════════════ */
-function PkPlate({ as, className, children, ...rest }) {
-  const plate = usePkPlate();
-  const Tag = as || "section";
-  return <Tag className={pkCx("pk-plate", plate, className)} {...rest}>{children}</Tag>;
-}
-
 /* A plate whose ground is the sky. No ...rest here (Babel-standalone shares
    its _excluded helper across files): the props it passes on are listed. */
 function PkSkyPlate(props) {
@@ -489,7 +477,6 @@ const PK_PLACE_HUE = { home: "var(--accent)", tasks: "var(--accent)", calendar: 
   shared: "var(--info)", trash: "var(--destructive)", connections: "var(--info)", settings: "var(--v2p-ink-2)" };
 const PK_KIND_HUE = { doc: "var(--success)", page: "var(--success)", folder: "var(--accent)", template: "var(--pk-violet)", task: "var(--accent)", event: "var(--destructive)", mail: "var(--info)" };
 const PK_GLYPH_PX = { s: 32, m: 44, l: 56, xl: 72 };
-const pkPlaceHue = (place) => PK_PLACE_HUE[place] || PK_KIND_HUE[place] || "var(--v2p-lav)";
 function PkGlyph({ place, kind, size, tone, className, label }) {
   const px = typeof size === "number" ? size : PK_GLYPH_PX[size || "m"] || 44;
   const hue = place ? PK_PLACE_HUE[place] : PK_KIND_HUE[kind];
@@ -763,65 +750,28 @@ function PkChips({ children, className, label }) {
     </div>
   );
 }
-function PkChip({ on, hue, onClick, label, children, ...rest }) {
-  const plate = usePkPlate();
-  return (
-    <button type="button" className={pkCx("pk-chip", plate, on && "is-on")} aria-pressed={!!on} onClick={onClick} style={hue ? { "--hue": hue } : undefined} {...rest}>
-      <span className="pk-chip-mark" aria-hidden="true">{on ? <PkIcon name="check" size={11} /> : null}</span>
-      <span className="pk-chip-label">{label || children}</span>
-    </button>
-  );
-}
 
-/* ══ Fog that answers the scroll ═══════════════════════════════════════════
+/* ══ Fog that drifts like the sky ═════════════════════════════════════════
    The halftone dots in a fog band (the screen's bottom band, menu A's card)
-   drift with the scroll: each layer's dot screen slides at its own rate
-   (background-position — the band's mask stays put), and the layers part a
-   little with the scroll's speed (transform), springing back together when
-   the scroll stops. Nothing runs at rest: the spring loop ends when it
-   settles; reduced motion = still dots.
-   pkFogDrift(getDots) → { scroll(y) } ; getDots() → the dot elements. */
-const PK_FOG_RATE = [0.17, 0.29, 0.43];
-function pkFogDrift(getDots) {
-  const S = { y: null, t: 0, o: { x: 0, v: 0 }, target: 0, raf: 0, last: 0, quiet: 0 };
-  const write = () => {
-    const els = getDots(); if (!els) return;
-    for (let i = 0; i < els.length; i++) {
-      const el = els[i]; if (!el) continue;
-      const f = PK_FOG_RATE[i] || 0.3;
-      const ph = (((S.y || 0) * f) % 6 + 6) % 6;
-      el.style.backgroundPositionY = (i === 1 ? ph + 3 : ph).toFixed(2) + "px";
-      const o = S.o.x * (0.55 + 0.45 * i);
-      el.style.transform = Math.abs(o) < 0.05 ? "" : "translate3d(" + (o * (i - 1) * 0.35).toFixed(2) + "px," + o.toFixed(2) + "px,0)";
-    }
-  };
-  const loop = () => {
-    if (S.raf) return;
-    S.last = performance.now();
-    const tick = (now) => {
-      const dt = Math.min(0.034, (now - S.last) / 1000); S.last = now;
-      if (now - S.t > 90) S.target = 0; /* the scroll stopped: settle */
-      const done = pkStep(S.o, S.target, dt, 220, 0.55) && S.target === 0;
-      write();
-      if (done || (S.target === 0 && Math.abs(S.o.x) < 0.08 && Math.abs(S.o.v) < 0.6)) { S.o.x = 0; S.o.v = 0; write(); S.raf = 0; return; }
-      S.raf = requestAnimationFrame(tick);
-    };
-    S.raf = requestAnimationFrame(tick);
-  };
-  return {
-    scroll(y) {
-      if (pkReduced()) return;
-      const now = performance.now();
-      if (S.y == null) { S.y = y; S.t = now; return; }
-      const dy = y - S.y, dt = Math.max(8, now - S.t);
-      S.y = y; S.t = now;
-      if (!dy) return;
-      /* px per ms → a few px of parting, against the scroll */
-      S.target = pkClamp(-dy / dt * 7, -9, 9);
-      loop();
-    },
-    stop() { cancelAnimationFrame(S.raf); S.raf = 0; }
-  };
+   drift slowly right → left and bob a hair, all the time the band is seen
+   (the owner's exception to "nothing loops at rest", MOTION.md). It is
+   compositor-only: each dot layer is a little wider than the band and its
+   `translate` (the drift, 8 dot cells per cycle, so the loop is seamless)
+   and `transform` (the bob) are CSS animations (phone-kit.css pk-fog-drift /
+   pk-fog-bob). They run only while the band is live: on screen, the tab
+   visible — pkFogLive(el) keeps data-pk-live on the band; PkScreen also
+   pauses them while its fog is faded out (data-pk-fog-on). Reduced motion =
+   still dots. The scroll no longer moves them.
+   pkFogLive(el) → cleanup ; marks el data-pk-live="1" | "0". */
+function pkFogLive(el) {
+  if (!el || typeof document === "undefined") return undefined;
+  let seen = true;
+  const sync = () => { const v = seen && !document.hidden ? "1" : "0"; if (el.getAttribute("data-pk-live") !== v) el.setAttribute("data-pk-live", v); };
+  const io = typeof IntersectionObserver === "function" ? new IntersectionObserver((es) => { seen = es[es.length - 1].isIntersecting; sync(); }) : null;
+  if (io) io.observe(el);
+  document.addEventListener("visibilitychange", sync);
+  sync();
+  return () => { if (io) io.disconnect(); document.removeEventListener("visibilitychange", sync); };
 }
 
 /* ══ Blur bands ═══════════════════════════════════════════════════════════ */
@@ -839,8 +789,14 @@ function PkTopBand({ className }) {
   return <div className={pkCx("pk-topband", className)} aria-hidden="true"><PkBlurLayers /><span className="pk-topband-wash" /></div>;
 }
 function PkFog({ fogRef }) {
+  const own = React.useRef(null);
+  const setEl = React.useCallback((n) => {
+    own.current = n;
+    if (typeof fogRef === "function") fogRef(n); else if (fogRef) fogRef.current = n;
+  }, [fogRef]);
+  React.useEffect(() => pkFogLive(own.current), []);
   return (
-    <div ref={fogRef} className="pk-fog" aria-hidden="true">
+    <div ref={setEl} className="pk-fog" aria-hidden="true" data-pk-live="0">
       <PkBlurLayers />
       <span className="pk-fog-wash" />
       <span className="pk-fog-dots is-1" /><span className="pk-fog-dots is-2" /><span className="pk-fog-dots is-3" />
@@ -871,6 +827,7 @@ function PkScreen({ title, compactTitle, sub, right, head, headClass, onPull, sc
       r.style.setProperty("--pk-kt", kt.toFixed(3));
       r.style.setProperty("--pk-fog-k", fog.toFixed(3));
       r.setAttribute("data-pk-collapsed", kt > 0.5 ? "1" : "0");
+      r.setAttribute("data-pk-fog-on", fog > 0.01 ? "1" : "0"); /* the fog's drift pauses while it is faded out */
     };
     read();
     el.addEventListener("scroll", read, { passive: true });
@@ -878,18 +835,9 @@ function PkScreen({ title, compactTitle, sub, right, head, headClass, onPull, sc
     if (ro) { ro.observe(el); if (el.firstElementChild) ro.observe(el.firstElementChild); }
     return () => { el.removeEventListener("scroll", read); if (ro) ro.disconnect(); };
   }, [scroller]);
-  /* the bottom fog's dots drift with the scroll (pkFogDrift) */
-  const fogEl = React.useRef(null);
-  React.useEffect(() => {
-    const el = scroller; if (!el) return undefined;
-    const drift = pkFogDrift(() => (fogEl.current ? fogEl.current.querySelectorAll(".pk-fog-dots") : null));
-    const on = () => drift.scroll(el.scrollTop);
-    el.addEventListener("scroll", on, { passive: true });
-    return () => { el.removeEventListener("scroll", on); drift.stop(); };
-  }, [scroller]);
   const small = compactTitle != null ? compactTitle : typeof title === "string" ? title : "";
   return (
-    <div ref={root} className={pkCx("pk-screen", className)} data-pk-screen={screen || ""} data-pk-collapsed="0">
+    <div ref={root} className={pkCx("pk-screen", className)} data-pk-screen={screen || ""} data-pk-collapsed="0" data-pk-fog-on="0">
       <div ref={setSc} className="pk-scroll">
         <div className="pk-content">
           {title != null || sub || head ? (
@@ -921,7 +869,7 @@ function PkScreen({ title, compactTitle, sub, right, head, headClass, onPull, sc
       </div>
       <PkTopBand />
       {small ? <div className="pk-compact" aria-hidden="true">{glyph || glyphKind ? <PkGlyph place={glyph} kind={glyphKind} size={22} className="pk-compact-glyph" /> : null}<span className="pk-compact-title">{small}</span></div> : null}
-      <PkFog fogRef={fogEl} />
+      <PkFog />
       {onPull ? <PkPullDown scroller={scroller} {...onPull} /> : null}
     </div>
   );
@@ -1481,9 +1429,8 @@ function PkActions({ acts, onClose }) {
 
 Object.assign(window, {
   PkHold, PkActions, PkHueTile, pkOwnGesture,
-  /* the old names (Mobile.jsx, wave 3) */ MbHold: PkHold, MbActSheet: PkActions, MbHueTile: PkHueTile, mbOwnGesture: pkOwnGesture,
   pkDay, pkTaskPull, pkCx, pkReduced, pkInverse, pkPlateClass, PkTheme, usePkInverse, usePkPlate, usePkExit,
-  PkScreen, PkPullDown, PkPlate, PkRow, PkTaskRow, PkNumber, PkSection, PkChips, PkChip, PkSheet, PkScrim, PkEmpty, PkButton, PkField, PkFog,
+  PkScreen, PkPullDown, PkRow, PkTaskRow, PkNumber, PkSection, PkChips, PkSheet, PkScrim, PkEmpty, PkButton, PkField, PkFog,
   PkBlurLayers, PkTopBand, PkSkyPlate, PkSkyBadge, PkSweep, pkSkyMood,
-  PkGlyph, PkGlass, pkDotSweep, pkPlaceHue, pkFogDrift, pkPillRect
+  PkGlyph, PkGlass, pkDotSweep, pkFogLive, pkPillRect
 });

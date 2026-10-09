@@ -5,7 +5,6 @@
    data-ctx-id / data-ctx-title) and it gets its menu. Everything else gets the
    app menu. Text fields keep the browser's menu, because copy and paste
    belong to the OS there. */
-const CxNS = window.NeedtDesignSystem_25d3c8;
 
 /* Live from the one project registry (work.jsx), read at menu time — plus No project. */
 const cxProjects = () => (window.projectStore ? window.projectStore.get().list : []).map((p) => [p.name, window.projectHue ? window.projectHue(p.name) : p.color]).concat([[null, null]]);
@@ -21,7 +20,6 @@ function needtOpenProject(name) {
   if (a && a.setScreen) a.setScreen("projects");
   window.dispatchEvent(new CustomEvent("needt-project-open", { detail: { name: name } }));
 }
-const cxSoon = (what) => () => window.toast(what + " — coming with the port");
 
 /* Delete on a task moves it to Trash (trashedAt), never out of the list, and
    the toast's Undo brings it back. Data.js owns the rule when it has it. */

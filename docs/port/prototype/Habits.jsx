@@ -17,7 +17,7 @@
  * plans around — a real function, not a widget beside the plan.
  */
 const HbNS = window.NeedtDesignSystem_25d3c8;
-const { Icon: HbIcon, NavSection: HbSection, Tooltip: HbTooltip } = HbNS;
+const { Icon: HbIcon, Tooltip: HbTooltip } = HbNS;
 
 /* THE STORE lives in stores.jsx (07.10.26), shared with the phone: Habit
    rows (window.habitStore) and HabitCheckin rows (window.habitCheckinStore)
@@ -53,34 +53,6 @@ function HabitStrip({ done, hue, onToggle }) {
   );
 }
 
-function HabitRow({ h, onToggle, menu }) {
-  const hue = hbHue(h);
-  const days = hbDays(h);
-  const hit = days.filter(Boolean).length;
-  /* A perWeek habit is measured by its week, so a missed day inside a week
-     that still meets the count is not a miss at all. */
-  const week = window.NEEDT.habitWeek(h.id);
-  const perWeek = window.NEEDT.habitPerWeek(h), time = window.NEEDT.habitTime(h);
-  const label = perWeek ? week + "/" + perWeek + " this week" : hit + " of 14";
-  return (
-    <div className="group hb-row" data-ctx="habit" data-ctx-id={h.id}>
-      <span className="hb-row-top">
-        <span className="hb-row-title" title={h.title}>{h.title}</span>
-        {/* The hour is the habit's own slot — the thing the scheduler builds
-            the day around, so it is stated even when nothing else is. */}
-        {time ? (
-          <span className="hb-row-at">{time}</span>
-        ) : null}
-        {menu}
-      </span>
-      <span className="hb-row-bottom">
-        <HabitStrip done={days} hue={hue} onToggle={onToggle} />
-        <span className="hb-row-label">{label}</span>
-      </span>
-    </div>
-  );
-}
-
 function StreakChip({ compact }) {
   const n = window.NEEDT.streak();
   const closed = window.NEEDT.closedDays;
@@ -97,31 +69,6 @@ function StreakChip({ compact }) {
         </span>
       </span>
     </HbTooltip>
-  );
-}
-
-function HabitShelf({ menu }) {
-  const live = hbUseHabits();
-  const todayDone = live.filter(hbOnToday).length;
-  return (
-    <div className="hb-shelf">
-      {/* NavSection's markup, with the label at tertiary: it names the list. */}
-      <div className="hb-shelf-head">
-        <span className="hb-shelf-label">Every day</span>
-        <span className="hb-shelf-count">{todayDone}/{live.length}</span>
-      </div>
-      <span className="hb-shelf-streak"><StreakChip compact /></span>
-      {live.map((h) => (
-        <HabitRow key={h.id} h={h} menu={menu ? menu(h) : null}
-          onToggle={() => hbApi.toggle(h.id)} />
-      ))}
-      {!live.length ? <p className="hb-shelf-none">No habits yet.</p> : null}
-      {/* No scolding, and no debt: a habit that was missed is simply a hollow
-          dot, and the next one is today. */}
-      <p className="hb-shelf-foot">
-        A missed day stays empty. Nothing carries over.
-      </p>
-    </div>
   );
 }
 
@@ -200,70 +147,7 @@ function HabitToday({ menu }) {
   );
 }
 
-const HB_WEEKS = 26;
 const HB_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/* A day's history, generated once from the habits' own strips so the field and
-   the strips cannot disagree: the last fourteen days come from the data, and
-   the weeks before them from a stable pseudo-random walk seeded per day. */
-function hbHistory(live) {
-  const today = new Date(2026, 8, 1);
-  const days = [];
-  const total = HB_WEEKS * 7;
-  for (let i = total - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    const back = i;
-    let kept;
-    if (back < 14) {
-      kept = live.filter((h) => window.NEEDT.habitDoneOn(h.id, d)).length;
-    } else {
-      /* Deterministic, so the field does not reshuffle on every render. */
-      const s = Math.sin(d.getTime() / 8.64e7) * 10000;
-      kept = Math.round(Math.abs(s - Math.floor(s)) * live.length);
-    }
-    days.push({ date: d, kept: kept, of: live.length, today: back === 0 });
-  }
-  return days;
-}
-
-function HabitField({ live, onToggleAll }) {
-  const days = hbHistory(live);
-  const weeks = [];
-  for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-  /* One label per month, at the week its first day falls in. */
-  const labels = weeks.map((w, i) => {
-    const m = w[0].date.getMonth();
-    const prev = i ? weeks[i - 1][0].date.getMonth() : -1;
-    return m !== prev ? HB_MONTHS[m] : null;
-  });
-  return (
-    <div className="hb-field">
-      <div className="hb-field-grid">
-        {weeks.map((w, i) => (
-          <span key={i} className={"hb-field-week" + (labels[i] && i ? " is-month" : "")}>
-            {w.map((d, j) => {
-              const ratio = d.of ? d.kept / d.of : 0;
-              return (
-                <span key={j} title={d.kept + " of " + d.of + " kept · " + d.date.getDate() + " " + HB_MONTHS[d.date.getMonth()]}
-                  onClick={d.today ? onToggleAll : undefined}
-                  className={"hb-field-day" + (d.today ? " is-today" : "")}
-                  style={ratio ? { background: "color-mix(in oklab, var(--accent) " + Math.round(26 + ratio * 62) + "%, transparent)" } : undefined} />
-              );
-            })}
-          </span>
-        ))}
-      </div>
-      <div className="hb-field-labels">
-        {labels.map((l, i) => (
-          <span key={i} className={"hb-field-lcell" + (l && i ? " is-month" : "")}>
-            {l ? <span className="hb-field-month">{l}</span> : null}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* MONTHS AS DOTS (08.10.26). One row block per month, one dot per day, the
    way a wall calendar reads: filled = kept, grey = missed, ring = still
@@ -385,4 +269,4 @@ function HabitRail() {
   );
 }
 
-Object.assign(window, { hbKeptOn, HabitToday, HabitTodayCard, HabitShelf, HabitRail, StreakChip, HabitField, HabitRow, HabitStrip, HabitMonths, HabitLeft });
+Object.assign(window, { hbKeptOn, HabitToday, HabitTodayCard, HabitRail, StreakChip, HabitStrip, HabitMonths, HabitLeft });

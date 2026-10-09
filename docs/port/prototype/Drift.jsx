@@ -279,4 +279,4 @@ function normalizeTheme(v) {
   return map[v] || "light";
 }
 
-Object.assign(window, { normalizeTheme, useDrift, sunTimes, timeThemeAt, placeFromTz, TIME_PALETTES, TZ_PLACES, mixHex, driftMix: mixHex, fmtSunHour: fmtHour });
+Object.assign(window, { normalizeTheme, useDrift, sunTimes, timeThemeAt, placeFromTz, TIME_PALETTES, TZ_PLACES, mixHex });

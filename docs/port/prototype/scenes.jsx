@@ -52,8 +52,6 @@
      <GlassCard pad radius width caption strong best className style onClick label>
      <PxBadge tone="solid|glass|green">Pro</PxBadge>
      <PxDots count index onPick label />
-     window.pxMountSky(el, {variant, horizon, clouds, mood, dark}) — plain-JS mount
-       (used by backgrounds.html); returns { set(mood, dark), stop() }.
 
    Performance (08.10.26 v2, owner: "the app lags" — Connections was ~20 ms
    per frame at 30 fps, auth ~30, with 50–350 ms spikes):
@@ -178,7 +176,6 @@ function pxPalette(date, dark, pin) {
   const m = PX_MOOD[nm];
   return Object.assign({}, m, { dark: !!dark, phase: { a: m.name, b: m.name, k: 0 } });
 }
-function pxPhaseAt(date) { const n = pxMoodName(date, false); return { a: n, b: n, k: 0 }; }
 window.__skyMood = function (arg) {
   if (arg == null) { pxMoodPin = null; pxDayShift = 0; }
   else if (typeof arg === "number") { pxMoodPin = null; pxDayShift = arg; }
@@ -981,7 +978,6 @@ function pxStart(root, canvas, dotCanvas, opt) {
        toward the base), FW how wide the dotted fringe is. */
     accumClouds(tm, dir, ta);
     for (let gy = 0; gy < gr; gy++) {
-      const yp = gy * kc;
       const v = gy * S * 1.35 + sy;
       const my = gy - mouse.y;
       for (let gx = 0; gx < gc; gx++) {
@@ -1536,17 +1532,4 @@ function PxDots({ count, index, onPick, label, names, className, style }) {
   );
 }
 
-/* Plain-JS mount (no React) for standalone pages such as backgrounds.html. */
-function pxMountSky(el, o) {
-  pxEnsureCss();
-  const opt = Object.assign({}, o || {});
-  el.classList.add("px-sky");
-  el.innerHTML = "";
-  const cv = document.createElement("canvas"); cv.className = "px-canvas";
-  const dv = document.createElement("canvas"); dv.className = "px-dotscreen";
-  const gr = document.createElement("div"); gr.className = "px-grain"; gr.style.backgroundImage = "url(" + pxGrain() + ")";
-  el.appendChild(cv); el.appendChild(dv); el.appendChild(gr);
-  return pxStart(el, cv, dv, opt);
-}
-
-Object.assign(window, { PxSky, GlassCard, PxBadge, PxDots, pxEnsureCss, pxPalette, pxPhaseAt, pxMountSky });
+Object.assign(window, { PxSky, GlassCard, PxBadge, PxDots, pxEnsureCss, pxPalette });

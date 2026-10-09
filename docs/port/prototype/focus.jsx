@@ -6,7 +6,7 @@
      setup — purpose, length (25 / 50 / 90 / custom), the task, ambient sound
              and "Hide other tasks", Start;
      run   — the clock, huge, on the sky; the task's subtasks (tick) and its
-             notes (task.description, written through App's updateTask →
+             notes (task.notes, plain text, written through App's updateTask →
              NEEDT.applyTaskPatch); Pause / +5 min / Stop; ambient chip;
              Minimise folds the window into the sidebar pill (the running
              clock) and the pill opens it again;
@@ -70,7 +70,7 @@ function fcTaskOf(tasks, f) {
    in a row with at least one session, ending today). */
 const FC_LOG = "needt.focus.log";
 function fcDay(d) { const x = d || new Date(); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); }
-function fcLogRead() { try { const v = JSON.parse(localStorage.getItem(FC_LOG)); return Array.isArray(v) ? v : []; } catch (e) { return []; } }
+function fcLogRead() { const v = window.needtSync ? window.needtSync.get(FC_LOG) : null; return Array.isArray(v) ? v : []; }
 function fcLogAdd(row) { const l = fcLogRead().concat([row]).slice(-400); if (window.needtSync) window.needtSync.set(FC_LOG, l); }
 function fcStats() {
   const log = fcLogRead(), today = fcDay();
@@ -393,17 +393,17 @@ function fcEndsAt(leftSec) {
 }
 
 /* The task in the session: its subtasks to tick and its notes. Notes are the
-   task's description, saved as you type (debounced) and on blur. */
+   task's notes (plain text), saved as you type (debounced) and on blur. */
 function FcTaskCard({ task, Glass }) {
   const app = () => window.__app || {};
-  const [notes, setNotes] = React.useState(task.description || "");
+  const [notes, setNotes] = React.useState(task.notes || "");
   const timer = React.useRef(0);
-  const last = React.useRef(task.description || "");
+  const last = React.useRef(task.notes || "");
   const write = (v) => {
     window.clearTimeout(timer.current);
     if (v === last.current) return;
     last.current = v;
-    if (app().updateTask) app().updateTask(task.id, { description: v });
+    if (app().updateTask) app().updateTask(task.id, { notes: v || null });
   };
   React.useEffect(() => () => { window.clearTimeout(timer.current); }, []);
   const parts = task.TaskPart || [];

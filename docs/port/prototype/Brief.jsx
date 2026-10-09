@@ -7,7 +7,7 @@
  * in the first clear space rather than on top of what is already there. It
  * grows downward — the page scrolls, the canvas does not.
  */
-const { Icon, IconButton, Tooltip, Checkbox, Chip, StatusDot, Button, ToggleGroup, Menu, MenuItem, MenuLabel, MenuSeparator, FormRow, Switch } = window.NeedtDesignSystem_25d3c8;
+const { Icon, IconButton, Tooltip, Checkbox, Menu, MenuItem, MenuLabel } = window.NeedtDesignSystem_25d3c8;
 
 const AUTHORS = {
   you:    { name: "You", icon: "user", color: "var(--text-primary)", mark: "var(--text-quaternary)" },
@@ -15,9 +15,6 @@ const AUTHORS = {
   linear: { name: "Linear", icon: "folder-kanban", color: "var(--info)", mark: "var(--info)" },
   github: { name: "GitHub", icon: "code", color: "var(--success)", mark: "var(--success)" }
 };
-
-
-const CANVAS_W = 900;
 
 /* Written by Needt, character by character, the way it actually arrives. */
 function Typed({ text, color, speed, onDone }) {
@@ -223,39 +220,6 @@ const LOG = [
   ["Batch photographed, three items still unlisted", "Tue, 18:30"],
   ["Week planned: 18 free hours, 3 tasks unplaced", "Mon, 08:40"]
 ];
-
-/* The three forms of the brief, each as its own real screen. */
-function MiniToday({ on }) { return <window.Miniature kind="day" width={124} />; }
-function MiniProse({ on }) { return <window.Miniature kind="prose" width={124} />; }
-function MiniCanvas({ on }) { return <window.Miniature kind="canvas" width={124} />; }
-
-function BriefSettings({ at, form, onForm, marks, onMarks, timeline, onTimeline }) {
-  return (
-    <div className="shell-brief-settings-layer" style={{ left: at.x, top: at.y }}>
-      <Menu width={300}>
-        <MenuLabel>Form</MenuLabel>
-        <div className="shell-brief-settings-row">
-          {[["prose", "Prose", MiniProse], ["canvas", "Canvas", MiniCanvas]].map(([k, label, Mini]) => (
-            <button className="shell-brief-settings-stack" key={k} type="button" onClick={() => onForm(k)}
-             >
-              <Mini on={form === k} />
-              <span className="shell-brief-settings-text" style={{ color: form === k ? "var(--accent)" : "var(--text-secondary)" }}>{label}</span>
-            </button>
-          ))}
-        </div>
-        <MenuSeparator />
-        <div className="base-stack shell-help-sheet-span">
-          <FormRow label="Timeline" hint="The week as it happened.">
-            <Switch checked={timeline} onChange={onTimeline} />
-          </FormRow>
-          <FormRow label="Author marks" hint="Who wrote each entry.">
-            <Switch checked={marks} onChange={onMarks} />
-          </FormRow>
-        </div>
-      </Menu>
-    </div>
-  );
-}
 
 /* THE WRITING LAYER — the brief is not a report you read, it is a page you
    write on. Every block with words is editable in place; a slash opens the
@@ -522,7 +486,6 @@ function Brief({ form: formProp, onForm, marks, timeline }) {
      the choice when it cares — Today hides its date plate in prose. */
   const [ownForm, setOwnForm] = React.useState("prose");
   const form = formProp || ownForm;
-  const setForm = onForm || setOwnForm;
   const head = React.useRef(null);
   const [tool, setTool] = React.useState(null);
   const [editing, setEditing] = React.useState(null);
@@ -773,4 +736,4 @@ function Brief({ form: formProp, onForm, marks, timeline }) {
    product's own renderer instead of redrawing them. */
 /* The miniatures are exported so the screen's own settings popover can show the
    forms rather than name them. */
-Object.assign(window, { Brief, ProseBrief, MiniToday, MiniProse, MiniCanvas, Body, AUTHORS, BRIEF_LOG: LOG, BRIEF_SEED: SEED });
+Object.assign(window, { Brief, ProseBrief, Body, AUTHORS });

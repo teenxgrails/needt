@@ -6,8 +6,6 @@
 const WkNS = window.NeedtDesignSystem_25d3c8;
 const { Icon: WkIcon } = WkNS;
 
-const WK_FRAMES = { mist: "color-mix(in oklab, var(--accent) 24%, var(--background))", sand: "color-mix(in oklab, var(--info) 24%, var(--background))",
-  sage: "color-mix(in oklab, var(--success) 24%, var(--background))", stone: "color-mix(in oklab, var(--text-primary) 12%, var(--background))" };
 const dayOf = (t) => window.NEEDT.dueDay(t);
 const WK_TODAY = 1;
 const wkAt = (t) => window.NEEDT.at(t);
@@ -32,7 +30,6 @@ if (typeof document !== "undefined" && !document.getElementById("wk-css")) {
   document.head.appendChild(st);
 }
 const wkSetTasks = (f) => { if (window.__app && window.__app.setTasksRaw) window.__app.setTasksRaw(f); };
-const wkProjects = window.projects;
 
 /* New Project — a small sheet: a name and one of five colours. The same
    sheet edits one (initial + title + cta), from the right-click menu. */

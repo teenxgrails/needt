@@ -23,12 +23,15 @@ const NEEDT = (function () {
      whole colour policy of the product: the colour on screen is the person's
      own data. Fields match the database (Project: id, name, color, icon); a
      task refers to its project by `projectId`, never by name. */
+  /* THE ONE LIST OF SEED PROJECTS: stores.jsx's PROJECT_SEEDS (the project
+     store's first fill) is derived from it, so the two can't drift. `ground`
+     is the project card's frame tint. */
   const projects = [
-    { id: "ops",    name: "Operations",    color: "var(--hue-orange)", icon: "briefcase" },
-    { id: "ds",     name: "Design system", color: "var(--hue-blue)", icon: "component" },
-    { id: "german", name: "German",        color: "var(--hue-violet)", icon: "graduation-cap" },
-    { id: "resale", name: "Resale",        color: "var(--hue-green)", icon: "package" },
-    { id: "life",   name: "Life",          color: "var(--hue-yellow)", icon: "heart" }
+    { id: "ops",    name: "Operations",    color: "var(--hue-orange)", icon: "briefcase", ground: "sand" },
+    { id: "ds",     name: "Design system", color: "var(--hue-blue)", icon: "component", ground: "sage" },
+    { id: "german", name: "German",        color: "var(--hue-violet)", icon: "graduation-cap", ground: "stone" },
+    { id: "resale", name: "Resale",        color: "var(--hue-green)", icon: "package", ground: "mist" },
+    { id: "life",   name: "Life",          color: "var(--hue-yellow)", icon: "heart", ground: "sand" }
   ];
   /* Aliases the seeds already use. Kept here rather than in the screens, so a
      renamed project is one edit. */
@@ -179,10 +182,41 @@ const NEEDT = (function () {
     return { dueDate: d, scheduledStart: start, scheduledEnd: addMinutes(start, (t && t.estimatedMinutes) || 30), isFixed: true };
   }
 
+  /* NOTES (09.10.26). A task's notes are one field, `notes`: plain text
+     (newlines kept). Older records carry the desktop's sanitised HTML in
+     `description`, the phone's plain text in `description`, or the legacy
+     `note`; notesText reads any of them as text and migrateTask folds them
+     into `notes` (description / note are dropped). */
+  function notesText(v) {
+    if (v == null || v === "") return null;
+    let s = String(v);
+    if (/<[a-z][\s\S]*>/i.test(s)) {
+      s = s.replace(/\r?\n/g, " ")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<li[^>]*>/gi, "- ")
+        .replace(/<\/(p|div|li|h[1-6]|blockquote|pre)>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+      s = s.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+    }
+    s = s.replace(/^\s+|\s+$/g, "");
+    return s || null;
+  }
+  function migrateNotes(o) {
+    if (!("description" in o) && !("note" in o)) return o;
+    const t = Object.assign({}, o);
+    if (t.notes == null) t.notes = notesText(o.description != null && o.description !== "" ? o.description : o.note);
+    delete t.description; delete t.note;
+    if (t.notes == null) delete t.notes;
+    return t;
+  }
+
   /* MIGRATION. Storage written before the database names (est, due, project
-     by name, at/time, parts, waitsOn, stage) is read once and rewritten. */
+     by name, at/time, parts, waitsOn, stage, description / note) is read once
+     and rewritten. */
   function migrateTask(o) {
     if (!o || typeof o !== "object") return o;
+    o = migrateNotes(o);
     const old = ["est", "due", "project", "at", "time", "parts", "waitsOn", "stage"].some((k) => k in o);
     if (!old) return sync(o);
     const t = {};
@@ -809,7 +843,7 @@ const NEEDT = (function () {
     people, person, blocking, stages, blockerOf, unblocks,
     closedDays, streak, dateLabel, shiftWeek,
     iso, toDate, dayLabel, dueLabel, dueDay, hhmm, stamp, at, timeLabel, sync, moveDay, placeAt,
-    migrateTask, migrateProject, migrateDoc,
+    migrateTask, migrateProject, migrateDoc, notesText,
     habitCheckins, habitDoneOn, habitDays, habitKept, habitStreak, habitWeek, habitTime, habitPerWeek, habitColor, liveHabits, setCheckin, migrateHabit, habitPatch,
     dayIso, makeEvent, eventAt, migrateEvent, eventMinutes, eventBlock, eventsInRange, moveEvent,
     mail, mailThread, mailDayLabel, mailTime, liveMail, mailFixture, migrateMail,
@@ -908,7 +942,7 @@ Object.assign(window, { NEEDT });
     });
     if (f.priority) task.priority = f.priority.value.toLowerCase();
     if (f.label) task.labels = [f.label.value];
-    if (parsed.note) task.description = parsed.note;
+    if (parsed.note) task.notes = parsed.note;
     return { task: task, slot: slot, minutes: minutes, reason: slotReason(slot, minutes) };
   }
   Object.assign(N, { planNow: PLAN_NOW, planDate: planDate, planWeekday: planWeekday, planHour: planHour,

@@ -417,22 +417,8 @@ function useDrag(onDrop) {
   return [drag, dragProps, null];
 }
 
-/* Is this element the one being dragged? (Kept for callers; the source is
-   hidden by the drag itself, so a caller needs no fade of its own.) */
-function isDragged(drag, item) {
-  return !!(drag && drag.item && (drag.item.id != null ? drag.item.id === item.id : drag.item.title === item.title));
-}
-
 /* The lifted item lives in its own layer (see useDrag), so nothing is drawn
    here any more — kept so App's <DragGhost /> needs no change. */
 function DragGhost() { return null; }
 
-/* Would this landing be refused? A task cannot take time that has already
-   gone, and it cannot take a block the scheduler is not allowed to move. */
-function blockedLanding(items, start, end, now) {
-  if (now != null && end <= now) return "Already gone";
-  const hit = items.filter((b) => b.start < end && b.end > start && !b.movable)[0];
-  return hit ? "Fixed: " + hit.title : null;
-}
-
-Object.assign(window, { useDrag, DragGhost, targetAt, snapTime, hhmmOf, isDragged, blockedLanding, scrollerAt, SNAP, THRESHOLD });
+Object.assign(window, { useDrag, DragGhost, targetAt, snapTime, hhmmOf, scrollerAt, SNAP, THRESHOLD });

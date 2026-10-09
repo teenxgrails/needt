@@ -8,7 +8,7 @@
  * quiet metadata. Overdue sits above the day because it competes for today's
  * hours. */
 const HdNS = window.NeedtDesignSystem_25d3c8;
-const { Icon: HdIcon, IconButton: HdIconButton, Tooltip: HdTooltip } = HdNS;
+const { Icon: HdIcon, Tooltip: HdTooltip } = HdNS;
 
 const HD_PART = (at) => at == null ? null : at < 12 ? "Morning" : at < 17 ? "Afternoon" : "Evening";
 const hdDur = (min) => !min ? "" : min < 60 ? min + " min" : Math.floor(min / 60) + " h" + (min % 60 ? " " + (min % 60) : "");
@@ -16,53 +16,15 @@ const hdDur = (min) => !min ? "" : min < 60 ? min + " min" : Math.floor(min / 60
    the shapes this file draws with: a decimal hour, a "4 Sep" label, a name. */
 const hdAt = (t) => window.NEEDT.at(t);
 const hdDue = (t) => window.NEEDT.dueLabel(t);
-const hdPName = (t) => window.NEEDT.projectName(t);
 const hdTime = (at) => at == null ? "" : String(Math.floor(at)).padStart(2, "0") + ":" + (at % 1 ? "30" : "00");
-
-/* The project chip on the right of a row. A task with no project gets a grey
-   "No project" chip in the same slot, so the right column never jumps. */
-function HdProjChip({ t }) {
-  const proj = t.projectId && window.cvProject ? window.cvProject(t.projectId) : null;
-  if (!hdPName(t)) {
-    return <span className="hd-noproj hd-pchip">
-      <span className="hd-flex"><HdIcon name="folder" size={12} /></span>No project
-    </span>;
-  }
-  return (
-    <span className="hd-pchip is-set">
-      <span className="hd-flex" style={{ color: proj ? proj.color : "var(--text-muted)" }}><HdIcon name="folder" size={12} /></span>{hdPName(t)}
-    </span>
-  );
-}
-
-/* Where a task came from (07.10.26): Mail, Calendar or an import. A small
-   grey chip before the project chip; a Mail chip opens that message. */
-const HD_SRC_ICON = { mail: "mail", calendar: "calendar", "import": "download" };
-const HD_SRC_NAME = { mail: "Mailbox", calendar: "Calendar", "import": "Import" };
-function HdSourceChip({ src }) {
-  if (!src || !src.kind) return null;
-  const label = src.label || HD_SRC_NAME[src.kind] || "";
-  const title = "From " + (HD_SRC_NAME[src.kind] || src.kind) + (src.label ? " · " + src.label : "");
-  const inner = [<span key="i" className="hd-flex"><HdIcon name={HD_SRC_ICON[src.kind] || "download"} size={12} /></span>, <span key="l">{label}</span>];
-  if (src.kind === "mail" && src.id != null) {
-    const open = (e) => {
-      e.stopPropagation();
-      if (window.__app && window.__app.setScreen) window.__app.setScreen("mail");
-      window.dispatchEvent(new CustomEvent("needt-mail", { detail: { id: src.id, act: "open" } }));
-    };
-    return <button type="button" className="hd-src" title={title} aria-label={title + " — open in Mailbox"} onClick={open}>{inner}</button>;
-  }
-  return <span className="hd-src" title={title}>{inner}</span>;
-}
 
 /* Quiet row metadata (time · duration · source icon · project columns) is
    drawn by Task (task.jsx). The habit / add / chevron hovers that used to be
    injected here live in styles/home.css now. */
 /* The task row, the checkbox and the quiet metadata live in task.jsx now —
-   one Task for Home, Tasks, Calendar, Mail and the phone. These names stay as
-   thin aliases for anything that still says HdTask / HdCheck. */
+   one Task for Home, Tasks, Calendar, Mail and the phone. HdCheck stays as a
+   thin alias of TaskCheck. */
 const HdCheck = window.TaskCheck;
-function HdTask(props) { return <window.Task layout="row" {...props} task={props.task || props.t} />; }
 
 /* Many tasks (07.10.26): a section shows its first `cap` rows and a quiet
    "Show all N" under them, so a 500-task day still opens at once and the
@@ -111,26 +73,6 @@ const hdUseHabits = () => window.useHabits ? window.useHabits() : ((window.NEEDT
 const hdToggleHabit = (id, on) => { if (window.habitApi) window.habitApi.toggle(id, on); };
 const hdHabitOn = (h) => window.NEEDT.habitDoneOn(h.id);
 const hdHabitTip = (h) => { const t = window.NEEDT.habitTime(h); return (t ? t + " · " : "") + window.NEEDT.habitKept(h.id) + " of the last 14"; };
-function HdHabits() {
-  const list = hdUseHabits();
-  return (
-    <div className="hd-habits">
-      {list.map((h) => {
-        const on = hdHabitOn(h);
-        return (
-          <HdTooltip key={h.id} label={hdHabitTip(h)} side="bottom">
-            <div role="button" tabIndex={0} aria-pressed={on} data-ctx="habit" data-ctx-id={h.id} className={"hd-habit hd-habit-lg" + (on ? " is-on" : "")} onClick={() => hdToggleHabit(h.id, !on)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); hdToggleHabit(h.id, !on); } }}>
-              <HdCheck on={on} hue="var(--success)" />
-              <span className="hd-habit-name">{h.title}</span>
-            </div>
-          </HdTooltip>
-        );
-      })}
-    </div>
-  );
-}
-
 
 /* HOME, rebuilt on the Tasks layout (07.10.26). No document card any more: the
    same header as Tasks (+, title, tabs right), then the summary row, then the
@@ -813,4 +755,4 @@ function HomeToday({ tasks: allTasks, onOpen, onToggle, dragProps }) {
   );
 }
 
-Object.assign(window, { HomeToday, HdCheck, HdTask, HdFold, HdProjChip, HdSourceChip, HdCapped });
+Object.assign(window, { HomeToday, HdCheck, HdFold, HdCapped });

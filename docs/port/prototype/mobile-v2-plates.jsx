@@ -2,7 +2,7 @@
  * shell that is mobile.html (mobile-dev.html renders V2pLivePhone).
  *
  * Home and Calendar in the material of menu A (nav-a.jsx), built from the
- * phone kit (phone-kit.jsx: PkScreen, PkPlate, PkTaskRow, PkSection, PkSheet,
+ * phone kit (phone-kit.jsx: PkScreen, usePkPlate, PkTaskRow, PkSection, PkSheet,
  * PkNumber, PkButton, PkField; the day rules are window.pkDay).
  *
  *   Home      date → a small progress line ("Done 6 of 10" + thin bar) →
@@ -16,8 +16,9 @@
  *   Calendar  Schedule: week strip over one day; today shows now / next on
  *             a SKY plate (PkSkyPlate, like Home's Next up), then what is coming (lavender now-line); "No time"
  *             and "Earlier today" fold. Month: a dot grid; picking a day
- *             keeps the month and lists that day under it. Overlapping
- *             items carry an "Overlaps · <other>" mark. Events open
+ *             keeps the month and lists that day under it. Items that
+ *             collide with a calendar event carry an "Overlaps · <other>"
+ *             mark (task-on-task overlaps are not marked). Events open
  *             PkEventSheet (phone-overlays.jsx).
  *   Dark      plates are the kit's muted surface (usePkPlate); only the
  *             primary action keeps full contrast.
@@ -196,11 +197,13 @@ function V2pHome({ tasks, onOpen, onFocus, say, pull }) {
 /* ── Calendar ─────────────────────────────────────────────────────────── */
 const V2P_WD = ["M", "T", "W", "T", "F", "S", "S"];
 function v2pDayLoad(n) { return n <= 0 ? 0 : n <= 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 : 4; }
-/* Timed items of one day that overlap: id → titles of the others. */
+/* Timed items of one day that collide with a calendar event: id → titles of
+   the others. Two tasks overlapping each other are not marked — the scheduling
+   engine spreads them; only a clash that involves an event is the user's call. */
 function v2pOverlaps(timed) {
   const out = {};
   timed.forEach((a) => {
-    const others = timed.filter((b) => b !== a && a.at < b.at + b.len / 60 && b.at < a.at + a.len / 60);
+    const others = timed.filter((b) => b !== a && (a.event || b.event) && a.at < b.at + b.len / 60 && b.at < a.at + a.len / 60);
     if (others.length) out[a.id] = others.map((b) => b.title);
   });
   return out;
@@ -269,7 +272,8 @@ function V2pMonth({ selDay, onPick, count }) {
 /* Calendar: the week strip over one day's schedule (Schedule), or the month
    grid over the picked day's items (Month — picking keeps the month). Today
    shows what is now and coming first; the past folds under "Earlier today",
-   items with no time fold under "No time". Overlapping items say so. */
+   items with no time fold under "No time". Items colliding with an event
+   say so (two tasks overlapping each other are not marked). */
 function V2pCalendar({ tasks, onOpen, pull }) {
   const mine = window.useStore(c2Store);
   const titles = window.useStore(c2Titles);

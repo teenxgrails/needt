@@ -15,7 +15,8 @@
  * swipe); once a row is lifted, the swipe, the pull-down and the scroll
  * stand down (their move events stop here).
  *
- *   const dz = usePdDrag({ canLift(id) → bool, onDrop(r) });
+ *   const dz = usePtkDrag(…)  (phone-tasks.jsx: the hook, on pdAttach —
+ *   { canLift(id) → bool, onDrop(r) }; the unused window.usePdDrag is gone)
  *   <div ref={dz.ref}> … zones … </div>
  *
  *   A zone is an element with data-pd-zone="<key>" holding a PkSection:
@@ -324,12 +325,4 @@ function pdAttach(container, get) {
   };
 }
 
-function usePdDrag(opts) {
-  const o = React.useRef(opts);
-  o.current = opts;
-  const [el, setEl] = React.useState(null);
-  React.useEffect(() => (el ? pdAttach(el, () => o.current) : undefined), [el]);
-  return { ref: setEl };
-}
-
-Object.assign(window, { usePdDrag, pdAttach, PD_HOLD });
+Object.assign(window, { pdAttach, PD_HOLD });

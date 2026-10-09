@@ -7,15 +7,10 @@
 .hd-title-h1 { margin: 0; font: var(--type-page-title); color: var(--text-primary); white-space: nowrap; }
 .hd-head-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 .hd-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
-.hd-flex { display: flex; }
 .hd-meta-t { font: var(--type-meta); color: var(--text-tertiary); }
 .hd-num { font-variant-numeric: tabular-nums; }
 .hd-push { margin-left: auto; }
 .hd-meta-line { white-space: nowrap; }
-
-/* Project / no-project chip. */
-.hd-pchip { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px 0 6px; border-radius: 6px; background: var(--fill-2); color: var(--text-tertiary); }
-.hd-pchip.is-set { background: var(--fill-3); }
 
 /* Fold (Craft's section). */
 .hd-fold { display: flex; flex-direction: column; gap: 2px; }
@@ -32,10 +27,7 @@
 .hd-fold-body { display: flex; flex-direction: column; gap: 2px; }
 
 /* Habit chips (summary card) and the larger chip row. */
-.hd-habits { display: flex; flex-wrap: wrap; gap: 6px; }
-.hd-habit-lg { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px 0 8px; border: 0; border-radius: 9px; cursor: default; transition: background-color var(--transition-hover); }
-.hd-habit-name { font: var(--type-ui-medium); color: var(--text-secondary); white-space: nowrap; }
-.hd-habit.is-on .hd-habit-name, .hd-habit.is-on .hd-chip-name { color: var(--text-primary); }
+.hd-habit.is-on .hd-chip-name { color: var(--text-primary); }
 .hd-chips { display: flex; flex-wrap: wrap; gap: 5px; align-content: flex-start; }
 .hd-chip { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 8px 0 4px; border: 0; border-radius: 7px; cursor: default; transition: background-color var(--transition-hover); }
 .hd-chip-name { font: 500 13px/16px var(--font-sans); color: var(--text-secondary); white-space: nowrap; }
@@ -107,13 +99,6 @@
 .hd-notes { margin: 0; padding: 10px 0 0; font: 400 14px/20px var(--font-sans); font-style: italic; color: var(--text-disabled); box-shadow: var(--border) 0 1px 0 0 inset; }
 
 /* ── TodayScreen.jsx · wrapper (Brief form) ──────────────────────────── */
-.home-stub { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-3xl); box-shadow: var(--shadow-inset-ring); }
-.home-phead { display: flex; align-items: center; gap: 16px; height: 52px; flex: none; }
-.home-phead-left { display: flex; align-items: baseline; gap: 11px; }
-.home-phead-title { margin: 0; font: var(--type-page-title); color: var(--text-primary); }
-.home-phead-meta { font: var(--type-meta); color: var(--text-muted); }
-.home-phead-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.home-legend { margin: 0; font: var(--type-meta); color: var(--text-muted); }
 .home-top { display: flex; gap: 20px; align-items: center; flex: none; padding: 8px 0 16px; }
 .home-top.is-hidden { display: none; }
 .home-date { flex: none; display: flex; align-items: flex-end; gap: 11px; padding-right: 4px; padding-bottom: 2px; }

@@ -1,3 +1,5 @@
+> **FROZEN 09.10.26** — the prototype is final; see FROZEN.md. Further work happens in the new web repo.
+
 # Needt — porting brief
 
 What `index.html` and `mobile.html` actually mount today (07.10.26), what to
@@ -172,9 +174,12 @@ Feature-detects the shells (`window.Capacitor` with `isNativePlatform()`, `windo
 | `TaskWait` | `{personId, reason}` (was `waitsOn`) |
 | `Stage` | `todo` \| `doing` \| `review` \| `done` (`NEEDT.stages`) |
 | `isFixed` | boolean — time set by hand, planner must not move it (was `time`). **Not in DB yet** (see below) |
+| `notes` | plain text (newlines kept) — the one notes field, desktop and phone (09.10.26). Older `description` (desktop HTML / phone text) and `note` are folded into it by `migrateTask` (`NEEDT.notesText` turns HTML into text) |
+| `entry` | the two-minute first step — a one-line field on both task editors |
+| `chunk`, `deadline`, `hardDeadline`, `hours` | scheduling: minimum work block in minutes (`null` = don't split), deadline `"YYYY-MM-DD"` (+ hard = never planned past it), `"work" \| "personal" \| "any"` |
 
 ### Project
-`{id, name, color, icon}` — `color` (was `hue`), `icon` (was `glyph`; user projects default `"folder"`). One registry: `window.projectStore` + `window.projects` (create / rename / recolor / edit / remove with undo) in `stores.jsx` — the desktop (`work.jsx`, Sidebar, ctx menus) and the phone read the same store; localStorage `needt.projects.all` (+ `needt.projects` for the user's own, `needt.projects.sort`). It seeds on first read (seed colours need `cvProject`).
+`{id, name, color, icon}` — `color` (was `hue`), `icon` (was `glyph`; user projects default `"folder"`). Seeds: ONE list, `NEEDT.projects` in `Data.js` (ops, ds, german, resale, life — with `ground`); `stores.jsx` `PROJECT_SEEDS` is derived from it. One registry: `window.projectStore` + `window.projects` (create / rename / recolor / edit / remove with undo) in `stores.jsx` — the desktop (`work.jsx`, Sidebar, ctx menus) and the phone read the same store; localStorage `needt.projects.all` (+ `needt.projects` for the user's own, `needt.projects.sort`). It seeds on first read (seed colours need `cvProject`).
 
 ### Doc
 `isFavorite` (UI label **Pinned**), `coverUrl` (data URL, `art:<id>` or null), `trashedAt` (null or ISO; trashed = non-null), `projectId`, `style` (one JSON object — see HANDOFF "Document style").
@@ -216,7 +221,7 @@ Habits: `habitDoneOn`, `habitDays`, `habitKept`, `habitStreak`, `habitWeek`, `ha
 | `status` | To do / In progress / In review / Done label (overlaps `Stage` + `done`) | user |
 | `done` | closed or not | user |
 | `source` | where it came from (mail, chat) — "From …" chip | computed |
-| `auto`, `hardDeadline`, `kind`, `chunk`, `priority`, `note` | Task-dialog settings: auto-schedule, hard deadline, task/event/doc, min work block, priority, notes | user |
+| `auto`, `hardDeadline`, `deadline`, `hours`, `kind`, `chunk`, `priority`, `notes` | Task-editor settings (desktop TaskDialog and phone PkTaskSheet write the same keys): auto-schedule, hard deadline, deadline, hours, task/event/doc, min work block (null = don't split), priority, notes (plain text) | user |
 | Doc `hue` | cached project colour for cards | computed |
 | Doc `updated`, `viewed`, `created` | human labels ("20 min ago") — should come from timestamps | computed |
 | Doc `body` | page content as `[kind, text, extra?, fmt?]` blocks; text = rich text (spans) — shape in 3b | user |
@@ -251,7 +256,7 @@ Shell: `topbar.jsx` (sidebar toggle, search, notifications, help), `Sidebar.jsx`
 
 **Gone:** Columns view / 46 px-per-hour grid (`CalendarScreen.jsx`, `ColumnsScreen`), Workspace with Flow/Team/Kanban, Boards, "Starred" (now **Pinned**). Home's Prose/Canvas brief (`Brief.jsx`) is only reachable via `?form=prose|canvas`.
 
-**Mounted but not rendered by any screen:** `BlockDesigns.jsx`, `RichBlock.jsx` (no live importer). `ColumnsView.jsx` is mounted only for helpers — `cvProject` (project lookup, used widely), `cvDur` (Dialogs), `CvCard` (focus picker in Sidebar). Port the helpers into the data layer; do not port the views.
+**No longer mounted (port-prune, 09.10.26):** `BlockDesigns.jsx`, `RichBlock.jsx` and `CalendarScreen.jsx` are out of every page (originals in `_archive/port-prune/removed/`, the list in `_archive/port-prune/pruned.txt`). `ColumnsView.jsx` is mounted only for helpers — `cvProject` (project lookup, used widely; `RB_PROJECTS` / `RB_NEUTRAL` moved here from RichBlock) and `cvDur` (Dialogs); the views (`ColumnsView`, `CvCard`, `CvColumn` …) are gone. Port the helpers into the data layer.
 
 ## 3a. The phone (`mobile.html`, 08.10.26)
 
@@ -259,16 +264,16 @@ ONE live phone, not a sheet of frames: `mobile-dev.html` renders `V2pLivePhone` 
 
 | File | What |
 | --- | --- |
-| `phone-kit.jsx` + `styles/phone-kit.css` | the kit (API in the file's top comment): `PkScreen` (large title → compact title over the top blur band, bottom fog behind the pill, pull-down), `PkPullDown`, `PkPlate` + `usePkPlate` (light: inverse plate; dark: `pk-muted` raised surface, only the primary keeps full contrast), `PkButton`, `PkField`, `PkNumber` (rolling digits), `PkSection`, `PkRow` / `PkTaskRow` (swipe right = done, left = tomorrow; lead · one open button · action), `usePkExit`, `PkChips` (blurred edges), `PkSheet` (detents, swipe-down physics, footer pinned at lower detents), `PkScrim`, `PkFog`, `PkTopBand`, `PkBlurLayers`, `PkEmpty`, and `pkDay` — the one copy of the day rules (sections, Next up, toggle / update / create(parsed fields) / later / trash / moveOverdue) |
+| `phone-kit.jsx` + `styles/phone-kit.css` | the kit (API in the file's top comment): `PkScreen` (large title → compact title over the top blur band, bottom fog behind the pill, pull-down), `PkPullDown`, `usePkPlate` (the class a plate wears — light: inverse plate; dark: `pk-muted` raised surface, only the primary keeps full contrast; the `PkPlate` component is gone), `PkButton`, `PkField`, `PkNumber` (rolling digits), `PkSection`, `PkRow` / `PkTaskRow` (swipe right = done, left = tomorrow; lead · one open button · action), `usePkExit`, `PkChips` (blurred edges), `PkSheet` (detents, swipe-down physics, footer pinned at lower detents), `PkScrim`, `PkFog` (its halftone drifts while visible — `pkFogLive`, see 3b), `PkTopBand`, `PkBlurLayers`, `PkEmpty`, and `pkDay` — the one copy of the day rules (sections, Next up, toggle / update / create(parsed fields) / later / trash / moveOverdue) |
 | `mobile-v2-plates.jsx` | Home, Calendar (event detail = `PkEventSheet`), the shell `V2pLivePhone` (screen, Ask, paywall, auth, `away` for menu A) and `V2pScreens` (the screen + the task sheet, composer, snack) |
-| `phone-overlays.jsx` | `PkTaskSheet`, `PkComposer` (coParse line + attachments → `pkDay.create`), `PkAsk`, `PkSnack`, `PkPaywall` (the sky paywall in a sheet), `PkEventSheet` |
+| `phone-overlays.jsx` | `PkTaskSheet` (First step `entry`; Scheduling card → picker sheets writing `isFixed`/`auto`, `chunk`, `deadline` + `hardDeadline`, `hours` — the desktop TaskDialog's keys; notes = `notes`), `PkComposer` (coParse line + attachments → `pkDay.create`), `PkAsk`, `PkSnack`, `PkPaywall` (the sky paywall in a sheet), `PkEventSheet` |
 | `phone-tasks.jsx` | Tasks (Inbox / Today / Upcoming / All), Projects + a project's page (`window.projects`) |
 | `phone-docs.jsx` | Docs list (sort = `doc-style.jsx` `dcSortDocs` / `dcReadSort`, the desktop's `needt.docsSort`) and `PdDocReader` (draws `Mobile.jsx` `MbDoc*`) |
 | `phone-mail.jsx` | Mailbox + thread sheet (`window.mailApi`) |
 | `phone-habits.jsx` | Habits (`habitApi`, `hbKeptOn` from `Habits.jsx`), Moodboards (list in Plates, boards / items = `Mobile.jsx` `MbmRoot`; an open item calls `onCover`) |
 | `phone-places.jsx` | Connections (sync = `stores.jsx` `CN_CAL_SYNC` / `cnCalOn`, written through the settings dual write), Templates (`docs.fromTemplate`), Shared, Trash |
 | `phone-settings.jsx` | Settings (wave 3) — `window.PkPlaces.settings`, the desktop's settings object (see 3b) |
-| `phone-drag.jsx` | long-press drag and drop of rows (`usePdDrag`; zones `data-pd-zone`) — Tasks, Home |
+| `phone-drag.jsx` | long-press drag and drop of rows (`pdAttach`, used through `phone-tasks.jsx` `usePtkDrag`; zones `data-pd-zone`) — Tasks, Home |
 | `Mobile.jsx` | what is left of the old phone: formatters, the phone's stores (`mbTaskStore`, `mbPrefStore`, connections, edge data), Calendar data (`mbCalData`), the doc reader page, Moodboards, Ask answers, states glyphs. The old phone (tab bar, More, top chrome, `MbHome` … `MbTrash`, `MbTask`, `MbComposer`, `MbAsk`, `MbSettings`, `MobileApp`) is `_archive/Mobile.legacy.jsx` (+ `_archive/mobile.legacy.css`) |
 | `mobile-nav.jsx` | `mnTiles` / `mnCounts` for menu A (`mobile-nav.html` redirects to the phone) |
 
@@ -279,11 +284,11 @@ ONE live phone, not a sheet of frames: `mobile-dev.html` renders `V2pLivePhone` 
 ## 3b. Phone wave 3 (09.10.26) — what was added and where it lives
 
 **Kit additions (`phone-kit.jsx`, API in its top comment).**
-- `PkGlyph place|kind size tone` (the coloured section glyph tile — screen headers `PkScreen glyph=`, section heads `PkSection glyph=`, empty states, rows), `PkGlass` (frosted surface), `pkPlaceHue(place)`.
+- `PkGlyph place|kind size tone` (the coloured section glyph tile — screen headers `PkScreen glyph=`, section heads `PkSection glyph=`, empty states, rows), `PkGlass` (frosted surface). (`PkChip`, `pkPlaceHue` were removed in the port-prune pass.)
 - `PkSkyPlate` (a plate whose ground is the brand sky), `PkSkyBadge` (small sky vignette), `pkSkyMood(theme)` (mood by time of day), `PkSweep` / `pkDotSweep` (one-shot halftone sweep).
-- `pkFogDrift(getDots)` — the bottom fog's dots answer the scroll (see MOTION).
+- Fog halftone dots (PkFog, menu A card fog) drift right → left forever while visible — the owner's one exception to "nothing loops at rest" (09.10.26): port as a compositor-only transform loop (~23–40 s, seamless 8-cell offset), paused when hidden / off-screen / faded out, static under reduced motion; `pkFogLive(el)` replaces the removed scroll-driven `pkFogDrift` (see MOTION).
 - `PkSheet from=… onShut` — a sheet that grows out of a rect and goes back into it; `pkPillRect` is menu A's pill (the composer).
-- Hold → actions, moved here from `Mobile.jsx`: `PkHold` (450 ms long press / right click → `onHold`), `PkActions` (the glass action sheet, `acts = { title, meta, head, actions: [...] }`), `PkHueTile`, `pkOwnGesture(pointerId)`. The old names `MbHold`, `MbActSheet`, `MbHueTile`, `mbOwnGesture` are window aliases. Classes `pk-hold`, `pk-acts`, `pk-act*`, `pk-hue-tile` (`styles/phone-kit.css`).
+- Hold → actions, moved here from `Mobile.jsx`: `PkHold` (450 ms long press / right click → `onHold`), `PkActions` (the glass action sheet, `acts = { title, meta, head, actions: [...] }`), `PkHueTile`, `pkOwnGesture(pointerId)`. (The old `MbHold` / `MbActSheet` / `MbHueTile` / `mbOwnGesture` window aliases are gone — use the Pk names.) Classes `pk-hold`, `pk-acts`, `pk-act*`, `pk-hue-tile` (`styles/phone-kit.css`).
 - `PkSheet` keeps a closed sheet fully off screen when its `detents` (or its content height) change while it is shut.
 
 **Settings place (`phone-settings.jsx`).** The same settings as the desktop, one object: every control writes `needtSettings` (`stores.jsx`, `needt.settings` through `needtSync`); `mbPrefStore` (`Mobile.jsx`) is a view of the same store since 09.10.26 (§1a) — `psSettingsSet` / `mbSetPref` are the one rule (Connections' calendar sync, menu A and onboarding write through it too); their old second write into `mbPrefStore` is now a no-op. Pages: Account · Plan & billing · General · Appearance (theme, accent, sky) · Your day · Tasks · Focus · Notifications · Menu (`mobileTiles`, the pill's three places) · Sidebar (`sidebarTiles`) · Connections (opens the place) · Data & privacy · Shortcuts · About · Sign out. The shell follows live: the pill's tiles re-read `mobileTiles` on every settings change, and the live phone wears `data-accent` from the `accent` setting.

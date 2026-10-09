@@ -524,26 +524,6 @@ function App() {
     if (window.stNoteTask) { const t = tasks.find((x) => x.id === id); window.stNoteTask(id, t && t.done ? "Reopened" : "Checked off"); }
     setTasks((list) => list.map((t) => (t.id === id ? patchTask(t, { done: !t.done }) : t)));
   }
-  /* A part is a piece of one task, not a task: it toggles inside its parent
-     and never takes a place in the day. When a part outgrows that, it is
-     promoted — the one way a second level enters the model. */
-  function togglePart(id, i) {
-    setTasks((list) => list.map((t) => (t.id === id && t.TaskPart
-      ? patchTask(t, { TaskPart: t.TaskPart.map((p, j) => (j === i ? Object.assign({}, p, { done: !p.done }) : p)) })
-      : t)));
-  }
-  function promotePart(id, i) {
-    setTasks((list) => {
-      const parent = list.find((t) => t.id === id);
-      if (!parent || !parent.TaskPart || !parent.TaskPart[i]) return list;
-      const part = parent.TaskPart[i];
-      const next = list.map((t) => (t.id === id ? Object.assign({}, t, { TaskPart: t.TaskPart.filter((_, j) => j !== i) }) : t));
-      const at = next.findIndex((t) => t.id === id);
-      next.splice(at + 1, 0, { id: Date.now(), title: part.title, projectId: parent.projectId, tone: parent.tone,
-        status: part.done ? "done" : "todo", estimatedMinutes: 20, done: part.done, noSlot: parent.noSlot });
-      return next;
-    });
-  }
   function capture(title) {
     setTasks((list) => list.concat([{ id: Date.now(), title: title, projectId: null, status: "todo", estimatedMinutes: 45, done: false }]));
   }
@@ -586,7 +566,7 @@ function App() {
     if (hour != null) Object.assign(task, { scheduledStart: N.stamp(day, hour), isFixed: true });
     if (f.priority) task.priority = f.priority.value.toLowerCase();
     if (f.label) task.labels = [f.label.value];
-    if (p.note) task.description = p.note;
+    if (p.note) task.notes = p.note;
     setTasks((list) => list.concat([task]));
   }
 

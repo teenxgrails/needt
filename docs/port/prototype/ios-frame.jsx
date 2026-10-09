@@ -4,7 +4,7 @@
 /* BEGIN USAGE */
 // iOS.jsx — Simplified iOS 26 (Liquid Glass) device frame
 // Based on the iOS 26 UI Kit + Figma status bar spec. No assets, no deps.
-// Exports (to window): IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard
+// Exports (to window): IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSKeyboard
 //
 // Usage — wrap your screen content in <IOSDevice> to get the bezel, status bar
 // and home indicator (props: title, dark, keyboard):
@@ -101,46 +101,6 @@ function IOSNavBar({ title = 'Title', dark = false, trailingIcon = true }) {
       </div>
       {/* large title */}
       <div className="iosf-nav-bar-4" style={{ color: text }}>{title}</div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Grouped list (inset card, r:26) + row (52px)
-// ─────────────────────────────────────────────────────────────
-function IOSListRow({ title, detail, icon, chevron = true, isLast = false, dark = false }) {
-  const text = dark ? 'var(--color-white)' : 'var(--color-black)';
-  const sec = dark ? 'var(--ios-secondary-label-dark)' : 'var(--ios-secondary-label)';
-  const ter = dark ? window.cssVar('--ios-tertiary-label-dark') : window.cssVar('--ios-tertiary-label');
-  const sep = dark ? 'var(--ios-separator-dark)' : 'var(--ios-separator)';
-  return (
-    <div className="iosf-list-row-1">
-      {icon && (
-        <div className="iosf-list-row-2" style={{ background: icon }} />
-      )}
-      <div className="iosf-list-row-3" style={{ color: text }}>{title}</div>
-      {detail && <span className="iosf-list-row-4" style={{ color: sec }}>{detail}</span>}
-      {chevron && (
-        <svg width="8" height="14" viewBox="0 0 8 14" className="iosf-list-row-5">
-          <path d="M1 1l6 6-6 6" stroke={ter} strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )}
-      {!isLast && (
-        <div className="iosf-list-row-6" style={{ bottom: 0, right: 0, left: icon ? 58 : 16, background: sep }} />
-      )}
-    </div>
-  );
-}
-
-function IOSList({ header, children, dark = false }) {
-  const hc = dark ? 'var(--ios-secondary-label-dark)' : 'var(--ios-secondary-label)';
-  const bg = dark ? 'var(--ios-cell-dark)' : 'var(--color-white)';
-  return (
-    <div>
-      {header && (
-        <div className="iosf-list-1" style={{ color: hc }}>{header}</div>
-      )}
-      <div className="iosf-list-2" style={{ background: bg }}>{children}</div>
     </div>
   );
 }
@@ -246,5 +206,5 @@ function IOSKeyboard({ dark = false }) {
 }
 
 Object.assign(window, {
-  IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSList, IOSListRow, IOSKeyboard,
+  IOSDevice, IOSStatusBar, IOSNavBar, IOSGlassPill, IOSKeyboard,
 });

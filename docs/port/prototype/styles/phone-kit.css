@@ -52,6 +52,21 @@
 .pk-fog-dots.is-1 { top: 40px; height: 36px; background-image: radial-gradient(circle, var(--pk-dot) 0.55px, transparent 1.1px); }
 .pk-fog-dots.is-2 { top: 60px; height: 38px; background-image: radial-gradient(circle, var(--pk-dot) 0.95px, transparent 1.5px); background-position: 3px 3px; }
 .pk-fog-dots.is-3 { top: 82px; height: 42px; background-image: radial-gradient(circle, var(--pk-dot) 1.35px, transparent 1.9px); }
+/* The dots drift like the sky (owner's exception to "nothing loops at rest",
+   MOTION.md): right → left by 8 cells (48px) per cycle — seamless, the
+   layer is 48px wider than the band — and a hair of bob; compositor-only
+   (translate + transform). Running only while the band is live
+   (phone-kit.jsx pkFogLive: on screen, tab visible) and, in a PkScreen,
+   while its fog shows. Nearer (bigger) dots drift faster. */
+.pk-fog > .pk-fog-dots { right: -48px; will-change: transform, translate;
+  animation: pk-fog-drift 40s linear infinite paused, pk-fog-bob 9s ease-in-out -3s infinite paused; }
+.pk-fog > .pk-fog-dots.is-2 { animation-duration: 31s, 11s; animation-delay: 0s, -7s; }
+.pk-fog > .pk-fog-dots.is-3 { animation-duration: 23s, 7.5s; animation-delay: 0s, -1s; }
+.pk-fog[data-pk-live="1"] > .pk-fog-dots { animation-play-state: running; }
+.pk-screen[data-pk-fog-on="0"] .pk-fog > .pk-fog-dots { animation-play-state: paused; }
+@keyframes pk-fog-drift { from { translate: 0 0; } to { translate: -48px 0; } }
+@keyframes pk-fog-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+@media (prefers-reduced-motion: reduce) { .pk-fog > .pk-fog-dots { animation: none; } }
 
 /* ── rolling digits: a 0–9 strip per digit, moved by --d ── */
 .pk-num { display: inline-flex; white-space: nowrap; }
@@ -70,7 +85,7 @@
    dark surface with light text, no big white card; the primary button
    inside keeps full contrast (ink on plate). Light theme plates stay
    inverse. */
-.pk-plate.pk-muted, .pk-pull.pk-muted, .pk-reveal.is-done.pk-muted, .pk-chip.pk-muted { background: var(--v2p-card); box-shadow: var(--v2p-card-edge); }
+.pk-plate.pk-muted, .pk-pull.pk-muted, .pk-reveal.is-done.pk-muted { background: var(--v2p-card); box-shadow: var(--v2p-card-edge); }
 .pk-muted .pk-btn:not(.is-primary):not(.is-ghost), .pk-muted .pk-pull-field, .pk-reveal.pk-muted .pk-reveal-mark { background: var(--v2p-card-raise); }
 .pk-muted .pk-btn.is-ghost:active { background: var(--v2p-card-raise); }
 
@@ -185,16 +200,6 @@
 .pk-edge.is-left .pk-edge-wash { background: linear-gradient(to left, var(--pk-fog-0), var(--pk-mist)); }
 .pk-edge.is-right .pk-edge-wash { background: linear-gradient(to right, var(--pk-fog-0), var(--pk-mist)); }
 
-.pk-chip { flex: none; height: 40px; padding: 0 15px 0 6px; border: 0; border-radius: 20px; display: inline-flex; align-items: center; gap: 9px;
-  background: var(--v2p-plate); color: var(--v2p-ink-2); font: 500 14px/1 var(--font-sans); letter-spacing: -0.01em;
-  transition: color 0.2s ease, transform 0.18s var(--pk-ease, ease); -webkit-tap-highlight-color: transparent; }
-.pk-chip:active { transform: scale(0.95); }
-.pk-chip.is-on { color: var(--v2p-ink); }
-.pk-chip-mark { flex: none; width: 28px; height: 28px; border-radius: 14px; display: grid; place-items: center; box-sizing: border-box;
-  box-shadow: inset 0 0 0 1.5px var(--hue, var(--v2p-ink-3)); color: var(--v2p-plate); transition: background-color 0.22s ease, transform 0.3s var(--pk-spring, ease); }
-.pk-chip.is-on .pk-chip-mark { background: var(--hue, var(--v2p-lav)); transform: scale(1.04); }
-.pk-chip-label { white-space: nowrap; }
-
 /* ── 3 · scrim: the screen behind, blurred harder toward the edges ── */
 .pk-scrim { --pk-scrim-k: 0; position: absolute; inset: 0; z-index: 50; pointer-events: none; -webkit-tap-highlight-color: transparent; }
 .pk-scrim.is-open { pointer-events: auto; }
@@ -250,17 +255,8 @@
 .pk-sheet-foot.is-pinned { padding-top: 10px; background: var(--pk-glass); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); box-shadow: inset 0 1px 0 var(--v2p-line); }
 .pk-sheet input, .pk-sheet textarea { user-select: text; -webkit-user-select: text; }
 
-/* ── attachments (the composer's chips, the task sheet's list) — the old
-   phone chrome's tokens, until those screens move to the kit ── */
-.pk-file-x { flex: none; width: 18px; height: 18px; margin-right: -4px; padding: 0; border: 0; border-radius: 9px; background: transparent; color: inherit; display: grid; place-items: center; }
-.pk-file-x:active { background: var(--fill-5, var(--surface-raised)); }
-.pk-files { display: flex; flex-direction: column; gap: 6px; }
-.pk-file-row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border-radius: var(--radius-lg, 12px); background: var(--surface-raised); color: var(--text-primary); font: var(--type-ui); }
-.pk-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pk-file-size { flex: none; color: var(--text-tertiary); font: var(--type-meta); font-variant-numeric: tabular-nums; }
-
 @media (prefers-reduced-motion: reduce) {
-  .pk-num-strip, .pk-rw, .pk-row, .pk-reveal-mark, .pk-chip, .pk-chip-mark, .pk-check-ring, .pk-btn, .pk-sec-chev, .pk-edge > * { transition: none; }
+  .pk-num-strip, .pk-rw, .pk-row, .pk-reveal-mark, .pk-check-ring, .pk-btn, .pk-sec-chev, .pk-edge > * { transition: none; }
   .pk-compact-title { transform: none; }
 }
 

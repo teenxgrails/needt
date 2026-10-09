@@ -10,9 +10,13 @@
  *
  *   <PkTaskSheet task open onClose onUpdate(id, patch) onDelete(t) onFocus(t) />
  *     MbTask's props. Autosave (a quiet "Saved" flashes). Title + done ring,
- *     facts (Date, Time, Duration, Project, Priority, Labels — a tap opens a
- *     row of choices under the fact), Subtasks, Notes (t.description),
- *     Attachments. Start focus is the one primary action; Delete sits quiet
+ *     First step (t.entry, one line under the title), facts (Date, Time,
+ *     Duration, Project, Priority, Labels — a tap opens a row of choices
+ *     under the fact), Scheduling (a folded glass card — Placement, Min. work
+ *     block, Deadline, Hours; each row opens its picker in a sheet over the
+ *     task sheet; the same keys as the desktop TaskDialog: isFixed/auto,
+ *     chunk, deadline + hardDeadline, hours), Subtasks, Notes (t.notes, plain
+ *     text), Attachments. Start focus is the one primary action; Delete sits quiet
  *     at the end of the body.
  *   <PkComposer open onClose onCreate(parsed) />
  *     one big field (coParse is the source of truth: the Date / Project /
@@ -44,6 +48,21 @@ const POV_DAYS = [["Today", 0], ["Tomorrow", 1], ["In 2 days", 2], ["Next week",
 const POV_HOURS = [9, 11, 14, 17];
 const povProjects = () => window.projects.list();
 const povLabels = () => (window.CO_LABELS || ["errand", "money", "deep work", "admin", "reading"]);
+/* Scheduling — the desktop TaskDialog's choices (Dialogs.jsx TD_CHUNK / TD_HOURS). */
+const POV_CHUNK = [null, 15, 25, 30, 45, 60, 90];
+const POV_SCHED_HOURS = [["work", "Work hours"], ["personal", "Personal"], ["any", "Any time"]];
+const POV_DEADLINE = [["Today", 0], ["Tomorrow", 1], ["In 2 days", 2], ["Next week", 7], ["In 2 weeks", 14]];
+const povIsoIn = (n) => { const N = window.NEEDT, d = N.today; return N.iso(new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)); };
+
+/* One choice in a picker sheet: the words, a hint, a check when chosen. */
+function PovPickRow({ on, onClick, hint, children, data }) {
+  return (
+    <button type="button" className={povCx("pov-pick-row", on && "is-on")} aria-pressed={!!on} onClick={onClick} {...(data || {})}>
+      <span className="pov-pick-text"><span className="pov-pick-label">{children}</span>{hint ? <span className="pov-pick-hint">{hint}</span> : null}</span>
+      <span className="pov-pick-check" aria-hidden="true">{on ? <PovIcon name="check" size={18} /> : null}</span>
+    </button>
+  );
+}
 
 function PovFact({ id, label, value, muted, late, open, onToggle, children }) {
   return (
@@ -91,6 +110,70 @@ function PkTaskSheet({ task, open, onClose, onUpdate, onDelete, onFocus }) {
   const anyTime = () => edit({ scheduledStart: null, scheduledEnd: null, isFixed: false });
   const flipLabel = (l) => edit({ labels: labels.indexOf(l) > -1 ? labels.filter((x) => x !== l) : labels.concat([l]) });
 
+  /* Scheduling: folded by default, remembered (mbPrefs.taskSchedOpen); a
+     row opens its picker in a sheet over this one. */
+  const prefs = mbUse(mbPrefStore);
+  const schedOpen = !!prefs.taskSchedOpen;
+  const [pick, setPick] = React.useState(null);
+  React.useEffect(() => { if (!open) setPick(null); }, [open]);
+  React.useEffect(() => { setPick(null); }, [t.id]);
+  const lastPick = React.useRef(null); if (pick) lastPick.current = pick;
+  const pickShown = pick || lastPick.current;
+  const fixed = t.isFixed === true || t.auto === false;
+  const chunk = t.chunk ? +t.chunk : null;
+  const deadline = t.deadline || null;
+  const hours = t.hours || "work";
+  const hoursLabel = (POV_SCHED_HOURS.filter((h) => h[0] === hours)[0] || [hours, hours])[1];
+  const dlLabel = deadline ? (t.hardDeadline ? "Hard · " : "") + (N.dayLabel ? N.dayLabel(deadline) : deadline) : null;
+  const schedSum = [
+    (fixed ? "Fixed" : "Auto") + (at != null ? " " + mbTime(at) : ""),
+    chunk ? "min block " + chunk + " min" : "no split",
+    deadline ? (t.hardDeadline ? "hard deadline " : "deadline ") + (N.dayLabel ? N.dayLabel(deadline) : deadline) : null,
+    hours !== "work" ? hoursLabel.toLowerCase() : null
+  ].filter(Boolean).join(" · ");
+  const choose = (p) => { edit(p); setPick(null); };
+  const schedRow = (k, label, value, muted) => (
+    <button type="button" className="pov-srow" onClick={() => setPick(k)} aria-haspopup="dialog" data-pov-srow={k}>
+      <span className="pov-srow-label">{label}</span>
+      <span className={povCx("pov-srow-value", muted && "is-muted")}>{value}</span>
+      <span className="pov-srow-chev" aria-hidden="true"><PovIcon name="chevron-right" size={14} /></span>
+    </button>
+  );
+  const PICK = {
+    placement: { title: "Placement", body: (
+      <>
+        <PovPickRow on={!fixed} onClick={() => choose({ isFixed: false, auto: true })} hint={at != null ? "Planned " + mbTime(at) + " — Needt may move it" : "Needt finds the slot"} data={{ "data-pov-pick-opt": "auto" }}>Auto</PovPickRow>
+        <PovPickRow on={fixed} onClick={() => choose({ isFixed: true, auto: false })} hint={at != null ? "Stays at " + mbTime(at) : "Stays where you put it"} data={{ "data-pov-pick-opt": "fixed" }}>Fixed</PovPickRow>
+      </>
+    ) },
+    chunk: { title: "Min. work block", body: (
+      <>
+        {POV_CHUNK.map((c) => (
+          <PovPickRow key={String(c)} on={chunk === c} onClick={() => choose({ chunk: c })} hint={c ? "Never shorter than " + c + " min" : "One sitting, in one piece"} data={{ "data-pov-pick-opt": String(c) }}>{c ? c + " min" : "Don’t split"}</PovPickRow>
+        ))}
+      </>
+    ) },
+    deadline: { title: "Deadline", body: (
+      <>
+        {POV_DEADLINE.map(([l, n]) => {
+          const v = povIsoIn(n);
+          return <PovPickRow key={l} on={deadline === v} onClick={() => choose({ deadline: v })} hint={N.dayLabel ? N.dayLabel(v) : v} data={{ "data-pov-pick-opt": String(n) }}>{l}</PovPickRow>;
+        })}
+        <PovPickRow on={!deadline} onClick={() => choose({ deadline: null, hardDeadline: false })} data={{ "data-pov-pick-opt": "none" }}>No deadline</PovPickRow>
+        <div className="pov-pick-switch">
+          <span className="pov-pick-text"><span className="pov-pick-label">Hard deadline</span><span className="pov-pick-hint">Needt never plans it past this day</span></span>
+          <button type="button" role="switch" aria-checked={!!t.hardDeadline} aria-label="Hard deadline" disabled={!deadline} className={povCx("pov-switch", t.hardDeadline && "is-on")}
+            onClick={() => edit({ hardDeadline: !t.hardDeadline })} data-pov-hard=""><span className="pov-switch-knob" /></button>
+        </div>
+      </>
+    ) },
+    hours: { title: "Hours", body: (
+      <>
+        {POV_SCHED_HOURS.map(([k, l]) => <PovPickRow key={k} on={hours === k} onClick={() => choose({ hours: k })} data={{ "data-pov-pick-opt": k }}>{l}</PovPickRow>)}
+      </>
+    ) }
+  };
+
   const head = (
     <div className="pov-task-top">
       <span className="pov-task-proj">{pname ? <span className="pov-hue" style={{ "--hue": mbHue(t.projectId) }} aria-hidden="true" /> : null}{pname || "No project"}</span>
@@ -107,13 +190,20 @@ function PkTaskSheet({ task, open, onClose, onUpdate, onDelete, onFocus }) {
   );
 
   return (
-    <PkSheet open={open} onClose={onClose} head={head} footer={footer} label={t.title || "Task"} className="pov-task" bodyClass="pov-task-body">
+    <>
+    <PkSheet open={open} onClose={() => (pick ? setPick(null) : onClose())} head={head} footer={footer} label={t.title || "Task"} className="pov-task" bodyClass="pov-task-body">
       <div className="pov-title-row" data-pov-task={t.id != null ? t.id : ""}>
         <button type="button" className={povCx("pov-ring", t.done && "is-on")} aria-pressed={!!t.done} aria-label={t.done ? "Mark not done" : "Mark done"} onClick={() => edit({ done: !t.done })}>
           {t.done ? <PovIcon name="check" size={16} /> : null}
         </button>
         <PkField className="pov-title" multiline grow rows={1} value={t.title || ""} placeholder="Name it"
           onChange={(e) => edit({ title: e.target.value })} inputProps={{ "aria-label": "Title", "data-pov-title": "" }} />
+      </div>
+      <div className="pov-step" data-pov-step="">
+        <PovIcon name="arrow-right" size={14} />
+        <label className="pov-step-label" htmlFor={"pov-entry-" + (t.id != null ? t.id : "x")}>First step</label>
+        <input id={"pov-entry-" + (t.id != null ? t.id : "x")} className="pov-step-input" value={t.entry || ""} placeholder="The smallest thing that counts"
+          onChange={(e) => edit({ entry: e.target.value || null })} data-pov-entry="" />
       </div>
       {t.overdue && !t.done ? <p className="pov-late">Overdue — this was due {mbDue(t)}. Move it or let it go.</p> : null}
       {t.TaskWait && N.person ? <p className="pov-quiet-line"><PovIcon name="clock" size={13} />Waiting on {N.person(t.TaskWait.personId).name} for {t.TaskWait.reason}</p> : null}
@@ -143,6 +233,24 @@ function PkTaskSheet({ task, open, onClose, onUpdate, onDelete, onFocus }) {
         </PovFact>
       </div>
 
+      <PkGlass as="section" className="pov-sched" aria-label="Scheduling" data-pov-sched={schedOpen ? "open" : "folded"}>
+        <button type="button" className="pov-sched-head" aria-expanded={schedOpen} onClick={() => mbSetPref("taskSchedOpen", !schedOpen)} data-pov-sched-head="">
+          <span className="pov-sched-text">
+            <span className="pov-sched-title">Scheduling</span>
+            {schedOpen ? null : <span className="pov-sched-sum">{schedSum}</span>}
+          </span>
+          <span className={povCx("pov-sched-chev", schedOpen && "is-open")} aria-hidden="true"><PovIcon name="chevron-down" size={16} /></span>
+        </button>
+        {schedOpen ? (
+          <div className="pov-sched-rows">
+            {schedRow("placement", "Placement", fixed ? "Fixed" : "Auto")}
+            {schedRow("chunk", "Min. work block", chunk ? chunk + " min" : "Don’t split", !chunk)}
+            {schedRow("deadline", "Deadline", dlLabel || "None", !deadline)}
+            {schedRow("hours", "Hours", hoursLabel)}
+          </div>
+        ) : null}
+      </PkGlass>
+
       <section className="pov-block" data-pov-subtasks="">
         <div className="pov-block-head"><span className="pk-label">Subtasks</span>{parts.length ? <span className="pov-count">{closed} of {parts.length}</span> : null}</div>
         {parts.map((p, i) => (
@@ -162,8 +270,8 @@ function PkTaskSheet({ task, open, onClose, onUpdate, onDelete, onFocus }) {
       </section>
 
       <section className="pov-block">
-        <PkField label="Notes" id={"pov-notes-" + (t.id != null ? t.id : "x")} multiline grow rows={2} value={t.description || ""} placeholder="Add a note"
-          onChange={(e) => edit({ description: e.target.value })} inputProps={{ "data-pov-notes": "" }} />
+        <PkField label="Notes" id={"pov-notes-" + (t.id != null ? t.id : "x")} multiline grow rows={2} value={t.notes || ""} placeholder="Add a note"
+          onChange={(e) => edit({ notes: e.target.value || null })} inputProps={{ "data-pov-notes": "" }} />
       </section>
 
       {(t.attachments || []).length ? (
@@ -184,6 +292,11 @@ function PkTaskSheet({ task, open, onClose, onUpdate, onDelete, onFocus }) {
         <PkButton kind="ghost" icon="trash-2" className="pov-delete" onClick={() => onDelete(t)}>Delete task</PkButton>
       </div>
     </PkSheet>
+    <PkSheet open={!!(open && pick)} onClose={() => setPick(null)} title={pickShown ? PICK[pickShown].title : ""} label={pickShown ? PICK[pickShown].title : "Scheduling"}
+      className="pov-pick" bodyClass="pov-pick-body">
+      <div className="pov-pick-list" data-pov-pick={pickShown || ""}>{pickShown ? PICK[pickShown].body : null}</div>
+    </PkSheet>
+    </>
   );
 }
 

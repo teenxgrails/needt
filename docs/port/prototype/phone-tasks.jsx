@@ -114,7 +114,7 @@ function ptkDropWrite(r, specs, say) {
 function PtkZone({ k, spec, folded, children }) {
   return <div className="ptk-zone" data-pd-zone={k} data-pd-mode={spec ? spec.mode : "none"} data-pd-folded={folded ? "1" : undefined}>{children}</div>;
 }
-/* phone-drag's usePdDrag, inline so the hook order never depends on load
+/* The drag hook (phone-drag.jsx pdAttach), inline so the hook order never depends on load
    order: attaches pdAttach to the list once it is mounted. */
 function usePtkDrag(specs, say, busy) {
   const o = React.useRef(null);

@@ -30,7 +30,6 @@ const DT_THEMES = [
     L: { page: cssVar("--doc-theme-night-page-l"), ink: cssVar("--doc-theme-night-ink-l"), head: cssVar("--doc-theme-night-head-l") }, D: { page: cssVar("--doc-theme-night-page-d"), ink: cssVar("--doc-theme-night-ink-d"), head: cssVar("--doc-theme-night-head-d") } }
 ];
 const dtRgb = (h) => { const n = parseInt(h.slice(1), 16); return ((n >> 16) & 255) + ", " + ((n >> 8) & 255) + ", " + (n & 255); };
-const dtPreset = (id) => DT_THEMES.find((t) => t.id === id) || DT_THEMES[0];
 
 /* A doc's style is one JSON object (the database's Doc.style): the page style
    fields, plus `theme` / `ground` for a page still wearing an old preset. */
@@ -128,7 +127,6 @@ const DC_FONTS = [
   { id: "mono", glyph: "00", name: "Mono", css: "var(--font-mono)" },
   { id: "rounded", glyph: "Rr", name: "Rounded", css: "'Nunito', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', sans-serif" }
 ];
-const DC_SEPS = [["line", "Line"], ["dots", "Dots"], ["wave", "Hand-drawn"]];
 const DC_COVER_ARTS = ["rose", "sand", "sage", "ocean", "night", "paper", "ink", "default"];
 /* "All Styles": every entry is a complete style. Old theme ids map 1:1. */
 const DC_PRESETS = [
@@ -368,7 +366,8 @@ function dcSortDocs(list, key, dir) {
 /* Sort is a per-viewer convenience, kept in this browser (needt.docsSort). */
 const DC_SORT_KEY = "needt.docsSort";
 function dcReadSort() {
-  try { const v = JSON.parse(localStorage.getItem(DC_SORT_KEY)); if (v && DC_SORTS.some((x) => x[0] === v.key) && (v.dir === "asc" || v.dir === "desc")) return v; } catch (e) {}
+  const v = window.needtSync ? window.needtSync.get(DC_SORT_KEY) : null;
+  if (v && DC_SORTS.some((x) => x[0] === v.key) && (v.dir === "asc" || v.dir === "desc")) return v;
   return { key: "updated", dir: "desc" };
 }
 
@@ -454,8 +453,6 @@ function dxNorm(v) {
   return out;
 }
 const spansToText = (v) => (Array.isArray(v) ? v.map((x) => (x && x.t != null ? String(x.t) : "")).join("") : v == null ? "" : typeof v === "string" ? v : String(v));
-const dxLen = (v) => spansToText(v).length;
-const dxIsRich = (v) => Array.isArray(v);
 /* Pieces of the text, keeping marks (raw arrays; dxNorm before storing). */
 function dxCut(v, a, b) {
   const out = []; let pos = 0;
@@ -672,9 +669,9 @@ const dxMigrateBody = (body) => (Array.isArray(body) ? body.map(dxMigrateBlock) 
 /* A block's words as plain text (search, outline, summaries). */
 const dxText = (a) => (a ? spansToText(a[1]) : "");
 
-Object.assign(window, { DX_MARKS, DX_COLORS, DX_HLS, DX_TEXT_KINDS, toSpans, dxNorm, spansToText, dxLen, dxIsRich, sliceSpans, concatSpans, spliceText, marksIn, applyMark,
+Object.assign(window, { DX_MARKS, DX_COLORS, DX_HLS, DX_TEXT_KINDS, toSpans, dxNorm, spansToText, sliceSpans, concatSpans, spliceText, marksIn, applyMark,
   renderSpans, spansToHtml, spansToMarkdown, domToSpans, dxFromEditor, dxRangeIn, dxSelect, dxSafeHref, dxMigrateBlock, dxMigrateBody, dxText });
 
 Object.assign(window, { DT_THEMES, DtCover, DcCover, dcStyleField, dcStyleOf, dcPageOf, dcFontOf, dcInkFor, dcVars, dcBackdrop, dcBdVars, dcAmbientFor, dcLoadFonts,
-  DC_DEFAULT, DC_PRESETS, DC_PAGES, DC_TEXTS, DC_BACKDROPS, DC_FONTS, DC_SEPS, DC_COVER_ARTS,
+  DC_DEFAULT, DC_PRESETS, DC_PAGES, DC_TEXTS, DC_BACKDROPS, DC_FONTS, DC_COVER_ARTS,
   dcAge, DC_SORTS, dcSortDefault, dcDirLabel, dcSortDocs, DC_SORT_KEY, dcReadSort });

@@ -1,4 +1,4 @@
-const { NavRow, Switch, Checkbox, SidebarHint, Button, IconButton, Icon, Chip, ContextMenu, Menu, MenuItem, MenuLabel, MenuSeparator, Tooltip, DocumentSheet, EmptyState, Avatar } = window.NeedtDesignSystem_25d3c8;
+const { NavRow, Switch, Checkbox, SidebarHint, IconButton, Icon, Menu, MenuItem, MenuLabel, MenuSeparator, Avatar } = window.NeedtDesignSystem_25d3c8;
 
 /* Docs grid, the document editor, Share and the inspector. The seed pages,
    themes, styles and the miniature live in docs-kit.jsx (loaded first). */
@@ -738,39 +738,6 @@ function DocPanel({ onBack }) {
   );
 }
 
-/* A panel hung under its trigger: the shared shape of Share, Notifications
-   and Help. One open at a time is the caller's business, not the panel's. */
-function Pop({ trigger, width, align, children }) {
-  const [open, setOpen] = React.useState(false);
-  const [shown, leaving] = window.useExit(open, 130);
-  const wrap = React.useRef(null);
-  React.useEffect(() => {
-    if (!open) return undefined;
-    const away = (e) => { if (wrap.current && !wrap.current.contains(e.target)) setOpen(false); };
-    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", away); document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
-  }, [open]);
-  return (
-    <span className="docs-drop-menu-1" ref={wrap}>
-      <span className="docs-drop-menu-2" onClick={() => setOpen(!open)}>{trigger}</span>
-      {shown ? (
-        <div className={"nx-pop docs-pop-panel" + ((align || "right") === "right" ? " is-right" : "") + (leaving ? " is-leaving" : "")} style={{ width: width }}>
-          {typeof children === "function" ? children(() => setOpen(false)) : children}
-        </div>
-      ) : null}
-    </span>
-  );
-}
-
-function Seg({ items, value, onChange }) {
-  return (
-    <span className="toggle-group docs-seg-1">
-      {items.map(([id, l]) => <button className={"docs-seg-2 docs-seg-s1" + (value === id ? " is-on" : "")} key={id} type="button" aria-pressed={value === id} onClick={() => onChange(id)}>{l}</button>)}
-    </span>
-  );
-}
-
 /* ---------- Share (08.10.26) ----------
    Built like the Moodboard share sheet: invite by email with a role, the
    people on the page, general access and the link. AI access is its own block
@@ -782,7 +749,7 @@ const DC_AI_LEVELS = [["none", "None"], ["read", "Read"], ["edit", "Read & edit"
 const DC_SHARE_KEY = "needt.docShare";
 const DC_SHARE_SEED = { launch: { members: [{ email: "lena@fischer.studio", name: "Lena Fischer", role: "edit" }] } };
 const dcShareBlank = () => ({ members: [], access: "private", linkRole: "view", ai: {} });
-let dcShareAll = (() => { try { return JSON.parse(localStorage.getItem(DC_SHARE_KEY)) || {}; } catch (e) { return {}; } })();
+let dcShareAll = (() => { const v = window.needtSync ? window.needtSync.get(DC_SHARE_KEY) : null; return v && typeof v === "object" ? v : {}; })();
 /* Another window's sharing lands here (the share sheet listens for needt-docshare). */
 if (window.needtSync) window.needtSync.subscribe(DC_SHARE_KEY, (v, info) => {
   if (info.origin === "local" || info.origin === "error") return;
@@ -990,24 +957,6 @@ function DocShareSheet({ open, onClose }) {
   );
 }
 
-function NotificationsPanel() {
-  const [tab, setTab] = React.useState("activity");
-  return (
-    <div className="docs-dc-style-panel-9">
-      <div className="docs-notifications-panel-1">
-        <span className="docs-notifications-panel-2">Notifications</span>
-        <span className="docs-panel-find-3"><IconButton label="Notification settings" variant="ghost"><Icon name="ellipsis" size={16} /></IconButton></span>
-      </div>
-      <Seg value={tab} onChange={setTab} items={[["activity", "Activity"], ["reminders", "Reminders"]]} />
-      <div className="docs-notifications-panel-3">
-        <span className="docs-notifications-panel-4"><Icon name="bell" size={24} /></span>
-        <span className="docs-dc-gallery-3">{tab === "activity" ? "Nothing new" : "No reminders set"}</span>
-        <span className="docs-notifications-panel-5">{tab === "activity" ? "Mentions, comments and agent suggestions on your documents land here." : "Set one from a block's menu: Remind me."}</span>
-      </div>
-    </div>
-  );
-}
-
 /* The right inspector opens on request only (08.10.26): closed while you read,
    opened by the Insert button here, by the "/" menu's last row or by the top
    bar's panel toggle (⌘⌥\\). Its open state is the shell's docPanel pref,
@@ -1078,20 +1027,12 @@ function InsertPanel() {
   );
 }
 
-function PanelLabel({ children }) { return <DcLabel>{children}</DcLabel>; }
 function PanelRow({ label, value, last }) {
   return (
     <div className={"docs-panel-row-1 docs-panel-row-s1" + (last ? " is-on" : "")}>
       <span className="docs-panel-row-2">{label}</span>
       <span className="docs-panel-row-3">{value}</span>
     </div>
-  );
-}
-function Choice({ items, value, onChange }) {
-  return (
-    <span className="toggle-group docs-dc-style-panel-29">
-      {items.map(([id, l]) => <button className={"docs-seg-2 docs-choice-s1" + (value === id ? " is-on" : "")} key={id} type="button" aria-pressed={value === id} onClick={() => onChange(id)}>{l}</button>)}
-    </span>
   );
 }
 
@@ -1104,9 +1045,6 @@ function Tile({ on, onClick, children, style, label, tall, className }) {
       {children}
     </button>
   );
-}
-function TileRow({ children, cols }) {
-  return <div className="docs-tile-row-1" style={{ gridTemplateColumns: "repeat(" + (cols || children.length) + ", minmax(0, 1fr))" }}>{children}</div>;
 }
 function Joined({ items, value, onChange }) {
   return (

@@ -38,8 +38,6 @@
  * need a face. Which agent asked for the action is already said in the brief,
  * in that agent's own ink.
  */
-const AcNS = window.NeedtDesignSystem_25d3c8;
-const { Icon: AcIcon } = AcNS;
 
 /* How long a reach takes, by distance. Fitts's law in the shape that matters
    here: a fixed cost to start moving, plus a term that grows with distance but

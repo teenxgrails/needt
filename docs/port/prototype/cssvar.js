@@ -2,7 +2,6 @@
    code that needs a literal value). Colours live only in themes.css. */
 (function () {
   const cache = {};
-  let stamp = "";
   window.cssVar = function (name, el) {
     const root = el || document.documentElement;
     const key = (root.className || "") + "|" + name;

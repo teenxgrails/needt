@@ -1,6 +1,4 @@
-const { Card, Button, IconButton, Icon, Input, Select, Switch, Checkbox, RadioGroup, SegmentedControl,
-  FormRow, FormGroup, Chip, StatusDot, Avatar, Tooltip, NavSection, Menu, MenuItem, MenuSeparator, DropdownMenu,
-  Skeleton, SkeletonRows, EmptyState } = window.NeedtDesignSystem_25d3c8;
+const { Card, IconButton, Icon, Switch, Menu, MenuItem, DropdownMenu } = window.NeedtDesignSystem_25d3c8;
 
 /* SETTINGS — a full screen, not a dialog. The left rail is the table of
    contents; the right column is one section at a time, so a form row never
@@ -10,25 +8,8 @@ const { Card, Button, IconButton, Icon, Input, Select, Switch, Checkbox, RadioGr
 /* One person, one Needt (08.10.26): there are no spaces to switch between and
    no space-level settings. Teams will live inside your Needt later. */
 
-/* Every sized control on this screen measures from one constant, so a Select
-   and the Input next to it cannot disagree. */
-const CTRL = { width: 220 };
-
 /* The person Settings belongs to. Same mock as the sidebar's profile. */
 const ME = { name: "Maksym K.", email: "maksym@needt.app", initials: "MK" };
-
-const KEYWORDS = {
-  account: "profile name email avatar photo password sign in google apple devices sign out teams delete account",
-  plan: "plan billing pro trial lifetime invoices license",
-  general: "links browser desktop app offline",
-  appearance: "theme light dark system time sunrise sunset accent colour color gradient",
-  day: "working hours day starts ends week start time zone calendar default view agenda week scheduler auto-schedule plan order keep focus free shortest work block gap between tasks weekend",
-  tasks: "estimate project subtasks task value money worth project activity flame",
-  focus: "session length break sound notifications animate logo wordmark snap",
-  alerts: "daily plan overdue week review channel desktop email",
-  keys: "shortcuts keyboard command",
-  data: "export import csv markdown json notion google docs ics download again usage privacy reset"
-};
 
 /* THEMES, THEME_CLASS and ACCENTS live in settings-kit.jsx (loaded first). */
 
@@ -40,21 +21,6 @@ function ThemePicture({ id, width }) {
   if (id === "system") return <window.Miniature kind="day" width={width} half={["paper", "dark"]} />;
   if (id === "time") return <window.Miniature kind="day" width={width} diagonal={["paper", "dark"]} />;
   return <window.Miniature kind="day" width={width} theme={THEME_CLASS[id] || "paper"} />;
-}
-
-/* Used by onboarding (AuthScreen) as well. */
-function ThemeThumb({ id, label, active, onPick }) {
-  return (
-    <button type="button" onClick={() => onPick(id)} aria-pressed={active} className={"thumb settings-theme-thumb-thumb" + (active ? " is-active" : "")}
-     >
-      <span className="settings-theme-thumb-span">
-        <ThemePicture id={id} width={132} />
-      </span>
-      <span className="settings-theme-thumb-row">
-        {active ? <Icon name="check" size={13} /> : null}{label}
-      </span>
-    </button>
-  );
 }
 
 /* ---------- Craft-pattern primitives ----------
@@ -644,4 +610,4 @@ function SettingsScreen({ theme, onTheme, accent, onAccent, day, onBack: leaveNo
   );
 }
 
-Object.assign(window, { SettingsScreen, ThemeThumb });
+Object.assign(window, { SettingsScreen });

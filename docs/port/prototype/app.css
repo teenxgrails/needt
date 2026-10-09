@@ -7,16 +7,6 @@
  * renders the identical product rather than an approximation of it. A page
  * that renders the app without this file is not showing the app.
  */
-/* Host-side correction to a design-system defect, not a restyle.
-   .nt-block-title is flex: 0 0 auto in tokens/ui.css. In a compact block the
-   row switches to flex-direction: row, so a title that cannot shrink pushes
-   .nt-block-time (flex: none; margin-left: auto) out of a box with
-   overflow: hidden — the time disappears. Belongs in ui.css as
-   .nt-block[data-compact="true"] .nt-block-title { flex: 0 1 auto; }
-
-/* Hours outside the working window: drawn, not hidden — an evening event has
-   to be able to land there. One hairline at 45°, no fill. */
-.nt-hatch { background-image: repeating-linear-gradient(45deg, rgba(var(--foreground-rgb), 0.05) 0 1px, transparent 1px 7px); }
 
 /* The wordmark breathes — the one perpetual animation besides the spinner,
    and like the spinner it means something: the app is running. It inflates by
@@ -53,13 +43,12 @@
    Durations and curves come from tokens/motion.css; only the origins live
    here, because only the page knows which corner a surface hangs from. */
 .nt-menu { animation: needt-pop var(--transition-pop) both; transform-origin: top left; }
-.nt-menu[data-align="right"], .nt-menu-right { transform-origin: top right; }
+.nt-menu[data-align="right"] { transform-origin: top right; }
 .nt-popover { animation: needt-pop var(--transition-pop) both; transform-origin: bottom left; }
 /* Flipped upward: the panel hangs above its anchor and grows from the edge it
    is attached to. */
 .pop-up .nt-popover { top: auto !important; bottom: calc(100% + 6px); transform-origin: bottom left; }
 /* A menu hung above its trigger grows from the edge it is attached to. */
-.menu-up .nt-menu { animation: needt-pop var(--transition-pop) both; transform-origin: bottom left; }
 .nt-datepicker { animation: needt-pop var(--transition-pop) both; transform-origin: top left; }
 .nt-scrim { animation: needt-fade var(--transition-pop) both; }
 .nt-dialog { animation: needt-pop-modal var(--duration-screen) var(--ease-pop) both; }
@@ -67,8 +56,6 @@
 .nt-scrim > div { animation: needt-pop-modal var(--duration-screen) var(--ease-pop) both; transform-origin: top center; }
 /* A screen replacing another. */
 .screen-enter { animation: needt-screen var(--duration-screen) var(--ease-pop) both; }
-/* A block the app just placed or moved. */
-.just-landed > * { animation: needt-landed 0.6s var(--ease-pop) both; }
 
 /* The perpetual and the celebratory stop entirely under reduced motion; the
    token-level durations in motion.css handle everything that merely arrives. */
@@ -140,8 +127,7 @@
   100% { opacity: 1; transform: none; }
 }
 .screen-enter article,
-.screen-enter [data-col-scroll] > *,
-.screen-enter .nt-card { animation: needt-rise 0.46s cubic-bezier(0.2, 0.9, 0.24, 1); }
+.screen-enter [data-col-scroll] > * { animation: needt-rise 0.46s cubic-bezier(0.2, 0.9, 0.24, 1); }
 .screen-enter article:nth-child(1) { animation-delay: 0.02s; }
 .screen-enter article:nth-child(2) { animation-delay: 0.05s; }
 .screen-enter article:nth-child(3) { animation-delay: 0.08s; }
@@ -166,14 +152,10 @@ article:active { transform: translateY(0) scale(0.997); transition-duration: 0.0
 /* ── EVERY PRESS ANSWERS ────────────────────────────────────────────────
    A control that does not move under the finger reads as a picture of a
    control. 90ms down, spring back up. */
-button, .btn, [role="menuitem"], .nt-nav-row, .nt-chip {
+button, .btn, [role="menuitem"] {
   transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.24, 1), background-color var(--transition-hover), box-shadow 0.2s cubic-bezier(0.2, 0.9, 0.24, 1), color var(--transition-hover);
 }
-button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { transform: scale(0.965); transition-duration: 0.09s; }
-.nt-icon-button:hover { transform: translateY(-1px); }
-/* A nav row slides a hair toward its content when hovered — the sidebar's own
-   version of leaning in. */
-.nt-nav-row:hover { transform: translateX(2px); }
+button:active, .btn:active, [role="menuitem"]:active { transform: scale(0.965); transition-duration: 0.09s; }
 
 /* ── A MENU CASCADES ────────────────────────────────────────────────────
    The surface arrives, then its rows fall in over 100ms. A menu whose items
@@ -197,7 +179,7 @@ button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { trans
   58%  { opacity: 1; transform: translateY(-1px) scale(1.02); filter: blur(0); }
   100% { opacity: 1; transform: none; }
 }
-.nt-chip, .nt-status-dot { animation: needt-land 0.36s cubic-bezier(0.2, 0.9, 0.24, 1); }
+.nt-status-dot { animation: needt-land 0.36s cubic-bezier(0.2, 0.9, 0.24, 1); }
 
 /* ── A THING IS CLOSED ──────────────────────────────────────────────────
    The ring fills from its middle and throws one ring outward. The row itself
@@ -216,7 +198,6 @@ button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { trans
    animation on the row itself would outrank the hover transform in this same
    layer, and an entry that holds state is what froze the cards. */
 @keyframes needt-tab-fill { from { opacity: 0; filter: blur(2px); } to { opacity: 1; filter: blur(0); } }
-.nt-nav-row[aria-current="page"] > *, .nt-nav-row[data-active="true"] > * { animation: needt-tab-fill 0.28s cubic-bezier(0.2, 0.9, 0.24, 1); }
 
 /* ── SCROLLING SURFACES BREATHE AT THEIR EDGE ───────────────────────────
    A scroller that ends flush reads as a clipped page; a fade says there is
@@ -224,26 +205,20 @@ button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { trans
 .scroll-inner { scroll-behavior: smooth; }
 
 @media (prefers-reduced-motion: reduce) {
-  .screen-enter article, .screen-enter section, .screen-enter .nt-card,
-  .nt-chip, .nt-status-dot, .nt-menu [role="menuitem"], .nt-menu .nt-menu-label,
-  [data-state="checked"], [aria-checked="true"],
-  .nt-nav-row[aria-current="page"], .nt-nav-row[data-active="true"] { animation: none; }
-  article:hover, .nt-nav-row:hover, .nt-icon-button:hover { transform: none; }
+  .screen-enter article, .screen-enter section, .nt-status-dot, .nt-menu [role="menuitem"], .nt-menu .nt-menu-label, [data-state="checked"], [aria-checked="true"] { animation: none; }
+  article:hover { transform: none; }
   .scroll-inner { scroll-behavior: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .needt-mark.is-breathing { animation: none; }
-  .just-landed > * { animation: none; }
   .screen-enter, .nt-menu, .nt-popover, .nt-datepicker, .nt-dialog, .nt-scrim, .nt-scrim > div { animation-duration: 0.01ms; }
 }
 
 /* An overlay's trigger wrapper shrink-wraps and forwards no style; this makes
    a pinned sidebar row a full-width target. */
-.needt-stretch { display: flex; width: 100%; }
 /* Popover nests two wrappers — the outer holder and the anchor — so both must
    stretch before the button's own 100% has anything to resolve against. */
-.needt-stretch > *, .needt-stretch > * > * { flex: 1 1 auto; min-width: 0; width: 100%; }
 /* The caret that follows what Needt is writing. */
 @keyframes needt-caret { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 .brief-caret { display: inline-block; width: 2px; height: 1em; margin-left: 1px; vertical-align: -2px; background: var(--accent); animation: needt-caret 1s steps(1) infinite; }
@@ -260,7 +235,6 @@ button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { trans
   0% { opacity: 0; transform: translateY(6px) scale(0.96); }
   100% { opacity: 1; transform: none; }
 }
-.ci-body { animation: needt-island-in 0.26s cubic-bezier(0.2, 0.7, 0.2, 1) 0.1s both; }
 /* A breath of accent around the shell while it is carrying something, so the
    swell is felt at the edge of vision rather than only where you are looking. */
 @keyframes needt-island-ring {
@@ -268,7 +242,7 @@ button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { trans
   45% { box-shadow: var(--shadow-floating), 0 0 0 5px rgba(var(--accent-rgb), 0.13); }
 }
 .chat-shell.is-island { animation: needt-island-ring 2.6s ease-in-out 2; }
-@media (prefers-reduced-motion: reduce) { .ci-body, .chat-shell.is-island { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .chat-shell.is-island { animation: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .brief-caret, .chat-dots i, .chat-line { animation: none; }
@@ -297,9 +271,6 @@ button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { trans
    accent hairline sweeps under it for the length of the swap. */
 @keyframes needt-veil-mark { from { opacity: 0; transform: translateY(7px) scale(0.985); } to { opacity: 1; transform: none; } }
 @keyframes needt-veil-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-.veil-mark { animation: needt-veil-mark 0.26s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.veil-sweep { position: absolute; inset: 0; border-radius: 1px; background: var(--accent);
-  animation: needt-veil-sweep 0.52s cubic-bezier(0.4, 0, 0.2, 1) both; }
 
 /* SETTINGS — a section arrives from below its heading, once, fast enough that
    the eye reads it as the same page changing subject. */
@@ -332,14 +303,6 @@ button:active, .btn:active, [role="menuitem"]:active, .nt-nav-row:active { trans
 /* THE LANDING — the shape a dragged task would take, drawn where it would
    land: accent outline, its start time, nothing filled in. */
 @keyframes needt-drop-in { from { opacity: 0; transform: scaleY(0.9); } to { opacity: 1; transform: none; } }
-.drop-preview { display: flex; align-items: center; gap: 6px; padding: 0 8px; pointer-events: none; overflow: hidden;
-  border-radius: var(--radius-md); background: var(--fill-accent); color: var(--accent);
-  box-shadow: rgba(var(--accent-rgb), 0.55) 0 0 0 1.5px inset; transform-origin: 50% 0;
-  animation: needt-drop-in 0.14s ease both; }
-/* Refused: the same shape in the destructive tone, saying what is in the way.
-   The outline is dashed, because a refusal is not a place. */
-.drop-preview-no { background: var(--fill-destructive); color: var(--destructive);
-  box-shadow: none; outline: 1.5px dashed var(--destructive); outline-offset: -1.5px; }
 
 /* Focus is a 2px inset accent ring — on the thumbnails and the section rail
    too, so the whole screen is reachable from the keyboard. */
@@ -350,8 +313,7 @@ nav[aria-label="Settings sections"] button[aria-current]:focus-visible,
 nav[aria-label="Settings sections"] button:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
 
 @media (prefers-reduced-motion: reduce) {
-  .veil-mark, .veil-sweep, .settings-enter, .saved-pop, .auth-enter, .step-enter, .step-enter-back,
-  .auth-aurora, .mini-block, .mini-now, .drop-preview { animation: none; }
+  .settings-enter, .saved-pop, .auth-enter, .step-enter, .step-enter-back, .auth-aurora, .mini-block, .mini-now { animation: none; }
 }
 
 /* THE FLAME — a category's impulse. The silhouette is a clipped polygon whose
@@ -393,12 +355,6 @@ nav[aria-label="Settings sections"] button:focus-visible { outline: none; box-sh
   35% { transform: scale(1.18); background: var(--fill-accent); color: var(--accent); }
   100% { transform: scale(1); }
 }
-.count-bump { animation: needt-count-bump 0.32s ease; }
-/* The columns strip is dragged and wheeled sideways, so it must not select
-   text while being pulled. */
-.cv-strip { cursor: default; user-select: none; }
-
-@media (prefers-reduced-motion: reduce) { .count-bump { animation: none; } }
 /* A one-line block in a week column cannot hold both a title and a mono time.
    The block measures itself and drops the time; the title never truncates to
    four characters to make room for a value the grid already states. */
@@ -410,18 +366,12 @@ nav[aria-label="Settings sections"] button:focus-visible { outline: none; box-sh
 .mark-bar { animation: needt-pop var(--transition-pop) both; transform-origin: 50% 100%; }
 /* The pointer time and the hour gutter sit on the sheet, so their backing
    follows the sheet rather than the page. */
-.cal-sheet .cal-aim-time { background: var(--background); }
 /* The hour gutter and the head row stay put while the table scrolls under
    them, so a day column is never nameless and an hour is never guessed. */
-.cal-sheet .scroll-inner { scrollbar-width: none; }
-.cal-sheet .scroll-inner::-webkit-scrollbar { width: 0; height: 0; }
 /* THE WALLS. What is not today lives in the edge of the room: a 22px lip with
    the name turned on its side, and the column itself parked just outside the
    frame. Reaching the edge slides it in over the day rather than displacing
    it — the thing being read must not move while you look somewhere else. */
-.hd-wall { position: absolute; top: 0; bottom: 0; width: 292px; z-index: 6; display: flex; }
-.hd-wall-left { left: 0; }
-.hd-wall-right { right: 0; flex-direction: row-reverse; }
 /* THE WALL IS NOT A BUTTON. What sits at the edge is the shelf itself, pushed
    almost all the way out and dimmed: a strip of its name and a sliver of the
    cards behind it. Dimmed rather than hidden, because a person has to be able
@@ -429,35 +379,6 @@ nav[aria-label="Settings sections"] button:focus-visible { outline: none; box-sh
    label would be a control promising a click, when the gesture is a reach. */
 /* The lip is the reach, not a label: a bare strip of ground with nothing
    written on it. */
-.hd-wall-lip { flex: none; width: 22px; }
-.hd-wall-body {
-  position: relative;
-  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 0 11px;
-  /* Out of focus, not merely dim. Opacity alone never fixed the sliver: a
-     crisp rounded corner and a coloured ring at the screen edge read as a
-     card that got cut off, at any opacity. Blur removes the edges, so what is
-     behind the wall becomes a shape you can see and cannot read — which is
-     exactly what it is. */
-  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.2s ease;
-}
-/* Pushed out far enough that a strip of the cards still shows — that strip is
-   the invitation, and it is the only one. */
-.hd-wall-left .hd-wall-body { transform: translateX(-100%); opacity: 0; }
-.hd-wall-right .hd-wall-body { transform: translateX(100%); opacity: 0; }
-
-/* THE HIT AREA IS WHAT IS ON SCREEN, AND NOTHING ELSE. The wall's box is
-   292px because that is its width when it is out; as a hover target that box
-   was a transparent shield lying across a third of the day. So the wall takes
-   no pointer at all: the name strip does, and the body does once it is out —
-   which is what keeps it out while you are reading it. */
-.hd-wall { pointer-events: none; }
-.hd-wall-lip { pointer-events: auto; }
-.hd-wall:has(.hd-wall-lip:hover) .hd-wall-body,
-.hd-wall-body:hover { transform: none; opacity: 1; pointer-events: auto; }
-.hd-wall:has(.hd-wall-lip:hover) .hd-wall-body,
-.hd-wall-body:hover { filter: drop-shadow(0 6px 22px rgba(0, 0, 0, 0.22)); }
-
-@media (prefers-reduced-motion: reduce) { .hd-wall-body { transition: none; } }
 /* The keyboard sheet. A cap is a physical key drawn small: a raised face on a
    recessed well, in the mono face because a key legend is a value. */
 .key-sheet { position: relative; display: flex; flex-direction: column; width: min(720px, 100%); max-height: min(560px, 100%);
@@ -476,39 +397,22 @@ nav[aria-label="Settings sections"] button:focus-visible { outline: none; box-sh
   background: var(--overlay-scrim); animation: needt-fade var(--transition-pop) both; }
 
 @media (prefers-reduced-motion: reduce) { .td-scrim { animation: none; } }
-.cal-stick { position: sticky; left: 0; background: var(--background); z-index: 50; }
 /* The rail: a dotted line down the right edge of the margin, one dot every
    quarter hour, so the quarters are countable without ruling the day. */
-.cal-rail::after {
-  content: ""; position: absolute; top: 0; bottom: 0; right: 8px; left: 0; margin: 0 auto; width: 2px;
-  background-image: radial-gradient(circle, var(--text-quaternary) 0.75px, transparent 0.85px);
-  background-size: 2px 14px; background-repeat: repeat-y;
-}
 /* The header has to fit the shell's own floor: under 1320px the inactive tabs
    drop their labels and their icons carry them, so the tail of the row — the
    view toggle and the options gear — is never clipped. */
 @media (max-width: 1320px) {
-  .tab-bar .tab-label { display: none; }
   .tab-bar button { padding: 0 8px; }
 }
 /* Non-working hours: hatched, never blocked. The hour is still there and still
    takes a drop — the ground simply says it is not working time. */
-.cal-off { pointer-events: none; z-index: 0;
-  background: repeating-linear-gradient(-45deg, var(--fill-3) 0 1px, transparent 1px 7px); }
 /* A popover anchored to a full-width control in the rail stretches to that
    width — the rail clips, so a panel wider than the rail loses its right edge. */
 .pop-up > .nt-popover { left: 0; right: 0; }
-.block-compact { container-type: inline-size; }
-@container (max-width: 150px) { .block-compact-time { display: none !important; } }
 /* THE TWO-MINUTE STRIP. A gap states its length whether or not you fill it,
    so at rest it is a rule with a number in it — and only on hover does it
    look like a control. */
-.mn-rule { flex: 1; border-top: 1px dashed var(--border); }
-.mn-box { transition: color var(--transition-hover), background-color var(--transition-hover); }
-.mn-box:hover { color: var(--text-secondary); background: var(--fill-2); }
-.mn-label { color: inherit; }
-.mn-box:hover .mn-rule { border-top-color: var(--text-disabled); }
-.mn-shelf { animation: needt-pop var(--transition-pop) both; transform-origin: 50% 0; }
 .needt-mark { cursor: default; }
 .needt-mark text { transform-box: fill-box; transform-origin: 50% 100%; }
 .needt-mark tspan { stroke-width: 0.2;
@@ -517,10 +421,6 @@ nav[aria-label="Settings sections"] button:focus-visible { outline: none; box-sh
 .needt-mark.is-breathing tspan { animation: needt-breathe 5.2s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
 /* The wave: each letter starts a beat after the one before it, so the swell
    crosses the word instead of arriving everywhere at once. */
-.needt-mark.mode-wave.is-breathing tspan:nth-child(2) { animation-delay: 0.11s; }
-.needt-mark.mode-wave.is-breathing tspan:nth-child(3) { animation-delay: 0.22s; }
-.needt-mark.mode-wave.is-breathing tspan:nth-child(4) { animation-delay: 0.33s; }
-.needt-mark.mode-wave.is-breathing tspan:nth-child(5) { animation-delay: 0.44s; }
 .needt-mark:hover tspan { animation-play-state: paused; stroke-width: 5.8; }
 .needt-mark:hover text { animation-play-state: paused; }
 .needt-mark.is-held tspan { animation-play-state: paused; stroke-width: 0.4; transition-duration: 0.1s; }
@@ -557,10 +457,6 @@ nav[aria-label="Settings sections"] button:focus-visible { outline: none; box-sh
 /* The timeline sets its blocks' ring inline, so this one needs the weight. */
 [data-depth="lifted"] .nt-timeline .nt-block { box-shadow: var(--shadow-raised) !important; }. */
 .nt-block[data-compact="true"] .nt-block-title { flex: 0 1 auto; }
-
-/* Hours outside the working window: drawn, not hidden — an evening event has
-   to be able to land there. One hairline at 45°, no fill. */
-.nt-hatch { background-image: repeating-linear-gradient(45deg, rgba(var(--foreground-rgb), 0.05) 0 1px, transparent 1px 7px); }
 
 /* DEPTH — how far an object sits off the ground. "raised" is the system
    default and needs no rules. The other two are whole-product treatments, not
@@ -757,16 +653,8 @@ button:focus-visible, [role="button"]:focus-visible, a:focus-visible, .nx-btn:fo
   outline: 2px solid var(--accent); outline-offset: 2px; }
 button:focus:not(:focus-visible), [role="button"]:focus:not(:focus-visible) { outline: none; }
 
-/* Home tile progress: a 3px pill along the bottom inside the tile. */
-.sb-progress { position: absolute; left: 10px; right: 10px; bottom: 4px; height: 3px; border-radius: 9999px; background: var(--fill-4); overflow: hidden; pointer-events: none; }
-.sb-progress > i { display: block; height: 100%; border-radius: inherit; background: var(--accent-fill, var(--accent)); transition: width 520ms cubic-bezier(0.2, 0.9, 0.24, 1); }
-
 /* Task source chip (Mail / Calendar / Import) — where a task came from. */
-.hd-src { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px 0 6px; border: 0; border-radius: 6px;
-  background: var(--fill-2); color: var(--text-tertiary); font: var(--type-meta); cursor: default; max-width: 22ch; }
-.hd-src > span:last-child { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-button.hd-src:hover { background: var(--fill-4); color: var(--text-secondary); }
-@media (prefers-reduced-motion: reduce) { .nx-btn, .sb-progress > i { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .nx-btn { transition: none; } }
 
 /* ---------- Moodboards v2 (07.10.26) ---------- */
 .mb-card { -webkit-user-drag: element; }
@@ -1012,7 +900,6 @@ main .scroll-inner::-webkit-scrollbar-corner, .nx-scroll::-webkit-scrollbar-corn
 @supports not selector(::-webkit-scrollbar) {
   main .scroll-inner, .nx-scroll { scrollbar-width: thin; scrollbar-color: rgba(var(--foreground-rgb), 0.22) transparent; }
 }
-.cal-sheet .scroll-inner::-webkit-scrollbar { width: 0; height: 0; }
 
 /* Documents grid (07.10.26): auto-fill on desktop, two up under 900, one on
    a phone-width window. Masonry follows. */
