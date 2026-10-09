@@ -1,0 +1,107 @@
+"use client";
+
+import {
+  type CSSProperties,
+  type PropsWithChildren,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import "@/styles/v3/index.css";
+
+import { newDate } from "@/lib/date-utils";
+import { V3_FONT_CLASSES } from "@/lib/needt3/fonts";
+import {
+  type TimeReading,
+  placeFromTz,
+  readTimePalettes,
+  resolveTheme,
+  timeThemeAt,
+} from "@/lib/needt3/theme";
+
+import { useNeedt3Ui } from "@/store/needt3-ui";
+
+/**
+ * True inside the v3 frame. The flag is read once per request on the server
+ * (`isDesignV3`) and arrives here through the layout; client code asks this
+ * context and never fetches flags.
+ */
+const DesignV3Context = createContext(false);
+
+export function useDesignV3() {
+  return useContext(DesignV3Context);
+}
+
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+const TIME_TICK_MS = 60_000;
+
+function useOsDark() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(DARK_QUERY);
+    setDark(mq.matches);
+    const read = (e: MediaQueryListEvent) => setDark(e.matches);
+    mq.addEventListener("change", read);
+    return () => mq.removeEventListener("change", read);
+  }, []);
+  return dark;
+}
+
+/** The Time reading, recomputed once a minute while Time is chosen. */
+function useTimeReading(
+  enabled: boolean,
+  scopeRef: React.RefObject<HTMLDivElement | null>
+) {
+  const [reading, setReading] = useState<TimeReading | null>(null);
+  useEffect(() => {
+    if (!enabled || !scopeRef.current) {
+      setReading(null);
+      return undefined;
+    }
+    const el = scopeRef.current;
+    const place = placeFromTz();
+    const palettes = readTimePalettes(el);
+    if (!palettes.day.bg) return undefined; // tokens not loaded: stay put
+    const read = () => setReading(timeThemeAt(newDate(), place, palettes));
+    read();
+    const id = window.setInterval(read, TIME_TICK_MS);
+    return () => window.clearInterval(id);
+  }, [enabled, scopeRef]);
+  return reading;
+}
+
+/**
+ * The v3 frame: the `.needt-v3` scope element every v3 screen renders in.
+ * It carries the theme (`data-theme`, `data-drift`), the accent and the font
+ * variables. Providers (session, TanStack Query, workspace) come from the
+ * root layout and are shared with the old shell; v3 query keys are prefixed
+ * `["v3", …]`, so the two never share cache entries.
+ */
+export function V3Root({ children }: PropsWithChildren) {
+  const scopeRef = useRef<HTMLDivElement>(null);
+  const theme = useNeedt3Ui((s) => s.theme);
+  const accent = useNeedt3Ui((s) => s.accent);
+  const osDark = useOsDark();
+  const time = useTimeReading(theme === "time", scopeRef);
+  const resolved = resolveTheme(theme, osDark, time);
+
+  return (
+    <DesignV3Context.Provider value={true}>
+      <div
+        ref={scopeRef}
+        className={`needt-v3 ${V3_FONT_CLASSES} relative z-10 flex h-dvh min-h-0 flex-col overflow-hidden`}
+        data-theme={resolved.side}
+        data-drift={resolved.drift ? "on" : undefined}
+        data-accent={accent}
+        data-theme-choice={theme}
+        style={resolved.vars as CSSProperties}
+        suppressHydrationWarning
+      >
+        {children}
+      </div>
+    </DesignV3Context.Provider>
+  );
+}

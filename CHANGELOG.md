@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Design v3 port, foundations (behind the `design_v3` flag, off for
+  everyone): the new design's tokens, themes and stylesheets are vendored
+  under a `.needt-v3` scope (`npm run tokens:sync:v3`, guarded by
+  `npm run tokens:check`), with the licensed Exposure face and Newsreader /
+  Nunito. A person with the flag sees the app inside the new frame, themed
+  System / Light / Dark / Time with nine accents; nobody else sees a change.
+
 - Brief and Canvas: a connected tool's writing is no longer shown as your
   own. Authorship is carried by the ink and a mark in the margin, and the
   list of authors was closed to four — anything else fell back to "you",
