@@ -135,11 +135,6 @@ function cnUseConn() {
   }, []);
   return v;
 }
-/* Shared with the sidebar row: which accounts need you now. */
-function cnIssues(conn) {
-  const c = conn || (window.connections ? window.connections.get() : {});
-  return Object.keys(c).filter((id) => c[id] === "disconnected");
-}
 
 function CnSpinner({ size }) {
   const z = size || 12;
@@ -405,6 +400,10 @@ function CnSetup({ id, apiKey, onMakeKey, onConnected, onClose, connected }) {
 
 /* Calendar sync settings: CN_CAL_SYNC / cnCalOn live in stores.jsx (one
    copy for this screen and the phone's Connections). */
+/* A project's colour (var(--hue-…)) as the dot's data-hue name; any other
+   colour keeps the dot's default. (Was called here but defined nowhere — the
+   MCP / API link sheet threw on "Selected projects", 09.10.26.) */
+const cnHueOf = (color) => { const m = /--hue-(\w+)/.exec(String(color || "")); return m ? m[1] : undefined; };
 function CnSyncRow({ title, desc, hue, checked, onChange, attr }) {
   const Sw = cnNS.Switch;
   return (
@@ -1063,4 +1062,4 @@ function ConnectionsScreen() {
   );
 }
 
-Object.assign(window, { ConnectionsScreen, cnIssues, cnLabel });
+Object.assign(window, { ConnectionsScreen, cnLabel });

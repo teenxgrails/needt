@@ -67,14 +67,6 @@ function ewClamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
 function ewEaseOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 function ewEaseOutExpo(t) { return t >= 1 ? 1 : 1 - Math.pow(2, -10 * t); }
 
-/* The three published shapes, so a demo can draw frame strips of real values
-   instead of approximating them by eye. */
-function ewDevelopAt(ms, index, floor) {
-  const from = floor === undefined ? -100 : floor;
-  const t = ewClamp((ms - index * 85) / 620, 0, 1);
-  return Math.round((from - from * ewEaseOutCubic(t)) * 10) / 10;
-}
-
 function ewBreatheAt(ms, index) {
   const u = ((ms - index * EW_BREATHE.offset) % EW_BREATHE.cycle + EW_BREATHE.cycle) % EW_BREATHE.cycle / EW_BREATHE.cycle;
   /* Half-cosine: 0 at the ends, full depth at the middle, easeInOut by shape
@@ -363,5 +355,5 @@ function ExposureWordmark({ size, word, busy, mode, style, className }) {
   );
 }
 
-Object.assign(window, { ExposureWordmark, ewDevelopAt, ewBreatheAt, ewPulseAt,
+Object.assign(window, { ExposureWordmark, ewBreatheAt, ewPulseAt,
   EW_MAX, EW_RADIUS, EW_MIN_SIZE, EW_SPRING, EW_BREATHE, EW_PULSE });

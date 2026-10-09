@@ -250,8 +250,6 @@ function MbAuth({ mode, onMode, onDone }) {
 const MA_NOW = (window.NEEDT && window.NEEDT.planNow) || 14 + 20 / 60;
 const maWeekday = (d, form) => window.NEEDT.planWeekday(d, form);
 const maHour = (v) => window.NEEDT.planHour(v);
-const maFirstSlot = (o) => window.NEEDT.firstSlot(o);
-const maSlotReason = (r, minutes) => window.NEEDT.slotReason(r, minutes);
 const maFirstTask = (parsed, prefs, tasks) => window.NEEDT.firstTask(parsed, prefs, tasks);
 
 /* Working hours: half hours from 05:00 to 23:30. Time zone: the three the

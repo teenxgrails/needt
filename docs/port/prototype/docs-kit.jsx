@@ -1,4 +1,4 @@
-const { NavRow, Switch, Checkbox, SidebarHint, Button, IconButton, Icon, Chip, ContextMenu, Menu, MenuItem, MenuLabel, MenuSeparator, Tooltip, DocumentSheet, EmptyState, Avatar } = window.NeedtDesignSystem_25d3c8;
+const { Menu } = window.NeedtDesignSystem_25d3c8;
 
 /* DOCS KIT — the part of the Docs place the rest of the app needs at first
    paint (08.10.26, split from DocsScreen.jsx for the lazy build): the seed
@@ -24,14 +24,6 @@ const DOCS = [
   { id: "untitled", title: "", projectId: null, style: null, updated: "1 hour ago", viewed: "27 min ago", created: "Today", body: [] }
 ];
 
-/* The theme a page wears, or null for the default page. */
-const dtThemeOf = (doc) => { const id = dcStyleField(doc).theme; const t = id ? dtPreset(id) : null; return t && t.L ? t : null; };
-/* Covers: on by default for a themed page, off for the default one. */
-const dtCoverOn = (doc) => !!doc && (dtThemeOf(doc) ? doc.coverUrl !== "" : !!doc.coverUrl);
-/* The inline half of a themed surface; themes.css picks L or D. */
-function dtVars(t) {
-  return { "--dt-page-l": t.L.page, "--dt-page-d": t.D.page, "--dt-ink-l": dtRgb(t.L.ink), "--dt-ink-d": dtRgb(t.D.ink), "--dt-head-l": t.L.head, "--dt-head-d": t.D.head };
-}
 /* The ambient tint on the app's ground, written as a style element so the
    shell's own writes to <html> can never wipe it. Null fades it back out. */
 function dtAmbient(t) {
@@ -55,14 +47,6 @@ function dcSetStyle(doc, patch) {
   if (st.ground) next.ground = st.ground;
   window.docs.patch(doc.id, { style: next, coverUrl: coverUrl });
 }
-/* The page as it really reads, rendered at twice the card's width and scaled
-   down, so a card is a picture of the document and never a row of grey bars.
-   One renderer serves the card, the list thumbnail and the sidebar. */
-/* The frame shows the page's ground at card scale, so it is mixed stronger
-   than the ground itself: at 6px a 9% tint disappears. Still flat, no gradient. */
-const FRAMES = { mist: "color-mix(in oklab, var(--accent) 24%, var(--background))", sand: "color-mix(in oklab, var(--info) 24%, var(--background))",
-  sage: "color-mix(in oklab, var(--success) 24%, var(--background))", stone: "color-mix(in oklab, var(--text-primary) 12%, var(--background))" };
-const groundOf = (doc) => (doc && FRAMES[dcStyleField(doc).ground]) || null;
 const docText = (doc) => doc.body.map((b) => b[0] === "cards" ? b[1].join(" · ") : b[0] === "table" ? b[1].map((r) => r.join(" ")).join(" · ") : b[0] === "image" ? "" : spansToText(b[1])).filter((t) => typeof t === "string" && t).join(" · ");
 /* A block in miniature. Text is rich (doc-style.jsx spans): drawn with its
    marks, links as words (the card's click opens the page). */
@@ -140,5 +124,5 @@ function DocThumb({ doc, w, h }) {
   );
 }
 
-Object.assign(window, { DocThumb, MiniDoc, DOCS, dtThemeOf, dcSetStyle });
+Object.assign(window, { DocThumb, MiniDoc, DOCS, dcSetStyle });
 if (window.docs) window.docs.seed(DOCS);

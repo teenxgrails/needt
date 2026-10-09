@@ -35,8 +35,8 @@ const tkClock = (h) => { if (h == null) return null; const m = Math.round(h * 60
 const tkDur = (min) => !min ? "" : min < 60 ? min + " min" : Math.floor(min / 60) + " h" + (min % 60 ? " " + (min % 60) : "");
 const tkDurLong = (min) => { const h = Math.floor((min || 0) / 60), m = Math.round((min || 0) % 60); return h ? h + " h" + (m ? " " + m + " min" : "") : m + " min"; };
 
-/* The neutral a block wears when it has no project (RichBlock's, so the grid
-   and the calendar agree). */
+/* The neutral a block wears when it has no project (ColumnsView.jsx
+   RB_NEUTRAL, so cvProject and the rows agree). */
 const tkNeutral = () => (window.RB_NEUTRAL && window.RB_NEUTRAL.color) || "var(--text-tertiary)";
 
 /* THE MAPPING. Pure: a task (database fields, Data.js) — or a calendar item

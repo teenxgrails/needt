@@ -76,7 +76,6 @@
   .ma-menu-slot, .ma-menu-tile { transition: none; }
 }
 
-
 /* ══ SIGN-IN AND SETUP ON PLATES (MobileAuth.jsx, 08.10.26) ══════════════════
    The pixel sky fills the whole screen (sign-in and setup are, with the
    paywall and Pro, the only phone screens that keep it). Over it: huge tight

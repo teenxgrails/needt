@@ -33,12 +33,16 @@
  * beside it (onCompose — the same as holding the pill); while the composer
  * is up it grows out of the pill (phone-kit.jsx PkSheet from=pkPillRect) and
  * the menu steps out (morph prop) until the sheet has gone back into it.
- * The card's fog dots answer the list's scroll (phone-kit.jsx pkFogDrift).
+ * The fog's halftone dots drift like the sky while the fog shows (CSS,
+ * compositor-only — the owner's exception to "nothing loops at rest",
+ * MOTION.md); the scroll does not move them. The create button wears the
+ * pill's own glass (wave 4, 09.10.26). The three tiles stay pinned on top of
+ * the card while the list scrolls under them, into a soft blur (.nva-head).
  * Settings: the full phone Settings place (window.PkPlaces.settings,
  * phone-settings.jsx) when it is loaded — the in-card list is the fallback.
  * Default top three: Home · Docs · Ask Needt (mobile-nav.jsx mnTiles).
  *
- * Nothing moves at rest; reduced motion jumps between states.
+ * Nothing else moves at rest; reduced motion jumps between states.
  */
 const NvaNS = window.NeedtDesignSystem_25d3c8;
 const { Icon: NvaIcon } = NvaNS;
@@ -51,6 +55,21 @@ const NVA_ORDER = ["home", "calendar", "tasks", "docs", "mail", "ask", "habits",
 /* The phone's ids → the desktop's place glyph ids (Sidebar.jsx PlaceGlyph). */
 const NVA_GLYPH = { home: "today", calendar: "calendar", tasks: "tasks", docs: "docs", mail: "mail", habits: "habits", moodboards: "moodboards", projects: "projects" };
 
+/* Motion on WebKit (09.10.26, iPhone lag fix): every frame of the open /
+   close / drag writes only transform, opacity and the shape's clip-path —
+   no size, radius or offset, and no layout read (the list's metrics are
+   cached: nvaMeasureLists, the scroll handlers). The card's layout is fixed
+   per stop: the list box is the card's height at rest on the card, the full
+   height at full and while moving (a spacer under the rows keeps the scroll
+   range, so nothing jumps), switched once when motion starts and once when it
+   settles (data-moving / data-at-full on .nva). The shadow is not a filter
+   on the moving shape: it is pre-drawn box-shadow pieces (nvaShadowPieces, a
+   nine-slice per corner radius) that only move and stretch. While anything
+   moves, the fog's and the head's backdrop blurs step out (the fog keeps its
+   wash and dots) and fade back in once it settles; will-change is set only
+   while moving. */
+/* The create button beside the pill: a little smaller than the pill (64). */
+const NVA_ADD = 54, NVA_ADD_GAP = 8;
 const nvaClamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const nvaLerp = (a, b, k) => a + (b - a) * k;
 const nvaUnit = (v) => nvaClamp(v, 0, 1);
@@ -198,6 +217,17 @@ function nvaShape(g, p, t) {
 function nvaPillSlot(g, i) { return { x: (g.W - g.PW) / 2 + 34 + i * 54, y: g.fullH - (g.PB - g.M) - g.PH / 2 }; }
 function nvaTileSlot(g, i) { return { x: 14 + g.tileW / 2 + i * (g.tileW + 8), dy: 22 + 32 }; }
 
+/* The pill's glass is the size of the stop it rests at (the pill, or the
+   handle when tucked away) — set once per stop, stretched by a transform in
+   between. */
+function nvaSizeGlass(R, S, hid, force) {
+  hid = !!hid;
+  const g = S.g;
+  if (!g || (S.glassHid === hid && !force)) return;
+  S.glassHid = hid; S.gw = hid ? g.HW : g.PW; S.gh = hid ? g.HH : g.PH;
+  if (R.glass) { const gs = R.glass.style; gs.width = S.gw + "px"; gs.height = S.gh + "px"; gs.borderRadius = S.gh / 2 + "px"; }
+}
+
 /* A plain spring, integrated in small steps. Slightly under-damped, so a
    flick settles with a hint of overshoot. */
 function nvaStep(s, target, dt, k, zeta) {
@@ -212,6 +242,136 @@ function nvaStep(s, target, dt, k, zeta) {
 }
 /* Rubber band: x past the edge, eased so it slows but never stops dead. */
 const nvaRubber = (x, d) => (1 - 1 / (x * 0.55 / d + 1)) * d;
+
+/* ── The shadow: --nva-shadow (themes.css, a drop-shadow list) drawn once as
+   box-shadow on nine-slice pieces of a rounded rect, one set per corner
+   radius the shape rests at (handle 11 · pill and full 32 · card 38). Each
+   frame only moves and stretches the pieces and cross-fades the two sets
+   either side of the shape's radius, so the shadow is exact at every stop.
+   The corners are box-shadow (never stretched); the edges are the same
+   shadow's straight-edge profile as a gradient (nvaShadowEdges), which
+   stretches along its length exactly — a stretched box-shadow would be
+   re-blurred in the stretched space. A drop-shadow's blur is a standard
+   deviation, box-shadow's twice that: the blur is doubled. */
+const NVA_SH_R = [11, 32, 38];
+const NVA_SH_E = 100; /* room for the widest shadow past the edge (dark: 22 down + 68 blur) */
+const NVA_SH_U = 8;   /* an edge piece's unstretched length */
+function nvaShadowPieces(R0) {
+  const E = NVA_SH_E, U = NVA_SH_U, big = 2 * R0 + 2 * E + 64, C = E + R0;
+  /* [wrapper w, h, inner rect left, top] — tl tr bl br · top bottom left right */
+  return [[C, C, E, E], [C, C, R0 - big, E], [C, C, E, R0 - big], [C, C, R0 - big, R0 - big],
+    [U, E, (U - big) / 2, E], [U, E, (U - big) / 2, -big], [E, U, E, (U - big) / 2], [E, U, -big, (U - big) / 2]]
+    .map(([w, h, ix, iy], i) => ({ w, h, ix, iy, big, edge: i < 4 ? null : "tblr"[i - 4] }));
+}
+/* The drop-shadow list → [{ x, y, sd, col }] (sd = its standard deviation). */
+function nvaParseShadow(filter) {
+  const out = [], re = /drop-shadow\(((?:[^()]|\([^()]*\))*)\)/g;
+  let m;
+  while ((m = re.exec(filter || ""))) {
+    const toks = [];
+    let depth = 0, cur = "";
+    for (const ch of m[1].trim() + " ") {
+      if (ch === "(") depth++; else if (ch === ")") depth--;
+      if (ch === " " && depth === 0) { if (cur) toks.push(cur); cur = ""; } else cur += ch;
+    }
+    const lens = toks.filter((t) => /^-?[\d.]+(px)?$/.test(t)).map(parseFloat);
+    const col = toks.filter((t) => !/^-?[\d.]+(px)?$/.test(t)).join(" ") || "rgba(0,0,0,.3)";
+    /* the colour's channels, for the edge gradients' stops */
+    const m4 = col.match(/rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+%?))?/i);
+    const hx = col.match(/^#([0-9a-f]{6})([0-9a-f]{2})?$/i);
+    let rgb = "0,0,0", alpha = 0.3;
+    if (m4) { rgb = m4[1] + "," + m4[2] + "," + m4[3]; alpha = m4[4] == null ? 1 : m4[4].endsWith("%") ? parseFloat(m4[4]) / 100 : parseFloat(m4[4]); }
+    else if (hx) { const n = parseInt(hx[1], 16); rgb = (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255); alpha = hx[2] ? parseInt(hx[2], 16) / 255 : 1; }
+    out.push({ x: lens[0] || 0, y: lens[1] || 0, sd: lens[2] || 0, col, rgb, alpha });
+  }
+  return out;
+}
+/* A filter list chains: each drop-shadow also shadows the shadows before it
+   (dark: the white rim lightens the big shadow). Expand that into the flat
+   list box-shadow paints, top first: [{ x, y, sd, rgb, alpha, col }]. */
+function nvaChainShadow(list) {
+  let shapes = [{ x: 0, y: 0, v: 0, a: 1, content: true }];
+  const out = [];
+  for (const d of list) {
+    const copies = shapes.map((sh) => ({ x: sh.x + d.x, y: sh.y + d.y, v: sh.v + d.sd * d.sd, a: sh.a * d.alpha, rgb: d.rgb }));
+    for (const c of copies) out.push({ x: c.x, y: c.y, sd: Math.sqrt(c.v), rgb: c.rgb, alpha: c.a, col: "rgba(" + c.rgb + "," + c.a.toFixed(4) + ")" });
+    shapes = shapes.concat(copies);
+  }
+  return out.filter((d) => d.alpha > 0.004);
+}
+function nvaBoxShadow(list) {
+  return list.map((d) => d.x + "px " + d.y + "px " + (2 * d.sd).toFixed(2) + "px " + d.col).join(", ") || "none";
+}
+/* Normal CDF (Abramowitz–Stegun erf). */
+function nvaPhi(z) {
+  const x = Math.abs(z) / Math.SQRT2, t = 1 / (1 + 0.3275911 * x);
+  const e = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return z >= 0 ? (1 + e) / 2 : (1 - e) / 2;
+}
+/* The shadow outside one straight edge, as gradients (one layer per shadow,
+   stacked like box-shadow's): side t / b / l / r, from the edge outward. */
+function nvaShadowEdges(list) {
+  const E = NVA_SH_E, steps = 24, out = {};
+  for (const side of "tblr") {
+    const dir = { t: "to top", b: "to bottom", l: "to left", r: "to right" }[side];
+    out[side] = list.map((d) => {
+      /* the shadow's own edge sits off the shape's by the offset along this side's outward normal */
+      const off = side === "t" ? -d.y : side === "b" ? d.y : side === "l" ? -d.x : d.x;
+      const stops = [];
+      for (let i = 0; i <= steps; i++) {
+        const dist = E * Math.pow(i / steps, 1.6);
+        const a = d.sd > 0 ? nvaPhi((off - dist) / d.sd) : (dist < off ? 1 : 0);
+        stops.push("rgba(" + d.rgb + "," + (a * d.alpha).toFixed(4) + ") " + dist.toFixed(2) + "px");
+      }
+      return "linear-gradient(" + dir + ", " + stops.join(", ") + ")";
+    }).join(", ") || "none";
+  }
+  return out;
+}
+/* Write a style only when it changed (no style churn on still parts). */
+function nvaPut(el, k, v) {
+  if (!el) return;
+  const c = el.__nvaw || (el.__nvaw = {});
+  if (c[k] === v) return;
+  c[k] = v;
+  if (k.charCodeAt(0) === 45) el.style.setProperty(k, v); else el.style[k] = v;
+}
+/* Lay the shadow sets on the shape s (box coordinates): the two sets either
+   side of its radius, weighted by it; a set wider than the shape allows
+   (a pill shrinking to the handle) is scaled down whole, so its corners never
+   overlap. */
+function nvaPaintShadow(R, s) {
+  const E = NVA_SH_E, U = NVA_SH_U, rr = NVA_SH_R;
+  for (let i = 0; i < rr.length; i++) {
+    const set = R["sh" + i]; if (!set) continue;
+    const lo = rr[i - 1], hi = rr[i + 1], r0 = rr[i];
+    let w = 0;
+    if (s.r === r0) w = 1;
+    else if (s.r < r0) w = lo == null ? 1 : nvaUnit((s.r - lo) / (r0 - lo));
+    else w = hi == null ? 1 : nvaUnit((hi - s.r) / (hi - r0));
+    nvaPut(set, "visibility", w < 0.005 ? "hidden" : "visible");
+    if (w < 0.005) continue;
+    /* the weight goes on the pieces, not the set: an opacity changing on a
+       parent of layers makes Chromium repaint them every frame */
+    const wo = w.toFixed(3);
+    for (let n = 0; n < 8; n++) nvaPut(set.children[n], "opacity", wo);
+    const k = Math.min(1, s.h / (2 * r0), s.w / (2 * r0)), Rk = r0 * k, Ek = E * k;
+    const ex = s.w - 2 * Rk, ey = s.h - 2 * Rk;
+    const at = (n, x, y, sx, sy) => {
+      const el = set.children[n];
+      nvaPut(el, "transform", "translate(" + x.toFixed(2) + "px," + y.toFixed(2) + "px) scale(" + sx.toFixed(4) + "," + sy.toFixed(4) + ")");
+    };
+    at(0, s.x - Ek, s.y - Ek, k, k);
+    at(1, s.x + s.w - Rk, s.y - Ek, k, k);
+    at(2, s.x - Ek, s.y + s.h - Rk, k, k);
+    at(3, s.x + s.w - Rk, s.y + s.h - Rk, k, k);
+    at(4, s.x + Rk, s.y - Ek, Math.max(ex, 0) / U, k);
+    at(5, s.x + Rk, s.y + s.h, Math.max(ex, 0) / U, k);
+    at(6, s.x - Ek, s.y + Rk, k, Math.max(ey, 0) / U);
+    at(7, s.x + s.w, s.y + Rk, k, Math.max(ey, 0) / U);
+    for (let n = 4; n < 8; n++) nvaPut(set.children[n], "visibility", (n < 6 ? ex : ey) < 0.25 ? "hidden" : "visible");
+  }
+}
 
 function NvaToggle({ on, onChange, label }) {
   return (
@@ -316,7 +476,8 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
 
   const rootRef = React.useRef(null);
   const R = React.useRef({}).current; /* refs to every painted node */
-  const S = React.useRef({ p: { x: 0, v: 0 }, t: { x: 0, v: 0 }, u: { x: 0, v: 0 }, tp: 0, tt: 0, tu: 0, raf: 0, last: 0, g: null, setFrom: "card" }).current;
+  const S = React.useRef({ p: { x: 0, v: 0 }, t: { x: 0, v: 0 }, u: { x: 0, v: 0 }, tp: 0, tt: 0, tu: 0, raf: 0, last: 0, g: null, setFrom: "card",
+    moving: false, rowsH: 0, st: 0, setH: 0, setCH: 0, sst: 0, gw: 1, gh: 1 }).current;
   const listRef = React.useRef(null), setRef = React.useRef(null);
   const modeRef = React.useRef(mode); modeRef.current = mode;
   /* The sky behind the three tiles draws frames only while the card sits
@@ -329,16 +490,29 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
     if (live !== !!S.skyLive) { S.skyLive = live; if (skyEng.current) skyEng.current.park(!live); }
   };
 
-  /* ── paint: write every moving value straight to the DOM ── */
+  /* The lists' metrics, cached for paint (which must not read layout):
+     the rows' height without the spacer, the settings' scroll range. */
+  const measureLists = () => {
+    if (R.rows) S.rowsH = R.rows.offsetHeight;
+    if (listRef.current) S.st = listRef.current.scrollTop;
+    const sc = setRef.current;
+    if (sc) { S.setH = sc.scrollHeight; S.setCH = sc.clientHeight; S.sst = sc.scrollTop; }
+  };
+
+  /* ── paint: write every moving value straight to the DOM — transform,
+     opacity, the clip, nothing that lays out, nothing read back ── */
   const paint = React.useCallback(() => {
     const g = S.g; if (!g || !R.shape) return;
+    const put = nvaPut;
     const p = S.p.x, t = nvaUnit(S.t.x), u = nvaUnit(S.u.x);
     const s = nvaShape(g, p, t);
     const clip = "inset(" + s.y.toFixed(2) + "px " + (g.W - s.x - s.w).toFixed(2) + "px " + (g.fullH - s.y - s.h).toFixed(2) + "px " + s.x.toFixed(2) + "px round " + s.r.toFixed(2) + "px)";
-    R.shape.style.clipPath = clip; R.shape.style.webkitClipPath = clip;
+    put(R.shape, "clipPath", clip); put(R.shape, "webkitClipPath", clip);
+    nvaPaintShadow(R, s);
 
     const open = nvaUnit(p);                      /* 0 pill … 1 card */
-    R.shape.style.setProperty("--nva-k", open.toFixed(3));
+    const ok = open.toFixed(3);
+    put(R.ground, "--nva-k", ok);                 /* see-through pill → solid card */
     const q = nvaUnit(-p);                        /* 0 pill … 1 handle */
     const eIcon = open < 1 ? 1 - Math.pow(1 - open, 2.2) : 1;
     /* The three: pill slot → tile, riding the shape's top edge. */
@@ -349,85 +523,124 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
       let y = p >= 0 ? s.y + nvaLerp(g.PH / 2, ts.dy, eIcon) : s.y + s.h / 2;
       let sc = nvaLerp(1, 1.36, eIcon), op = 1 - u;
       if (p < 0) { x = nvaLerp(ps.x, g.W / 2 + (i - 1) * 10, q); sc = 1 - 0.55 * q; op = nvaUnit(1 - q * 1.7); }
-      el.style.transform = "translate(" + (x - 26).toFixed(2) + "px," + (y - 26).toFixed(2) + "px) scale(" + sc.toFixed(3) + ")";
-      el.style.opacity = op.toFixed(3);
-      el.style.visibility = op < 0.02 ? "hidden" : "visible";
+      put(el, "transform", "translate(" + (x - 26).toFixed(2) + "px," + (y - 26).toFixed(2) + "px) scale(" + sc.toFixed(3) + ")");
+      put(el, "opacity", op.toFixed(3));
+      put(el, "visibility", op < 0.02 ? "hidden" : "visible");
+      put(el, "--nva-k", ok);                     /* its "you are here" dot leaves as the card opens */
     }
     /* The pill's own parts: the dot grid and the hairline before it. */
     const pillOp = p >= 0 ? nvaUnit(1 - open * 3.2) : nvaUnit(1 - q * 1.8);
-    R.pillbits.style.transform = "translate(" + (s.x + s.w - 60).toFixed(2) + "px," + (s.y + s.h / 2 - 22).toFixed(2) + "px)";
-    R.pillbits.style.opacity = pillOp.toFixed(3);
-    R.pillbits.style.visibility = pillOp < 0.02 ? "hidden" : "visible";
-    R.dots.style.opacity = nvaUnit(1 - (p >= 0 ? 0 : q * 1.4)).toFixed(3);
-    /* The pill is frosted glass (wave 3): a backdrop blur cut to the same
-       shape, under the ground (which is see-through while it is a pill and
-       turns solid as the card opens — --nva-k). Outside .nva-body, whose
-       drop-shadow filter would blind a blur inside it. */
+    put(R.pillbits, "transform", "translate(" + (s.x + s.w - 60).toFixed(2) + "px," + (s.y + s.h / 2 - 22).toFixed(2) + "px)");
+    put(R.pillbits, "opacity", pillOp.toFixed(3));
+    put(R.pillbits, "visibility", pillOp < 0.02 ? "hidden" : "visible");
+    put(R.dots, "opacity", nvaUnit(1 - (p >= 0 ? 0 : q * 1.4)).toFixed(3));
+    /* The pill is frosted glass (wave 3): a backdrop blur under the ground
+       (see-through while it is a pill, solid as the card opens — --nva-k).
+       Outside .nva-body. Its box is the size of the stop it rests at (the
+       pill, or the handle — nvaSizeGlass, once per stop); in between it is
+       stretched to the shape by a transform. */
     if (R.glass) {
-      /* sized to the shape itself (a full-height blur cut down by a clip
-         still costs its whole box on every frame of what is under it) */
       const gk = p >= 0 ? nvaUnit(1 - open * 1.4) : 1;
-      const gs = R.glass.style;
-      gs.transform = "translate(" + (g.M + s.x).toFixed(2) + "px," + (g.fh - g.M - g.fullH + s.y).toFixed(2) + "px)";
-      gs.width = s.w.toFixed(2) + "px"; gs.height = s.h.toFixed(2) + "px"; gs.borderRadius = s.r.toFixed(2) + "px";
-      gs.opacity = gk.toFixed(3);
-      gs.visibility = gk < 0.02 ? "hidden" : "";
+      put(R.glass, "transform", "translate(" + (g.M + s.x).toFixed(2) + "px," + (g.fh - g.M - g.fullH + s.y).toFixed(2) + "px) scale(" + (s.w / S.gw).toFixed(4) + "," + (s.h / S.gh).toFixed(4) + ")");
+      put(R.glass, "opacity", gk.toFixed(3));
+      put(R.glass, "visibility", gk < 0.02 ? "hidden" : "visible");
     }
-    /* The create button: glass, beside the pill; it leaves as the card opens
-       or the pill tucks away. */
+    /* The create button: the pill's glass, beside the pill; it leaves as the
+       card opens or the pill tucks away. */
     if (R.add) {
       const addK = p >= 0 ? nvaUnit(1 - open * 3.2) : nvaUnit(1 - q * 1.8);
-      const ax = g.M + s.x + s.w + 10, ay = g.fh - g.M - g.fullH + s.y + (s.h - 52) / 2;
-      R.add.style.transform = "translate(" + ax.toFixed(2) + "px," + ay.toFixed(2) + "px) scale(" + nvaLerp(0.6, 1, addK).toFixed(3) + ")";
-      R.add.style.opacity = addK.toFixed(3);
-      R.add.style.visibility = addK < 0.02 ? "hidden" : "visible";
+      const ax = g.M + s.x + s.w + NVA_ADD_GAP, ay = g.fh - g.M - g.fullH + s.y + (s.h - NVA_ADD) / 2;
+      put(R.add, "transform", "translate(" + ax.toFixed(2) + "px," + ay.toFixed(2) + "px) scale(" + nvaLerp(0.6, 1, addK).toFixed(3) + ")");
+      put(R.add, "opacity", addK.toFixed(3));
+      put(R.add, "visibility", addK < 0.02 ? "hidden" : "visible");
     }
     /* Under the pill: which of the three is the screen you are on. */
-    R.handle.style.transform = "translate(" + (s.x + s.w / 2 - 14).toFixed(2) + "px," + (s.y + s.h / 2 - 1.5).toFixed(2) + "px)";
-    R.handle.style.opacity = nvaUnit((q - 0.55) / 0.45).toFixed(3);
+    put(R.handle, "transform", "translate(" + (s.x + s.w / 2 - 14).toFixed(2) + "px," + (s.y + s.h / 2 - 1.5).toFixed(2) + "px)");
+    put(R.handle, "opacity", nvaUnit((q - 0.55) / 0.45).toFixed(3));
 
     /* Card content rides the shape's top; tiles and rows arrive in a stagger. */
-    R.content.style.transform = "translateY(" + s.y.toFixed(2) + "px)";
+    put(R.content, "transform", "translateY(" + s.y.toFixed(2) + "px)");
     const tilesK = nvaUnit((open - 0.35) / 0.55) * (1 - u);
-    R.tiles.style.opacity = tilesK.toFixed(3);
-    R.tiles.style.transform = "translateY(" + ((1 - tilesK) * 10).toFixed(2) + "px) scale(" + nvaLerp(0.94, 1, tilesK).toFixed(3) + ")";
-    R.grab.style.opacity = nvaUnit((open - 0.6) / 0.4).toFixed(3);
+    put(R.tiles, "opacity", tilesK.toFixed(3));
+    put(R.tiles, "transform", "translateY(" + ((1 - tilesK) * 10).toFixed(2) + "px) scale(" + nvaLerp(0.94, 1, tilesK).toFixed(3) + ")");
+    put(R.grab, "opacity", nvaUnit((open - 0.6) / 0.4).toFixed(3));
     const rowEls = R.rows ? R.rows.children : [];
     for (let i = 0; i < rowEls.length; i++) {
       /* staggered, and every row fully in by the time the card is open (the
          full stop shows them all) */
       const k = nvaUnit((open - 0.35 - Math.min(i, 6) * 0.04) / 0.4) * (1 - u);
-      rowEls[i].style.opacity = k.toFixed(3);
-      rowEls[i].style.transform = "translateY(" + ((1 - k) * 22).toFixed(2) + "px)";
+      put(rowEls[i], "opacity", k.toFixed(3));
+      put(rowEls[i], "transform", "translateY(" + ((1 - k) * 22).toFixed(2) + "px)");
     }
-    /* The list is as tall as the card is, between the card and full. */
-    R.rowsBox.style.height = (Math.max(g.cardH, Math.min(s.h, g.fullH)) - 118).toFixed(2) + "px";
-    R.rowsBox.style.visibility = open < 0.3 || u > 0.98 ? "hidden" : "visible";
-    R.set.style.opacity = nvaUnit((u - 0.3) / 0.7).toFixed(3);
-    R.set.style.transform = "translateY(" + ((1 - u) * 26).toFixed(2) + "px)";
-    R.set.style.visibility = u < 0.02 ? "hidden" : "visible";
+    /* The list shows as much as the card is tall, between the card and full.
+       Its box is fixed per stop (CSS, data-moving / data-at-full) and the
+       clip hides the rest; as the card grows the list keeps its last row at
+       the card's bottom, as a growing box would (S.st is the cached scroll). */
+    const visH = Math.max(g.cardH, Math.min(s.h, g.fullH));
+    if (S.moving && listRef.current) {
+      const maxSt = Math.max(0, S.rowsH - visH);
+      if (S.st > maxSt + 0.5) { S.st = maxSt; listRef.current.scrollTop = maxSt; }
+    }
+    /* the soft edge under the tiles shows once the list is scrolled under them */
+    if (R.head) {
+      const hk = nvaUnit(S.st / 24) * tilesK;
+      put(R.head, "--nva-head-k", hk.toFixed(3));
+      put(R.head, "visibility", hk < 0.01 ? "hidden" : "visible");
+    }
+    put(R.rowsBox, "visibility", open < 0.3 || u > 0.98 ? "hidden" : "visible");
+    put(R.set, "opacity", nvaUnit((u - 0.3) / 0.7).toFixed(3));
+    put(R.set, "transform", "translateY(" + ((1 - u) * 26).toFixed(2) + "px)");
+    put(R.set, "visibility", u < 0.02 ? "hidden" : "visible");
 
     /* Fog sits on the shape's bottom edge, and only while there is more. */
-    const sc = u > 0.5 ? setRef.current : listRef.current;
-    const more = sc ? sc.scrollHeight - sc.scrollTop - sc.clientHeight : 0;
+    const more = u > 0.5 ? S.setH - S.sst - S.setCH : S.rowsH - S.st - visH;
     const fogK = nvaUnit((open - 0.55) / 0.45) * nvaUnit(more / 60);
-    R.fog.style.transform = "translateY(" + (s.y + s.h - 132).toFixed(2) + "px)";
-    R.fog.style.opacity = fogK.toFixed(3);
+    put(R.fog, "transform", "translateY(" + (s.y + s.h - 132).toFixed(2) + "px)");
+    put(R.fog, "opacity", fogK.toFixed(3));
+    /* its dots drift (CSS) only while it shows and the tab is visible */
+    const fogLive = fogK > 0.01 && !(typeof document !== "undefined" && document.hidden) ? "1" : "0";
+    if (R.fog.getAttribute("data-live") !== fogLive) R.fog.setAttribute("data-live", fogLive);
 
     /* The ground dims as the card opens. */
-    R.scrim.style.opacity = (open * nvaLerp(1, 1.25, t)).toFixed(3);
+    put(R.scrim, "opacity", (open * nvaLerp(1, 1.25, t)).toFixed(3));
 
     /* The tuck hint floats above the shape while you pull below the pill. */
     if (R.hint) {
-      R.hint.style.transform = "translate(-50%," + (s.y - 46).toFixed(2) + "px)";
-      R.hint.style.opacity = (S.dragging && p < -0.04 ? nvaUnit(q * 4) : 0).toFixed(3);
+      put(R.hint, "transform", "translate(-50%," + (s.y - 46).toFixed(2) + "px)");
+      put(R.hint, "opacity", (S.dragging && p < -0.04 ? nvaUnit(q * 4) : 0).toFixed(3));
     }
     skySync();
   }, []);
 
+  /* Motion starts / settles: the layout switches that are made once per stop
+     (never per frame) — the list box, will-change, the blurs (nav-a.css). */
+  const moving = () => {
+    const el = rootRef.current; if (!el || S.moving) return;
+    S.moving = true;
+    window.clearTimeout(S.fadeT);
+    el.removeAttribute("data-fade");
+    el.setAttribute("data-moving", "");
+  };
+  const rest = () => {
+    const el = rootRef.current; if (!el) return;
+    const was = S.moving;
+    S.moving = false;
+    el.removeAttribute("data-moving");
+    /* full (and the in-card settings, which open at full): the list box is
+       the full height; anywhere else the card's */
+    if (S.p.x >= 0.999 && S.t.x >= 0.999) el.setAttribute("data-at-full", ""); else el.removeAttribute("data-at-full");
+    if (was) {
+      /* the blurs come back with a short fade, not a pop */
+      el.setAttribute("data-fade", "");
+      window.clearTimeout(S.fadeT);
+      S.fadeT = window.setTimeout(() => el.removeAttribute("data-fade"), 320);
+    }
+  };
+
   /* ── the spring loop: runs only while something is moving ── */
   const run = React.useCallback(() => {
     if (S.raf) return;
+    moving();
     S.last = performance.now();
     const tick = (now) => {
       const dt = Math.min(0.034, (now - S.last) / 1000); S.last = now;
@@ -435,7 +648,7 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
       const b = nvaStep(S.t, S.tt, dt, 360, 0.92);
       const c = nvaStep(S.u, S.tu, dt, 360, 0.92);
       paint();
-      if (a && b && c) { S.p.x = S.tp; S.p.v = 0; S.t.x = S.tt; S.t.v = 0; S.u.x = S.tu; S.u.v = 0; S.raf = 0; paint(); return; }
+      if (a && b && c) { S.p.x = S.tp; S.p.v = 0; S.t.x = S.tt; S.t.v = 0; S.u.x = S.tu; S.u.v = 0; S.raf = 0; paint(); rest(); return; }
       S.raf = requestAnimationFrame(tick);
     };
     S.raf = requestAnimationFrame(tick);
@@ -448,6 +661,7 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
     const tt = m === "full" || m === "settings" ? 1 : 0;
     const tu = m === "settings" ? 1 : 0;
     S.tp = tp; S.tt = tt; S.tu = tu;
+    nvaSizeGlass(R, S, m === "hidden");
     if (vp != null) S.p.v = vp;
     if (vt != null) S.t.v = vt;
     setMode(m); modeRef.current = m;
@@ -455,21 +669,39 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
       /* back at the top next time it opens */
       window.setTimeout(() => { if (modeRef.current === "pill" || modeRef.current === "hidden") { if (listRef.current) listRef.current.scrollTop = 0; if (setRef.current) setRef.current.scrollTop = 0; } }, 420);
     }
-    if (nvaReduced()) { S.p.x = tp; S.p.v = 0; S.t.x = tt; S.t.v = 0; S.u.x = tu; S.u.v = 0; paint(); return; }
+    if (nvaReduced()) { cancelAnimationFrame(S.raf); S.raf = 0; S.p.x = tp; S.p.v = 0; S.t.x = tt; S.t.v = 0; S.u.x = tu; S.u.v = 0; paint(); rest(); return; }
     run();
   }, [paint, run]);
 
   /* Size: the frame's screen box. */
   React.useLayoutEffect(() => {
     const el = rootRef.current; if (!el) return undefined;
-    const measure = () => { const r = el.getBoundingClientRect(); S.g = nvaGeom(el.clientWidth || r.width, el.clientHeight || r.height); el.style.setProperty("--nva-w", S.g.W + "px"); el.style.setProperty("--nva-full", S.g.fullH + "px"); el.style.setProperty("--nva-card", S.g.cardH + "px"); el.style.setProperty("--nva-tile", S.g.tileW + "px"); paint(); };
+    const measure = () => {
+      const r = el.getBoundingClientRect(); S.g = nvaGeom(el.clientWidth || r.width, el.clientHeight || r.height);
+      el.style.setProperty("--nva-w", S.g.W + "px"); el.style.setProperty("--nva-full", S.g.fullH + "px"); el.style.setProperty("--nva-card", S.g.cardH + "px"); el.style.setProperty("--nva-tile", S.g.tileW + "px");
+      nvaSizeGlass(R, S, S.glassHid, true);
+      measureLists(); paint();
+    };
     measure();
     const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
     if (ro) ro.observe(el);
+    /* the list's height (fonts, counts, the tiles) — read here, never in a frame */
+    const rr = typeof ResizeObserver === "function" && R.rows ? new ResizeObserver(() => { measureLists(); paint(); }) : null;
+    if (rr) rr.observe(R.rows);
     el.__nva = S; /* tests read the springs here */
-    return () => { if (ro) ro.disconnect(); cancelAnimationFrame(S.raf); S.raf = 0; };
+    document.addEventListener("visibilitychange", paint); /* the fog's drift pauses with the tab */
+    return () => { if (ro) ro.disconnect(); if (rr) rr.disconnect(); window.clearTimeout(S.fadeT); document.removeEventListener("visibilitychange", paint); cancelAnimationFrame(S.raf); S.raf = 0; };
   }, [paint]);
-  React.useLayoutEffect(() => { paint(); });
+  React.useLayoutEffect(() => { measureLists(); paint(); });
+  /* The shadow is the theme's --nva-shadow (read from the ground the menu
+     floats on), drawn as box-shadow on the pieces — once per theme. */
+  React.useLayoutEffect(() => {
+    const el = rootRef.current; if (!el) return;
+    const list = nvaChainShadow(nvaParseShadow(getComputedStyle(el).getPropertyValue("--nva-shadow")));
+    el.style.setProperty("--nva-shadow-box", nvaBoxShadow(list));
+    const ed = nvaShadowEdges(list);
+    for (const k in ed) el.style.setProperty("--nva-shadow-" + k, ed[k]);
+  }, [theme]);
 
   /* A full-screen layer of the app (a board item, the "How to save"
      walkthrough) took the screen: the menu steps down to the pill and slides
@@ -529,6 +761,7 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
       d.kind = canScroll && ((dy > 0 && sc.scrollTop > 0) || (dy < 0 && S.t.x > 0.98)) ? "scroll" : "drag";
       d.yk = d.y0; d.px0 = nvaTrackOf(S); /* count from the touch-down */
       S.dragging = true;
+      if (d.kind === "drag") moving();
     }
     if (d.kind === "scroll") {
       const sc = d.scroller;
@@ -536,7 +769,9 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
       if (want < 0 && dy > 0) {
         /* scrolled back to the top: the rest of the pull moves the card */
         sc.scrollTop = 0;
+        if (sc === listRef.current) S.st = 0; else S.sst = 0;
         d.kind = "drag"; d.yk = e.clientY; d.px0 = nvaTrackOf(S);
+        moving();
       } else { sc.scrollTop = want; paint(); return; }
     }
     if (d.kind !== "drag") return;
@@ -559,7 +794,7 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
     G.current = null; endHold(); S.dragging = false;
     if (d.kind) S.gestureEnd = performance.now();
     hintRef.current = null; setHint(null);
-    if (!d.kind || d.kind === "none" || d.kind === "held") { if (S.p.x !== S.tp || S.t.x !== S.tt || S.u.x !== S.tu) run(); return; }
+    if (!d.kind || d.kind === "none" || d.kind === "held") { if (S.p.x !== S.tp || S.t.x !== S.tt || S.u.x !== S.tu) run(); else rest(); return; }
     const sm = d.samples, a = sm[0], b = sm[sm.length - 1];
     const vy = b[0] - a[0] > 0 ? (b[1] - a[1]) / (b[0] - a[0]) : 0; /* px/ms, + down */
     if (d.kind === "scroll") { nvaFling(d.scroller, -vy, paint); return; }
@@ -613,18 +848,9 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
   const open = mode === "card" || mode === "full" || mode === "settings";
   const counts2 = counts || {};
   const here = top.indexOf(screen) > -1;
-  /* the card's fog dots answer the list's scroll (phone-kit.jsx pkFogDrift) */
-  const drift = React.useRef(null);
-  if (!drift.current && window.pkFogDrift) {
-    const dots = () => (R.fog ? R.fog.querySelectorAll(".nva-fog-dots") : null);
-    drift.current = { rows: window.pkFogDrift(dots), settings: window.pkFogDrift(dots) };
-  }
-  React.useEffect(() => () => { if (drift.current) { drift.current.rows.stop(); drift.current.settings.stop(); } }, []);
-  const onScroll = (e) => {
-    paint();
-    const el = e && e.currentTarget, d = drift.current;
-    if (d && el) (el === setRef.current ? d.settings : d.rows).scroll(el.scrollTop);
-  };
+  /* scroll positions are cached here (paint never reads layout) */
+  const onScroll = () => { if (listRef.current) S.st = listRef.current.scrollTop; paint(); };
+  const onSetScroll = () => { const sc = setRef.current; if (sc) { S.sst = sc.scrollTop; S.setH = sc.scrollHeight; S.setCH = sc.clientHeight; } paint(); };
 
   return (
     <div ref={rootRef} className={"nva " + (theme === "dark" ? "is-dark" : "is-light") + (away ? " is-away" : "") + (morph ? " is-morph" : "")} data-nva-mode={mode} data-nav-variant="A" aria-hidden={away ? "true" : undefined}>
@@ -632,14 +858,31 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
 
       <div ref={(n) => (R.glass = n)} className="nva-glass" aria-hidden="true" />
       <div className={"nva-body" + (holding ? " is-holding" : "")}>
+        {/* The shadow: pre-drawn pieces that move with the shape (nvaPaintShadow). */}
+        <div className="nva-shadow" aria-hidden="true">
+          {NVA_SH_R.map((r0, si) => (
+            <div key={r0} ref={(n) => (R["sh" + si] = n)} className="nva-sh-set">
+              {nvaShadowPieces(r0).map((pc, i) => (
+                <span key={i} className={"nva-sh" + (pc.edge ? " is-" + pc.edge : "")} style={{ width: pc.w, height: pc.h }}>
+                  {pc.edge ? null : <i style={{ left: pc.ix, top: pc.iy, width: pc.big, height: pc.big, borderRadius: r0 }} />}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
         <div ref={(n) => (R.shape = n)} className={"nva-shape " + inverse} role="navigation" aria-label="Menu"
           onPointerDown={onPointerDown}
           onClickCapture={onClickCapture} onClick={onShapeClick}>
-          <div className="nva-ground" />
+          <div ref={(n) => (R.ground = n)} className="nva-ground" />
 
           {/* Card content, positioned from the shape's top edge. */}
           <div ref={(n) => (R.content = n)} className="nva-content" aria-hidden={open ? undefined : "true"}>
             <span ref={(n) => (R.grab = n)} className="nva-grab" />
+            {/* The soft edge the list scrolls under, below the pinned tiles. */}
+            <div ref={(n) => (R.head = n)} className="nva-head" aria-hidden="true">
+              <span className="nva-head-blur is-1" /><span className="nva-head-blur is-2" /><span className="nva-head-blur is-3" />
+              <span className="nva-head-wash" />
+            </div>
             <div ref={(n) => (R.tiles = n)} className="nva-tiles" data-px-scope="">
               {window.PxSky ? (
                 <div className="nva-sky" aria-hidden="true" data-nva-sky="">
@@ -681,16 +924,18 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
                     <span className={"nva-plan" + (planInfo.pro ? " is-pro" : "")}>{planInfo.badge}</span>
                   </button>
                 </div>
+                {/* keeps the card's scroll range while the box is full height (moving) */}
+                <div className="nva-rows-pad" aria-hidden="true" />
               </div>
             </div>
             <div ref={(n) => (R.set = n)} className="nva-set-box">
-              <NvaSettings theme={theme} onTheme={onTheme} onBack={() => go(S.setFrom)} plan={plan} planInfo={planInfo} scrollRef={setRef} onScroll={onScroll}
+              <NvaSettings theme={theme} onTheme={onTheme} onBack={() => go(S.setFrom)} plan={plan} planInfo={planInfo} scrollRef={setRef} onScroll={onSetScroll}
                 onUpgrade={() => { go("pill"); if (onUpgrade) onUpgrade(); }} onSignOut={() => { go("pill"); if (onSignOut) onSignOut(); }} />
             </div>
           </div>
 
           {/* The fog: rows past the fourth melt into the card. */}
-          <div ref={(n) => (R.fog = n)} className="nva-fog" aria-hidden="true">
+          <div ref={(n) => (R.fog = n)} className="nva-fog" aria-hidden="true" data-live="0">
             <span className="nva-fog-blur is-1" /><span className="nva-fog-blur is-2" /><span className="nva-fog-blur is-3" />
             <span className="nva-fog-wash" />
             <span className="nva-fog-dots is-1" /><span className="nva-fog-dots is-2" /><span className="nva-fog-dots is-3" />
@@ -721,9 +966,9 @@ function NeedtNavA({ theme, screen, onScreen, tiles, counts, onCompose, frameEl,
       </div>
 
       {onCompose ? (
-        <button ref={(n) => (R.add = n)} type="button" className="nva-add" tabIndex={mode === "pill" ? 0 : -1} aria-label="New task" data-nva-add=""
+        <button ref={(n) => (R.add = n)} type="button" className={"nva-add " + inverse} tabIndex={mode === "pill" ? 0 : -1} aria-label="New task" data-nva-add=""
           onClick={() => { if (modeRef.current === "pill" && onCompose) onCompose(); }}>
-          <NvaIcon name="plus" size={24} />
+          <NvaIcon name="plus" size={22} />
         </button>
       ) : null}
       <span ref={(n) => (R.hint = n)} className={"nva-hint " + inverse} aria-live="polite">
@@ -757,6 +1002,7 @@ function nvaFling(el, v, onFrame) {
   let vel = v * 16;
   const step = () => {
     vel *= 0.95;
+    /* read at the start of the frame, before paint writes anything */
     const max = el.scrollHeight - el.clientHeight;
     const next = nvaClamp(el.scrollTop + vel, 0, max);
     el.scrollTop = next;

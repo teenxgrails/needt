@@ -313,13 +313,6 @@ function MbDoc({ id, doc }) {
 /* Connections — the desktop's store shape and key ("needt.connections") and
    its change event, so a reconnect on one screen shows on every other. */
 const MB_CONN_DEFAULT = { gmail: "connected", outlook: "disconnected", gcal: "connected", ical: "connected", notion: "connected", github: "connected" };
-const MB_CONN = [
-  ["Mail & chat", [["gmail", "Gmail", "G", "oklch(0.62 0.2 27)", "maksym.a@gmail.com"], ["outlook", "Outlook", "O", "oklch(0.58 0.15 250)", "maksym@outlook.com", "Token expired — nothing new since 06:12"], ["icloudmail", "iCloud Mail", "i", "oklch(0.62 0.15 250)", "maksym@icloud.com"], ["slack", "Slack", "S", "oklch(0.35 0.1 330)", "demesures.slack.com"]]],
-  ["Calendars", [["gcal", "Google Calendar", "31", "oklch(0.6 0.15 255)", "maksym.a@gmail.com"], ["ical", "Apple Calendar", "A", "oklch(0.55 0.02 260)", "iCloud · Personal, Family"], ["ocal", "Outlook Calendar", "O", "var(--brand-outlook-bg)", "maksym@outlook.com"], ["zoom", "Zoom", "Z", "oklch(0.55 0.2 262)", "maksym.a@gmail.com"]]],
-  ["Work", [["notion", "Notion", "N", "oklch(0.3 0 0)", "Maksym’s workspace"], ["linear", "Linear", "L", "oklch(0.55 0.13 275)", "Demesures"], ["todoist", "Todoist", "T", "oklch(0.6 0.19 30)", "maksym.a@gmail.com"]]],
-  ["Files & inspiration", [["gdrive", "Google Drive", "D", "oklch(0.7 0.15 85)", "maksym.a@gmail.com"], ["dropbox", "Dropbox", "D", "oklch(0.55 0.2 260)", "maksym.a@gmail.com"], ["github", "GitHub", "G", "oklch(0.3 0 0)", "teenx"], ["figma", "Figma", "F", "oklch(0.62 0.2 300)", "Maksym · Demesures team"], ["pinterest", "Pinterest", "P", "oklch(0.58 0.21 22)", null, null, "soon"]]],
-  ["AI", [["claude", "Claude", "C", "oklch(0.66 0.13 45)", "Claude Desktop · MCP server", null, "beta"]]]
-];
 function mbConnRead() {
   if (window.connections && typeof window.connections.get === "function") return window.connections.get();
   const v = mbLs.get("needt.connections", {}) || {};
@@ -388,8 +381,7 @@ const MB_ASK = [
   ["Draft a reply to Jonas", "“Hi Jonas, thanks for the update. Thursday works — could you send the samples before 12:00 so we can check them the same day? Best, Maksym”"]
 ];
 /* ── The hold → actions layer (wave 3) is in phone-kit.jsx now: PkHold,
-   PkActions, PkHueTile, pkOwnGesture. MbHold / MbActSheet / MbHueTile /
-   mbOwnGesture stay as window aliases of those for older call sites. ── */
+   PkActions, PkHueTile, pkOwnGesture (the old Mb* aliases are gone). ── */
 
 /* ── Moodboards ───────────────────────────────────────────────────────────
  * Personal inspiration collections — not tasks, so nothing here has a date,

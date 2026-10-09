@@ -33,8 +33,6 @@
 .auth-row-text-2 { font-size: 13px; color: var(--text-tertiary); text-wrap: pretty; }
 .auth-row-grid { flex: 0 0 auto; width: 20px; height: 20px; display: grid; place-items: center; color: white; transition: background-color var(--transition-hover); }
 .auth-ax-step-art-el { transition: opacity 200ms ease; }
-.auth-ax-step-art-grid { position: relative; display: grid; place-items: center; height: 134px; border-radius: 15px; overflow: hidden; background: var(--background); }
-.px-kicker.auth-ax-step-art-text { color: var(--px-ink-2); }
 .auth-ax-step-art-text-2 { padding: 5px 11px; font-size: 12px; }
 .auth-onboarding-abs { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 18px 32px 24px 48px; box-sizing: border-box; }
 .auth-onboarding-row { flex: none; display: flex; align-items: center; gap: 16px; }
@@ -47,22 +45,6 @@
 .auth-onboarding-col-2 { flex: 0 1 auto; min-height: 0; max-height: calc(100vh - 210px); display: flex; flex-direction: column; }
 .auth-onboarding-col-3 { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 24px 22px 16px; }
 .auth-onboarding-el-2 { padding-bottom: 14px; }
-.auth-onboarding-col-4 { display: flex; flex-direction: column; gap: 18px; }
-.auth-onboarding-grid { display: grid; grid-template-columns: repeat(4, 132px); justify-content: center; gap: 16px 12px; }
-.auth-onboarding-row-3 { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; box-shadow: var(--shadow-ring); }
-.auth-onboarding-text-4 { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.auth-onboarding-col-5 { display: flex; flex-direction: column; gap: 16px; }
-.auth-onboarding-box { border-radius: 14px; box-shadow: var(--shadow-ring); overflow: hidden; background: var(--surface-raised); }
-.auth-onboarding-row-4 { display: flex; align-items: center; gap: 12px; padding: 9px 14px; }
-.auth-onboarding-text-5 { font-size: 13px; color: var(--text-tertiary); }
-.auth-onboarding-text-6 { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--text-primary); text-align: right; }
-.ax-link.auth-onboarding-btn { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
-.auth-onboarding-text-7 { font-size: 12px; font-weight: 500; color: var(--text-tertiary); }
-.auth-onboarding-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.auth-onboarding-col-6 { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 6px; border: 0; cursor: default; border-radius: 12px; }
-.auth-onboarding-row-5 { display: flex; justify-content: center; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow-ring); }
-.auth-onboarding-text-8 { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-.auth-onboarding-text-9 { font-size: 12px; color: var(--text-tertiary); text-wrap: pretty; }
 .auth-onboarding-row-6 { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 12px 16px 14px; border-top: 1px solid var(--border); }
 .auth-onboarding-text-10 { margin-left: auto; }
 
@@ -177,18 +159,12 @@
 .ma-setup-top { flex: none; display: flex; align-items: center; gap: 8px; }
 .ma-setup-top > .auth-theme { margin-left: auto; }
 .ma-setup-top .auth-theme-b { padding: 0 8px; }
-.axs-skip.ma-setup-skip { margin-left: auto; }
-.ma-setup-top > .auth-theme + .ma-setup-skip { margin-left: 0; }
 .ma-hours { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
 .ma-hours-line { display: flex; align-items: center; gap: 8px; }
 .ma-hours .auth-select { height: 44px; }
 .ma-hours-line .auth-select { flex: 1; width: auto; }
 .ma-hours .auth-select.is-wide { flex: none; width: 100%; }
 .ma-hours .auth-select select { font-size: 15px; }
-.ma-setup-skiptask { margin-left: auto; color: var(--text-tertiary); }
-.mb-setup-21 { display: flex; justify-content: flex-end; }
-.mb-setup-21 > .ma-button-1 { flex: 1; }
-.ma-forgot { align-self: flex-end; margin-top: -6px; }
 
 /* ── "Make your sidebar" (onboarding step 3, 08.10.26) ────────────────────── */
 /* The grid: a slice of the real sidebar — its ground, three columns, 64px tiles. */

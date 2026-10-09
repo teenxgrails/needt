@@ -283,7 +283,7 @@ function PhbSortList({ ids, render, onOrder, onHold, className }) {
       try { el.setPointerCapture(D.pid); } catch (err) { /* gone */ }
       window.needtPlatform.haptic("light");
       setLift(id); setOrder(ids.slice());
-    }, MB_HOLD_MS);
+    }, PK_HOLD_MS);
   };
   const move = (e) => {
     if (D.id == null || e.pointerId !== D.pid) return;
@@ -556,7 +556,7 @@ function PhbWall({ items, canEdit, onOpen, onHold, onOrder }) {
       try { el.setPointerCapture(D.pid); } catch (err) { /* gone */ }
       window.needtPlatform.haptic("light");
       setLift(it.id); setOrder(D.ids.slice());
-    }, MB_HOLD_MS);
+    }, PK_HOLD_MS);
   };
   const move = (e) => {
     if (D.id == null || e.pointerId !== D.pid) return;

@@ -1149,7 +1149,8 @@ const MoodboardsScreen = (() => {
   const MB_SORTS = [["name", "Name"], ["created", "Date created"], ["updated", "Date updated"]];
   const MB_SORT_KEY = "needt.mbSort";
   function mbReadSort() {
-    try { const v = JSON.parse(localStorage.getItem(MB_SORT_KEY)); if (v && MB_SORTS.some((x) => x[0] === v.key) && (v.dir === "asc" || v.dir === "desc")) return v; } catch (e) {}
+    const v = window.needtSync ? window.needtSync.get(MB_SORT_KEY) : null;
+    if (v && MB_SORTS.some((x) => x[0] === v.key) && (v.dir === "asc" || v.dir === "desc")) return v;
     return { key: "updated", dir: "desc" };
   }
 

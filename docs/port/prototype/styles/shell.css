@@ -18,9 +18,6 @@
 .cmp-btn:hover, .cmp-btn.is-open { background: var(--fill-2); }
 .cmp-btn.is-set { color: var(--text-primary); }
 .cmp-icon { width: 28px; padding: 0; justify-content: center; color: var(--text-tertiary); }
-.cmp-cancel { flex: none; white-space: nowrap; height: 30px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; cursor: default; font: 500 13px/1 var(--font-sans); color: var(--text-secondary); }
-.cmp-cancel:hover { background: var(--fill-2); }
-.cmp-add { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; flex: none; height: 30px; padding: 0 8px 0 12px; border: 0; border-radius: 9px; cursor: default; background: var(--text-primary); color: var(--background); font: 500 13px/1 var(--font-sans); transition: opacity .15s; }
 .cmp-go { gap: 8px; padding-right: 8px; }
 .cmp-go:disabled { opacity: 0.35; }
 .cmp-kbd { display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 5px; font: 500 11px/1 var(--font-sans); background: var(--kbd-fill); color: inherit; }
@@ -67,24 +64,10 @@
 
 /* Sidebar.jsx — static styles moved out of style={{…}} */
 .shell-pinned-face-grid { width: 18px; height: 22px; display: grid; place-items: center; }
-.shell-find-bar-span { display: block; transition: opacity 0.34s cubic-bezier(0.37, 0, 0.63, 1); }
-.shell-day-menu-nt-menu { position: fixed; width: 268px; z-index: 800; }
-.shell-day-menu-nt-menu-item { height: auto; align-items: flex-start; padding: 7px 8px; gap: 8px; }
 .shell-day-menu-span { padding-top: 2px; }
-.shell-day-menu-stack { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .shell-day-menu-text { text-wrap: pretty; }
 .shell-mini-month-stack { display: flex; flex-direction: column; gap: 5px; }
-.shell-mini-month-row { display: flex; align-items: center; justify-content: space-between; height: 24px; padding: 0 2px; }
-.shell-mini-month-row-2 { display: flex; gap: 2px; }
-.shell-mini-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; justify-items: stretch; }
-.shell-mini-month-grid-2 { display: grid; place-items: center; height: 14px; font: var(--type-meta-medium); font-size: 11px; color: var(--text-muted); }
 .shell-mini-month-div { position: relative; }
-.shell-mini-month-drop { display: grid; place-items: center; width: 100%; height: 30px; border: 0; cursor: default; border-radius: var(--radius-md); font: var(--type-ui); font-variant-numeric: tabular-nums; transition: background-color var(--transition-hover); }
-.shell-mini-month-layer { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); display: grid; place-items: center; width: 14px; height: 10px; border: 0; background: transparent; cursor: default; color: var(--text-quaternary); padding: 0; }
-.shell-mini-month-layer-2 { position: absolute; left: 50%; bottom: 2px; transform: translateX(-50%); border-radius: var(--radius-pill); }
-.shell-up-menu-row { position: relative; display: flex; width: 100%; }
-.shell-up-menu-row-2 { display: flex; width: 100%; }
-.shell-up-menu-layer { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); z-index: var(--z-dropdown); }
 .shell-space-menu-div { position: relative; flex: 1 1 auto; min-width: 0; }
 .shell-focus-control-circle { transition: stroke-dashoffset 0.4s linear; }
 .shell-place-glyph-svg { display: block; flex: none; }
@@ -332,10 +315,6 @@ html.is-drag-active .tk-desk.is-hot { background: transparent; }
 .shell-brief-body-text-5 { font: var(--type-meta-medium); color: var(--text-primary); }
 .shell-brief-body-text-6 { margin-left: auto; font: var(--type-meta); color: var(--accent); }
 .shell-brief-body-stack-5 { display: flex; flex-direction: column; gap: 4px; padding: 11px; }
-.shell-brief-settings-layer { position: fixed; z-index: var(--z-dropdown); width: 300px; }
-.shell-brief-settings-row { display: flex; gap: 8px; padding: 2px 8px 8px; }
-.shell-brief-settings-stack { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 0; border: 0; background: transparent; cursor: default; }
-.shell-brief-settings-text { font: var(--type-meta-medium); text-align: left; }
 .shell-brief-slash-menu-layer { position: fixed; z-index: var(--z-dropdown); width: 240px; }
 .shell-brief-selection-bar-mark-bar { position: fixed; z-index: var(--z-tooltip); display: flex; align-items: center; gap: 2px; height: 34px; padding: 0 5px; border-radius: var(--radius-pill); background: var(--toolbar-fill, var(--surface-raised)); box-shadow: var(--shadow-floating); }
 .shell-brief-selection-bar-bar { width: 1px; height: 16px; margin: 0 3px; background: var(--border); }

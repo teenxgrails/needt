@@ -3,8 +3,6 @@
 /* connections.jsx — static inline styles moved here */
 .cn-spinner-el { display: inline-block; box-sizing: border-box; border-radius: 999px; border: 1.5px solid var(--fill-5); border-top-color: currentColor; }
 .cn-tile-grid { position: relative; flex: none; display: grid; place-items: center; overflow: hidden; }
-.cn-tile-abs { position: absolute; left: 0; right: 0; top: 0; }
-.cn-tile-abs-2 { position: absolute; display: flex; gap: 2px; }
 .cn-tile-dot { width: 3px; height: 3px; border-radius: 2px; }
 .cn-menu-box { position: fixed; z-index: 1100; width: 210px; padding: 6px; box-sizing: border-box; border-radius: 14px; background: var(--surface-raised); box-shadow: var(--shadow-floating); }
 .cn-menu-row { display: flex; }
@@ -35,7 +33,6 @@
 .cn-setup-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cn-setup-el { align-self: flex-start; margin-top: 3px; }
 .cn-setup-row-2 { display: flex; align-items: center; gap: 8px; padding-top: 14px; box-shadow: var(--border) 0 1px 0 0 inset; }
-.cn-setup-row-3 { display: inline-flex; align-items: center; gap: 6px; color: var(--success); }
 .cn-setup-el-2 { flex: 1; }
 .cn-card-col { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .cn-card-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
@@ -221,7 +218,6 @@ button.cn-lrow:hover, a.cn-lrow:hover, .cn-lrow.is-open { background: var(--fill
    card's limit line beside Upgrade; the AI tab's one upsell card. */
 .cn-tab .pro-badge { margin-left: 6px; }
 .cn-limit { min-width: 0; font: var(--type-meta); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
-.cn-upsell { max-width: 720px; width: 100%; margin: 0 auto 4px; box-sizing: border-box; }
 
 /* Free · AI tools tab (08.10.26): one glass promo panel on the sky instead of
    cards, filters and MCP / API sections. Tool icons hazy behind a lock. */

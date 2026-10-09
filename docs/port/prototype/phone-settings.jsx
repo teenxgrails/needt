@@ -773,4 +773,4 @@ function PsSettings(props) {
 
 window.PkPlaces = window.PkPlaces || {};
 window.PkPlaces.settings = PsSettings;
-Object.assign(window, { PsSettings, psSettingsSet: psSet });
+Object.assign(window, { PsSettings });

@@ -9,7 +9,7 @@
  * the thing it belongs to; here the object you already know grows, carries
  * the message, and shrinks. It is rare on purpose.
  */
-const { Icon, IconButton, Button, Tooltip } = window.NeedtDesignSystem_25d3c8;
+const { Icon, IconButton } = window.NeedtDesignSystem_25d3c8;
 
 /* What the island is allowed to say. Each one either teaches something the
    product can do or reports something it just did — never praise. */
@@ -87,7 +87,6 @@ function ChatTip({ note, leaving, onOpen, onAct, onDismiss, onHold }) {
     </div>
   );
 }
-const ChatIsland = ChatTip;
 
 /* Where tips stay away (08.10.26): setup and money moments. The route comes
    from needtStates (App reports every route, Settings as "settings"); the
@@ -1268,7 +1267,6 @@ function Chat({ onOpenBrief, hidden, open: openProp, onOpenChange, dock, narrow 
     root.style.setProperty("--chat-tip-lift", Math.ceil(tipRef.current.offsetHeight + 12) + "px");
     return () => root.style.removeProperty("--chat-tip-lift");
   }, [tipShown, tipLeaving, note]);
-  const Art = window.Art;
   const canInsert = scope && scope.kind === "doc";
 
   /* Where the panel lives. Wide window: a 360 column of the app's main row
@@ -1559,4 +1557,4 @@ function Chat({ onOpenBrief, hidden, open: openProp, onOpenChange, dock, narrow 
   );
 }
 
-Object.assign(window, { Chat, ChatIsland, ChatTip, CHAT_NOTES });
+Object.assign(window, { Chat, ChatTip, CHAT_NOTES });

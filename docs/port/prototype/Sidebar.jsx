@@ -1,170 +1,16 @@
 const NS = window.NeedtDesignSystem_25d3c8;
-const { NavRow, NavSection, CommandBar, Avatar, SidebarHint, IconButton, Icon, ToggleGroup, Tooltip, StatusDot, Checkbox, Chip, Button, Input, Popover, Menu, MenuItem, MenuLabel, MenuSeparator, DropdownMenu } = NS;
+const { Avatar, Icon, Tooltip, Menu } = NS;
 
-/* Booked minutes per day of September, out of an 11-hour day — the dot under a
-   date is the day's load, so a heavy week is visible without opening one. */
-const LOAD = { 1: 390, 2: 420, 3: 300, 4: 480, 5: 60, 6: 0, 7: 360, 8: 450, 9: 510, 10: 420, 11: 240, 12: 90, 13: 0, 14: 330, 15: 480, 16: 540, 17: 390, 18: 600, 19: 120, 20: 0, 21: 300, 22: 270, 23: 360, 24: 420, 25: 210, 26: 0, 27: 0, 28: 330, 29: 390, 30: 300 };
-const CALENDAR_SOURCES = [
-  { id: "work", name: "Work", tone: "accent", account: "google" },
-  { id: "personal", name: "Personal", tone: "success", account: "apple" },
-  { id: "family", name: "Family", tone: "info", account: "apple" }
-];
-const PINNED = [
-  { id: "launch", title: "Launch brief — September" },
-  { id: "rules", title: "Needt design rules" }
-];
 /* Pinned rows wear the page's own face (ground + first lines) once the docs
    module is loaded; until then the plain document glyph. */
 function PinnedFace({ id }) {
   const doc = (window.docs && window.docs.find(id)) || (window.DOCS || []).find((d) => d.id === id);
   return doc && window.DocThumb ? <span className="shell-pinned-face-grid"><window.DocThumb doc={doc} w={14} h={18} /></span> : <Icon name="file-text" size={16} />;
 }
-const DOW = ["M", "T", "W", "T", "F", "S", "S"];
 
 /* The mark itself lives in ExposureWordmark.jsx — the sidebar, the account
    screen and the route veil all render that one component. */
 const { ExposureWordmark } = window;
-
-const FIND_HINTS = [
-  ["Find anything", "⌘K"],
-  ["Capture a task", "⏎"],
-  ["Start focus", "⌘⇧F"],
-  ["Plan my day", "⌘⇧P"],
-  ["Jump to a day", "⌘G"]
-];
-
-function FindBar({ onClick, frozen }) {
-  const [i, setI] = React.useState(0);
-  const [lit, setLit] = React.useState(true);
-  React.useEffect(() => {
-    if (frozen) return undefined;
-    const id = window.setInterval(() => {
-      setLit(false);
-      window.setTimeout(() => { setI((n) => (n + 1) % FIND_HINTS.length); setLit(true); }, 340);
-    }, 11000);
-    return () => window.clearInterval(id);
-  }, [frozen]);
-  const [label, keys] = FIND_HINTS[frozen ? 0 : i];
-  return (
-    <span className="shell-find-bar-span" style={{ opacity: lit ? 1 : 0 }}>
-      <CommandBar label={label} keys={keys} width="100%" onClick={onClick} />
-    </span>
-  );
-}
-
-/* A month, small — and a place to act on a day, not only to look at it.
-   Every cell is a drop target; hovering one offers the day menu in the slot
-   the load dot occupies at rest, so the affordance costs no extra height. */
-const DAY_ACTIONS = [
-  ["sunrise", "Start the day later", "Move today's tasks to when you are ready."],
-  ["sunset", "Finish early", "Reschedule what is left of the day."],
-  ["ban", "Block out hours", "Pick hours the scheduler cannot use."],
-  ["ban", "Block out the whole day", "Nothing gets placed here."],
-  ["rotate-ccw", "Unblock the day", "Every hour is available again."]
-];
-
-function DayMenu({ at, onClose }) {
-  React.useEffect(() => {
-    function away(e) { if (!e.target.closest || !e.target.closest(".nt-menu")) onClose(); }
-    function key(e) { if (e.key === "Escape") onClose(); }
-    window.setTimeout(() => document.addEventListener("mousedown", away), 0);
-    document.addEventListener("keydown", key);
-    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", key); };
-  }, []);
-  /* Same reason as the brief's overlays: a screen with a transform re-bases
-     fixed coordinates, so a menu placed from a rectangle belongs on the body. */
-  return ReactDOM.createPortal(
-    <div className="nt-menu shell-day-menu-nt-menu" style={{ left: at.x, top: at.y }}>
-      <MenuLabel>{at.date} September</MenuLabel>
-      {DAY_ACTIONS.map(([icon, label, hint], i) => (
-        <button key={i} type="button" className="nt-menu-item shell-day-menu-nt-menu-item" onClick={onClose}
-         >
-          <span className="shell-day-menu-span"><Icon name={icon} size={16} /></span>
-          <span className="shell-day-menu-stack">
-            <span className="base-strong">{label}</span>
-            <span className="base-meta shell-day-menu-text">{hint}</span>
-          </span>
-        </button>
-      ))}
-    </div>, document.body);
-}
-
-function MiniMonth({ selected, onSelect, dragOverDate }) {
-  const [menu, setMenu] = React.useState(null);
-  const [hover, setHover] = React.useState(null);
-  const cells = [];
-  cells.push({ date: 31, outside: true, key: "a31" });
-  for (let d = 1; d <= 30; d++) cells.push({ date: d, key: "s" + d, today: d === 1 });
-  for (let d = 1; cells.length % 7; d++) cells.push({ date: d, outside: true, key: "o" + d });
-  return (
-    <div className="shell-mini-month-stack">
-      <div className="shell-mini-month-row">
-        <span className="base-strong">September 2026</span>
-        <span className="shell-mini-month-row-2">
-          <IconButton label="Previous month" variant="ghost"><Icon name="chevron-left" size={14} /></IconButton>
-          <IconButton label="Next month" variant="ghost"><Icon name="chevron-right" size={14} /></IconButton>
-        </span>
-      </div>
-      <div className="shell-mini-month-grid">
-        {DOW.map((d, i) => <span className="shell-mini-month-grid-2" key={i}>{d}</span>)}
-        {cells.map((c) => {
-          const load = c.outside ? 0 : (LOAD[c.date] || 0) / 660;
-          const on = !c.outside && selected === c.date;
-          const over = !c.outside && dragOverDate === String(c.date);
-          const hot = !c.outside && hover === c.key;
-          return (
-            <div className="shell-mini-month-div" key={c.key}
-              onMouseEnter={() => setHover(c.key)} onMouseLeave={() => setHover(null)}>
-              <button className="shell-mini-month-drop" type="button" data-drop={c.outside ? undefined : "day"} data-date={c.date} data-label={c.date + " September"}
-                onClick={() => !c.outside && onSelect(c.date)}
-                style={{ background: over ? "var(--fill-accent-strong)" : on ? "var(--fill-accent)" : c.today ? "var(--fill-accent-strong)" : hot ? "var(--fill-3)" : "transparent", boxShadow: over ? "var(--shadow-focus)" : "none", color: c.outside ? "var(--text-disabled)" : (on || c.today) ? "var(--accent)" : "var(--text-secondary)" }}>
-                {c.date}
-              </button>
-              {/* One slot, two jobs: the day's load at rest, the day's menu
-                  under the hand. */}
-              {!c.outside ? (hot ? (
-                <button className="shell-mini-month-layer" type="button" aria-label={"Actions for " + c.date + " September"}
-                  onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setMenu({ date: c.date, x: Math.min(r.left, window.innerWidth - 280), y: Math.min(r.bottom + 4, window.innerHeight - 320) }); }}
-                 >
-                  <Icon name="chevron-down" size={11} />
-                </button>
-              ) : load > 0 ? (
-                <span className="shell-mini-month-layer-2" style={{ width: load >= 0.75 ? 4 : 3, height: load >= 0.75 ? 4 : 3, background: load >= 0.9 ? "var(--text-secondary)" : load >= 0.5 ? "var(--text-quaternary)" : "var(--text-disabled)" }} />
-              ) : null) : null}
-            </div>
-          );
-        })}
-      </div>
-      {menu ? <DayMenu at={menu} onClose={() => setMenu(null)} /> : null}
-    </div>
-  );
-}
-
-/* An upward menu: the same DS Menu, hung above its trigger instead of below,
-   because a control on the last row of the rail has no room beneath it. */
-function UpMenu({ trigger, width, children }) {
-  const [open, setOpen] = React.useState(false);
-  const [shown, leaving] = window.useExit(open, 130);
-  const wrap = React.useRef(null);
-  React.useEffect(() => {
-    if (!open) return undefined;
-    function away(e) { if (wrap.current && !wrap.current.contains(e.target)) setOpen(false); }
-    function esc(e) { if (e.key === "Escape") setOpen(false); }
-    document.addEventListener("mousedown", away);
-    document.addEventListener("keydown", esc);
-    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
-  }, [open]);
-  return (
-    <div className="shell-up-menu-row" ref={wrap}>
-      <span className="shell-up-menu-row-2" onClick={() => setOpen(!open)}>{trigger}</span>
-      {shown ? (
-        <div className={"shell-up-menu-layer " + "nx-up" + (leaving ? " is-leaving" : "")} onClick={() => setOpen(false)}>
-          <Menu width={width}>{children}</Menu>
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 /* ---------- Account (08.10.26) ----------
    There is one workspace; teams will live inside it. So the top-left is the
@@ -340,10 +186,6 @@ function FocusControl({ focus }) {
   );
 }
 
-const AGENT_TOOLS = [
-  { id: "notion", label: "Notion · ask Needt about it", icon: "database" },
-  { id: "github", label: "GitHub · teenxgrails", icon: "github" }
-];
 /* The registry lives in work.jsx (loaded later); until it is there, an empty
    stand-in keeps the hook order stable. */
 const sbNoProjects = { get: () => ({ list: [], sort: "manual" }), sub: () => () => {} };
@@ -832,4 +674,4 @@ function pageNew(screen, what) {
   window.setTimeout(() => window.dispatchEvent(new CustomEvent("needt-new", { detail: what })), 300);
 }
 
-Object.assign(window, { Sidebar, PlaceGlyph, MiniMonth, FocusControl, DayMenu, DAY_ACTIONS, CALENDAR_SOURCES, LOAD, PageAddButton, pageNew });
+Object.assign(window, { Sidebar, PlaceGlyph, FocusControl, PageAddButton, pageNew });

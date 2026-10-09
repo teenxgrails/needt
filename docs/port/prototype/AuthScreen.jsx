@@ -1,4 +1,4 @@
-const { Button, Input, Icon, IconButton, Checkbox, Switch, Select, Chip, StatusDot, Avatar, FormRow, FormGroup, RadioGroup, Tooltip } = window.NeedtDesignSystem_25d3c8;
+const { Icon, IconButton } = window.NeedtDesignSystem_25d3c8;
 const { ExposureWordmark } = window;
 
 /* AUTH + ONBOARDING — the two screens before the product, on the painted sky
@@ -473,18 +473,6 @@ const CALS = [
   ["skip", "Skip for now", "Connect one later from Settings", "later"]
 ];
 
-/* The calendar's two views (07.10.26: Columns is gone; 08.10.26: Days is
-   called Agenda). Onboarding no longer asks — Calendar opens on Week. Kept for
-   auth.html and anything that still draws the thumbnails. */
-const VIEWS = [
-  ["grid", "Week", "The week by the hour, with everything placed on it."],
-  ["days", "Agenda", "Day after day as a list, today first."]
-];
-const VIEW_KIND = { grid: "grid", days: "day" };
-function ViewThumb({ id, on, width }) {
-  return <window.Miniature kind={VIEW_KIND[id] || "day"} width={width || 96} />;
-}
-
 /* ── First-slot planner: Data.js (NEEDT.firstSlot / slotReason / firstTask),
    shared with the phone's MobileAuth.jsx. The first free run of `minutes`
    inside working hours from the prototype's now (Tue 1 Sep, 14:20) that
@@ -492,8 +480,6 @@ function ViewThumb({ id, on, width }) {
 const OB_NOW = (window.NEEDT && window.NEEDT.planNow) || 14 + 20 / 60;
 const obWeekday = (d, form) => window.NEEDT.planWeekday(d, form);
 const obHour = (v) => window.NEEDT.planHour(v);
-const needtFirstSlot = (o) => window.NEEDT.firstSlot(o);
-const needtSlotReason = (r, minutes) => window.NEEDT.slotReason(r, minutes);
 const needtFirstTask = (parsed, prefs, tasks) => window.NEEDT.firstTask(parsed, prefs, tasks);
 
 /* Working hours: half hours from 05:00 to 23:30. Time zone: the three the
@@ -997,4 +983,4 @@ function OnboardingScreen({ onDone, theme, onTheme, embedded, seed }) {
   );
 }
 
-Object.assign(window, { AuthScreen, OnboardingScreen, ViewThumb, VIEWS, needtFirstSlot, needtSlotReason, needtFirstTask });
+Object.assign(window, { AuthScreen, OnboardingScreen, needtFirstTask });

@@ -196,7 +196,6 @@ function useSettings() { useStore(settingsStore); return [needtSettings.get(), n
    the phone (both pages load this file). Old storage is migrated in Data.js
    before anything here reads it. */
 const stRead = (k) => nsGet(k, null);
-const stWrite = (k, v) => nsSet(k, v);
 const stClone = (x) => JSON.parse(JSON.stringify(x));
 const stNow = () => new Date().toISOString();
 
@@ -474,13 +473,9 @@ const boardsView = {
    touches nothing but the project. "needt.projects" holds the user's own;
    the whole list, renames and recolours included, lives in
    "needt.projects.all". The store seeds on first read: the seed colours come
-   from RichBlock / ColumnsView (cvProject), which load after this file. */
-const PROJECT_SEEDS = [
-  { id: "resale", name: "Resale", ground: "mist" },
-  { id: "ops", name: "Operations", ground: "sand" },
-  { id: "ds", name: "Design system", ground: "sage" },
-  { id: "german", name: "German", ground: "stone" }
-];
+   from ColumnsView.jsx (cvProject), which loads after this file. */
+/* One source: the seeds are NEEDT.projects (Data.js) — id, name, ground. */
+const PROJECT_SEEDS = window.NEEDT.projects.map((p) => ({ id: p.id, name: p.name, ground: p.ground || null }));
 const PROJECT_SWATCHES = [["accent", "var(--accent)"], ["info", "var(--info)"], ["success", "var(--success)"], ["destructive", "var(--destructive)"], ["muted", "var(--text-muted)"]];
 const prjSeedHue = (name) => { const x = window.cvProject ? window.cvProject(name) : null; return (x && x.color) || "var(--text-tertiary)"; };
 const prjSeeded = () => PROJECT_SEEDS.map((p) => { const n = window.NEEDT.project(p.id); return Object.assign({}, p, { color: prjSeedHue(p.name), icon: (n && n.icon) || "folder", seed: true }); });
@@ -612,7 +607,7 @@ const projects = {
     return out;
   }
 };
-Object.assign(window, { PROJECT_SEEDS, PROJECT_SWATCHES, WK_PROJECTS: PROJECT_SEEDS, WK_SWATCHES: PROJECT_SWATCHES, projectStore, projects, useProjects, projectHue, projectsSorted, projectSeeds: prjSeeded });
+Object.assign(window, { PROJECT_SEEDS, PROJECT_SWATCHES, WK_PROJECTS: PROJECT_SEEDS, projectStore, projects, useProjects, projectHue, projectsSorted, projectSeeds: prjSeeded });
 
 /* ---------- toast ---------- */
 const toastStore = makeStore([]);

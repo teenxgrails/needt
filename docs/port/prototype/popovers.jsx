@@ -7,7 +7,6 @@
    The illustrations are drawn here, flat, in the token hues (one extra hue,
    VIOLET, for the template wand). No SF Symbols, no images, no gradients:
    depth comes from a second, darker tone of the same hue. */
-const PvNS = window.NeedtDesignSystem_25d3c8;
 
 const VIOLET = "oklch(0.62 0.19 300)";
 const mix = (c, n, base) => "color-mix(in oklch, " + c + " " + n + "%, " + (base || "var(--surface-raised)") + ")";

@@ -279,7 +279,6 @@
   --accent-contrast: #121314;
 }
 
-
 /* === RAISED OBJECTS ON A DARK GROUND ===
  *
  * On paper an object reads as raised because a light surface sits above the
@@ -319,30 +318,8 @@
     0 8px 16px 0 rgba(0, 0, 0, 0.35);
 }
 
-
 /* An outline glyph inside a filled tile runs heavier than it does in a nav
    row, so project marks and source marks read at the same weight. */
-.rb-tile-glyph svg { stroke-width: 2.5; }
-/* THE ENTRY. The one thing on a task you press, so the one thing built as a
-   control: the raised default button, which answers the pointer with the
-   accent and says what pressing it does. Both labels share a grid cell, so the
-   opacity pair below is what keeps one of them hidden — without it they
-   render on top of each other. */
-.rb-entry { color: var(--text-primary); background: var(--surface-raised); box-shadow: var(--shadow-raised);
-  transition: box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease; }
-.rb-entry .rb-arrow { color: var(--rb-ink); transition: color 0.15s ease, transform 0.15s ease; }
-.rb-entry .rb-cost { color: var(--text-tertiary); transition: color 0.15s ease; }
-.rb-entry .rb-rest { opacity: 1; transition: opacity 0.15s ease; }
-.rb-entry .rb-hot { opacity: 0; transition: opacity 0.15s ease; }
-.rb-entry:hover { background: color-mix(in oklab, var(--accent) 12%, var(--surface-raised)); color: var(--accent); box-shadow: var(--shadow-raised-hover); }
-.rb-entry:hover .rb-arrow { color: var(--accent); transform: translateX(2px); }
-.rb-entry:hover .rb-cost { color: color-mix(in oklab, var(--accent) 70%, var(--text-tertiary)); }
-.rb-entry:hover .rb-rest { opacity: 0; }
-.rb-entry:hover .rb-hot { opacity: 1; }
-.rb-entry:active { box-shadow: var(--shadow-inset-ring); }
-
-@media (prefers-reduced-motion: reduce) { .rb-entry, .rb-entry * { transition: none; } .rb-entry:hover .rb-arrow { transform: none; } }
-
 
 /* Floating layers sit one step above raised on dark; on light they ARE raised. */
 :root, .paper, .warm { --surface-floating: var(--surface-raised); }
@@ -459,7 +436,6 @@
   color: rgba(var(--foreground-rgb), 1);
 }
 .dark .dt-cover svg { filter: brightness(0.86) saturate(0.95); }
-
 
 /* =====================================================================
  * COLOUR TOKENS (code-review item 9: "colours only via tokens")
@@ -1434,4 +1410,14 @@
   --ppl-on: var(--v2p-lav-soft);
   --ppl-on-ink: var(--v2p-ink);
   --ppl-on-edge: inset 0 0 0 1px var(--v2p-lav-ring);
+}
+
+/* --- PHONE MENU A · wave 4 (nav-a.jsx, 09.10.26) — the create button wears the pill's glass (it carries the pill's inverse theme class, so these read the pill's side): --nva-add-rim its hairline rim + soft shadow (the pill's edge), --nva-add-quiet its icon (the pill's quiet ink; lavender only while pressed). Replaces the wave-3 --nva-add-glass / -edge / -ink, which nothing reads any more. --- */
+:root, .paper, .warm {
+  --nva-add-rim: inset 0 0 0 1px rgba(18, 18, 20, 0.07), 0 8px 20px -12px rgba(0, 0, 0, 0.55);
+  --nva-add-quiet: rgba(18, 18, 20, 0.62);
+}
+.dark, .dim {
+  --nva-add-rim: inset 0 0 0 1px rgba(246, 245, 250, 0.1), 0 10px 22px -12px rgba(18, 16, 40, 0.45);
+  --nva-add-quiet: rgba(246, 245, 250, 0.72);
 }

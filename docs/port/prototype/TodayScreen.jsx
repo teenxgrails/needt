@@ -1,26 +1,4 @@
-const { Card, CalendarStrip, CalendarDay, CalendarBlock, DayTimeline, FreeTime, Button, IconButton, Icon, FloatingAction, Chip, EmptyState, Tooltip, ToggleGroup } = window.NeedtDesignSystem_25d3c8;
-
-/* A view that exists in the navigation but not yet in the product. It holds the
-   space and says what will be here — it never pretends to be loading. */
-function Stub({ title, text }) {
-  return (
-    <div className="home-stub">
-      <EmptyState icon={<Icon name="calendar-days" size={24} />} text={text} />
-    </div>
-  );
-}
-
-function PageHeader({ title, meta, actions }) {
-  return (
-    <header className="home-phead">
-      <div className="home-phead-left">
-        <h1 className="home-phead-title">{title}</h1>
-        {meta ? <span className="home-phead-meta">{meta}</span> : null}
-      </div>
-      <div className="home-phead-acts">{actions}</div>
-    </header>
-  );
-}
+const { Card, CalendarStrip, CalendarDay, CalendarBlock, FreeTime } = window.NeedtDesignSystem_25d3c8;
 
 const WEEK = [
   { weekday: "MON", date: 31, blocks: [{ title: "Standup", time: "10:30" }] },
@@ -54,26 +32,6 @@ function WeekStrip({ selected, onSelect }) {
         </CalendarDay>
       ))}
     </CalendarStrip>
-  );
-}
-
-function Legend() {
-  return (
-    <p className="home-legend">
-      Grey rail: fixed. Coloured rail: the scheduler placed it and can move it again.
-    </p>
-  );
-}
-
-/* The one number the screen exists to answer, in the display serif rather than
-   another 13px caption — and derived from the same items the timeline draws, so
-   the headline and the visible gaps cannot disagree. */
-function FreeTimeHeadline({ free }) {
-  return (
-    <div className="nt-freetime">
-      <span className="nt-freetime-value">{free.left}</span>
-      <span className="nt-freetime-caption">free left today · {free.total} in working hours</span>
-    </div>
   );
 }
 
@@ -134,4 +92,4 @@ function TodayScreen({ tasks, onOpen, onToggle, form, onForm, brief, dragProps, 
   );
 }
 
-Object.assign(window, { TodayScreen, PageHeader, WeekStrip, Legend, FreeTimeHeadline, Stub, WEEK, DAY, PLACED });
+Object.assign(window, { TodayScreen, WeekStrip, WEEK, DAY, PLACED });

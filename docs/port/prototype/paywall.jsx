@@ -81,10 +81,8 @@ function needtPlanInfo(s) {
     default: return { name: "Free", line: "Tasks, calendar, docs and one mail account.", badge: "Free", pro: false };
   }
 }
-/* Is the space on Pro (trial, monthly, yearly, lifetime)? */
-function needtIsPro(s) { return !!needtPlanInfo(s || needtPlan.get()).pro; }
 function useNeedtPro() { const [p] = useNeedtPlan(); return !!needtPlanInfo(p).pro; }
-Object.assign(window, { needtPlan, useNeedtPlan, needtPlanInfo, needtIsPro, useNeedtPro });
+Object.assign(window, { needtPlan, useNeedtPlan, needtPlanInfo, useNeedtPro });
 
 const PW_FREE = ["Tasks and projects", "Calendar", "Docs", "1 mail account"];
 const PW_PRO = [
@@ -243,24 +241,10 @@ function openPaywall(opts) {
 }
 function closePaywall() { pwStore.open = false; pwEmit(); }
 
-/* A small "Pro" pill for features that belong to Pro (they still work in the
-   prototype). */
-function PwProStamp({ style }) {
-  const Badge = window.PxBadge;
-  if (!Badge) return null;
-  return <Badge style={style}>Pro</Badge>;
-}
-
 /* ── Pro gating (08.10.26) ─────────────────────────────────────────────────
    One set of pieces for every place a Pro feature shows up:
      <ProBadge size="sm|md" locked />   the black "PRO" pill (promo-pill black);
                                         locked adds the lock glyph.
-     <ProGate feature="Plan my day">…</ProGate>
-                                        Free: children show with a locked PRO
-                                        pill; a click anywhere opens the paywall
-                                        with "Unlock Plan my day with Pro".
-                                        Trial/Pro: children work, a small PRO.
-     proGuard(feature, fn)              fn on Pro, the paywall on Free.
      <ProUpsell id title line cta feature />
                                         the one soft card a screen may carry —
                                         Free only, dismissible for good
@@ -276,29 +260,7 @@ function ProBadge({ size, locked, className, title }) {
     </span>
   );
 }
-function proGuard(feature, fn) {
-  return function (e) {
-    if (needtIsPro()) return fn ? fn.apply(this, arguments) : undefined;
-    if (e && e.preventDefault) { e.preventDefault(); e.stopPropagation(); }
-    openPaywall(feature);
-  };
-}
-function ProGate({ feature, children, badge, className, size }) {
-  const pro = useNeedtPro();
-  if (pro) return (
-    <span className={"pro-gate is-pro" + (className ? " " + className : "")} data-pro-gate={feature}>
-      {children}{badge === false ? null : <ProBadge size="sm" title={feature + " — included in Pro"} />}
-    </span>);
-  const stop = (e) => { e.preventDefault(); e.stopPropagation(); openPaywall(feature); };
-  return (
-    <span className={"pro-gate is-locked" + (className ? " " + className : "")} data-pro-gate={feature} data-pro-locked=""
-      title={"Unlock " + feature + " with Pro"} onClickCapture={stop}
-      onKeyDownCapture={(e) => { if (e.key === "Enter" || e.key === " ") stop(e); }}>
-      {children}<ProBadge size={size || "sm"} locked />
-    </span>);
-}
 const PW_UPSELL_KEY = "needt.upsellDismissed.";
-const pwUpsellGone = (id) => pwRaw(PW_UPSELL_KEY + id) === "1";
 function ProUpsell({ id, title, line, cta, feature, className }) {
   pwEnsureCss();
   const pro = useNeedtPro();
@@ -370,4 +332,4 @@ function PwPromoCard() {
   );
 }
 
-Object.assign(window, { ProBadge, ProGate, ProUpsell, ProLimit, proGuard, pwUpsellGone, PwPromoCard, openPaywall, closePaywall, PwProStamp, pwEnsureCss });
+Object.assign(window, { ProBadge, ProUpsell, ProLimit, PwPromoCard, openPaywall, closePaywall, pwEnsureCss });

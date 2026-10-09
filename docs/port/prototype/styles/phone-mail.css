@@ -37,7 +37,6 @@
 .pml-file { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 16px; background: var(--v2p-raise); color: var(--v2p-ink-2);
   font: 500 13px/1 var(--font-sans); }
 .pml-as-task { display: flex; align-items: center; gap: 6px; margin: 14px 2px 10px; font: 400 13px/18px var(--font-sans); color: var(--v2p-ink-2); }
-.pml-reply { padding: 0; }
 .pml-down { display: flex; align-items: center; gap: 8px; margin: 10px 2px 0; font: 400 13px/18px var(--font-sans); color: var(--v2p-ink-2); }
 .pml-sheet .pk-sheet-foot .pml-act-archive { flex: none; width: 54px; padding: 0; }
 
@@ -48,7 +47,6 @@
 .pml-view.is-on { background: var(--ppl-on); color: var(--ppl-on-ink); box-shadow: var(--ppl-on-edge); }
 .pml-view-n { font-variant-numeric: tabular-nums; opacity: 0.7; }
 .pml-view:focus-visible { outline: 2px solid var(--v2p-lav); outline-offset: 2px; }
-.pml-fwd-form { display: flex; flex-direction: column; gap: 16px; padding-top: 4px; }
 .pml-err { margin: -8px 4px 0; font: 400 13px/17px var(--font-sans); color: var(--v2p-alert); }
 .pml-quote { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; }
 .pml-quote-from { font: 500 13px/17px var(--font-sans); color: var(--v2p-ink-2); }

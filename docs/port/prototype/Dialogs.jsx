@@ -1,4 +1,4 @@
-const { Dialog, FormRow, FormGroup, Input, Textarea, Select, Checkbox, Switch, RadioGroup, Button, IconButton, Chip, Icon, Tooltip, Popover, DatePicker, StatusDot, Menu, MenuItem, MenuLabel } = window.NeedtDesignSystem_25d3c8;
+const { Switch, Icon, Menu, MenuItem, MenuLabel } = window.NeedtDesignSystem_25d3c8;
 
 /* THE TASK EDITOR (08.10.26 rebuild) — one compact card, like Things / Linear.
  *
@@ -6,9 +6,10 @@ const { Dialog, FormRow, FormGroup, Input, Textarea, Select, Checkbox, Switch, R
  * saves, long titles wrap), the ⋯ menu and close. Under the title one row of
  * chips — Date · Duration · Project · Priority · Labels · Repeat (and Who, only
  * when someone else holds the task). Empty chips read "+ Date"; each one opens
- * a small popover editor. Then the notes (a format bar appears only over a
- * selection), the subtasks (inline add, drag to reorder, ring "1/3"), and the
- * two-minute first step. The planner's knobs (placement, minimum work block,
+ * a small popover editor. Then the notes (plain text, `notes` — the same
+ * field and format as the phone), the subtasks (inline add, drag to reorder,
+ * ring "1/3"), and the two-minute first step (`entry`, a one-line field; with
+ * text in it, Start focus runs on it). The planner's knobs (placement, minimum work block,
  * deadline, hours) live under ⋯ → Scheduling…, which opens an inline section;
  * when anything there is not the default a one-line summary chip sits under
  * the chips. Task / Event / Document is not a tab row any more: ⋯ → Convert to…
@@ -27,12 +28,11 @@ const TD_REPEAT = [[null, "Never"], ["daily", "Every day"], ["weekdays", "Every 
 const TD_CHUNK = [null, 15, 25, 30, 45, 60, 90];
 const TD_HOURS = [["work", "Work hours"], ["personal", "Personal"], ["any", "Any time"]];
 const TD_LABELS = ["Deep work", "Quick win", "Errand", "Call", "Waiting"];
-const TD_STATUS = { todo: "To do", in_progress: "In progress", review: "In review", done: "Done" };
 const TD_DOW = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 const TD_MON_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const TD_DRAFT = {
   id: "draft", title: "Draft the launch brief", projectId: "ops", dueDate: "2026-09-04", estimatedMinutes: 90, priority: "high",
-  description: "Last month’s numbers, the two decisions we changed, and what the factory needs by Friday.",
+  notes: "Last month’s numbers, the two decisions we changed, and what the factory needs by Friday.",
   TaskPart: [{ id: "d.1", title: "Pull last month’s numbers", done: true }, { id: "d.2", title: "Write the draft", done: false }, { id: "d.3", title: "Send it for review", done: false }]
 };
 
@@ -76,22 +76,8 @@ function tdProjects() {
   try { if (window.projectStore) (window.projectStore.get().list || []).forEach(add); } catch (e) {}
   return out;
 }
-/* Notes are a small subset of HTML (bold, italic, strike, link, lists). */
-const TD_TAGS = { B: 1, STRONG: 1, I: 1, EM: 1, S: 1, STRIKE: 1, U: 1, A: 1, UL: 1, OL: 1, LI: 1, BR: 1, DIV: 1, P: 1 };
-function tdClean(html) {
-  const box = document.createElement("div"); box.innerHTML = html || "";
-  (function walk(n) {
-    Array.from(n.childNodes).forEach((c) => {
-      if (c.nodeType === 3) return;
-      if (c.nodeType !== 1 || !TD_TAGS[c.tagName]) { if (c.nodeType === 1) { walk(c); while (c.firstChild) n.insertBefore(c.firstChild, c); } n.removeChild(c); return; }
-      Array.from(c.attributes).forEach((a) => { if (!(c.tagName === "A" && a.name === "href")) c.removeAttribute(a.name); });
-      walk(c);
-    });
-  })(box);
-  return box.innerHTML;
-}
-const tdEsc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-const tdNoteHtml = (t) => { const v = t.description != null ? t.description : t.note; if (!v) return ""; return /<[a-z][\s\S]*>/i.test(v) ? tdClean(v) : tdEsc(v).replace(/\n/g, "<br>"); };
+/* Notes are plain text (`notes`, Data.js NEEDT.notesText reads older HTML). */
+const tdNotes = (t) => (t && t.notes) || "";
 
 /* The ring + "1/3" (same drawing as the task row's counter). */
 function TdRing({ done, total }) {
@@ -162,7 +148,8 @@ function TaskDialog({ open, onClose, task, onChange }) {
   const [parts, setParts] = React.useState(t.TaskPart || []);
   const [pop, setPop] = React.useState(null);          // { key, x, y }
   const [menu, setMenu] = React.useState(false);
-  const [bar, setBar] = React.useState(null);          // selection toolbar { x, y }
+  const [notes, setNotes] = React.useState(tdNotes(t));
+  const [entry, setEntry] = React.useState(t.entry || "");
   const [q, setQ] = React.useState("");
   const [drag, setDrag] = React.useState(null);        // { from, over }
   const [focusId, setFocusId] = React.useState(null);
@@ -242,8 +229,8 @@ function TaskDialog({ open, onClose, task, onChange }) {
     const src = task || draft;
     setTitle(src.title || "");
     setParts(src.TaskPart || []);
-    setPop(null); setMenu(false); setBar(null); setSubTick(null);
-    if (notesRef.current) notesRef.current.innerHTML = tdNoteHtml(src);
+    setPop(null); setMenu(false); setSubTick(null);
+    setNotes(tdNotes(src)); setEntry(src.entry || "");
   }, [tid, open]);
   React.useEffect(() => {
     if (focusId == null) return;
@@ -270,7 +257,7 @@ function TaskDialog({ open, onClose, task, onChange }) {
     const h = (e) => {
       if (e.key === "Escape") {
         e.stopPropagation(); e.preventDefault();
-        if (pop) setPop(null); else if (menu) setMenu(false); else if (bar) setBar(null); else onClose && onClose();
+        if (pop) setPop(null); else if (menu) setMenu(false); else onClose && onClose();
       } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.stopPropagation(); e.preventDefault(); toggleDone();
       }
@@ -289,18 +276,11 @@ function TaskDialog({ open, onClose, task, onChange }) {
     document.addEventListener("mousedown", h, true);
     return () => document.removeEventListener("mousedown", h, true);
   }, [pop, menu]);
-  /* The format bar follows a selection inside the notes, and only then. */
-  React.useEffect(() => {
-    if (!open) return;
-    const h = () => {
-      const s = window.getSelection(), n = notesRef.current, c = cardRef.current;
-      if (!s || !n || !c || s.isCollapsed || !s.rangeCount || !n.contains(s.anchorNode)) { setBar(null); return; }
-      const r = s.getRangeAt(0).getBoundingClientRect(), cr = c.getBoundingClientRect();
-      setBar({ x: r.left + r.width / 2 - cr.left, y: r.top - cr.top });
-    };
-    document.addEventListener("selectionchange", h);
-    return () => document.removeEventListener("selectionchange", h);
-  }, [open]);
+  /* The notes field grows with its text. */
+  React.useLayoutEffect(() => {
+    const n = notesRef.current; if (!n) return;
+    n.style.height = "auto"; n.style.height = n.scrollHeight + "px";
+  }, [notes, open]);
 
   if (!open) return null;
 
@@ -336,7 +316,7 @@ function TaskDialog({ open, onClose, task, onChange }) {
     hours !== "work" ? (TD_HOURS.find((h) => h[0] === hours) || [0, hours])[1].toLowerCase() : null
   ].filter(Boolean).join(" · ");
   const firstOpen = parts.filter((p) => !p.done)[0];
-  const wayIn = t.entry || (firstOpen && firstOpen.title) || null;
+  const wayIn = entry.trim() || (firstOpen && firstOpen.title) || null;
   const created = t.createdAt ? tdShort(N.toDate(t.createdAt)) : null;
   const updated = t.updatedAt ? tdAgo(t.updatedAt) : null;
   const inProgress = t.status === "in_progress" && !t.done;
@@ -378,16 +358,8 @@ function TaskDialog({ open, onClose, task, onChange }) {
     emit(Object.assign(N.placeAt(t, t.dueDate || tdIso(tdToday()), +m[1] + +m[2] / 60), { auto: false }));
   };
   const setFixed = (v) => emit(v ? { isFixed: true, auto: false } : { isFixed: false, auto: true });
-  const noteInput = () => {
-    const n = notesRef.current; if (!n) return;
-    const empty = !n.textContent.trim() && !n.querySelector("li");
-    emit({ description: empty ? null : tdClean(n.innerHTML) });
-  };
-  const fmt = (cmd) => {
-    if (cmd === "createLink") { const url = window.prompt("Link", "https://"); if (!url) return; document.execCommand("createLink", false, url); }
-    else document.execCommand(cmd, false, null);
-    noteInput();
-  };
+  const editNotes = (v) => { setNotes(v); emit({ notes: v.trim() ? v : null }); };
+  const editEntry = (v) => { setEntry(v); emit({ entry: v.trim() ? v : null }); };
   const app = window.__app || {};
   const quietClose = () => { if (snap.current) snap.current.quiet = true; onClose && onClose(); };
   const restore = (id) => { if (app.updateTask) app.updateTask(id, { trashedAt: null }); };
@@ -412,7 +384,7 @@ function TaskDialog({ open, onClose, task, onChange }) {
     toDoc: () => {
       setMenu(false);
       if (!task || !window.docs) return;
-      const text = notesRef.current ? notesRef.current.innerText.trim() : "";
+      const text = notes.trim();
       const d = window.docs.create({ title: t.title, projectId: t.projectId || null, hue: proj ? proj.color : null, body: text ? [{ id: "b1", kind: "p", text: text }] : [] });
       onChange(N.trashTask(task)); quietClose();
       window.toast && window.toast("Converted to a document", { undo: () => { window.docs.remove(d.id); restore(task.id); } });
@@ -673,8 +645,8 @@ function TaskDialog({ open, onClose, task, onChange }) {
             </section>
           ) : null}
 
-          <div ref={notesRef} className="tdc-notes" contentEditable suppressContentEditableWarning data-placeholder="Add notes"
-            role="textbox" aria-multiline="true" aria-label="Notes" onInput={noteInput} />
+          <textarea ref={notesRef} className="tdc-notes" rows={1} value={notes} placeholder="Add notes" aria-label="Notes"
+            onChange={(e) => editNotes(e.target.value)} />
 
           <section className="tdc-subs" aria-label="Subtasks">
             {parts.length ? (
@@ -712,16 +684,16 @@ function TaskDialog({ open, onClose, task, onChange }) {
             </label>
           </section>
 
-          {wayIn && !t.done ? (
-            <button type="button" className="tdc-step" title="Start a focus session on the first step"
-              onClick={() => { if (task && app.setFocus) { app.setFocus({ intention: wayIn, planned: t.estimatedMinutes || 25, elapsed: 0, taskId: t.id }); onClose && onClose(); } }}>
-              <span className="tdc-step-arrow"><Icon name="arrow-right" size={14} /></span>
-              <span className="tdc-step-label">First step</span>
-              <span className="tdc-step-text">{wayIn}</span>
-              <span className="tdc-step-go">Start focus</span>
-              <span className="tdc-step-cost">2 min</span>
-            </button>
-          ) : null}
+          <div className="tdc-step" data-tdc-step="">
+            <span className="tdc-step-arrow" aria-hidden="true"><Icon name="arrow-right" size={14} /></span>
+            <label className="tdc-step-label" htmlFor="tdc-entry">First step</label>
+            <input id="tdc-entry" className="tdc-step-input" value={entry} placeholder={(firstOpen && firstOpen.title) || "The smallest thing that counts as starting"}
+              aria-label="First step" onChange={(e) => editEntry(e.target.value)} />
+            {wayIn && !t.done && task ? (
+              <button type="button" className="nx-btn nx-btn-text nx-btn-sm tdc-step-go" title="Start a focus session on the first step"
+                onClick={() => { if (app.setFocus) { app.setFocus({ intention: wayIn, planned: t.estimatedMinutes || 25, elapsed: 0, taskId: t.id }); onClose && onClose(); } }}>Start focus</button>
+            ) : <span className="tdc-step-cost">2 min</span>}
+          </div>
 
           {attachments.length ? (
             <div className="tdc-files">
@@ -743,42 +715,8 @@ function TaskDialog({ open, onClose, task, onChange }) {
         {pop && popBody ? (
           <div ref={popRef} className={"tdc-pop is-" + pop.key} role="dialog" aria-label={pop.key} style={anchorStyle(pop)}>{popBody}</div>
         ) : null}
-        {bar ? (
-          <div className="tdc-bar" role="toolbar" aria-label="Format" style={anchorStyle(bar)} onMouseDown={(e) => e.preventDefault()}>
-            {[["bold", "bold"], ["italic", "italic"], ["strikeThrough", "strikethrough"], ["insertUnorderedList", "list"], ["createLink", "link"]].map(([cmd, glyph]) => (
-              <button key={cmd} type="button" className="tdc-icon-btn" aria-label={glyph} onClick={() => fmt(cmd)}><Icon name={glyph} size={14} /></button>
-            ))}
-          </div>
-        ) : null}
       </div>
     </div>
-  );
-}
-
-function SettingsDialog({ open, onClose, theme, onTheme }) {
-  const [font, setFont] = React.useState("inter");
-  return (
-    <Dialog open={open} onClose={onClose} title="Settings" subtitle="Appearance and scheduling"
-      footer={<><button type="button" className="nx-btn nx-btn-text" onClick={onClose}>Cancel</button><button type="button" className="nx-btn nx-btn-primary" onClick={onClose}>Save</button></>}>
-      <div className="docs-td-settings">
-        <FormGroup title="Appearance">
-          <FormRow label="Theme">
-            <RadioGroup horizontal name="theme-setting" value={theme} onChange={onTheme}
-              items={[{ value: "system", label: "System" }, { value: "paper", label: "Paper" }, { value: "warm", label: "Warm" }, { value: "dim", label: "Dim" }, { value: "dark", label: "Dark" }]} />
-          </FormRow>
-          <FormRow label="Interface font">
-            <Select value={font} onChange={setFont} options={[{ value: "inter", label: "Inter" }, { value: "system", label: "System" }]} />
-          </FormRow>
-          <FormRow label="Document width"><Input suffix="px" defaultValue="844" style={{ width: 120 }} /></FormRow>
-        </FormGroup>
-        <FormGroup title="Scheduling" style={{ marginTop: 21 }}>
-          <FormRow label="Working hours"><span className="docs-td-hours"><Input type="time" defaultValue="09:00" style={{ width: 108 }} /><span className="docs-td-hours-to">to</span><Input type="time" defaultValue="18:00" style={{ width: 108 }} /></span></FormRow>
-          <FormRow label="Auto-schedule"><Switch checked onChange={() => {}} /></FormRow>
-          <FormRow label="Protect focus" hint="The scheduler will not place meetings inside a focus block."><Switch checked onChange={() => {}} /></FormRow>
-          <FormRow label="Week starts on"><Select value="mon" options={[{ value: "mon", label: "Monday" }, { value: "sun", label: "Sunday" }]} /></FormRow>
-        </FormGroup>
-      </div>
-    </Dialog>
   );
 }
 
@@ -827,4 +765,4 @@ function CommandPalette({ open, onClose, onScreen, tasks }) {
   );
 }
 
-Object.assign(window, { TaskDialog, SettingsDialog, CommandPalette });
+Object.assign(window, { TaskDialog, CommandPalette });
