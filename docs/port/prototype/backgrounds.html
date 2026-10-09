@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Needt Backgrounds</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="themes.css?v=1008h">
+<script src="cssvar.js?v=1007n"></script>
+<script type="text/babel" src="scenes.jsx?v=1008h"></script>
+<style>
+@font-face{font-family:"Exposure VAR";src:url("ExposureTrialVAR.woff2") format("woff2-variations"),url("ExposureTrialVAR.woff2") format("woff2");font-display:block}
+:root{
+  --page:#f6f6f4;--ink:#141414;--ink2:#5f5f5a;--ink3:#9a9a94;--line:rgba(0,0,0,.08);
+  --chip:#fff;--chipOn:#141414;--chipOnInk:#fff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--page)}
+body{background:var(--page);color:var(--ink);font:15px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:0 16px 120px}
+.wrap{max-width:1000px;margin:0 auto}
+.top{padding:72px 0 36px}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.top h1{font-size:44px;line-height:1.08;letter-spacing:-.025em;font-weight:700;margin-top:10px}
+.top h1 span{color:var(--ink3);font-weight:600}
+.top p{font-size:17px;color:var(--ink2);margin-top:14px;max-width:640px}
+.top p b{color:var(--ink);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.legend a{font-size:13px;font-weight:500;color:var(--ink2);text-decoration:none;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px 6px 8px;display:inline-flex;gap:8px;align-items:center}
+.legend a i{font-style:normal;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;min-width:20px;padding:0 3px;height:20px;border-radius:999px;background:#f0f0ec;display:grid;place-items:center;font-size:11px}
+.legend a:hover{color:var(--ink)}
+
+.opt{padding:56px 0 0}
+.opt-head{display:grid;grid-template-columns:auto 1fr;gap:6px 22px;align-items:start;margin-bottom:18px}
+.num{font-size:64px;line-height:.86;font-weight:700;letter-spacing:-.05em;font-variant-numeric:tabular-nums;grid-row:span 2}
+.opt-head h2{font-size:24px;letter-spacing:-.015em;font-weight:650;line-height:1.15}
+.opt-head h2 em{font-style:normal;font-size:12px;font-weight:600;color:var(--ink3);margin-left:8px;letter-spacing:.02em;vertical-align:3px;border:1px solid var(--line);padding:2px 8px;border-radius:999px}
+.opt-head p{color:var(--ink2);font-size:15px;max-width:640px}
+.controls{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px}
+.lab{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-right:2px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--chip);color:var(--ink2);font:500 13px/1 Inter,system-ui,sans-serif;padding:7px 12px 7px 8px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.chip:hover{color:var(--ink);border-color:rgba(0,0,0,.16)}
+.chip .sw{display:inline-flex}
+.chip .sw b{width:12px;height:12px;border-radius:50%;margin-left:-4px;box-shadow:0 0 0 1.5px #fff}
+.chip .sw b:first-child{margin-left:0}
+.chip[aria-pressed=true]{background:var(--chipOn);color:var(--chipOnInk);border-color:var(--chipOn)}
+.chip[aria-pressed=true] .sw b{box-shadow:0 0 0 1.5px var(--chipOn)}
+.chip small{font-size:11px;opacity:.6;font-weight:500}
+.sp{flex:1}
+.tog{appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink2);font:500 13px/1 Inter,system-ui,sans-serif;padding:5px 6px 5px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:10px;cursor:pointer}
+.tog .track{width:34px;height:20px;border-radius:999px;background:#e4e4df;position:relative;transition:background .2s}
+.tog .track::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .2s}
+.tog[aria-pressed=true]{color:var(--ink)}
+.tog[aria-pressed=true] .track{background:#141414}
+.tog[aria-pressed=true] .track::after{transform:translateX(14px)}
+
+/* ---------- tile ---------- */
+.tile{position:relative;width:100%;aspect-ratio:16/10;border-radius:22px;overflow:hidden;isolation:isolate;background:#ddd;
+  box-shadow:0 0 0 1px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04),0 20px 50px -20px rgba(0,0,0,.18)}
+.stage{position:absolute;inset:0;z-index:0}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage canvas.lo{image-rendering:auto}
+.grain{position:absolute;inset:-60px;z-index:1;pointer-events:none;opacity:.10;mix-blend-mode:overlay;background-size:180px 180px;animation:grain 1s steps(6) infinite}
+.tile.dark .grain{opacity:.11}
+.grain.strong{opacity:.22;mix-blend-mode:soft-light}
+.tile.dark .grain.strong{opacity:.28}
+.grain.none{display:none}
+@keyframes grain{0%{transform:translate(0,0)}17%{transform:translate(-23px,11px)}33%{transform:translate(17px,-29px)}50%{transform:translate(-9px,31px)}67%{transform:translate(29px,7px)}83%{transform:translate(-31px,-13px)}100%{transform:translate(0,0)}}
+
+/* frame chrome: faux window bar dots */
+.chrome{position:absolute;top:16px;left:18px;z-index:3;display:flex;gap:7px}
+.chrome i{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.tile.dark .chrome i{background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+
+/* ---------- Craft glass ---------- */
+.glass{
+  background:linear-gradient(180deg,rgba(255,255,255,.6) 0%,rgba(255,255,255,.8) 100%);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  border-radius:26px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.06),0 2px 6px rgba(0,0,0,.05),0 24px 60px -12px rgba(30,20,60,.18);
+}
+.tile.dark .glass{
+  background:linear-gradient(180deg,rgba(28,28,32,.55) 0%,rgba(22,22,26,.74) 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),0 0 0 1px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.25),0 24px 60px -12px rgba(0,0,0,.55);
+}
+.card{position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%);width:340px;padding:30px 28px 22px;color:#141414;text-align:center}
+.tile.dark .card{color:#f4f4f2}
+.wm{font-family:"Exposure VAR",Inter,serif;font-size:44px;line-height:1;letter-spacing:-.01em;font-variation-settings:"EXPO" 0}
+.card h3{font-size:19px;font-weight:650;letter-spacing:-.01em;margin-top:14px}
+.card .sub{font-size:13.5px;color:rgba(20,20,20,.55);margin-top:3px}
+.tile.dark .card .sub{color:rgba(255,255,255,.55)}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;height:42px;border-radius:13px;font:550 14px/1 Inter,system-ui,sans-serif;border:0;margin-top:9px;cursor:default}
+.btn svg{width:16px;height:16px}
+.btn.sec{background:rgba(255,255,255,.75);color:#141414;box-shadow:inset 0 0 0 1px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04)}
+.tile.dark .btn.sec{background:rgba(255,255,255,.08);color:#f4f4f2;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)}
+.card .first{margin-top:20px}
+.or{display:flex;align-items:center;gap:10px;margin:14px 0 4px;font-size:12px;color:rgba(20,20,20,.4)}
+.or::before,.or::after{content:"";flex:1;height:1px;background:rgba(0,0,0,.08)}
+.tile.dark .or{color:rgba(255,255,255,.4)}
+.tile.dark .or::before,.tile.dark .or::after{background:rgba(255,255,255,.1)}
+.field{height:42px;border-radius:13px;background:rgba(255,255,255,.65);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);text-align:left;padding:0 14px;display:flex;align-items:center;font-size:14px;color:rgba(20,20,20,.38);margin-top:9px}
+.tile.dark .field{background:rgba(0,0,0,.25);box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);color:rgba(255,255,255,.35)}
+.btn.pri{background:#141414;color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.12)}
+.tile.dark .btn.pri{background:#f4f4f2;color:#141414}
+.legal{font-size:11.5px;color:rgba(20,20,20,.42);margin-top:14px}
+.tile.dark .legal{color:rgba(255,255,255,.38)}
+
+.promo{position:absolute;z-index:4;right:20px;bottom:20px;display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border-radius:20px;color:#141414;max-width:330px}
+.tile.dark .promo{color:#f4f4f2}
+.pro{font:700 10.5px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;background:#141414;color:#fff;padding:5px 7px;border-radius:7px}
+.tile.dark .pro{background:#f4f4f2;color:#141414}
+.promo .t{font-size:13px;line-height:1.3}
+.promo .t b{font-weight:650;display:block}
+.promo .t span{color:rgba(20,20,20,.55);font-size:12px}
+.tile.dark .promo .t span{color:rgba(255,255,255,.5)}
+.promo .go{font:600 12px/1 Inter,system-ui,sans-serif;background:rgba(255,255,255,.8);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);padding:8px 11px;border-radius:11px;white-space:nowrap}
+.tile.dark .promo .go{background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+
+/* liquid blobs (DOM) */
+.lq{position:absolute;inset:0;overflow:hidden}
+.lq .orb{position:absolute;left:0;top:0;border-radius:50%;will-change:transform}
+.lq .frost{position:absolute;inset:0;-webkit-backdrop-filter:blur(22px) saturate(1.25);backdrop-filter:blur(22px) saturate(1.25);
+  background:linear-gradient(160deg,rgba(255,255,255,.28),rgba(255,255,255,.06) 45%,rgba(255,255,255,.18))}
+.tile.dark .lq .frost{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,0) 45%,rgba(255,255,255,.04))}
+
+.foot{margin-top:72px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink3);font-size:13px}
+
+@media (max-width:720px){
+  .top{padding:40px 0 20px}.top h1{font-size:32px}
+  .num{font-size:44px}
+  .tile{aspect-ratio:auto;height:620px}
+  .promo{left:12px;right:12px;bottom:12px;max-width:none}
+}
+@media (prefers-reduced-motion:reduce){.grain{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Needt · Special screens</div>
+    <h1>Pick a background <span>— Needt special screens</span></h1>
+    <p><b>Say the number you like.</b> Each option is shown live behind the real sign-in glass card and a PRO promo, so you judge background + glass together. Try the mood chips (the colour shifts a little day to day) and the Dark switch.</p>
+    <nav class="legend" id="legend"></nav>
+  </header>
+  <main id="opts"></main>
+  <div class="foot">Login · Onboarding · Paywall · Connections · Promo cards — one background family for all special screens. Everything is generated in code, no images.</div>
+</div>
+
+<template id="tileTpl">
+  <div class="tile">
+    <div class="stage"></div>
+    <div class="grain"></div>
+    <div class="chrome"><i></i><i></i><i></i></div>
+    <div class="card glass">
+      <div class="wm">Needt</div>
+      <h3>Welcome back</h3>
+      <div class="sub">Sign in to pick up where you left off.</div>
+      <div class="btn sec first"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 12.6c-.02-2.2 1.8-3.26 1.88-3.31-1.03-1.5-2.62-1.7-3.18-1.73-1.35-.14-2.64.8-3.33.8-.69 0-1.74-.78-2.86-.76-1.47.02-2.83.86-3.59 2.17-1.53 2.66-.39 6.6 1.1 8.76.73 1.06 1.6 2.24 2.73 2.2 1.1-.05 1.51-.71 2.84-.71 1.32 0 1.7.71 2.86.69 1.18-.02 1.93-1.07 2.65-2.13.84-1.22 1.18-2.41 1.2-2.47-.03-.01-2.3-.88-2.3-3.51zM14.2 6.13c.6-.74 1.01-1.75.9-2.77-.87.04-1.93.58-2.55 1.31-.56.65-1.05 1.69-.92 2.68.97.08 1.96-.49 2.57-1.22z"/></svg>Continue with Apple</div>
+      <div class="btn sec"><svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h5.9a5.05 5.05 0 0 1-2.2 3.3v2.75h3.55c2.08-1.92 3.25-4.74 3.25-8.08z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.55-2.75c-.98.66-2.24 1.06-3.73 1.06-2.87 0-5.3-1.94-6.16-4.54H2.18v2.84A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.84 14.1A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.44.34-2.1V7.06H2.18A11 11 0 0 0 1 12c0 1.77.43 3.45 1.18 4.94l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.96 10.96 0 0 0 12 1 11 11 0 0 0 2.18 7.06l3.66 2.84C6.7 7.3 9.14 5.38 12 5.38z"/></svg>Continue with Google</div>
+      <div class="or">or</div>
+      <div class="field">you@email.com</div>
+      <div class="btn pri">Continue</div>
+      <div class="legal">By continuing you agree to the Terms &amp; Privacy.</div>
+    </div>
+    <div class="promo glass">
+      <span class="pro">PRO</span>
+      <div class="t"><b>Needt PRO</b><span>Unlimited AI planning &amp; sync</span></div>
+      <span class="go">Try free</span>
+    </div>
+  </div>
+</template>
+
+<script>
+(function(){
+"use strict";
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DOY = Math.floor((Date.now() - new Date(new Date().getFullYear(),0,0)) / 864e5);
+const TODAY = DOY % 3;
+
+/* ---------- utils ---------- */
+const hex = h => { h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; };
+const clamp = (v,a,b)=>v<a?a:v>b?b:v;
+const lerp = (a,b,t)=>a+(b-a)*t;
+const a0 = h => 'rgba('+hex(h).join(',')+',0)';
+function mulberry(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+// sRGB <-> linear for nicer mixing
+const S2L = new Float32Array(256); for(let i=0;i<256;i++){const c=i/255;S2L[i]=c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);}
+const L2S = new Uint8ClampedArray(4096); for(let i=0;i<4096;i++){const c=i/4095;L2S[i]=Math.round(255*(c<=.0031308?c*12.92:1.055*Math.pow(c,1/2.4)-.055));}
+const lin = h => hex(h).map(v=>S2L[v]);
+const toS = v => L2S[(clamp(v,0,1)*4095)|0];
+
+// grain texture
+const GRAIN = (()=>{const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');const d=x.createImageData(180,180);const r=mulberry(7);
+  for(let i=0;i<d.data.length;i+=4){const v=(r()*255)|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255;}x.putImageData(d,0,0);return c.toDataURL();})();
+
+/* =====================================================================
+   1 · AURORA MESH — inverse-distance mesh of 5 drifting colour fields,
+   domain-warped, mixed in linear light, rendered low-res & upscaled.
+   ===================================================================== */
+function Aurora(stage){
+  const cv=document.createElement('canvas');cv.className='lo';stage.appendChild(cv);
+  const ctx=cv.getContext('2d');let W,H,img,pts=[];
+  const seeds=[[.18,.22,.9,.31,0],[.82,.18,.63,.27,1.7],[.72,.82,.74,.35,3.1],[.2,.8,.55,.22,4.4],[.5,.5,.47,.4,2.2]];
+  return {
+    resize(w,h){W=Math.max(48,Math.round(w/7));H=Math.max(30,Math.round(h/7));cv.width=W;cv.height=H;img=ctx.createImageData(W,H);},
+    palette(p){pts=p.cols.map(lin);this.base=lin(p.base);this.dark=p.dark;},
+    draw(t){
+      const d=img.data,s=t*.00006, n=pts.length;
+      const px=new Float32Array(n),py=new Float32Array(n);
+      for(let i=0;i<n;i++){const k=seeds[i%5];px[i]=k[0]+.22*Math.sin(s*k[2]*6+k[4])+.08*Math.sin(s*13*k[3]+k[4]*2);py[i]=k[1]+.2*Math.cos(s*k[3]*7+k[4]*1.3)+.07*Math.sin(s*11*k[2]);}
+      const b=this.base, bw=this.dark?.5:.35;
+      let o=0;
+      for(let y=0;y<H;y++){const fy=y/H;
+        for(let x=0;x<W;x++){const fx=x/W;
+          const wx=fx+.07*Math.sin(fy*3.1+s*9)+.03*Math.sin(fy*7.3-s*14), wy=fy+.07*Math.cos(fx*2.7-s*8)+.03*Math.cos(fx*6.1+s*12);
+          let r=b[0]*bw,g=b[1]*bw,bb=b[2]*bw,ws=bw;
+          for(let i=0;i<n;i++){const dx=(wx-px[i])*1.6,dy=wy-py[i];const dd=dx*dx+dy*dy+.02;const w=1/(dd*Math.sqrt(dd));r+=pts[i][0]*w;g+=pts[i][1]*w;bb+=pts[i][2]*w;ws+=w;}
+          d[o]=toS(r/ws);d[o+1]=toS(g/ws);d[o+2]=toS(bb/ws);d[o+3]=255;o+=4;}}
+      ctx.putImageData(img,0,0);
+    }
+  };
+}
+
+/* =====================================================================
+   2 · GRAIN GRADIENT — calm 3-stop diagonal gradient + soft moving bloom.
+   ===================================================================== */
+function GrainGrad(stage){
+  const cv=document.createElement('canvas');cv.className='lo';stage.appendChild(cv);
+  const ctx=cv.getContext('2d');let W,H,img,P;
+  return {
+    resize(w,h){W=Math.max(48,Math.round(w/6));H=Math.max(30,Math.round(h/6));cv.width=W;cv.height=H;img=ctx.createImageData(W,H);},
+    palette(p){P={a:lin(p.cols[0]),b:lin(p.cols[1]),c:lin(p.cols[2]),bl:lin(p.bloom),bl2:lin(p.bloom2||p.bloom),k:p.bloomK||1,dark:p.dark};},
+    draw(t){
+      const d=img.data,s=t*.0001;
+      const ang=.9+.12*Math.sin(s*1.3), ca=Math.cos(ang), sa=Math.sin(ang);
+      const bx=.32+.22*Math.sin(s*1.7), by=.3+.16*Math.cos(s*1.1);
+      const b2x=.78+.12*Math.cos(s*1.25+1), b2y=.78+.1*Math.sin(s*1.5);
+      const asp=W/H;
+      let o=0;
+      for(let y=0;y<H;y++){const fy=y/H;
+        for(let x=0;x<W;x++){const fx=x/W;
+          let u=(fx*ca*asp*.62+fy*sa)/(ca*asp*.62+sa); u=clamp(u+.05*Math.sin(fx*2.4+s*2),0,1);
+          let r,g,b;
+          if(u<.55){const k=u/.55,e=k*k*(3-2*k);r=lerp(P.a[0],P.b[0],e);g=lerp(P.a[1],P.b[1],e);b=lerp(P.a[2],P.b[2],e);}
+          else{const k=(u-.55)/.45,e=k*k*(3-2*k);r=lerp(P.b[0],P.c[0],e);g=lerp(P.b[1],P.c[1],e);b=lerp(P.b[2],P.c[2],e);}
+          const dx=(fx-bx)*asp,dy=fy-by;const L=Math.exp(-(dx*dx+dy*dy)/.09)*.55*P.k;
+          const dx2=(fx-b2x)*asp,dy2=fy-b2y;const L2=Math.exp(-(dx2*dx2+dy2*dy2)/.07)*.35*P.k;
+          if(P.dark){r+=P.bl[0]*L+P.bl2[0]*L2;g+=P.bl[1]*L+P.bl2[1]*L2;b+=P.bl[2]*L+P.bl2[2]*L2;}
+          else{r=lerp(r,P.bl[0],L);g=lerp(g,P.bl[1],L);b=lerp(b,P.bl[2],L);r=lerp(r,P.bl2[0],L2*.8);g=lerp(g,P.bl2[1],L2*.8);b=lerp(b,P.bl2[2],L2*.8);}
+          d[o]=toS(r);d[o+1]=toS(g);d[o+2]=toS(b);d[o+3]=255;o+=4;}}
+      ctx.putImageData(img,0,0);
+    }
+  };
+}
+
+/* =====================================================================
+   3 · PAPER COLLAGE — torn risograph paper cut-outs, floating + parallax.
+   ===================================================================== */
+function Paper(stage,tile){
+  const cv=document.createElement('canvas');stage.appendChild(cv);
+  const ctx=cv.getContext('2d');let W,H,dpr,P,bg,pieces=[];const mouse={x:0,y:0,tx:0,ty:0};
+  tile.addEventListener('pointermove',e=>{const r=tile.getBoundingClientRect();mouse.tx=(e.clientX-r.left)/r.width-.5;mouse.ty=(e.clientY-r.top)/r.height-.5;});
+  tile.addEventListener('pointerleave',()=>{mouse.tx=mouse.ty=0;});
+  // 1D smooth value noise
+  function noise1(seed){const r=mulberry(seed);const v=[];for(let i=0;i<1024;i++)v.push(r()*2-1);return x=>{const i=Math.floor(x),f=x-i,e=f*f*(3-2*f);return lerp(v[(i%1024+1024)%1024],v[((i+1)%1024+1024)%1024],e);};}
+  function outline(shape){ // dense points around a base shape, local coords
+    const pts=[];
+    if(shape.t==='circle'){const n=Math.max(90,Math.round(shape.r*2*Math.PI/3));for(let i=0;i<n;i++){const a=i/n*Math.PI*2;pts.push([Math.cos(a)*shape.r*(shape.sx||1),Math.sin(a)*shape.r]);}}
+    else if(shape.t==='rect'){const {w,h}=shape;const per=2*(w+h),n=Math.round(per/3);for(let i=0;i<n;i++){let d=i/n*per,x,y;if(d<w){x=d;y=0}else if(d<w+h){x=w;y=d-w}else if(d<2*w+h){x=w-(d-w-h);y=h}else{x=0;y=h-(d-2*w-h)}pts.push([x-w/2,y-h/2]);}}
+    else if(shape.t==='wave'){const {w,h,amp,freq,ph}=shape;const n=Math.round(w/3);
+      for(let i=0;i<=n;i++){const x=i/n*w;pts.push([x-w/2,-h/2+amp*Math.sin(x/w*Math.PI*2*freq+ph)]);}
+      const m=Math.round(h/3);for(let i=1;i<m;i++)pts.push([w/2,-h/2+i/m*h]);
+      for(let i=n;i>=0;i--){const x=i/n*w;pts.push([x-w/2,h/2+amp*.6*Math.sin(x/w*Math.PI*2*freq+ph+1.4)]);}
+      for(let i=m-1;i>0;i--)pts.push([-w/2,-h/2+i/m*h]);}
+    return pts;
+  }
+  function displace(pts,seed,base,rough){const n1=noise1(seed),n2=noise1(seed+11),n3=noise1(seed+23);const out=[];const N=pts.length;
+    for(let i=0;i<N;i++){const a=pts[(i-1+N)%N],b=pts[(i+1)%N];let nx=b[1]-a[1],ny=-(b[0]-a[0]);const l=Math.hypot(nx,ny)||1;nx/=l;ny/=l;
+      const s=i*1.0;const off=base+rough*(n1(s/40)*1.2+n2(s/6)*1.0+n3(s/1.4)*.7);out.push([pts[i][0]+nx*off,pts[i][1]+ny*off]);}
+    return out;}
+  function polyPath(c,pts){c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.closePath();}
+  function sprite(def,ink,seed){
+    const base=outline(def.shape);
+    // orientation: make sure normals point outward (shoelace)
+    let A=0;for(let i=0;i<base.length;i++){const a=base[i],b=base[(i+1)%base.length];A+=a[0]*b[1]-b[0]*a[1];}
+    if(A<0)base.reverse();
+    const rim=displace(base,seed,4.2,2.6), inner=displace(base,seed+5,-1,1.1);
+    let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;for(const p of rim){minx=Math.min(minx,p[0]);maxx=Math.max(maxx,p[0]);miny=Math.min(miny,p[1]);maxy=Math.max(maxy,p[1]);}
+    const pad=40;const sw=Math.ceil((maxx-minx+pad*2)),sh=Math.ceil((maxy-miny+pad*2));
+    const c=document.createElement('canvas');c.width=Math.ceil(sw*dpr);c.height=Math.ceil(sh*dpr);const x=c.getContext('2d');
+    x.scale(dpr,dpr);x.translate(pad-minx,pad-miny);
+    // soft cast shadow
+    x.save();x.shadowColor=P.dark?'rgba(0,0,0,.55)':'rgba(40,30,10,.18)';x.shadowBlur=18;x.shadowOffsetY=7;x.fillStyle=P.rim;polyPath(x,rim);x.fill();x.restore();
+    x.save();x.shadowColor=P.dark?'rgba(0,0,0,.4)':'rgba(40,30,10,.12)';x.shadowBlur=2;x.shadowOffsetY=1;x.fillStyle=P.rim;polyPath(x,rim);x.fill();x.restore();
+    // rim fibre texture
+    x.save();polyPath(x,rim);x.clip();const r=mulberry(seed*3+1);x.fillStyle=P.dark?'rgba(0,0,0,.06)':'rgba(120,100,60,.07)';
+    for(let i=0;i<(sw*sh)/90;i++){x.fillRect(minx-pad+r()*sw,miny-pad+r()*sh,r()*2+.5,r()*.8+.3);}x.restore();
+    // ink layer
+    x.save();polyPath(x,inner);x.clip();x.fillStyle=ink;x.fillRect(minx-pad,miny-pad,sw,sh);
+    // riso texture: tonal mottling + dropouts + misregistered darker grain
+    const r2=mulberry(seed*7+3);
+    const nm=Math.max(2,Math.round((maxx-minx)*(maxy-miny)/9000));for(let i=0;i<nm;i++){const gx=minx+r2()*(maxx-minx),gy=miny+r2()*(maxy-miny),gr=(20+r2()*60)*Math.min(2,Math.sqrt((maxx-minx)/120));const g=x.createRadialGradient(gx,gy,0,gx,gy,gr);g.addColorStop(0,'rgba(255,255,255,'+(.05+r2()*.08)+')');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(gx-gr,gy-gr,gr*2,gr*2);}
+    x.fillStyle=P.dark?'rgba(30,28,24,.16)':'rgba(255,253,245,.38)';
+    for(let i=0;i<(sw*sh)/45;i++){const s=r2()*.9+.3;x.fillRect(minx-pad+r2()*sw,miny-pad+r2()*sh,s,s);}
+    x.fillStyle='rgba(0,0,0,.05)';
+    for(let i=0;i<(sw*sh)/60;i++){const s=r2()*1.1+.3;x.fillRect(minx-pad+r2()*sw,miny-pad+r2()*sh,s,s);}
+    x.restore();
+    // highlight on the top-left torn lip
+    return {c,ox:minx-pad,oy:miny-pad,w:sw,h:sh};
+  }
+  function build(){
+    if(!W||!P)return;
+    // paper background
+    bg=document.createElement('canvas');bg.width=Math.ceil(W*dpr);bg.height=Math.ceil(H*dpr);const b=bg.getContext('2d');b.scale(dpr,dpr);
+    b.fillStyle=P.paper;b.fillRect(0,0,W,H);
+    const vg=b.createRadialGradient(W*.5,H*.45,H*.2,W*.5,H*.5,W*.75);vg.addColorStop(0,'rgba(255,255,255,'+(P.dark?0:.25)+')');vg.addColorStop(1,P.dark?'rgba(0,0,0,.35)':'rgba(120,95,50,.10)');b.fillStyle=vg;b.fillRect(0,0,W,H);
+    const r=mulberry(99);
+    for(let i=0;i<W*H/22;i++){b.fillStyle=r()<.5?(P.dark?'rgba(255,255,255,.035)':'rgba(255,255,255,.35)'):(P.dark?'rgba(0,0,0,.18)':'rgba(110,90,50,.06)');b.fillRect(r()*W,r()*H,r()*1.6+.4,r()*1.6+.4);}
+    b.strokeStyle=P.dark?'rgba(255,255,255,.04)':'rgba(110,90,50,.07)';b.lineWidth=.6;
+    for(let i=0;i<220;i++){const x0=r()*W,y0=r()*H,a=r()*Math.PI*2,l=6+r()*22;b.beginPath();b.moveTo(x0,y0);b.quadraticCurveTo(x0+Math.cos(a+.6)*l*.5,y0+Math.sin(a+.6)*l*.5,x0+Math.cos(a)*l,y0+Math.sin(a)*l);b.stroke();}
+    const u=Math.min(W,H*1.6);
+    const C=P.inks; // [blue, yellow, coral]
+    const defs=[
+      {ink:C[1],x:.83,y:.2,rot:.0,depth:.6,shape:{t:'circle',r:u*.135}},
+      {ink:C[0],x:.5,y:.95,rot:-.04,depth:1,shape:{t:'wave',w:W*1.25,h:H*.36,amp:H*.05,freq:1.3,ph:.6}},
+      {ink:C[2],x:.11,y:.3,rot:-.2,depth:.8,shape:{t:'rect',w:u*.22,h:u*.29}},
+      {ink:C[0],x:.2,y:.14,rot:.3,depth:.4,shape:{t:'circle',r:u*.05}},
+      {ink:C[2],x:.9,y:.62,rot:.5,depth:.9,shape:{t:'rect',w:u*.2,h:u*.055}},
+      {ink:C[1],x:.06,y:.74,rot:.12,depth:1.2,shape:{t:'circle',r:u*.085,sx:1.25}},
+      {ink:C[2],x:.72,y:.08,rot:-.6,depth:.5,shape:{t:'rect',w:u*.07,h:u*.022}},
+      {ink:C[0],x:.95,y:.4,rot:.2,depth:.7,shape:{t:'rect',w:u*.06,h:u*.06}},
+      {ink:C[1],x:.33,y:.82,rot:-.35,depth:1.3,shape:{t:'rect',w:u*.09,h:u*.028}},
+    ];
+    pieces=defs.map((d,i)=>Object.assign({},d,{s:sprite(d,d.ink,17+i*31),ph:i*1.7,sp:.6+((i*37)%10)/14}));
+  }
+  return {
+    resize(w,h){W=w;H=h;dpr=Math.min(1.5,devicePixelRatio||1);cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);build();},
+    palette(p){P=p;build();},
+    draw(t){
+      if(!bg)return;
+      mouse.x+=(mouse.tx-mouse.x)*.08;mouse.y+=(mouse.ty-mouse.y)*.08;
+      ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(bg,0,0);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      const s=t*.001;
+      for(const p of pieces){
+        const fx=Math.sin(s*.35*p.sp+p.ph)*9*p.depth - mouse.x*26*p.depth;
+        const fy=Math.cos(s*.29*p.sp+p.ph*1.3)*7*p.depth - mouse.y*18*p.depth;
+        const rot=p.rot+Math.sin(s*.22*p.sp+p.ph)*.025;
+        ctx.save();ctx.translate(p.x*W+fx,p.y*H+fy);ctx.rotate(rot);ctx.drawImage(p.s.c,p.s.ox,p.s.oy,p.s.w,p.s.h);ctx.restore();
+      }
+    }
+  };
+}
+
+/* =====================================================================
+   4 · SOFT HALFTONE — morphing colour fields printed as round dots.
+   ===================================================================== */
+function Halftone(stage){
+  const cv=document.createElement('canvas');stage.appendChild(cv);
+  const ctx=cv.getContext('2d');let W,H,dpr,P,grid=[];const S=7.5;
+  function hash(i){let x=Math.imul(i^0x9e3779b9,0x85ebca6b);x^=x>>>13;x=Math.imul(x,0xc2b2ae35);x^=x>>>16;return (x>>>0)/4294967296;}
+  return {
+    resize(w,h){W=w;H=h;dpr=Math.min(2,devicePixelRatio||1);cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
+      grid=[];const rh=S*.866;let k=0;for(let y=-1,row=0;y<H/rh+1;y++,row++)for(let x=-1;x<W/S+1;x++){grid.push(x*S+(row&1?S/2:0),y*rh,hash(k++));}
+      grid=new Float32Array(grid);},
+    palette(p){P=p;},
+    draw(t){
+      const s=t*.00008;ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.fillStyle=P.bg;ctx.fillRect(0,0,W,H);
+      const asp=W/H;
+      const B=[
+        [.2+.1*Math.sin(s*5.1),.3+.12*Math.cos(s*4.3),.27+.04*Math.sin(s*6),0],
+        [.8+.09*Math.cos(s*4.6+1),.28+.12*Math.sin(s*3.7+2),.25+.04*Math.cos(s*5),1],
+        [.62+.14*Math.sin(s*3.3+3),.86+.08*Math.cos(s*4.9),.26+.03*Math.sin(s*4),2],
+        [.1+.06*Math.cos(s*3.9+4),.9+.06*Math.sin(s*5.6+1),.16,1],
+      ];
+      const nb=B.length,inv=B.map(b=>1/(b[2]*b[2]));
+      const paths=P.dots.map(()=>new Path2D());
+      const maxR=S*.4;
+      for(let i=0;i<grid.length;i+=3){
+        const x=grid[i],y=grid[i+1],h=grid[i+2];const fx=x/W*asp,fy=y/H;
+        let I=0,c0=0,c1=0,c2=0;
+        for(let j=0;j<nb;j++){const b=B[j];const dx=fx-b[0]*asp,dy=fy-b[1];const v=Math.exp(-(dx*dx+dy*dy)*inv[j]);I+=v;const v4=v*v*v*v;if(b[3]===0)c0+=v4;else if(b[3]===1)c1+=v4;else c2+=v4;}
+        I*=1+.1*Math.sin(fx*8+s*30)*Math.cos(fy*6-s*22);
+        if(I<.035)continue;
+        const r=maxR*Math.sqrt(Math.min(1,I*1.05));if(r<.5)continue;
+        const tot=c0+c1+c2;const pick=h*tot;const ci=pick<c0?0:pick<c0+c1?1:2;
+        const pth=paths[ci];pth.moveTo(x+r,y);pth.arc(x,y,r,0,6.2832);
+      }
+      for(let k=0;k<paths.length;k++){ctx.fillStyle=P.dots[k];ctx.fill(paths[k]);}
+    }
+  };
+}
+
+/* =====================================================================
+   5 · LIQUID GLASS BLOBS — glossy 3D orbs orbiting behind frosted glass.
+   ===================================================================== */
+function Liquid(stage){
+  const root=document.createElement('div');root.className='lq';stage.appendChild(root);
+  const bgl=document.createElement('div');bgl.style.cssText='position:absolute;inset:0';root.appendChild(bgl);
+  const orbs=[];for(let i=0;i<5;i++){const o=document.createElement('div');o.className='orb';root.appendChild(o);orbs.push(o);}
+  const frost=document.createElement('div');frost.className='frost';root.appendChild(frost);
+  let W,H,P;
+  const cfg=[[.26,.32,.46,.11,.08,0,.9],[.76,.3,.4,.12,.1,2.1,1.1],[.6,.78,.5,.1,.07,4.2,.8],[.1,.86,.26,.07,.06,1.2,1.3],[.93,.88,.22,.06,.08,3.3,1.2]];
+  return {
+    resize(w,h){W=w;H=h;this.size();},
+    size(){if(!W||!P)return;orbs.forEach((o,i)=>{const d=Math.round(Math.min(W,H*1.5)*cfg[i][2]);o.style.width=o.style.height=d+'px';o._d=d;});},
+    palette(p){P=p;bgl.style.background=p.bg;
+      orbs.forEach((o,i)=>{const c=p.orbs[i%p.orbs.length];
+        o.style.background=`radial-gradient(circle at 34% 28%, ${c[0]} 0%, ${c[1]} 26%, ${c[2]} 62%, ${c[3]} 100%)`;
+        o.style.boxShadow=p.dark?`inset -18px -26px 60px rgba(0,0,0,.35), 0 40px 120px -20px ${c[2]}`:`inset -20px -30px 70px rgba(40,20,80,.16), inset 14px 18px 40px rgba(255,255,255,.55), 0 50px 110px -30px ${c[2]}`;});
+      this.size();},
+    draw(t){
+      const s=t*.001;
+      orbs.forEach((o,i)=>{const c=cfg[i];const d=o._d||100;
+        const x=(c[0]+c[3]*Math.sin(s*.11*c[6]+c[5]))*W-d/2, y=(c[1]+c[4]*Math.cos(s*.09*c[6]+c[5]*1.3))*H-d/2;
+        const sc=1+.05*Math.sin(s*.17*c[6]+c[5]);
+        o.style.transform=`translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) scale(${sc.toFixed(3)}) rotate(${(s*4*c[6]+c[5]*40)%360}deg)`;
+        const a=48+6*Math.sin(s*.3+i),b=52+6*Math.cos(s*.27+i*2);o.style.borderRadius=`${a}% ${100-a}% ${b}% ${100-b}% / ${b}% ${a}% ${100-a}% ${100-b}%`;
+      });
+    }
+  };
+}
+
+/* =====================================================================
+   6 · PRINTED SKY (current, refined) — the real in-app engine from
+   scenes.jsx (window.pxMountSky): muted Craft-like sky, crisp cumulus,
+   halftone dot screens at cloud edges and the sides, paper grain.
+   6A ends in a cloud sea, 6B in a pale haze with distant ridges (both with
+   the default wispy clouds); 6C swaps in the round-puff clouds.
+   ===================================================================== */
+function SkyV3(horizon,variant,clouds){
+  return function(stage){
+    const host=document.createElement('div');host.style.cssText='position:absolute;inset:0';stage.appendChild(host);
+    let eng=null,want=null;
+    (function boot(){
+      if(!window.pxMountSky){setTimeout(boot,60);return;}
+      eng=window.pxMountSky(host,{horizon,variant,clouds:clouds||'wispy',mood:want?want[0]:'clear',dark:want?want[1]:false,interactive:true});
+    })();
+    return {resize(){},palette(p){want=[p.mood,!!p.dark];if(eng)eng.set(p.mood,!!p.dark);},draw(){}};
+  };
+}
+const SKY_MOODS=[
+  {n:'Clear',light:{mood:'clear',cols:['#94bde2','#dde8f1','#ffffff']},dark:{mood:'night'}},
+  {n:'Lilac morning',light:{mood:'lilac',cols:['#a6b3d9','#e8e2ec','#fdfbff']},dark:{mood:'harbor'}},
+  {n:'Pale golden',light:{mood:'golden',cols:['#9cb9d7','#ede2cf','#fffaf1']},dark:{mood:'slate'}},
+  {n:'Haze',light:{mood:'haze',cols:['#a4bdd4','#e5ebf0','#fbfcfd']},dark:{mood:'night'}},
+  {n:'Overcast silver',light:{mood:'silver',cols:['#a0afbf','#e0e4e8','#f6f8fa']},dark:{mood:'slate'}},
+];
+
+/* ---------- options & palettes ---------- */
+const OPTS=[
+ {id:'aurora',name:'Aurora mesh',desc:'Five soft colour fields melting into each other and drifting slowly. Apple / Stripe calm, with a whisper of grain.',grain:'',make:Aurora,
+  moods:[
+   {n:'Dawn',light:{base:'#fbf3ee',cols:['#ffb59e','#c9b8ff','#9fd0ff','#ffe2a0','#ff9fc6']},dark:{base:'#0b0b14',cols:['#5a2a7a','#123d7a','#7a2a4e','#0e5560','#3a2d9a']}},
+   {n:'Lagoon',light:{base:'#f2f8f6',cols:['#9ff0d4','#8fd6ff','#b3b8ff','#e6f59c','#ffc8ae']},dark:{base:'#06100f',cols:['#0d5b56','#123f7a','#2f2a85','#3d5a12','#0a6b5a']}},
+   {n:'Dusk',light:{base:'#fbf2f6',cols:['#e5a8ff','#ffb27c','#93a9ff','#ffa0bb','#fff0c4']},dark:{base:'#0d0812',cols:['#6a2387','#8a3d18','#24307e','#7e1f45','#43206e']}},
+  ]},
+ {id:'grain',name:'Grain gradient',desc:'One calm gradient, fine film grain and a soft bloom of light that wanders across. Arc / Linear minimal.',grain:'strong',make:GrainGrad,
+  moods:[
+   {n:'Apricot',light:{cols:['#fff4ea','#ffd2b2','#eab0d6'],bloom:'#fffaf2',bloom2:'#ffe6c8'},dark:{cols:['#0b0a0d','#17111a','#24131f'],bloom:'#a8487a',bloom2:'#ff8a5c',bloomK:.55}},
+   {n:'Glacier',light:{cols:['#f3f6ff','#c9d7fb','#9cb6f0'],bloom:'#ffffff',bloom2:'#e6ecff'},dark:{cols:['#08090d','#0e1018','#121630'],bloom:'#4a5ad8',bloom2:'#7b6cf0',bloomK:.6}},
+   {n:'Matcha',light:{cols:['#f5f6ec','#d6e8c6','#a8d2bd'],bloom:'#fffcee',bloom2:'#f5ffe0'},dark:{cols:['#080b09','#0d1410','#0f1e18'],bloom:'#2f8f6a',bloom2:'#b0c44a',bloomK:.5}},
+  ]},
+ {id:'paper',name:'Paper collage',desc:'Torn risograph cut-outs on warm paper, floating gently with a little parallax under the cursor. Craft’s idea, Needt’s palette.',grain:'none',make:Paper,
+  moods:[
+   {n:'Classic riso',light:{paper:'#f3eee3',rim:'#ffffff',inks:['#2f6fd0','#ffd83a','#ff6f5e']},dark:{paper:'#1a1917',rim:'#e9e3d5',inks:['#2f6fd0','#ffd83a','#ff6f5e']}},
+   {n:'Mint & orange',light:{paper:'#f1efe8',rim:'#ffffff',inks:['#3255a4','#00a95c','#ff7a3a']},dark:{paper:'#171816',rim:'#e7e4da',inks:['#3e66c2','#00a95c','#ff7a3a']}},
+   {n:'Berry',light:{paper:'#f4efe9',rim:'#ffffff',inks:['#765ba7','#ffb511','#ff5aa8']},dark:{paper:'#1a1719',rim:'#ebe4dd',inks:['#8a6cc4','#ffb511','#ff5aa8']}},
+  ]},
+ {id:'halftone',name:'Soft halftone',desc:'Big soft colour shapes printed as fine round dots that grow and shrink as the shapes morph. The pixel vibe, grown up — no letters.',grain:'none',make:Halftone,
+  moods:[
+   {n:'Lavender',light:{bg:'#f7f6f3',dots:['#7d6cf4','#ff7eaa','#58b4ff']},dark:{bg:'#0d0d12',dots:['#8f80ff','#ff7eaa','#5cb8ff']}},
+   {n:'Citrus',light:{bg:'#f8f6f1',dots:['#ff8a3d','#ffc23c','#2fbf98']},dark:{bg:'#0f0e0b',dots:['#ff8a3d','#ffc23c','#2fd3a4']}},
+   {n:'Ocean',light:{bg:'#f5f7f8',dots:['#2f6bff','#22c3d6','#8d7cff']},dark:{bg:'#090c12',dots:['#4a7fff','#22c3d6','#9a8bff']}},
+  ]},
+ {id:'liquid',name:'Liquid glass blobs',desc:'Glossy, slightly 3D colour orbs slowly orbiting behind a frosted pane. Soft, tactile, very “Craft paywall”.',grain:'',make:Liquid,
+  moods:[
+   {n:'Sorbet',light:{bg:'linear-gradient(160deg,#f6f2fb,#f3eef4 50%,#eef6f2)',orbs:[['#fff','#d9cbff','#a68cff','#7b62e0'],['#fff','#ffd4bb','#ffa77c','#f07a52'],['#fff','#c4f5e2','#79ddb9','#3fb894']]},
+     dark:{bg:'linear-gradient(160deg,#0e0c18,#0b0a12 60%,#0a1210)',orbs:[['#e9e1ff','#a48cff','#5a3fd6','#24135e'],['#ffe3d2','#ff9d73','#c9502b','#4d1806'],['#d9fff0','#5fd6ac','#178a66','#04301f']]}},
+   {n:'Candy',light:{bg:'linear-gradient(160deg,#fbf3f8,#f2f4fb)',orbs:[['#fff','#ffc6e7','#ff8fcb','#e05aa3'],['#fff','#c6e2ff','#86bdff','#4f8ae8'],['#fff','#fff0b8','#ffd86b','#f0b02e']]},
+     dark:{bg:'linear-gradient(160deg,#130b12,#0a0c14)',orbs:[['#ffe0f2','#ff7fc4','#c02c7d','#4a0a2c'],['#e0efff','#6aa8ff','#2659c9','#0b1d4e'],['#fff6d6','#ffd055','#b98410','#3d2a00']]}},
+   {n:'Twilight',light:{bg:'linear-gradient(160deg,#f1f0fb,#f6efef)',orbs:[['#fff','#c9c0ff','#8f7bff','#5b45e0'],['#fff','#ffc8c8','#ff8f8f','#e05858'],['#fff','#c2f0ee','#6fd6d0','#2fa8a2']]},
+     dark:{bg:'linear-gradient(160deg,#0c0b17,#100a0d)',orbs:[['#e6e1ff','#8f7bff','#4a33c8','#170d52'],['#ffe1e1','#ff7f7f','#b8343a','#3d0a0c'],['#dcfffd','#4fd0c8','#14857e','#032e2b']]}},
+  ]},
+ {id:'sky-sea',num:'6A',name:'Printed sky · Cloud sea',tag:'current',desc:'The refined in-app sky: muted calm blues, realistic wispy cumulus (crisper than before) whose edges dissolve into a printed dot screen, paper grain — and you are above the clouds: a lit bank of cloud tops along the bottom.',grain:'none',make:SkyV3('cloudsea','a','wispy'),moods:SKY_MOODS},
+ {id:'sky-haze',num:'6B',name:'Printed sky · Haze',tag:'option',desc:'Same sky, other horizon: a pale atmosphere fading to near-white, with faint distant ridges in desaturated blue-grey.',grain:'none',make:SkyV3('haze','c','wispy'),moods:SKY_MOODS},
+ {id:'sky-puff',num:'6C',name:'Printed sky · Round puffs',tag:'alt clouds',desc:'Same sky and cloud sea, but the clouds are rounder, cleaner cumulus puffs with flat bases (clouds="puff") instead of the realistic wispy ones.',grain:'none',make:SkyV3('cloudsea','a','puff'),moods:SKY_MOODS},
+];
+
+/* ---------- build DOM ---------- */
+const tpl=document.getElementById('tileTpl');const main=document.getElementById('opts');const legend=document.getElementById('legend');
+const tiles=[];
+OPTS.forEach((o,idx)=>{
+  const n=o.num||String(idx+1);
+  const sec=document.createElement('section');sec.className='opt';sec.id='opt-'+n;
+  sec.innerHTML=`<div class="opt-head"><div class="num">${n}</div><h2>${o.name}${o.tag?`<em>${o.tag}</em>`:''}</h2><p>${o.desc}</p>
+    <div class="controls"><span class="lab">Mood</span><span class="chips"></span><span class="sp"></span><button class="tog" aria-pressed="false" type="button">Dark<span class="track"></span></button></div></div>`;
+  const tileEl=tpl.content.firstElementChild.cloneNode(true);sec.appendChild(tileEl);main.appendChild(sec);
+  const a=document.createElement('a');a.href='#opt-'+n;a.innerHTML=`<i>${n}</i>${o.name}`;legend.appendChild(a);
+  const g=tileEl.querySelector('.grain');g.style.backgroundImage=`url(${GRAIN})`;if(o.grain)g.classList.add(o.grain);
+  const stage=tileEl.querySelector('.stage');
+  const R=o.make(stage,tileEl);
+  const T={o,el:tileEl,R,mood:TODAY,dark:false,visible:false,last:0,ms:[],idx};
+  const chips=sec.querySelector('.chips');
+  o.moods.forEach((m,i)=>{const b=document.createElement('button');b.type='button';b.className='chip';
+    const sw=(m.light.cols||m.light.inks||m.light.dots||(m.light.orbs&&m.light.orbs.map(x=>x[2]))||[m.light.sky[0],m.light.sky[1],m.light.h[1]]).slice(0,3);
+    b.innerHTML=`<span class="sw">${sw.map(c=>`<b style="background:${c}"></b>`).join('')}</span>${m.n}${i===TODAY?' <small>today</small>':''}`;
+    b.addEventListener('click',()=>{T.mood=i;apply(T);});chips.appendChild(b);});
+  T.chips=[...chips.children];
+  const tog=sec.querySelector('.tog');tog.addEventListener('click',()=>{T.dark=!T.dark;apply(T);});T.tog=tog;
+  tiles.push(T);
+});
+function apply(T){
+  const m=T.o.moods[T.mood];const p=Object.assign({},T.dark?m.dark:m.light,{dark:T.dark});
+  T.el.classList.toggle('dark',T.dark);T.tog.setAttribute('aria-pressed',T.dark);
+  T.chips.forEach((c,i)=>c.setAttribute('aria-pressed',i===T.mood));
+  T.R.palette(p);T.dirty=true;
+}
+function size(T){const r=T.el.getBoundingClientRect();const w=Math.round(r.width),h=Math.round(r.height);if(w&&h&&(w!==T.w||h!==T.h)){T.w=w;T.h=h;T.R.resize(w,h);T.dirty=true;}}
+tiles.forEach(T=>{apply(T);size(T);});
+const ro=new ResizeObserver(()=>tiles.forEach(size));tiles.forEach(T=>ro.observe(T.el));
+
+/* ---------- loop: IO-paused, ~30fps cap, reduced-motion = static ---------- */
+const io=new IntersectionObserver(es=>es.forEach(e=>{const T=tiles.find(t=>t.el===e.target);T.visible=e.isIntersecting;}),{rootMargin:'100px'});
+tiles.forEach(T=>io.observe(T.el));
+const T0=performance.now();const STATIC_T=48000;
+function frame(now){
+  for(const T of tiles){
+    if(!T.visible||!T.w)continue;
+    if(REDUCED){if(T.dirty){T.R.draw(STATIC_T);T.dirty=false;}continue;}
+    if(now-T.last<32&&!T.dirty)continue;
+    T.last=now;T.dirty=false;
+    const a=performance.now();T.R.draw(now-T0+40000+T.idx*7000);const d=performance.now()-a;
+    T.ms.push(d);if(T.ms.length>90)T.ms.shift();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__bgStats=()=>tiles.map(T=>({id:T.o.id,avgMs:T.ms.length?+(T.ms.reduce((a,b)=>a+b,0)/T.ms.length).toFixed(2):null,maxMs:T.ms.length?+Math.max(...T.ms).toFixed(2):null,n:T.ms.length}));
+window.__bgSet=(i,mood,dark)=>{const T=tiles[i];if(mood!=null)T.mood=mood;if(dark!=null)T.dark=dark;apply(T);};
+})();
+</script>
+</body>
+</html>

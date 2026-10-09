@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — the film</title>
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="exposure-wordmark.css?v=6">
+<link rel="stylesheet" href="themes.css?v=4">
+<link rel="stylesheet" href="composer.css?v=2">
+<link rel="stylesheet" href="app.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/_ds_bundle.js"></script>
+<script type="module" src="needt-icons.js?v=9"></script>
+<script src="platform.js?v=1009b"></script>
+<style>
+html,body{height:100%;margin:0;background:#F4F7FB;overflow:auto}#root{width:100%}
+/* Bare: whoever embeds it owns the ground as well as the frame. */
+html.bare,html.bare body{background:transparent;overflow:hidden}
+/* The engine's shell: its own dark ground and padding, neither of which is
+   ours — selected by structure because it carries no class to name. */
+html.bare #root>div{background:transparent !important;padding:0 !important}
+/* Its transport — the clock and the scrubber — is the last child of that
+   shell. A looping, un-operable film has nothing for either to do. */
+html.bare #root>div>div:last-child{display:none !important}
+</style>
+<script>try{if(new URLSearchParams(location.search).has("bare"))document.documentElement.classList.add("bare");}catch(e){}</script>
+<script>window.OM_SCENES = '[{"name":"Wake","dur":2.4,"desc":"The day as it stands: hours, the now-line, three things already agreed to, and four tasks waiting in the rail with no time."},{"name":"Press","dur":1.0,"desc":"Plan my day is pressed — the raised button settles toward the page, the way the product presses."},{"name":"Place","dur":4.6,"desc":"Four blocks land in the gaps between what was already there, 0.42s apart. Each arrival drains its card from the unplaced queue, because the sidebar computes that list from the same data."},{"name":"Focus","dur":4.6,"desc":"The first block becomes a session: the room dims to it, the corners breathe in the accent, the focus button starts counting. Then the camera pulls back so the last frame matches the first."}]';</script>
+<script>window.OM_PLAYBACK = '{"mode":"loop"}';</script>
+</head><body><div id="root"></div>
+
+<!-- The product itself, in the order its files depend on each other. The film
+     renders these components; it does not reimplement them. -->
+<script src="Data.js?v=4"></script>
+<script type="text/babel" src="Drag.jsx?v=2"></script>
+<script type="text/babel" src="BlockDesigns.jsx?v=2"></script>
+<script type="text/babel" src="RichBlock.jsx?v=5"></script>
+<script type="text/babel" src="Flame.jsx"></script>
+<script type="text/babel" src="ExposureWordmark.jsx?v=6"></script>
+<script type="text/babel" src="Miniature.jsx?v=1"></script>
+<script type="text/babel" src="ColumnsView.jsx?v=8"></script>
+<script type="text/babel" src="Habits.jsx?v=8"></script>
+<script type="text/babel" src="Composer.jsx?v=3"></script>
+<script type="text/babel" src="Sidebar.jsx"></script>
+
+<script type="text/babel" src="animations-v3.jsx"></script>
+<script type="text/babel" src="film.jsx?v=11"></script>
+</body></html>

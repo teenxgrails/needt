@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — the mark, and what this can do</title>
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="themes.css?v=3">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+@font-face { font-family: "Exposure VAR"; src: url("./ExposureTrialVAR.woff2") format("woff2-variations"); font-display: block; }
+
+html, body { height: 100%; margin: 0; background: var(--background); overflow: auto; }
+#page { width: 100%; }
+
+/* ── THE PLATE ───────────────────────────────────────────────────────────
+   An app icon's silhouette is a SUPERELLIPSE, not a rounded rectangle:
+   |x|^n + |y|^n = 1 with n near 5. A border-radius corner is a circular arc
+   spliced onto a straight edge, so the curvature jumps at the splice — at icon
+   size that jump is visible as a slight pinch at each corner. The path here is
+   generated from the formula at load, so the curvature is continuous all the
+   way round. */
+.plate {
+  position: relative; aspect-ratio: 1; display: grid; place-items: center;
+  isolation: isolate; overflow: hidden;
+}
+/* Iridescence is not one gradient. It is several wide, low-saturation light
+   sources overlapping on a near-white ground — which is what makes it read as
+   a coated surface catching a room rather than as a colour ramp. */
+.plate-light {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    radial-gradient(88% 72% at 24% 12%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 62%),
+    radial-gradient(96% 84% at 104% 106%, rgba(224, 231, 242, 0.78) 0%, rgba(224, 231, 242, 0) 64%),
+    linear-gradient(152deg, #f4f9fd 0%, #fbfafc 46%, #f7f3f7 74%, #eef2f7 100%);
+}
+.plate-cloud .plate-light {
+  background:
+    /* the light, broad and from the upper left */
+    radial-gradient(120% 96% at 14% 4%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0) 66%),
+    /* three masses: large low-left, small high-right, broad base */
+    radial-gradient(46% 34% at 30% 62%, rgba(255, 255, 255, 0.97) 0%, rgba(255, 255, 255, 0.55) 52%, rgba(255, 255, 255, 0) 78%),
+    radial-gradient(30% 24% at 72% 34%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.42) 54%, rgba(255, 255, 255, 0) 80%),
+    radial-gradient(64% 30% at 54% 88%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.3) 56%, rgba(255, 255, 255, 0) 82%),
+    /* the undersides, cool and heavier than the tops */
+    radial-gradient(52% 26% at 26% 80%, rgba(176, 196, 222, 0.5) 0%, rgba(176, 196, 222, 0) 72%),
+    radial-gradient(34% 20% at 74% 52%, rgba(176, 196, 222, 0.42) 0%, rgba(176, 196, 222, 0) 74%),
+    /* sky */
+    linear-gradient(168deg, #d9e9f7 0%, #eaf3fb 52%, #f6f4f2 100%);
+}
+.plate-cumulus .plate-light {
+  background:
+    /* sun behind the cloud line, so the rim warms where it is thinnest */
+    radial-gradient(58% 40% at 78% 16%, rgba(255, 246, 228, 0.95) 0%, rgba(255, 246, 228, 0) 60%),
+    /* seven masses, none the same size, none at the same height */
+    radial-gradient(26% 20% at 16% 54%, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.34) 58%, rgba(255,255,255,0) 82%),
+    radial-gradient(38% 28% at 36% 64%, rgba(255,255,255,0.99) 0%, rgba(255,255,255,0.4) 56%, rgba(255,255,255,0) 80%),
+    radial-gradient(20% 16% at 52% 46%, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.3) 58%, rgba(255,255,255,0) 84%),
+    radial-gradient(30% 22% at 68% 60%, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.34) 56%, rgba(255,255,255,0) 80%),
+    radial-gradient(16% 13% at 84% 50%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.26) 58%, rgba(255,255,255,0) 84%),
+    radial-gradient(56% 22% at 46% 82%, rgba(255,255,255,0.94) 0%, rgba(255,255,255,0.3) 54%, rgba(255,255,255,0) 80%),
+    radial-gradient(22% 15% at 26% 38%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.18) 60%, rgba(255,255,255,0) 86%),
+    /* the flat, cool base every cumulus has */
+    radial-gradient(70% 18% at 46% 88%, rgba(150, 172, 200, 0.55) 0%, rgba(150, 172, 200, 0) 76%),
+    radial-gradient(34% 14% at 34% 74%, rgba(150, 172, 200, 0.45) 0%, rgba(150, 172, 200, 0) 78%),
+    linear-gradient(172deg, #a9cdee 0%, #cde2f6 44%, #e8ddc9 100%);
+}
+.plate-volume .plate-light {
+  background:
+    /* one specular hit, tight — a solid, not a scatter */
+    radial-gradient(20% 15% at 30% 30%, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 62%),
+    radial-gradient(16% 12% at 64% 22%, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0) 64%),
+    /* the occlusion crescents: where light stops rather than wraps */
+    radial-gradient(30% 20% at 44% 76%, rgba(74, 94, 122, 0.62) 0%, rgba(74, 94, 122, 0) 70%),
+    radial-gradient(22% 15% at 74% 60%, rgba(74, 94, 122, 0.5) 0%, rgba(74, 94, 122, 0) 72%),
+    /* the masses themselves, bright-topped and dense */
+    radial-gradient(40% 30% at 36% 48%, #ffffff 0%, #e8eef6 62%, rgba(232,238,246,0) 80%),
+    radial-gradient(28% 22% at 70% 40%, #ffffff 0%, #e4ebf4 60%, rgba(228,235,244,0) 80%),
+    radial-gradient(52% 26% at 50% 74%, #f6f9fc 0%, #dae3ee 60%, rgba(218,227,238,0) 82%),
+    linear-gradient(160deg, #b9d2ea 0%, #d6e5f3 58%, #eef0f2 100%);
+}
+.plate-dark .plate-light {
+  background:
+    radial-gradient(88% 72% at 24% 12%, rgba(96, 116, 134, 0.30) 0%, rgba(96, 116, 134, 0) 62%),
+    radial-gradient(96% 84% at 104% 106%, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0) 64%),
+    linear-gradient(152deg, #1c2228 0%, #191a1f 48%, #1d1a1f 76%, #121316 100%);
+}
+/* The one edge an icon is allowed: a hairline of light along the top, because
+   a physical plate catches the light on its upper rim. */
+.plate::after {
+  content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.75), inset 0 0 0 1px rgba(18, 20, 24, 0.035);
+}
+.plate-dark::after { box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.plate-volume::after { box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.85), inset 0 -14px 22px -14px rgba(74,94,122,0.38), inset 0 0 0 1px rgba(18,20,24,0.05); }
+
+.disc { position: absolute; z-index: 1; border-radius: 50%; background: #1a1c1e;
+  --disc-lift: translateZ(0); transform: var(--disc-lift); }
+.plate-dark .disc { background: #f8f9fb; }
+
+/* The wordmark, set in Exposure — the variable face already in this project —
+   with a weight DISTRIBUTION across the letters rather than one weight. Its
+   EXPO axis runs -100 (inked, counters closing) to +100 (burnt away); the ramp
+   below keeps the terminals crisp and lets the middle of the word swell. */
+.fog {
+  /* BEHIND THE LETTER (z-index 1, under .mark's 2). It used to be 3 — in
+     front — so every bank of vapour crossed the strokes and the letter
+     arrived soft at every size. Air in front of the subject is a photograph
+     of weather; an icon is a symbol, and a symbol's figure is never veiled.
+     The bank still reads as air because it passes between the sky and the
+     letter, which is also what a real cloud does behind a near object. */
+  position: absolute; inset: -14%; z-index: 1; pointer-events: none;
+  transform: rotate(-3deg);
+  /* Softer than the letter's own strokes, so it has no edge to notice. */
+  filter: blur(14px);
+  background:
+    radial-gradient(46% 13% at 48% 60%, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.22) 56%, rgba(255,255,255,0) 82%),
+    radial-gradient(30% 9% at 33% 51%, rgba(255,255,255,0.44) 0%, rgba(255,255,255,0) 84%),
+    radial-gradient(26% 8% at 70% 56%, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 84%),
+    radial-gradient(38% 11% at 57% 70%, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 82%);
+}
+
+.mark {
+  position: relative; z-index: 2; margin: 0; display: flex; align-items: baseline;
+  font-family: "Exposure VAR", Georgia, serif; font-weight: 400;
+  color: #fdfdff; line-height: 0.9; letter-spacing: -0.004em; white-space: nowrap;
+  /* Height from a vertical scale, not from font-size: the stroke weights the
+     ramp sets stay exactly as authored while the mark grows taller. --mark-lift
+     and --mark-slant are slots, so nothing else has to touch `transform`. */
+  --mark-lift: translateZ(0);
+  --mark-slant: skewX(0deg);
+  transform: var(--mark-lift) scaleY(1.16) var(--mark-slant); transform-origin: 50% 62%;
+}
+.mark > span { display: inline-block; white-space: pre; }
+.mark-serif { font-family: "Instrument Serif", Georgia, serif; font-style: italic; }
+/* An oblique, not a synthesised italic: the face has no italic, and the
+   browser's fake one shears the horizontals too. */
+.mark-oblique { --mark-slant: skewX(-11deg); letter-spacing: 0.008em; }
+.mark-oblique > span { transform: skewX(1.5deg); }
+.plate-dark .mark { color: #17181b; }
+
+/* ── PAGE FURNITURE ─────────────────────────────────────────────────────── */
+.row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.grid { display: grid; gap: 20px; }
+.cap {
+  display: flex; flex-direction: column; gap: 11px; min-width: 0; padding: 16px;
+  border-radius: var(--radius-2xl); background: var(--surface-raised); box-shadow: var(--shadow-ring);
+}
+.eyebrow { font: var(--type-meta-medium); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-quaternary); }
+.stage {
+  position: relative; border-radius: var(--radius-xl); background: var(--background);
+  box-shadow: var(--shadow-inset-ring); overflow: hidden;
+}
+.note { font: var(--type-meta); color: var(--text-muted); text-wrap: pretty; }
+.mono { font-family: var(--font-mono); font-size: 11px; color: var(--text-disabled); }
+
+/* ── CAPABILITY: the variable axis ──────────────────────────────────────── */
+.expo { font-family: "Exposure VAR", Georgia, serif; font-size: 72px; line-height: 1; color: var(--text-primary); display: flex; gap: 0.01em; cursor: default; }
+.expo span { display: inline-block; white-space: pre; font-variation-settings: "EXPO" 0; }
+
+/* ── CAPABILITY: 3D parallax ────────────────────────────────────────────── */
+.tilt { perspective: 900px; display: grid; place-items: center; }
+.tilt-in { transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1); will-change: transform; }
+.tilt-in .disc { --disc-lift: translateZ(26px); }
+.tilt-in .mark { --mark-lift: translateZ(52px); }
+
+/* ── CAPABILITY: motion ─────────────────────────────────────────────────── */
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+.breathing { animation: breathe 5.2s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
+/* ── THE SAME SKY, AT LANDING SIZE ─────────────────────────────────────── */
+.hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  border-radius: var(--radius-2xl);
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.8), inset 0 0 0 1px rgba(18,20,24,0.05),
+    0 18px 44px -22px rgba(24,36,52,0.3);
+}
+.hero-sky {
+  position: absolute; inset: -8%; z-index: 0;
+  background:
+    /* the sun, upper right, behind everything */
+    radial-gradient(38% 58% at 82% 4%, rgba(255,248,232,0.9) 0%, rgba(255,248,232,0) 60%),
+
+    /* the near bank: four big masses, none the same size or height */
+    radial-gradient(22% 30% at 14% 74%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 54%, rgba(255,255,255,0) 78%),
+    radial-gradient(27% 38% at 33% 80%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.46) 52%, rgba(255,255,255,0) 76%),
+    radial-gradient(19% 26% at 49% 71%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.36) 54%, rgba(255,255,255,0) 80%),
+    radial-gradient(24% 33% at 68% 78%, rgba(255,255,255,1) 0%, rgba(255,255,255,0.4) 53%, rgba(255,255,255,0) 77%),
+    radial-gradient(17% 24% at 86% 74%, rgba(255,255,255,0.97) 0%, rgba(255,255,255,0.32) 55%, rgba(255,255,255,0) 80%),
+
+    /* the middle distance: smaller, higher, weaker */
+    radial-gradient(12% 15% at 24% 56%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0) 78%),
+    radial-gradient(15% 18% at 57% 52%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 76%),
+    radial-gradient(10% 13% at 76% 58%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 80%),
+
+    /* far off, just above the horizon: size is distance */
+    radial-gradient(7% 5% at 40% 45%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 82%),
+    radial-gradient(6% 4% at 65% 43%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0) 82%),
+    radial-gradient(5% 3.5% at 14% 47%, rgba(255,255,255,0.52) 0%, rgba(255,255,255,0) 84%),
+
+    /* the flat, cool bases — what makes a cumulus a solid with a bottom */
+    radial-gradient(24% 9% at 14% 86%, rgba(122,152,188,0.62) 0%, rgba(122,152,188,0) 74%),
+    radial-gradient(29% 11% at 33% 93%, rgba(122,152,188,0.66) 0%, rgba(122,152,188,0) 72%),
+    radial-gradient(20% 8% at 49% 83%, rgba(122,152,188,0.56) 0%, rgba(122,152,188,0) 74%),
+    radial-gradient(25% 10% at 68% 91%, rgba(122,152,188,0.6) 0%, rgba(122,152,188,0) 73%),
+
+    /* haze ABOVE the horizon, where distance thins the blue — it sits behind
+       the near clouds, never over them */
+    linear-gradient(180deg, rgba(255,255,255,0) 28%, rgba(246,250,254,0.62) 47%, rgba(255,255,255,0) 56%),
+
+    /* the base stays BLUE through the cloud band, so the masses have something
+       to be lighter than; the warm stop is a horizon line, not the floor */
+    linear-gradient(178deg,
+      #8fc0e8 0%,
+      #a6cdec 22%,
+      #bcd9f2 38%,
+      #f4efe4 47%,
+      #c3dcf2 54%,
+      #a9cfec 72%,
+      #93c1e6 100%);
+}
+/* The air in front, at landing scale: wider banks, blurred far past the
+   letter's strokes so it is never a shape. */
+.hero-fog {
+  position: absolute; inset: -12%; z-index: 4; pointer-events: none;
+  transform: rotate(-1.6deg); filter: blur(30px);
+  background:
+    radial-gradient(30% 9% at 44% 44%, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.2) 56%, rgba(255,255,255,0) 80%),
+    radial-gradient(20% 6.5% at 71% 40%, rgba(255,255,255,0.46) 0%, rgba(255,255,255,0) 82%),
+    radial-gradient(23% 7% at 20% 39%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 82%);
+}
+@keyframes hero-sky-drift {
+  0%   { transform: translate3d(-2.2%, -0.8%, 0) scale(1.06); }
+  50%  { transform: translate3d(2.2%, 0.6%, 0) scale(1.1); }
+  100% { transform: translate3d(-2.2%, -0.8%, 0) scale(1.06); }
+}
+@keyframes hero-fog-drift {
+  0%   { transform: rotate(-1.6deg) translate3d(4%, 0.8%, 0); }
+  50%  { transform: rotate(-1.6deg) translate3d(-4%, -0.6%, 0); }
+  100% { transform: rotate(-1.6deg) translate3d(4%, 0.8%, 0); }
+}
+.hero-sky { animation: hero-sky-drift 58s cubic-bezier(0.37, 0, 0.63, 1) infinite; will-change: transform; }
+.hero-fog { animation: hero-fog-drift 31s cubic-bezier(0.37, 0, 0.63, 1) infinite; will-change: transform; }
+.hero-body { position: relative; z-index: 3; }
+@media (prefers-reduced-motion: reduce) { .hero-sky, .hero-fog { animation: none; } }
+
+/* The drifting variant. The layer is oversized and offset, so at no point in
+   the cycle does its own boundary enter the plate. */
+@keyframes sky-drift {
+  0%   { transform: translate3d(-3.5%, -1.6%, 0) scale(1.16); }
+  50%  { transform: translate3d(3.5%, 1.2%, 0) scale(1.2); }
+  100% { transform: translate3d(-3.5%, -1.6%, 0) scale(1.16); }
+}
+/* Counter to the sky, and quicker: near air moves faster than far air, and
+   that difference is what makes the pair read as depth. */
+@keyframes fog-drift {
+  0%   { transform: rotate(-3deg) translate3d(6%, 1.4%, 0); }
+  50%  { transform: rotate(-3deg) translate3d(-6%, -1.2%, 0); }
+  100% { transform: rotate(-3deg) translate3d(6%, 1.4%, 0); }
+}
+.plate-live .plate-light {
+  inset: -18%;
+  animation: sky-drift 34s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  will-change: transform;
+}
+.plate-live .fog {
+  animation: fog-drift 19s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breathing, .tilt-in { animation: none; transition: none; }
+  /* Weather is state, not information: with motion off it simply stands
+     still, at the position the static plate has always used. */
+  .plate-live .plate-light, .plate-live .fog { animation: none; }
+  .plate-live .plate-light { inset: 0; }
+}
+</style>
+</head><body><div id="page"></div>
+
+<script>
+/* THE SILHOUETTE, FROM THE FORMULA.
+ *
+ * Parametric superellipse, normalised into a 0–100% polygon so it can be a
+ * clip-path on any size. 192 points is past the threshold where the polygon is
+ * distinguishable from the curve at icon scale, and cheap enough to apply to
+ * every plate on the page. */
+function squircle(n, ratio, steps) {
+  const r = (ratio == null ? 0.2237 : ratio) * 100;
+  const k = steps || 26;
+  const pts = [];
+  /* One corner, as a quarter superellipse in an r×r box. `fromX` says which
+     axis the sweep STARTS on, so consecutive corners join instead of each
+     restarting from the horizontal. */
+  function corner(cx, cy, sx, sy, fromX) {
+    for (let i = 0; i <= k; i++) {
+      const t = (i / k) * (Math.PI / 2);
+      const a = Math.pow(Math.cos(t), 2 / n);
+      const b = Math.pow(Math.sin(t), 2 / n);
+      const x = cx + sx * r * (fromX ? a : b);
+      const y = cy + sy * r * (fromX ? b : a);
+      pts.push(x.toFixed(2) + "% " + y.toFixed(2) + "%");
+    }
+  }
+  corner(100 - r, r, 1, -1, true);      /* right edge → top edge */
+  corner(r, r, -1, -1, false);          /* top edge → left edge */
+  corner(r, 100 - r, -1, 1, true);      /* left edge → bottom edge */
+  corner(100 - r, 100 - r, 1, 1, false);/* bottom edge → right edge */
+  return "polygon(" + pts.join(",") + ")";
+}
+const SQ = squircle(5);
+
+/* One icon, built from four numbers: how big, how much of it the disc takes,
+   where the disc sits, and what the wordmark says. Every variant below is a
+   different set of those four — which is the point of having a system rather
+   than five drawings. */
+function icon(o) {
+  const s = o.size;
+  const d = s * (o.disc == null ? 0.755 : o.disc);
+  const el = document.createElement("div");
+  el.className = "plate" + (o.dark ? " plate-dark" : "")
+    + (o.sky ? " plate-" + o.sky : "") + (o.cloud ? " plate-cloud" : "")
+    + (o.live ? " plate-live" : "") + (o.cls ? " " + o.cls : "");
+  el.style.width = s + "px";
+  el.style.clipPath = SQ;
+  el.style.borderRadius = (s * 0.02) + "px";
+  el.style.boxShadow = o.flat ? "none"
+    : "0 " + (s * 0.026) + "px " + (s * 0.062) + "px rgba(18,20,24,0.10), 0 " + (s * 0.007) + "px " + (s * 0.016) + "px rgba(18,20,24,0.07)";
+
+  const light = document.createElement("span");
+  light.className = "plate-light";
+  el.appendChild(light);
+
+  const disc = document.createElement("span");
+  disc.className = "disc";
+  if (o.noDisc) disc.style.display = "none";
+  disc.style.width = d + "px";
+  disc.style.height = d + "px";
+  disc.style.left = ((s - d) / 2 + s * (o.dx || 0)) + "px";
+  disc.style.top = ((s - d) / 2 + s * (o.dy || 0)) + "px";
+  if (o.ring) {
+    /* An aperture, not a dot: the disc becomes a ring and the wordmark sits in
+       the opening. Drawn with a border rather than a second circle, so the
+       opening is genuinely the plate showing through. */
+    disc.style.background = "transparent";
+    disc.style.border = (d * o.ring) + "px solid " + (o.dark ? "#f7f8fa" : "#131316");
+    disc.style.boxSizing = "border-box";
+  }
+  el.appendChild(disc);
+
+  const mark = document.createElement("p");
+  mark.className = "mark" + (o.oblique ? " mark-oblique" : "") + (o.face === "serif" ? " mark-serif" : "");
+  mark.style.fontSize = (s * (o.type == null ? 0.30 : o.type)) + "px";
+  /* The nudge goes in the lift slot, so it composes with the height scale and
+     the slant instead of replacing them. */
+  if (o.mx || o.my) {
+    mark.style.setProperty("--mark-lift", "translate(" + (s * (o.mx || 0)) + "px," + (s * (o.my || 0)) + "px)");
+  }
+  if (o.ink) mark.style.color = o.ink;
+  if (o.cloud) mark.style.textShadow = "0 1px 0 rgba(255,255,255,0.55)";
+  /* The ramp: crisp at the ends, inked through the middle. Words shorter or
+     longer than five letters are sampled from the same curve, so a monogram
+     and a full name are the same idea at two lengths. */
+  const word = o.word == null ? "Needt" : o.word;
+  const ramp = o.ramp || [-4, -22, -34, -24, -6];
+  word.split("").forEach(function (ch, i) {
+    const g = document.createElement("span");
+    const p = word.length === 1 ? 0.5 : i / (word.length - 1);
+    const at = p * (ramp.length - 1);
+    const lo = Math.floor(at), hi = Math.min(lo + 1, ramp.length - 1);
+    const v = ramp[lo] + (ramp[hi] - ramp[lo]) * (at - lo);
+    g.style.fontVariationSettings = '"EXPO" ' + v.toFixed(1);
+    g.textContent = ch;
+    mark.appendChild(g);
+  });
+  el.appendChild(mark);
+
+  if (o.fog) {
+    const fog = document.createElement("span");
+    fog.className = "fog";
+    el.appendChild(fog);
+  }
+
+  if (!o.ring) {
+    const authored = parseFloat(mark.style.fontSize);
+    const fit = function () {
+      /* Back to the authored size first — the loop only shrinks, so without
+         this a re-run compounds instead of correcting. */
+      mark.style.fontSize = authored + "px";
+      const pb = el.getBoundingClientRect();
+      const db = disc.getBoundingClientRect();
+      if (!db.width) return;
+      const cx = db.left - pb.left + db.width / 2;
+      const cy = db.top - pb.top + db.height / 2;
+      const r = db.width / 2;
+      for (let pass = 0; pass < 8; pass++) {
+        const mb = mark.getBoundingClientRect();
+        const mx0 = mb.left - pb.left, mx1 = mb.right - pb.left;
+        const my0 = mb.top - pb.top, my1 = mb.bottom - pb.top;
+        /* The row of the mark where the circle is narrowest. */
+        const dy = Math.max(Math.abs(my0 - cy), Math.abs(my1 - cy));
+        if (dy >= r) { mark.style.fontSize = (parseFloat(mark.style.fontSize) * 0.9) + "px"; continue; }
+        const half = Math.sqrt(r * r - dy * dy);
+        const need = Math.max(cx - mx0, mx1 - cx);
+        if (need <= half - s * 0.012) break;
+        mark.style.fontSize = (parseFloat(mark.style.fontSize) * Math.max(0.8, (half - s * 0.012) / need)) + "px";
+      }
+    };
+    /* Run it, and run it again once the faces are in — the routine restores
+       the authored size first, so a re-run corrects instead of compounding.
+       Nothing here waits for a frame. */
+    measure(fit);
+    FACES.then(fit);
+    if (document.fonts && document.fonts.addEventListener) {
+      document.fonts.addEventListener("loadingdone", fit);
+    }
+  }
+  return el;
+}
+
+const MEASURES = [];
+function measure(fn) {
+  MEASURES.push(fn);
+  fn();
+  window.setTimeout(fn, 0);
+}
+function remeasure() { MEASURES.forEach(function (f) { f(); }); }
+document.addEventListener("visibilitychange", remeasure);
+window.addEventListener("load", remeasure);
+
+/* Forced, not observed: load requests the face, ready only watches. */
+const FACES = (document.fonts && document.fonts.load)
+  ? Promise.all([
+      document.fonts.load('400 100px "Exposure VAR"'),
+      document.fonts.load('italic 400 100px "Instrument Serif"')
+    ]).catch(function () { return null; })
+  : Promise.resolve(null);
+
+function h(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function section(title, lede) {
+  const s = h("section");
+  s.style.cssText = "display:flex;flex-direction:column;gap:16px;padding-top:12px";
+  const head = h("div");
+  head.style.cssText = "display:flex;flex-direction:column;gap:5px";
+  const t = h("h2", null, title);
+  t.style.cssText = "margin:0;font:var(--type-page-title);color:var(--text-primary)";
+  head.appendChild(t);
+  if (lede) {
+    const l = h("p", "note", lede);
+    l.style.cssText = "margin:0;max-width:820px;font:var(--type-ui);color:var(--text-secondary);text-wrap:pretty";
+    head.appendChild(l);
+  }
+  s.appendChild(head);
+  return s;
+}
+function specimen(label, node, note) {
+  const w = h("div");
+  w.style.cssText = "display:flex;flex-direction:column;gap:9px;min-width:0";
+  w.appendChild(node);
+  const l = h("span", "eyebrow", label);
+  w.appendChild(l);
+  if (note) {
+    const n = h("span", "note", note);
+    n.style.maxWidth = "230px";
+    w.appendChild(n);
+  }
+  return w;
+}
+
+const page = document.getElementById("page");
+page.className = "app";
+page.style.cssText = "min-height:100%;background:var(--background);padding:28px 28px 80px;display:flex;flex-direction:column;gap:32px";
+
+/* ── HEADER ─────────────────────────────────────────────────────────────── */
+const head = h("header");
+head.style.cssText = "display:flex;flex-direction:column;gap:6px";
+const hh = h("h1", null, "The mark, rebuilt from its geometry");
+hh.style.cssText = "margin:0;font:var(--type-page-title);font-size:28px;color:var(--text-primary)";
+head.appendChild(hh);
+const hl = h("p", null, "The icon is not traced: the corners are quarter superellipses meeting flat edges at zero curvature, the sheen is one corner-to-corner sweep with a single highlight — four overlapping lights read as mottling — and the wordmark is typed rather than drawn — so every variant below is four numbers changed, not a new drawing. The name is set in Exposure, the variable face this project already carries, with a weight distribution across the letters rather than one weight.");
+hl.style.cssText = "margin:0;max-width:860px;font:var(--type-ui);color:var(--text-secondary);text-wrap:pretty";
+head.appendChild(hl);
+page.appendChild(head);
+
+/* ── 0 · THE SKY AT LANDING SIZE ────────────────────────────────────────── */
+const s0 = section("0 · The same weather, at landing size",
+  "Enlarging the icon is not the same design: at 180px the sky is the frame and seven masses read as a cloud, but at 1440 the same percentages are seven enormous lobes with nothing else in the picture. What a big sky shows and a small one cannot is DISTANCE — so this adds the three things distance is made of: a horizon with the cloud line below the middle, masses at four scales with the small ones pushed toward the horizon, and haze along the bottom where you are looking through the most air. The sun stays upper right and the bases stay flat and cool, so it is recognisably the same afternoon.");
+
+const hero = h("div", "hero");
+hero.style.cssText = "min-height:520px;display:grid;align-items:center;padding:0";
+const heroSky = h("span", "hero-sky");
+const heroFog = h("span", "hero-fog");
+hero.appendChild(heroSky);
+hero.appendChild(heroFog);
+
+const hb = h("div", "hero-body");
+hb.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:20px;padding:64px 32px;text-align:center";
+
+/* The mark at the size a hero gives it, on the sky rather than on a plate of
+   its own — a plate inside a sky would be an object photographed in front of
+   weather instead of weather the product is made of. */
+const hw = document.createElement("p");
+hw.className = "mark";
+hw.style.cssText = "font-size:clamp(56px, 13vw, 132px);color:#22364c;text-shadow:0 1px 0 rgba(255,255,255,0.55)";
+"Needt".split("").forEach(function (ch, i) {
+  const g = document.createElement("span");
+  const ramp = [-6, -26, -34, -24, -8];
+  g.style.fontVariationSettings = '"EXPO" ' + ramp[i];
+  g.textContent = ch;
+  hw.appendChild(g);
+});
+hb.appendChild(hw);
+
+const hsub = document.createElement("p");
+hsub.style.cssText = "margin:0;max-width:520px;font:var(--weight-regular) 17px/25px var(--font-sans);color:rgba(30,44,62,0.78);text-wrap:pretty";
+hsub.textContent = "The calendar and the work on one grid. It places what you have to do into the hours you actually have.";
+hb.appendChild(hsub);
+
+const hact = h("div");
+hact.style.cssText = "display:flex;gap:11px;padding-top:6px";
+const hb1 = document.createElement("button");
+hb1.type = "button";
+hb1.className = "btn";
+hb1.style.cssText = "height:40px;padding:0 20px";
+hb1.textContent = "Start planning";
+const hb2 = document.createElement("button");
+hb2.type = "button";
+hb2.className = "btn btn-ghost";
+hb2.style.cssText = "height:40px;padding:0 18px;color:rgba(30,44,62,0.82)";
+hb2.textContent = "See a day";
+hact.appendChild(hb1);
+hact.appendChild(hb2);
+hb.appendChild(hact);
+
+hero.appendChild(hb);
+s0.appendChild(hero);
+page.appendChild(s0);
+
+/* ── 1 · THE RECREATION, AT FOUR SIZES ──────────────────────────────────── */
+const s1 = section("1 · The icon that ships, at the sizes it ships at", "An icon is judged at the size it is used, so here is the chosen one — Cumulus — at the five that matter: the store tile, the dock, the tab, the favicon, and the 16px the tab actually renders. Nothing about it is size-specific: one set of numbers, scaled. Below it, the variant this page started with, for the comparison that made the choice — the name fitted inside the disc reads at 128 and stops reading somewhere under 64, which is the whole reason the monogram is the mark.");
+const ICON = { sky: "cumulus", noDisc: true, word: "N", type: 0.58, ink: "#16283c", ramp: [-52], cloud: true, fog: true };
+const r1 = h("div", "row");
+r1.style.alignItems = "flex-end";
+[[224, "224 — store"], [128, "128 — dock"], [64, "64 — tab"], [32, "32 — favicon"], [16, "16 — tab, real size"]].forEach(function (p) {
+  r1.appendChild(specimen(p[1], icon(Object.assign({}, ICON, { size: p[0] }))));
+});
+const r1b = h("div", "row");
+r1b.style.cssText = "align-items:flex-end;opacity:0.72;margin-top:20px";
+[[128, "128 — wordmark"], [64, "64 — wordmark"], [32, "32 — wordmark"]].forEach(function (p) {
+  r1b.appendChild(specimen(p[1], icon({ size: p[0] })));
+});
+s1.appendChild(r1);
+s1.appendChild(r1b);
+page.appendChild(s1);
+
+/* ── 2 · VARIANTS, EACH ON A NAMED AXIS ─────────────────────────────────── */
+const s2 = section("2 · Twelve variants, each on one axis", "Options are only useful if they disagree about something you can name. Each of these moves one decision: where the disc sits, how much of the name survives, which ground it is on, whether the disc is a container or a shape, and whether the mark stands upright or leans.");
+const g2 = h("div", "grid");
+g2.style.gridTemplateColumns = "repeat(auto-fit, minmax(196px, 1fr))";
+[
+  { o: { size: 180 }, label: "Plate", note: "The recreation. The disc is a container and the name lives inside it — quiet, and it reads as an object on a shelf." },
+  { o: { size: 180, disc: 0.92, dx: -0.13, dy: -0.09, type: 0.26, mx: -0.04, my: -0.02 }, label: "Eclipse", note: "The disc is pushed until it crosses the plate's edge, so it becomes a shape rather than a container and the name sits on the crossing. Louder, and unmistakable in a dock of squares." },
+  { o: { size: 180, disc: 0.86, word: "N", type: 0.52 }, label: "Monogram", note: "What survives at 32px: one letter, and the disc grown to carry it. This is the answer to the finding above." },
+  { o: { size: 180, dark: true }, label: "Negative", note: "Light disc on a dark plate — the dark-mode tile, which the original has no answer for. The same four numbers, two colours swapped." },
+  { o: { size: 180, ring: 0.085, disc: 0.86, type: 0.25, ink: "#17181b" }, label: "Aperture", note: "The disc opens into a ring and the name sits in the opening, so the mark says “a slot in the day” instead of “a dot”. The closest of the five to what the product is about." },
+  { o: { size: 180, oblique: true, type: 0.285 }, label: "Oblique", note: "The same mark slanted 11°, with the vertical corrected so the letterforms keep their height. Exposure has no italic, so this is an oblique — the browser's synthesised italic shears the horizontals as well and a high-contrast face cannot survive it." },
+  { o: { size: 180, oblique: true, dark: true, disc: 0.92, dx: -0.13, dy: -0.09, type: 0.26, mx: -0.04, my: -0.02 }, label: "Oblique eclipse", note: "Two axes moved at once — the slant and the crossing disc — on the dark tile. The point of a system is that this needed no new drawing." },
+  { o: { size: 180, cloud: true, noDisc: true, word: "N", type: 0.58, ink: "#2a3a4c", ramp: [-30] }, label: "Cloud", note: "The monogram on weather. A cloud is not mottling — it is a volume lit from somewhere, so these are three masses at unequal heights, each brighter on top than at its base, with the undersides cool. The disc is gone: on sky it would read as a hole punched through it." },
+  { o: { size: 180, sky: "cumulus", noDisc: true, word: "N", type: 0.58, ink: "#16283c", ramp: [-52], cloud: true, fog: true }, label: "Cumulus", note: "Realism is count and asymmetry, not detail: seven masses, no two the same size or height, a flat cool base, and the sun behind the cloud line so the rim warms where the vapour is thinnest. Evenness is the tell of a fake cloud." },
+  { o: { size: 180, sky: "cumulus", noDisc: true, word: "N", type: 0.58, ink: "#16283c", ramp: [-52], cloud: true, fog: true, live: true }, label: "Cumulus, live", note: "The same plate with the air moving. The sky crosses over 34 seconds, the fog banks counter to it in 19 — near air moves faster than far air, and that difference is what makes the two read as depth rather than as one texture being panned. The letter and the disc do not move at all: the highlight belongs to the sky, and sliding the mark with it would take the light off the letter." },
+  { o: { size: 180, sky: "volume", noDisc: true, word: "N", type: 0.56, ink: "#213347", ramp: [-34], cloud: true }, label: "Volume", note: "The same weather modelled as objects: one tight specular hit, a visible terminator, an occlusion crescent under each mass, and the plate shaded along its own lower rim. Vapour scatters light, a solid stops it — that, not detail, is what separates this from Cumulus." },
+  { o: { size: 180, sky: "cumulus", noDisc: true, word: "N", type: 0.66, ink: "#31445a", face: "serif", cloud: true }, label: "Cumulus serif", note: "The same sky, the letter cut in the display serif this design system carries rather than in Exposure. High contrast suits vapour: the hairlines almost dissolve into the cloud while the stems hold the shape." },
+  { o: { size: 180, cloud: true, noDisc: true, word: "N", type: 0.6, ink: "#41556e", ramp: [46] }, label: "Vapour", note: "The axis pushed the other way — +46 instead of −30 — so the letter is burnt back rather than inked. Against cloud the medium and the mark are then made of the same thing, which no amount of styling can fake." }
+].forEach(function (v) {
+  const card = h("div", "cap");
+  const box = h("div");
+  box.style.cssText = "display:grid;place-items:center;padding:8px 0 4px";
+  box.appendChild(icon(v.o));
+  card.appendChild(box);
+  card.appendChild(h("span", "eyebrow", v.label));
+  card.appendChild(h("span", "note", v.note));
+  g2.appendChild(card);
+});
+s2.appendChild(g2);
+page.appendChild(s2);
+
+/* ── 3 · CAPABILITIES, DEMONSTRATED ─────────────────────────────────────── */
+const s3 = section("3 · What this can actually do", "Not a list of claims — six working demonstrations, each of a different kind of craft. Every one of them is live: move the pointer over them.");
+const g3 = h("div", "grid");
+g3.style.gridTemplateColumns = "repeat(auto-fit, minmax(316px, 1fr))";
+
+/* (a) GEOMETRY FROM MATH — the same formula, swept. */
+const cA = h("div", "cap");
+cA.appendChild(h("span", "eyebrow", "Geometry — shape from a formula"));
+const stA = h("div", "stage");
+stA.style.cssText += "padding:16px;display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap";
+[2, 2.6, 3.4, 5, 9].forEach(function (n) {
+  const w = h("div");
+  w.style.cssText = "display:flex;flex-direction:column;gap:5px;align-items:center";
+  const sq = h("div");
+  sq.style.cssText = "width:56px;height:56px;background:linear-gradient(150deg,var(--accent),color-mix(in oklab,var(--accent) 55%, #fff))";
+  sq.style.clipPath = squircle(n, 0.2237, 40);
+  w.appendChild(sq);
+  w.appendChild(h("span", "mono", "n = " + n));
+  g3 && w;
+  stA.appendChild(w);
+});
+cA.appendChild(stA);
+cA.appendChild(h("span", "note", "The corner is a quarter superellipse in a box 22.37% of the side — flat edges, and at the join both the tangent and the curvature go to zero. n = 2 is a plain circular arc, which arrives at full curvature: that jump is the pinch you see on every border-radius corner. n = 5 is the shape an app icon actually is."));
+g3.appendChild(cA);
+
+/* (b) VARIABLE TYPE — pointer-driven axis. */
+const cB = h("div", "cap");
+cB.appendChild(h("span", "eyebrow", "Type — the same axis, driven live"));
+const stB = h("div", "stage");
+stB.style.cssText += "padding:22px 16px;display:grid;place-items:center";
+const expo = h("div", "expo");
+"Needt".split("").forEach(function (ch) { expo.appendChild(h("span", null, ch)); });
+stB.appendChild(expo);
+cB.appendChild(stB);
+cB.appendChild(h("span", "note", "A real variable font on its own exposure axis, each letter sprung to the pointer's distance — so the word is lit by where you are rather than switching between two states. The lag is the effect: instant response reads as a slider, a spring reads as a light source."));
+g3.appendChild(cB);
+
+/* (c) MOTION — the minimum-jerk reach. */
+const cC = h("div", "cap");
+cC.appendChild(h("span", "eyebrow", "Motion — a hand, not a spring"));
+const stC = h("div", "stage");
+stC.style.cssText += "height:184px;cursor:crosshair";
+const trail = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+trail.setAttribute("width", "100%"); trail.setAttribute("height", "100%");
+trail.style.cssText = "position:absolute;inset:0";
+const tpath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+tpath.setAttribute("fill", "none");
+tpath.setAttribute("stroke", "var(--accent)");
+tpath.setAttribute("stroke-width", "1.5");
+tpath.setAttribute("stroke-linecap", "round");
+tpath.setAttribute("opacity", "0.45");
+trail.appendChild(tpath);
+stC.appendChild(trail);
+const hand = h("span");
+hand.style.cssText = "position:absolute;left:0;top:0;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:7px;background:var(--accent);box-shadow:0 2px 6px rgba(0,0,0,0.3);will-change:transform";
+stC.appendChild(hand);
+const hintC = h("span", "mono", "click anywhere");
+hintC.style.cssText = "position:absolute;left:11px;bottom:9px";
+stC.appendChild(hintC);
+cC.appendChild(stC);
+cC.appendChild(h("span", "note", "Minimum-jerk easing — 10t³ − 15t⁴ + 6t⁵, the measured velocity profile of a human reach — over one bezier whose bow is fixed before the first frame, with the duration set from distance the way Fitts's law sets it. A damped spring is the obvious model and the wrong one: pushed sideways it returns by oscillating, and people do not sway."));
+g3.appendChild(cC);
+
+/* (d) DATA — plan against actual. */
+const cD = h("div", "cap");
+cD.appendChild(h("span", "eyebrow", "Data — the shape of a claim"));
+const stD = h("div", "stage");
+stD.style.cssText += "height:184px;padding:14px";
+const DONE = [0, 6, 9, 9, 14, 21, 24];
+const TOTAL = 28;
+const svgD = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+svgD.setAttribute("viewBox", "0 0 360 156");
+svgD.setAttribute("preserveAspectRatio", "xMidYMid meet");
+svgD.style.cssText = "width:100%;height:100%;display:block";
+/* Authored in the viewBox's own units. Uniform scaling only, so a circle is
+   still a circle whatever size the card ends up. */
+const boxD = { w: 360, h: 156 };
+function ptD(i, v) {
+  return [10 + (i / (DONE.length - 1)) * (boxD.w - 20), (boxD.h - 14) - (v / TOTAL) * (boxD.h - 34)];
+}
+function svgEl(tag, attrs) {
+  const e = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+  return e;
+}
+const planD = svgEl("path", { stroke: "var(--text-disabled)", "stroke-width": 1.5, "stroke-dasharray": "4 4", fill: "none" });
+const actD = svgEl("path", { stroke: "var(--accent)", "stroke-width": 2, "stroke-linejoin": "round", fill: "none" });
+const gapD = svgEl("path", { stroke: "var(--destructive)", "stroke-width": 1.5, fill: "none" });
+const dotsD = DONE.map(function () { return svgEl("circle", { r: 2.5, fill: "var(--accent)" }); });
+svgD.appendChild(planD); svgD.appendChild(actD); svgD.appendChild(gapD);
+dotsD.forEach(function (c) { svgD.appendChild(c); });
+function drawD() {
+  planD.setAttribute("d", "M " + ptD(0, 0).join(" ") + " L " + ptD(DONE.length - 1, TOTAL).join(" "));
+  actD.setAttribute("d", "M " + DONE.map(function (v, i) { return ptD(i, v).join(" "); }).join(" L "));
+  DONE.forEach(function (v, i) {
+    const p = ptD(i, v);
+    dotsD[i].setAttribute("cx", p[0]); dotsD[i].setAttribute("cy", p[1]);
+  });
+  /* The gap is the whole message, so it is the thing labelled. */
+  const l = ptD(DONE.length - 1, DONE[DONE.length - 1]);
+  gapD.setAttribute("d", "M " + l[0] + " " + l[1] + " L " + l[0] + " " + ptD(DONE.length - 1, TOTAL)[1]);
+}
+stD.appendChild(svgD);
+const capD = h("span", null, "4 behind");
+capD.style.cssText = "position:absolute;right:14px;top:26px;font:var(--type-meta-medium);color:var(--destructive)";
+stD.appendChild(capD);
+cD.appendChild(stD);
+cD.appendChild(h("span", "note", "A Marey chart: time across, work done up. The plan is a straight line, so falling behind shows up as an angle rather than as a percentage you have to compare against memory. The number is printed once, on the gap, because the gap is the claim."));
+g3.appendChild(cD);
+
+/* (e) 3D — layered parallax on the real icon. */
+const cE = h("div", "cap");
+cE.appendChild(h("span", "eyebrow", "Space — parallax on real layers"));
+const stE = h("div", "stage tilt");
+stE.style.cssText += "height:220px";
+const tiltIn = h("div", "tilt-in");
+tiltIn.appendChild(icon({ size: 150 }));
+stE.appendChild(tiltIn);
+cE.appendChild(stE);
+cE.appendChild(h("span", "note", "Plate, disc and wordmark on three different Z planes, tilted toward the pointer — so the depth comes from the parts genuinely standing apart rather than from a drawn shadow. The same icon, no second asset."));
+g3.appendChild(cE);
+
+/* (f) STATE — one period for everything alive. */
+const cF = h("div", "cap");
+cF.appendChild(h("span", "eyebrow", "State — one heartbeat"));
+const stF = h("div", "stage");
+stF.style.cssText += "height:220px;display:grid;place-items:center";
+const br = h("div", "breathing");
+br.appendChild(icon({ size: 132 }));
+stF.appendChild(br);
+cF.appendChild(stF);
+cF.appendChild(h("span", "note", "5.2 seconds, the same period as the focus aura, the focus ring and the composer's glow — everything alive in this product breathes at one rate, so the app reads as running rather than as a collection of animations. It stops during a focus session: one thing holding still while the rest breathes is how attention is shown."));
+g3.appendChild(cF);
+
+s3.appendChild(g3);
+page.appendChild(s3);
+
+/* ── BEHAVIOUR ──────────────────────────────────────────────────────────── */
+
+/* (d) The chart, once — it has no measurement to wait for. */
+drawD();
+
+/* (b) The torch. Distance → axis, through a spring per letter, integrated in
+   fixed substeps so the feel does not change with the display's refresh rate. */
+(function () {
+  const letters = [].slice.call(expo.children);
+  const st = letters.map(function () { return { v: 0, x: 0, t: 0 }; });
+  let hot = false;
+  stB.addEventListener("pointermove", function (e) {
+    hot = true;
+    letters.forEach(function (el, i) {
+      const r = el.getBoundingClientRect();
+      const d = Math.abs(e.clientX - (r.left + r.width / 2)) / 170;
+      const c = Math.max(0, Math.min(1, d));
+      st[i].t = (1 - (c * c * (3 - 2 * c))) * 58;
+    });
+    wake();
+  });
+  stB.addEventListener("pointerleave", function () { hot = false; st.forEach(function (s) { s.t = 0; }); wake(); });
+  let last = 0, carry = 0, raf = 0, onScreen = false;
+
+  function moving() {
+    return st.some(function (s) { return Math.abs(s.t - s.x) > 0.05 || Math.abs(s.v) > 0.05; });
+  }
+  function awake() { return onScreen && document.visibilityState === "visible"; }
+  function wake() { if (!raf && awake()) raf = requestAnimationFrame(frame); }
+  function sleep() { if (raf) { cancelAnimationFrame(raf); raf = 0; } last = 0; }
+
+  function frame(now) {
+    raf = 0;
+    if (!awake()) return;
+    if (!last) last = now;
+    carry = Math.min(carry + (now - last), 40); last = now;
+    while (carry >= 8.33) {
+      st.forEach(function (s) { s.v = (s.v + (s.t - s.x) * 0.22) * 0.72; s.x += s.v; });
+      carry -= 8.33;
+    }
+    letters.forEach(function (el, i) { el.style.fontVariationSettings = '"EXPO" ' + st[i].x.toFixed(1); });
+    /* At rest there is nothing to draw, so nothing is scheduled: the next
+       pointer move starts the loop again from the stored phase. */
+    if (moving()) raf = requestAnimationFrame(frame); else last = 0;
+  }
+
+  if (typeof IntersectionObserver !== "undefined") {
+    new IntersectionObserver(function (es) {
+      onScreen = es[0].isIntersecting;
+      if (onScreen) wake(); else sleep();
+    }, { threshold: 0.2 }).observe(stB);
+  } else { onScreen = true; }
+  document.addEventListener("visibilitychange", function () { if (awake()) wake(); else sleep(); });
+})();
+
+/* (c) The reach. */
+(function () {
+  const box = stC;
+  let from = { x: 150, y: 92 }, to = { x: 150, y: 92 }, ctrl = null, t0 = 0, ms = 0, side = -1;
+  hand.style.transform = "translate3d(150px,92px,0)";
+  function ease(t) { return t * t * t * (10 + t * (-15 + 6 * t)); }
+  box.addEventListener("pointerdown", function (e) {
+    const r = box.getBoundingClientRect();
+    const target = { x: e.clientX - r.left, y: e.clientY - r.top };
+    const dx = target.x - from.x, dy = target.y - from.y, len = Math.hypot(dx, dy) || 1;
+    side = -side;
+    const bow = Math.min(len * 0.11, 40) * side;
+    ctrl = { x: from.x + dx / 2 + (-dy / len) * bow, y: from.y + dy / 2 + (dx / len) * bow };
+    to = target;
+    ms = Math.max(300, Math.min(760, 210 + 190 * Math.log2(len / 90 + 1)));
+    t0 = 0;
+    tpath.setAttribute("d", "M " + from.x + " " + from.y + " Q " + ctrl.x + " " + ctrl.y + " " + to.x + " " + to.y);
+    tpath.setAttribute("opacity", "0.45");
+    requestAnimationFrame(step);
+  });
+  function step(now) {
+    if (!t0) t0 = now;
+    const p = Math.min((now - t0) / ms, 1), e = ease(p), u = 1 - e;
+    const x = u * u * from.x + 2 * u * e * ctrl.x + e * e * to.x;
+    const y = u * u * from.y + 2 * u * e * ctrl.y + e * e * to.y;
+    hand.style.transform = "translate3d(" + x + "px," + y + "px,0)";
+    if (p < 1) return requestAnimationFrame(step);
+    from = { x: to.x, y: to.y };
+    /* The path fades after it lands: it is evidence of the trip, not decoration
+       that accumulates. */
+    tpath.style.transition = "opacity 0.9s ease";
+    tpath.setAttribute("opacity", "0");
+    window.setTimeout(function () { tpath.style.transition = ""; }, 950);
+  }
+})();
+
+/* (e) The tilt. */
+(function () {
+  stE.addEventListener("pointermove", function (e) {
+    const r = stE.getBoundingClientRect();
+    const nx = (e.clientX - r.left) / r.width - 0.5, ny = (e.clientY - r.top) / r.height - 0.5;
+    tiltIn.style.transition = "none";
+    tiltIn.style.transform = "rotateY(" + (nx * 26).toFixed(2) + "deg) rotateX(" + (-ny * 26).toFixed(2) + "deg)";
+  });
+  stE.addEventListener("pointerleave", function () {
+    tiltIn.style.transition = "transform 0.5s cubic-bezier(0.2,0.7,0.2,1)";
+    tiltIn.style.transform = "none";
+  });
+})();
+</script>
+</body></html>

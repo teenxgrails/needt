@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — exposure wordmark</title>
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="exposure-wordmark.css?v=6">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/_ds_bundle.js"></script>
+<style>html,body{height:100%}body{margin:0;overflow:auto;background:var(--background)}#root{width:100%}</style>
+</head><body><div id="root"></div>
+<script type="text/babel" src="ExposureWordmark.jsx?v=6"></script>
+<script type="text/babel">
+const NS = window.NeedtDesignSystem_25d3c8;
+const { ToggleGroup, SegmentedControl, Switch, Chip } = NS;
+
+/* A still of the word at named axis values — the frame strip is built from
+   these, so a screenshot carries the motion. */
+function Frame({ values, size }) {
+  return (
+    <h2 className="font-display" style={{ margin: 0, fontSize: size || 64, lineHeight: 1.1, color: "var(--text-primary)" }}>
+      {"Needt".split("").map((ch, i) => (
+        <span key={i} className="ew-letter" style={{ fontVariationSettings: '"EXPO" ' + values[i] }}>{ch}</span>
+      ))}
+    </h2>
+  );
+}
+
+const STOPS = [0, 120, 260, 420, 600, 960];
+
+function FrameStrip({ stops, shape, size }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", background: "var(--surface-raised)", borderRadius: "var(--radius-2xl)", boxShadow: "var(--shadow-ring)", padding: "4px 20px 11px" }}>
+      {stops.map((ms) => {
+        const vals = [0, 1, 2, 3, 4].map((i) => shape(ms, i));
+        return (
+          <div key={ms} style={{ display: "flex", alignItems: "center", gap: 20, padding: "11px 0", boxShadow: "var(--border) 0 -1px 0 0 inset" }}>
+            <span style={{ flex: "none", width: 64, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>{ms} ms</span>
+            <span style={{ flex: "none", minWidth: 340 }}><Frame values={vals} size={size || 56} /></span>
+            <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {vals.map((v, i) => (
+                <span key={i} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: v === 0 ? "var(--text-disabled)" : v < 0 ? "var(--text-secondary)" : "var(--accent)", fontVariantNumeric: "tabular-nums" }}>
+                  {"Needt"[i]} {v}
+                </span>
+              ))}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* 4 and 5 — the two loops, as readable stills and as a live switch. Negative
+   values are set in ink, positive in the accent, because the axis has two
+   directions and that is the point of these two motions. */
+function Loops() {
+  const [form, setForm] = React.useState("breathe+pulse");
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+        <header style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ font: "var(--type-card-title)", color: "var(--text-primary)" }}>4 · Breathe</span>
+          <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 640, textWrap: "pretty" }}>
+            A loop: EXPO 0 → −100 → 0 over 5200ms, phase offset 260ms per letter. The 1040ms spread across the cycle —
+            20% — is what makes it a wave travelling through the word rather than five letters throbbing together.
+            Six stills across one cycle:
+          </span>
+        </header>
+        <FrameStrip stops={[0, 650, 1300, 2600, 3900, 5200]} shape={ewBreatheAt} />
+      </section>
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+        <header style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ font: "var(--type-card-title)", color: "var(--text-primary)" }}>5 · Pulse</span>
+          <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 640, textWrap: "pretty" }}>
+            A burst on top of breathe, every 6000ms, and in the opposite direction: → +70 at 35% of 1300ms,
+            easeOutExpo, 80ms per letter. Breathe floods the counters with ink; pulse burns the strokes away.
+            Two directions on one axis. Disabled at 28px, where the axis is clamped to −40…0.
+          </span>
+        </header>
+        <FrameStrip stops={[0, 200, 455, 800, 1300]} shape={ewPulseAt} />
+      </section>
+
+      <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+        <header style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span style={{ font: "var(--type-card-title)", color: "var(--text-primary)" }}>Live · mode</span>
+          <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 640, textWrap: "pretty" }}>
+            Switch between the three modes. Hover the word in either loop: the breathe amplitude falls to 0 over 250ms
+            so the torch reads clean, and returns over 400ms when the pointer leaves.
+          </span>
+        </header>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: 20, background: "var(--surface-raised)", borderRadius: "var(--radius-2xl)", boxShadow: "var(--shadow-ring)" }}>
+          <SegmentedControl value={form} onChange={setForm} label="Mode"
+            items={[{ value: "still", label: "still" }, { value: "breathe", label: "breathe" }, { value: "breathe+pulse", label: "breathe+pulse" }]} />
+          <div style={{ display: "grid", placeItems: "center", minHeight: 180 }}>
+            <ExposureWordmark size={112} mode={form} />
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 32, flexWrap: "wrap" }}>
+            {[[64, "sign-in"], [28, "rail · pulse off"]].map(([s, note]) => (
+              <span key={s} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <ExposureWordmark size={s} mode={form} />
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-disabled)" }}>{s}px · {note}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function Strip() {
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{ font: "var(--type-card-title)", color: "var(--text-primary)" }}>1 · Develop-in</span>
+        <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 620, textWrap: "pretty" }}>
+          Once on mount. EXPO −100 → 0 over 620ms easeOutCubic, 85ms per letter, ~960ms for the word.
+          Six real stills below: at −100 the counters are filled and the letters fuse; by 960ms every letter is at 0.
+        </span>
+      </header>
+      <div style={{ display: "flex", flexDirection: "column", gap: 0, background: "var(--surface-raised)", borderRadius: "var(--radius-2xl)", boxShadow: "var(--shadow-ring)", padding: "4px 20px 11px" }}>
+        {STOPS.map((ms) => {
+          const vals = [0, 1, 2, 3, 4].map((i) => ewDevelopAt(ms, i));
+          return (
+            <div key={ms} style={{ display: "flex", alignItems: "center", gap: 20, padding: "11px 0", boxShadow: "var(--border) 0 -1px 0 0 inset" }}>
+              <span style={{ flex: "none", width: 64, fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-tertiary)", fontVariantNumeric: "tabular-nums" }}>{ms} ms</span>
+              <span style={{ flex: "none", minWidth: 340 }}><Frame values={vals} size={56} /></span>
+              <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {vals.map((v, i) => (
+                  <span key={i} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: v === 0 ? "var(--text-disabled)" : "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+                    {"Needt"[i]} {v}
+                  </span>
+                ))}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function Torch() {
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{ font: "var(--type-card-title)", color: "var(--text-primary)" }}>3 · Torch</span>
+        <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 620, textWrap: "pretty" }}>
+          Move the cursor across the word. Each letter's target is its distance from the cursor through a smoothstep
+          falloff over 180px, driven by a spring — stiffness 220, damping 26, mass 1. The lag behind the pointer is
+          what makes it a light source rather than a slider.
+        </span>
+      </header>
+      <div style={{ display: "grid", placeItems: "center", minHeight: 200, padding: "20px 32px", background: "var(--surface-raised)", borderRadius: "var(--radius-2xl)", boxShadow: "var(--shadow-ring)" }}>
+        <ExposureWordmark size={112} mode="breathe" />
+      </div>
+    </section>
+  );
+}
+
+function Busy() {
+  const [busy, setBusy] = React.useState(true);
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{ font: "var(--type-card-title)", color: "var(--text-primary)" }}>2 · Busy</span>
+        <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 620, textWrap: "pretty" }}>
+          Raised while the scheduler is writing: EXPO 55 over 300ms easeOut and hold, back to 0 over 400ms.
+          Capped at 55 — past about 60 the strokes fragment and it reads broken rather than lit.
+        </span>
+      </header>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+        {[["busy = true", true, 55], ["busy = false", false, 0]].map(([label, on, v]) => (
+          <div key={label} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 20, background: "var(--surface-raised)", borderRadius: "var(--radius-2xl)", boxShadow: "var(--shadow-ring)" }}>
+            <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ font: "var(--type-meta-medium)", letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-quaternary)" }}>{label}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-disabled)" }}>EXPO {v}</span>
+            </span>
+            {/* The real component in each state, so the tween is what you see. */}
+            <ExposureWordmark size={64} busy={on} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 20px", background: "var(--surface-raised)", borderRadius: "var(--radius-2xl)", boxShadow: "var(--shadow-ring)" }}>
+        <Switch checked={busy} onChange={setBusy} />
+        <span style={{ font: "var(--type-ui)", color: "var(--text-secondary)" }}>Live — flip it and watch the tween</span>
+        <span style={{ marginLeft: "auto" }}><ExposureWordmark size={64} busy={busy} /></span>
+      </div>
+    </section>
+  );
+}
+
+/* The resting state at the three shipping sizes, across the three themes —
+   one row per theme, all three sizes in it, so the comparison is between
+   grounds rather than between nine identical cards. */
+function Resting() {
+  const THEMES = ["light", "dim", "dark"];
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{ font: "var(--type-card-title)", color: "var(--text-primary)" }}>Resting · EXPO 0</span>
+        <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 620, textWrap: "pretty" }}>
+          What a screenshot shows, and what reduced motion shows. 28px clamps the axis to −40…0 — positive values thin
+          the strokes until they vanish on the light theme, so the rail's mark never goes above 0.
+        </span>
+      </header>
+      {THEMES.map((t) => (
+        <div key={t} className={"app " + (t === "light" ? "" : t)}
+          style={{ display: "flex", alignItems: "flex-end", gap: 32, flexWrap: "wrap", padding: 20, background: "var(--background)", borderRadius: "var(--radius-2xl)", boxShadow: "var(--shadow-ring)" }}>
+          <span style={{ flex: "none", width: 52, font: "var(--type-meta-medium)", letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-quaternary)" }}>{t}</span>
+          {[[28, "rail, −40…0"], [64, "sign-in"], [112, "hero"]].map(([s, note]) => (
+            <span key={s} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <ExposureWordmark size={s} />
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--text-disabled)" }}>{s}px · {note}</span>
+            </span>
+          ))}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function App() {
+  const [theme, setTheme] = React.useState("light");
+  return (
+    <div className={"app " + (theme === "light" ? "" : theme)} style={{ minHeight: "100%", background: "var(--background)", padding: "20px 20px 60px", display: "flex", flexDirection: "column", gap: 32 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 300 }}>
+          <ExposureWordmark size={64} mode="breathe+pulse" />
+          <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 660, textWrap: "pretty" }}>
+            Exposure VAR on one axis — EXPO, −100 to +100, resting 0. Duplexed, so every axis position has the same
+            advance width and nothing in the layout can move. Five motions: one on mount, one on a prop, one on the
+            pointer, and two loops that run the axis in both directions.
+          </span>
+        </div>
+        <ToggleGroup value={theme} onChange={setTheme} label="Page theme"
+          items={["light", "dim", "dark"].map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) }))} />
+      </header>
+      <Strip />
+      <Busy />
+      <Torch />
+      <Loops />
+      <Resting />
+    </div>
+  );
+}
+
+const __root = document.getElementById("root");
+if (__root) ReactDOM.createRoot(__root).render(<App />);
+</script>
+</body></html>

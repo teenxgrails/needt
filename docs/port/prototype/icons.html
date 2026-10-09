@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — icon pack</title>
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="themes.css?v=4">
+<link rel="stylesheet" href="app.css?v=1">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="vendor/lucide-local.js?v=1"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/_ds_bundle.js"></script>
+<script type="module" src="needt-icons.js?v=7"></script>
+<style>html,body{margin:0;background:var(--background);color:var(--text-primary);font-family:var(--font-sans)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Icon, ToggleGroup } = window.NeedtDesignSystem_25d3c8;
+/* Every concept the product draws, grouped by where it lives. The name is
+   what a screen asks for; the drawing behind it can change in one file. */
+const GROUPS = [
+  ["Shell", ["home", "workspace", "calendar", "mail", "docs", "new-doc", "tasks", "search", "share", "bell", "bell-dot", "help", "sidebar-left", "sidebar-right", "connections", "shared", "templates", "desktop", "download", "plan", "folder", "ellipsis", "plus", "plus-circle", "close-circle", "check", "chevron-down", "chevron-right"]],
+  ["Views", ["view-grid", "view-cards", "view-list", "outline", "attachments", "expand", "format", "style", "info", "swap", "cover", "scribble"]],
+  ["Blocks", ["text", "page", "card", "file", "image", "image-search", "code-block", "formula", "diagram", "whiteboard", "table", "gallery", "board", "checklist", "callout", "toggle", "bookmark", "link"]],
+  ["Formatting", ["bold", "italic", "strikethrough", "code", "highlighter", "list-bullets", "list-numbers", "indent", "outdent", "align-left", "align-center", "align-right", "align-justify", "mention", "heading"]],
+  ["Actions", ["react", "comment", "comment-add", "remind", "insert-above", "insert-below", "copy-link", "duplicate", "move-to", "rename", "group", "ungroup", "to-top", "to-bottom", "present", "versions", "delete", "open-anything", "find" ]],
+  ["Info & help", ["created", "updated", "author", "sync", "feedback", "whats-new", "markdown", "keyboard", "lock", "users", "star"]],
+  ["Needt", ["task", "task-done", "event", "habit", "place", "unplaced", "focus", "focus-session", "plan-day", "assistant", "agent", "ink", "source", "reconnect", "mcp", "mail-unread"]]
+];
+function Pack() {
+  const [size, setSize] = React.useState("20");
+  const [, force] = React.useState(0);
+  React.useEffect(() => { const f = () => force((n) => n + 1); window.addEventListener("needt-icons", f); const t = setTimeout(f, 1500); return () => { window.removeEventListener("needt-icons", f); clearTimeout(t); }; }, []);
+  const reg = window.NeedtIcons || {};
+  const all = GROUPS.reduce((n, g) => n + g[1].length, 0);
+  const missing = GROUPS.reduce((n, g) => n + g[1].filter((k) => !reg[k === "find" ? "search" : k]).length, 0);
+  return (
+    <div style={{ padding: "40px 48px", display: "flex", flexDirection: "column", gap: 28 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", gap: 16 }}>
+        <div>
+          <h1 style={{ margin: 0, font: "var(--type-page-title)" }}>Needt icon pack</h1>
+          <p style={{ margin: "6px 0 0", font: "var(--type-ui)", color: "var(--text-tertiary)" }}>{all} concepts · one stroke weight · drawn by Lucide (ISC) · names are what screens ask for</p>
+        </div>
+        <span style={{ marginLeft: "auto" }}><ToggleGroup value={size} onChange={setSize} label="Size" items={[{ value: "13", label: "13" }, { value: "16", label: "16" }, { value: "20", label: "20" }, { value: "24", label: "24" }]} /></span>
+      </header>
+      {missing ? <p style={{ margin: 0, font: "var(--type-meta)", color: "var(--destructive)" }}>{missing} names did not resolve — they show an empty box.</p> : null}
+      {GROUPS.map(([g, names]) => (
+        <section key={g} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <span style={{ font: "var(--type-meta-medium)", letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-quaternary)" }}>{g} · {names.length}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))", gap: 8 }}>
+            {names.map((n) => {
+              const key = n === "find" ? "search" : n;
+              const ok = !!reg[key];
+              return (
+                <div key={n} style={{ height: 88, borderRadius: "var(--radius-xl)", background: "var(--surface-raised)", boxShadow: ok ? "var(--shadow-ring)" : "var(--destructive) 0 0 0 1px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, color: "var(--text-primary)" }}>
+                  <Icon name={key} size={parseInt(size, 10)} />
+                  <span style={{ font: "var(--type-meta)", fontFamily: "var(--font-mono)", color: ok ? "var(--text-muted)" : "var(--destructive)" }}>{n}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Pack />);
+</script>
+</body></html>
