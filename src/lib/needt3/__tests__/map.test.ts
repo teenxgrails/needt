@@ -67,7 +67,7 @@ describe("task mapping", () => {
 
   it("speaks the prototype's names", () => {
     expect(t).toMatchObject({
-      note: "<p>For Monday</p>",
+      notes: "For Monday",
       done: false,
       dueDate: "2026-09-04",
       scheduledStart: "2026-09-04T09:00",
@@ -95,7 +95,7 @@ describe("task mapping", () => {
     const body = taskPatchToApi(patch, TZ);
     expect(body).toMatchObject({
       title: ROW.title,
-      description: ROW.description,
+      description: "For Monday",
       dueDate: ROW.dueDate,
       scheduledStart: ROW.scheduledStart,
       scheduledEnd: ROW.scheduledEnd,

@@ -200,6 +200,34 @@ export function shiftWeek(today: string, n: number) {
   return addDays(today, -((weekday(today) + 6) % 7) + n * 7);
 }
 
+/* ---------- tasks: notes ---------- */
+
+/**
+ * A task's notes as plain text (newlines kept), from either the desktop's
+ * sanitised HTML or plain text. Empty → null. Data.js `notesText`.
+ */
+export function notesText(v: unknown): string | null {
+  if (v == null || v === "") return null;
+  let s = String(v);
+  if (/<[a-z][\s\S]*>/i.test(s)) {
+    s = s
+      .replace(/\r?\n/g, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<li[^>]*>/gi, "- ")
+      .replace(/<\/(p|div|li|h[1-6]|blockquote|pre)>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&amp;/g, "&");
+    s = s.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+  }
+  s = s.replace(/^\s+|\s+$/g, "");
+  return s || null;
+}
+
 /* ---------- tasks: state ---------- */
 
 export interface PartLike {

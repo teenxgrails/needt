@@ -25,6 +25,7 @@ import {
   mailTime,
   moveDay,
   moveEvent,
+  notesText,
   overlaps,
   placeAt,
   project,
@@ -200,6 +201,19 @@ describe("time on a task", () => {
     expect(placeAt(null, null, 9, TODAY).scheduledStart).toBe(
       "2026-09-01T09:00"
     );
+  });
+});
+
+describe("notes", () => {
+  it("reads the desktop's HTML and the phone's text as plain text", () => {
+    expect(
+      notesText(
+        "<p>Call Anna</p><ul><li>price</li><li>date &amp; time</li></ul>"
+      )
+    ).toBe("Call Anna\n- price\n- date & time");
+    expect(notesText("  line one\nline two  ")).toBe("line one\nline two");
+    expect(notesText("<p></p>")).toBeNull();
+    expect(notesText(null)).toBeNull();
   });
 });
 

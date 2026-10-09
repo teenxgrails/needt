@@ -11,7 +11,7 @@
  *   earned    ↔ Task.earnedCents (×100)      Stage    ↔ Task.globalStage
  *   chunk     ↔ Task.minChunkMinutes         holder   ↔ Task.assigneeId
  *   blockedBy ↔ Task.dependsOnId             priority ↔ Task.priorityLevel
- *   done      ↔ Task.status === "completed"  note     ↔ Task.description
+ *   done      ↔ Task.status === "completed"  notes    ↔ Task.description (as text)
  *   source    ↔ Task.originKind/originId/originQuote
  *   schedule  ↔ Habit.at / Habit.quota
  *   startAt   ↔ CalendarEvent.start (local) calendarId ↔ CalendarEvent.feedId
@@ -21,6 +21,7 @@
  * person's IANA time zone.
  */
 import { formatInTimeZone, fromZonedTime } from "@/lib/date-utils";
+import { notesText } from "@/lib/needt3/derive";
 
 export type V3StageId = "todo" | "doing" | "review" | "done";
 export type DbTaskStage = "TODO" | "DOING" | "REVIEW" | "DONE";
@@ -133,7 +134,8 @@ export interface V3TaskSource {
 export interface V3Task {
   id: string;
   title: string;
-  note: string | null;
+  /** Plain text, newlines kept (Data.js NOTES 09.10.26). */
+  notes: string | null;
   done: boolean;
   /** Raw lifecycle status ("todo" | "in_progress" | "completed"). */
   status: string;
@@ -175,7 +177,7 @@ export function taskFromApi(row: ApiTask, tz: string): V3Task {
   return {
     id: row.id,
     title: row.title,
-    note: row.description ?? null,
+    notes: notesText(row.description),
     done: row.status === "completed",
     status: row.status,
     projectId: row.projectId ?? null,
@@ -229,7 +231,7 @@ export function taskPatchToApi(
   const has = (k: keyof V3TaskPatch) =>
     Object.prototype.hasOwnProperty.call(patch, k);
   if (has("title")) out.title = patch.title;
-  if (has("note")) out.description = patch.note;
+  if (has("notes")) out.description = patch.notes;
   if (has("done")) out.status = patch.done ? "completed" : "todo";
   if (has("projectId")) out.projectId = patch.projectId;
   if (has("dueDate")) out.dueDate = localToIso(patch.dueDate, tz);
