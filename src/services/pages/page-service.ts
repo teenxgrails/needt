@@ -70,7 +70,11 @@ export async function listPages(
       tags: { select: { id: true, name: true, color: true } },
       createdBy: true,
       position: true,
+      createdAt: true,
       updatedAt: true,
+      coverUrl: true,
+      projectId: true,
+      style: true,
       database: { select: { id: true } },
       accessGrants: {
         where: { userId: actorUserId(actor) },
