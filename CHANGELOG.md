@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `npm run tokens:check`), with the licensed Exposure face and Newsreader /
   Nunito. A person with the flag sees the app inside the new frame, themed
   System / Light / Dark / Time with nine accents; nobody else sees a change.
+- The API takes the fields the new design writes: Trash and the "from
+  mail / doc / chat" origin on tasks, "don't split", a project's tint and
+  manual order, a habit's own colour, glyph, time, weekly quota and
+  project, a document's style and project, Trash and "needs a reply" on
+  mail (Needt's copy only — mail stays read-only at the provider), and a
+  moodboard's project, link share, Pinterest board and Trash. Each is
+  validated, so a bad value is a 400 rather than a stored surprise. The
+  database gained them additively, plus tables for task attachments,
+  per-person page views, invites by email, per-tool AI access on a page,
+  moodboard tiles, notifications and MCP/API access links.
 
 - Brief and Canvas: a connected tool's writing is no longer shown as your
   own. Authorship is carried by the ink and a mark in the margin, and the

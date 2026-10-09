@@ -70,7 +70,11 @@ export async function listPages(
       tags: { select: { id: true, name: true, color: true } },
       createdBy: true,
       position: true,
+      createdAt: true,
       updatedAt: true,
+      coverUrl: true,
+      projectId: true,
+      style: true,
       database: { select: { id: true } },
       accessGrants: {
         where: { userId: actorUserId(actor) },
@@ -107,6 +111,23 @@ async function assertOwnedParent(actor: PageActor, parentId?: string | null) {
   if (!parent) throw new Error("Parent page not found");
 }
 
+/** A page may only be filed under a project the actor's workspace owns. */
+async function assertScopedProject(
+  actor: PageActor,
+  projectId?: string | null
+) {
+  if (!projectId) return;
+  const workspaceId = actorWorkspaceId(actor);
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      ...(workspaceId ? { workspaceId } : { userId: actorUserId(actor) }),
+    },
+    select: { id: true },
+  });
+  if (!project) throw new Error("Project not found");
+}
+
 export async function createPage(
   actor: PageActor,
   input: {
@@ -115,10 +136,13 @@ export async function createPage(
     icon?: string | null;
     isPrivate?: boolean;
     createdBy?: PageAuthor;
+    style?: Prisma.InputJsonObject | null;
+    projectId?: string | null;
   }
 ) {
   const userId = actorUserId(actor);
   await assertOwnedParent(actor, input.parentId);
+  await assertScopedProject(actor, input.projectId);
   const last = await prisma.page.findFirst({
     where: {
       ...actorPageScope(actor),
@@ -138,6 +162,8 @@ export async function createPage(
       isPrivate: input.isPrivate === true,
       createdBy: input.createdBy ?? PageAuthor.HUMAN,
       position: (last?.position ?? 0) + 1024,
+      ...(input.style ? { style: input.style } : {}),
+      ...(input.projectId ? { projectId: input.projectId } : {}),
       blocks: {
         create: {
           type: PageBlockType.PARAGRAPH,
@@ -163,6 +189,8 @@ export async function updatePage(
     isFavorite?: boolean;
     position?: number;
     trashed?: boolean;
+    style?: Prisma.InputJsonObject | null;
+    projectId?: string | null;
   }
 ) {
   const requiredRole =
@@ -176,6 +204,9 @@ export async function updatePage(
     throw new Error("A page cannot contain itself");
   if (input.parentId !== undefined) {
     await assertOwnedParent(actor, input.parentId);
+  }
+  if (input.projectId !== undefined) {
+    await assertScopedProject(actor, input.projectId);
   }
   return prisma.page.update({
     where: { id: pageId },
@@ -198,6 +229,10 @@ export async function updatePage(
       ...(input.trashed !== undefined
         ? { trashedAt: input.trashed ? new Date() : null }
         : {}),
+      ...(input.style !== undefined
+        ? { style: input.style ?? Prisma.DbNull }
+        : {}),
+      ...(input.projectId !== undefined ? { projectId: input.projectId } : {}),
     },
     include: pageDetailInclude,
   });
