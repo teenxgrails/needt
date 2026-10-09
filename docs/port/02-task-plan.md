@@ -34,6 +34,7 @@ Source: `docs/port/prototype/` in this repo (below: `$P`; frozen 2026-10-09 from
 - `<Task task layout="row|card|block" onToggle onOpen draggable dense? />`: one component, three layouts. Source: `$P/task.jsx` (`TkRow` 205, `TkCard` 293, `TkBlock` 353, `Task` 403; `TaskCheck` 117; `TkPartRing` 188), plus the Home row `HdTask` (`$P/HomeToday.jsx:65`). Its prop type is `NeedtTask` from `src/lib/needt/types.ts`, extended rather than forked.
 - `<Sheet open onClose side="right|bottom|center" from?: DOMRect>`, `<Menu>` / `<RichMenu items>` (`$P/popovers.jsx` `RichMenu` 161, `RichRow` 124, `SmallRow` 149), `<CtxLayer>` (`$P/ctx.jsx:116`) are built on Radix (`dropdown-menu`, `popover`, `dialog` already in `src/components/ui`) and styled with v3 classes. `useExit(open, ms)` is ported from `$P/motion.js`.
 - `<StScreen query={…} kind="list|grid|doc|calendar">`: every screen body mounts inside it (§T08).
+- **Portals stay inside the scope.** Every v3 stylesheet selector starts with `.needt-v3`, so a Radix portal into `document.body` renders unstyled. Pass `container={useV3PortalContainer()}` (an element inside `<V3Root>`) to every Radix `Portal` (Dialog, Popover, DropdownMenu, Tooltip, ContextMenu).
 - Toasts: only `notify` from `src/lib/notifications.ts` (CLAUDE.md). Undo = `notify.success(msg, { action: { label: "Undo", onClick } })`. Port no `ToastLayer`.
 
 ### 2.3 Data and query keys
@@ -318,6 +319,9 @@ What breaks when the flag is on for the visual user (at the flip):
 4. Old specs and their PNGs are deleted in the **contract step** (after the flag reaches 100 %), together with old `needt/**`, `.needt-v2`, `AppShell.tsx`'s old branch, and the shadcn token block. That is a separate PR.
 
 ## 7. Risks and what to cut
+
+- **Before `port/integration` goes to `main`:** `V3Root` imports `src/styles/v3/index.css` statically, so ~1 MB of v3 CSS (all scoped, no visual effect) loads for flag-off users too. Load it only when the flag is on (separate route-group layout or a `<link>` emitted by `V3Root`) before merging to main.
+
 
 **Top risks**
 
