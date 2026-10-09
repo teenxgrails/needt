@@ -60,6 +60,7 @@ export const qk = {
   settings: () => [V3, "settings"] as const,
   plan: () => [V3, "plan"] as const,
   shell: () => [V3, "shell"] as const,
+  search: (q: string) => [V3, "search", q] as const,
 } as const;
 
 export type QueryKeyOf<K extends keyof typeof qk> = ReturnType<(typeof qk)[K]>;
