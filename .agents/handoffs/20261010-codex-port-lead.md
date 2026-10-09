@@ -17,6 +17,8 @@ objective: Coordinate isolated design-port lanes and maintain dependency and ver
 
 - Verified PR #77 and #78 merged; created clean worktrees based on 491b945.
 - Delegated A/T05, B/T06, C/T08 with disjoint file ownership and own installs.
+- Lead docs committed e26af1a and pushed port/lead-status; normal lint/type hooks passed.
+- Recovered disk by removing npm cache and own regenerable lead dependencies; no foreign source touched.
 
 ## Working state
 
@@ -25,7 +27,7 @@ objective: Coordinate isolated design-port lanes and maintain dependency and ver
 
 ## Verification
 
-- Passed: live GitHub merged-state checks for #77/#78; clean initial worktrees.
+- Passed: live GitHub merged-state checks for #77/#78; clean initial worktrees; lead lint/type-check.
 - Not run / still required: lane local gates, screenshot acceptance and PR CI.
 
 ## Decisions and constraints
@@ -39,6 +41,7 @@ objective: Coordinate isolated design-port lanes and maintain dependency and ver
 - S1 contracts/integration missing for all three lanes; exact requests in STATUS.md.
 - Handoff checker fails inherited S1 T03/T04 handoff status review; leave owner file untouched.
 - Context7/Playwright MCP unavailable; record fallback evidence honestly.
+- Lane B install and C Prisma hit ENOSPC; retrying after cleanup, builds serialized.
 
 ## Next action
 

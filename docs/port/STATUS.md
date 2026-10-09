@@ -6,9 +6,9 @@ Foundation verified: #77 (T01/T02) and #78 (T03/T04) merged into
 
 | Lane | Card | PR | State | Blockers |
 | --- | --- | --- | --- | --- |
-| A / S2 | T05 Shell | — | Implementing S2 components | S1 V3Root shell mount and search hook |
-| B / S3 | T06 Task | — | Implementing pure UI and derived labels | S1 task contract / parts and waits mapping; generated CSS motion corrections |
-| C / S4 | T08 States | — | Implementing states and status mapping | Offline queue count and AI status data contracts |
+| A / S2 | T05 Shell | — | Local cheap gates and browser harness checks pass; 12 PNGs captured | S1 root/search; remaining fidelity gaps; build interrupted for disk |
+| B / S3 | T06 Task | — | Pure UI implemented; clean reinstall repairs ENOSPC-corrupt dependencies | S1 task contract / parts and waits mapping; generated CSS motion corrections |
+| C / S4 | T08 States | — | Local cheap gates pass; screenshot and offline-scope checks | Unscoped queue messages unsafe across tabs; production consuming screen absent |
 
 ## Dependency checklist
 
@@ -53,11 +53,31 @@ Screenshots: prototype and app, light/dark, 1440×900; card-specific widths/stat
 3. Generated `src/styles/v3/tasks.css` retains prototype motion violations.
    Apply mandatory motion corrections through the S1 sync script, preserving
    tokens:check parity; lanes must not hand-edit generated files.
-4. T08: expose supported offline queue count and AI limit/down status through
-   existing authorized hooks. Expired-trial status is already derivable:
-   `/api/billing` retains `trialEndsAt` independently of `isTrial`.
+4. T08: existing billing hook preserves real usage fields at runtime, allowing
+   validated S4 narrowing for AI exhaustion. Service-down/reset time are absent.
+   Expired-trial status is derivable from retained `trialEndsAt`.
+   `public/sw.js:399` filters global activeScope but broadcasts count to every
+   tab with no scope in the payload. A second workspace tab can therefore send
+   its count to the first tab. S1 must add a validated scope to the payload or
+   reply per client; S4 must reject unscoped/mismatched counts in the meantime.
 5. Handoff checker fails on inherited
    `.agents/handoffs/20261009-claude-port-t03-t04.md`: `status: review` is outside
    validator's active/blocked/complete set. Owner must correct that handoff.
 
 These gaps block full card acceptance; lanes continue independent components.
+
+## Disk / lead verification checkpoint
+
+- Lead docs commit `e26af1a` pushed to `origin/port/lead-status`; normal commit
+  hooks passed zero-warning lint and type-check (Node 22).
+- Disk reached 131 MiB free and lane B install / C Prisma failed ENOSPC.
+  Removed regenerable npm cache and lead's own node_modules after its commit;
+  free space recovered to about 2.1 GiB. Lane source and dependencies preserved.
+- B retries install alone; Next builds will run one at a time.
+- Browser evidence ports reserved: prototype 4408, A 4305, B 4306, C 4308.
+  Component harness evidence must be labeled separately from authenticated app
+  integration, which is not proven by screenshots of standalone components.
+- Frozen prototype omits its requested DS bundle. Read-only server fallback uses
+  original `Needt - Design : App, Landing/_ds/.../_ds_bundle.js`; matching frozen
+  styles/task source verified by SHA256. S1 should vendor missing runtime asset
+  for reproducible reference preview; no frozen files modified by lanes.
