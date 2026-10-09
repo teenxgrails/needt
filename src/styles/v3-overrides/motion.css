@@ -34,3 +34,20 @@
     animation: none !important;
   }
 }
+
+/* Lane B · T06 <Task> (task.jsx, styles/tasks.css).
+   Rule 12: never animate `left` / `width` — a calendar block moves by
+   placement, not by a transition on its box. */
+.needt-v3 .tk-block {
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+/* V-D17: off-scale durations snap to the scale (400 → 280, 200 → 220). */
+.needt-v3 .tk-ring-fill {
+  transition: stroke-dashoffset 280ms var(--nx-ease);
+}
+.needt-v3 .tk-touch {
+  transition: opacity 220ms ease;
+}
