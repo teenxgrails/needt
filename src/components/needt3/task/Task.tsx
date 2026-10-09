@@ -10,26 +10,45 @@ import {
 import { FiArrowRight } from "react-icons/fi";
 
 import { useDesignV3 } from "@/components/needt3/root/V3Root";
-import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
 
+import { formatInTimeZone, newDate } from "@/lib/date-utils";
+import { NEUTRAL_MARK, type ProjectLike } from "@/lib/needt3/derive";
 import { useProjects } from "@/lib/needt3/hooks/projects";
+import { useTimeZone } from "@/lib/needt3/hooks/settings";
+import { useToggleTask } from "@/lib/needt3/hooks/tasks";
 
 import { TaskCheck } from "./TaskCheck";
 import { DeskMeta, LineMeta, PartCount, TaskValue } from "./chips";
-import { type TaskData, taskView } from "./view";
+import { type TaskEntry, isTaskEvent, taskView } from "./view";
 
-export type { TaskData } from "./view";
-export { taskView } from "./view";
+export type { TaskEntry, TaskEvent, TaskView } from "./view";
+export { isTaskEvent, taskView } from "./view";
 
+/**
+ * THE TASK ($P/task.jsx): one component, three layouts.
+ *   row   — density "desk" (default), "touch", "agenda", "mini".
+ *   card  — density "desk" (default), "touch", "preview"; actions = children.
+ *   block — a calendar block; the caller places it (`style`) and passes the
+ *           box it got (`box`) so the text can follow the <30 min rule.
+ * Without `onToggle` the check closes / reopens the task through
+ * `useToggleTask` (status `completed`); open parts do not block it.
+ */
 export interface TaskProps {
-  task: TaskData;
+  task: TaskEntry;
   layout?: "row" | "card" | "block";
   onToggle?: (id: string) => void;
-  onOpen?: (id: string, task: TaskData) => void;
+  onOpen?: (id: string, task: TaskEntry) => void;
   draggable?: boolean;
   dense?: boolean;
   density?: "desk" | "touch" | "agenda" | "mini" | "preview";
-  dragProps?: (task: TaskData, mode: "place") => HTMLAttributes<HTMLDivElement>;
+  dragProps?: (
+    task: TaskEntry,
+    mode: "place"
+  ) => HTMLAttributes<HTMLDivElement>;
+  /** Projects to resolve `projectId` against; defaults to `useProjects()`. */
+  projects?: readonly ProjectLike[];
+  /** The person's day ("YYYY-MM-DD") for overdue; defaults to today in their zone. */
+  today?: string;
   late?: boolean;
   phase?: "strike" | "collapse" | "out";
   back?: boolean;
@@ -53,6 +72,7 @@ export interface TaskProps {
   style?: CSSProperties;
 }
 
+/** Renders only inside the v3 frame; flag off it mounts nothing. */
 export function Task(props: TaskProps) {
   const v3 = useDesignV3();
   return v3 ? <TaskContent {...props} /> : null;
@@ -80,15 +100,20 @@ function TaskContent(props: TaskProps) {
     style,
     className = "",
   } = props;
-  const reduced = useNeedtReducedMotion();
-  const projects = useProjects();
+  const projectsQuery = useProjects();
+  const tz = useTimeZone();
+  const toggleTask = useToggleTask();
   const [hot, setHot] = useState(false);
   const [focused, setFocused] = useState(false);
-  const v = taskView(task, projects.data);
+  const today = props.today ?? formatInTimeZone(newDate(), tz, "yyyy-MM-dd");
+  const v = taskView(task, props.projects ?? projectsQuery.data, today);
   const density = props.density ?? (props.dense ? "mini" : "desk");
   const late = props.late ?? (layout === "card" && v.overdue);
-  const open = () => onOpen?.(task.id, task);
-  const openProps: HTMLAttributes<HTMLDivElement> = onOpen
+  const canOpen = !!onOpen && !v.event;
+  const open = () => {
+    if (canOpen) onOpen?.(task.id, task);
+  };
+  const openProps: HTMLAttributes<HTMLDivElement> = canOpen
     ? {
         role: "button",
         tabIndex: 0,
@@ -104,27 +129,27 @@ function TaskContent(props: TaskProps) {
         },
       }
     : {};
-  const toggle = onToggle ? () => onToggle(task.id) : undefined;
+  const toggle = onToggle
+    ? () => onToggle(task.id)
+    : isTaskEvent(task)
+      ? undefined
+      : () => void toggleTask.toggle(task).catch(() => undefined);
   const check = (
     <TaskCheck key={task.id} on={v.done || !!phase} onClick={toggle} />
   );
-  const hue = v.event
-    ? "var(--text-tertiary)"
-    : v.hue || "color-mix(in oklab, var(--foreground) 42%, var(--surface-raised))";
+  const hue = v.event ? "var(--text-tertiary)" : v.hue || NEUTRAL_MARK.color;
   const identity = {
     "data-task": v.event ? undefined : v.id,
     "data-ctx": v.event ? undefined : "task",
     "data-ctx-id": v.event ? undefined : v.id,
   };
-  const motionStyle: CSSProperties = reduced
-    ? { animation: "none", transition: "none" }
-    : { animationFillMode: "backwards" };
 
   if (layout === "block") {
     const h = box.h ?? Math.max((v.len / 60) * 52 - 3, 20);
     const pt = box.padTop || 0;
     const short = v.len < 30 || h - pt < 34;
     const lines = Math.max(1, Math.floor((h - pt - (box.tight ? 5 : 23)) / 15));
+    // time prefix only when "09:00 " plus ~6 characters of title fit
     const fitTime =
       (box.w ?? 999) - 15 >= 38 + Math.min(v.title.length, 6) * 6.4;
     const shadow =
@@ -132,6 +157,7 @@ function TaskContent(props: TaskProps) {
         lit ? "var(--shadow-raised)" : null,
         box.cascade ? "var(--surface-raised) 0 0 0 1px" : null,
         selected ? "var(--accent) 0 0 0 1.5px inset" : null,
+        focused ? "var(--accent) 0 0 0 2px" : null,
       ]
         .filter(Boolean)
         .join(", ") || "none";
@@ -150,13 +176,8 @@ function TaskContent(props: TaskProps) {
             : `color-mix(in oklch, ${hue} ${lit ? 22 : 14}%, var(--surface-raised))`,
           boxShadow: shadow,
           opacity: v.done ? 0.5 : 1,
-          transform: lit && !reduced ? "translateY(-1px)" : "none",
-          transition:
-            "background-color 140ms ease, box-shadow 140ms ease, transform 140ms ease",
+          transform: lit ? "translateY(-1px)" : "none",
           ...style,
-          ...motionStyle,
-          outline: focused ? "2px solid var(--accent)" : undefined,
-          outlineOffset: focused ? 2 : undefined,
         }}
       >
         <span
@@ -202,7 +223,10 @@ function TaskContent(props: TaskProps) {
             {v.title}
           </span>
           <span className="tk-prev-where">
-            {v.projectName || "Inbox"} · {v.due || "later"}
+            {v.projectName || "Inbox"} ·{" "}
+            {!isTaskEvent(task) && task.dueDate === today
+              ? "today"
+              : v.due || "later"}
           </span>
         </div>
       );
@@ -212,7 +236,11 @@ function TaskContent(props: TaskProps) {
           <span
             aria-hidden="true"
             className="tk-tcard-rail"
-            style={{ background: v.projectName ? hue : "var(--text-muted)" }}
+            style={{
+              background: v.projectName
+                ? v.hue || "var(--text-muted)"
+                : "var(--text-muted)",
+            }}
           />
           <span className="tk-tcard-head">
             {label ? <span className="tk-label">{label}</span> : null}
@@ -227,14 +255,14 @@ function TaskContent(props: TaskProps) {
           {children ? <span className="tk-tcard-acts">{children}</span> : null}
         </div>
       );
+    const cardHue = v.hue || "var(--text-muted)";
     return (
       <div
         {...identity}
         className={`hd-card nx-swap tk-card ${className}`}
         style={{
-          background: `color-mix(in oklab, ${v.hue || "var(--text-muted)"} 22%, var(--background))`,
+          background: `color-mix(in oklab, ${cardHue} 22%, var(--background))`,
           ...style,
-          ...motionStyle,
         }}
       >
         <div aria-label={label} className="tk-card-plate">
@@ -254,14 +282,14 @@ function TaskContent(props: TaskProps) {
                   <span
                     aria-hidden="true"
                     className="tk-dot"
-                    style={{ background: hue }}
+                    style={{ background: cardHue }}
                   />
                   <span className="tk-clip">{v.projectName}</span>
                 </span>
               ) : null}
             </span>
           </div>
-          <div className="tk-card-text">
+          <div key={v.id} className="nx-swap tk-card-text">
             <div {...openProps} title={v.title} className="tk-card-title">
               {v.title}
             </div>
@@ -283,12 +311,7 @@ function TaskContent(props: TaskProps) {
         {...identity}
         {...openProps}
         className={`mb-row tk-touch ${className}`}
-        style={{
-          opacity: phase === "out" ? 0 : 1,
-          transition: "opacity 220ms ease",
-          ...style,
-          ...motionStyle,
-        }}
+        style={{ opacity: phase === "out" ? 0 : 1, ...style }}
       >
         <span className="tk-touch-check">
           <TaskCheck
@@ -390,7 +413,7 @@ function TaskContent(props: TaskProps) {
   return (
     <div
       className={`hd-row${phase === "collapse" ? " is-collapsing" : ""}${phase ? " is-striking" : ""}${back ? " nx-swap" : ""} ${className}`}
-      style={{ ...style, ...motionStyle }}
+      style={style}
     >
       <div>
         <div

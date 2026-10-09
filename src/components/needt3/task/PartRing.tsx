@@ -1,9 +1,6 @@
-"use client";
-
-import { useNeedtReducedMotion } from "@/components/providers/MotionRuntime";
-
+/* Parts: a small progress ring beside "1/2" ($P/task.jsx `TkPartRing`).
+   The fill's transition lives in src/styles/v3-overrides/motion.css. */
 export function PartRing({ done, total }: { done: number; total: number }) {
-  const reduced = useNeedtReducedMotion();
   const circumference = 2 * Math.PI * 4.5;
   return (
     <svg
@@ -23,11 +20,6 @@ export function PartRing({ done, total }: { done: number; total: number }) {
         strokeDashoffset={
           circumference * (1 - (total ? Math.min(done / total, 1) : 0))
         }
-        style={{
-          transition: reduced
-            ? "none"
-            : "stroke-dashoffset 280ms var(--nx-ease)",
-        }}
       />
     </svg>
   );
