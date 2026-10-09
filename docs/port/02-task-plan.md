@@ -67,10 +67,10 @@ Source: `docs/port/prototype/` in this repo (below: `$P`; frozen 2026-10-09 from
 
 | Stream | Owns (write) |
 | --- | --- |
-| S1 Foundation | `prisma/**`, `scripts/sync-design-tokens.mjs`, `scripts/check-design-tokens.mjs`, `src/styles/v3/{ds-*,themes,base,app,exposure-wordmark,home,mail,habits,auth,paywall,scenes}.css`, `src/lib/feature-flags*.ts`, `src/lib/needt3/**`, `src/store/needt3-ui.ts`, `src/app/(app)/layout.tsx`, `src/app/page.tsx`, `needt3/{home,mail,habits,auth,paywall,scenes,wordmark}/**`, `CHANGELOG.md` |
-| S2 Shell | `needt3/{shell,palette,ctx,menu,dialogs/TaskDialog*,work,places}/**`, `src/styles/v3/{shell,tasks,places}.css`, routes `/tasks`, `/projects*`, `/moodboards*`, `/templates`, `/shared`, `/trash` |
-| S3 Objects | `needt3/{task,composer,drag,calendar,settings,connections}/**`, `src/styles/v3/{composer,calendar,settings,connections}.css`, routes `/calendar`, `/settings`, `/connections` |
-| S4 Layers | `needt3/{states,docs,document,corner,cursor,orb,focus}/**`, `src/styles/v3/{docs,chat,focus}.css`, routes `/pages*` |
+| S1 Foundation (Claude) | `prisma/**`, `scripts/sync-design-tokens.mjs`, `scripts/check-design-tokens.mjs`, `src/styles/v3/{ds-*,themes,base,app,exposure-wordmark,home,auth,paywall,scenes}.css`, `src/lib/feature-flags*.ts`, `src/lib/needt3/**`, `src/store/needt3-ui.ts`, `src/app/(app)/layout.tsx`, `src/app/page.tsx`, `needt3/{home,auth,paywall,scenes,wordmark,corner,cursor,orb}/**`, `CHANGELOG.md` |
+| S2 Shell (Codex A) | `needt3/{shell,palette,ctx,menu,dialogs/TaskDialog*,work,places}/**`, `src/styles/v3/{shell,tasks,places}.css`, routes `/tasks`, `/projects*`, `/moodboards*`, `/templates`, `/shared`, `/trash` |
+| S3 Objects (Codex B) | `needt3/{task,composer,drag,calendar,settings,connections}/**`, `src/styles/v3/{composer,calendar,settings,connections}.css`, routes `/calendar`, `/settings`, `/connections` |
+| S4 Layers (Codex C) | `needt3/{states,docs,document,focus,mail,habits}/**`, `src/styles/v3/{docs,focus,mail,habits}.css`, routes `/pages*`, `/mail`, `/habits` (`chat.css` and the corner/cursor/orb moved to Claude) |
 
 Each stream also writes its own route `page.tsx` files. Nobody edits the old `src/components/needt/**`, `src/components/layout/AppShell.tsx`, `src/app/globals.css`, or the old `src/styles/needt-*.css`.
 
