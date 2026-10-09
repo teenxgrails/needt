@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { partsWaitsInclude } from "@/services/tasks/parts-waits";
 import { TaskBusyStatus, WorkspaceRole } from "@prisma/client";
 import { RRule } from "rrule";
 
@@ -94,6 +95,7 @@ export async function GET(request: NextRequest) {
         tags: true,
         project: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
+        ...partsWaitsInclude,
       },
       orderBy: {
         createdAt: "desc",
