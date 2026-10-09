@@ -9,6 +9,7 @@ import { newDate } from "@/lib/date-utils";
 import { getPlan } from "@/lib/entitlements";
 import { isTaskPlacementBlocked } from "@/lib/flexible-hours-guard-server";
 import { logger } from "@/lib/logger";
+import { parseV3Fields, taskV3FieldsSchema } from "@/lib/needt3/api-fields";
 import { prisma } from "@/lib/prisma";
 import { activeProjectTaskWhere } from "@/lib/projects/archive";
 import { schedulePushTaskBlock } from "@/lib/task-block-push";
@@ -137,6 +138,9 @@ export async function POST(request: NextRequest) {
     delete taskData.activities;
     delete taskData.recurrenceMasterId;
     delete taskData.recurrenceInstanceAt;
+    const v3 = parseV3Fields(taskV3FieldsSchema, taskData);
+    if (!v3.ok) return new NextResponse(v3.error, { status: 400 });
+    Object.assign(taskData, v3.data);
     const workspaceId = auth.workspace?.workspaceId;
     const assigneeId =
       requestedAssigneeId === undefined ? userId : requestedAssigneeId;

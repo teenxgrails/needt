@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
     });
     if (!schedule) return NextResponse.json({ error: "Schedule not found" }, { status: 404 });
   }
+  if (parsed.data.projectId) {
+    const project = await prisma.project.findFirst({
+      where: { id: parsed.data.projectId, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
+      select: { id: true },
+    });
+    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
   const habit = await prisma.habit.create({
     data: { ...parsed.data, userId: auth.userId, workspaceId: auth.workspace!.workspaceId },
   });

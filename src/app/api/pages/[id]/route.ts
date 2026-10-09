@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getPage, updatePage } from "@/services/pages/page-service";
-import { PageAccessRole } from "@prisma/client";
+import { PageAccessRole, Prisma } from "@prisma/client";
 
 import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { resolvePageAccess } from "@/lib/auth/page-auth";
+import { pageV3FieldsSchema, parseV3Fields } from "@/lib/needt3/api-fields";
 
 const LOG_SOURCE = "PageDetailAPI";
 type RouteContext = { params: Promise<{ id: string }> };
@@ -41,6 +42,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   try {
     const body = await request.json().catch(() => ({}));
+    const v3 = parseV3Fields(pageV3FieldsSchema, body);
+    if (!v3.ok) return NextResponse.json({ error: v3.error }, { status: 400 });
     const requiredRole =
       typeof body.isPrivate === "boolean" || typeof body.trashed === "boolean"
         ? PageAccessRole.FULL_ACCESS
@@ -71,6 +74,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         typeof body.isFavorite === "boolean" ? body.isFavorite : undefined,
       position: typeof body.position === "number" ? body.position : undefined,
       trashed: typeof body.trashed === "boolean" ? body.trashed : undefined,
+      style: v3.data.style as Prisma.InputJsonObject | null | undefined,
+      projectId: v3.data.projectId,
     });
     if (!page)
       return NextResponse.json({ error: "Page not found" }, { status: 404 });

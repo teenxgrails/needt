@@ -21,6 +21,13 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (!existing) return NextResponse.json({ error: "Habit not found" }, { status: 404 });
   const parsed = habitInputSchema.partial().safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid habit" }, { status: 400 });
+  if (parsed.data.projectId) {
+    const project = await prisma.project.findFirst({
+      where: { id: parsed.data.projectId, ...workspaceDataScopeWhere(auth.workspace, auth.userId) },
+      select: { id: true },
+    });
+    if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
   const habit = await prisma.habit.update({ where: { id }, data: parsed.data });
   return NextResponse.json({ habit });
 }
