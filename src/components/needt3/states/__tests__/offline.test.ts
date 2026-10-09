@@ -68,6 +68,11 @@ describe("offline count from the established scoped service-worker protocol", ()
     expect(host.textContent).toContain("3 changes waiting");
     await send(-4, "2:first:workspace-a");
     expect(host.textContent).toContain("3 changes waiting");
+    // scopeKey null is the sign-out reset and applies to every tab.
+    await send(0, null as unknown as string);
+    expect(host.textContent).not.toContain("changes waiting");
+    await send(3, "2:first:workspace-a");
+    expect(host.textContent).toContain("3 changes waiting");
     mockWorkspace = "workspace-b";
     await render();
     expect(host.textContent).not.toContain("3 changes waiting");

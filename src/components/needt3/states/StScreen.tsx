@@ -7,12 +7,17 @@ import { FiCloudOff, FiLock, FiRefreshCw } from "react-icons/fi";
 import strings from "../../../../docs/port/prototype/port/strings/en.json";
 import { useDesignV3 } from "../root/V3Root";
 import { type SkeletonKind, StSkeleton } from "./StSkeleton";
-import { type ScreenQuery, screenState } from "./status";
+import {
+  SCREEN_KIND,
+  type ScreenQuery,
+  errorText,
+  screenState,
+} from "./status";
 
 const copy = strings["states.jsx"];
 
 export function StError({
-  text = "Couldn’t load this — the server didn’t answer.",
+  text = errorText(),
   onRetry,
 }: {
   text?: string;
@@ -80,6 +85,8 @@ export function StNoAccess({
           </span>
         </span>
       ) : null}
+      {/* //todo "Request access" button: no access-request API exists yet;
+          the prototype's button is a mock, so it is not ported. */}
     </div>
   );
 }
@@ -107,17 +114,27 @@ export function PlEmpty({
 
 export interface StScreenProps {
   query: ScreenQuery;
-  kind: SkeletonKind;
+  /** Skeleton shape; defaults to the screen's kind in `SCREEN_KIND`. */
+  kind?: SkeletonKind;
+  /** Screen name (states.jsx `ST_WHAT` keys) for the error text and layer id. */
+  screen?: string;
   children: ReactNode;
   errorText?: string;
   title?: string;
 }
 
+/**
+ * Wraps a screen body and replaces it with the matching state while its
+ * query has nothing to show: skeleton on first load, error + Retry, offline
+ * without cache, and no access on 403. Cached content always wins, except
+ * after a 403.
+ */
 export function StScreen({
   query,
   kind,
+  screen,
   children,
-  errorText,
+  errorText: text,
   title,
 }: StScreenProps) {
   const enabled = useDesignV3();
@@ -129,24 +146,31 @@ export function StScreen({
       className="relative flex min-h-0 flex-1 flex-col"
       data-st-state={state}
     >
-      {state === "loading" ? (
-        <StSkeleton kind={kind} />
-      ) : state === "no-access" ? (
-        <div className="st-center is-mid">
-          <StNoAccess title={title} />
-        </div>
-      ) : (
-        <div className="st-center">
-          <StError
-            text={
-              state === "offline"
-                ? "You’re offline — reconnect to load this."
-                : errorText
-            }
-            onRetry={query.refetch}
+      <div className="st-layer" data-st-layer={screen ?? kind ?? "list"}>
+        {state === "loading" ? (
+          <StSkeleton
+            kind={kind ?? (screen ? SCREEN_KIND[screen] : undefined) ?? "list"}
           />
-        </div>
-      )}
+        ) : state === "no-access" ? (
+          <div className="st-center is-mid">
+            <StNoAccess
+              title={title}
+              kind={screen === "moodboards" ? "moodboard" : "document"}
+            />
+          </div>
+        ) : (
+          <div className="st-center">
+            <StError
+              text={
+                state === "offline"
+                  ? "You’re offline — reconnect to load this."
+                  : (text ?? errorText(screen))
+              }
+              onRetry={query.refetch}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
