@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Design v3 port, foundations (behind the `design_v3` flag, off for
+  everyone): the new design's tokens, themes and stylesheets are vendored
+  under a `.needt-v3` scope (`npm run tokens:sync:v3`, guarded by
+  `npm run tokens:check`), with the licensed Exposure face and Newsreader /
+  Nunito. A person with the flag sees the app inside the new frame, themed
+  System / Light / Dark / Time with nine accents; nobody else sees a change.
 - The API takes the fields the new design writes: Trash and the "from
   mail / doc / chat" origin on tasks, "don't split", a project's tint and
   manual order, a habit's own colour, glyph, time, weekly quota and

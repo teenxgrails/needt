@@ -43,7 +43,9 @@ Read first (all in the repo)
 - docs/port/01-data-map.md for fields (owner decisions at the end are binding:
   mail is read-only; habits have streaks; the task sheet keeps First step and
   Scheduling; "Overlaps" only when a calendar event is involved).
-- The prototype is docs/port/prototype/ (read-only). Serve it with
+- The prototype is docs/port/prototype/ (FROZEN, read-only). Also read its
+  FROZEN.md, COMPONENTS.md (props + target module per component) and use
+  docs/port/prototype/port/ (types, fixtures, en.json strings) instead of retyping. Serve it with
   `npx serve docs/port/prototype` and open index-dev.html#screen/<view> or
   mobile-dev.html to compare. Never edit it.
 
