@@ -1,0 +1,36 @@
+/* Design v3 — motion corrections from docs/port/prototype/MOTION.md.
+ *
+ * HAND-WRITTEN, not vendored: src/styles/v3/ is regenerated from the frozen
+ * prototype and must stay byte-for-byte reproducible, so the corrections the
+ * port applies on top of it live here and load after it (V3Root imports this
+ * file after src/styles/v3/index.css). Same `.needt-v3` scope, same or higher
+ * specificity, later in the cascade — each rule wins over the vendored one.
+ *
+ * V-B8: entry animations must not hold their end state. With fill `both` the
+ * last keyframe keeps applying after the animation ends, so a later
+ * transform/opacity change on the same element is ignored. `backwards` still
+ * hides the element during its delay, which is what the stagger needs.
+ */
+.needt-v3
+  :is(
+    .screen-enter,
+    .nx-swap,
+    .sb-tile,
+    .tk-block,
+    .settings-enter,
+    .auth-enter,
+    .sb-swap,
+    .mbm-tile
+  ) {
+  animation-fill-mode: backwards;
+}
+
+/* Inline `animation: nx-swap …` styles (V-C9) bypass the class rule above;
+   components must use the `.nx-swap` class instead of inline animation. */
+
+/* V-C11: a shimmer under reduced motion stops instead of cycling at 1 ms. */
+@media (prefers-reduced-motion: reduce) {
+  .needt-v3 :is(.mb-skel, .st-sk, .chat-think-now) {
+    animation: none !important;
+  }
+}

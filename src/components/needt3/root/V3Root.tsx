@@ -11,6 +11,8 @@ import {
 } from "react";
 
 import "@/styles/v3/index.css";
+// Port corrections on top of the vendored prototype CSS; must load after it.
+import "@/styles/v3-overrides/motion.css";
 
 import { newDate } from "@/lib/date-utils";
 import { V3_FONT_CLASSES } from "@/lib/needt3/fonts";
