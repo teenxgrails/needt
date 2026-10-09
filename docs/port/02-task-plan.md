@@ -1,25 +1,25 @@
 # Design v3 port — task plan (desktop day 1, phone days 2–3)
 
-Source: `/Users/lol/Needt/Needt - Design : App, Landing/needt-app/` (below: `$P`). Read first: `$P/PORT.md`, `$P/SCREENS.md`, `$P/MOTION.md`, `$P/UI-RULES.md`. Reference render: open `$P/index.html#screen/<view>` (views: `today tasks projects calendar docs mail moodboards habits templates shared trash connections settings`) and `$P/mobile.html`.
+Source: `docs/port/prototype/` in this repo (below: `$P`; frozen 2026-10-09 from `Needt - Design : App, Landing/needt-app/`). Read first: `$P/PORT.md`, `$P/SCREENS.md`, `$P/MOTION.md`, `$P/UI-RULES.md`. Reference render: serve `$P` and open `$P/index-dev.html#screen/<view>` (views: `today tasks projects calendar docs mail moodboards habits templates shared trash connections settings`) and `$P/mobile-dev.html`.
 
 ## 0. Corrections to the skeleton, from the code
 
 | Finding | Consequence |
 | --- | --- |
-| `$P` is **untracked** in the main checkout (`?? "Needt - Design : App, Landing/"`). A `git worktree` will not contain it. | Every subagent reads the prototype by **absolute quoted path**. Never copy it into a worktree. |
+| The prototype was untracked in the main checkout. | **Resolved 2026-10-09:** frozen copy committed at `docs/port/prototype/` (no builds, no trial font; `index.html`/`mobile.html` are not included — open `index-dev.html`/`mobile-dev.html`). Read-only. |
 | A September port already exists: `src/components/needt/**` (old bundle "Content height and label fixes"), tokens vendored by `scripts/sync-design-tokens.mjs` into `src/styles/needt-*.css` under the `.needt-v2` scope, guarded by `scripts/check-design-tokens.mjs`. | The new design gets its **own scope `.needt-v3`** and its own folder. Re-vendoring into `.needt-v2` would restyle every flag-off screen. Old code stays untouched until the flag is flipped and the contract step deletes it. |
 | `isFeatureEnabled(key, userId)` (`src/lib/feature-flags.ts`) is server-only (Prisma, `crypto`) and per user. Precedent: `editor_v2` in `src/app/(app)/pages/[id]/page.tsx`. | The flag is read once per request on the server. It reaches the client through a context. No client fetch of flags. |
 | Removed in the new design but live in `src/`: Workspace (Flow/Team/Kanban, `needt/workspace/**`), Columns/Sequence/Minutes (`needt/calendar/ColumnsScreen.tsx` …), Brief/Prose/Canvas Home forms (`needt/home/BriefBoard.tsx` …), the old phone (`needt/mobile/**`, `NeedtMobileTabs`). | They are not ported. They stay behind flag-off only. |
 | Routes missing in `src/app/(app)/`: habits, templates, shared, trash, connections. Today, connections are `settings#integrations`. | New routes, rendered only when the flag is on (they `notFound()` when it is off). |
 | Prototype runtime layers: `sync.js`, `platform.js`, `app-boot.js`, `build.js`, `needt-lazy.js`, `cssvar.js`, `ios-frame.jsx`. | **Do not port these.** Persistence = existing API + TanStack Query. Lazy loading = `next/dynamic`. Platform = a thin `src/lib/needt3/platform.ts` (clipboard, file pick, share, `openExternal`) with web implementations only. |
 | Most data already has columns: `Task.scheduleLocked` (= `isFixed`), `entry`, `noSlot`, `valueCents`, `previousScheduledStart` (= `movedFrom`), `globalStage` (= `Stage`), `TaskPart`, `TaskWait`, `Page.isFavorite/coverUrl/trashedAt`, `Habit.at/archivedAt`, `Moodboard.archivedAt`, `PageTemplate`, `Subscription`, `LifetimeHold`. | Migrations in hour 1 are small and additive (T03). |
-| `feat/needt-notifications` (current branch) is **not in main** and touches `needt/corner/**`. | Merge it to main before the integration branch is cut, or cut the integration branch from it. The owner decides at 0:00. |
+| `feat/needt-notifications` (#66) touches `needt/corner/**`. | **Resolved 2026-10-09:** merged into `port/integration` (not main; its visual baselines change). |
 | Prototype key table bug: `NEEDT_KEYS` labels `G W` "Workspace", but `GO` maps `gw→projects` and `gt→tasks` (`$P/App.jsx:51-68`). | Port as `G P` Projects and `G T` Tasks. One table drives both the handler and the sheet. |
 
 ## 1. Branches, worktrees, flag
 
-- Integration branch: `feat/design-v3`, cut from `origin/main` (after the notifications decision). Merging into `main` = production deploy, so it merges **only with the flag off for everyone**.
-- Streams: `feat/design-v3-s1` … `-s4`, worktrees `../Needt-worktrees/design-v3-s{1..4}`, one handoff each in `.agents/handoffs/2026-10-10-design-v3-s{N}.md`. Each stream rebases on `feat/design-v3` at every hour boundary. The integrator (S1 owner) merges hourly.
+- Integration branch: `port/integration`, cut from `origin/main` at `3c4a71e` with #66 merged in. Merging into `main` = production deploy, so it merges **only with the flag off for everyone**.
+- Streams: branches `port/<task-or-stream>` from `port/integration`, each in its own worktree, one handoff each in `.agents/handoffs/`. Workers: Claude (S1 foundations, review, integration) and Codex (screen streams). PRs target `port/integration`; Claude reviews and merges.
 - Flag key: `design_v3`. Rollout 0 %, override for the owner's user id.
 
 ## 2. Shared contracts (frozen at 1:00; a change after that goes through the S1 handoff)
@@ -114,11 +114,11 @@ Every task card: **Src → Target → Deps → Accept.**
 ### Hour 1 (0:00–1:00) — foundations, all four in parallel
 
 **T01 Tokens, themes, fonts (S1)**
-- Src: `$P/../_ds/needt-design-system-main-25d3c8e5-…/{styles.css,tokens/*.css}`, `$P/themes.css` (1437), `$P/app.css` (1159), `$P/composer.css`, `$P/exposure-wordmark.css`, `$P/styles/*.css`, `$P/ExposureTrialVAR.woff2`, `$P/Drift.jsx` (Time theme), `$P/settings-kit.jsx` (theme/accent lists).
+- Src: `docs/port/_ds/{styles.css,tokens/*.css}`, `$P/themes.css` (1437), `$P/app.css` (1159), `$P/composer.css`, `$P/exposure-wordmark.css`, `$P/styles/*.css`, `$P/Drift.jsx` (Time theme), `$P/settings-kit.jsx` (theme/accent lists).
 - Target:
   - `scripts/sync-design-tokens.mjs` gains `--scope .needt-v3 --out src/styles/v3` and the bundle path `"Needt - Design : App, Landing"`. Output: `src/styles/v3/*.css`.
   - `scripts/check-design-tokens.mjs` checks the v3 files.
-  - Fonts: `next/font/local` for Exposure (trial file now; the licensed file swaps in under the same family). Newsreader and Nunito come via `next/font/google`.
+  - Fonts: `next/font/local` for Exposure from the licensed `public/fonts/ExposureVAR.woff2`. Newsreader and Nunito come via `next/font/google`.
   - `src/lib/needt3/theme.ts` holds System/Light/Dark/Time + accents.
 - Deps: none.
 - Accept: `npm run tokens:check` passes; `/style` (old) is pixel-identical (`npx playwright test --config=playwright.visual.config.ts style-lab`); a scratch page under `.needt-v3` shows text ladder and fills matching `$P/index.html` in both themes.
