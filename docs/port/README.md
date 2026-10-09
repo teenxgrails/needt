@@ -1,7 +1,10 @@
 # Design port (2026-10)
 
-- `prototype/` — frozen copy of the Claude Design prototype
-  (`Needt - Design : App, Landing/needt-app`) taken 2026-10-09, read-only.
+- `prototype/` — the prototype, **FROZEN 2026-10-09** by the owner (see
+  `prototype/FROZEN.md`): final for desktop and phone, read-only. Spec files:
+  `PORT.md`, `COMPONENTS.md` (every live component, props, target module),
+  `SCREENS.md`, `MOTION.md`, `UI-RULES.md`, and `prototype/port/` (tokens as
+  JSON + CSS, TypeScript types, fixtures + validator, UI strings `en.json`).
   Port from here, never edit it. The trial Exposure font, build output,
   archives and icon explorations are left out; the licensed font is
   `public/fonts/ExposureVAR.woff2`.
