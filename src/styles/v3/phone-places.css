@@ -33,10 +33,8 @@
 
 /* ── Connections ── */
 .needt-v3 .ppl-tile { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--pk-glass-chip); box-shadow: var(--pk-glass-chip-edge); color: var(--v2p-ink-2); font: 600 16px/1 var(--font-sans); box-sizing: border-box; }
-.needt-v3 .ppl-row-lead .brand-icon,
 .needt-v3 .ppl-row-lead svg { display: block; }
 .needt-v3 .ppl-flag { flex: none; padding: 2px 6px; border-radius: 6px; background: var(--v2p-raise); color: var(--v2p-ink-2); font: 600 10px/12px var(--font-sans); letter-spacing: 0.06em; text-transform: uppercase; }
-.needt-v3 .ppl-soon { font: 500 13px/16px var(--font-sans); color: var(--v2p-ink-3); padding-right: 4px; }
 .needt-v3 .ppl-sheet-tile { display: block; padding: 12px 22px 0; }
 
 /* the sync sheet: toggle rows on the glass */
@@ -98,7 +96,6 @@
 .needt-v3 .ppl-doc { flex: 1 0 auto; display: flex; flex-direction: column; }
 .needt-v3 .ppl-doc .mb-doc { flex: 1 0 auto; min-height: 0; border-radius: 22px 22px 0 0; overflow: hidden; }
 .needt-v3 .ppl-doc .mb-doc-card { padding-bottom: 40px; }
-
 
 /* ── wave 3 (09.10.26): account / access sheets, previews, trash groups ── */
 .needt-v3 .ppl-acct-body { display: flex; flex-direction: column; padding-top: 4px; }

@@ -169,6 +169,7 @@
     "lint-staged": "^15.5.0",
     "nodemon": "^3.1.9",
     "postcss": "^8",
+    "postcss-selector-parser": "^6.1.2",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.5.14",
     "tailwindcss": "^3.4.1",

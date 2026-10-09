@@ -43,7 +43,6 @@
 .needt-v3 .pl-habits-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .needt-v3 .pl-habits-col-2 { container-type: inline-size; padding: 28px 28px 24px; border-radius: var(--radius-3xl); background: var(--surface-raised); box-shadow: var(--shadow-ring); display: flex; flex-direction: column; gap: 16px; }
 .needt-v3 .pl-habits-text { font: var(--type-ui); color: var(--text-tertiary); margin-top: -10px; }
-.needt-v3 .pl-habits-section { padding: 20px 18px; border-radius: var(--radius-3xl); background: var(--surface-raised); box-shadow: var(--shadow-ring); }
 .needt-v3 .pl-page { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 32px; }
 .needt-v3 .pl-templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 .needt-v3 .pl-trash-col { margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 10px; }

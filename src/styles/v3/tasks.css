@@ -227,8 +227,7 @@
   border-radius: 16px; background: var(--surface-raised); box-shadow: var(--shadow-floating);
   animation: v3-tdc-in 160ms var(--nx-ease) both; transform-origin: 50% 40%; }
 .needt-v3[data-theme="dark"] .tdc-card,
-.needt-v3[data-theme="dark"] .tdc-pop,
-.needt-v3[data-theme="dark"] .tdc-bar { background: var(--surface-floating); }
+.needt-v3[data-theme="dark"] .tdc-pop { background: var(--surface-floating); }
 
 /* Head: round checkbox · title · ⋯ · ×. */
 .needt-v3 .tdc-head { position: relative; flex: none; display: flex; align-items: flex-start; gap: 12px; padding: 18px 12px 0 20px; }
@@ -289,15 +288,12 @@
 .needt-v3 .tdc-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding: 16px 20px 16px 54px; }
 .needt-v3 .tdc-label { display: inline-flex; align-items: center; gap: 6px; font: var(--type-meta-medium); color: var(--text-tertiary); }
 
-.needt-v3 .tdc-notes { min-height: 22px; outline: none; font: var(--type-body); color: var(--text-secondary); overflow-wrap: anywhere; cursor: text; }
+/* Notes: plain text (`notes`), a borderless textarea that grows with it. */
+.needt-v3 .tdc-notes { display: block; width: 100%; min-height: 22px; margin: 0; padding: 0; border: 0; outline: none; resize: none; overflow: hidden; background: transparent;
+  font: var(--type-body); color: var(--text-secondary); overflow-wrap: anywhere; cursor: text; }
 .needt-v3 .tdc-notes:focus,
 .needt-v3 .tdc-notes:focus-visible { outline: none; box-shadow: none; }
-.needt-v3 .tdc-notes:empty::before { content: attr(data-placeholder); color: var(--text-disabled); }
-.needt-v3 .tdc-notes ul,
-.needt-v3 .tdc-notes ol { margin: 4px 0; padding-left: 20px; }
-.needt-v3 .tdc-notes a { color: var(--text-primary); text-decoration: underline; text-underline-offset: 2px; }
-.needt-v3 .tdc-bar { position: absolute; z-index: 3; left: var(--tdc-x); top: var(--tdc-y); transform: translate(-50%, calc(-100% - 6px));
-  display: flex; gap: 2px; padding: 3px; border-radius: 11px; background: var(--surface-raised); box-shadow: var(--shadow-floating); animation: v3-tdc-fade 120ms ease both; }
+.needt-v3 .tdc-notes::placeholder { color: var(--text-disabled); }
 
 /* Subtasks. */
 .needt-v3 .tdc-subs { display: flex; flex-direction: column; gap: 0; margin-left: -34px; }
@@ -328,17 +324,20 @@
 .needt-v3 .tdc-sub-add:hover { background: transparent; }
 .needt-v3 .tdc-sub-plus { flex: none; width: 16px; display: flex; justify-content: center; color: var(--text-tertiary); }
 
-/* First step — one compact row. */
-.needt-v3 .tdc-step { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 10px; border: 0; border-radius: 10px; text-align: left; cursor: default;
+/* First step — one compact row: the label, a one-line field (`entry`), and
+   Start focus once there is a way in. */
+.needt-v3 .tdc-step { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 4px 0 10px; border-radius: 10px;
   background: var(--fill-2); color: var(--text-secondary); transition: background-color var(--transition-hover); }
-.needt-v3 .tdc-step:hover { background: var(--fill-3); }
+.needt-v3 .tdc-step:hover,
+.needt-v3 .tdc-step:focus-within { background: var(--fill-3); }
 .needt-v3 .tdc-step-arrow { flex: none; display: flex; color: var(--text-tertiary); }
 .needt-v3 .tdc-step-label { flex: none; font: var(--type-meta-medium); color: var(--text-tertiary); }
-.needt-v3 .tdc-step-text { flex: 1; min-width: 0; font: var(--type-ui-medium); color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.needt-v3 .tdc-step-go { flex: none; display: none; font: var(--type-meta-medium); color: var(--text-primary); }
-.needt-v3 .tdc-step:hover .tdc-step-go { display: inline; }
-.needt-v3 .tdc-step:hover .tdc-step-cost { display: none; }
+.needt-v3 .tdc-step-input { flex: 1; min-width: 0; height: 30px; padding: 0; border: 0; outline: none; background: transparent; font: var(--type-ui-medium); color: var(--text-primary); }
+.needt-v3 .tdc-step-input:focus,
+.needt-v3 .tdc-step-input:focus-visible { outline: none; box-shadow: none; }
+.needt-v3 .tdc-step-input::placeholder { color: var(--text-disabled); font: var(--type-ui); }
 .needt-v3 .tdc-step-cost { flex: none; font: var(--type-meta); color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.needt-v3 .tdc-step-go { flex: none; }
 
 /* Attachments. */
 .needt-v3 .tdc-files { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -346,7 +345,6 @@
   font: var(--type-meta); color: var(--text-secondary); }
 .needt-v3 .tdc-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .needt-v3 .tdc-file .tdc-icon-btn { width: 22px; height: 22px; border-radius: 6px; }
-.needt-v3 .tdc-file-input { display: none; }
 
 /* Scheduling — inline section behind ⋯ → Scheduling…. */
 .needt-v3 .tdc-sched { display: flex; flex-direction: column; gap: 10px; padding: 10px 12px 12px; border-radius: 12px; background: var(--fill-1); box-shadow: var(--border) 0 0 0 1px inset;
@@ -456,7 +454,6 @@
   .needt-v3 .tdc-scrim,
 .needt-v3 .tdc-card,
 .needt-v3 .tdc-pop,
-.needt-v3 .tdc-bar,
 .needt-v3 .tdc-sched { animation: none; }
   .needt-v3 .tk-check.nx-check.is-ticking svg,
 .needt-v3 .tk-check-touch-box.is-ticking svg,

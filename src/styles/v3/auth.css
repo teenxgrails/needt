@@ -38,8 +38,6 @@
 .needt-v3 .auth-row-text-2 { font-size: 13px; color: var(--text-tertiary); text-wrap: pretty; }
 .needt-v3 .auth-row-grid { flex: 0 0 auto; width: 20px; height: 20px; display: grid; place-items: center; color: white; transition: background-color var(--transition-hover); }
 .needt-v3 .auth-ax-step-art-el { transition: opacity 200ms ease; }
-.needt-v3 .auth-ax-step-art-grid { position: relative; display: grid; place-items: center; height: 134px; border-radius: 15px; overflow: hidden; background: var(--background); }
-.needt-v3 .px-kicker.auth-ax-step-art-text { color: var(--px-ink-2); }
 .needt-v3 .auth-ax-step-art-text-2 { padding: 5px 11px; font-size: 12px; }
 .needt-v3 .auth-onboarding-abs { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 18px 32px 24px 48px; box-sizing: border-box; }
 .needt-v3 .auth-onboarding-row { flex: none; display: flex; align-items: center; gap: 16px; }
@@ -52,22 +50,6 @@
 .needt-v3 .auth-onboarding-col-2 { flex: 0 1 auto; min-height: 0; max-height: calc(100vh - 210px); display: flex; flex-direction: column; }
 .needt-v3 .auth-onboarding-col-3 { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; padding: 24px 22px 16px; }
 .needt-v3 .auth-onboarding-el-2 { padding-bottom: 14px; }
-.needt-v3 .auth-onboarding-col-4 { display: flex; flex-direction: column; gap: 18px; }
-.needt-v3 .auth-onboarding-grid { display: grid; grid-template-columns: repeat(4, 132px); justify-content: center; gap: 16px 12px; }
-.needt-v3 .auth-onboarding-row-3 { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; box-shadow: var(--shadow-ring); }
-.needt-v3 .auth-onboarding-text-4 { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.needt-v3 .auth-onboarding-col-5 { display: flex; flex-direction: column; gap: 16px; }
-.needt-v3 .auth-onboarding-box { border-radius: 14px; box-shadow: var(--shadow-ring); overflow: hidden; background: var(--surface-raised); }
-.needt-v3 .auth-onboarding-row-4 { display: flex; align-items: center; gap: 12px; padding: 9px 14px; }
-.needt-v3 .auth-onboarding-text-5 { font-size: 13px; color: var(--text-tertiary); }
-.needt-v3 .auth-onboarding-text-6 { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--text-primary); text-align: right; }
-.needt-v3 .ax-link.auth-onboarding-btn { font-size: 12px; color: var(--text-tertiary); text-decoration: none; }
-.needt-v3 .auth-onboarding-text-7 { font-size: 12px; font-weight: 500; color: var(--text-tertiary); }
-.needt-v3 .auth-onboarding-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-.needt-v3 .auth-onboarding-col-6 { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 6px; border: 0; cursor: default; border-radius: 12px; }
-.needt-v3 .auth-onboarding-row-5 { display: flex; justify-content: center; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow-ring); }
-.needt-v3 .auth-onboarding-text-8 { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-.needt-v3 .auth-onboarding-text-9 { font-size: 12px; color: var(--text-tertiary); text-wrap: pretty; }
 .needt-v3 .auth-onboarding-row-6 { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 12px 16px 14px; border-top: 1px solid var(--border); }
 .needt-v3 .auth-onboarding-text-10 { margin-left: auto; }
 
@@ -184,18 +166,12 @@
 .needt-v3 .ma-setup-top { flex: none; display: flex; align-items: center; gap: 8px; }
 .needt-v3 .ma-setup-top > .auth-theme { margin-left: auto; }
 .needt-v3 .ma-setup-top .auth-theme-b { padding: 0 8px; }
-.needt-v3 .axs-skip.ma-setup-skip { margin-left: auto; }
-.needt-v3 .ma-setup-top > .auth-theme + .ma-setup-skip { margin-left: 0; }
 .needt-v3 .ma-hours { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
 .needt-v3 .ma-hours-line { display: flex; align-items: center; gap: 8px; }
 .needt-v3 .ma-hours .auth-select { height: 44px; }
 .needt-v3 .ma-hours-line .auth-select { flex: 1; width: auto; }
 .needt-v3 .ma-hours .auth-select.is-wide { flex: none; width: 100%; }
 .needt-v3 .ma-hours .auth-select select { font-size: 15px; }
-.needt-v3 .ma-setup-skiptask { margin-left: auto; color: var(--text-tertiary); }
-.needt-v3 .mb-setup-21 { display: flex; justify-content: flex-end; }
-.needt-v3 .mb-setup-21 > .ma-button-1 { flex: 1; }
-.needt-v3 .ma-forgot { align-self: flex-end; margin-top: -6px; }
 
 /* ── "Make your sidebar" (onboarding step 3, 08.10.26) ────────────────────── */
 /* The grid: a slice of the real sidebar — its ground, three columns, 64px tiles. */

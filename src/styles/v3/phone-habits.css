@@ -95,7 +95,6 @@
 .needt-v3 .phb-mb-stage { position: absolute; inset: 0; }
 .needt-v3 .phb-mb-stage.is-board { animation: v3-phb-in 0.3s cubic-bezier(0.2, 0.9, 0.24, 1); }
 @keyframes v3-phb-in { from { transform: translate3d(24px, 0, 0); } to { transform: none; } }
-.needt-v3 .phb-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* the boards list */
 .needt-v3 .phb-boards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 12px; padding-bottom: 8px; }

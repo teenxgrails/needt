@@ -47,16 +47,12 @@
 .needt-v3 .base-push { margin-left: auto; }
 
 /* surfaces */
-.needt-v3 .base-card { border-radius: 16px; background: var(--surface-raised); box-shadow: var(--shadow-raised); }
-.needt-v3 .base-chip { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px; border-radius: 6px; background: var(--fill-2); font: var(--type-meta); color: var(--text-tertiary); white-space: nowrap; }
-.needt-v3 .base-glass { background: var(--floating-fill, var(--surface-raised)); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); box-shadow: var(--shadow-floating); }
 .needt-v3 .base-scrim { position: fixed; inset: 0; z-index: 1050; display: grid; place-items: center; background: var(--nx-scrim); }
 .needt-v3 .base-sheet { border-radius: var(--radius-2xl); background: var(--surface-raised); box-shadow: var(--shadow-floating); }
 .needt-v3 .base-close { width: 26px; height: 26px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 999px; background: var(--fill-5); color: var(--text-tertiary); cursor: default; }
 
 /* menus / popovers */
 .needt-v3 .base-menu { width: 240px; padding: 6px; box-sizing: border-box; border-radius: 16px; background: var(--surface-raised); box-shadow: var(--shadow-floating); }
-.needt-v3 .base-menu-row { display: flex; align-items: center; width: 100%; height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; cursor: default; text-align: left; font: 400 15px/19px var(--font-sans); color: var(--text-primary); }
 .needt-v3 .base-menu-sep { display: block; height: 1px; margin: 5px 10px; background: var(--border); }
 
 /* empty states */

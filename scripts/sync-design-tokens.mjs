@@ -441,8 +441,12 @@ function stripRemoteImports(css) {
  * Known damage in the frozen copy, fixed before parsing:
  * - styles/mobile.css lost the `/*` that opens the doc-reader comment, so the
  *   comment text reads as a selector and the rest of the file is garbage.
+ * - app.css carries the same stray dot-and-terminator suffix the v2 capture had (see
+ *   stripCaptureArtifacts): browsers skip it, Next's CSS minimizer fails the
+ *   production build on it.
  */
 function stripV3CaptureArtifacts(css, name) {
+  css = stripCaptureArtifacts(css);
   if (name === "mobile") {
     return css.replace(
       /(\.iosf-keyboard-11 \{[^}]*\})([ \t]+doc-style\.jsx \(backdrop)/,

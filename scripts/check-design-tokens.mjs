@@ -20,6 +20,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import postcss from "postcss";
+import selectorParser from "postcss-selector-parser";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -102,6 +103,19 @@ for (const group of GROUPS) {
 
     root.walkRules((rule) => {
       if (rule.parent?.type === "atrule" && /keyframes$/.test(rule.parent.name)) return;
+
+      // Browsers skip a selector they cannot parse; Next's production CSS
+      // minimizer fails the whole build on it (2026-10-10, app.css capture
+      // artifact). Parse every selector here so it fails at commit instead.
+      try {
+        selectorParser().processSync(rule.selector);
+      } catch (error) {
+        problems.push(
+          `${rel}:${rule.source?.start?.line} — "${rule.selector.slice(0, 80)}" ` +
+            `does not parse (${error.message}); fix the sync script, then ${group.regenerate}`,
+        );
+        return;
+      }
 
       for (const selector of rule.selectors) {
         if (selector.startsWith(group.scope)) continue;

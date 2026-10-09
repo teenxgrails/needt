@@ -67,7 +67,6 @@
 /* Trial clarity (08.10.26): the line under the CTA wraps to a readable width. */
 .needt-v3 .pw-go-sub { max-width: 460px; text-wrap: pretty; }
 
-
 /* ── Pro gating (08.10.26) ─────────────────────────────────────────────────
    ProBadge: the promo pill's black, two sizes. md 18px tall, sm 15px. */
 .needt-v3 .pro-badge { display: inline-flex; align-items: center; gap: 3px; flex: none; height: 18px; padding: 0 6px; box-sizing: border-box; border-radius: 6px; white-space: nowrap;
@@ -76,13 +75,8 @@
 .needt-v3 .pro-badge > svg { flex: none; }
 .needt-v3[data-theme="dark"] .pro-badge { box-shadow: var(--white-a16) 0 0 0 1px inset; }
 /* ProGate: the children keep their own look; the pill sits after them. */
-.needt-v3 .pro-gate { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
-.needt-v3 .pro-gate.is-locked { cursor: default; }
-.needt-v3 .pro-gate.is-locked > :not(.pro-badge) { opacity: .72; }
-.needt-v3 .pro-gate.is-locked:hover > :not(.pro-badge) { opacity: 1; }
 /* Inline pill inside a button or a label. */
-.needt-v3 .nx-btn .pro-badge,
-.needt-v3 .pro-inline { margin-left: 2px; }
+.needt-v3 .nx-btn .pro-badge { margin-left: 2px; }
 /* ProUpsell: the one soft card a screen may carry. */
 .needt-v3 .pro-upsell { display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 14px; border-radius: 16px; box-sizing: border-box;
   background: var(--surface-raised); box-shadow: var(--shadow-raised); }

@@ -89,26 +89,6 @@
   14%  { opacity: 1; transform: scale(1.012); }
   100% { opacity: 0; transform: scale(1); }
 }
-.needt-v3 .co-discharge {
-  position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
-  box-shadow:
-    inset 0 0 26px -1px rgba(var(--co-neon), 0.34),
-    0 0 6px 1px rgba(var(--co-neon), 0.8),
-    0 0 18px 3px rgba(var(--co-neon), 0.5),
-    0 0 46px 9px rgba(var(--co-neon), 0.28),
-    0 0 110px 22px rgba(var(--co-neon), 0.14);
-  animation: v3-needt-co-discharge 0.56s cubic-bezier(0.22, 0.6, 0.24, 1) both;
-}
-.needt-v3[data-theme="dark"] .co-discharge,
-.needt-v3[data-theme="dim"] .co-discharge {
-  box-shadow:
-    inset 0 0 40px -1px rgba(var(--co-neon), 0.5),
-    0 0 4px 1px rgba(240, 246, 255, 1),
-    0 0 18px 3px rgba(var(--co-neon), 1),
-    0 0 44px 8px rgba(var(--co-neon), 0.66),
-    0 0 96px 18px rgba(var(--co-neon), 0.4),
-    0 0 180px 40px rgba(var(--co-neon), 0.2);
-}
 
 /* The line: one input with its own text made transparent, and the parse drawn
    underneath in the same metrics. Both must agree to the pixel or the marks
@@ -182,7 +162,6 @@
 .needt-v3 .co-draft,
 .needt-v3 .co-bars i,
 .needt-v3 .co-scrim,
-.needt-v3 .co-arrive,
-.needt-v3 .co-discharge { animation: none; }
+.needt-v3 .co-arrive { animation: none; }
   .needt-v3 .co-box.is-live::after { animation: none; }
 }

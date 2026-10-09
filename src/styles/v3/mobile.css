@@ -40,14 +40,6 @@
 .needt-v3 .iosf-nav-bar-2 { display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
 .needt-v3 .iosf-nav-bar-3 { margin-left: -1px; }
 .needt-v3 .iosf-nav-bar-4 { padding: 0 16px; font-family: -apple-system, system-ui; font-size: 34px; font-weight: 700; line-height: 41px; letter-spacing: 0.4px; }
-.needt-v3 .iosf-list-row-1 { display: flex; align-items: center; min-height: 52px; padding: 0 16px; position: relative; font-family: -apple-system, system-ui; font-size: 17px; letter-spacing: -0.43px; }
-.needt-v3 .iosf-list-row-2 { width: 30px; height: 30px; border-radius: 7px; margin-right: 12px; flex-shrink: 0; }
-.needt-v3 .iosf-list-row-3 { flex: 1; }
-.needt-v3 .iosf-list-row-4 { margin-right: 6px; }
-.needt-v3 .iosf-list-row-5 { flex-shrink: 0; }
-.needt-v3 .iosf-list-row-6 { position: absolute; height: 0.5px; }
-.needt-v3 .iosf-list-1 { font-family: -apple-system, system-ui; font-size: 13px; text-transform: uppercase; padding: 8px 36px 6px; letter-spacing: -0.08px; }
-.needt-v3 .iosf-list-2 { border-radius: 26px; margin: 0 16px; overflow: hidden; }
 .needt-v3 .iosf-device-1 { border-radius: 48px; overflow: hidden; position: relative; box-shadow: 0 40px 80px var(--black-a18), 0 0 0 1px var(--black-a12); font-family: -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 .needt-v3 .iosf-device-2 { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 126px; height: 37px; border-radius: 24px; background: var(--color-black); z-index: 50; }
 .needt-v3 .iosf-device-3 { position: absolute; top: 0; left: 0; right: 0; z-index: 10; }
@@ -68,7 +60,9 @@
 .needt-v3 .iosf-keyboard-9 { display: flex; gap: 6.5px; flex: 1; }
 .needt-v3 .iosf-keyboard-10 { display: flex; gap: 6px; align-items: center; }
 .needt-v3 .iosf-keyboard-11 { height: 56px; width: 100%; position: relative; }
-/* The doc reader:   doc-style.jsx (backdrop, page, text, cover, separator, font). As on the
+
+/* Document — the desktop's page style, read from the same Doc.style through
+   doc-style.jsx (backdrop, page, text, cover, separator, font). As on the
    desktop the backdrop fills the screen behind the page and the page is a
    card floating on it; without one the page is the screen. --dc-bd-l /
    --dc-bd-d and the .dt-themed pair are computed per doc and set inline.

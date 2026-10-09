@@ -344,7 +344,6 @@
 .needt-v3 .chat-suggest-card:active { transform: none; }
 }
 
-
 /* Tip card (08.10.26) — a small painted-sky card above the Ask pill, same sky
    and ink as the sidebar Pro promo (.pw-promo). Right-aligned with the pill;
    two cloud puffs trail down toward it. Never overlaps the pill. */
@@ -405,7 +404,6 @@
   .needt-v3 .chat-tip-card:hover,
 .needt-v3 .chat-tip-card:focus-visible { transform: none; }
 }
-
 
 /* AI ORB at rest (08.10.26): a still frame. base.css gives the film and the
    halo infinite CSS loops; they are off here and AiOrb.jsx plays them with
