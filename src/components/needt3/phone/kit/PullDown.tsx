@@ -21,11 +21,13 @@ import {
 } from "@/lib/needt3/gesture";
 import { springStep } from "@/lib/needt3/spring";
 
+import type { SkyEngine } from "../../scenes";
+import { PxSky } from "../../scenes";
 import { PkButton } from "./Material";
 import { PkScrim } from "./Scrim";
-import { pkTrack } from "./pointer";
-import { usePkPlate } from "./theme";
-import { pkCx, pkReduced } from "./util";
+import { type EndReason, onGestureAbort, pkTrack } from "./pointer";
+import { usePkPlate, usePkSkyMood } from "./theme";
+import { pkCx, pkMarkMoving, pkReduced } from "./util";
 
 export interface PullHit {
   id: string;
@@ -56,6 +58,8 @@ interface PullState {
   drag: Drag | null;
   open: boolean;
   ended: number;
+  skyOn: boolean;
+  moving: boolean;
 }
 interface Drag {
   x0: number;
@@ -73,8 +77,8 @@ interface Drag {
  * add it. The finger moves it 1:1 to its height, then a rubber band; letting
  * go springs it open or shut. Its position is a `clip-path` and a
  * `translateY` written through a ref each frame; React state is only open,
- * the query and the armed hint.
- * //todo: the sky strip along the plate's top (PxSky) is not ported.
+ * the query and the armed hint. The sky strip along the plate's top draws
+ * only while the plate is out (parked while shut).
  */
 export function PkPullDown<H extends PullHit = PullHit>({
   scroller,
@@ -100,7 +104,11 @@ export function PkPullDown<H extends PullHit = PullHit>({
     drag: null,
     open: false,
     ended: 0,
+    skyOn: false,
+    moving: false,
   }).current;
+  const skyEng = useRef<SkyEngine | null>(null);
+  const sky = usePkSkyMood();
   const [open, setOpenRaw] = useState(false);
   const [q, setQ] = useState("");
   const [armed, setArmed] = useState(false);
@@ -117,6 +125,17 @@ export function PkPullDown<H extends PullHit = PullHit>({
     el.style.setProperty("-webkit-clip-path", clip);
     el.style.transform = over ? `translateY(${over.toFixed(1)}px)` : "";
     el.style.visibility = y < 0.5 ? "hidden" : "visible";
+    // the screen's blur bands rest while the plate moves
+    const moving = !!(S.raf || (S.drag && S.drag.kind === "pull"));
+    if (moving !== S.moving) {
+      S.moving = moving;
+      pkMarkMoving(el, moving);
+    }
+    // the sky strip draws only while the plate is out
+    if (y >= 0.5 !== S.skyOn) {
+      S.skyOn = y >= 0.5;
+      skyEng.current?.park(!S.skyOn);
+    }
     const k = Math.min(1, shown / H);
     if (body.current) {
       body.current.style.opacity = Math.min(
@@ -273,7 +292,7 @@ export function PkPullDown<H extends PullHit = PullHit>({
     }
     paint();
   };
-  const finish = () => {
+  const finish = (reason: EndReason = "up") => {
     const d = S.drag;
     S.drag = null;
     if (!d) return;
@@ -283,12 +302,20 @@ export function PkPullDown<H extends PullHit = PullHit>({
       paint();
       return;
     }
+    // A cancelled pull (a hold took the finger, or the browser cancelled it)
+    // settles where it was resting: it never opens or shuts on the strength of
+    // where the finger happened to be.
+    if (reason === "cancel") {
+      S.target = S.open ? S.H : 0;
+      run();
+      return;
+    }
     const v = velocity(d.s); // px/ms, + down
     const vel = Math.max(-4000, Math.min(4000, v * 1000));
     setOpen(pullSettle(S.open, S.y.x, v, S.H), vel);
   };
   const mvRef = useRef(moveTo);
-  const endRef = useRef(finish);
+  const endRef = useRef<(reason?: EndReason) => void>(finish);
   mvRef.current = moveTo;
   endRef.current = finish;
 
@@ -300,26 +327,45 @@ export function PkPullDown<H extends PullHit = PullHit>({
       if (
         e.pointerType === "touch" ||
         (e.button != null && e.button > 0) ||
-        S.open
+        S.open ||
+        S.drag
       )
         return;
       if (sc.scrollTop > 0) return;
       begin(e.clientX, e.clientY, "screen");
       off = pkTrack(
         (ev) => mvRef.current(ev.clientX, ev.clientY, ev),
-        () => endRef.current()
+        (_ev, reason) => endRef.current(reason),
+        e.pointerId
       );
     };
+    // Touch: the non-passive touchmove (the only way to stop the browser's own
+    // overscroll) exists only between a touchstart at the top of the scroll and
+    // its end or cancel; the rest of the time scrolling stays passive.
+    const stopTouch = () => {
+      sc.removeEventListener("touchmove", tm);
+      sc.removeEventListener("touchend", te);
+      sc.removeEventListener("touchcancel", tc);
+    };
     const ts = (e: TouchEvent) => {
-      if (S.open || sc.scrollTop > 0 || e.touches.length !== 1) return;
+      if (S.open || S.drag || sc.scrollTop > 0 || e.touches.length !== 1)
+        return;
       begin(e.touches[0].clientX, e.touches[0].clientY, "screen");
+      sc.addEventListener("touchmove", tm, { passive: false });
+      sc.addEventListener("touchend", te);
+      sc.addEventListener("touchcancel", tc);
     };
     const tm = (e: TouchEvent) => {
       if (S.drag && e.touches.length === 1)
         mvRef.current(e.touches[0].clientX, e.touches[0].clientY, e);
     };
     const te = () => {
-      if (S.drag) endRef.current();
+      stopTouch();
+      if (S.drag) endRef.current("up");
+    };
+    const tc = () => {
+      stopTouch();
+      if (S.drag) endRef.current("cancel");
     };
     // A pull is not a tap: the click that follows it is swallowed.
     const ck = (e: Event) => {
@@ -328,19 +374,19 @@ export function PkPullDown<H extends PullHit = PullHit>({
         e.preventDefault();
       }
     };
+    // A hold has fired: let go of the finger without opening or shutting.
+    const offAbort = onGestureAbort(() => {
+      if (S.drag) endRef.current("cancel");
+    });
     sc.addEventListener("pointerdown", pd);
     sc.addEventListener("touchstart", ts, { passive: true });
-    sc.addEventListener("touchmove", tm, { passive: false });
-    sc.addEventListener("touchend", te);
-    sc.addEventListener("touchcancel", te);
     sc.addEventListener("click", ck, true);
     return () => {
       off?.();
+      offAbort();
+      stopTouch();
       sc.removeEventListener("pointerdown", pd);
       sc.removeEventListener("touchstart", ts);
-      sc.removeEventListener("touchmove", tm);
-      sc.removeEventListener("touchend", te);
-      sc.removeEventListener("touchcancel", te);
       sc.removeEventListener("click", ck, true);
     };
     // begin / S are stable for the life of the component
@@ -351,10 +397,12 @@ export function PkPullDown<H extends PullHit = PullHit>({
   const onPlateDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!S.open || (e.button != null && e.button > 0)) return;
     if ((e.target as HTMLElement).closest?.("input, button")) return;
+    if (S.drag) return;
     begin(e.clientX, e.clientY, "plate");
     pkTrack(
       (ev) => mvRef.current(ev.clientX, ev.clientY, ev),
-      () => endRef.current()
+      (_ev, reason) => endRef.current(reason),
+      e.pointerId
     );
   };
 
@@ -386,6 +434,16 @@ export function PkPullDown<H extends PullHit = PullHit>({
         aria-hidden={open ? undefined : "true"}
         onPointerDown={onPlateDown}
       >
+        <div className="pk-pull-sky" data-px-scope="" aria-hidden="true">
+          <PxSky
+            horizon="none"
+            fps={15}
+            mood={sky.mood ?? undefined}
+            dark={sky.dark}
+            parked
+            engine={skyEng}
+          />
+        </div>
         <div ref={body} className="pk-pull-body">
           <div className="pk-pull-status" />
           <div className="pk-pull-field">

@@ -22,6 +22,7 @@ import { usePlan } from "@/lib/needt3/hooks/plan";
 import { freeIncludes, proIncludes } from "@/lib/needt3/paywall";
 import { priceStrings } from "@/lib/needt3/pricing";
 
+import { PxSky } from "../../scenes";
 import { PkButton, PkGlass, PkSheet, pkCx } from "../kit";
 import {
   type PwPick,
@@ -46,8 +47,9 @@ const FREE = freeIncludes();
 const PRO = proIncludes();
 
 /* The sheet is the prototype's `Paywall phone` as a full PkSheet (phone-
-   overlays.jsx `PkPaywall`). The painted sky is not ported (PxSky): the sheet
-   stands on the CSS fallback ground (`[data-px-scope]`, v3-overrides). */
+   overlays.jsx `PkPaywall`). The painted sky is PxSky (variant b), mounted
+   while the sheet is open or settling, as the desktop paywall does; the sheet
+   keeps `data-px-scope` so the engine can write the sky's ink on it. */
 
 function subscribeOnline(cb: () => void) {
   window.addEventListener("online", cb);
@@ -165,6 +167,9 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
   const online = useOnline();
   const checkout = useCheckout();
   const [picked, setPicked] = useState<PwPick>(pickOf(cycle));
+  // the sky runs while the sheet is open or sliding away, not while it is put away
+  const [sky, setSky] = useState(open);
+  if (open && !sky) setSky(true);
   const lastPro = useRef<"monthly" | "annual">(
     picked === "monthly" ? "monthly" : "annual"
   );
@@ -243,6 +248,7 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
     <PkSheet
       open={open}
       onClose={onClose}
+      onShut={() => setSky(false)}
       detents={[0.95]}
       label={pkPaywall.needt_pro}
       className="pov-paywall"
@@ -259,6 +265,11 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
           data-px-scope=""
           data-pw-open={open ? "1" : "0"}
         >
+          {open || sky ? (
+            <div className="pw-sky">
+              <PxSky variant="b" intensity={1} />
+            </div>
+          ) : null}
           <div className="pw-top">
             <div className="pw-scene-abs">
               <PkGlass

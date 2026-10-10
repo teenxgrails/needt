@@ -17,18 +17,13 @@ import { pkClamp, pkCx } from "./util";
 export { PkScrim } from "./Scrim";
 
 /* ══ Blur bands ═══════════════════════════════════════════════════════════
-   Three stacked backdrop blurs (4 → 10 → 22 px), each masked further toward
-   the edge, so content melts into frosted glass. The bands must not sit under
-   an ancestor with opacity / filter / mask, or the blur sees nothing — fades
-   go through --pk-*-k on the layers themselves. */
+   ONE backdrop blur (10 px) masked toward the edge, so content melts into
+   frosted glass (the prototype stacked three: blur on blur is what rule 12
+   forbids on a phone). The bands must not sit under an ancestor with opacity /
+   filter / mask, or the blur sees nothing — fades go through --pk-*-k on the
+   layer itself. */
 export function PkBlurLayers() {
-  return (
-    <>
-      <span className="pk-blur is-1" />
-      <span className="pk-blur is-2" />
-      <span className="pk-blur is-3" />
-    </>
-  );
+  return <span className="pk-blur is-2" />;
 }
 
 /** The top band alone (PkScreen has one): the progressive blur at the status bar. */

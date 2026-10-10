@@ -3,7 +3,8 @@
  * Order matters and lives here, not in import statements: an import sorter
  * can reorder JS imports but never the @imports inside a CSS file. The
  * vendored prototype CSS (generated, never edited) loads first; the port's
- * hand-written corrections load after it and win at equal specificity.
+ * hand-written corrections load after it and win at equal specificity. The
+ * phone sheets are part of the generated v3/index.css, so they load once.
  */
 @import "./v3/index.css";
 @import "./v3-overrides/motion.css";
