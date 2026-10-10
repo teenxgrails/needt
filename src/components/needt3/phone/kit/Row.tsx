@@ -21,15 +21,15 @@ import {
   pushSample,
   sideOf,
   swipeArmed,
-  swipeCommit,
   swipeOffset,
+  swipeRelease,
   swipeReveal,
   velocity,
 } from "@/lib/needt3/gesture";
 import type { V3Task } from "@/lib/needt3/map";
 
 import { PkSweep } from "./Material";
-import { frameWriter, pkTrack } from "./pointer";
+import { type EndReason, frameWriter, pkTrack } from "./pointer";
 import { usePkPlate } from "./theme";
 import { pkCx, pkReduced } from "./util";
 
@@ -159,7 +159,7 @@ export function PkRow({
     }
   };
 
-  const end = (e: PointerEvent) => {
+  const end = (_e: PointerEvent | null, reason: EndReason) => {
     const d = G.current;
     G.current = null;
     frame.current.cancel();
@@ -167,8 +167,11 @@ export function PkRow({
     ended.current = performance.now();
     if (d.kind !== "swipe") return;
     wrap.current?.classList.remove("is-dragging");
-    const dx = e.clientX - d.x0;
-    const side = swipeCommit(dx, velocity(d.s), allow);
+    // The last move's offset decides, not the up event's own coordinates; a
+    // cancel (a real pointercancel, or a hold that took the finger) commits
+    // nothing and the row goes home.
+    const dx = d.dx;
+    const side = swipeRelease(reason, dx, velocity(d.s), allow);
     setArmed(null);
     if (!side) {
       set(0, 0, null);
@@ -184,6 +187,8 @@ export function PkRow({
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if ((e.button != null && e.button > 0) || done || !swipes) return;
+    // A second finger while one is down is not a second swipe.
+    if (G.current) return;
     // the check ring, a lead's own button and the action stay taps
     const b = (e.target as HTMLElement).closest?.("button, a, input, textarea");
     if (b && !b.classList.contains("pk-row-open")) return;
@@ -198,7 +203,7 @@ export function PkRow({
       off: () => undefined,
     };
     G.current = d;
-    d.off = pkTrack(move, end);
+    d.off = pkTrack(move, end, e.pointerId);
   };
 
   // a swipe is not a tap
@@ -394,7 +399,8 @@ export function PkClip({ count }: { count: number }) {
    commit(t, kind) writes the change (and the numbers roll). */
 const HOLD_CHECK = 360;
 const HOLD_THROWN = 190;
-const FOLD_MS = 260;
+// the fade-and-clip of a removed row (opacity + clip-path, motion.css)
+const FOLD_MS = 180;
 
 type ExitKind = "check" | "done" | "later";
 

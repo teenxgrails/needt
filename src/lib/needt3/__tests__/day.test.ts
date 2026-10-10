@@ -168,6 +168,15 @@ describe("words", () => {
     expect(hourOfWord("midnight")).toBe(0);
     expect(hourOfWord(9.5)).toBe(9.5);
     expect(hourOfWord("25:00")).toBeNull();
+    expect(hourOfWord("13pm")).toBeNull();
+    expect(hourOfWord("0am")).toBeNull();
+    expect(hourOfWord("00pm")).toBeNull();
+    expect(hourOfWord("14am")).toBeNull();
+    expect(hourOfWord("1am")).toBe(1);
+    expect(hourOfWord("11pm")).toBe(23);
+    expect(hourOfWord("12:30pm")).toBe(12.5);
+    expect(hourOfWord("12:30am")).toBe(0.5);
+    expect(hourOfWord("0:30")).toBe(0.5);
     expect(hourOfWord("soon")).toBeNull();
   });
   it("minutes", () => {

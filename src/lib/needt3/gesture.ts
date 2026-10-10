@@ -87,6 +87,22 @@ export function swipeCommit(
     : null;
 }
 
+/**
+ * What a released row swipe commits. A cancelled gesture (a real
+ * pointercancel, or a hold that took the finger) commits nothing, whatever
+ * the pointer last said; an "up" uses the last move's offset `dx` (the up
+ * event's own coordinates are not trusted) and the velocity of the samples.
+ */
+export function swipeRelease(
+  reason: "up" | "cancel",
+  dx: number,
+  v: number,
+  a: SwipeAllow,
+  at = SWIPE_AT
+) {
+  return reason === "cancel" ? null : swipeCommit(dx, v, a, at);
+}
+
 /* ---------- sheet ---------- */
 
 /** The offset below the open position for a drag: 1:1 down, rubber past the top. */
@@ -135,6 +151,17 @@ export function sheetSettle(y: number, v: number, stops: readonly number[]) {
   const lowest = stops.length > 1 ? stops[stops.length - 2] : 0;
   if (v > 0.9 && y > lowest - 4) best = last;
   return { stop: best, closes: best === last };
+}
+
+/**
+ * Where a sheet whose drag was cancelled rests: the open stop nearest to where
+ * it is, never the shut one (a cancel must not close it).
+ */
+export function sheetRestStop(y: number, stops: readonly number[]) {
+  const open = stops.length > 1 ? stops.slice(0, -1) : [stops[0] ?? 0];
+  let best = open[0];
+  for (const p of open) if (Math.abs(p - y) < Math.abs(best - y)) best = p;
+  return best;
 }
 
 /** How far a footer rides up so it stays on screen at a lower detent. */

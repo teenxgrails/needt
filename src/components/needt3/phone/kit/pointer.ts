@@ -1,51 +1,97 @@
 /**
- * Window-level pointer tracking for one drag (phone-kit.jsx `pkTrack`), and
- * taking the finger over from the screen's own gestures (`pkOwnGesture`).
+ * Window-level pointer tracking for one drag (phone-kit.jsx `pkTrack`), the
+ * abort bus a hold uses to take the finger (`pkOwnGesture`), and the
+ * one-frame writer.
  */
 
-export interface Tracker {
-  mv: (e: PointerEvent) => void;
-  up: (e: PointerEvent) => void;
-}
+export type EndReason = "up" | "cancel";
 
 /**
- * Follow one drag on the window: `move(e)` for every pointermove, `end(e)` once
- * on up or cancel, then the listeners are gone. Returns a function that
- * detaches early (an unmount in the middle of a drag).
+ * Follow one drag on the window: `move(e)` for every pointermove of the
+ * tracked pointer, `end(e, reason)` once, then the listeners are gone.
+ *
+ * - With `pointerId`, other fingers' events are ignored (a second finger
+ *   lifting must not end this drag).
+ * - `reason` is "up" for a pointerup and "cancel" for a pointercancel or an
+ *   abort (`pkAbortGestures`). A cancelled drag must not commit anything, and
+ *   its event carries no usable coordinates, so `end` gets the event only for
+ *   an "up".
+ *
+ * Returns a function that detaches early (an unmount in the middle of a drag).
  */
 export function pkTrack(
   move: (e: PointerEvent) => void,
-  end: (e: PointerEvent) => void
+  end: (e: PointerEvent | null, reason: EndReason) => void,
+  pointerId?: number
 ) {
+  let done = false;
+  const mine = (e: PointerEvent) =>
+    pointerId === undefined || e.pointerId === pointerId;
   const off = () => {
-    window.removeEventListener("pointermove", fn.mv, true);
-    window.removeEventListener("pointerup", fn.up, true);
-    window.removeEventListener("pointercancel", fn.up, true);
+    done = true;
+    window.removeEventListener("pointermove", mv, true);
+    window.removeEventListener("pointerup", up, true);
+    window.removeEventListener("pointercancel", cancel, true);
+    unAbort();
   };
-  const fn: Tracker = {
-    mv: (e) => move(e),
-    up: (e) => {
-      off();
-      end(e);
-    },
+  const mv = (e: PointerEvent) => {
+    if (!done && mine(e)) move(e);
   };
-  window.addEventListener("pointermove", fn.mv, true);
-  window.addEventListener("pointerup", fn.up, true);
-  window.addEventListener("pointercancel", fn.up, true);
+  const up = (e: PointerEvent) => {
+    if (done || !mine(e)) return;
+    off();
+    end(e, "up");
+  };
+  const cancel = (e: PointerEvent) => {
+    if (done || !mine(e)) return;
+    off();
+    end(null, "cancel");
+  };
+  const unAbort = onGestureAbort((id) => {
+    if (
+      done ||
+      (pointerId !== undefined && id !== undefined && id !== pointerId)
+    )
+      return;
+    off();
+    end(null, "cancel");
+  });
+  window.addEventListener("pointermove", mv, true);
+  window.addEventListener("pointerup", up, true);
+  window.addEventListener("pointercancel", cancel, true);
   return off;
+}
+
+/* ---------- the abort bus ---------- */
+
+const ABORT = "pk-gesture-abort";
+
+/**
+ * A hold has fired: every other gesture on the screen (a row's swipe, the
+ * pull-down, a sheet drag) must let go of the finger without committing. This
+ * replaces the prototype's synthetic `pointercancel`, whose coordinates are
+ * zero and which a real browser cancel cannot be told apart from.
+ */
+export function pkAbortGestures(pointerId?: number) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(ABORT, { detail: { pointerId } }));
+}
+
+/** Subscribe to the abort bus; returns the unsubscribe. */
+export function onGestureAbort(fn: (pointerId: number | undefined) => void) {
+  const h = (e: Event) =>
+    fn((e as CustomEvent<{ pointerId?: number }>).detail?.pointerId);
+  window.addEventListener(ABORT, h);
+  return () => window.removeEventListener(ABORT, h);
 }
 
 /**
  * A hold that becomes a lift (a drag) takes the finger: the screen's own
- * trackers get a pointercancel, and touch moves stop scrolling until the
- * returned release() is called.
+ * gestures are aborted, and touch moves stop scrolling until the returned
+ * release() is called.
  */
 export function pkOwnGesture(pointerId: number) {
-  try {
-    window.dispatchEvent(new PointerEvent("pointercancel", { pointerId }));
-  } catch {
-    /* an old browser without PointerEvent constructors */
-  }
+  pkAbortGestures(pointerId);
   const stop = (e: TouchEvent) => {
     e.stopPropagation();
     if (e.cancelable) e.preventDefault();

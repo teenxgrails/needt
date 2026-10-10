@@ -204,20 +204,6 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-/* The brand sky (scenes.jsx PxSky) is not ported. Until it is, a sky plate and
- * badge read these from the scope: a soft accent wash on the raised surface,
- * ink from the text ladder. Theme and accent still follow the app. */
-.needt-v3 [data-px-scope] {
-  --px-ground: linear-gradient(
-    160deg,
-    color-mix(in oklch, var(--accent) 24%, var(--surface-raised)),
-    var(--surface-raised) 85%
-  );
-  --px-ink: var(--text-primary);
-  --px-ink-2: var(--text-secondary);
-  --px-shadow: transparent;
-  --px-halo: transparent;
-}
 
 /* A theme class on a nested element (the prototype's `.dark` / `.paper` on
  * an inverse plate, a sheet's morph wash, a swipe reveal) re-declares the
@@ -301,4 +287,61 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.7),
     0 6px 18px -12px rgba(40, 34, 90, 0.28);
   --pk-violet: oklch(0.62 0.17 295);
+}
+
+/* ───────── P1 · review fixes (rule 12) ─────────
+ * One live blur per moving thing. */
+/* The bands carry one blur layer now (was three stacked); its mask runs the
+ * whole way so the single layer still melts into the edge. */
+.needt-v3 .pk-blur.is-2 {
+  -webkit-mask-image: linear-gradient(
+    var(--pk-dir),
+    transparent 0%,
+    var(--v2p-ink) 70%
+  );
+  mask-image: linear-gradient(
+    var(--pk-dir),
+    transparent 0%,
+    var(--v2p-ink) 70%
+  );
+}
+/* While a sheet or the pull-down moves (PkSheet / PkPullDown mark the host
+ * with data-pk-moving) the screen's own band and fog blurs rest: the mover's
+ * scrim is the one blur. */
+.needt-v3 [data-pk-moving] :is(.pk-topband, .pk-fog) .pk-blur {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* A footer riding up over the body at a lower detent gets an opaque backing,
+ * not glass: it moves, so it must not carry a blur of its own. */
+.needt-v3 .pk-sheet-foot.is-pinned {
+  background: var(--v2p-ground);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* Room for the riding footer: a class that flips once (PkSheet), not a
+ * padding written every frame. --pk-pin-max is set on the layer in measure(). */
+.needt-v3 .pk-sheet-body.has-pin {
+  padding-bottom: calc(30px + var(--pk-pin-max, 0px));
+}
+/* A removed row fades and clips away where it stands; the list then closes
+ * the gap at once and the rows below slide up (FLIP, useFlipRows). Nothing
+ * animates the row's height or grid tracks. */
+.needt-v3 .pk-rw {
+  transition: none;
+}
+.needt-v3 .pk-rw.is-out {
+  grid-template-rows: 1fr;
+  opacity: 0;
+  clip-path: inset(0 0 100% 0);
+  transition:
+    opacity 180ms ease,
+    clip-path 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* The fog dots drift only while the band is live (on screen, tab visible, fog
+ * faded in). Otherwise the animation is removed, not paused, so a parked
+ * screen holds no running animation. */
+.needt-v3 .pk-fog:not([data-pk-live="1"]) > .pk-fog-dots,
+.needt-v3 .pk-screen[data-pk-fog-on="0"] .pk-fog > .pk-fog-dots {
+  animation: none;
 }

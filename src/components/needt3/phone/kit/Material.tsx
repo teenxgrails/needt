@@ -3,10 +3,12 @@
 import {
   type ButtonHTMLAttributes,
   type CSSProperties,
+  Children,
   type ElementType,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type ReactNode,
+  isValidElement,
   useLayoutEffect,
   useRef,
   useState,
@@ -15,7 +17,9 @@ import {
 import { LuChevronDown } from "react-icons/lu";
 
 import { Art, type ArtName } from "../../menu/Art";
+import { PxSky } from "../../scenes";
 import { PlaceGlyph } from "../../shell/PlaceGlyph";
+import { useFlipRows } from "./flip";
 import { usePkSkyMood } from "./theme";
 import { pkCx, pkReduced } from "./util";
 
@@ -70,10 +74,11 @@ export function PkNumber({
 }
 
 /* ══ The sky ═══════════════════════════════════════════════════════════════
-   //todo: the brand sky engine (scenes.jsx PxSky, 1–1465) is not ported. A
-   sky plate and badge draw the CSS fallback in v3-overrides/motion.css
-   (`[data-px-scope]`); the mood and the app theme are still passed on as data
-   attributes so the engine can drop in. */
+   The brand sky (scenes/PxSky) as a small accent on the calm ground, at the
+   phone's 15 fps. It follows the APP theme and the time of day (usePkSkyMood),
+   never the inverse plate it sits on. The plate keeps `data-px-scope`: the
+   engine writes the sky's ink (--px-ink …) on the nearest such ancestor, and
+   rests after 12 s without input, pauses off screen and when covered. */
 
 type SkyProps = {
   as?: ElementType;
@@ -104,10 +109,17 @@ export function PkSkyPlate(props: SkyProps) {
       className={pkCx("pk-plate pk-skyplate", className)}
       data-px-scope=""
       data-px-night={sky.dark ? "1" : undefined}
-      data-pk-sky-mood={sky.mood ?? "day"}
       style={{ borderRadius: radius ?? 26 }}
       {...pass}
     >
+      <PxSky
+        horizon="none"
+        fps={15}
+        radius={radius ?? 26}
+        mood={sky.mood ?? undefined}
+        dark={sky.dark}
+        className="pk-skyplate-sky"
+      />
       <div className="pk-skyplate-in">{children}</div>
     </Tag>
   );
@@ -121,10 +133,17 @@ export function PkSkyBadge({ className }: { className?: string }) {
       className={pkCx("pk-skybadge", className)}
       data-px-scope=""
       data-px-night={sky.dark ? "1" : undefined}
-      data-pk-sky-mood={sky.mood ?? "day"}
       aria-hidden="true"
       data-pk-skybadge=""
-    />
+    >
+      <PxSky
+        horizon="none"
+        fps={15}
+        radius={20}
+        mood={sky.mood ?? undefined}
+        dark={sky.dark}
+      />
+    </span>
   );
 }
 
@@ -528,6 +547,14 @@ export function PkSection({
   children?: ReactNode;
   className?: string;
 }) {
+  const rows = useRef<HTMLDivElement>(null);
+  // the rows below a removed one slide up instead of the list animating height
+  useFlipRows(
+    rows,
+    Children.toArray(children)
+      .map((c) => (isValidElement(c) ? String(c.key) : ""))
+      .join("|")
+  );
   const label = (
     <>
       {glyph ? (
@@ -571,7 +598,11 @@ export function PkSection({
         )}
         {action ? <span className="pk-sec-action">{action}</span> : null}
       </header>
-      {folded ? null : <div className="pk-sec-rows">{children}</div>}
+      {folded ? null : (
+        <div ref={rows} className="pk-sec-rows">
+          {children}
+        </div>
+      )}
     </section>
   );
 }

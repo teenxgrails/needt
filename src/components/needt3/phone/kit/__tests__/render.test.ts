@@ -143,7 +143,7 @@ describe("kit markup", () => {
   it("PkSheet: a shut sheet is hidden from assistive tech; open is a modal dialog with its footer", () => {
     const shut = html(h(PkSheet, { open: false, title: "New task" }, "x"));
     expect(shut).toContain('data-pk-sheet="shut"');
-    expect(shut).toContain('aria-hidden="true"');
+    expect(shut).toContain("inert");
     const open = html(
       h(
         PkSheet,
