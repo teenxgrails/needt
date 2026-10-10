@@ -50,7 +50,30 @@ export function touchedTaskId(meta: ChatMeta): string | null {
   return typeof id === "string" && id ? id : null;
 }
 
-/** A tool ran that may have changed planner data (not a confirmation ask). */
+/**
+ * Agent tools that only read (names from src/services/ai/tool-catalog.ts).
+ * Kept here as a plain list so the client bundle does not pull the catalog's
+ * schemas; a test keeps it in step with the catalog.
+ */
+export const READ_ONLY_TOOLS: ReadonlySet<string> = new Set([
+  "query_schedule",
+  "parse_brain_dump",
+  "list_pages",
+  "search_pages",
+  "get_focus_stats",
+  "search_mail",
+  "get_message",
+  "get_user_settings",
+  "list_memories",
+]);
+
+/**
+ * A tool ran that may have changed planner data: not a confirmation ask and
+ * not a read. An unknown tool counts as a write, so a refetch is never missed.
+ */
 export function changedData(meta: ChatMeta): boolean {
-  return !!meta.toolName && meta.toolName !== "confirmation_required";
+  const tool = meta.toolName;
+  return (
+    !!tool && tool !== "confirmation_required" && !READ_ONLY_TOOLS.has(tool)
+  );
 }

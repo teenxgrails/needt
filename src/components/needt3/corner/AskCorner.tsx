@@ -12,8 +12,8 @@
  *
  * Notices come from the `notify` facade (src/lib/notifications.ts) through
  * the bridge in needt/corner; this mounts the sink for the v3 frame, where the
- * old AppShell's <NeedtNotices> does not exist. Hovering the island, or having
- * the panel open, holds the dismiss clocks.
+ * old AppShell's <NeedtNotices> does not exist. Hovering the island, focus
+ * inside it, or having the panel open holds the dismiss clocks.
  */
 import * as React from "react";
 
@@ -158,13 +158,22 @@ function Corner() {
   const ask = useAskNeedt();
   const vh = useViewportHeight();
   const [hovering, setHovering] = React.useState(false);
+  /* Keyboard focus inside the island, kept apart from the mouse so a mouse
+     leaving does not drop a held focus and a focus leaving does not drop a
+     hover. */
+  const [focused, setFocused] = React.useState(false);
+  /* A notice's question, waiting for the reply in flight to finish. */
+  const [queued, setQueued] = React.useState<string | null>(null);
   const [panelShown] = useExit(open, MORPH_MS);
+  const pillRef = React.useRef<HTMLButtonElement>(null);
+  const islandRef = React.useRef<HTMLDivElement>(null);
+  const refocus = React.useRef(false);
 
   /* Reading the panel or reaching for a row both stop the clocks. */
   React.useEffect(() => {
-    if (open || hovering) hold();
+    if (open || hovering || focused) hold();
     else release();
-  }, [open, hovering, hold, release]);
+  }, [open, hovering, focused, hold, release]);
 
   const view = islandView(notices);
   const counted = hiddenLabel(view.hidden);
@@ -182,11 +191,43 @@ function Corner() {
     dismiss(n.id);
     if (a.say) {
       setOpen(true);
-      void ask.send(a.say);
+      // A reply is still streaming: the question waits its turn rather than
+      // being dropped by send().
+      if (ask.phase === "idle") void ask.send(a.say);
+      else setQueued(a.say);
     }
     if (a.go) router.push(a.go.startsWith("/") ? a.go : `/${a.go}`);
     a.run?.();
   }
+
+  /* A focused row that is dismissed, or an island that turns inert, takes
+     the focus away without a focusout; check again so the clocks resume. */
+  React.useEffect(() => {
+    if (!focused) return;
+    const el = islandRef.current;
+    if (state !== "island" || !el || !el.contains(document.activeElement)) {
+      setFocused(false);
+    }
+  }, [focused, state, notices]);
+
+  const { phase: askPhase, send: askSend } = ask;
+  React.useEffect(() => {
+    if (!queued || askPhase !== "idle") return;
+    setQueued(null);
+    void askSend(queued);
+  }, [queued, askPhase, askSend]);
+
+  /* Escape hands the focus back to the corner it came from: the pill, or
+     the island's first control when the island is what is showing. */
+  React.useEffect(() => {
+    if (open || !refocus.current) return;
+    refocus.current = false;
+    const target =
+      state === "island"
+        ? islandRef.current?.querySelector<HTMLElement>("button")
+        : pillRef.current;
+    target?.focus();
+  }, [open, state]);
 
   const urgent = view.rows.some((n) => n.kind === "risk" && !n.leaving);
 
@@ -219,6 +260,7 @@ function Corner() {
         onKeyDown={(e) => {
           if (e.key === "Escape" && open) {
             e.preventDefault();
+            refocus.current = true;
             setOpen(false);
           }
         }}
@@ -229,6 +271,7 @@ function Corner() {
           inert={state !== "pill" || undefined}
         >
           <button
+            ref={pillRef}
             type="button"
             data-agent-home
             data-chat-pill
@@ -245,14 +288,20 @@ function Corner() {
         <div
           className={`v3c-layer v3c-island${state === "island" ? " is-on" : ""}`}
           style={{ width: islandSize.w, height: islandSize.h }}
+          ref={islandRef}
           inert={state !== "island" || undefined}
           role="region"
           aria-label="Needt notifications"
           aria-live={urgent ? "assertive" : "polite"}
           onMouseEnter={() => setHovering(true)}
           onMouseLeave={() => setHovering(false)}
-          onFocus={() => setHovering(true)}
-          onBlur={() => setHovering(false)}
+          onFocus={() => setFocused(true)}
+          onBlur={(e) => {
+            const next = e.relatedTarget;
+            if (!(next instanceof Node && e.currentTarget.contains(next))) {
+              setFocused(false);
+            }
+          }}
         >
           {counted ? <div className="v3c-count">{counted}</div> : null}
           {view.rows.map((n) => (

@@ -81,6 +81,11 @@ export function placeHand(
   }
 }
 
+/** Whether any step of `run` has a target the hand could reach right now. */
+export function anyTargetOnScreen(run: AgentRun): boolean {
+  return run.steps.some((step) => !!boxOf(document.querySelector(step.target)));
+}
+
 export function AgentCursor() {
   const [active, setActive] = React.useState<Active | null>(null);
   const [phase, setPhase] = React.useState<Phase>("in");
@@ -116,7 +121,8 @@ export function AgentCursor() {
       busy: () => running.current,
       run: (run: AgentRun) =>
         new Promise<void>((settle) => {
-          if (running.current || run.steps.length === 0) {
+          // Nothing on screen to reach: the hand does not come out at all.
+          if (running.current || !anyTargetOnScreen(run)) {
             settle();
             return;
           }

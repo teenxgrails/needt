@@ -116,20 +116,27 @@ export function useAskNeedt() {
                 event.conversationId ?? conversation.current;
               confirm = !!event.requiresConfirm;
               if (changedData(event)) {
-                void qc.invalidateQueries({ queryKey: ["v3"] });
                 const task = touchedTaskId(event);
-                if (task) {
-                  void runAgent({
-                    label: event.toolName ?? "agent",
+                const tool = event.toolName ?? "";
+                // The hand points at the row the tool touched, so the row has
+                // to be on screen first: refetch, let it paint, then look.
+                void (async () => {
+                  await qc.invalidateQueries({ queryKey: ["v3"] });
+                  if (!task) return;
+                  await new Promise((r) => window.requestAnimationFrame(r));
+                  const target = `[data-task="${CSS.escape(task)}"]`;
+                  if (!document.querySelector(target)) return;
+                  await runAgent({
+                    label: tool || "agent",
                     steps: [
                       {
-                        target: `[data-task="${CSS.escape(task)}"]`,
+                        target,
                         act: { kind: "rest" },
-                        say: (event.toolName ?? "").replace(/_/g, " "),
+                        say: tool.replace(/_/g, " "),
                       },
                     ],
                   });
-                }
+                })();
               }
               continue;
             }
@@ -158,8 +165,11 @@ export function useAskNeedt() {
           patch(reply.id, { text: FAILED, failed: true });
         }
       } finally {
-        abort.current = null;
-        setPhase("idle");
+        // A later request may own the slot by now; leave it alone.
+        if (abort.current === ctl) {
+          abort.current = null;
+          setPhase("idle");
+        }
       }
     },
     [patch, qc]
