@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Registration is closed until launch. People who already have an account
+  keep signing in with a password, Google or Microsoft; a new account is
+  refused — the sign-up endpoint answers 403 `SIGNUPS_CLOSED`, and an OAuth
+  sign-in that would create a user lands back on sign-in with a line pointing
+  to the waitlist at needt.app. It opens when the `signups_open` feature flag
+  is enabled at 100%.
+- The waitlist has a backend: `POST /api/waitlist` takes `{ email, ref? }`
+  from the landing page at needt.app (CORS for needt.app and www.needt.app),
+  puts the address straight onto the list in our own database, rate-limits
+  per address and per IP, and answers the same `{ ok: true }` whether the
+  address was new or already there.
+
 - Sign in wears the design. It was the last screen still drawn in the
   pre-port chrome, and the first one anybody sees. The behaviour underneath
   is the same one that shipped before — the same providers, the same
