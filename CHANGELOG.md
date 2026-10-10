@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- The application at use.needt.app asks not to be indexed: `/robots.txt`
+  disallows everything and is readable without signing in, and every response
+  carries `X-Robots-Tag: noindex, nofollow`. The worker can ping an external
+  uptime monitor (`NEEDT_HEARTBEAT_URL`), and cookieless Umami analytics load
+  when `NEXT_PUBLIC_UMAMI_WEBSITE_ID` is set at build time.
 - Sign in wears the design. It was the last screen still drawn in the
   pre-port chrome, and the first one anybody sees. The behaviour underneath
   is the same one that shipped before — the same providers, the same
