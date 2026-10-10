@@ -29,6 +29,9 @@ export function TemplatesScreen() {
   const list = templates.data ?? [];
 
   const use = async (id: string, name: string) => {
+    // One page per press: a second click while the first is in flight would
+    // make a duplicate page.
+    if (make.isPending) return;
     const page = await make.mutateAsync({
       templateId: id,
       title: templatePageTitle(name, newDate(), timeZone),

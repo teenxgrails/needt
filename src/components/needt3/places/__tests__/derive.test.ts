@@ -136,10 +136,9 @@ describe("templates", () => {
 });
 
 describe("shared", () => {
-  it("another person's page is anything below full access", () => {
-    expect(isSharedWithMe({ accessRole: "EDITOR" })).toBe(true);
-    expect(isSharedWithMe({ accessRole: "VIEWER" })).toBe(true);
-    expect(isSharedWithMe({ accessRole: "FULL_ACCESS" })).toBe(false);
+  it("only an explicit grant on someone else.s page is a share", () => {
+    expect(isSharedWithMe({ sharedWithMe: true })).toBe(true);
+    expect(isSharedWithMe({ sharedWithMe: false })).toBe(false);
     expect(isSharedWithMe({})).toBe(false);
   });
   it("labels", () => {

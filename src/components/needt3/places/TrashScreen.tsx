@@ -75,9 +75,15 @@ function TrashRow({
  * so the promise is visible, the worker job is a follow-up.
  *
  * //todo: Pages. `GET /api/pages` hides trashed pages and there is no route
- * that lists them, so a page deleted from Docs (which does reach Trash, with
- * Undo) cannot be listed or restored from here yet.
+ * that lists them, and `PATCH /api/pages/:id { trashed: false }` cannot
+ * restore one either (page access resolves only untrashed pages). Until both
+ * exist the copy here promises tasks and moodboards only, not pages.
  */
+const COPY = {
+  meta: "Tasks and moodboards stay here for 30 days",
+  emptyLine: "Delete a task or a moodboard \u2014 it lands here first.",
+};
+
 export function TrashScreen() {
   const timeZone = useTimeZone();
   const tasks = useTasks({ scope: "trash" });
@@ -95,7 +101,7 @@ export function TrashScreen() {
   );
   const dead = useMemo(() => tasks.data ?? [], [tasks.data]);
   const { total, headings } = trashSections({
-    pages: 0,
+    pages: 0, //todo: trashed pages, once a list mode and a restore route exist
     tasks: dead.length,
     boards: gone.length,
   });
@@ -137,11 +143,7 @@ export function TrashScreen() {
 
   return (
     <div className="scroll-inner pl-page" data-v3-screen="trash">
-      <PlaceHeader
-        art="trash"
-        title={tr.trash}
-        meta={tr.pages_and_tasks_stay_here_for_30_days}
-      />
+      <PlaceHeader art="trash" title={tr.trash} meta={COPY.meta} />
       <StScreen
         query={mergeQueries([tasks, boards])}
         kind="list"
@@ -151,9 +153,7 @@ export function TrashScreen() {
           <div className="nx-swap pl-trash-col">
             <Art name="trash" size={56} />
             <span className="pl-empty-text">{tr.trash_is_empty}</span>
-            <span className="pl-line">
-              {tr.delete_a_page_or_a_task_it_lands_here_fi}
-            </span>
+            <span className="pl-line">{COPY.emptyLine}</span>
           </div>
         ) : (
           <div className="pl-trash-col-2">

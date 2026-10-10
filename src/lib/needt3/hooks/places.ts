@@ -86,7 +86,8 @@ export interface V3SharedDoc {
 }
 
 /**
- * Pages other people own that the person can open. The list route does not
+ * Pages other people own and explicitly shared with the person (the list
+ * route's `sharedWithMe`, computed from grants). The list route does not
  * say who shared a page, so there is no "from <name>" yet.
  * //todo: owner name and the date it was shared (needs the owner on `GET /api/pages`).
  */
@@ -95,7 +96,10 @@ export function useSharedDocs() {
     queryKey: qk.shared(),
     queryFn: async (): Promise<V3SharedDoc[]> => {
       const { pages } = await fetchJson<{
-        pages: (ApiPage & { accessRole?: string | null })[];
+        pages: (ApiPage & {
+          accessRole?: string | null;
+          sharedWithMe?: boolean;
+        })[];
       }>("/api/pages");
       return pages
         .filter(isSharedWithMe)
