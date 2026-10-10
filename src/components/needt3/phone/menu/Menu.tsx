@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -45,6 +46,7 @@ import { useNeedt3Ui } from "@/store/needt3-ui";
 import { frameWriter, pkTrack } from "../kit/pointer";
 import { type PkSide, pkReduced } from "../kit/util";
 import { MenuGlyph } from "./Glyph";
+import { menuFocusMove, menuIsOpen, setInert } from "./a11y";
 import { type MenuPlaceId, menuRows, menuWord } from "./places";
 import { type MenuCounts, menuBadge, menuStatus } from "./status";
 
@@ -150,6 +152,8 @@ interface State {
   pillAlpha: number;
   hintShown: "more" | "tuck" | null;
   fling: number;
+  /** Closed to the pill: focus goes back to the dot grid once it shows (at rest). */
+  focusDots: boolean;
 }
 
 interface Refs {
@@ -267,17 +271,19 @@ export function Menu(props: MenuProps) {
     gw: 1,
     gh: 1,
     glassHid: false,
-    gestureEnd: 0,
+    gestureEnd: Number.NEGATIVE_INFINITY,
     fadeT: 0,
     hold: 0,
     hereIdx: -1,
     pillAlpha: 0.8,
     hintShown: null,
     fling: 0,
+    focusDots: false,
   }).current;
   const G = useRef<Gesture | null>(null);
   const modeRef = useRef<NvaMode>(mode);
   modeRef.current = mode;
+  const cardId = useId();
   const propsRef = useRef(props);
   propsRef.current = props;
   S.hereIdx = screen ? top.indexOf(screen) : -1;
@@ -459,6 +465,18 @@ export function Menu(props: MenuProps) {
     el.setAttribute("data-moving", "");
     propsRef.current.onMoving?.(true);
   }, [R, S]);
+  /* Focus back on the "Every place" button that opened the card. It waits for
+     rest (the dot grid is invisible while the pill is still growing) and gives
+     way to whoever has focus by now: the composer, a layer over the menu, or
+     an element outside the menu. */
+  const returnFocus = useCallback(() => {
+    if (!S.focusDots || modeRef.current !== "pill") return;
+    S.focusDots = false;
+    if (propsRef.current.away || useNeedt3Ui.getState().composerOpen) return;
+    const at = document.activeElement;
+    if (at && at !== document.body && !R.root?.contains(at)) return;
+    R.dots?.focus({ preventScroll: true });
+  }, [R, S]);
   const rest = useCallback(() => {
     const el = R.root;
     if (!el) return;
@@ -477,7 +495,8 @@ export function Menu(props: MenuProps) {
       );
       propsRef.current.onMoving?.(false);
     }
-  }, [R, S]);
+    returnFocus();
+  }, [R, S, returnFocus]);
 
   /* ── the spring loop: runs only while something is moving ── */
   const run = useCallback(() => {
@@ -657,6 +676,33 @@ export function Menu(props: MenuProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [go]);
 
+  /* Focus follows the stop: into the first tile when the card opens, back to
+     the "Every place" button when it closes to the pill (`returnFocus`, at
+     rest, or at once when the move was a jump). */
+  const prevMode = useRef<NvaMode>(mode);
+  useEffect(() => {
+    const prev = prevMode.current;
+    prevMode.current = mode;
+    const move = menuFocusMove(prev, mode);
+    S.focusDots = move === "dots";
+    if (move === "tile")
+      R.tiles?.querySelector<HTMLElement>("button")?.focus({
+        preventScroll: true,
+      });
+    else if (move === "dots" && !S.moving) returnFocus();
+  }, [R, S, mode, returnFocus]);
+
+  /* While the card is up the screen behind it is not reachable by keyboard,
+     pointer or screen reader (it is the host `ShellFrame` marks). */
+  const isOpen = menuIsOpen(mode);
+  useEffect(() => {
+    const host =
+      R.root?.closest("[data-v2p-frame]")?.querySelector("[data-v2p-host]") ??
+      null;
+    setInert(host, isOpen);
+    return () => setInert(host, false);
+  }, [R, isOpen]);
+
   /* ── gestures ── */
   const endHold = () => {
     window.clearTimeout(S.hold);
@@ -826,7 +872,7 @@ export function Menu(props: MenuProps) {
   };
 
   const inverse = side === "dark" ? "paper" : "dark";
-  const open = mode === "card" || mode === "full";
+  const open = isOpen;
   const here = screen ? top.includes(screen) : false;
   /* scroll positions are cached here (paint never reads layout) */
   const onScroll = () => {
@@ -847,7 +893,7 @@ export function Menu(props: MenuProps) {
       }
       data-nva-mode={mode}
       data-nav-variant="A"
-      aria-hidden={away ? "true" : undefined}
+      inert={away || undefined}
     >
       <div
         ref={(n) => {
@@ -927,6 +973,7 @@ export function Menu(props: MenuProps) {
               R.content = n;
             }}
             className="nva-content"
+            id={cardId}
             aria-hidden={open ? undefined : "true"}
           >
             <span
@@ -1127,6 +1174,8 @@ export function Menu(props: MenuProps) {
               className={"nva-dots" + (!here ? " is-here" : "")}
               tabIndex={mode === "pill" ? 0 : -1}
               onClick={() => go("card")}
+              aria-expanded={open}
+              aria-controls={cardId}
               aria-label={
                 "Every place" +
                 (!here && screen ? ` — you are in ${menuWord(screen)}` : "")

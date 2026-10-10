@@ -101,7 +101,23 @@ describe("Menu A markup", () => {
     const out = html({ away: true, morph: true });
     expect(out).toContain("is-away");
     expect(out).toContain("is-morph");
-    expect(out).toContain('aria-hidden="true"');
+  });
+
+  it("away makes the whole menu inert, not aria-hidden (its buttons would stay focusable)", () => {
+    const root = (o: string) => o.match(/<div class="nva [^>]*>/)?.[0] ?? "";
+    expect(root(html({ away: true }))).toContain('inert=""');
+    expect(root(html({ away: true }))).not.toContain("aria-hidden");
+    expect(root(html())).not.toContain("inert");
+  });
+
+  it("the Every place button says it is expanded and points at the card region", () => {
+    const out = html();
+    const btn = out.match(/<button[^>]*data-nva-open[^>]*>/)?.[0] ?? "";
+    expect(btn).toContain('aria-expanded="false"');
+    const controls = btn.match(/aria-controls="([^"]+)"/)?.[1];
+    expect(controls).toBeTruthy();
+    // the id it points at is on the card's content region
+    expect(out).toContain(`class="nva-content" id="${controls}"`);
   });
 
   it("the shadow is nine-slice pieces, three sets, with no filter", () => {

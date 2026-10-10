@@ -30,7 +30,7 @@ function useNowStamp(timeZone: string) {
     let t = 0;
     const tick = () => {
       setNow(read());
-      t = window.setTimeout(tick, 60_000 - (Date.now() % 60_000) + 50);
+      t = window.setTimeout(tick, 60_000 - (newDate().getTime() % 60_000) + 50);
     };
     tick();
     return () => window.clearTimeout(t);

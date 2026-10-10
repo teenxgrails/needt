@@ -326,8 +326,46 @@
 }
 /* ... and so does the screen under the menu: PhoneShell sets data-nva-moving on
  * the host for the same span. !important because the kit's glass chips and
- * bands carry their own, more specific rules. */
-.needt-v3 [data-v2p-host][data-nva-moving] * {
+ * bands carry their own, more specific rules. An explicit list, not `*`: a
+ * universal selector under the host is matched against every node of every
+ * screen on each style recalc. The list is every class that carries a
+ * backdrop-filter in the phone sheets (phone-kit.css, mobile-v2-plates.css,
+ * mobile.css, and the screen sheets in v3/index.css: phone-docs, phone-habits,
+ * phone-settings, mobile-onboarding). A new glass class in a vendored sheet is
+ * added here; `npm run check:ui-contracts` does not see it. */
+.needt-v3
+  [data-v2p-host][data-nva-moving]
+  :is(
+    .pk-blur,
+    .pk-edge-blur,
+    .pk-scrim-blur,
+    .pk-sheet,
+    .pk-sheet-foot,
+    .pk-glass,
+    .pk-glyph,
+    .pk-btn,
+    .v2p-seg,
+    .iosf-glass-pill-2,
+    .iosf-keyboard-2,
+    .pd-glass,
+    .pd-qo,
+    .pd-acc,
+    .pd-kb-area,
+    .pd-pop,
+    .pd-actbar,
+    .pd-menu,
+    .pd-bubble,
+    .phb-sort-row,
+    .ps-card,
+    .ps-profile,
+    .ps-pro-mark,
+    .ps-plan-card,
+    .mau-band-blur,
+    .mau-glass-blur,
+    .mau-chip,
+    .mau-theme,
+    .mau-skip
+  ) {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
