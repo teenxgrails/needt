@@ -11,8 +11,6 @@ import {
 } from "react";
 
 import "@/styles/v3/index.css";
-// Port corrections on top of the vendored prototype CSS; must load after it.
-import "@/styles/v3-overrides/motion.css";
 
 import { newDate } from "@/lib/date-utils";
 import { V3_FONT_CLASSES } from "@/lib/needt3/fonts";
@@ -25,6 +23,10 @@ import {
 } from "@/lib/needt3/theme";
 
 import { useNeedt3Ui } from "@/store/needt3-ui";
+
+// V3Shell imports the motion overrides, so they load after index.css
+// (an import sorter cannot reorder them past it from there).
+import { V3Shell } from "../shell/V3Shell";
 
 /**
  * True inside the v3 frame. The flag is read once per request on the server
@@ -102,7 +104,7 @@ export function V3Root({ children }: PropsWithChildren) {
         style={resolved.vars as CSSProperties}
         suppressHydrationWarning
       >
-        {children}
+        <V3Shell>{children}</V3Shell>
       </div>
     </DesignV3Context.Provider>
   );
