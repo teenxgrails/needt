@@ -1,0 +1,10 @@
+/* Design v3 — the one stylesheet entry V3Root imports.
+ *
+ * Order matters and lives here, not in import statements: an import sorter
+ * can reorder JS imports but never the @imports inside a CSS file. The
+ * vendored prototype CSS (generated, never edited) loads first; the port's
+ * hand-written corrections load after it and win at equal specificity.
+ */
+@import "./v3/index.css";
+@import "./v3-overrides/motion.css";
+@import "./v3-overrides/type.css";

@@ -11,10 +11,6 @@ import {
 
 import { usePathname, useRouter } from "next/navigation";
 
-// Port corrections on top of the vendored prototype CSS. Imported here, not
-// in V3Root, so they load after V3Root's src/styles/v3/index.css.
-import "@/styles/v3-overrides/motion.css";
-
 import { useNeedt3Ui } from "@/store/needt3-ui";
 
 import { CtxLayer } from "../ctx/CtxLayer";
