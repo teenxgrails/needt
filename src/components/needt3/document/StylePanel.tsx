@@ -13,6 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { LuLayers, LuPlus, LuUpload } from "react-icons/lu";
 
+import { ApiError } from "@/lib/needt3/hooks/core";
 import { useUpdateDoc } from "@/lib/needt3/hooks/docs";
 import { usePlan } from "@/lib/needt3/hooks/plan";
 import type { V3Doc } from "@/lib/needt3/map";
@@ -31,6 +32,7 @@ import {
   V3Switch,
   docsCopy,
 } from "../docs/DocParts";
+import { isProStyleValue } from "../docs/pro-style";
 import {
   DOC_BACKDROPS,
   DOC_DEFAULT,
@@ -286,8 +288,9 @@ export function StylePanel({ doc, read }: { doc: V3Doc; read: TokenReader }) {
   const openSettings = useNeedt3Ui((x) => x.openSettings);
   const fileRef = useRef<HTMLInputElement>(null);
   // Document themes (All Styles, Backdrop) are Pro; colour, text, cover and
-  // font stay free. An unknown plan (still loading) counts as not Pro, so a
-  // free reader never gets a Pro style through the loading gap.
+  // font stay free (the rule is ../docs/pro-style, which the API enforces). An
+  // unknown plan (still loading) counts as not Pro, so a free reader never
+  // gets a Pro style through the loading gap.
   const pro = !!plan.data && plan.data.kind !== "free";
   const toPaywall = () => openSettings("plan");
   const s = styleOf(doc);
@@ -310,7 +313,19 @@ export function StylePanel({ doc, read }: { doc: V3Doc; read: TokenReader }) {
           });
         }
       })
-      .catch(() => undefined);
+      .catch((error: unknown) => {
+        // The mutation already put the optimistic change back. A plan the
+        // server reads as Free (expired trial, stale plan) refuses a Pro
+        // value: refresh what we think the plan is and show the paywall.
+        if (
+          error instanceof ApiError &&
+          error.status === 403 &&
+          error.message === "UPGRADE_REQUIRED"
+        ) {
+          void qc.invalidateQueries({ queryKey: qk.plan() });
+          toPaywall();
+        }
+      });
   const set = (p: Partial<DocStyle>, toast?: string) =>
     write(stylePatch(doc, p), toast);
 
@@ -504,7 +519,7 @@ export function StylePanel({ doc, read }: { doc: V3Doc; read: TokenReader }) {
           label={copy.backdrop}
           row="backdrop"
           sub={
-            s.backdrop === "none"
+            !isProStyleValue("backdrop", s.backdrop)
               ? copy.themes_with_pro
               : `${backdropName(s.backdrop)} ${copy.change_with_pro}`
           }
