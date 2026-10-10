@@ -17,6 +17,7 @@ import {
   morphClip,
   pushSample,
   sheetOffset,
+  sheetRestStop,
   sheetSettle,
   sheetStops,
   velocity,
@@ -24,9 +25,16 @@ import {
 import { springStep } from "@/lib/needt3/spring";
 
 import { PkScrim } from "./Scrim";
-import { pkTrack } from "./pointer";
+import {
+  focusablesIn,
+  stackIsTop,
+  stackPush,
+  stackRemove,
+  trapTab,
+} from "./focus";
+import { type EndReason, onGestureAbort, pkTrack } from "./pointer";
 import { usePkInverse } from "./theme";
-import { pkClamp, pkCx, pkReduced } from "./util";
+import { pkClamp, pkCx, pkMarkMoving, pkReduced } from "./util";
 
 /** A rect in the sheet layer's px, or a function that measures it (menu A's pill). */
 export type SheetFrom =
@@ -65,6 +73,7 @@ interface SheetState {
   wasHidden: boolean;
   ds: readonly number[] | null;
   pin: number;
+  pinned: boolean;
   m: {
     k: { x: number; v: number };
     raf: number;
@@ -132,6 +141,7 @@ export function PkSheet({
     wasHidden: true,
     ds: null,
     pin: 0,
+    pinned: false,
     m: { k: { x: 1, v: 0 }, raf: 0, rect: null },
   }).current;
   const ds =
@@ -157,21 +167,32 @@ export function PkSheet({
     }
     // At a lower detent the sheet's bottom is below the screen: the footer
     // rides up to stay on screen (down to the lowest detent; past it, while
-    // closing, it leaves with the sheet), and the body gets the room.
+    // closing, it leaves with the sheet). Per frame this writes the footer's
+    // transform only; the body's room for it is a class that flips once when
+    // the footer starts or stops riding (the amount is --pk-pin-max, set in
+    // measure()), so no layout property is written while it moves.
     const pin = footerPin(y, S.FH, S.ds);
     if (Math.abs(pin - S.pin) > 0.25 || (pin === 0 && S.pin)) {
       S.pin = pin;
-      if (footEl.current) {
+      if (footEl.current)
         footEl.current.style.transform = pin
           ? `translate3d(0,${(-pin).toFixed(1)}px,0)`
           : "";
-        footEl.current.classList.toggle("is-pinned", pin > 0.5);
+      const pinned = pin > 0.5;
+      if (pinned !== S.pinned) {
+        S.pinned = pinned;
+        footEl.current?.classList.toggle("is-pinned", pinned);
+        bodyEl.current?.classList.toggle("has-pin", pinned);
       }
-      if (bodyEl.current && footEl.current)
-        bodyEl.current.style.paddingBottom = pin
-          ? `calc(30px + ${pin.toFixed(1)}px)`
-          : "";
     }
+  }, [S]);
+
+  /** The screen's blur bands rest while the sheet moves (one blur at a time). */
+  const syncMoving = useCallback(() => {
+    pkMarkMoving(
+      layer.current,
+      !!(S.raf || S.m.raf || (S.drag && S.drag.kind === "drag"))
+    );
   }, [S]);
 
   const run = useCallback(() => {
@@ -187,13 +208,15 @@ export function PkSheet({
         S.y.v = 0;
         S.raf = 0;
         paint();
+        syncMoving();
         return;
       }
       paint();
       S.raf = requestAnimationFrame(tick);
     };
     S.raf = requestAnimationFrame(tick);
-  }, [S, paint]);
+    syncMoving();
+  }, [S, paint, syncMoving]);
 
   const go = useCallback(
     (target: number, vel?: number) => {
@@ -262,14 +285,16 @@ export function PkSheet({
           M.raf = 0;
           layer.current?.classList.remove("is-morphing");
           morphPaint();
+          syncMoving();
           done?.();
           return;
         }
         M.raf = requestAnimationFrame(tick);
       };
       M.raf = requestAnimationFrame(tick);
+      syncMoving();
     },
-    [S, morphPaint]
+    [S, morphPaint, syncMoving]
   );
 
   const stopMorph = useCallback(() => {
@@ -280,7 +305,8 @@ export function PkSheet({
     M.k.x = 1;
     layer.current?.classList.remove("is-morphing");
     morphPaint();
-  }, [S, morphPaint]);
+    syncMoving();
+  }, [S, morphPaint, syncMoving]);
 
   /* Measure the sheet. A closed sheet (or one on its way down) keeps its shut
      position in step with its height: new detents, or content that grew while
@@ -295,6 +321,10 @@ export function PkSheet({
     if (S.ds) el.style.height = `${Math.round(S.ds[S.ds.length - 1] * S.FH)}px`;
     else el.style.height = "";
     S.H = el.offsetHeight;
+    ly.style.setProperty(
+      "--pk-pin-max",
+      `${footerPin(Number.POSITIVE_INFINITY, S.FH, S.ds).toFixed(1)}px`
+    );
     if (wasShut && S.H + 24 !== oldShut) {
       S.target = S.H + 24;
       if (!S.raf && !S.m.raf && !S.drag) {
@@ -334,11 +364,6 @@ export function PkSheet({
       } else {
         if (S.y.x > S.H + 24 || S.y.x === SHUT_FROM_START) S.y.x = S.H + 24;
         go(firstStop(S.FH, S.ds));
-      }
-      try {
-        sheet.current?.focus({ preventScroll: true });
-      } catch {
-        /* an old engine */
       }
     } else if (!was || S.y.x >= S.H + 23.5) {
       // already shut (a re-render with other detents): straight to the shut
@@ -397,16 +422,57 @@ export function PkSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dsKey]);
 
+  /* Focus and stacking. When the sheet opens: remember who had the focus,
+     join the stack, and move the focus in after the first paint (not inside the
+     layout effect, where the sheet is still off screen). Esc and the Tab trap
+     answer only for the top sheet; closing puts the focus back where it was. */
   useEffect(() => {
     if (!open) return undefined;
+    const opener = document.activeElement as HTMLElement | null;
+    const id = stackPush();
+    const sheetEl = sheet.current;
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => {
+        const el = sheet.current;
+        if (!el || !stackIsTop(id)) return;
+        // already inside (an autofocus field of its own): leave it
+        if (el.contains(document.activeElement)) return;
+        const first = focusablesIn(el.querySelector(".pk-sheet-body") ?? el)[0];
+        try {
+          (first ?? el).focus({ preventScroll: true });
+        } catch {
+          /* an old engine */
+        }
+      });
+    });
     const k = (e: KeyboardEvent) => {
+      if (!stackIsTop(id)) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         closeRef.current?.();
+        return;
       }
+      if (sheet.current) trapTab(e, sheet.current);
     };
     window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", k);
+      stackRemove(id);
+      // back to the opener, unless the person already moved on
+      const here = document.activeElement;
+      if (
+        opener &&
+        opener.isConnected &&
+        (!here || here === document.body || (sheetEl && sheetEl.contains(here)))
+      ) {
+        try {
+          opener.focus({ preventScroll: true });
+        } catch {
+          /* gone */
+        }
+      }
+    };
   }, [open]);
 
   useEffect(() => {
@@ -452,6 +518,7 @@ export function PkSheet({
       S.raf = 0;
       if (S.m.raf) stopMorph();
       layer.current?.classList.add("is-dragging");
+      syncMoving();
     }
     if (d.kind !== "drag") return;
     if (ev?.cancelable) ev.preventDefault();
@@ -459,18 +526,27 @@ export function PkSheet({
     S.y.v = 0;
     paint();
   };
-  const finish = () => {
+  const finish = (reason: EndReason = "up") => {
     const d = S.drag;
     S.drag = null;
     layer.current?.classList.remove("is-dragging");
-    if (!d || d.kind !== "drag") return;
+    if (!d || d.kind !== "drag") {
+      syncMoving();
+      return;
+    }
+    // A cancelled drag (a hold took the finger, or the browser cancelled it)
+    // goes back to the stop it is nearest and never closes.
+    if (reason === "cancel") {
+      go(sheetRestStop(S.y.x, sheetStops(S.H, S.FH, S.ds)));
+      return;
+    }
     const v = velocity(d.s); // px/ms, + down
     const { stop, closes } = sheetSettle(S.y.x, v, sheetStops(S.H, S.FH, S.ds));
     go(stop, pkClamp(v * 1000, -4000, 4000));
     if (closes) closeRef.current?.();
   };
   const mvRef = useRef(moveTo);
-  const endRef = useRef(finish);
+  const endRef = useRef<(reason?: EndReason) => void>(finish);
   mvRef.current = moveTo;
   endRef.current = finish;
 
@@ -486,39 +562,58 @@ export function PkSheet({
       fieldish(e.target)
     )
       return;
+    if (S.drag) return;
     begin(e.clientX, e.clientY, !!bodyEl.current?.contains(e.target as Node));
     pkTrack(
       (ev) => mvRef.current(ev.clientX, ev.clientY, ev),
-      () => endRef.current()
+      (_ev, reason) => endRef.current(reason),
+      e.pointerId
     );
   };
   useEffect(() => {
     const el = sheet.current;
     if (!el) return undefined;
+    // The non-passive touchmove (needed to stop the page scrolling under a
+    // sheet drag) exists only between a touchstart that could start a drag and
+    // its end or cancel.
+    const stopTouch = () => {
+      el.removeEventListener("touchmove", tm);
+      el.removeEventListener("touchend", te);
+      el.removeEventListener("touchcancel", tc);
+    };
     const ts = (e: TouchEvent) => {
-      if (!S.open || e.touches.length !== 1 || fieldish(e.target)) return;
+      if (!S.open || S.drag || e.touches.length !== 1 || fieldish(e.target))
+        return;
       begin(
         e.touches[0].clientX,
         e.touches[0].clientY,
         !!bodyEl.current?.contains(e.target as Node)
       );
+      el.addEventListener("touchmove", tm, { passive: false });
+      el.addEventListener("touchend", te);
+      el.addEventListener("touchcancel", tc);
     };
     const tm = (e: TouchEvent) => {
       if (S.drag && e.touches.length === 1)
         mvRef.current(e.touches[0].clientX, e.touches[0].clientY, e);
     };
     const te = () => {
-      if (S.drag) endRef.current();
+      stopTouch();
+      if (S.drag) endRef.current("up");
     };
+    const tc = () => {
+      stopTouch();
+      if (S.drag) endRef.current("cancel");
+    };
+    // A hold has fired: let go of the finger without closing or moving.
+    const offAbort = onGestureAbort(() => {
+      if (S.drag) endRef.current("cancel");
+    });
     el.addEventListener("touchstart", ts, { passive: true });
-    el.addEventListener("touchmove", tm, { passive: false });
-    el.addEventListener("touchend", te);
-    el.addEventListener("touchcancel", te);
     return () => {
+      offAbort();
+      stopTouch();
       el.removeEventListener("touchstart", ts);
-      el.removeEventListener("touchmove", tm);
-      el.removeEventListener("touchend", te);
-      el.removeEventListener("touchcancel", te);
     };
     // begin / S are stable for the life of the component
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -536,7 +631,7 @@ export function PkSheet({
     <div
       ref={layer}
       className={pkCx("pk-sheet-layer", open && "is-open")}
-      aria-hidden={open ? undefined : "true"}
+      inert={open ? undefined : true}
       data-pk-sheet={open ? "open" : "shut"}
     >
       <PkScrim scrimRef={scrim} open={open} onClick={() => onClose?.()} />

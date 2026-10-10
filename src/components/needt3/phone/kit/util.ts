@@ -42,3 +42,15 @@ export function pkSkyMood(side: PkSide, hour: number): SkyMood {
       ? "rose"
       : null;
 }
+
+/**
+ * Mark the phone host while something big moves in it (a sheet, the pull-down),
+ * so the screen's own blur bands rest and only the mover's one blur is live
+ * (rule 12: one backdrop-filter while it moves). The host is the nearest
+ * `[data-v2p-host]`, else the layer's parent.
+ */
+export function pkMarkMoving(from: Element | null, on: boolean) {
+  if (!from) return;
+  const host = from.closest("[data-v2p-host]") ?? from.parentElement;
+  host?.toggleAttribute("data-pk-moving", on);
+}

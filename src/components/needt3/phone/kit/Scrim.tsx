@@ -25,7 +25,6 @@ export function PkScrim({
       onClick={onClick}
       aria-hidden="true"
     >
-      <span className="pk-scrim-blur is-1" />
       <span className="pk-scrim-blur is-2" />
       <span className="pk-scrim-tint" />
     </div>

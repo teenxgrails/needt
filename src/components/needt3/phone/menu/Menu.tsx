@@ -43,7 +43,7 @@ import { type Spring, springStep } from "@/lib/needt3/spring";
 
 import { useNeedt3Ui } from "@/store/needt3-ui";
 
-import { frameWriter, pkTrack } from "../kit/pointer";
+import { type EndReason, frameWriter, pkTrack } from "../kit/pointer";
 import { type PkSide, pkReduced } from "../kit/util";
 import { MenuGlyph } from "./Glyph";
 import { menuFocusMove, menuIsOpen, setInert } from "./a11y";
@@ -774,10 +774,10 @@ export function Menu(props: MenuProps) {
     fw.current?.schedule(paint);
   };
 
-  const onPointerUp = (e: PointerEvent) => {
+  const onPointerUp = (e: PointerEvent | null, reason: EndReason = "up") => {
     const d = G.current;
     const g = S.g;
-    if (!d || !g || d.id !== e.pointerId) return;
+    if (!d || !g || (e && d.id !== e.pointerId)) return;
     G.current = null;
     fw.current?.cancel();
     endHold();
@@ -785,7 +785,14 @@ export function Menu(props: MenuProps) {
     if (d.kind) S.gestureEnd = performance.now();
     S.hintShown = null;
     setHint(null);
-    if (!d.kind || d.kind === "none" || d.kind === "held") {
+    // a cancelled gesture (a hold took the finger, or the browser cancelled
+    // it) settles where it was heading and never releases with a velocity
+    if (
+      reason === "cancel" ||
+      !d.kind ||
+      d.kind === "none" ||
+      d.kind === "held"
+    ) {
       if (S.p.x !== S.tp || S.t.x !== S.tt) run();
       else rest();
       return;
@@ -822,7 +829,7 @@ export function Menu(props: MenuProps) {
     G.current?.off?.();
     // Follow the finger on the window: it may leave the shape (and the
     // phone) mid-drag, and pointer capture is not reliable across inputs.
-    const off = pkTrack(onPointerMove, onPointerUp);
+    const off = pkTrack(onPointerMove, onPointerUp, e.pointerId);
     G.current = {
       id: e.pointerId,
       x0: e.clientX,

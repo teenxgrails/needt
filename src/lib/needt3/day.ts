@@ -213,6 +213,8 @@ export function hourOfWord(
   if (w === "midnight") return 0;
   const m = /^(\d{1,2})(?::(\d{2}))?\s?(am|pm)?$/.exec(w);
   if (!m) return null;
+  // "13pm" and "0am" are not hours: am/pm takes 1–12
+  if (m[3] && (+m[1] < 1 || +m[1] > 12)) return null;
   const h = m[3] ? (+m[1] % 12) + (m[3] === "pm" ? 12 : 0) : +m[1];
   if (h > 23 || (m[2] && +m[2] > 59)) return null;
   return h + (m[2] ? +m[2] / 60 : 0);

@@ -9,6 +9,7 @@ import { haptic } from "@/lib/needt3/platform";
 
 import { PkHueTile } from "./Material";
 import { PkSheet } from "./Sheet";
+import { pkAbortGestures } from "./pointer";
 import { pkCx } from "./util";
 
 /* ══ Hold → actions ═══════════════════════════════════════════════════════
@@ -64,13 +65,10 @@ export function PkHold({
     const st = s.current;
     st.t = 0;
     st.fired = true;
-    try {
-      window.dispatchEvent(
-        new PointerEvent("pointercancel", { pointerId: st.id ?? 0 })
-      );
-    } catch {
-      /* an old browser */
-    }
+    // Let go of the finger everywhere else (a row swipe, the pull-down, a
+    // sheet drag) without committing: the abort bus, not a synthetic
+    // pointercancel with zero coordinates.
+    pkAbortGestures(st.id ?? undefined);
     try {
       if (st.el && st.id != null)
         (st.el as HTMLElement).setPointerCapture(st.id);
