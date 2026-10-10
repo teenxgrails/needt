@@ -193,15 +193,42 @@ describe("composerDraft", () => {
     expect(weekly.kind === "habit" && weekly.habit.schedule.perWeek).toBe(1);
   });
 
-  it("pins an event with no clock to 09:00 for an hour", () => {
+  it("drafts an event with no clock at 09:00 for an hour", () => {
     const d = composerDraft(composerParse("Dentist friday", NOW), NOW, "event");
-    expect(d.kind === "event" && d.task).toMatchObject({
-      dueDate: "2026-09-04",
-      scheduledStart: "2026-09-04T09:00",
-      scheduledEnd: "2026-09-04T10:00",
-      estimatedMinutes: 60,
-      isFixed: true,
+    expect(d).toEqual({
+      kind: "event",
+      event: {
+        title: "Dentist",
+        startAt: "2026-09-04T09:00",
+        endAt: "2026-09-04T10:00",
+        isAllDay: false,
+      },
     });
+  });
+
+  it("drafts a timed event as an event, never a task, and drops parts", () => {
+    const d = composerDraft(
+      composerParse("Call Anna tomorrow 3pm for 45 min / agenda", NOW),
+      NOW,
+      "event"
+    );
+    expect(d).toEqual({
+      kind: "event",
+      event: {
+        title: "Call Anna",
+        startAt: "2026-09-02T15:00",
+        endAt: "2026-09-02T15:45",
+        isAllDay: false,
+      },
+    });
+  });
+
+  it("drafts a monthly cadence as a task, not a daily habit", () => {
+    const p = composerParse("Pay rent every month", NOW);
+    expect(p.repeat?.cadence).toBe("month");
+    expect(p.kind).toBe("task");
+    expect(composerDraft(p, NOW).kind).toBe("task");
+    expect(composerDraft(p, NOW, "habit").kind).toBe("task");
   });
 
   it("drafts a doc", () => {

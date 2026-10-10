@@ -50,6 +50,7 @@ import {
 import { newDate, toLocalDateKey } from "@/lib/date-utils";
 import { dayLabel } from "@/lib/needt3/derive";
 import { useCreateDoc } from "@/lib/needt3/hooks/docs";
+import { useCreateEvent } from "@/lib/needt3/hooks/events";
 import { useCreateHabit } from "@/lib/needt3/hooks/habits";
 import { useProjects } from "@/lib/needt3/hooks/projects";
 import { useCreateTask, useTaskParts } from "@/lib/needt3/hooks/tasks";
@@ -360,9 +361,12 @@ function PickMenu({
 
 function Shelf({
   open,
+  withNote,
   onPick,
 }: {
   open: boolean;
+  /** Only a task keeps a description; elsewhere the row would be dropped. */
+  withNote: boolean;
   onPick: (words: string | null) => void;
 }) {
   return (
@@ -373,7 +377,7 @@ function Shelf({
       <div className="co-shelf-inner">
         <div className="co-shelf-body">
           <div className="shell-shelf-grid">
-            {MORE.map((row) => (
+            {MORE.filter((row) => withNote || row.words != null).map((row) => (
               <button
                 key={row.label}
                 type="button"
@@ -465,6 +469,7 @@ export function Composer({ open, onClose }: ComposerProps) {
   const parts = useTaskParts();
   const createDoc = useCreateDoc();
   const createHabit = useCreateHabit();
+  const createEvent = useCreateEvent();
 
   const p = useMemo(
     () => composerParse(text, newDate(), projects),
@@ -524,25 +529,30 @@ export function Composer({ open, onClose }: ComposerProps) {
       } else if (draft.kind === "habit") {
         const { undo } = await createHabit.mutateAsync({ draft: draft.habit });
         undoable("Habit added", undo);
+      } else if (draft.kind === "event") {
+        const { undo } = await createEvent(draft.event);
+        undoable("Added to Calendar", undo);
       } else {
-        //todo: an event becomes a task pinned to its time until v3 has an
-        // event-create hook (POST /api/events from src/lib/needt3/hooks).
         const { result, undo } = await createTask.mutateAsync({
           draft: draft.task,
         });
-        if (result) {
-          for (const [i, title] of draft.parts.entries())
-            await parts.add(result.id, title, i);
-        }
         const day = draft.task.dueDate ?? null;
+        /* The task exists: offer Undo now, so a failed part below can
+           neither lose it nor tempt a retry into a duplicate task. */
         undoable(
-          draft.kind === "event"
-            ? "Added to Calendar"
-            : !day || day === toLocalDateKey(newDate())
-              ? "Added to today"
-              : `Added — ${dayLabel(day)}`,
+          !day || day === toLocalDateKey(newDate())
+            ? "Added to today"
+            : `Added — ${dayLabel(day)}`,
           undo
         );
+        if (result) {
+          try {
+            for (const [i, title] of draft.parts.entries())
+              await parts.add(result.id, title, i);
+          } catch {
+            // The parts hook has told the person; the task stays.
+          }
+        }
       }
     } catch {
       // The hook has already told the person and put the cache back.
@@ -554,8 +564,10 @@ export function Composer({ open, onClose }: ComposerProps) {
     if (!line) return;
     const parse = composerParse(line, newDate(), projects);
     void create(parse, type ?? parse.kind, note);
-    /* What was made lifts off the sheet and fades upward; the sheet stays. */
-    setFlight({ title: parse.title, key: newDate().getTime() });
+    /* What was made lifts off the sheet and fades upward; the sheet stays.
+       Under reduced motion nothing flies. */
+    if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
+      setFlight({ title: parse.title, key: newDate().getTime() });
     setText("");
     setScroll(0);
     setType(null);
@@ -628,6 +640,13 @@ export function Composer({ open, onClose }: ComposerProps) {
             className={`cmp-sheet nx-sheet${out}`}
             forceMount
             aria-describedby={undefined}
+            onInteractOutside={(e) => {
+              /* Undo on a notice is outside the sheet (press and focus) but
+                 must not close it: the person is still capturing. */
+              const target = e.detail.originalEvent.target;
+              if (target instanceof Element && target.closest(".nf-stack"))
+                e.preventDefault();
+            }}
             onOpenAutoFocus={(e) => {
               e.preventDefault();
               input.current?.focus();
@@ -718,7 +737,7 @@ export function Composer({ open, onClose }: ComposerProps) {
               </div>
 
               {/* The description: a second line — prose, not an attribute. */}
-              {note != null ? (
+              {note != null && kind === "task" ? (
                 <div className="co-note shell-composer-note">
                   <textarea
                     className="shell-composer-textarea"
@@ -777,6 +796,7 @@ export function Composer({ open, onClose }: ComposerProps) {
 
               <Shelf
                 open={more}
+                withNote={kind === "task"}
                 onPick={(words) => {
                   setMore(false);
                   if (words == null) {

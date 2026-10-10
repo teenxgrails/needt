@@ -303,7 +303,11 @@ export function composerParse(
     title: unclaimed(body, marks) || sentence,
     sentence,
     parts: base.parts,
-    kind: base.kind,
+    // A habit counts per day or week; "every month" is drafted as a task.
+    kind:
+      base.kind === "habit" && f.repeat?.cadence === "month"
+        ? "task"
+        : base.kind,
     date: f.date
       ? { label: f.date.label, span: f.date.span, day: day(f.date.on) }
       : null,
@@ -365,9 +369,18 @@ const EVENT_DEFAULT_LENGTH = 60;
 
 export type ComposerDraft =
   | {
-      kind: "task" | "event";
+      kind: "task";
       task: V3TaskPatch & { title: string };
       parts: string[];
+    }
+  | {
+      kind: "event";
+      event: {
+        title: string;
+        startAt: string;
+        endAt: string;
+        isAllDay: false;
+      };
     }
   | { kind: "doc"; doc: { title: string; projectId: string | null } }
   | {
@@ -381,8 +394,8 @@ export type ComposerDraft =
 
 /**
  * What the hooks are asked to make. `kind` is the segment's verdict (the
- * parse's, unless overruled). An event is a task pinned to its time
- * (`scheduledStart` + `isFixed`) — the same fields a timed task gets.
+ * parse's, unless overruled). An event is a real calendar event; a monthly
+ * cadence is drafted as a task, since a habit counts per day or week only.
  */
 export function composerDraft(
   p: ComposerParse,
@@ -396,6 +409,11 @@ export function composerDraft(
 
   if (kind === "doc") return { kind, doc: { title: p.title, projectId } };
 
+  //todo: monthly habits — the habit API counts per week only, so a monthly
+  // cadence is a task (its repeat has no v3 write path yet either).
+  if (kind === "habit" && p.repeat?.cadence === "month")
+    return composerDraft(p, now, "task", note);
+
   if (kind === "habit") {
     const c = p.repeat?.cadence;
     return {
@@ -403,7 +421,6 @@ export function composerDraft(
       habit: {
         title: p.title,
         projectId,
-        //todo: monthly habits — the habit API counts per week only.
         schedule: {
           time: clock,
           perWeek: c === "week" || c === "weekday" ? 1 : null,
@@ -418,6 +435,18 @@ export function composerDraft(
     p.duration?.minutes ??
     (kind === "event" ? EVENT_DEFAULT_LENGTH : DEFAULT_ESTIMATE);
   const day = p.date?.day ?? today;
+  if (kind === "event") {
+    const startAt = `${day}T${timed}`;
+    return {
+      kind,
+      event: {
+        title: p.title,
+        startAt,
+        endAt: addMinutes(startAt, est) ?? startAt,
+        isAllDay: false,
+      },
+    };
+  }
   const task: V3TaskPatch & { title: string } = {
     title: p.title,
     projectId,
