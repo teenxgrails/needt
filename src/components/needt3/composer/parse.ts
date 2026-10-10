@@ -190,8 +190,9 @@ function claim(
   re: RegExp,
   accept: (m: RegExpExecArray, span: CoSpan) => boolean
 ): { m: RegExpExecArray; span: CoSpan } | null {
-  const scan = new RegExp(re.source, re.flags);
-  for (let m = scan.exec(body); m; m = scan.exec(body)) {
+  // `re` is one of the module's global literals; rewind it before a scan.
+  re.lastIndex = 0;
+  for (let m = re.exec(body); m; m = re.exec(body)) {
     // A leading-space group is context, not part of the claim.
     const lead = m[1] && /^\s$/.test(m[1]) ? m[1].length : 0;
     const span = { from: m.index + lead, to: m.index + m[0].length };
