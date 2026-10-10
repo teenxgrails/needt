@@ -15,6 +15,7 @@ import "@/styles/v3-entry.css";
 
 import { newDate } from "@/lib/date-utils";
 import { V3_FONT_CLASSES } from "@/lib/needt3/fonts";
+import type { PhoneUi } from "@/lib/needt3/phone-ui";
 import {
   type TimeReading,
   placeFromTz,
@@ -28,6 +29,7 @@ import { useNeedt3Ui } from "@/store/needt3-ui";
 // V3Shell imports the motion overrides, so they load after index.css
 // (an import sorter cannot reorder them past it from there).
 import { V3Shell } from "../shell/V3Shell";
+import { PhoneUiProvider, useResolvedPhoneUi } from "./phone-ui-context";
 
 /**
  * True inside the v3 frame. The flag is read once per request on the server
@@ -85,7 +87,17 @@ function useTimeReading(
  * root layout and are shared with the old shell; v3 query keys are prefixed
  * `["v3", …]`, so the two never share cache entries.
  */
-export function V3Root({ children }: PropsWithChildren) {
+export function V3Root({
+  children,
+  initialUi = "desktop",
+  uiForced = false,
+}: PropsWithChildren<{
+  /** The server's pick (`phoneUiFrom`); the first render, so hydration matches. */
+  initialUi?: PhoneUi;
+  /** The `needt-ui` cookie pinned `initialUi`: the width never overrides it. */
+  uiForced?: boolean;
+}>) {
+  const ui = useResolvedPhoneUi(initialUi, uiForced);
   const scopeRef = useRef<HTMLDivElement>(null);
   const theme = useNeedt3Ui((s) => s.theme);
   const accent = useNeedt3Ui((s) => s.accent);
@@ -102,10 +114,13 @@ export function V3Root({ children }: PropsWithChildren) {
         data-drift={resolved.drift ? "on" : undefined}
         data-accent={accent}
         data-theme-choice={theme}
+        data-ui={ui}
         style={resolved.vars as CSSProperties}
         suppressHydrationWarning
       >
-        <V3Shell>{children}</V3Shell>
+        <PhoneUiProvider value={ui}>
+          <V3Shell ui={ui}>{children}</V3Shell>
+        </PhoneUiProvider>
       </div>
     </DesignV3Context.Provider>
   );

@@ -6,5 +6,6 @@
  * hand-written corrections load after it and win at equal specificity.
  */
 @import "./v3/index.css";
+@import "./v3-phone.css";
 @import "./v3-overrides/motion.css";
 @import "./v3-overrides/type.css";

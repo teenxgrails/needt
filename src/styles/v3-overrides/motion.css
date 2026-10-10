@@ -95,3 +95,134 @@
   --px-shadow: transparent;
   --px-halo: transparent;
 }
+
+/* ───────── P2 · phone shell and menu A (nav-a.jsx, mobile-v2-plates.jsx) ─────────
+ * Everything below is the port's own: the vendored nav-a.css / mobile-nav.css /
+ * mobile-v2-plates.css are untouched. */
+
+/* The screen host: the one <main> of the frame on the phone (ShellFrame). It
+ * is V2pScreens' root (.v2p-root) on the Plates ground. No entry animation sits
+ * above it or the stage, so no blur band ever has an ancestor with opacity. */
+.needt-v3 .v3-phone-host {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+  background: var(--v2p-ground);
+  color: var(--v2p-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Menu A wears the opposite theme (black on light, white on dark). The
+ * prototype put .dark / .paper on the card; the vendored sheets scope themes by
+ * the scope element's data-theme, so a theme class on a nested element reaches
+ * nothing. These are the existing --nva-* values (themes.css, same names, same
+ * numbers), declared for the three elements that wear the inverse. The glyph
+ * drawings read --surface-raised / --border, which the card maps to its own. */
+.needt-v3 :is(.nva-shape, .nva-add, .nva-hint).dark {
+  --nva-bg: #0b0b0d;
+  --nva-raise: #1a1a1f;
+  --nva-raise-2: #24242b;
+  --nva-ink: #f6f5fa;
+  --nva-ink-2: rgba(246, 245, 250, 0.5);
+  --nva-ink-3: rgba(246, 245, 250, 0.28);
+  --nva-line: rgba(246, 245, 250, 0.09);
+  --nva-lav: #bdb6ff;
+  --nva-lav-soft: rgba(189, 182, 255, 0.16);
+  --nva-lav-ring: rgba(189, 182, 255, 0.6);
+  --nva-pearl: #efe9f4;
+  --nva-dot: rgba(189, 182, 255, 0.36);
+  --nva-fog: rgba(11, 11, 13, 0.97);
+  --nva-fog-0: rgba(11, 11, 13, 0);
+  --nva-alert: #ff6b6f;
+  --nva-pill-alpha: 0.84;
+  --nva-add-rim:
+    inset 0 0 0 1px rgba(246, 245, 250, 0.1),
+    0 10px 22px -12px rgba(18, 16, 40, 0.45);
+  --nva-add-quiet: rgba(246, 245, 250, 0.72);
+  --surface-raised: var(--nva-raise-2);
+  --border: var(--nva-line);
+}
+.needt-v3 :is(.nva-shape, .nva-add, .nva-hint).paper {
+  --nva-bg: #ffffff;
+  --nva-raise: #f3f2f8;
+  --nva-raise-2: #ebe9f3;
+  --nva-ink: #121214;
+  --nva-ink-2: rgba(18, 18, 20, 0.52);
+  --nva-ink-3: rgba(18, 18, 20, 0.3);
+  --nva-line: rgba(18, 18, 20, 0.08);
+  --nva-lav: #7c74d8;
+  --nva-lav-soft: rgba(124, 116, 216, 0.14);
+  --nva-lav-ring: rgba(124, 116, 216, 0.55);
+  --nva-pearl: #f4eff6;
+  --nva-dot: rgba(124, 116, 216, 0.4);
+  --nva-fog: rgba(255, 255, 255, 0.96);
+  --nva-fog-0: rgba(255, 255, 255, 0);
+  --nva-alert: #e5484d;
+  --nva-pill-alpha: 0.8;
+  --nva-add-rim:
+    inset 0 0 0 1px rgba(18, 18, 20, 0.07), 0 8px 20px -12px rgba(0, 0, 0, 0.55);
+  --nva-add-quiet: rgba(18, 18, 20, 0.62);
+  --surface-raised: var(--nva-raise-2);
+  --border: var(--nva-line);
+}
+
+/* The sky band behind the three tiles, until PxSky is ported: the brand's own
+ * sky tokens as a still gradient (lavender by day, night by night), the tiles
+ * on it as glass in the sky's ink. */
+.needt-v3 .nva-tiles[data-px-scope] {
+  --px-ground: linear-gradient(
+    160deg,
+    var(--sky-lavender-top),
+    var(--sky-lavender-mid) 55%,
+    var(--sky-lavender-low)
+  );
+  --px-ink: var(--sky-on-light-ink);
+  --px-ink-2: var(--sky-on-light-ink-2);
+}
+.needt-v3 .nva-tiles[data-px-night="1"] {
+  --px-ground: linear-gradient(
+    160deg,
+    var(--sky-night-top),
+    var(--sky-night-mid) 55%,
+    var(--sky-night-low)
+  );
+  --px-ink: var(--sky-on-dark-ink);
+  --px-ink-2: var(--sky-on-dark-ink-2);
+}
+
+/* SSR draws the menu unplaced; it shows once it has measured its frame. */
+.needt-v3 .nva:not([data-nva-ready]) {
+  visibility: hidden;
+}
+
+/* Rule 12 · nothing loops at rest. The fog's halftone drift is the owner's one
+ * exception, and only while the fog shows: with the fog hidden the animations
+ * do not exist at all (not merely paused), so document.getAnimations() is empty
+ * after the menu settles at the pill. */
+.needt-v3 .nva-fog[data-live="0"] .nva-fog-dots {
+  animation: none;
+}
+
+/* Rule 12 · exactly one backdrop-filter while the menu moves: the pill's glass.
+ * The fog's and the head's blurs (already stepped out by nav-a.css) lose the
+ * filter itself, not just their opacity; the three tiles and the create button
+ * give theirs up for the moving frames (they blur a flat sky / a nearly opaque
+ * ground, so nothing visible changes). */
+.needt-v3
+  .nva[data-moving]
+  :is(.nva-fog-blur, .nva-head-blur, .nva-add, .nva-tiles .nva-tile) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* ... and so does the screen under the menu: PhoneShell sets data-nva-moving on
+ * the host for the same span. !important because the kit's glass chips and
+ * bands carry their own, more specific rules. */
+.needt-v3 [data-v2p-host][data-nva-moving] * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
