@@ -13,10 +13,13 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { useNeedt3Ui } from "@/store/needt3-ui";
 
+import { ComposerHost } from "../composer/Composer";
+import { CornerLayer } from "../corner/CornerLayer";
 import { CtxLayer } from "../ctx/CtxLayer";
 import { V3PortalScope } from "../ctx/PortalScope";
 import { registerCtx } from "../ctx/registry";
 import { CommandPalette } from "../palette/CommandPalette";
+import { SettingsSheet } from "../settings/SettingsSheet";
 import { CustomizeSidebar } from "./CustomizeSidebar";
 import { KeySheet } from "./KeySheet";
 import { type ShellApi, ShellContext } from "./ShellContext";
@@ -279,10 +282,13 @@ export function V3Shell({ children }: PropsWithChildren) {
           />
           <KeySheet open={keysOpen} onClose={() => setKeysOpen(false)} />
           <WhatsNew open={newsOpen} onClose={() => setNewsOpen(false)} />
+          <SettingsSheet />
           <CommandPalette
             open={paletteOpen}
             onClose={() => useNeedt3Ui.getState().setPaletteOpen(false)}
           />
+          <ComposerHost />
+          <CornerLayer />
         </V3PortalScope>
       </div>
     </ShellContext.Provider>

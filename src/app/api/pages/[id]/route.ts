@@ -74,6 +74,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         typeof body.isFavorite === "boolean" ? body.isFavorite : undefined,
       position: typeof body.position === "number" ? body.position : undefined,
       trashed: typeof body.trashed === "boolean" ? body.trashed : undefined,
+      //todo: Pro-only style keys (All Styles presets, Backdrop) are not
+      // enforced server-side; a free plan can write them through this PATCH.
+      // Gating them here needs an owner decision.
       style: v3.data.style as Prisma.InputJsonObject | null | undefined,
       projectId: v3.data.projectId,
     });

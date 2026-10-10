@@ -19,6 +19,7 @@ import {
   taskPatchToApi,
 } from "@/lib/needt3/map";
 import { type TaskFilter, qk } from "@/lib/needt3/query-keys";
+import { serialByKey } from "@/lib/needt3/serial";
 
 import {
   dropListItem,
@@ -97,24 +98,28 @@ export function useUpdateTask() {
         t ? applyLocal(t, patch) : t
       );
     },
-    request: async ({ id, patch }) => {
-      const held =
-        findListItem<V3Task>(qc, TASKS, id) ??
-        qc.getQueryData<V3Task>(qk.task(id));
-      const saved = taskFromApi(
-        await sendJson<ApiTask>(
-          `/api/tasks/${id}`,
-          "PUT",
-          taskPatchToApi(patch, tz),
-          revisionHeader(held?.updatedAt)
-        ),
-        tz
-      );
-      // The server's row carries the new revision; the next edit must send it.
-      patchListItem<V3Task>(qc, TASKS, id, () => saved);
-      qc.setQueryData<V3Task>(qk.task(id), (t) => (t ? saved : t));
-      return saved;
-    },
+    /* Writes to one task go one at a time, and each reads the revision
+       only after the previous PUT has stored its own — two in flight would
+       send the same If-Match and the second would 409. */
+    request: ({ id, patch }) =>
+      serialByKey(`task:${id}`, async () => {
+        const held =
+          findListItem<V3Task>(qc, TASKS, id) ??
+          qc.getQueryData<V3Task>(qk.task(id));
+        const saved = taskFromApi(
+          await sendJson<ApiTask>(
+            `/api/tasks/${id}`,
+            "PUT",
+            taskPatchToApi(patch, tz),
+            revisionHeader(held?.updatedAt)
+          ),
+          tz
+        );
+        // The server's row carries the new revision; the next edit sends it.
+        patchListItem<V3Task>(qc, TASKS, id, () => saved);
+        qc.setQueryData<V3Task>(qk.task(id), (t) => (t ? saved : t));
+        return saved;
+      }),
   });
 }
 

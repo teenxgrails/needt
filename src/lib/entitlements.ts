@@ -5,60 +5,10 @@ import {
 } from "@prisma/client";
 
 import { endOfMonth, newDate, startOfMonth } from "@/lib/date-utils";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
-export const PLAN_LIMITS = {
-  FREE: {
-    calendars: 1,
-    autoScheduledTasks: 15,
-    boards: 1,
-    mailboxes: 0,
-    aiAgent: false,
-    focusStats: false,
-    advancedFocusModes: false,
-    remindersPerTask: 1,
-    bookingPages: 1,
-    advancedNudges: false,
-  },
-  PRO: {
-    calendars: null,
-    autoScheduledTasks: null,
-    boards: null,
-    mailboxes: 3,
-    aiAgent: true,
-    focusStats: true,
-    advancedFocusModes: true,
-    remindersPerTask: null,
-    bookingPages: null,
-    advancedNudges: true,
-  },
-  LIFETIME: {
-    calendars: null,
-    autoScheduledTasks: null,
-    boards: null,
-    mailboxes: 3,
-    aiAgent: true,
-    focusStats: true,
-    advancedFocusModes: true,
-    remindersPerTask: null,
-    bookingPages: null,
-    advancedNudges: true,
-  },
-} as const satisfies Record<
-  SubscriptionPlan,
-  {
-    calendars: number | null;
-    autoScheduledTasks: number | null;
-    boards: number | null;
-    mailboxes: number | null;
-    aiAgent: boolean;
-    focusStats: boolean;
-    advancedFocusModes: boolean;
-    remindersPerTask: number | null;
-    bookingPages: number | null;
-    advancedNudges: boolean;
-  }
->;
+export { PLAN_LIMITS } from "@/lib/plan-limits";
 
 export type LimitStatus = {
   allowed: boolean;

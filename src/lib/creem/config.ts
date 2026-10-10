@@ -1,3 +1,8 @@
+/**
+ * The one place prices, the lifetime seat cap and the trial length live.
+ * Server code (checkout, lifetime cap, trial grants) and every screen read
+ * from here; nothing else spells "$59", "300" or "14 days".
+ */
 export const NEEDT_PRICING = {
   currency: "USD",
   trialDays: 14,

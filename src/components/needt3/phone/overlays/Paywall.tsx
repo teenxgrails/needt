@@ -19,6 +19,7 @@ import {
 
 import { ApiError, sendJson } from "@/lib/needt3/hooks/core";
 import { usePlan } from "@/lib/needt3/hooks/plan";
+import { lifetimeLeftLine, priceStrings } from "@/lib/needt3/pricing";
 
 import { PkButton, PkGlass, PkSheet, pkCx } from "../kit";
 import {
@@ -27,9 +28,7 @@ import {
   checkoutBody,
   ctaFor,
   freeSummary,
-  lifetimeLeftLine,
   pickOf,
-  priceStrings,
 } from "./paywallModel";
 import {
   pkPaywall,

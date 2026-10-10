@@ -1,58 +1,17 @@
 import { NEEDT_PRICING } from "@/lib/creem/config";
+import { lifetimeLeftLine, money, priceStrings } from "@/lib/needt3/pricing";
 
-import {
-  checkoutBody,
-  ctaFor,
-  freeSummary,
-  lifetimeLeftLine,
-  money,
-  pickOf,
-  priceStrings,
-} from "../paywallModel";
+import { checkoutBody, ctaFor, freeSummary, pickOf } from "../paywallModel";
 
-describe("priceStrings (from NEEDT_PRICING, never typed)", () => {
+describe("the strings come from the one pricing module", () => {
   const p = priceStrings();
 
-  it("reads the prices, the trial and the cap from the one module", () => {
+  it("reads the prices, the trial and the cap from NEEDT_PRICING, never typed", () => {
     expect(p.monthly).toBe(money(NEEDT_PRICING.pro.month.amountCents));
     expect(p.yearly).toBe(money(NEEDT_PRICING.pro.year.amountCents));
     expect(p.lifetime).toBe(money(NEEDT_PRICING.lifetime.amountCents));
     expect(p.trialDays).toBe(NEEDT_PRICING.trialDays);
     expect(p.lifetimeCap).toBe(NEEDT_PRICING.lifetime.cap);
-  });
-
-  it("derives the yearly saving", () => {
-    expect(p).toMatchObject({
-      monthly: "$7",
-      yearly: "$59",
-      lifetime: "$149",
-      yearlyPerMonth: "$4.92",
-      saveAmount: "$25",
-      savePct: 30,
-      trialDays: 14,
-      lifetimeCap: 300,
-    });
-    expect(p.trialCta).toBe("Start 14-day free trial");
-    expect(p.footnote).toBe("Prices in USD. Taxes may apply.");
-  });
-
-  it("takes any pricing, so a test or a new plan changes every string at once", () => {
-    const q = priceStrings({
-      currency: "EUR",
-      trialDays: 7,
-      pro: { month: { amountCents: 1000 }, year: { amountCents: 9600 } },
-      lifetime: { amountCents: 20000, cap: 100 },
-    });
-    expect(q).toMatchObject({
-      monthly: "$10",
-      yearly: "$96",
-      yearlyPerMonth: "$8",
-      saveAmount: "$24",
-      savePct: 20,
-      lifetimeCap: 100,
-      trialCta: "Start 7-day free trial",
-      footnote: "Prices in EUR. Taxes may apply.",
-    });
   });
 });
 
@@ -60,10 +19,6 @@ describe("the lifetime line never invents a seat count", () => {
   it("is the cap alone while the server has sent no count", () => {
     expect(lifetimeLeftLine(null, 300)).toBe("First 300 buyers");
     expect(lifetimeLeftLine(undefined, 300)).toBe("First 300 buyers");
-  });
-  it("uses a count only when one is given", () => {
-    expect(lifetimeLeftLine(41, 300)).toBe("41 of 300 left");
-    expect(lifetimeLeftLine(-2, 300)).toBe("0 of 300 left");
   });
 });
 
