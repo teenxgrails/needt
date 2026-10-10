@@ -19,6 +19,10 @@ export interface ApiBilling {
   cancelAtPeriodEnd: boolean;
   canManageBilling: boolean;
   lifetimeAvailable: boolean;
+  /** Lifetime seats still open (cap minus buyers and holds); null if unknown. */
+  lifetimeLeft?: number | null;
+  /** The `billing_checkout` switch; absent means checkout is closed. */
+  checkoutEnabled?: boolean;
 }
 
 export type V3PlanKind = "free" | "trial" | "monthly" | "yearly" | "lifetime";

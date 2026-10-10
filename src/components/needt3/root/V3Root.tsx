@@ -27,6 +27,7 @@ import { useNeedt3Ui } from "@/store/needt3-ui";
 
 // V3Shell imports the motion overrides, so they load after index.css
 // (an import sorter cannot reorder them past it from there).
+import { PaywallHost } from "../paywall/PaywallHost";
 import { V3Shell } from "../shell/V3Shell";
 
 /**
@@ -106,6 +107,7 @@ export function V3Root({ children }: PropsWithChildren) {
         suppressHydrationWarning
       >
         <V3Shell>{children}</V3Shell>
+        <PaywallHost />
       </div>
     </DesignV3Context.Provider>
   );
