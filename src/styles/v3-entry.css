@@ -8,3 +8,6 @@
 @import "./v3/index.css";
 @import "./v3-overrides/motion.css";
 @import "./v3-overrides/type.css";
+@import "./v3-overrides/scenes.css";
+@import "./v3-overrides/paywall.css";
+@import "./v3-overrides/auth-sky.css";

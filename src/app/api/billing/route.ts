@@ -4,7 +4,10 @@ import { getHostedAiUsage, publicHostedAiUsage } from "@/services/ai/usage";
 
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { isCreemConfigured } from "@/lib/creem/config";
-import { isLifetimeCheckoutAvailable } from "@/lib/creem/lifetime-cap";
+import {
+  isLifetimeCheckoutAvailable,
+  lifetimeSeatsLeft,
+} from "@/lib/creem/lifetime-cap";
 import { newDate } from "@/lib/date-utils";
 import {
   canAddCalendar,
@@ -37,6 +40,7 @@ export async function GET(request: NextRequest) {
       focusStats,
       aiUsage,
       lifetimeAvailable,
+      lifetimeLeft,
     ] = await Promise.all([
       prisma.subscription.findUnique({
         where: { userId: auth.userId },
@@ -62,6 +66,7 @@ export async function GET(request: NextRequest) {
       canViewFocusStats(auth.userId),
       getHostedAiUsage(auth.userId),
       isLifetimeCheckoutAvailable(auth.userId),
+      lifetimeSeatsLeft(),
     ]);
 
     return NextResponse.json({
@@ -79,6 +84,7 @@ export async function GET(request: NextRequest) {
       cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
       canManageBilling: Boolean(subscription?.creemCustomerId),
       lifetimeAvailable,
+      lifetimeLeft,
       usage: {
         calendars,
         autoScheduledTasks,
