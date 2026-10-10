@@ -44,8 +44,10 @@ export interface CalBlock {
   title: string;
   done?: boolean;
   event?: boolean;
-  /** The person's own event (Needt calendar): can be deleted here. */
+  /** The person's own event (a Needt calendar of theirs): editable here. */
   own?: boolean;
+  /** Part of a recurring series: read-only until occurrences are expanded. */
+  recurring?: boolean;
   /** Project name (tasks) for the slot list. */
   project?: string | null;
   draft?: boolean;

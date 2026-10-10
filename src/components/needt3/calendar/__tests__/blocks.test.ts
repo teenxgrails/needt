@@ -1,6 +1,6 @@
 import type { V3Event, V3Task } from "@/lib/needt3/map";
 
-import { calendarItems, hideDoneTitle } from "../blocks";
+import { calendarItems, canEditEvent, hideDoneTitle } from "../blocks";
 
 const today = "2026-09-01";
 
@@ -112,6 +112,7 @@ describe("calendarItems", () => {
         ev({ id: "mine", source: "needt", calendarId: "local" }),
       ],
       calendarNames: new Map([["work", "Work"]]),
+      ownCalendarIds: new Set(["work", "local"]),
       today,
       hideDone: true,
     });
@@ -127,6 +128,52 @@ describe("calendarItems", () => {
     });
     expect(timed[1]).toMatchObject({ own: true });
     expect(timed[1].entry).toMatchObject({ calendarName: "Your events" });
+  });
+
+  it("a workspace busy block is never the person's own", () => {
+    const { timed } = calendarItems({
+      tasks: [],
+      events: [
+        ev({
+          id: "workspace-busy:abc",
+          title: "Busy",
+          source: "needt",
+          calendarId: "workspace-busy",
+        }),
+      ],
+      ownCalendarIds: new Set(["local"]),
+      today,
+      hideDone: false,
+    });
+    expect(timed[0]).toMatchObject({ event: true, own: false });
+    expect(timed[0].entry).toMatchObject({ calendarName: "Workspace" });
+    expect(canEditEvent(timed[0])).toBe(false);
+  });
+
+  it("only an own, non-recurring event is editable", () => {
+    const { timed } = calendarItems({
+      tasks: [task({ id: "t", scheduledStart: "2026-09-01T09:00" })],
+      events: [
+        ev({ id: "synced" }),
+        ev({ id: "mine", source: "needt", calendarId: "local" }),
+        ev({
+          id: "series",
+          source: "needt",
+          calendarId: "local",
+          isRecurring: true,
+          recurrenceRule: "FREQ=WEEKLY",
+        }),
+      ],
+      ownCalendarIds: new Set(["work", "local"]),
+      today,
+      hideDone: false,
+    });
+    const by = new Map(timed.map((b) => [b.id, b]));
+    expect(canEditEvent(by.get("t")!)).toBe(true);
+    expect(canEditEvent(by.get("synced")!)).toBe(false);
+    expect(canEditEvent(by.get("mine")!)).toBe(true);
+    expect(by.get("series")).toMatchObject({ own: true, recurring: true });
+    expect(canEditEvent(by.get("series")!)).toBe(false);
   });
 
   it("puts an all-day event on every day it covers", () => {

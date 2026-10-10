@@ -11,6 +11,7 @@ import { formatInTimeZone, newDate } from "@/lib/date-utils";
 import { addDays, addMinutes, hhmm, hourOf, stamp } from "@/lib/needt3/derive";
 import {
   useCalendars,
+  useCreateEvent,
   useEventLifecycle,
   useEvents,
   useUpdateEvent,
@@ -33,7 +34,12 @@ import { StScreen } from "../states/StScreen";
 import { AGENDA_SIZES, type AgendaSize, DaysView } from "./DaysView";
 import { Seg2 } from "./Seg2";
 import { type Draft, WeekView } from "./WeekView";
-import { type CalItem, calendarItems, hideDoneTitle } from "./blocks";
+import {
+  type CalItem,
+  calendarItems,
+  canEditEvent,
+  hideDoneTitle,
+} from "./blocks";
 import { daySpan, freeSlot, hourBounds, spanLabel, weekStart } from "./layout";
 
 type View = "week" | "days";
@@ -148,6 +154,10 @@ function CalendarScreen() {
     () => new Map((calendars ?? []).map((c) => [c.id, c.name])),
     [calendars]
   );
+  const ownCalendarIds = useMemo(
+    () => new Set((calendars ?? []).map((c) => c.id)),
+    [calendars]
+  );
   const { timed, loose, doneHidden } = useMemo(
     () =>
       calendarItems({
@@ -155,6 +165,7 @@ function CalendarScreen() {
         events: eventsQuery.data ?? [],
         projects,
         calendarNames,
+        ownCalendarIds,
         today,
         hideDone,
       }),
@@ -163,6 +174,7 @@ function CalendarScreen() {
       eventsQuery.data,
       projects,
       calendarNames,
+      ownCalendarIds,
       today,
       hideDone,
     ]
@@ -174,6 +186,7 @@ function CalendarScreen() {
   const toggle = useToggleTask();
   const updateEvent = useUpdateEvent();
   const lifecycle = useEventLifecycle();
+  const createEvent = useCreateEvent();
   const [draft, setDraft] = useState<Draft | null>(null);
 
   const undoable = (message: string, undo: () => Promise<void>) =>
@@ -199,15 +212,16 @@ function CalendarScreen() {
       .catch(ignore);
   };
   const onRename = (b: CalItem, title: string) => {
-    //todo: PATCH /api/events/[id] writes the local copy only; a synced event's
-    // new title is not pushed to its provider and the next sync restores it.
+    //todo: PATCH /api/events/[id] writes the local copy only; until it writes
+    // back to the provider, synced events are read-only here (canEditEvent).
+    if (!canEditEvent(b)) return;
     void updateEvent
       .mutateAsync({ id: b.id, patch: { title } })
       .then(({ undo }) => undoable(`Renamed to ${quote(title)}`, undo))
       .catch(ignore);
   };
   const onDelete = (b: CalItem) => {
-    if (!b.own) return;
+    if (!b.event || !canEditEvent(b)) return;
     void lifecycle
       .mutateAsync({ remove: b.id })
       .then(({ undo }) => undoable(`Deleted ${quote(b.title)}`, undo))
@@ -219,20 +233,11 @@ function CalendarScreen() {
     const d = draft;
     setDraft(null);
     if (!d) return;
-    const feeds = (calendars ?? []).filter((c) => c.enabled !== false);
-    const feed = feeds.find((c) => c.type === "LOCAL") ?? feeds[0];
-    if (!feed) {
-      //todo: no calendar to write to — needs a create-local-feed hook in
-      // src/lib/needt3/hooks/events.ts (POST /api/feeds, type LOCAL).
-      notify.error("Add a calendar in Connections first.");
-      return;
-    }
     const startAt = stamp(d.date, d.at) ?? `${d.date}T09:00`;
     const endAt = addMinutes(startAt, 60) ?? startAt;
-    void lifecycle
-      .mutateAsync({
-        create: { title, startAt, endAt, isAllDay: false, calendarId: feed.id },
-      })
+    // always a Needt (LOCAL) calendar, created once if missing — never a
+    // synced provider calendar
+    void createEvent({ title, startAt, endAt, isAllDay: false })
       .then(({ undo }) =>
         undoable(`Added ${quote(title)} · ${hhmm(d.at)}`, undo)
       )

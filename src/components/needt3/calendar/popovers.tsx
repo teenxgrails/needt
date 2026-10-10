@@ -15,7 +15,7 @@ import { NEUTRAL_MARK, type ProjectLike } from "@/lib/needt3/derive";
 import { useV3PortalContainer } from "../ctx/PortalScope";
 import { useExit } from "../ctx/useExit";
 import { taskView } from "../task/view";
-import type { CalItem, CalTimed } from "./blocks";
+import { type CalItem, type CalTimed, canEditEvent } from "./blocks";
 import { c2End, c2Time } from "./layout";
 
 /** nx-pop's exit runs 130ms; useExit must match it (MOTION V-D18). */
@@ -158,15 +158,17 @@ export function Peek({
       </div>
       <div className="c2-peek-acts">
         {b.event ? (
-          <>
-            <button
-              type="button"
-              className="nx-btn nx-btn-secondary nx-btn-sm"
-              onClick={() => setEditing(true)}
-            >
-              Edit title
-            </button>
-            {b.own ? (
+          // only the person's own, non-recurring local event is editable;
+          // synced and recurring events and busy blocks get no actions
+          canEditEvent(b) ? (
+            <>
+              <button
+                type="button"
+                className="nx-btn nx-btn-secondary nx-btn-sm"
+                onClick={() => setEditing(true)}
+              >
+                Edit title
+              </button>
               <button
                 type="button"
                 className="nx-btn nx-btn-text nx-btn-sm"
@@ -177,8 +179,8 @@ export function Peek({
               >
                 Delete
               </button>
-            ) : null}
-          </>
+            </>
+          ) : null
         ) : (
           <>
             <button
