@@ -225,6 +225,8 @@
 .needt-v3 [data-v2p-host][data-nva-moving] * {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+
 /* A theme class on a nested element (the prototype's `.dark` / `.paper` on
  * an inverse plate, a sheet's morph wash, a swipe reveal) re-declares the
  * theme-following --v2p-* / --pk-* tokens for that subtree. The vendored sheets
