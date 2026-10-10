@@ -10,6 +10,7 @@ import {
   nextUpNote,
   partOf,
   pickNextUp,
+  proFromPlan,
   scheduleItems,
   scheduleWindow,
   sectionsOf,
@@ -278,5 +279,58 @@ describe("week ahead", () => {
       planned: 180,
       cap: 540 * 5,
     });
+  });
+});
+
+describe("placement comes from scheduledStart", () => {
+  const FRIDAY = "2026-09-04";
+  const TOMORROW = "2026-09-02";
+
+  it("due today but scheduled tomorrow 09:00 is not today's", () => {
+    const t = task({ dueDate: TODAY, scheduledStart: at(TOMORROW, "09:00") });
+    const s = splitHome([t], TODAY);
+    expect(s.day).toEqual([]);
+    expect(s.late).toEqual([]);
+    expect(scheduleItems([t], [], TODAY)).toEqual([]);
+    // the day list never gives it today's hour, so no "Was planned for 09:00"
+    const pick = pickNextUp([], [t]);
+    expect(nextUpNote(pick!, 14, TODAY)).not.toContain("09:00");
+    // it is tomorrow's, at 09:00
+    const week = weekAhead([t], [], TODAY, capacityFrom(undefined));
+    expect(week[0].date).toBe(TOMORROW);
+    expect(week[0].tasks.map((x) => x.id)).toEqual([t.id]);
+  });
+
+  it("scheduled today 10:00 and due Friday sits on today at 10:00", () => {
+    const t = task({ dueDate: FRIDAY, scheduledStart: at(TODAY, "10:00") });
+    const s = splitHome([t], TODAY);
+    expect(s.day.map((x) => x.id)).toEqual([t.id]);
+    expect(sectionsOf(s.day, () => true)).toEqual([["Morning", [t]]]);
+    expect(scheduleItems(s.day, [], TODAY)).toMatchObject([
+      { id: t.id, at: 10 },
+    ]);
+    expect(nextUpNote(pickNextUp([], s.day)!, 8, TODAY)).toBe(
+      "Today · 30 min of work"
+    );
+    const week = weekAhead([t], [], TODAY, capacityFrom(undefined));
+    expect(week.some((d) => d.tasks.length)).toBe(false);
+  });
+
+  it("a due-only task is in today's list without an hour", () => {
+    const t = task({ dueDate: TODAY });
+    const s = splitHome([t], TODAY);
+    expect(s.day.map((x) => x.id)).toEqual([t.id]);
+    expect(sectionsOf(s.day, () => true)).toEqual([["Anytime today", [t]]]);
+    expect(scheduleItems(s.day, [], TODAY)).toEqual([]);
+  });
+});
+
+describe("proFromPlan", () => {
+  it("unlocks only a known paid plan; unknown is neither", () => {
+    expect(proFromPlan(undefined)).toBeNull();
+    expect(proFromPlan(null)).toBeNull();
+    expect(proFromPlan("free")).toBe(false);
+    expect(proFromPlan("trial")).toBe(true);
+    expect(proFromPlan("lifetime")).toBe(true);
   });
 });

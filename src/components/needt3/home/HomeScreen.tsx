@@ -51,6 +51,7 @@ import {
   NextUpCard,
   NextUpNone,
   PlanButton,
+  type ProState,
   ProgressCard,
   Schedule,
   WeekLoad,
@@ -63,6 +64,7 @@ import {
   dur,
   nextUpNote,
   pickNextUp,
+  proFromPlan,
   scheduleItems,
   sectionsOf,
   skipNext,
@@ -155,7 +157,9 @@ export function HomeScreen() {
 
   const pick = pickNextUp(lateOpen, dayOpen, skipped);
   const canPlan = allTasks.some((t) => !t.done && !t.isFixed);
-  const pro = plan.data ? plan.data.kind !== "free" : true;
+  // unknown (loading / failed) is neither Pro nor Free: nothing Pro-only is
+  // unlocked and nothing is upsold until the plan is known
+  const pro: ProState = proFromPlan(plan.data?.kind);
 
   const habits = liveHabits(habitsQuery.data ?? []);
   const checkins = checkinsQuery.data ?? [];
@@ -273,61 +277,42 @@ export function HomeScreen() {
     );
   };
 
-  /**
-   * Closing the last open part closes the parent. Only on the transition
-   * (some open → none open), so reopening a parent whose parts are all done
-   * does not snap it shut again.
-   */
-  const partsOpen = useRef<Record<string, number> | null>(null);
-  useEffect(() => {
-    const prev = partsOpen.current;
-    const next: Record<string, number> = {};
-    allTasks.forEach((t) => {
-      if (t.parts.length) next[t.id] = t.parts.filter((p) => !p.done).length;
-    });
-    partsOpen.current = next;
-    if (!prev) return;
-    allTasks.forEach((t) => {
-      if (!t.done && next[t.id] === 0 && prev[t.id] > 0) {
-        closed.current = closed.current.filter((x) => x !== t.id).concat(t.id);
-        void updateTask
-          .mutateAsync({ id: t.id, patch: { done: true } })
-          .catch(() => undefined);
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allTasks]);
+  //todo: closing the last open part should close the parent, inside the
+  // part-toggle mutation (one write, one undo) — not as an effect here that
+  // fires on every cache change.
 
   /** Move every open overdue task onto today; one Undo puts them all back. */
   const moveToToday = async () => {
     const list = late.filter((t) => !t.done);
     if (!list.length) return;
-    try {
-      const done = await Promise.all(
-        list.map((t) =>
-          updateTask.mutateAsync({ id: t.id, patch: moveDay(t, today, today) })
-        )
-      );
-      notify.success(
-        `${list.length} ${list.length === 1 ? "task" : "tasks"} moved to today`,
-        {
-          action: {
-            label: "Undo",
-            onClick: () => void Promise.all(done.map((d) => d.undo())),
-          },
-        }
-      );
-    } catch {
-      // the mutation already told the person and put the rows back
-    }
+    // each move stands alone: one failure (already reported and rolled back
+    // by the mutation) must not take the others' Undo with it
+    const settled = await Promise.allSettled(
+      list.map((t) =>
+        updateTask.mutateAsync({ id: t.id, patch: moveDay(t, today, today) })
+      )
+    );
+    const moved = settled.flatMap((r) =>
+      r.status === "fulfilled" ? [r.value] : []
+    );
+    if (!moved.length) return;
+    notify.success(
+      `${moved.length} ${moved.length === 1 ? "task" : "tasks"} moved to today`,
+      {
+        action: {
+          label: "Undo",
+          onClick: () => void Promise.allSettled(moved.map((d) => d.undo())),
+        },
+      }
+    );
   };
 
   const startFocus = () => {
     if (!pick) return;
     //todo: create a FocusSession (taskId, intention, 25 min) via
-    // /api/focus/session; for now the Focus window opens on its own setup.
+    // /api/focus/session and only then say "Focus started"; for now the Focus
+    // window opens on its own setup and nothing claims a session began.
     setFocusOpen(true);
-    notify.info(`Focus started · 25 min on “${pick.task.title}”`);
   };
 
   const onHabit = (h: V3Habit, done: boolean) =>

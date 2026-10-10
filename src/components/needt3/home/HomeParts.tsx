@@ -40,15 +40,25 @@ import {
 
 /* The Home pieces ($P/HomeToday.jsx). Pure drawing: the screen owns state. */
 
-export const Pill = ({ pro }: { pro: boolean }) => (
-  <span
-    className={`pro-badge is-sm${pro ? "" : " is-locked"}`}
-    data-pro-badge={pro ? "on" : "locked"}
-    aria-label={pro ? "Pro feature" : "Pro feature — locked"}
-  >
-    {pro ? null : <FiLock size={8} aria-hidden />}PRO
-  </span>
-);
+/**
+ * The person's plan as Home reads it: true = known paid, false = known Free,
+ * null = not known yet (loading or failed). While null nothing Pro-only is
+ * unlocked and nothing is upsold.
+ */
+export type ProState = boolean | null;
+
+export const Pill = ({ pro }: { pro: ProState }) => {
+  const locked = pro === false;
+  return (
+    <span
+      className={`pro-badge is-sm${locked ? " is-locked" : ""}`}
+      data-pro-badge={pro ? "on" : locked ? "locked" : "unknown"}
+      aria-label={locked ? "Pro feature — locked" : "Pro feature"}
+    >
+      {locked ? <FiLock size={8} aria-hidden /> : null}PRO
+    </span>
+  );
+};
 
 /** A section's rows, capped: a quiet "Show all N" under a long list. */
 export function Capped<T extends { id: string }>({
@@ -505,7 +515,7 @@ export function PlanButton({
   primary,
   small,
 }: {
-  pro: boolean;
+  pro: ProState;
   canPlan: boolean;
   onPlan: () => void;
   onLocked: () => void;
@@ -516,16 +526,18 @@ export function PlanButton({
     <button
       type="button"
       data-agent-plan={primary ? "" : undefined}
-      data-hd-plan={pro ? "on" : "locked"}
+      data-hd-plan={pro ? "on" : pro === false ? "locked" : "unknown"}
       className={`nx-btn nx-btn-secondary${small ? " nx-btn-sm" : ""}`}
-      disabled={pro && !canPlan}
-      onClick={pro ? onPlan : onLocked}
+      disabled={pro === null || (pro && !canPlan)}
+      onClick={pro ? onPlan : pro === false ? onLocked : undefined}
       title={
-        !pro
-          ? "Unlock Plan my day with Pro"
-          : canPlan
-            ? "Place what has no time yet into today's free hours"
-            : "Everything already has a time"
+        pro === null
+          ? "Checking your plan"
+          : !pro
+            ? "Unlock Plan my day with Pro"
+            : canPlan
+              ? "Place what has no time yet into today's free hours"
+              : "Everything already has a time"
       }
     >
       <LuWandSparkles size={small ? 14 : 15} aria-hidden />
@@ -778,7 +790,7 @@ export function WeekLoad({
 }: {
   days: readonly WeekDay[];
   cap: Capacity;
-  pro: boolean;
+  pro: ProState;
   onCalendar: () => void;
   onUpgrade: () => void;
 }) {
@@ -886,7 +898,7 @@ export function WeekLoad({
           );
         })}
       </div>
-      {!pro ? (
+      {pro === null ? null : !pro ? (
         <div className="hd-load-lock" data-hd-load-locked="">
           <span className="hd-load-lock-line">
             See which days are over capacity before they happen.

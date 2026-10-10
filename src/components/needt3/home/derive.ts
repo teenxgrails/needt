@@ -22,21 +22,36 @@ export const HOME_CAP_SLACK = 5;
 /** The schedule rail shows a window of this many rows around now. */
 export const SCHEDULE_CAP = 24;
 
+/**
+ * Pro as Home reads it from the plan's kind: true = known paid (trial
+ * included), false = known Free, null = not known yet (loading or failed).
+ */
+export const proFromPlan = (kind: string | null | undefined) =>
+  kind == null ? null : kind !== "free";
+
 export const PARTS = ["Morning", "Afternoon", "Evening"] as const;
 export type DayPart = (typeof PARTS)[number];
 
+/** The day of a task's `scheduledStart` ("YYYY-MM-DD"), or null. The stamp is
+ *  already local to the saved time zone (map.ts `isoToStamp`). */
+const scheduledDay = (t: Pick<V3Task, "scheduledStart">) =>
+  t.scheduledStart ? t.scheduledStart.slice(0, 10) : null;
+
 /**
- * The day a task belongs to: its due day, else the day it is placed on.
- * (The prototype's tasks always carried a due day; real ones are often only
- * scheduled.)
+ * The day a task is placed on: the day of its `scheduledStart` when it has
+ * one, else its due day (a due-only task sits in that day's list without an
+ * hour). A task due today but scheduled tomorrow belongs to tomorrow.
  */
 export function dayOf(t: Pick<V3Task, "dueDate" | "scheduledStart">) {
-  return t.dueDate ?? (t.scheduledStart ? t.scheduledStart.slice(0, 10) : null);
+  return scheduledDay(t) ?? t.dueDate ?? null;
 }
 
-/** The hour a task sits at (decimal), or null when it has no place in a day. */
-export const hourAt = (t: Pick<V3Task, "scheduledStart">) =>
-  hourOf(t.scheduledStart);
+/**
+ * The hour a task sits at (decimal), or null when it has no place in a day.
+ * With `day`, only a `scheduledStart` on that day gives an hour.
+ */
+export const hourAt = (t: Pick<V3Task, "scheduledStart">, day?: string) =>
+  day != null && scheduledDay(t) !== day ? null : hourOf(t.scheduledStart);
 
 export function partOf(at: number | null): DayPart | null {
   return at == null
@@ -195,22 +210,25 @@ export function skipNext(
 /** The line under the Next up title: why this one, in the prototype's words. */
 export function nextUpNote(pick: NextUp, nowHour: number, today: string) {
   const t = pick.task;
-  const at = hourAt(t);
+  const at = hourAt(t, today);
   const d = dur(t.estimatedMinutes);
   const day = dayOf(t);
   if (day && day < today) {
-    return `Overdue since ${dayLabel(dayOf(t))} · the oldest thing still open, ${d || "no estimate"}${pick.moreLate ? ` · +${pick.moreLate} overdue` : ""}`;
+    const since = t.dueDate && t.dueDate < today ? t.dueDate : day;
+    return `Overdue since ${dayLabel(since)} · the oldest thing still open, ${d || "no estimate"}${pick.moreLate ? ` · +${pick.moreLate} overdue` : ""}`;
   }
   if (at != null && at < nowHour) {
     return `Was planned for ${hhmm(at)} · still open, ${d || "no estimate"}`;
   }
   const start = Math.max(nowHour, at ?? nowHour);
   const end = start + (t.estimatedMinutes || 0) / 60;
-  const afterAt = pick.after ? hourAt(pick.after) : null;
+  const afterAt = pick.after ? hourAt(pick.after, today) : null;
+  // "Due today" only when it is; a task placed today and due later is "Today"
+  const lead = t.dueDate === today ? "Due today" : "Today";
   if (afterAt != null && t.estimatedMinutes && end <= afterAt) {
-    return `Due today · ${d} fits before ${hhmm(afterAt)}`;
+    return `${lead} · ${d} fits before ${hhmm(afterAt)}`;
   }
-  return `Due today${t.estimatedMinutes ? ` · ${d} of work` : ""}`;
+  return `${lead}${t.estimatedMinutes ? ` · ${d} of work` : ""}`;
 }
 
 /* ---------- today's schedule ---------- */
@@ -226,7 +244,8 @@ export interface ScheduleItem {
   projectId: string | null;
 }
 
-/** Today's timed events and timed tasks, by hour (events first at a tie). */
+/** Today's timed events and the tasks whose `scheduledStart` is today, by
+ *  hour (events first at a tie). */
 export function scheduleItems(
   tasks: readonly V3Task[],
   events: readonly V3Event[],
@@ -246,11 +265,11 @@ export function scheduleItems(
       projectId: null,
     }));
   const tks = tasks
-    .filter((t) => hourAt(t) != null)
+    .filter((t) => hourAt(t, today) != null)
     .map<ScheduleItem>((t) => ({
       key: `t${t.id}`,
       id: t.id,
-      at: hourAt(t) as number,
+      at: hourAt(t, today) as number,
       len: t.estimatedMinutes || 30,
       title: t.title,
       event: false,
