@@ -112,6 +112,50 @@
 .needt-v3 .wk-padd-input {
   font: 500 13px/18px var(--font-sans);
 }
+/* Lane B · T12 Calendar + drag (calendar2.jsx, Drag.jsx).
+   V-D17: off-scale durations snap to the scale — drop settle 320 → 280
+   (its 1.25 overshoot is the one kept), source flip 300 → 280, rows making
+   room 200 → 220, settle fade 200 → 220, gap line 160 → 170. The lift itself
+   loses its 1.2 overshoot (only the settle keeps one). useDrag's settle
+   fallback timer (380 ms) is matched to the 280 ms here. */
+.needt-v3 .shell-drag-lift-card {
+  transition:
+    transform 180ms var(--nx-ease),
+    box-shadow 180ms ease;
+}
+.needt-v3 .shell-drag-lift.is-settling {
+  transition:
+    transform 280ms cubic-bezier(0.3, 1.25, 0.45, 1),
+    opacity 220ms ease;
+}
+.needt-v3 [data-drag-shift] {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.needt-v3 [data-drag-flip] {
+  transition: transform 280ms cubic-bezier(0.3, 1.25, 0.45, 1);
+}
+.needt-v3 .c2-gap::before {
+  transition:
+    opacity 120ms ease,
+    transform 170ms var(--nx-ease, ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .needt-v3 :is(.shell-drag-lift-card, .shell-drag-lift.is-settling),
+  .needt-v3 :is([data-drag-shift], [data-drag-flip]),
+  .needt-v3 .c2-gap::before {
+    transition: none;
+  }
+}
+
+/* Rule 2: chrome type is 13 / 12 px, never 14 — the calendar's day number,
+   peek title and slot-list heading were vendored at 14. */
+.needt-v3 .c2-dayhead-n {
+  font-size: 13px;
+}
+.needt-v3 :is(.c2-peek-title, .c2-peek-input, .c2-slot-when) {
+  font-size: 13px;
+  line-height: 18px;
+}
 
 /* Lane C · T15 Mailbox + T16 Habits (MailScreen.jsx, Habits.jsx, places.jsx).
    V-D17: the banner's 200 ms transform snaps to the scale (220). */

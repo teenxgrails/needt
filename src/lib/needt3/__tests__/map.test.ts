@@ -253,6 +253,27 @@ describe("project, habit, event, mail and board mapping", () => {
     expect(eventSourceFromFeedType("CALDAV")).toBe("apple");
   });
 
+  it("events carry their recurrence; a stored occurrence counts", () => {
+    const base = {
+      title: "Standup",
+      start: "2026-09-01T07:30:00.000Z",
+      end: "2026-09-01T08:00:00.000Z",
+      feedId: "f1",
+    };
+    expect(
+      eventFromApi(
+        { ...base, id: "m", isRecurring: true, recurrenceRule: "FREQ=DAILY" },
+        TZ
+      )
+    ).toMatchObject({ isRecurring: true, recurrenceRule: "FREQ=DAILY" });
+    expect(
+      eventFromApi({ ...base, id: "i", masterEventId: "m" }, TZ)
+    ).toMatchObject({ isRecurring: true, recurrenceRule: null });
+    expect(eventFromApi({ ...base, id: "o" }, TZ)).toMatchObject({
+      isRecurring: false,
+    });
+  });
+
   it("mail reads a message as a thread", () => {
     const m = mailFromApi(
       {
