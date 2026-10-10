@@ -4,11 +4,11 @@ import { useRef, useState } from "react";
 
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
 import {
+  LuArchive,
   LuEllipsis,
   LuFolder,
   LuPencil,
   LuPlus,
-  LuTrash2,
 } from "react-icons/lu";
 
 import { useCreateTask } from "@/lib/needt3/hooks/tasks";
@@ -70,8 +70,8 @@ function MoreMenu({
                 title={deleteTitle}
                 onSelect={onDelete}
               >
-                <LuTrash2 size={14} aria-hidden />
-                Delete project
+                <LuArchive size={14} aria-hidden />
+                Archive project
               </Dropdown.Item>
             </div>
           </Dropdown.Content>
@@ -188,7 +188,9 @@ export function ProjectPage({
             onEdit={onEdit}
             onDelete={onDelete}
             deleteTitle={
-              s.open ? `${s.open} open tasks move to No project` : undefined
+              s.open
+                ? `Its ${s.open} open ${s.open === 1 ? "task is" : "tasks are"} archived with it`
+                : undefined
             }
           />
         </span>

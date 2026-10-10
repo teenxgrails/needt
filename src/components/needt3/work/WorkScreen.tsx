@@ -182,7 +182,7 @@ function WorkScreenContent({
   };
 
   const deleteProject = (p: V3Project) => {
-    const open = liveAll.filter((t) => t.projectId === p.id && !t.done).length;
+    const count = liveAll.filter((t) => t.projectId === p.id).length;
     router.push("/projects");
     //todo Archiving keeps the tasks' projectId (they drop out of every
     // project list but still point at it); the prototype moves them to No
@@ -191,7 +191,7 @@ function WorkScreenContent({
       .archive(p.id)
       .then(({ undo }) =>
         notify.success(
-          `Deleted “${p.name}”${open ? ` — ${open} ${open === 1 ? "task" : "tasks"} moved to No project` : ""}`,
+          `Archived “${p.name}”${count ? ` and its ${count} ${count === 1 ? "task" : "tasks"}` : ""}`,
           { action: { label: "Undo", onClick: () => void undo() } }
         )
       )

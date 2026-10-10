@@ -249,9 +249,14 @@ export function TaskDialog({
     if (timer.current != null) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(flush, TEXT_SAVE_MS);
   };
+  /* One PUT, not two: text still waiting for its pause rides along with
+     this edit, so the two never race on the same revision (If-Match). */
   const emit = (patch: V3TaskPatch) => {
-    flush();
-    void send(patch);
+    if (timer.current != null) window.clearTimeout(timer.current);
+    timer.current = null;
+    const p = { ...pending.current, ...patch };
+    pending.current = {};
+    void send(p);
   };
 
   const close = useCallback(() => {
@@ -274,12 +279,11 @@ export function TaskDialog({
     onClose();
   }, [flush, onClose, t.id, update]);
 
-  useEffect(
-    () => () => {
-      if (timer.current != null) window.clearTimeout(timer.current);
-    },
-    []
-  );
+  /* Unmounting (route change, the task vanishing) saves the text that was
+     still waiting for its pause rather than dropping it. */
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+  useEffect(() => () => flushRef.current(), []);
   useEffect(() => {
     if (!flash) return undefined;
     const h = window.setTimeout(() => setFlash(0), 1400);
@@ -451,6 +455,21 @@ export function TaskDialog({
     return `${day}T${hh}:${mm}`;
   };
 
+  /* A conversion is make-then-trash. If the trash fails, the new object is
+     taken back, so the person never ends up with both. */
+  const trashOrTakeBack = async (
+    undoMade: () => Promise<void>,
+    what: "event" | "document"
+  ) => {
+    try {
+      return await trash.trash(t.id);
+    } catch {
+      await undoMade().catch(() => undefined);
+      notify.error(`Could not convert the task to a ${what}. Nothing changed.`);
+      return null;
+    }
+  };
+
   const act = {
     duplicate: async () => {
       setMenu(false);
@@ -489,7 +508,8 @@ export function TaskDialog({
             calendarId: feed.id,
           },
         });
-        const gone = await trash.trash(t.id);
+        const gone = await trashOrTakeBack(made.undo, "event");
+        if (!gone) return;
         quietClose();
         notify.success("Converted to an event", {
           action: {
@@ -509,7 +529,8 @@ export function TaskDialog({
         const made = await createDoc.mutateAsync({
           draft: { title: t.title, projectId: t.projectId },
         });
-        const gone = await trash.trash(t.id);
+        const gone = await trashOrTakeBack(made.undo, "document");
+        if (!gone) return;
         quietClose();
         notify.success("Converted to a document", {
           action: {
