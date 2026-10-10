@@ -51,3 +51,22 @@
 .needt-v3 .tk-touch {
   transition: opacity 220ms ease;
 }
+
+/* Lane A · T10/T11 Tasks, Projects and the task dialog (work.jsx,
+   Dialogs.jsx; styles/tasks.css). V-B8: the card, its scrim, popovers and
+   the Scheduling section enter with fill `backwards`, never `both`. */
+.needt-v3 :is(.tdc-scrim, .tdc-card, .tdc-pop, .tdc-sched) {
+  animation-fill-mode: backwards;
+}
+/* V-D17: off-scale duration snaps to the scale (400 → 280). */
+.needt-v3 .wk-ring-fill {
+  transition: stroke-dashoffset 280ms var(--nx-ease);
+}
+/* Rule 2: chrome type is 13 / 12 px — the mini card name and the project
+   page's add line were 14 px. */
+.needt-v3 .wk-mcard-name {
+  font: 600 13px/18px var(--font-sans);
+}
+.needt-v3 .wk-padd-input {
+  font: 500 13px/18px var(--font-sans);
+}
