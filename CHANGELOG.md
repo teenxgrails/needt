@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Admin operations lists every external service — billing, email, alerts,
+  push, OAuth, hosted AI, Sentry, collaboration, Redis, webhooks, cron — as
+  configured or not, with a live check for Redis and the collaboration
+  server and a button that sends one Sentry test event. Never a secret value.
 - Sign in wears the design. It was the last screen still drawn in the
   pre-port chrome, and the first one anybody sees. The behaviour underneath
   is the same one that shipped before — the same providers, the same
