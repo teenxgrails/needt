@@ -28,6 +28,7 @@ import { useNeedt3Ui } from "@/store/needt3-ui";
 
 // V3Shell imports the motion overrides, so they load after index.css
 // (an import sorter cannot reorder them past it from there).
+import { PaywallHost } from "../paywall/PaywallHost";
 import { V3Shell } from "../shell/V3Shell";
 import { PhoneUiProvider, useResolvedPhoneUi } from "./phone-ui-context";
 
@@ -121,6 +122,8 @@ export function V3Root({
         <PhoneUiProvider value={ui}>
           <V3Shell ui={ui}>{children}</V3Shell>
         </PhoneUiProvider>
+        {/* Permanent: a sibling of the shell, so no UI change reaches it. */}
+        <PaywallHost />
       </div>
     </DesignV3Context.Provider>
   );

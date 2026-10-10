@@ -16,6 +16,12 @@ export interface ShellFrameProps {
   rail: ReactNode;
   /** After the row: the desktop's layers (menus, sheets, palette), or the phone's chrome. */
   overlays: ReactNode;
+  /**
+   * Hosts both UIs need (Settings, composer, Ask). A fixed slot after
+   * `overlays`: it never depends on `ui`, so its children are not remounted
+   * when the UI changes.
+   */
+  hosts?: ReactNode;
   /** Moving between two places swaps the page; one place's pages keep it. */
   placeKey: string;
   /** The desktop page's padding (Focus Mode widens it). */
@@ -31,8 +37,8 @@ export interface ShellFrameProps {
  * `components/layout/AppShell.tsx`), so the guarantee here is structural: the
  * route children sit under the same chain of elements at every width, from
  * this component's root down to the single `<main>` and its keyed wrapper.
- * Nothing above them changes type or position when `ui` changes. The three
- * chrome slots (`top`, `rail`, `overlays`) are siblings of that chain at fixed
+ * Nothing above them changes type or position when `ui` changes. The
+ * chrome slots (`top`, `rail`, `overlays`, `hosts`) are siblings of that chain at fixed
  * positions, so filling or emptying them never moves it; the elements on the
  * chain only change className, attributes and style. A Jest test mounts it,
  * flips `ui` both ways and asserts the children and the `<main>` node are the
@@ -48,6 +54,7 @@ export function ShellFrame({
   top,
   rail,
   overlays,
+  hosts,
   placeKey,
   mainPadding,
   children,
@@ -84,6 +91,7 @@ export function ShellFrame({
             </main>
           </div>
           {overlays}
+          {hosts}
         </V3PortalScope>
       </div>
     </PkThemeRoot>

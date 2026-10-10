@@ -432,6 +432,9 @@ export interface ApiEvent {
   externalEventId?: string | null;
   location?: string | null;
   description?: string | null;
+  isRecurring?: boolean | null;
+  recurrenceRule?: string | null;
+  masterEventId?: string | null;
 }
 
 export type V3EventSource = "needt" | "google" | "apple" | "outlook";
@@ -446,6 +449,10 @@ export interface V3Event {
   calendarId: string;
   source: V3EventSource;
   externalId: string | null;
+  /** A series master or one of its stored occurrences. */
+  isRecurring?: boolean;
+  /** RRULE text of the series; occurrences are not expanded in v3. */
+  recurrenceRule?: string | null;
 }
 
 /** CalendarFeed.type → the prototype's event source. */
@@ -482,6 +489,8 @@ export function eventFromApi(
     calendarId: row.feedId,
     source: eventSourceFromFeedType(feedType),
     externalId: row.externalEventId ?? null,
+    isRecurring: !!row.isRecurring || !!row.masterEventId,
+    recurrenceRule: row.recurrenceRule ?? null,
   };
 }
 

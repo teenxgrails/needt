@@ -1,9 +1,10 @@
 import { Prisma, SubscriptionPlan } from "@prisma/client";
 
+import { NEEDT_PRICING } from "@/lib/creem/config";
 import { addCalendarDays, newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
-export const TRIAL_DURATION_DAYS = 14;
+export const TRIAL_DURATION_DAYS = NEEDT_PRICING.trialDays;
 
 type TrialTransaction = Prisma.TransactionClient;
 

@@ -22,6 +22,7 @@ import { PhoneShell } from "../phone/shell/PhoneShell";
 import { ShellFrame } from "../root/ShellFrame";
 import { CustomizeSidebar } from "./CustomizeSidebar";
 import { KeySheet } from "./KeySheet";
+import { PermanentHosts } from "./PermanentHosts";
 import { type ShellApi, ShellContext } from "./ShellContext";
 import { Sidebar } from "./Sidebar";
 import { WhatsNew } from "./TopIcons";
@@ -270,7 +271,9 @@ export function V3Shell({ children, ui }: PropsWithChildren<{ ui: PhoneUi }>) {
 
   /* The desktop's layers: right-click menus, Customize Sidebar, the key sheet,
      what's new, ⌘K. On the phone these give way to menu A and the overlay host
-     (long-press actions live in the phone kit). */
+     (long-press actions live in the phone kit). The Settings sheet, the
+     composer and Ask are not here: both UIs open them (the phone's menu calls
+     the store), so they live in `hosts`. */
   const desktopLayers = (
     <>
       <CtxLayer />
@@ -291,6 +294,7 @@ export function V3Shell({ children, ui }: PropsWithChildren<{ ui: PhoneUi }>) {
         top={phone || focusMode ? null : <Topbar />}
         rail={phone ? null : rail}
         overlays={phone ? <PhoneShell /> : desktopLayers}
+        hosts={<PermanentHosts />}
         // Keyed by place, so moving between two docs keeps the page.
         placeKey={pathname?.split("/")[1] ?? ""}
         mainPadding={focusMode ? "20px" : "0 20px 20px"}

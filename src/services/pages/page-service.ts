@@ -95,7 +95,22 @@ export async function listPages(
       isPrivate: page.isPrivate,
       accessGrants,
     }),
+    ...pageShareFlags(actor, { userId, accessGrants }),
   }));
+}
+
+/**
+ * Additive list fields: `isOwner` is true when the actor owns the page, and
+ * `sharedWithMe` only when someone else owns it and gave the actor an explicit
+ * grant. A role inherited from workspace membership is not a share.
+ */
+export function pageShareFlags(
+  actor: PageActor,
+  page: { userId: string | null; accessGrants: readonly unknown[] }
+) {
+  const isOwner =
+    typeof actor === "string" || page.userId === actorUserId(actor);
+  return { isOwner, sharedWithMe: !isOwner && page.accessGrants.length > 0 };
 }
 
 export async function getPage(actor: PageActor, pageId: string) {

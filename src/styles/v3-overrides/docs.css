@@ -1,0 +1,9 @@
+/* Design v3 — Document screen corrections on top of the vendored CSS. */
+
+/* The cover belongs to the Document chrome (DocumentScreen, Style panel).
+ * The legacy editor inside it keeps its own "Change cover" and "Add cover"
+ * controls; hide both so there is one cover owner. */
+.needt-v3 [data-doc-editor] button[aria-label="Change cover"],
+.needt-v3 [data-doc-editor] [data-page-cover-add] {
+  display: none !important;
+}
