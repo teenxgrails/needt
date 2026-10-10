@@ -191,6 +191,15 @@ export function ShareSheet({
       )
       .catch(() => undefined);
 
+  /* Off revokes the token and on would mint a new URL, so off is final:
+     a plain notice, no Undo. */
+  const changeLink = (on: boolean, msg: string) => {
+    if (on === published) return;
+    const p = setLink.mutateAsync({ pageId: doc.id, on });
+    if (on) withUndo(p, msg);
+    else void p.then(() => notify.success(msg)).catch(() => undefined);
+  };
+
   const invite = () => {
     if (!check.ok) return;
     withUndo(
@@ -429,8 +438,8 @@ export function ShareSheet({
                     ["link", copy.anyone_with_the_link],
                   ]}
                   onChange={(v) =>
-                    withUndo(
-                      setLink.mutateAsync({ pageId: doc.id, on: v === "link" }),
+                    changeLink(
+                      v === "link",
                       v === "link" ? "Anyone with the link can view" : "Private"
                     )
                   }
@@ -483,10 +492,7 @@ export function ShareSheet({
               checked={published}
               label={copy.publish_to_the_web}
               onChange={(on) =>
-                withUndo(
-                  setLink.mutateAsync({ pageId: doc.id, on }),
-                  on ? "Published" : "Unpublished"
-                )
+                changeLink(on, on ? "Published" : "Unpublished")
               }
             />
           </div>

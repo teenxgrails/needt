@@ -314,8 +314,12 @@ export function DocumentScreen({
                 ) : null}
                 {/* The editor brings its own canvas and a full-height frame;
                     on the page it takes the page's colour instead. The cover
-                    is the chrome's (above), so the editor's copy is hidden. */}
-                <div className="min-w-0 [&>div]:!min-h-0 [&>div]:!bg-transparent [&>div>header]:!bg-[var(--dt-page)] [&>div>div.sticky]:!bg-[var(--dt-page)] [&_button[aria-label='Change_cover']]:!hidden">
+                    is the chrome's (above), so the editor's cover controls are
+                    hidden (v3-overrides/docs.css). */}
+                <div
+                  data-doc-editor=""
+                  className="min-w-0 [&>div]:!min-h-0 [&>div]:!bg-transparent [&>div>header]:!bg-[var(--dt-page)] [&>div>div.sticky]:!bg-[var(--dt-page)]"
+                >
                   {children}
                 </div>
               </article>

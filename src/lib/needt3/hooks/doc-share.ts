@@ -161,12 +161,32 @@ export function useDocLink(id: string, enabled: boolean) {
   });
 }
 
-/** Turn the public link on or off; Undo flips it back. */
+interface LinkVars {
+  pageId: string;
+  on: boolean;
+}
+
+/**
+ * The step that takes the link back, from the state before the change.
+ * Turning the link off revokes its token, and turning it on again mints a new
+ * URL, so off has no undo; neither has a change that changes nothing.
+ */
+export function docLinkInverse(
+  before: DocLink | undefined,
+  { pageId, on }: LinkVars
+): LinkVars | null {
+  const was = !!before?.published;
+  if (was === on || !on) return null;
+  return { pageId, on: false };
+}
+
+/** Turn the public link on or off; Undo takes back turning it on. */
 export function useSetDocLink() {
-  return useUndoableMutation<{ pageId: string; on: boolean }, DocLink>({
+  return useUndoableMutation<LinkVars, DocLink>({
     scope: qk.doc("").slice(0, 2),
     label: "change the link",
-    inverse: (_qc, { pageId, on }) => ({ pageId, on: !on }),
+    inverse: (qc, vars) =>
+      docLinkInverse(qc.getQueryData<DocLink>(docLinkKey(vars.pageId)), vars),
     optimistic: (qc, { pageId, on }) => {
       qc.setQueryData<DocLink>(docLinkKey(pageId), (cur) => ({
         published: on,

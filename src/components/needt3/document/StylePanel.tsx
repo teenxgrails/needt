@@ -9,12 +9,14 @@ import {
   useState,
 } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { LuLayers, LuPlus, LuUpload } from "react-icons/lu";
 
 import { useUpdateDoc } from "@/lib/needt3/hooks/docs";
 import { usePlan } from "@/lib/needt3/hooks/plan";
 import type { V3Doc } from "@/lib/needt3/map";
+import { qk } from "@/lib/needt3/query-keys";
 import { notify } from "@/lib/notifications";
 
 import { useNeedt3Ui } from "@/store/needt3-ui";
@@ -279,12 +281,14 @@ async function uploadCover(pageId: string, file: File) {
 /** Style tab (prototype DocsScreen.jsx `DcStylePanel` 184–331). */
 export function StylePanel({ doc, read }: { doc: V3Doc; read: TokenReader }) {
   const update = useUpdateDoc();
+  const qc = useQueryClient();
   const plan = usePlan();
   const openSettings = useNeedt3Ui((x) => x.openSettings);
   const fileRef = useRef<HTMLInputElement>(null);
   // Document themes (All Styles, Backdrop) are Pro; colour, text, cover and
-  // font stay free. Unknown plan (loading) does not lock.
-  const pro = plan.data ? plan.data.kind !== "free" : true;
+  // font stay free. An unknown plan (still loading) counts as not Pro, so a
+  // free reader never gets a Pro style through the loading gap.
+  const pro = !!plan.data && plan.data.kind !== "free";
   const toPaywall = () => openSettings("plan");
   const s = styleOf(doc);
   const pg = pageOf(s.page);
@@ -314,7 +318,16 @@ export function StylePanel({ doc, read }: { doc: V3Doc; read: TokenReader }) {
     const f = files?.[0];
     if (!f) return;
     void uploadCover(doc.id, f)
-      .then((url) => set({ cover: url }, copy.cover_added))
+      // Patch over the document as it is when the upload lands, not as it was
+      // when the file was picked: style edits made meanwhile must survive.
+      .then((url) =>
+        write(
+          stylePatch(qc.getQueryData<V3Doc>(qk.doc(doc.id)) ?? doc, {
+            cover: url,
+          }),
+          copy.cover_added
+        )
+      )
       .catch(() => notify.error("Could not upload the picture."));
   };
 
