@@ -4,6 +4,7 @@ import { useCallback } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { logger } from "@/lib/logger";
 import { eventsInRange } from "@/lib/needt3/derive";
 import {
   type ApiEvent,
@@ -12,6 +13,7 @@ import {
   eventPatchToApi,
 } from "@/lib/needt3/map";
 import { type DateRange, qk } from "@/lib/needt3/query-keys";
+import { notify } from "@/lib/notifications";
 
 import {
   dropListItem,
@@ -26,6 +28,7 @@ import { useTimeZone } from "./settings";
 
 const EVENTS = qk.events();
 const CALENDARS_KEY = [...EVENTS, "calendars"] as const;
+const LOG_SOURCE = "needt3-events";
 
 export interface ApiFeed {
   id: string;
@@ -163,17 +166,17 @@ export function useCreateEvent() {
     async (
       fields: Pick<V3Event, "title" | "startAt" | "endAt" | "isAllDay">
     ) => {
-      const feeds =
-        qc.getQueryData<ApiFeed[]>(CALENDARS_KEY) ??
-        (await fetchJson<ApiFeed[]>("/api/feeds"));
-      let calendar = pickWritableCalendar(feeds);
-      if (!calendar) {
-        calendar = await sendJson<ApiFeed>("/api/feeds", "POST", {
-          name: NEEDT_CALENDAR_NAME,
-          type: "LOCAL",
-          enabled: true,
-        });
-        qc.setQueryData<ApiFeed[]>(CALENDARS_KEY, [...feeds, calendar]);
+      let calendar: ApiFeed;
+      try {
+        calendar = await writableCalendar(qc);
+      } catch (error) {
+        notify.error("Could not find a calendar for this event.");
+        void logger.error(
+          "v3 event calendar lookup failed",
+          { error: error instanceof Error ? error.message : String(error) },
+          LOG_SOURCE
+        );
+        throw error;
       }
       return lifecycle.mutateAsync({
         create: { ...fields, calendarId: calendar.id },
@@ -181,4 +184,31 @@ export function useCreateEvent() {
     },
     [qc, lifecycle]
   );
+}
+
+/* One creation at a time: two quick commits (or the Composer and a
+ * Calendar draft together) must not make two "Needt" calendars. */
+let pendingCalendar: Promise<ApiFeed> | null = null;
+
+export function writableCalendar(
+  qc: ReturnType<typeof useQueryClient>
+): Promise<ApiFeed> {
+  if (pendingCalendar) return pendingCalendar;
+  pendingCalendar = (async () => {
+    const feeds =
+      qc.getQueryData<ApiFeed[]>(CALENDARS_KEY) ??
+      (await fetchJson<ApiFeed[]>("/api/feeds"));
+    const found = pickWritableCalendar(feeds);
+    if (found) return found;
+    const created = await sendJson<ApiFeed>("/api/feeds", "POST", {
+      name: NEEDT_CALENDAR_NAME,
+      type: "LOCAL",
+      enabled: true,
+    });
+    qc.setQueryData<ApiFeed[]>(CALENDARS_KEY, [...feeds, created]);
+    return created;
+  })().finally(() => {
+    pendingCalendar = null;
+  });
+  return pendingCalendar;
 }
