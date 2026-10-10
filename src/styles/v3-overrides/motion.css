@@ -51,3 +51,46 @@
 .needt-v3 .tk-touch {
   transition: opacity 220ms ease;
 }
+
+/* Lane B · T07 Composer (Composer.jsx, composer.css, shell.css .cmp-*).
+   Rule 12: the shelf's rows and margin snap; only opacity and a short lift
+   move (the prototype animated grid-template-rows and margin-bottom). */
+.needt-v3 .co-shelf {
+  transform: translateY(4px);
+  transition:
+    opacity 220ms ease,
+    transform 220ms var(--nx-ease);
+}
+.needt-v3 .co-shelf.is-open {
+  transform: none;
+}
+/* V-B8 / V-D17: entries hold no end state; 200 → 220, flight 460 → 280
+   (Composer.tsx FLIGHT_MS matches). */
+.needt-v3 .cmp-chip {
+  animation-duration: 220ms;
+  animation-fill-mode: backwards;
+}
+.needt-v3 .co-note {
+  animation-duration: 220ms;
+  animation-fill-mode: backwards;
+}
+.needt-v3 .co-flight {
+  animation-duration: 280ms;
+}
+/* Rules 2 and 7: chrome type is 13/12 (the description line was 14), and
+   info text is at least tertiary. */
+.needt-v3 .shell-composer-textarea {
+  font-size: var(--text-ui);
+}
+.needt-v3 :is(.shell-composer-text, .shell-composer-text-2) {
+  color: var(--text-tertiary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .needt-v3 :is(.cmp-chip, .co-note, .co-flight) {
+    animation: none;
+  }
+  .needt-v3 .co-shelf {
+    transition: none;
+    transform: none;
+  }
+}
