@@ -1,0 +1,7 @@
+/* Design v3 — typography corrections on top of the vendored prototype CSS.
+ * Rule: chrome type is 13 px and 12 px, never 14 (CLAUDE.md, four rules). */
+
+/* tasks.css:99 sets the preview title in 14 px. */
+.needt-v3 .tk-prev-title {
+  font-size: 13px;
+}
