@@ -113,3 +113,21 @@
   background: var(--fill-3);
   color: var(--text-primary);
 }
+
+/* T13/T14 docs and document (S4). §3 items 11–12: the inspector opens by
+   opacity alone (its width snaps; animating width relayouts the page every
+   frame), the page's padding change does not animate, and the backdrop
+   cross-fade runs on the scale (320 → 280) without holding its end state. */
+.needt-v3 .docs-inspector {
+  transition: opacity 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.needt-v3 .docs-document-screen-3 {
+  transition: none;
+}
+.needt-v3 .dc-bd-in {
+  animation-duration: 280ms;
+  animation-fill-mode: backwards;
+}
+.needt-v3 .dc-bd-out {
+  animation-duration: 280ms;
+}
