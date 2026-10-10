@@ -270,6 +270,19 @@ const V3_DESKTOP_ORDER = [
   "mail", "habits",
 ];
 
+/**
+ * The phone stylesheets mobile-dev.html links after the desktop set, in its
+ * order. They are imported here, inside index.css, so they load before the
+ * hand-written overrides (v3-overrides/*.css) and an override wins over a
+ * vendored rule at equal specificity. (mobile.css, which mobile-dev.html loads
+ * after base, follows the desktop set here.)
+ */
+const V3_PHONE_ORDER = [
+  "mobile", "mobile-onboarding", "mobile-nav", "nav-a", "phone-kit",
+  "phone-overlays", "phone-tasks", "phone-drag", "phone-docs", "phone-mail",
+  "phone-habits", "phone-places", "phone-settings", "mobile-v2-plates",
+];
+
 /** Split on a top-level delimiter, ignoring ones inside (), [] and quotes. */
 function splitTopLevel(text, isDelim) {
   const parts = [];
@@ -550,12 +563,14 @@ function syncV3() {
 
   const index = [
     header([
-      "Needt design v3 — the desktop stylesheets, in the prototype's order.",
+      "Needt design v3 — the desktop stylesheets in the prototype's order,",
+      "then the phone stylesheets in mobile-dev.html's order.",
       "VENDORED, DO NOT EDIT BY HAND. Regenerate with: npm run tokens:sync:v3",
-      "Phone stylesheets are vendored next to these and imported by the phone",
-      "shell when it lands.",
     ]),
     ...V3_DESKTOP_ORDER.filter((n) => written.includes(n)).map((n) => `@import "./${n}.css";`),
+    "",
+    "/* Phone */",
+    ...V3_PHONE_ORDER.filter((n) => written.includes(n)).map((n) => `@import "./${n}.css";`),
     "",
   ].join("\n");
   writeFileSync(join(outDir, "index.css"), index);
