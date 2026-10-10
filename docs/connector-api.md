@@ -10,6 +10,37 @@ Authorization: Bearer needt_...
 Content-Type: application/json
 ```
 
+## MCP (Claude Code, Claude Desktop, other agents)
+
+The same token opens a remote MCP server at `/api/mcp` (Streamable HTTP,
+stateless JSON; POST only).
+
+1. Settings -> Personal API -> Generate token (shown once; rotating it
+   disconnects every agent).
+2. Connect:
+
+```bash
+claude mcp add --transport http needt https://use.needt.app/api/mcp \
+  --header "Authorization: Bearer needt_REPLACE_ME"
+```
+
+Add `--header "x-workspace-id: <id>"` to work in a shared workspace. Clients
+that only launch local processes can use the stdio bridge in `mcp/`.
+
+| Tool                | What it does                                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| `needt_search`      | Text search across tasks, projects, events, pages, habits, mail                                      |
+| `needt_list`        | Paginated list by `type` (task, project, event, calendar, page, habit, mail); `limit` ≤ 50, `cursor` |
+| `needt_get`         | One object in full by `type` and `id`                                                                |
+| `needt_create_task` | `POST /api/connect/tasks`                                                                            |
+| `needt_schedule`    | `POST` (or `GET` with `run: false`) `/api/connect/schedule`                                          |
+| `needt_reschedule`  | `POST /api/connect/reschedule`                                                                       |
+| `needt_control`     | `POST /api/connect/control`; every action the route accepts, deletes need `confirm: true`            |
+
+Write tools run the connector routes in-process, so auth, workspace scoping
+and confirmation rules are the routes' own. Requests are rate-limited per IP
+and per user (120/min). OAuth for claude.ai connectors is not available yet.
+
 ## Create Task
 
 ```bash

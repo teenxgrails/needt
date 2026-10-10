@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Claude Code, Claude Desktop and other agents connect to Needt directly at
+  `/api/mcp` with the personal access token. They can search, list and read
+  tasks, projects, calendars, events, pages, habits and mail, and create and
+  change tasks, projects and events. Settings → Personal API shows the URL
+  and the one-line `claude mcp add` command. The local stdio server is now a
+  thin bridge to the same endpoint, so it gained the restore actions it was
+  missing.
+
 - Sign in wears the design. It was the last screen still drawn in the
   pre-port chrome, and the first one anybody sees. The behaviour underneath
   is the same one that shipped before — the same providers, the same
