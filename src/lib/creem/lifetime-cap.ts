@@ -5,6 +5,7 @@ import {
 } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 
+import { NEEDT_PRICING } from "@/lib/creem/config";
 import { newDate } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
 
@@ -14,7 +15,7 @@ const OPEN_RESERVATION_STATUSES: LifetimeCheckoutReservationStatus[] = [
   LifetimeCheckoutReservationStatus.PENDING,
 ];
 
-export const LIFETIME_BUYER_CAP = 300;
+export const LIFETIME_BUYER_CAP = NEEDT_PRICING.lifetime.cap;
 
 type LifetimeReservation = {
   id: string;
