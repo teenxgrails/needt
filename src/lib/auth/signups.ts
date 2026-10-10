@@ -62,8 +62,10 @@ export async function isExistingOAuthUser(input: {
   if (linked) return true;
   const email = input.email?.trim();
   if (!email) return false;
-  const user = await prisma.user.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
+  // Exact match, as the Prisma adapter's getUserByEmail does: a case
+  // mismatch must refuse rather than let the adapter create a second user.
+  const user = await prisma.user.findUnique({
+    where: { email },
     select: { id: true },
   });
   return Boolean(user);

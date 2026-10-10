@@ -116,13 +116,17 @@ export async function POST(request: NextRequest) {
     return json({ error: "origin_not_allowed" }, 403, null);
   }
 
+  const declared = Number(request.headers.get("content-length") ?? "0");
+  if (declared > MAX_BODY_BYTES) {
+    return json({ error: "invalid_request" }, 413, origin);
+  }
   let raw: string;
   try {
     raw = await request.text();
   } catch {
     return json({ error: "invalid_request" }, 400, origin);
   }
-  if (raw.length > MAX_BODY_BYTES) {
+  if (Buffer.byteLength(raw, "utf8") > MAX_BODY_BYTES) {
     return json({ error: "invalid_request" }, 413, origin);
   }
   let body: unknown;

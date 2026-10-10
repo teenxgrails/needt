@@ -22,13 +22,13 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     featureFlag: { findUnique: jest.fn() },
     account: { findUnique: jest.fn() },
-    user: { findFirst: jest.fn(), updateMany: jest.fn() },
+    user: { findUnique: jest.fn(), updateMany: jest.fn() },
   },
 }));
 
 const flagRow = jest.mocked(prisma.featureFlag.findUnique);
 const linkedAccount = jest.mocked(prisma.account.findUnique);
-const userByEmail = jest.mocked(prisma.user.findFirst);
+const userByEmail = jest.mocked(prisma.user.findUnique);
 
 function setFlag(row: { enabled: boolean; rolloutPercentage: number } | null) {
   flagRow.mockResolvedValue(row as never);
@@ -140,7 +140,7 @@ describe("oauthSignInGate", () => {
     ).resolves.toBe(true);
     expect(userByEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { email: { equals: "Old@Example.com", mode: "insensitive" } },
+        where: { email: "Old@Example.com" },
       })
     );
   });
