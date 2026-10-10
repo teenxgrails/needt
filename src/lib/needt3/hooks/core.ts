@@ -9,6 +9,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
+import { newDate } from "@/lib/date-utils";
 import { logger } from "@/lib/logger";
 import { notify } from "@/lib/notifications";
 
@@ -58,11 +59,31 @@ export async function fetchJson<T>(
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-export const sendJson = <T>(url: string, method: string, body?: unknown) =>
+export const sendJson = <T>(
+  url: string,
+  method: string,
+  body?: unknown,
+  headers?: Record<string, string>
+) =>
   fetchJson<T>(url, {
     method,
+    ...(headers ? { headers } : {}),
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
+
+/**
+ * `If-Match` for a row we hold. Once the offline service worker is active it
+ * stamps every write with its scope, and the API then rejects a write that
+ * names no revision (409 OFFLINE_REVISION_CONFLICT) — the old screens send
+ * this from src/lib/task-api.ts, v3 writes must too.
+ */
+export function revisionHeader(
+  updatedAt: string | null | undefined
+): Record<string, string> | undefined {
+  return updatedAt
+    ? { "If-Match": newDate(updatedAt).toISOString() }
+    : undefined;
+}
 
 /** The browser's IANA zone; the settings hook overrides it with the saved one. */
 export function browserTimeZone() {

@@ -26,6 +26,7 @@ import {
   findListItem,
   patchListItem,
   previousFields,
+  revisionHeader,
   sendJson,
   useUndoableMutation,
 } from "./core";
@@ -82,6 +83,7 @@ function applyLocal(t: V3Task, patch: V3TaskPatch): V3Task {
 /** Patch a task. Resolves to `{ result, undo }`; undo writes the old fields back. */
 export function useUpdateTask() {
   const tz = useTimeZone();
+  const qc = useQueryClient();
   return useUndoableMutation<UpdateVars, V3Task>({
     scope: [TASKS, [...qk.task("")].slice(0, 2)],
     label: "update the task",
@@ -95,15 +97,24 @@ export function useUpdateTask() {
         t ? applyLocal(t, patch) : t
       );
     },
-    request: async ({ id, patch }) =>
-      taskFromApi(
+    request: async ({ id, patch }) => {
+      const held =
+        findListItem<V3Task>(qc, TASKS, id) ??
+        qc.getQueryData<V3Task>(qk.task(id));
+      const saved = taskFromApi(
         await sendJson<ApiTask>(
           `/api/tasks/${id}`,
           "PUT",
-          taskPatchToApi(patch, tz)
+          taskPatchToApi(patch, tz),
+          revisionHeader(held?.updatedAt)
         ),
         tz
-      ),
+      );
+      // The server's row carries the new revision; the next edit must send it.
+      patchListItem<V3Task>(qc, TASKS, id, () => saved);
+      qc.setQueryData<V3Task>(qk.task(id), (t) => (t ? saved : t));
+      return saved;
+    },
   });
 }
 
@@ -139,18 +150,28 @@ interface CreateVars {
 /** Create a task. Undo removes the task it created. */
 export function useCreateTask() {
   const tz = useTimeZone();
-  return useUndoableMutation<CreateVars | { deleteId: string }, V3Task | null>({
+  return useUndoableMutation<
+    CreateVars | { deleteId: string; revision: string | null },
+    V3Task | null
+  >({
     scope: TASKS,
     label: "create the task",
     inverseFromResult: true,
     inverse: (_qc, vars, result) =>
-      "draft" in vars && result ? { deleteId: result.id } : null,
+      "draft" in vars && result
+        ? { deleteId: result.id, revision: result.updatedAt }
+        : null,
     optimistic: (qc, vars) => {
       if ("deleteId" in vars) dropListItem<V3Task>(qc, TASKS, vars.deleteId);
     },
     request: async (vars) => {
       if ("deleteId" in vars) {
-        await sendJson(`/api/tasks/${vars.deleteId}`, "DELETE");
+        await sendJson(
+          `/api/tasks/${vars.deleteId}`,
+          "DELETE",
+          undefined,
+          revisionHeader(vars.revision)
+        );
         return null;
       }
       return taskFromApi(
