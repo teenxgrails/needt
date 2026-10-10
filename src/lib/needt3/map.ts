@@ -122,6 +122,57 @@ export interface ApiTask {
   scheduleId?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  /** TaskPart rows, ordered by `position` (GET /api/tasks, /api/tasks/[id]). */
+  parts?: ApiTaskPart[];
+  /** Open TaskWait rows (`resolvedAt: null`). */
+  waits?: ApiTaskWait[];
+}
+
+export interface ApiTaskPart {
+  id: string;
+  title: string;
+  done: boolean;
+  position?: number;
+}
+
+export interface ApiTaskWait {
+  id: string;
+  reason: string;
+  resolvedAt?: string | null;
+  waitingOnUserId: string;
+  waitingOnUser?: {
+    id: string;
+    name?: string | null;
+    image?: string | null;
+  } | null;
+}
+
+/** One part of a task (TaskPart). */
+export interface V3TaskPart {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+/** What a task waits on (TaskWait): a person (`on`, a user id) for `for`. */
+export interface V3TaskWait {
+  id: string;
+  on: string;
+  onName: string | null;
+  for: string;
+}
+
+export function partFromApi(row: ApiTaskPart): V3TaskPart {
+  return { id: row.id, title: row.title, done: row.done };
+}
+
+export function waitFromApi(row: ApiTaskWait): V3TaskWait {
+  return {
+    id: row.id,
+    on: row.waitingOnUserId,
+    onName: row.waitingOnUser?.name ?? null,
+    for: row.reason,
+  };
 }
 
 export interface V3TaskSource {
@@ -168,6 +219,10 @@ export interface V3Task {
   repeat: string | null;
   scheduleId: string | null;
   updatedAt: string | null;
+  /** Parts in order; `[]` when the task has none. */
+  parts: V3TaskPart[];
+  /** Open waits; `[]` when the task waits on no one. */
+  waits: V3TaskWait[];
 }
 
 const isOrigin = (k: unknown): k is V3OriginKind =>
@@ -211,12 +266,16 @@ export function taskFromApi(row: ApiTask, tz: string): V3Task {
     repeat: row.isRecurring ? (row.recurrenceRule ?? null) : null,
     scheduleId: row.scheduleId ?? null,
     updatedAt: row.updatedAt ?? null,
+    parts: [...(row.parts ?? [])]
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+      .map(partFromApi),
+    waits: (row.waits ?? []).filter((w) => !w.resolvedAt).map(waitFromApi),
   };
 }
 
 /** Fields a v3 screen may write. `done` maps to `status`. */
 export type V3TaskPatch = Partial<
-  Omit<V3Task, "id" | "status" | "updatedAt" | "movedFrom">
+  Omit<V3Task, "id" | "status" | "updatedAt" | "movedFrom" | "parts" | "waits">
 >;
 
 /**

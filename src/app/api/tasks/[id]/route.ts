@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { sendConnectorWebhook } from "@/services/connectors/webhooks";
 import { findTaskProjectMoveConflict } from "@/services/tasks/dependencies";
+import { partsWaitsInclude } from "@/services/tasks/parts-waits";
 import { recomputeTaskActuals } from "@/services/time-tracking/timeEntries";
 import {
   type Prisma,
@@ -61,6 +62,7 @@ export async function GET(
         tags: true,
         project: true,
         scheduledBlocks: { orderBy: { chunkIndex: "asc" } },
+        ...partsWaitsInclude,
         activities: {
           include: { actor: { select: { id: true, name: true, image: true } } },
           orderBy: { createdAt: "desc" },
@@ -159,6 +161,10 @@ export async function PUT(
     delete updates.workspaceId;
     delete updates.assignee;
     delete updates.activities;
+    // GET now includes these; a client echoing the task back must not write
+    // them through the task (they have their own routes).
+    delete updates.parts;
+    delete updates.waits;
     delete updates.archivedAt;
     delete updates.recurrenceMasterId;
     delete updates.recurrenceInstanceAt;

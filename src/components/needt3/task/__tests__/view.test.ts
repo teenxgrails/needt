@@ -33,6 +33,8 @@ const base: V3Task = {
   repeat: null,
   scheduleId: null,
   updatedAt: null,
+  parts: [],
+  waits: [],
 };
 const task = (patch: Partial<TaskEntry & V3Task> = {}) =>
   ({ ...base, ...patch }) as TaskEntry;
@@ -93,10 +95,16 @@ describe("v3 task labels", () => {
 
   it("draws no ring without parts and counts open and done parts", () => {
     expect(taskView(task()).parts).toBeNull();
-    expect(taskView(task({ parts: null })).parts).toBeNull();
     expect(taskView(task({ parts: [] })).parts).toBeNull();
     expect(
-      taskView(task({ parts: [{ done: true }, { done: false }] })).parts
+      taskView(
+        task({
+          parts: [
+            { id: "p1", title: "Outline", done: true },
+            { id: "p2", title: "Colour", done: false },
+          ],
+        })
+      ).parts
     ).toEqual({ done: 1, total: 2, open: 1 });
   });
 

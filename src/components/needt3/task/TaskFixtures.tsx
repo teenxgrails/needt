@@ -50,6 +50,8 @@ const BASE: V3Task = {
   repeat: null,
   scheduleId: null,
   updatedAt: null,
+  parts: [],
+  waits: [],
 };
 
 const FIXTURES: { name: string; task: TaskEntry }[] = [
@@ -64,7 +66,10 @@ const FIXTURES: { name: string; task: TaskEntry }[] = [
       scheduledStart: "2026-09-01T14:00",
       estimatedMinutes: 240,
       entry: "Open the artwork and pick the print side",
-      parts: [{ done: true }, { done: false }],
+      parts: [
+        { id: "p1", title: "Outline", done: true },
+        { id: "p2", title: "Colour", done: false },
+      ],
     },
   },
   {
