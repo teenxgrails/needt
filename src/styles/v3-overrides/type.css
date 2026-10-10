@@ -12,6 +12,8 @@
 .needt-v3 .hd-panel-title,
 .needt-v3 .hd-notes {
   font-size: 13px;
+}
+
 /* T22 Connections. connections.jsx keeps most of its card CSS in an inline
  * <style> (CN_CSS), so it is not in the vendored connections.css. Ported here
  * on the 13 / 12 px scale (the prototype uses 15, 14, 13.5 and 12.5), with the
