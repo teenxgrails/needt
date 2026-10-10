@@ -5,3 +5,11 @@
 .needt-v3 .tk-prev-title {
   font-size: 13px;
 }
+
+/* home.css sets the day-closed line, the rail panel titles and the notes line
+ * in 14 px. */
+.needt-v3 .hd-closed-line,
+.needt-v3 .hd-panel-title,
+.needt-v3 .hd-notes {
+  font-size: 13px;
+}
