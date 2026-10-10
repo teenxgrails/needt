@@ -10,7 +10,8 @@ import {
   useState,
 } from "react";
 
-import "@/styles/v3/index.css";
+// One entry, so the vendored CSS always loads before the port's overrides.
+import "@/styles/v3-entry.css";
 
 import { newDate } from "@/lib/date-utils";
 import { V3_FONT_CLASSES } from "@/lib/needt3/fonts";
