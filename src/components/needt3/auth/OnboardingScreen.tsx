@@ -22,17 +22,13 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  LuArrowLeft,
-  LuCheck,
-  LuSparkles,
-} from "react-icons/lu";
+import { LuArrowLeft, LuCheck, LuSparkles } from "react-icons/lu";
 
 import { NeedtPicker } from "@/components/ui/needt-picker";
 
 import { logger } from "@/lib/logger";
 import { useConnections } from "@/lib/needt3/hooks/connections";
-import { fetchJson, sendJson } from "@/lib/needt3/hooks/core";
+import { browserTimeZone, fetchJson, sendJson } from "@/lib/needt3/hooks/core";
 import { useSettings, useUpdateSettings } from "@/lib/needt3/hooks/settings";
 import { useCreateTask } from "@/lib/needt3/hooks/tasks";
 import type { V3Task } from "@/lib/needt3/map";
@@ -57,6 +53,7 @@ import { PLACES } from "../shell/places";
 import { NeedtLockup } from "../wordmark";
 import { SidebarGame } from "./SidebarGame";
 import {
+  DEFAULT_HOURS,
   HOUR_CHOICES,
   STEPS,
   STEP_IDS,
@@ -65,8 +62,12 @@ import {
   clampStep,
   goTo,
   hhmm,
+  hoursPatch,
   startOrder,
+  startZone,
   stepIndex,
+  stepsToSave,
+  zoneChoices,
 } from "./onboarding-steps";
 
 const LOG_SOURCE = "needt3-onboarding";
@@ -438,8 +439,14 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
   );
   const [dir, setDir] = React.useState<1 | -1>(1);
   const [uses, setUses] = React.useState<string[]>(["work"]);
-  const [start, setStart] = React.useState(9);
-  const [end, setEnd] = React.useState(18);
+  const [start, setStart] = React.useState<number>(DEFAULT_HOURS.start);
+  const [end, setEnd] = React.useState<number>(DEFAULT_HOURS.end);
+  /* The hours as saved on the server; null until that row has loaded. Until
+     then the selects show defaults and nothing is written from them. */
+  const [savedHours, setSavedHours] = React.useState<{
+    start: number;
+    end: number;
+  } | null>(null);
   const [tz, setTz] = React.useState("");
   const [skipCal, setSkipCal] = React.useState(false);
   const [tiles, setTiles] = React.useState<string[]>(() =>
@@ -450,6 +457,9 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
   const [adding, setAdding] = React.useState(false);
   const [planning, setPlanning] = React.useState(false);
   const seeded = React.useRef(false);
+  /* Steps the person actually stood on; only these are saved on the way out. */
+  const visited = React.useRef(new Set<string>());
+  const ready = !!settings.data;
 
   /* Start from what is already saved: hours from the scheduler's settings, the
      zone from settings (else this device's), the tile order from the prefs. */
@@ -457,7 +467,7 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
     if (seeded.current || !settings.data) return;
     seeded.current = true;
     const s = settings.data;
-    setTz(s.timeZone);
+    setTz(startZone(s.timeZone, browserTimeZone(), s.prefs.onboarded === true));
     setTiles(
       startOrder(
         PLACES.map((p) => p.id),
@@ -468,32 +478,50 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
       setUses(s.prefs.uses.filter((u): u is string => typeof u === "string"));
     void fetchJson<HoursRow>("/api/auto-schedule-settings")
       .then((row) => {
-        if (typeof row.workHourStart === "number") setStart(row.workHourStart);
-        if (typeof row.workHourEnd === "number") setEnd(row.workHourEnd);
+        const a =
+          typeof row.workHourStart === "number"
+            ? row.workHourStart
+            : DEFAULT_HOURS.start;
+        const b =
+          typeof row.workHourEnd === "number"
+            ? row.workHourEnd
+            : DEFAULT_HOURS.end;
+        setStart(a);
+        setEnd(b);
+        setSavedHours({ start: a, end: b });
       })
       .catch(() => undefined);
   }, [settings.data]);
 
   const step = STEPS[i];
   const id = step[0];
+  React.useEffect(() => {
+    visited.current.add(id);
+  }, [id]);
   const bad = badHours(start, end);
   const connected = new Set(
     (connections.data ?? [])
       .filter((c) => c.kind === "calendar")
       .map((c) => c.provider)
   );
-  const zoneOptions: ReadonlyArray<readonly [string, string]> =
-    React.useMemo(() => {
-      const own = settings.data?.timeZone;
-      const list = own && !ZONES.includes(own) ? [own, ...ZONES] : ZONES;
-      return list.map((z) => [z, zoneLabel(z)] as const);
-    }, [settings.data?.timeZone]);
+  const zoneOptions: ReadonlyArray<readonly [string, string]> = React.useMemo(
+    () =>
+      zoneChoices(ZONES, browserTimeZone(), settings.data?.timeZone).map(
+        (z) => [z, zoneLabel(z)] as const
+      ),
+    [settings.data?.timeZone]
+  );
 
+  /* prefs is replaced whole on the server, so a patch is only ever merged
+     into the loaded map. With nothing loaded, writing would wipe every other
+     key; refuse instead. */
   const setPref = React.useCallback(
     (patch: Record<string, unknown>) => {
-      const cur =
-        qc.getQueryData<{ prefs: Record<string, unknown> }>(qk.settings())
-          ?.prefs ?? {};
+      const cur = qc.getQueryData<{ prefs: Record<string, unknown> }>(
+        qk.settings()
+      )?.prefs;
+      if (!cur || typeof cur !== "object")
+        return Promise.reject(new Error("Settings are not loaded yet"));
       return update.mutateAsync({ prefs: { ...cur, ...patch } });
     },
     [qc, update]
@@ -504,11 +532,18 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
     try {
       if (k === "use") await setPref({ uses });
       if (k === "setup") {
-        await sendJson("/api/auto-schedule-settings", "PATCH", {
-          workHourStart: start,
-          workHourEnd: end,
+        const body = hoursPatch({
+          loaded: !!savedHours,
+          start,
+          end,
+          savedStart: savedHours?.start ?? start,
+          savedEnd: savedHours?.end ?? end,
         });
-        if (tz && tz !== settings.data?.timeZone)
+        if (body) {
+          await sendJson("/api/auto-schedule-settings", "PATCH", body);
+          setSavedHours({ start: body.workHourStart, end: body.workHourEnd });
+        }
+        if (settings.data && tz && tz !== settings.data.timeZone)
           await update.mutateAsync({ timeZone: tz });
       }
       if (k === "sidebar") await setPref({ sidebarTiles: tiles });
@@ -528,7 +563,8 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
   async function go(n: number) {
     const to = goTo({ from: i, to: n, start, end, hasFirst: !!first });
     if (to === null) return;
-    if (to > i) for (let k = i; k < to; k++) await save(STEP_IDS[k]);
+    if (to > i)
+      for (const k of stepsToSave(i, to, visited.current)) await save(k);
     setDir(to > i ? 1 : -1);
     setI(to);
   }
@@ -552,7 +588,7 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
   }
 
   async function finish(skipped?: boolean) {
-    if (planning) return;
+    if (planning || !ready) return;
     setPlanning(true);
     if (!skipped) await save(id);
     try {
@@ -588,7 +624,7 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
             <PxDots
               count={STEPS.length}
               index={i}
-              onPick={(n) => void go(n)}
+              onPick={ready ? (n) => void go(n) : undefined}
               label="Setup"
               names={STEPS.map((s) => s[1])}
               className="auth-onboarding-text"
@@ -598,6 +634,7 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
               type="button"
               className="axs-skip px-chip-btn"
               data-ob-skip
+              disabled={!ready}
               onClick={() => void finish(true)}
             >
               Skip setup
@@ -875,6 +912,7 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
                         type="button"
                         className="nx-btn nx-btn-text"
                         data-ob-skip-task
+                        disabled={!ready}
                         onClick={() => void finish()}
                       >
                         Skip — open Needt
@@ -894,6 +932,7 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
                       type="button"
                       className="nx-btn nx-btn-primary axs-go"
                       data-axs-next
+                      disabled={!ready}
                       onClick={() => void finish()}
                     >
                       {planning ? "Opening…" : "Open my day"}
@@ -903,7 +942,7 @@ export function OnboardingScreen({ startAt }: { startAt?: string | null }) {
                       type="button"
                       className="nx-btn nx-btn-primary axs-go"
                       data-axs-next
-                      disabled={id === "setup" && bad}
+                      disabled={!ready || (id === "setup" && bad)}
                       onClick={() => void go(i + 1)}
                     >
                       Continue

@@ -151,7 +151,8 @@ export function V3SignInRoute({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: typed.current }),
       });
-      return response.ok || response.status === 429;
+      if (response.status === 429) return "limited" as const;
+      return response.ok;
     } catch (e) {
       void logger.error(
         "Password reset request failed",

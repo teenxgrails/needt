@@ -163,3 +163,77 @@ export function swapSay(
     ? `${name(e.into)} is a tile now; ${name(e.back)} moved to More.`
     : `${name(a)} and ${name(b)} swapped places.`;
 }
+
+/* ── What leaving a step writes ───────────────────────────────────────────── */
+
+/** The scheduler's own default when a person has no row yet (9–17). */
+export const DEFAULT_HOURS = { start: 9, end: 17 } as const;
+
+export interface HoursState {
+  /** The saved row came back; until then the shown hours are only defaults. */
+  loaded: boolean;
+  start: number;
+  end: number;
+  savedStart: number;
+  savedEnd: number;
+}
+
+/**
+ * The working-hours PATCH body, or null when nothing should be sent: the
+ * saved row never loaded (defaults would overwrite real hours), nothing
+ * changed, or the hours are invalid.
+ */
+export function hoursPatch(
+  h: HoursState
+): { workHourStart: number; workHourEnd: number } | null {
+  if (!h.loaded) return null;
+  if (h.start === h.savedStart && h.end === h.savedEnd) return null;
+  if (badHours(h.start, h.end)) return null;
+  return { workHourStart: h.start, workHourEnd: h.end };
+}
+
+/**
+ * Steps whose choices are written when moving forward from `from` to `to`:
+ * only the ones the person actually stood on. Jumping ahead with the dots
+ * does not save a step that was never shown.
+ */
+export function stepsToSave(
+  from: number,
+  to: number,
+  visited: ReadonlySet<string>
+): StepId[] {
+  const out: StepId[] = [];
+  for (let k = from; k < to; k++) {
+    const id = STEP_IDS[k];
+    if (id && visited.has(id)) out.push(id);
+  }
+  return out;
+}
+
+/** Zones that mean "never chosen": the schema default and its alias. */
+const UNSET_ZONES = new Set(["UTC", "Etc/UTC"]);
+
+/**
+ * The zone to preselect: a person who has not finished setup and still sits
+ * on the server default gets this device's zone; anyone else keeps theirs.
+ */
+export function startZone(
+  saved: string,
+  device: string,
+  onboarded: boolean
+): string {
+  if (!onboarded && UNSET_ZONES.has(saved) && device) return device;
+  return saved || device;
+}
+
+/** Zone choices: the device's and the saved one always present, no repeats. */
+export function zoneChoices(
+  base: readonly string[],
+  device: string,
+  saved: string | undefined
+): string[] {
+  const out: string[] = [];
+  for (const z of [device, saved, ...base])
+    if (z && !out.includes(z)) out.push(z);
+  return out;
+}

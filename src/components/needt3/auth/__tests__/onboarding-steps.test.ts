@@ -1,4 +1,5 @@
 import {
+  DEFAULT_HOURS,
   SB_TILES,
   STEP_IDS,
   badHours,
@@ -6,11 +7,15 @@ import {
   clampStep,
   goTo,
   hhmm,
+  hoursPatch,
   startOrder,
+  startZone,
   stepIndex,
+  stepsToSave,
   swapEffect,
   swapSay,
   swapTiles,
+  zoneChoices,
 } from "../onboarding-steps";
 
 const ALL = [
@@ -127,5 +132,69 @@ describe("the saved tile list", () => {
       "moodboards",
       "habits",
     ]);
+  });
+});
+
+describe("working hours save rule", () => {
+  const base = { loaded: true, start: 9, end: 17, savedStart: 9, savedEnd: 17 };
+
+  it("defaults to the server's 9–17", () => {
+    expect(DEFAULT_HOURS).toEqual({ start: 9, end: 17 });
+  });
+
+  it("writes nothing before the saved hours have loaded", () => {
+    expect(hoursPatch({ ...base, loaded: false, end: 18 })).toBeNull();
+  });
+
+  it("writes nothing when the hours did not change", () => {
+    expect(hoursPatch(base)).toBeNull();
+  });
+
+  it("writes changed, valid hours", () => {
+    expect(hoursPatch({ ...base, start: 8 })).toEqual({
+      workHourStart: 8,
+      workHourEnd: 17,
+    });
+  });
+
+  it("never writes invalid hours", () => {
+    expect(hoursPatch({ ...base, start: 17, end: 17 })).toBeNull();
+  });
+});
+
+describe("steps saved on the way forward", () => {
+  it("saves only steps the person stood on", () => {
+    expect(stepsToSave(0, 3, new Set(["use"]))).toEqual(["use"]);
+    expect(stepsToSave(0, 3, new Set(["use", "setup", "sidebar"]))).toEqual([
+      "use",
+      "setup",
+      "sidebar",
+    ]);
+  });
+
+  it("saves nothing going back", () => {
+    expect(stepsToSave(3, 1, new Set(STEP_IDS))).toEqual([]);
+  });
+});
+
+describe("time zone", () => {
+  it("preselects the device zone for a new person on the default", () => {
+    expect(startZone("UTC", "Europe/Kyiv", false)).toBe("Europe/Kyiv");
+    expect(startZone("Etc/UTC", "Europe/Kyiv", false)).toBe("Europe/Kyiv");
+  });
+
+  it("keeps a chosen zone, and UTC once onboarded", () => {
+    expect(startZone("Asia/Tokyo", "Europe/Kyiv", false)).toBe("Asia/Tokyo");
+    expect(startZone("UTC", "Europe/Kyiv", true)).toBe("UTC");
+  });
+
+  it("always offers the device zone and the saved one", () => {
+    const list = zoneChoices(
+      ["UTC", "Europe/Berlin"],
+      "Europe/Kyiv",
+      "Asia/Tokyo"
+    );
+    expect(list).toEqual(["Europe/Kyiv", "Asia/Tokyo", "UTC", "Europe/Berlin"]);
+    expect(zoneChoices(["UTC"], "UTC", "UTC")).toEqual(["UTC"]);
   });
 });

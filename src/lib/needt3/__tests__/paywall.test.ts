@@ -1,17 +1,24 @@
 import {
   checkoutSelection,
+  freeIncludes,
   isPro,
   lifetimeLeftPct,
   paywallCta,
   paywallPick,
   planLine,
+  proIncludes,
   proLimitFull,
   proLimitText,
 } from "@/lib/needt3/paywall";
 import { priceStrings } from "@/lib/needt3/pricing";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 
 const PRICE = priceStrings();
-const open = { configured: true, lifetimeAvailable: true } as const;
+const open = {
+  configured: true,
+  lifetimeAvailable: true,
+  checkoutEnabled: true,
+} as const;
 
 describe("Lifetime meter", () => {
   it("is empty until the server has counted", () => {
@@ -77,6 +84,7 @@ describe("paywall call to action", () => {
       kind: "free",
       configured: true,
       lifetimeAvailable: false,
+      checkoutEnabled: true,
     });
     expect(cta.label).toBe("Lifetime is closed");
     expect(cta.blocked).toContain("300");
@@ -139,5 +147,74 @@ describe("plan state", () => {
     );
     expect(proLimitFull({ used: 0, max: 1, noun: "x" })).toBe(false);
     expect(proLimitFull({ used: 1, max: 1, noun: "x" })).toBe(true);
+  });
+});
+
+describe("checkout switch (billing_checkout)", () => {
+  const configured = {
+    kind: "free",
+    configured: true,
+    lifetimeAvailable: true,
+  } as const;
+
+  it("keeps the button off while the switch is off", () => {
+    const cta = paywallCta("annual", { ...configured, checkoutEnabled: false });
+    expect(cta.blocked).toMatch(/opens soon/i);
+  });
+
+  it("treats a response without the field as off", () => {
+    expect(paywallCta("monthly", configured).blocked).toMatch(/opens soon/i);
+    expect(paywallCta("lifetime", configured).blocked).toMatch(/opens soon/i);
+  });
+
+  it("opens checkout only when the switch is on", () => {
+    expect(
+      paywallCta("annual", { ...configured, checkoutEnabled: true }).blocked
+    ).toBeNull();
+  });
+});
+
+describe("what each plan includes", () => {
+  it("prints the Free limits the server enforces", () => {
+    const free = PLAN_LIMITS.FREE;
+    const lines = freeIncludes();
+    expect(lines).toContain(`${free.calendars} calendar`);
+    expect(lines).toContain(
+      `${free.autoScheduledTasks} auto-scheduled tasks a month`
+    );
+    expect(lines).toContain(`${free.boards} board`);
+    expect(lines.some((l) => /mail account/.test(l))).toBe(free.mailboxes > 0);
+  });
+
+  it("prints the Pro limits the server enforces, AI without counts", () => {
+    const pro = PLAN_LIMITS.PRO;
+    const titles = proIncludes().map(([t]) => t);
+    expect(titles[0]).toBe("AI included");
+    expect(titles).toContain("Unlimited calendars");
+    expect(titles).toContain("Unlimited auto-scheduled tasks");
+    expect(titles).toContain("Unlimited boards");
+    expect(titles).toContain(`${pro.mailboxes} mail accounts`);
+    for (const t of titles) expect(t).not.toMatch(/AI.*\d/);
+  });
+
+  it("follows a change in the limits", () => {
+    const lines = freeIncludes({
+      ...PLAN_LIMITS.FREE,
+      boards: 2,
+      mailboxes: 1,
+    });
+    expect(lines).toContain("2 boards");
+    expect(lines).toContain("1 mail account");
+  });
+
+  it("drops lines no entitlement backs", () => {
+    const all = [...freeIncludes(), ...proIncludes().map(([t]) => t)].join(" ");
+    for (const gone of [
+      "Priority sync",
+      "Document themes",
+      "moodboards",
+      "Every connection",
+    ])
+      expect(all).not.toContain(gone);
   });
 });

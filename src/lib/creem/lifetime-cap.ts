@@ -182,32 +182,7 @@ export async function attachLifetimeCheckout(
   });
 }
 
-export async function isLifetimeCheckoutAvailable(userId: string) {
-  const [subscription, existing, buyers, reservations] = await Promise.all([
-    prisma.subscription.findUnique({
-      where: { userId },
-      select: { plan: true },
-    }),
-    prisma.lifetimeHold.findUnique({
-      where: { userId },
-      select: { status: true },
-    }),
-    prisma.subscription.count({
-      where: { plan: SubscriptionPlan.LIFETIME },
-    }),
-    prisma.lifetimeHold.count({
-      where: { status: { in: OPEN_RESERVATION_STATUSES } },
-    }),
-  ]);
-  if (subscription?.plan === SubscriptionPlan.LIFETIME) return false;
-  if (existing && OPEN_RESERVATION_STATUSES.includes(existing.status)) {
-    return true;
-  }
-  return buyers + reservations < LIFETIME_BUYER_CAP;
-}
-
-/** Seats still open: the cap minus buyers and open checkout holds. */
-export async function lifetimeSeatsLeft() {
+async function countOccupiedLifetimeSlots() {
   const [buyers, reservations] = await Promise.all([
     prisma.subscription.count({
       where: { plan: SubscriptionPlan.LIFETIME },
@@ -216,7 +191,51 @@ export async function lifetimeSeatsLeft() {
       where: { status: { in: OPEN_RESERVATION_STATUSES } },
     }),
   ]);
-  return Math.max(0, LIFETIME_BUYER_CAP - buyers - reservations);
+  return buyers + reservations;
+}
+
+export type LifetimeAvailability = {
+  /** This person can open a Lifetime checkout now. */
+  available: boolean;
+  /** Seats still open: the cap minus buyers and open checkout holds. */
+  left: number;
+};
+
+/**
+ * Both Lifetime answers the billing summary needs, from one count of buyers
+ * and open holds.
+ */
+export async function lifetimeAvailability(
+  userId: string
+): Promise<LifetimeAvailability> {
+  const [subscription, existing, occupied] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { userId },
+      select: { plan: true },
+    }),
+    prisma.lifetimeHold.findUnique({
+      where: { userId },
+      select: { status: true },
+    }),
+    countOccupiedLifetimeSlots(),
+  ]);
+  const left = Math.max(0, LIFETIME_BUYER_CAP - occupied);
+  if (subscription?.plan === SubscriptionPlan.LIFETIME) {
+    return { available: false, left };
+  }
+  if (existing && OPEN_RESERVATION_STATUSES.includes(existing.status)) {
+    return { available: true, left };
+  }
+  return { available: occupied < LIFETIME_BUYER_CAP, left };
+}
+
+export async function isLifetimeCheckoutAvailable(userId: string) {
+  return (await lifetimeAvailability(userId)).available;
+}
+
+/** Seats still open: the cap minus buyers and open checkout holds. */
+export async function lifetimeSeatsLeft() {
+  return Math.max(0, LIFETIME_BUYER_CAP - (await countOccupiedLifetimeSlots()));
 }
 
 export async function authorizeLifetimeCompletion(

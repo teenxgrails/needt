@@ -80,8 +80,9 @@ export interface AuthScreenProps {
   providers?: readonly AuthProvider[];
   providerBusy?: string | null;
   onProvider?: (id: string) => void;
-  /** "Send me a reset link". Resolves true when the request went through. */
-  onRecover?: (email: string) => Promise<boolean>;
+  /** "Send me a reset link". Resolves true when the request went through,
+      "limited" when the server refused it for too many tries (429). */
+  onRecover?: (email: string) => Promise<boolean | "limited">;
   /** A message the page was opened with (an OAuth error). */
   notice?: string | null;
   /** Whether "Create one" is offered at all. */
@@ -273,6 +274,7 @@ export function AuthScreen({
   const [netErr, setNetErr] = React.useState(false);
   const [retrying, setRetrying] = React.useState(false);
   const [recover, setRecover] = React.useState<Recover>(null);
+  const [limited, setLimited] = React.useState(false);
   const [resendIn, setResendIn] = React.useState(0);
   const lastTry = React.useRef<(() => Promise<void>) | null>(null);
 
@@ -334,8 +336,13 @@ export function AuthScreen({
     if (mailProblem({ mail, touched: true })) return;
     const go = async () => {
       setBusy(true);
+      setLimited(false);
       const ok = await onRecover(mail.trim()).catch(() => false);
       setBusy(false);
+      if (ok === "limited") {
+        setLimited(true);
+        return;
+      }
       if (!ok) {
         setNetErr(true);
         return;
@@ -357,6 +364,7 @@ export function AuthScreen({
   }
 
   function openRecover() {
+    setLimited(false);
     setRefused(null);
     setNetErr(false);
     setPass("");
@@ -364,6 +372,7 @@ export function AuthScreen({
     setRecover("ask");
   }
   function closeRecover() {
+    setLimited(false);
     setNetErr(false);
     setRecover(null);
     setWithPass(false);
@@ -398,6 +407,11 @@ export function AuthScreen({
         </button>
       </div>
     ) : null;
+  const limitRow = limited ? (
+    <span className="auth-error-text" role="alert" data-auth-limited>
+      Too many requests, try again later
+    </span>
+  ) : null;
   const offlineNote = offline ? (
     <p
       className="axs-note auth-offline"
@@ -475,6 +489,7 @@ export function AuthScreen({
                 onEnter={() => void sendLink()}
               />
               {mText ? <span className="auth-error-text">{mText}</span> : null}
+              {limitRow}
               {netRow}
               <button
                 type="button"
@@ -494,10 +509,10 @@ export function AuthScreen({
             </h1>
             <p className="auth-signin-text">
               If <b className="auth-recover-mail">{mail}</b> has an account, a
-              reset link is on its way. It works for 30 minutes — open it on
-              this device.
+              reset link is on its way. It works for 1 hour.
             </p>
             <div className="auth-signin-col-4">
+              {limitRow}
               {netRow}
               <p
                 className="auth-recover-resend"
@@ -524,6 +539,7 @@ export function AuthScreen({
                   className="ax-link"
                   onClick={() => {
                     setNetErr(false);
+                    setLimited(false);
                     setRecover("ask");
                   }}
                 >

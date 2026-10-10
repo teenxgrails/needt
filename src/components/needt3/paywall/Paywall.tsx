@@ -10,7 +10,8 @@
 
    Payments: the button goes to `POST /api/billing/checkout` and follows the
    URL it returns. Nothing pretends to succeed: when checkout is not
-   configured the button is off and says so; when it fails the sheet says
+   configured, or the server's `billing_checkout` switch is off, the button
+   is off and says checkout opens soon; when it fails the sheet says
    "Checkout couldn't start" with a Retry. */
 import { useEffect, useRef, useState } from "react";
 
@@ -28,9 +29,11 @@ import { type V3Plan, usePlan } from "@/lib/needt3/hooks/plan";
 import {
   type PaywallPick,
   checkoutSelection,
+  freeIncludes,
   lifetimeLeftPct,
   paywallCta,
   paywallPick,
+  proIncludes,
 } from "@/lib/needt3/paywall";
 import { lifetimeLeftLine, priceStrings } from "@/lib/needt3/pricing";
 import { useOnline } from "@/lib/needt3/use-online";
@@ -48,14 +51,9 @@ import { NeedtAppIcon } from "../wordmark";
 
 const LOG_SOURCE = "needt3-paywall";
 
-const FREE = ["Tasks and projects", "Calendar", "Docs", "1 mail account"];
-const PRO: ReadonlyArray<readonly [string, string | null]> = [
-  ["AI planning", "Plan my day and Ask Needt"],
-  ["Every connection", "Mail, calendars, files — and MCP"],
-  ["Unlimited moodboards", "With sharing"],
-  ["Document themes", "And the Time theme"],
-  ["Priority sync", null],
-];
+/* Both lists come from PLAN_LIMITS, the numbers the server enforces. */
+const FREE = freeIncludes();
+const PRO = proIncludes();
 
 function Plans({
   pick,
@@ -217,9 +215,8 @@ function Scene({
               out of Needt
             </h2>
             <span className="px-on-sky pw-scene-text-2">
-              AI planning, every connection and the themes — free for{" "}
-              {D.trialDays} days, no card needed. Then back to Free unless you
-              choose a plan.
+              AI planning and Pro limits — free for {D.trialDays} days, no card
+              needed. Then back to Free unless you choose a plan.
             </span>
           </div>
           <div className="pw-collage pw-scene-box" aria-hidden="true">
@@ -324,7 +321,8 @@ export function Paywall({
   }, [open, onClose]);
 
   const cta = paywallCta(pick, plan ?? null);
-  const off = !online || cta.blocked !== null || busy;
+  /* Off until the plan (and with it the checkout switch) has loaded. */
+  const off = !online || !plan || cta.blocked !== null || busy;
 
   async function checkout() {
     if (off) return;

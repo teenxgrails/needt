@@ -4,6 +4,8 @@
  * module (`NEEDT_PRICING` via `priceStrings` in ./pricing); "N of 300 left" is
  * the server's count (`GET /api/billing` -> `lifetimeLeft`), never a constant.
  */
+import { PLAN_LIMITS, type PlanLimits } from "@/lib/plan-limits";
+
 import type { V3Plan } from "./hooks/plan";
 import { priceStrings } from "./pricing";
 
@@ -45,10 +47,10 @@ export interface PaywallCta {
   blocked: string | null;
 }
 
-type PlanFacts = Pick<
-  V3Plan,
-  "kind" | "configured" | "lifetimeAvailable"
-> | null;
+type PlanFacts =
+  | (Pick<V3Plan, "kind" | "configured" | "lifetimeAvailable"> &
+      Partial<Pick<V3Plan, "checkoutEnabled">>)
+  | null;
 
 /**
  * The call to action under the plan cards.
@@ -96,7 +98,9 @@ export function paywallCta(pick: PaywallPick, plan: PlanFacts): PaywallCta {
       blocked: "This is the plan you are on.",
     };
   }
-  if (plan && !plan.configured) {
+  /* Checkout is closed unless the server's `billing_checkout` switch says
+     otherwise; a response without the field counts as closed. */
+  if (plan && (!plan.configured || plan.checkoutEnabled !== true)) {
     return {
       ...base,
       blocked: "Checkout opens soon. Nothing is charged until it does.",
@@ -158,4 +162,66 @@ export function proLimitText({ used, max, noun }: ProLimitFacts): string {
 /** The "Upgrade for more" link shows once the Free allowance is used up. */
 export function proLimitFull({ used, max }: ProLimitFacts): boolean {
   return used >= max;
+}
+
+/* ── What each plan includes, from the limits the server enforces ─────────── */
+
+type Limits = PlanLimits;
+
+const plural = (n: number, one: string, many: string) =>
+  `${n} ${n === 1 ? one : many}`;
+
+/** "1 calendar" / "Unlimited calendars"; null when the plan has none. */
+function countLine(n: number | null, one: string, many: string): string | null {
+  if (n === null) return `Unlimited ${many}`;
+  if (n <= 0) return null;
+  return plural(n, one, many);
+}
+
+function limitLines(l: Limits): string[] {
+  const tasks =
+    l.autoScheduledTasks === null
+      ? "Unlimited auto-scheduled tasks"
+      : l.autoScheduledTasks > 0
+        ? `${plural(l.autoScheduledTasks, "auto-scheduled task", "auto-scheduled tasks")} a month`
+        : null;
+  return [
+    countLine(l.calendars, "calendar", "calendars"),
+    tasks,
+    countLine(l.boards, "board", "boards"),
+    countLine(l.mailboxes, "mail account", "mail accounts"),
+    countLine(l.bookingPages, "booking page", "booking pages"),
+    l.remindersPerTask === null
+      ? "Unlimited reminders per task"
+      : countLine(
+          l.remindersPerTask,
+          "reminder per task",
+          "reminders per task"
+        ),
+  ].filter((x): x is string => x !== null);
+}
+
+/** The Free line: what every account has, then the Free limits. */
+export function freeIncludes(l: Limits = PLAN_LIMITS.FREE): string[] {
+  return ["Tasks and projects", "Docs", ...limitLines(l)];
+}
+
+/** "Every Pro plan includes": AI (no counts), the Pro limits, Pro switches. */
+export function proIncludes(
+  l: Limits = PLAN_LIMITS.PRO
+): ReadonlyArray<readonly [string, string | null]> {
+  const out: Array<readonly [string, string | null]> = [];
+  if (l.aiAgent) out.push(["AI included", "Plan my day and Ask Needt"]);
+  for (const line of limitLines(l)) out.push([line, null]);
+  if (l.focusStats || l.advancedFocusModes)
+    out.push([
+      l.focusStats && l.advancedFocusModes
+        ? "Focus stats and advanced focus modes"
+        : l.focusStats
+          ? "Focus stats"
+          : "Advanced focus modes",
+      null,
+    ]);
+  if (l.advancedNudges) out.push(["Advanced nudges", null]);
+  return out;
 }
