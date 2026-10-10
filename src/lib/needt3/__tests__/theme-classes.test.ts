@@ -58,6 +58,8 @@ function nested(cls: "dark" | "paper") {
   const css = strip(
     readFileSync(join(root, "v3-overrides/motion.css"), "utf8")
   );
+  // cls is one of two literals above, never input.
+  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp
   const re = new RegExp(`\\.needt-v3 \\.${cls}\\s*\\{([^{}]*)\\}`);
   const m = re.exec(css);
   return m ? props(m[1]) : {};
