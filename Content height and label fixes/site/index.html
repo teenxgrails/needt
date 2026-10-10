@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Needt: The Smart Planner That Fixes Your Day</title>
+<meta name="description" content="Stop rewriting your plan every morning. Needt fits every task into your free time and rebuilds the day when a meeting moves. Free to try.">
+<link rel="canonical" href="https://needt.app/">
+<meta property="og:title" content="Needt: The Smart Planner That Fixes Your Day">
+<meta property="og:description" content="Stop rewriting your plan every morning. Needt fits every task into your free time and rebuilds the day when a meeting moves. Free to try.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://needt.app/">
+<link rel="icon" type="image/png" sizes="32x32" href="img/icon-32.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="img/icon-180.png?v=3">
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/tokens/fonts.css">
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="css/land.css?v=115">
+<link rel="stylesheet" href="css/land-motion.css?v=12">
+<link rel="stylesheet" href="css/land-life.css?v=22">
+<link rel="stylesheet" href="css/emphasis.css?v=17">
+<link rel="stylesheet" href="css/scenes.css?v=13">
+<link rel="stylesheet" href="css/versus.css?v=17">
+<link rel="stylesheet" href="css/nav.css?v=19">
+<link rel="stylesheet" href="css/panels.css?v=19">
+<script defer src="js/nav.js?v=5"></script>
+<script defer src="js/wordmark.js?v=3"></script>
+<script defer src="js/land.js?v=51"></script>
+<script defer src="js/panels.js?v=5"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Needt","applicationCategory":"BusinessApplication","operatingSystem":"macOS, Windows, Web","description":"A planner that fits every task into the free time you actually have.","offers":[{"@type":"Offer","name":"Pro","price":"9","priceCurrency":"EUR"},{"@type":"Offer","name":"Life","price":"180","priceCurrency":"EUR"}]}
+</script>
+<link rel="stylesheet" href="css/hero.css?v=18">
+<script defer src="js/hero.js?v=7"></script>
+<link rel="stylesheet" href="css/scraps.css?v=4">
+<script defer src="js/scraps.js?v=1"></script>
+<link rel="stylesheet" href="css/dock.css?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/paper.css?v=3">
+<script defer src="js/night.js?v=3"></script>
+</head>
+<body class="l-white">
+<!-- Clouds in the margins: real, blurred, drifting — see land.css "CLOUDS IN THE MARGINS". -->
+<div class="l-clouds" aria-hidden="true">
+  <span class="l-cloud t-sky" style="top:12%;left:-7%;--cw:520px;--cp:84s;--cd:-12s;--dx:46px;--cb:14px"></span>
+  <span class="l-cloud t-lav" style="top:19%;right:-9%;--cw:440px;--cp:96s;--cd:-40s;--dx:38px;--cb:13px"></span>
+  <span class="l-cloud t-lav" style="top:29%;left:-10%;--cw:380px;--cp:72s;--cd:-20s;--dx:34px;--cb:12px"></span>
+  <span class="l-cloud t-mint" style="top:37%;right:-6%;--cw:560px;--cp:104s;--cd:-60s;--dx:52px;--cb:16px"></span>
+  <span class="l-cloud t-mint" style="top:47%;left:-8%;--cw:480px;--cp:88s;--cd:-8s;--dx:42px;--cb:14px"></span>
+  <span class="l-cloud t-butter" style="top:56%;right:-10%;--cw:420px;--cp:78s;--cd:-30s;--dx:36px;--cb:13px"></span>
+  <span class="l-cloud t-butter" style="top:65%;left:-6%;--cw:540px;--cp:100s;--cd:-52s;--dx:48px;--cb:15px"></span>
+  <span class="l-cloud t-sky" style="top:74%;right:-8%;--cw:460px;--cp:86s;--cd:-18s;--dx:40px;--cb:14px"></span>
+  <span class="l-cloud t-lav" style="top:83%;left:-9%;--cw:400px;--cp:92s;--cd:-44s;--dx:36px;--cb:13px"></span>
+</div>
+
+<!-- The header is a cluster, not a bar: centred, only as wide as what it holds,
+     and floating over the page rather than banding it. The mark is absent at
+     the top — the wordmark is right there at six times the size — and grows
+     into the cluster's left edge once it has scrolled away, so nothing shifts
+     when it arrives. One action, and signed in the same slot carries the
+     avatar: a header with two primary actions has none. -->
+<nav class="l-nav s-nav">
+  <div class="l-nav-inner">
+  <a class="l-mark" href="index.html" aria-label="Needt">Needt</a>
+  <div class="l-navlinks">
+    <a class="l-navlink" href="pricing.html">Pricing</a>
+    <a class="l-navlink" href="agent.html">Agent</a>
+    <a class="l-navlink" href="security.html">Security</a>
+    <a class="l-navlink" href="blog.html">Blog</a>
+  </div>
+  <a class="l-btn l-btn-sm" href="../needt-app/auth.html" data-auth="out">Log in</a>
+  <span class="l-avatar" data-auth="in" hidden title="Maksym">MB</span>
+  </div>
+</nav>
+
+<!-- ── THE HERO ─────────────────────────────────────────────────────────────
+     The name is the largest thing on the page and the claim is one line under
+     it — two display lines at one size compete, which is the mistake the date
+     and the free-time figure made on Today.
+
+     The sky is the icon's weather at landing size, so the first thing seen is
+     the identity rather than a description of it. The agent's cursor arrives a
+     few seconds in and presses the button: the page claims the app does the
+     placing, and this is that claim happening rather than being asserted. -->
+<!-- THE HERO. A short serif line on the sky, and the real app rising out of
+     torn paper as you scroll — then Needt's own cursor places a task in it. -->
+<header class="hx" data-hx data-parallax>
+  <span class="cl" style="left:-60px;top:34%;width:520px;height:260px" aria-hidden="true"></span>
+  <span class="cl" style="right:-80px;top:14%;width:480px;height:240px" aria-hidden="true"></span>
+  <span class="cl" style="left:22%;top:8%;width:300px;height:140px;opacity:.7" aria-hidden="true"></span>
+  <svg class="hx-outline" viewBox="0 0 1700 470" aria-hidden="true"><text x="850" y="400" text-anchor="middle" font-size="500">NEEDT</text></svg>
+
+  <div class="hx-head l-sky-body">
+    <h1 class="hx-title">Every task gets <em>a real</em> hour in your day.</h1>
+    <p class="hx-sub">Your calendar and your to-dos on one page. Needt finds the time, and shows you the day before you keep it.</p>
+    <span class="hx-cta">
+      <a class="l-btn" href="../needt-app/auth.html">Plan my day</a>
+      <a class="l-btn l-btn-ghost" href="../needt-app/auth.html">
+        <span class="l-gift-tag">Gift</span>
+        <span><span class="l-gift-num">14</span> days of Pro</span>
+      </a>
+    </span>
+    <div class="hx-works" data-works aria-label="Works with"></div>
+  </div>
+
+  <div class="hx-stage" aria-hidden="true">
+    <div class="hx-dock" data-dock><svg class="hx-wires"></svg></div>
+    <span class="hx-tear hx-tear-g"></span>
+    <span class="hx-tear hx-tear-k"></span>
+    <span class="hx-tear hx-tear-w"></span>
+    <span class="hx-tear hx-tear-l"></span>
+    <span class="hx-tear hx-tear-r"></span>
+    <span class="sc sc-perf" data-tear="perf" style="left:-1%;width:44%;top:16%;height:60%;transform:rotate(-3.5deg);z-index:-1"></span>
+
+    <div class="hx-win">
+      <div class="hx-bar"><i></i><i></i><i></i><b>Calendar · Columns</b></div>
+      <!-- Drawn from the real app's own screen — Calendar → Columns, light theme —
+           so the first screen of the site reads as the product, not a mock-up,
+           without booting a React tree to show it. -->
+      <div class="hc ha">
+        <aside class="ha-side">
+          <div class="ha-mark">Needt</div>
+          <div class="ha-find"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Find anything<em>⌘K</em></div>
+          
+          <div class="ha-sec">Every day <em>2/4</em></div>
+          <div class="ha-habit"><span>Yoga</span><em>07:30</em></div>
+          <div class="ha-dots"><i></i><i></i><i class="is-off"></i><i></i><i></i><i></i><i></i><i class="is-off"></i><i></i><i></i><i></i><i></i><i></i><span>11 of 14</span></div>
+          <div class="ha-habit"><span>Read 20 pages</span><em>22:00</em></div>
+          <div class="ha-dots ha-dots-b"><i></i><i></i><i></i><i></i><i class="is-off"></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="is-off"></i><i></i><span>11 of 14</span></div>
+          <div class="ha-sec">Unplaced <em data-hc-count>1</em></div>
+          <div class="ha-queue">
+            <div class="hc-card ha-card" data-hc-src=""><span class="ha-ring ha-r-ds"></span><i class="ha-tile ha-ds"><svg viewBox="0 0 24 24"><path d="M12 4.5 14.5 7 12 9.5 9.5 7zM7 9.5 9.5 12 7 14.5 4.5 12zM17 9.5 19.5 12 17 14.5 14.5 12zM12 14.5 14.5 17 12 19.5 9.5 17z"/></svg></i><span class="hc-t"><b>Finish the tank graphic</b><em>4 h</em></span><span class="ha-entry"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Open the artwork</span><em>2 min</em></span><span class="ha-proj">Design system</span></div>
+          </div>
+        </aside>
+        <div class="ha-main">
+          <div class="ha-tabs">
+            <span class="ha-new">+ New</span>
+            <span>Home</span><span>Workspace</span><span class="is-on">Calendar</span><span>Documents</span>
+            <span class="ha-right"><i>‹</i><i>›</i><b class="ha-today">Today</b><b class="hc-plan ha-wand"><svg viewBox="0 0 24 24"><path d="m15 4 1 2 2 1-2 1-1 2-1-2-2-1 2-1zM4 20l10-10M18 14l.7 1.3L20 16l-1.3.7L18 18l-.7-1.3L16 16l1.3-.7z"/></svg></b></span>
+          </div>
+          <div class="ha-sort">Needt's order <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></div>
+          <div class="ha-cols">
+            <div class="ha-col">
+              <div class="ha-head">Overdue <em>2</em></div>
+              <div class="ha-eye">Morning</div>
+              <div class="hc-card ha-card is-due"><span class="ha-ring ha-r-ops"></span><i class="ha-tile ha-ops"><svg viewBox="0 0 24 24"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M4 9.5A2.5 2.5 0 0 1 6.5 7h11A2.5 2.5 0 0 1 20 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5zM4 12.5h16M12 11v3"/></svg></i><span class="hc-t"><b>Send invoices for August</b><em>30 min</em></span><span class="ha-due">Past due</span><span class="ha-proj">Operations</span></div>
+              <div class="hc-card ha-card is-due"><span class="ha-ring ha-r-ops"></span><i class="ha-tile ha-ops"><svg viewBox="0 0 24 24"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M4 9.5A2.5 2.5 0 0 1 6.5 7h11A2.5 2.5 0 0 1 20 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5zM4 12.5h16M12 11v3"/></svg></i><span class="hc-t"><b>Renew the domain</b><em>10 min</em></span><span class="ha-due">Past due</span><span class="ha-proj">Operations</span></div>
+            </div>
+            <div class="ha-col is-today">
+              <div class="ha-head">1 Sep · Today <em>4</em></div>
+              <div class="ha-eye">Morning</div>
+              <div class="hc-card ha-card"><span class="ha-ring ha-r-res"></span><i class="ha-tile ha-res"><svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg></i><span class="hc-t"><b>Pack the boots for pickup</b><em>25 min</em></span><span class="ha-proj">Resale</span></div>
+              <div class="hc-slot" data-hc-dst></div>
+              <div class="ha-eye">Afternoon</div>
+              <div class="hc-card ha-card"><span class="ha-ring ha-r-ds"></span><i class="ha-tile ha-ds"><svg viewBox="0 0 24 24"><path d="M12 4.5 14.5 7 12 9.5 9.5 7zM7 9.5 9.5 12 7 14.5 4.5 12zM17 9.5 19.5 12 17 14.5 14.5 12zM12 14.5 14.5 17 12 19.5 9.5 17z"/></svg></i><span class="hc-t"><b>Check the print proof</b><em>30 min</em></span><span class="ha-proj">Design system</span></div>
+            </div>
+            <div class="ha-col">
+              <div class="ha-head">2 Sep · Tomorrow <em>3</em></div>
+              <div class="ha-eye">Morning</div>
+              <div class="hc-card ha-card"><span class="ha-ring ha-r-res"></span><i class="ha-tile ha-res"><svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9zM4 7.5l8 4.5 8-4.5M12 12v9"/></svg></i><span class="hc-t"><b>Photograph the shell</b><em>40 min</em></span><span class="ha-proj">Resale</span></div>
+              <div class="hc-card ha-card"><span class="ha-ring ha-r-ds"></span><i class="ha-tile ha-ds"><svg viewBox="0 0 24 24"><path d="M12 4.5 14.5 7 12 9.5 9.5 7zM7 9.5 9.5 12 7 14.5 4.5 12zM17 9.5 19.5 12 17 14.5 14.5 12zM12 14.5 14.5 17 12 19.5 9.5 17z"/></svg></i><span class="hc-t"><b>Review the form-row spec</b><em>1 h</em></span><span class="ha-proj">Design system</span></div>
+              <div class="ha-eye">Afternoon</div>
+              <div class="hc-card ha-card"><span class="ha-ring ha-r-ops"></span><i class="ha-tile ha-ops"><svg viewBox="0 0 24 24"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M4 9.5A2.5 2.5 0 0 1 6.5 7h11A2.5 2.5 0 0 1 20 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5zM4 12.5h16M12 11v3"/></svg></i><span class="hc-t"><b>Sign the factory quote</b><em>45 min</em></span><span class="ha-entry"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Open the quote PDF</span><em>2 min</em></span><span class="ha-proj">Operations</span></div>
+            </div>
+            <div class="ha-col">
+              <div class="ha-head">3 Sep · Thursday <em>2</em></div>
+              <div class="ha-eye">Morning</div>
+              <div class="hc-card ha-card"><span class="ha-ring ha-r-ops"></span><i class="ha-tile ha-ops"><svg viewBox="0 0 24 24"><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M4 9.5A2.5 2.5 0 0 1 6.5 7h11A2.5 2.5 0 0 1 20 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5zM4 12.5h16M12 11v3"/></svg></i><span class="hc-t"><b>Collect last quarter’s numbers</b><em>45 min</em></span><span class="ha-proj">Operations</span></div>
+              <div class="ha-eye">Evening</div>
+              <div class="hc-card ha-card"><span class="ha-ring ha-r-gen"></span><i class="ha-tile ha-gen"><svg viewBox="0 0 24 24"><path d="M5 7h3M5 12h3M5 17h3M11 7h8M11 12h8M11 17h8"/></svg></i><span class="hc-t"><b>Read the VAT note</b><em>20 min</em></span><span class="ha-proj">No project</span></div>
+            </div>
+          </div>
+        </div>
+        <span class="hc-cursor" aria-hidden="true"><svg width="20" height="24" viewBox="0 0 20 24"><path d="M2.6 1.6 L2.6 18.2 L7 14.1 L9.8 20.5 L12.7 19.3 L10 13.1 L15.9 12.8 Z" fill="#fff" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/><path d="M2.6 1.6 L2.6 18.2 L7 14.1 L9.8 20.5 L12.7 19.3 L10 13.1 L15.9 12.8 Z" fill="#111"/></svg></span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- The film block that used to sit here is archived in
+     site/_archive-film-block.html, kept whole and working — a 900px moving
+     window directly under the claim competed with the claim for the first
+     screen. The scroll now goes from the sentence straight into the scenes,
+     which make the same argument by doing it rather than by playing it. -->
+
+<!-- ── SCENE 2 · FOUR TASKS WITH NOWHERE TO BE ─────────────────────────────
+     The setup, so it holds for 1.2 viewports and no longer: four things in the
+     air, brought by the scroll into the one column the product calls the
+     unplaced queue. -->
+<section class="pin" data-pin="1.7" id="scene-unplaced">
+  <span class="sc sc-yellow" data-tear="tr" style="left:-4%;top:18%;width:9%;height:46%;transform:rotate(-4deg)" aria-hidden="true"></span><span class="sc sc-black" data-tear="trbl" style="right:-4%;top:10%;width:9%;height:18%;transform:rotate(6deg)" aria-hidden="true"></span><span class="cl" style="right:4%;top:56%;width:380px;height:190px" aria-hidden="true"></span>
+  <div class="pin-stage">
+    <div class="pin-in">
+      <h2 class="l-h2 s2-title" style="max-width:22ch;margin-left:auto;margin-right:auto">Your day, <span class="l-it">before Needt.</span> A pile of tasks and <span class="s2-strike">no plan</span>.</h2>
+      <div class="s2" data-s2>
+        <span class="s2-queue" data-s2-queue></span>
+        <span class="s2-label" data-s2-label>No time yet</span>
+        <span class="s2-block" data-fx="-421" data-fy="-224" data-fr="-11"><span class="o-block"><span class="o-rail o-hue-ops"></span><span class="o-tick"></span><span class="o-body"><span class="o-title">Renew the passport</span><span class="o-when-row"><span class="o-time"><span class="s2-est">25 min</span><span class="s2-when">09:15</span></span><span class="o-where"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.5s7-6.1 7-11.1a7 7 0 1 0-14 0c0 5 7 11.1 7 11.1Z"/><circle cx="12" cy="10.2" r="2.4"/></svg><span>Bürgeramt Mitte</span></span></span></span></span></span>
+        <span class="s2-block" data-fx="400" data-fy="-130" data-fr="8"><span class="o-block"><span class="o-rail o-hue-ds"></span><span class="o-tick"></span><span class="o-body"><span class="o-title">Finish the tax form</span><span class="o-time"><span class="s2-est">45 min</span><span class="s2-when">11:00</span></span></span></span></span>
+        <!-- Events: filled, no rail, no circle. They already own an hour, and
+             you do not close a thing that happens to you — which is why the
+             third beat gives a time to the tasks and leaves these alone. -->
+        <span class="s2-block" data-fx="-370" data-fy="46" data-fr="-7"><span class="o-block o-event o-event-life"><span class="o-body"><span class="o-title">Dentist</span><span class="o-time">14:30</span></span></span></span>
+        <span class="s2-block" data-fx="383" data-fy="159" data-fr="8"><span class="o-block"><span class="o-rail o-hue-re"></span><span class="o-tick"></span><span class="o-body"><span class="o-title">Fix the bike</span><span class="o-time"><span class="s2-est">40 min</span><span class="s2-when">17:30</span></span></span></span></span>
+        <span class="s2-block" data-fx="-348" data-fy="254" data-fr="-8"><span class="o-block o-event o-event-family"><span class="o-body"><span class="o-title">Sara's birthday dinner</span><span class="o-when-row"><span class="o-time">19:00</span><span class="o-where"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.5s7-6.1 7-11.1a7 7 0 1 0-14 0c0 5 7 11.1 7 11.1Z"/><circle cx="12" cy="10.2" r="2.4"/></svg><span>Trattoria da Enzo</span></span></span></span></span></span>
+      </div>
+    </div>
+    <span class="pin-say" data-s2-say>Two things have a slot. Three are just hoping.</span>
+  </div>
+</section>
+
+<!-- ── THREE PANELS ───────────────────────────────────────────────────────
+     Each panel is one argument in two halves: the claim on the left and a
+     grid of drawn cards that prove it on the right. The cards are built from
+     the product's own parts — a chip, a row, a checkbox — never an embedded
+     app, which is what used to crop mid-word, render dark and lag the page.
+     Logos: drop <id>.svg into site/logos/ and the tile picks it up. -->
+<section class="l-section" id="week" style="padding-top:0">
+  <span class="sc sc-blue" data-tear="tl" style="right:-4%;top:6%;width:9%;height:34%;transform:rotate(3deg)" aria-hidden="true"></span><span class="sc sc-perf" data-tear="perf" style="left:-4%;top:44%;width:9%;height:14%;transform:rotate(-6deg)" aria-hidden="true"></span><span class="sc sc-pink" data-tear="trbl" style="right:-4%;top:72%;width:9%;height:14%;transform:rotate(-8deg)" aria-hidden="true"></span>
+  <div class="l-wrap k-stack">
+
+    <article class="k-panel k-lavender l-rise">
+      <div class="k-claim">
+        <span class="k-eyebrow">Capture</span>
+        <h2 class="k-title">Say it once. It comes back sorted.</h2>
+        <p class="k-body">Talk through everything on your mind, or type it in one line. Needt splits it into
+        tasks, reads the dates and projects you mentioned, and keeps the week's plan on one page.</p>
+        <a class="k-more" href="agent.html">See how capture works</a>
+      </div>
+      <div class="k-grid">
+        <div class="k-card k-wide">
+          <span class="k-head"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Listening<span class="k-sub">⌘ ⇧ Space</span></span>
+          <div class="k-listen">
+            <span class="k-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="k-said">Finish the Q3 budget <b>tomorrow</b>, sync with Anna <b>Friday at 10</b>, and renew the passport.</span>
+          </div>
+        </div>
+        <div class="k-card">
+          <span class="k-head"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.4 2.4L15.5 9.8"/></svg>Three tasks<span class="k-sub">sorted</span></span>
+          <div class="k-rows">
+            <div class="k-row"><span class="k-ring"></span><span>Finish the Q3 budget</span><span class="k-chip k-chip-blue">Tomorrow</span></div>
+            <div class="k-row"><span class="k-ring"></span><span>Sync with Anna</span><span class="k-chip k-chip-blue">Fri 10:00</span></div>
+            <div class="k-row"><span class="k-ring"></span><span>Renew the passport</span><span class="k-chip k-chip-grey">No date</span></div>
+          </div>
+        </div>
+        <div class="k-card">
+          <span class="k-head"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12h5M10 16h5"/></svg>This week<span class="k-sub">Week 36</span></span>
+          <div class="k-page">
+            <h4>The September batch</h4>
+            <p>Legal sign-off is the only thing between us and the factory.</p>
+            <p class="k-needt">Three tasks unplaced, 18 hours open<span class="k-caret"></span></p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <div class="k-pair">
+    <article class="k-panel k-mint k-half l-rise">
+      <div class="k-claim">
+        <span class="k-eyebrow">Connect</span>
+        <h2 class="k-title">Your calendars and your AI, in one place.</h2>
+        <p class="k-body">Events come in from the calendars you already use. Agents connect over MCP and write
+        into your week in their own colour, so you always know who changed what.</p>
+        <a class="k-more" href="agent.html">See the integrations</a>
+      </div>
+      <div class="k-grid">
+        <div class="k-card k-wide">
+          <span class="k-head"><svg viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></svg>MCP connections<a class="k-sub k-sub-link" href="blog.html">See all MCPs<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a></span>
+          <div class="k-logos">
+            <span class="k-logo is-mark" data-logo="chatgpt" title="ChatGPT" data-name="ChatGPT"><img src="img/logos/chatgpt.svg" alt="ChatGPT" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="cursor" title="Cursor" data-name="Cursor"><img src="img/logos/cursor.svg" alt="Cursor" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="notion" title="Notion" data-name="Notion"><img src="img/logos/notion.svg" alt="Notion" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="perplexity" title="Perplexity" data-name="Perplexity"><img src="img/logos/perplexity.svg" alt="Perplexity" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="grok" title="Grok" data-name="Grok"><img src="img/logos/grok.svg" alt="Grok" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="claude" title="Claude" data-name="Claude"><img src="img/logos/claude.svg" alt="Claude" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="github" title="GitHub" data-name="GitHub"><img src="img/logos/github.svg" alt="GitHub" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="slack" title="Slack" data-name="Slack"><img src="img/logos/slack.webp" alt="Slack" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="figma" title="Figma" data-name="Figma"><img src="img/logos/figma.svg" alt="Figma" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="meta" title="Meta AI" data-name="Meta AI"><img src="img/logos/meta.svg" alt="Meta AI" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="hermes" title="Hermes" data-name="Hermes"><img src="img/logos/hermes.svg" alt="Hermes" width="40" height="40" loading="lazy" decoding="async"></span>
+            <span class="k-logo is-mark" data-logo="gemini" title="Gemini" data-name="Gemini"><img src="img/logos/gemini.svg" alt="Gemini" width="40" height="40" loading="lazy" decoding="async"></span>
+          </div>
+        </div>
+        <div class="k-card">
+          <span class="k-head"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>Calendars</span>
+          <div class="k-logos k-logos-row"><span class="k-logo is-mark" data-logo="google" title="Google Calendar" data-name="Google Calendar"><img src="img/logos/google.svg" alt="Google Calendar" width="40" height="40" loading="lazy" decoding="async"></span><span class="k-logo is-mark" data-logo="apple" title="Apple Calendar" data-name="Apple Calendar"><img src="img/logos/apple.svg" alt="Apple Calendar" width="40" height="40" loading="lazy" decoding="async"></span><span class="k-logo is-mark" data-logo="microsoft" title="Outlook" data-name="Outlook"><img src="img/logos/microsoft.svg" alt="Outlook" width="40" height="40" loading="lazy" decoding="async"></span></div>
+          <span class="k-sub k-sub-line">Google, Apple and Outlook, both ways.</span>
+        </div>
+        <div class="k-card">
+          <span class="k-head"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Just ask</span>
+          <div class="k-prompts">
+            <span class="k-prompt">Plan my week<i aria-hidden="true">→</i></span>
+            <span class="k-prompt">Move what's late<i aria-hidden="true">→</i></span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="k-panel k-butter k-half l-rise">
+      <div class="k-claim">
+        <span class="k-eyebrow">Habits</span>
+        <h2 class="k-title">Habits that plan around your day.</h2>
+        <p class="k-body">A habit gets its own time the scheduler won't move. Missing a day costs nothing —
+        you see the last two weeks, not a streak you're afraid to break.</p>
+        <a class="k-more" href="pricing.html">Start with habits</a>
+      </div>
+      <div class="k-grid">
+        <div class="k-card">
+          <span class="k-head"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.4 2.4L15.5 9.8"/></svg>Today</span>
+          <div class="k-habits">
+            <div class="k-habit"><span class="k-tick"></span>Morning yoga<span class="k-time">07:30</span></div>
+            <div class="k-habit"><span class="k-tick"></span>Read 20 pages<span class="k-time">13:00</span></div>
+            <div class="k-habit"><span class="k-tick"></span>Evening walk<span class="k-time">19:00</span></div>
+            <div class="k-habit"><span class="k-tick k-keep"></span>Journal<span class="k-time">22:30</span></div>
+          </div>
+        </div>
+        <div class="k-card">
+          <span class="k-head"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Morning yoga<span class="k-sub">14 days</span></span>
+          <div class="k-field" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on k-today"></i></div>
+          <div class="k-ratio"><b>11</b><span>of the last 14 days —<br>a miss is just an empty square.</span></div>
+        </div>
+      </div>
+    </article>
+    </div>
+
+  </div>
+</section>
+
+<!-- THE HINGE. One statement between the two sections, lit word by word as it
+     is read: the week has just shown what the product is, this names the
+     problem, and the section below answers it. Once on the page — as an effect
+     it is memorable, as a habit it would make every paragraph a performance.
+
+     It gets a screen of its own rather than a section's padding, and it is
+     centred in it: a hinge is the one thing on the page that should arrive
+     with nothing else in view, and a sentence that lights word by word cannot
+     do that while a tile is still on screen above it. Centred because it is
+     addressed to the reader rather than set as body copy — the only other
+     centred text on the page is the hero's own claim, which is the same kind
+     of sentence. -->
+<section class="l-dark" style="min-height:90svh;display:flex;align-items:center;justify-content:center;padding:clamp(80px,12vh,180px) 0">
+  <div class="l-wrap" style="display:flex;justify-content:center">
+    <p class="o-read" data-read style="margin:0;max-width:26ch;text-align:center">Your plan breaks. You fix it. It breaks again. <span class="l-em l-hl-sketch">Let Needt do the fixing.</span></p>
+  </div>
+</section>
+
+<!-- ── HABITS AND FOCUS ────────────────────────────────────────────────────*/ -->
+<section class="l-section" id="focus">
+  <span class="sc sc-grey" data-tear="tlb" style="right:-4%;top:12%;width:9%;height:52%;transform:rotate(-2deg)" aria-hidden="true"></span><span class="cl" style="left:-40px;top:18%;width:420px;height:210px" aria-hidden="true"></span>
+  <div class="l-wrap l-grid" style="grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:26px;align-items:start">
+    <div class="l-stack l-rise" style="gap:18px">
+      <span class="l-tag">Habits &amp; focus</span>
+      <h2 class="l-h2" style="max-width:18ch">Build habits that stick.</h2>
+      <p class="l-body">A habit keeps its slot and the rest of the day is planned around it.
+      <span class="l-em l-hl-marker">No streaks to lose</span> — miss a day and nothing breaks. You just see
+      how often you showed up in the last 14 days.</p>
+      <p class="l-body"><span class="l-strong">Focus without interruptions.</span> Start a focus session, and
+      nothing gets scheduled on top of it. While it runs the room says so: the corners breathe, the button
+      counts down, and everything else holds still.</p>
+    </div>
+    <div class="l-card l-rise" data-lag="1" style="transition-delay:0.08s;padding:20px">
+      <!-- The same two mechanisms as the week's tiles, because this tile has
+           the same two problems without them: at fit-to-box it renders the
+           app's 13px chrome at 3.4px, and it is the one frame that boots a
+           whole React app on first paint. The focus is high in the screen —
+           the habit rail runs across the top of Today, which is the thing the
+           sentence beside it is about. -->
+      <div class="l-mini w-shot" data-mini data-scale="0.78" data-focus="52,16"
+        data-src="../needt-app/index.html?screen=today&amp;chrome=off">
+        <iframe width="1440" height="980" loading="lazy" title="The habit rail on Today" tabindex="-1"></iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── THE AGENT ───────────────────────────────────────────────────────────
+     The hand is the argument: an agent that rearranges your week silently is
+     an agent you stop trusting on the first surprise. -->
+<section class="l-section l-dark" id="agent">
+  <span class="sc sc-yellow" data-tear="tr" style="left:-4%;top:40%;width:9%;height:48%;transform:rotate(5deg)" aria-hidden="true"></span><span class="sc sc-mint" data-tear="trbl" style="right:-4%;top:8%;width:9%;height:20%;transform:rotate(-5deg)" aria-hidden="true"></span>
+  <div class="l-wrap l-grid" style="grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:44px;align-items:center">
+    <div class="o-hand l-rise" data-cursor-stage>
+      <div class="o-hand-app">
+        <span class="l-small">Tuesday 1 September</span>
+        <span class="l-row" style="gap:12px;justify-content:space-between;width:100%;flex-wrap:nowrap">
+          <span class="l-h3" style="font-size:24px">Four tasks unplaced</span>
+          <span class="o-plan" data-cursor-target>Plan my day</span>
+        </span>
+      </div>
+      <span class="l-cursor" aria-hidden="true">
+        <svg width="20" height="24" viewBox="0 0 20 24">
+          <path d="M2.6 1.6 L2.6 18.2 L7 14.1 L9.8 20.5 L12.7 19.3 L10 13.1 L15.9 12.8 Z"
+            fill="#fff" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></path>
+          <path d="M2.6 1.6 L2.6 18.2 L7 14.1 L9.8 20.5 L12.7 19.3 L10 13.1 L15.9 12.8 Z"
+            fill="#111" stroke="rgba(0,0,0,0.3)" stroke-width="0.5" stroke-linejoin="round"></path>
+        </svg>
+      </span>
+    </div>
+
+    <div class="l-stack l-rise" style="gap:18px">
+      <span class="l-tag">AI agent</span>
+      <h2 class="l-h2" style="max-width:18ch">Planning that shows its work.</h2>
+      <p class="l-body">Ask Needt to plan your day and watch Needt move each task into place: the cursor takes
+      the task, drops it into the gap, and goes back. <span class="l-strong">Nothing changes behind your
+      back.</span></p>
+      <span class="l-row">
+        <a class="l-btn l-btn-sm" href="agent.html">What it can do</a>
+        <a class="l-btn l-btn-ghost l-btn-sm" href="security.html">What it can&apos;t touch</a>
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ── THE ONE YOU ALREADY HAVE ────────────────────────────────────────────
+     Placed immediately before the price, because this is the sentence that
+     runs in the reader's head the moment a number appears: I already pay for
+     something that does this.
+
+     Each tool is credited before it is answered. The concession is not
+     politeness — a reader who is defending their current tool has stopped
+     reading, and the fastest way to make them defend it is to open by being
+     unfair to it. The deeper argument, by category, is on compare.html. -->
+<section class="l-section" id="instead">
+  <span class="sc sc-blue" data-tear="tr" style="left:-4%;top:8%;width:9%;height:30%;transform:rotate(-3deg)" aria-hidden="true"></span><span class="sc sc-black" data-tear="trbl" style="right:-4%;top:58%;width:9%;height:16%;transform:rotate(9deg)" aria-hidden="true"></span><span class="cl" style="right:-30px;top:6%;width:440px;height:220px" aria-hidden="true"></span>
+  <div class="l-wrap l-stack" style="gap:38px">
+    <div class="l-stack l-center l-rise" style="gap:18px;text-align:center">
+      <span class="l-tag" style="align-self:center">Instead of</span>
+      <h2 class="l-h2" style="max-width:20ch">You already have <span class="l-em l-hl-sketch">something for this</span>.</h2>
+      <p class="l-lead" style="max-width:52ch">Probably three things, and each of them is good at the half it
+      was built for. Here is the half that is left, in facts rather than adjectives.</p>
+    </div>
+
+    <!-- The table. Facts with a date on them — no star ratings and no winner
+         badge: a rating is an opinion in the costume of a measurement, and a
+         winner badge on your own page persuades nobody. Every number carries
+         the day it was read and the page it was read from, because a price
+         table that has quietly gone stale is the one thing a reader can catch
+         you on. -->
+    <div class="l-stack l-rise" style="gap:16px">
+      <div class="sp-wrap">
+        <input class="sp-s1" type="radio" name="sp-set" id="sp-set-1" checked aria-label="Compare with auto-schedulers">
+        <input class="sp-s2" type="radio" name="sp-set" id="sp-set-2" aria-label="Compare with lists and notes">
+        <div class="sp-tabs">
+          <label class="sp-tab" for="sp-set-1"><svg class="sp-tab-i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V12l3.2 2"></path></svg>The auto-schedulers</label>
+          <label class="sp-tab" for="sp-set-2"><svg class="sp-tab-i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"></path><path d="M4.6 6h.01M4.6 12h.01M4.6 18h.01"></path></svg>The lists and notes</label>
+        </div>
+        <div class="sp-scroll">
+          <div class="sp" data-sp>
+            <div class="sp-col">
+              <span class="sp-c sp-head"></span>
+              <span class="sp-c"><span class="sp-lab">Price, one person</span></span>
+              <span class="sp-c"><span class="sp-lab">Free plan</span></span>
+              <span class="sp-c"><span class="sp-lab">Trial</span></span>
+              <span class="sp-c"><span class="sp-lab">Who finds the time</span></span>
+              <span class="sp-c"><span class="sp-lab">How far it plans</span></span>
+              <span class="sp-c"><span class="sp-lab">Shows you the change</span></span>
+              <span class="sp-c"><span class="sp-lab">Built for</span></span>
+            </div>
+          <div class="sp-col">
+            <span class="sp-c sp-head sp-c-edge sp-c-mine"><span class="sp-name"><span class="sp-mark" aria-hidden="true" style="--mk:var(--accent)">N</span><span class="sp-who">Needt</span></span><span class="sp-what">A planner that gives the work a time</span></span>
+            <span class="sp-c sp-c-edge sp-c-mine"><span class="sp-v"><span class="sp-v-m">$7</span> / month</span><span class="sp-sub">$60 a year · or $149 once, first 300</span></span>
+            <span class="sp-c sp-c-edge sp-c-mine"><span class="sp-v sp-m sp-yes">Yes</span><span class="sp-sub">One real day, fully working. No card</span></span>
+            <span class="sp-c sp-c-edge sp-c-mine"><span class="sp-v sp-m sp-yes">14 days</span><span class="sp-sub">No card until the fourteenth</span></span>
+            <span class="sp-c sp-c-edge sp-c-mine"><span class="sp-v sp-m sp-yes">Needt, or its agent</span><span class="sp-sub">Maths finds the hour; the agent can plan the whole day. You see it first</span></span>
+            <span class="sp-c sp-c-edge sp-c-mine"><span class="sp-v sp-m sp-yes">The month</span></span>
+            <span class="sp-c sp-c-edge sp-c-mine"><span class="sp-v sp-m sp-yes">Every move, before it happens</span><span class="sp-sub">And you watch its hand do it</span></span>
+            <span class="sp-c sp-c-edge sp-c-mine"><span class="sp-v sp-m sp-yes">One person&apos;s day</span><span class="sp-sub">A freelancer, or a small team of them</span></span>
+          </div>
+            <div class="sp-set sp-set-1">
+          <div class="sp-col">
+            <span class="sp-c sp-head sp-c-edge"><span class="sp-name"><img class="sp-mark sp-mark-img" src="img/mark-motion.png" alt="" width="22" height="22" loading="lazy"><span class="sp-who">Motion</span></span><span class="sp-what">An auto-scheduler for teams</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-v-m">$29</span> / month</span><span class="sp-sub">$348 a year · $228 paid yearly</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">None</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">7 days</span><span class="sp-sub">Card required up front</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">It decides, continuously</span><span class="sp-sub">Rearranges the week while you are not looking</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v">Open-ended</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">After the fact</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Teams and their throughput</span></span>
+          </div>
+          <div class="sp-col">
+            <span class="sp-c sp-head sp-c-edge"><span class="sp-name"><img class="sp-mark sp-mark-img" src="img/mark-sunsama.png" alt="" width="22" height="22" loading="lazy"><span class="sp-who">Sunsama</span></span><span class="sp-what">A guided daily ritual</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-v-m">$25</span> / month</span><span class="sp-sub">$300 a year · $240 paid yearly</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">None</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-yes">14 days</span><span class="sp-sub">No card</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">You do, by hand</span><span class="sp-sub">The ritual is the product</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Two weeks</span><span class="sp-sub">Capped by design</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-yes">You made it yourself</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v">One person&apos;s planning ritual</span></span>
+          </div>
+          <div class="sp-col">
+            <span class="sp-c sp-head sp-c-edge"><span class="sp-name"><img class="sp-mark sp-mark-img" src="img/mark-reclaim.png" alt="" width="22" height="22" loading="lazy"><span class="sp-who">Reclaim</span></span><span class="sp-what">Calendar time protection</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-v-m">$12</span> / month</span><span class="sp-sub">$144 a year · $120 paid yearly</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-yes">Yes</span><span class="sp-sub">One calendar, a week ahead</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-off">—</span></span><span class="sp-sub">The free plan is the trial</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">It decides, continuously</span><span class="sp-sub">Around meetings on a shared calendar</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">A week free, twelve paid</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">After the fact</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Protecting time on a team calendar</span></span>
+          </div>
+            </div>
+            <div class="sp-set sp-set-2">
+          <div class="sp-col">
+            <span class="sp-c sp-head sp-c-edge"><span class="sp-name"><img class="sp-mark sp-mark-img" src="img/mark-todoist.png" alt="" width="22" height="22" loading="lazy"><span class="sp-who">Todoist</span></span><span class="sp-what">The list, done properly</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-v-m">$7</span> / month</span><span class="sp-sub">$60 a year · $5 a month paid yearly</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-yes">Yes</span><span class="sp-sub">Five projects, no reminders</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-off">—</span></span><span class="sp-sub">The free plan is the trial</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Nobody</span><span class="sp-sub">It reads the date out of your sentence, then waits</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">It does not plan</span><span class="sp-sub">A due date is not a time</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v">Nothing to show</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Anything you can put in a list</span></span>
+          </div>
+          <div class="sp-col">
+            <span class="sp-c sp-head sp-c-edge"><span class="sp-name"><img class="sp-mark sp-mark-img" src="img/mark-ticktick.png" alt="" width="22" height="22" loading="lazy"><span class="sp-who">TickTick</span></span><span class="sp-what">A list with a calendar bolted on</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-v-m">$3.99</span> / month</span><span class="sp-sub">$35.99 a year</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-yes">Yes</span><span class="sp-sub">Lists, and a calendar view</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-off">—</span></span><span class="sp-sub">The free plan is the trial</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Nobody</span><span class="sp-sub">You drag each task onto an hour yourself</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">It does not plan</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v">Nothing to show</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Lists, habits and a timer</span></span>
+          </div>
+          <div class="sp-col">
+            <span class="sp-c sp-head sp-c-edge"><span class="sp-name"><img class="sp-mark sp-mark-img" src="img/mark-notion.png" alt="" width="22" height="22" loading="lazy"><span class="sp-who">Notion</span></span><span class="sp-what">A workspace you build yourself</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-v-m">$12</span> / month</span><span class="sp-sub">$144 a year · $10 a month paid yearly</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-yes">Yes</span><span class="sp-sub">Unlimited pages on your own</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v"><span class="sp-off">—</span></span><span class="sp-sub">The free plan is the trial</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Nobody</span><span class="sp-sub">You type the plan in, and maintain it</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">It does not plan</span><span class="sp-sub">It has no idea how long your Tuesday is</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v">Nothing to show</span></span>
+            <span class="sp-c sp-c-edge"><span class="sp-v sp-m sp-no">Any kind of document</span></span>
+          </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="sp-note" style="text-align:center">Checked 15 September 2026 against each vendor&apos;s own pricing —
+        <a href="https://www.usemotion.com/pricing" target="_blank" rel="noopener">Motion</a>,
+        <a href="https://www.sunsama.com/pricing" target="_blank" rel="noopener">Sunsama</a>,
+        <a href="https://reclaim.ai/pricing" target="_blank" rel="noopener">Reclaim</a>,
+        <a href="https://www.notion.com/pricing" target="_blank" rel="noopener">Notion</a>,
+        <a href="https://todoist.com/pricing" target="_blank" rel="noopener">Todoist</a>,
+        <a href="https://ticktick.com/pricing" target="_blank" rel="noopener">TickTick</a>.
+        Prices here move often. The figure on each line is the month-to-month rate — what you pay without committing to a year.</p>
+    </div>
+
+    <p class="l-cite" style="text-align:center"><a href="compare.html">The longer argument, by category →</a></p>
+  </div>
+</section>
+
+<!-- ── FAQ ─────────────────────────────────────────────────────────────────*/ -->
+<section class="l-section" id="faq">
+  <span class="sc sc-perf" data-tear="perf" style="right:-4%;top:20%;width:9%;height:13%;transform:rotate(5deg)" aria-hidden="true"></span><span class="sc sc-grey" data-tear="trbl" style="left:-4%;top:54%;width:9%;height:22%;transform:rotate(-7deg)" aria-hidden="true"></span>
+  <div class="l-wrap l-stack" style="gap:30px">
+    <div class="l-stack l-rise" style="gap:18px">
+      <span class="l-tag">Questions</span>
+      <h2 class="l-h2">Questions? Answers.</h2>
+    </div>
+    <div class="l-faq l-rise">
+      <details open><summary>Does it replace my calendar?</summary>
+        <div class="l-faq-body"><div><p>No. It connects to your Google, Apple or Outlook calendar. Your
+        meetings stay where they are, and Needt never moves them.</p></div></div></details>
+      <details><summary>Where does my data live?</summary>
+        <div class="l-faq-body"><div><p>In your Needt account, synced across your devices. Files you choose to
+        keep on your own computer stay there, and we cannot read them.
+        <a class="l-hl" href="security.html">The details are here</a>.</p></div></div></details>
+      <details><summary>Is it AI?</summary>
+        <div class="l-faq-body"><div><p>The planning itself is plain maths: your free hours, how long things
+        take, deadlines, and what depends on what. AI writes the small helpers — a first step for a task, a
+        week summary — and you see them before they are saved.</p></div></div></details>
+      <details><summary>What if my day doesn&apos;t fit?</summary>
+        <div class="l-faq-body"><div><p>Needt tells you, and shows what moves. It won&apos;t squeeze eight
+        hours of work into four.</p></div></div></details>
+      <details><summary>Is it for teams?</summary>
+        <div class="l-faq-body"><div><p>It&apos;s built around one person&apos;s day, with a shared view for
+        small teams: who&apos;s on what, and what&apos;s blocked.</p></div></div></details>
+      <details><summary>Which platforms?</summary>
+        <div class="l-faq-body"><div><p>Needt works in any browser, and you can install it like an app on your
+        computer or phone. Native apps are on the way. <a class="l-hl" href="download.html">How to install
+        it</a>.</p></div></div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ── THE CLOSE ───────────────────────────────────────────────────────────
+     The sky returns for the last block, which is the only other place it
+     appears: the page opens and closes on the same afternoon. -->
+<footer class="l-footer l-sky-host l-on-sky">
+  <span class="l-sky-fade-top" aria-hidden="true"></span>
+  <span class="l-sky-par" aria-hidden="true"><span class="l-sky"></span></span>
+  <span class="l-fog" aria-hidden="true"></span>
+  <div class="l-sky-body l-wrap">
+    <div class="l-stack l-center" style="gap:24px;padding:clamp(80px,10vw,150px) 0 clamp(48px,6vw,80px)">
+      <h2 class="l-h2" data-heavy="22" style="max-width:18ch"><span class="l-heavy"><span class="l-breathe">Your day, <span class="l-em l-hl-wash l-hl-cool" data-cycle>finally planned.</span></span></span></h2>
+      <span class="l-row" style="justify-content:center;gap:10px">
+        <a class="l-btn" href="../needt-app/auth.html">Plan my day</a>
+        <a class="l-btn l-btn-ghost" href="../needt-app/auth.html">
+        <span class="l-gift-tag">Gift</span>
+        <span><span class="l-gift-num">14</span> days of Pro</span>
+      </a>
+      </span>
+    </div>
+    <!-- No link cluster here: the columns below already carry every one of
+         these, and the same four links twice in one footer means the reader
+         has to check whether they are the same four. -->
+    <div class="l-footer-cols">
+      <div class="l-footer-col"><span class="l-footer-eyebrow">Product</span>
+        <a href="pricing.html">Pricing</a><a href="agent.html">Agent</a><a href="security.html">Security</a><a href="download.html">Download</a></div>
+      <div class="l-footer-col"><span class="l-footer-eyebrow">Read</span>
+        <a href="blog.html">Blog</a><a href="blog-day-does-not-fit.html">When a day does not fit</a><a href="blog-time-blocking.html">Time blocking, honestly</a><a href="compare.html">Comparisons</a></div>
+      <div class="l-footer-col"><span class="l-footer-eyebrow">Legal</span>
+        <a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div>
+      <div class="l-footer-col"><span class="l-footer-eyebrow">Elsewhere</span>
+        <a href="../needt-app/auth.html">Log in</a><a href="mailto:hello@needt.app">hello@needt.app</a></div>
+    </div>
+    <div class="l-footer-base">
+      <!-- Not the name twice. It is at the floor below, six times this size;
+           what belongs on a 14px line is the thing a wordmark cannot say. -->
+      <span class="l-small">Made by one person.</span>
+      <span class="l-small" style="margin-left:auto">© 2026 Needt. Built for one day at a time.</span>
+    </div>
+  </div>
+
+  <!-- The floor: the name at the scale of the screen, cropped by the glass.
+       The crop is the point — a word that ends at the edge reads as continuing
+       past it, where a word with air beneath it reads as a caption. It carries
+       weight too: it sinks with the scroll and springs back. -->
+  <div class="l-floor" aria-hidden="true">
+    <span class="l-floor-word" data-expo data-heavy="96" data-heavy-down>Needt</span>
+  </div>
+</footer>
+
+<!-- On a phone the header is gone by the second screenful, so the one thing
+     you can do must not scroll away. -->
+<div class="l-dock">
+  <span class="l-dock-say">Give every task an hour.</span>
+  <a class="l-btn l-btn-sm" href="../needt-app/auth.html" style="flex:none">Plan my day</a>
+</div>
+
+<script src="js/pop.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/cloud-v2.js"></script>
+<script src="js/mascots-more.js"></script>
+<script src="js/trail.js?v=6"></script>
+<script defer src="js/dock.js?v=1"></script>
+</body></html>

@@ -272,9 +272,28 @@ writeFileSync(join(outDir, "needt-themes.css"), themes);
 const indexHtml = readFileSync(join(BUNDLE, "needt-app", "index.html"), "utf8");
 const styleBlocks = [...indexHtml.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]);
 
+/* The October 2026 export moved almost all of this out of the page and into
+   `app.css` — 599 lines and 33 of the 33 keyframe sets. Reading only the
+   inline blocks after that silently produced a motion layer with nothing in
+   it: a sync against that bundle deleted 641 lines, the notification stack's
+   own rules among them. Read both, in the order the page loads them, and the
+   layer survives an export that reorganises itself again. */
+const appCssPath = join(BUNDLE, "needt-app", "app.css");
+if (existsSync(appCssPath)) {
+  styleBlocks.unshift(readFileSync(appCssPath, "utf8"));
+}
+
+if (!styleBlocks.some((block) => block.includes("@keyframes"))) {
+  throw new Error(
+    "No @keyframes found in the bundle's motion sources. The export has " +
+      "moved them again; teach this script where before regenerating, or it " +
+      "will write an empty motion layer over a working one."
+  );
+}
+
 let motion = header([
   "Needt motion layer — VENDORED, DO NOT EDIT BY HAND.",
-  `Extracted from needt-app/index.html on ${stamp}.`,
+  `Extracted from needt-app/app.css and needt-app/index.html on ${stamp}.`,
   "Regenerate with: npm run tokens:sync",
   "",
   "The prototype's living layer: entrance, landing, menu cascade, the close",

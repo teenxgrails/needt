@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — the icon, forged at the sizes it ships at</title>
+<style>
+/* ── THE ICON FORGE ────────────────────────────────────────────────────────
+   Not a page of the site — the harness the icon asset is rendered from, kept
+   in the repo so the mark can be re-cut instead of re-traced out of a
+   screenshot. identity.html chose the DIRECTION (a monogram on weather); this
+   file cuts the shipping artwork from it, at the sizes it is actually used.
+
+   Three corrections to what identity.html's Cumulus gives you:
+
+   1 · THE SKY HAS FEWER, BIGGER MASSES. Cumulus stacks fourteen cloud
+       gradients — count and asymmetry are what make it read as real weather
+       at 180px. At 24px fourteen masses average into one flat haze and the
+       icon reads as a blurry grey square. Four masses, large and low.
+   2 · THE LETTER IS LIGHTER. Its EXPO ramp was −52, nearly the inked end of
+       the axis, which at 24px closes the counter of the N into a blob. −16
+       keeps the diagonal open. A wide light letter reads at small size; a
+       heavy one turns into a shape.
+   3 · LUX IS DEPTH, NOT DETAIL. One clean ground, a deep azure with a warm
+       horizon; one specular sweep across the upper left; a hairline of light
+       on the top rim and a cool one at the bottom. Nothing else. The
+       expensive look comes from a dark, saturated ground and a bright figure
+       — contrast, not ornament.
+*/
+@font-face { font-family: "Exposure VAR"; src: url("../needt-app/ExposureTrialVAR.woff2") format("woff2-variations"); font-display: block; }
+
+html, body { margin: 0; background: #f4f6f9; color: #10141a;
+  font: 400 13px/1.45 ui-sans-serif, system-ui, sans-serif; }
+#page { padding: 40px 32px 72px; display: flex; flex-direction: column; gap: 34px; }
+h1 { font: 600 20px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; margin: 0; }
+h2 { font: 600 12px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #6b7684; margin: 0 0 14px; }
+.note { color: #5b6674; max-width: 74ch; text-wrap: pretty; margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 26px; align-items: flex-end; }
+.cell { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.cell > span { font: 400 11px/1 ui-monospace, monospace; color: #7c8794; }
+.ground { display: flex; gap: 20px; align-items: center; padding: 18px 22px; border-radius: 14px; }
+.g-white { background: #fff; box-shadow: inset 0 0 0 1px rgba(16, 20, 26, 0.08); }
+.g-cell { background: #eaf2fd; box-shadow: inset 0 0 0 1px rgba(16, 20, 26, 0.06); }
+.g-dark { background: #12161c; }
+
+/* ── THE PLATE ─────────────────────────────────────────────────────────────
+   The silhouette is a SUPERELLIPSE from the formula, as in identity.html: a
+   border-radius corner is a circular arc spliced into a straight edge and the
+   curvature jumps at the splice. Every visible layer is clipped by it. */
+.ic { position: relative; aspect-ratio: 1; display: grid; place-items: center;
+  isolation: isolate; overflow: hidden; }
+
+/* The ground. A single 172° ramp: deep azure at the top, a warm band where
+   the horizon is, and a cooler settle below it — one object lit once. */
+.ic-sky { position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(174deg,
+    #12446f 0%, #1a558a 18%, #2a6ca6 40%, #3f85be 62%,
+    #6aa6d0 80%, #9dc4dd 92%, #cbd9dd 100%);
+}
+
+/* Four cloud masses, low and large — the count that survives a 24px render.
+   Their bases are cool and flat, which is what makes a cumulus a solid with a
+   bottom rather than a smudge of white. */
+.ic-cloud { position: absolute; inset: 0; z-index: 1;
+  background:
+    radial-gradient(32% 17% at 24% 90%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.36) 56%, rgba(255,255,255,0) 80%),
+    radial-gradient(28% 15% at 56% 94%, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.34) 57%, rgba(255,255,255,0) 80%),
+    radial-gradient(24% 13% at 84% 89%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.28) 58%, rgba(255,255,255,0) 82%),
+    radial-gradient(14% 7% at 40% 81%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 84%),
+    radial-gradient(40% 8% at 50% 100%, rgba(255,232,196,0.5) 0%, rgba(255,232,196,0) 72%);
+}
+
+/* The specular sweep: one broad source from the upper left, the only
+   highlight on the plate. A coated surface catches a room once. */
+.ic-spec { position: absolute; inset: 0; z-index: 2;
+  background:
+    radial-gradient(66% 50% at 16% 4%, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.08) 48%, rgba(255,255,255,0) 74%),
+    radial-gradient(130% 70% at 50% -14%, rgba(6,24,46,0.26) 0%, rgba(6,24,46,0) 58%);
+}
+
+/* THE AIR IS BEHIND THE LETTER, and thin. identity.html found this the hard
+   way: vapour in front of the figure veils the strokes at every size, and a
+   symbol's figure is never veiled. Two banks instead of four, at half the
+   former weight — "less haze on the letter" is the brief, and this is the
+   layer that was producing it. */
+.ic-fog { position: absolute; inset: -12%; z-index: 3; pointer-events: none;
+  transform: rotate(-3deg);
+  background:
+    radial-gradient(42% 9% at 46% 76%, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.08) 60%, rgba(255,255,255,0) 84%),
+    radial-gradient(26% 6% at 70% 71%, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 86%);
+}
+
+/* The letter. Height from a vertical scale, not from font-size, so the stroke
+   weight the axis sets stays as authored while the glyph grows taller. */
+.ic-mark { position: relative; z-index: 4; margin: 0; display: flex; align-items: baseline;
+  font-family: "Exposure VAR", Georgia, serif; font-weight: 400;
+  color: #fffefb; line-height: 0.9; letter-spacing: -0.004em; white-space: nowrap;
+  transform: translateY(-1.5%) scaleY(1.08); transform-origin: 50% 62%;
+}
+.ic-mark > span { display: inline-block; white-space: pre; font-size: inherit; font-family: inherit; color: inherit; }
+
+/* The two edges an icon is allowed: light along the top rim, where a physical
+   plate catches the light, and a cool hairline containing the shape. */
+.ic-rim { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+</style>
+</head><body><div id="page"></div>
+
+<script>
+/* Parametric superellipse as a percentage polygon, so one string clips any
+   size. Lifted verbatim in mechanism from identity.html — the shape is the
+   identity's, not this file's to reinvent. */
+function squircle(n, ratio, steps) {
+  const r = (ratio == null ? 0.2237 : ratio) * 100;
+  const k = steps || 48;
+  const pts = [];
+  function corner(cx, cy, sx, sy, fromX) {
+    for (let i = 0; i <= k; i++) {
+      const t = (i / k) * (Math.PI / 2);
+      const a = Math.pow(Math.cos(t), 2 / n);
+      const b = Math.pow(Math.sin(t), 2 / n);
+      const x = cx + sx * r * (fromX ? a : b);
+      const y = cy + sy * r * (fromX ? b : a);
+      pts.push(x.toFixed(3) + "% " + y.toFixed(3) + "%");
+    }
+  }
+  corner(100 - r, r, 1, -1, true);
+  corner(r, r, -1, -1, false);
+  corner(r, 100 - r, -1, 1, true);
+  corner(100 - r, 100 - r, 1, 1, false);
+  return "polygon(" + pts.join(",") + ")";
+}
+const SQ = squircle(5);
+
+/* EVERY NUMBER SCALES WITH THE PLATE. An icon authored at 512 and shipped at
+   24 is four separate drawings unless the rim, the shadow and the letter are
+   all expressed as fractions of the side. */
+function icon(size, o) {
+  o = o || {};
+  const el = document.createElement("div");
+  el.className = "ic";
+  el.style.width = size + "px";
+  el.style.clipPath = SQ;
+  el.style.borderRadius = (size * 0.02) + "px";
+  if (!o.flat) {
+    el.style.boxShadow = "0 " + (size * 0.024) + "px " + (size * 0.058) + "px rgba(14,26,44,0.18), 0 "
+      + (size * 0.006) + "px " + (size * 0.014) + "px rgba(14,26,44,0.12)";
+  }
+  ["ic-sky", "ic-cloud", "ic-spec", "ic-fog"].forEach(function (cls) {
+    const l = document.createElement("span");
+    l.className = cls;
+    el.appendChild(l);
+  });
+
+  const mark = document.createElement("p");
+  mark.className = "ic-mark";
+  mark.style.fontSize = (size * 0.46) + "px";
+  /* The shadow is a CONTACT shadow, not a glow: the letter sits on the
+     weather, so it darkens the cloud directly under itself and nothing more.
+     Scaled, or it is a halo at 512 and invisible at 24. */
+  mark.style.textShadow = "0 " + (size * 0.006) + "px " + (size * 0.012) + "px rgba(18,40,66,0.3)";
+  const g = document.createElement("span");
+  /* −16, not −52: near the inked end of the axis the N's counter closes and
+     the glyph becomes a lump at small sizes. */
+  g.style.fontVariationSettings = '"EXPO" ' + (o.expo == null ? -16 : o.expo);
+  g.textContent = "N";
+  mark.appendChild(g);
+  el.appendChild(mark);
+
+  const rim = document.createElement("span");
+  rim.className = "ic-rim";
+  rim.style.boxShadow = "inset 0 " + Math.max(1, size * 0.004) + "px 0 rgba(255,255,255,0.62), inset 0 0 0 "
+    + Math.max(1, size * 0.002) + "px rgba(12,28,48,0.16)";
+  el.appendChild(rim);
+  return el;
+}
+
+const page = document.getElementById("page");
+function h(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+page.appendChild(h("h1", null, "The icon, at the sizes it ships at"));
+page.appendChild(h("p", "note", "An icon is judged at the size it is used. The 512 is the store tile, 128 the dock, "
+  + "32 the browser tab, 24 the size it sits at in the comparison table. Every number in the drawing is a fraction "
+  + "of the side, so these are one artwork rather than four."));
+
+const s1 = h("section");
+s1.appendChild(h("h2", null, "On white"));
+const r1 = h("div", "row");
+[512, 128, 64, 32, 24].forEach(function (s) {
+  const c = h("div", "cell");
+  const w = h("div", "ground g-white");
+  const ico = icon(s);
+  ico.id = "shot-" + s;
+  w.appendChild(ico);
+  c.appendChild(w);
+  c.appendChild(h("span", null, s + "px"));
+  r1.appendChild(c);
+});
+s1.appendChild(r1);
+page.appendChild(s1);
+
+const s2 = h("section");
+s2.appendChild(h("h2", null, "On the grounds it actually lands on"));
+const r2 = h("div", "row");
+[["g-cell", "our column in the table"], ["g-dark", "the dark dock"]].forEach(function (pair) {
+  const c = h("div", "cell");
+  const w = h("div", "ground " + pair[0]);
+  [24, 32, 64].forEach(function (s) { w.appendChild(icon(s)); });
+  c.appendChild(w);
+  c.appendChild(h("span", null, pair[1]));
+  r2.appendChild(c);
+});
+s2.appendChild(r2);
+page.appendChild(s2);
+
+/* The capture target: 512, flat, so the asset carries no cast shadow baked
+   into its pixels — a shadow belongs to the surface the icon is placed on. */
+const s3 = h("section");
+s3.appendChild(h("h2", null, "The export plate"));
+s3.appendChild(h("p", "note", "Flat — no cast shadow in the pixels. Shadow belongs to whatever surface the icon is placed on, "
+  + "and an icon that ships its own is a sticker."));
+const hold = h("div", "row");
+const exp = icon(512, { flat: true });
+exp.id = "export-plate";
+hold.appendChild(exp);
+s3.appendChild(hold);
+page.appendChild(s3);
+</script>
+</body></html>

@@ -1,0 +1,171 @@
+/* THE DYNAMIC LAYER — loaded after land.css.
+ *
+ * What makes Genie feel alive is not the number of animations. It is that the
+ * page answers the scroll continuously instead of playing a cue when a section
+ * arrives: a fade-in is a switch, a scroll-linked transform is a dial. The eye
+ * reads the second as the page being present and the first as the page having
+ * been decorated once.
+ *
+ * So this layer is scroll-driven where the browser supports it — CSS scroll
+ * timelines, which run off the compositor and cost nothing per frame — and
+ * falls back to the one-shot rise in land.css where it does not. Every motion
+ * here states a relationship the static layout leaves implicit; none of it is
+ * movement for its own sake.
+ */
+
+/* ── 1 · THE PROOF COMES TO YOU ────────────────────────────────────────────
+   The film starts a little small, tilted back and low, and arrives square
+   under your own scroll. A screenshot that is simply there has to be believed;
+   a screen that settles into place as you reach it reads as a thing being
+   handed over. */
+@keyframes l-arrive {
+  from { opacity: 0.45; transform: perspective(1600px) translate3d(0, 62px, 0) rotateX(9deg) scale(0.9); }
+  to   { opacity: 1;    transform: perspective(1600px) translate3d(0, 0, 0) rotateX(0deg) scale(1); }
+}
+
+/* ── 4 · THE CLAIM HOLDS WHILE ITS EVIDENCE PASSES ─────────────────────────
+   The heading stays on screen while the cards for it scroll by, so a claim and
+   its proof are never separated by the fold. Only at widths that have room for
+   two columns — a sticky heading on a phone is a heading that eats the
+   screen. */
+@media (min-width: 1040px) {
+  .l-pin { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr); gap: 48px; align-items: start; }
+  .l-pin-head { grid-column: 2; grid-row: 1; position: sticky; top: 132px; }
+  .l-pin > .l-deck { grid-column: 1; grid-row: 1; }
+}
+
+/* ── 7 · SCROLL-DRIVEN, WHERE IT IS REAL ───────────────────────────────────
+   `animation-timeline: view()` ties an animation's progress to the element's
+   own passage through the viewport: it runs backwards when you scroll back,
+   holds when you stop, and never touches the main thread. This is the whole
+   difference between a page that reveals itself and a page that responds.
+   Where it is unsupported, land.css's observer-driven rise already covers it. */
+@supports (animation-timeline: view()) {
+  .l-arrive {
+    animation: l-arrive linear both;
+    animation-timeline: view();
+    animation-range: entry 2% cover 34%;
+  }
+  .l-rise {
+    opacity: 1; transform: none; transition: none;
+    animation: l-rise-scroll linear both;
+    animation-timeline: view();
+    animation-range: entry 4% entry 64%;
+  }
+  @keyframes l-rise-scroll {
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* A delay means nothing on a scroll timeline, so the staggered cards keep
+     their offsets by shifting the range instead. */
+  .l-rise[data-lag="1"] { animation-range: entry 9% entry 70%; }
+  .l-rise[data-lag="2"] { animation-range: entry 14% entry 76%; }
+  /* The marquee scrolls with the page as well as on its own clock, so the
+     strip drifts faster while you are moving through it. */
+  .l-marquee-track { animation-composition: add; }
+}
+
+/* ── STILLNESS IS COMPLETE ─────────────────────────────────────────────────
+   Not a list of the animations we remembered: everything, animation and
+   transition alike, and every animated element in its finished state. A
+   behaviour added later cannot escape this by being forgotten. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .l-arrive, .l-rise { opacity: 1 !important; transform: none !important; }
+}
+
+
+/* ── THE STEPS DEAL LIKE A DECK ───────────────────────────────────────────*/
+.l-deck { display: flex; flex-direction: column; gap: 26px; }
+.l-deck > article {
+  position: relative;
+  transform-origin: 50% 0;
+  /* No pile below the sticky breakpoint, so nothing recedes there: the values
+     the script writes are simply not read. */
+  --deck-s: 1; --deck-y: 0px; --deck-o: 1;
+  /* Written per frame from each card's own position, so the recede is tied to
+     the scroll rather than to a duration that a fast scroll overruns. */
+  will-change: transform;
+}
+@media (min-width: 1040px) {
+  .l-deck { gap: 0; }
+  .l-deck > article {
+    transform: scale(var(--deck-s)) translateY(var(--deck-y));
+    position: sticky;
+    /* Each sticks a step lower than the last, so the pile shows its edges:
+       you can see what you came from without it competing for the read.
+       148, not 128: the pile used to start level with the heading beside it
+       and the top card sat hard against the header. (land.js reads the same
+       number as `stickTop` — change one and you must change the other, or the
+       live card is decided from a line the card is not on.) */
+    top: calc(148px + var(--deck-i, 0) * 22px);
+    margin-bottom: clamp(60px, 9vh, 130px);
+  }
+  .l-deck > article:last-child { margin-bottom: 0; }
+  /* THE PAPER IS NEVER TRANSLUCENT — only the ink on it. --deck-o used to sit
+     on the article, which turned a receding card into glass and let the card
+     under it read through: two step titles in the same box. Moving it to the
+     children keeps the stack opaque and says the truer thing anyway — the
+     step has not gone anywhere, it has stopped being the one you are on. */
+  .l-deck > article > * { opacity: var(--deck-o); transition: opacity 0.2s linear; }
+}
+
+/* The step's number, large, in the card's own corner — the display serif at
+   a size the body text never reaches, so the eye finds its place before it
+   reads a word. */
+.l-deck-n {
+  position: absolute; right: clamp(18px, 2.4vw, 34px); top: clamp(12px, 1.8vw, 22px);
+  font-family: var(--font-display); font-weight: 400; line-height: 1;
+  font-size: clamp(44px, 5vw, 78px); letter-spacing: -0.02em;
+  color: color-mix(in oklab, var(--ink) 9%, transparent);
+  transition: color 0.4s ease;
+  pointer-events: none; user-select: none;
+}
+.l-deck > article.is-live .l-deck-n { color: color-mix(in oklab, var(--hl, #2E6DE9) 26%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .l-deck > article { position: relative !important; top: auto !important; transform: none; opacity: 1; }
+}
+
+
+/* The cards stay white and identical: they are three steps of one sequence,
+   and three different-coloured panels would say they are three different
+   kinds of thing. What distinguishes them is the number and the words. */
+.l-deck > article {
+  overflow: hidden;
+  background: #FFFFFF;
+  /* Each card above the one before it: the pile only reads as a pile if the
+     newest is on top, and a transform makes the default source order moot. */
+  z-index: calc(var(--deck-i, 0) + 1);
+}
+/* THE ONE PLACE ON THIS PAGE THAT EARNS A CAST SHADOW. Elsewhere the rule
+   holds — a shadow under a card is the fastest way to lose the daylight — but
+   these three cards physically overlap, and depth is not decoration here, it
+   is the whole mechanism: without a cast, three sheets of the same white at
+   the same apparent height are one confusing surface.
+   Two layers, always: a 1px contact shadow that says the sheet is touching
+   something, and a wide soft one that says how far above the page it is. The
+   live card gets both deepened, so lifting is what "you are here" looks
+   like. */
+.l-deck > article {
+  box-shadow:
+    inset 0 0 0 1px rgba(10, 13, 18, 0.06),
+    0 1px 2px rgba(10, 13, 18, 0.05),
+    0 10px 26px -20px rgba(10, 13, 18, 0.2);
+  transition: box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.l-deck > article.is-live {
+  box-shadow:
+    inset 0 0 0 1px rgba(10, 13, 18, 0.08),
+    0 2px 4px rgba(10, 13, 18, 0.06),
+    0 20px 44px -24px rgba(10, 13, 18, 0.26),
+    0 48px 90px -56px rgba(10, 13, 18, 0.34);
+}
+/* The step's number, large and quiet in the corner — the one mark that says
+   where you are, and it brightens only on the live card. */
+.l-deck-n { color: color-mix(in oklab, var(--ink) 7%, transparent); }
+.l-deck > article.is-live .l-deck-n { color: color-mix(in oklab, var(--ink) 15%, transparent); }

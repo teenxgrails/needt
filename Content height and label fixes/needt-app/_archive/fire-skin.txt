@@ -1,0 +1,116 @@
+THE FIRE SKIN — archived 2026-09-07
+
+A per-task warm skin: the whole object became the fire — warm body, warm ink,
+no rail (heat is not movability), and a crest of animated tongues over its top
+edge. It was the only warm fill in the product, lit by hand from the row menu
+and from a switch in the task dialog; nothing derived it.
+
+Removed from: BlockDesigns.jsx (Crest, FireBlock, the b.burning branch),
+TaskRow.jsx (the fire branches and the "Set it on fire" menu item),
+Dialogs.jsx (the "On fire" form row), App.jsx (the burn() toggle and the
+burning seed), TodayScreen.jsx (the burning seed), blocks.html (its specimen),
+index.html (the --fire-* ramp, needt-tongue, needt-ember, .fire-crest,
+.fire-body).
+
+The category FLAME (Flame.jsx, height = impulse) is a different object and
+stays in the product.
+
+──────────────────────────────────────────────────────────────── CSS
+
+/* FIRE — the one warm ramp in the product, and it belongs to a single state:
+   a task someone marked as burning. The three steps are derived from
+   --destructive by rotating its hue toward yellow at the same chroma, so the
+   ramp is harmonious with the palette rather than three invented oranges.
+   Nothing else in the product may use them. */
+:root, .dim, .dark {
+  --fire-deep: oklch(0.55 0.2 32);
+  --fire-mid:  oklch(0.68 0.19 56);
+  --fire-hot:  oklch(0.84 0.16 88);
+}
+/* Tongues along the top edge. Each one is the flame silhouette on its own
+   clock and its own phase, so the crest never repeats; they lean by skew about
+   their base, which keeps every tip over the block. */
+@keyframes needt-tongue {
+  0%   { transform: translateX(-50%) scaleY(1)    skewX(0deg); }
+  25%  { transform: translateX(-50%) scaleY(1.28) skewX(-7deg); }
+  55%  { transform: translateX(-50%) scaleY(0.86) skewX(6deg); }
+  80%  { transform: translateX(-50%) scaleY(1.16) skewX(-3deg); }
+  100% { transform: translateX(-50%) scaleY(1)    skewX(0deg); }
+}
+.fire-crest { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; z-index: 2; }
+/* Inward tongues hang from the object's own top edge and are clipped by it. */
+.fire-crest i[style*="top: 0"] { transform-origin: 50% 0; }
+.fire-crest i { position: absolute; display: block; transform-origin: 50% 100%; margin-left: -7px;
+  clip-path: polygon(50% 0%, 62% 18%, 72% 38%, 80% 60%, 76% 82%, 60% 100%, 40% 100%, 24% 82%, 20% 60%, 28% 38%, 38% 18%);
+  background: linear-gradient(to top, var(--fire-deep), var(--fire-mid) 55%, var(--fire-hot)); }
+/* The body itself breathes heat rather than sitting still: the warm wash
+   drifts, slowly, so a burning task is alive in peripheral vision. */
+@keyframes needt-ember { 0%, 100% { opacity: 0.82; } 50% { opacity: 1; } }
+.fire-body { animation: needt-ember 3.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .fire-crest i, .fire-body { animation: none; } }
+
+────────────────────────────────────────────────────────── COMPONENTS
+
+function Crest({ size, inward }) {
+  const box = React.useRef(null);
+  const [n, setN] = React.useState(8);
+  React.useEffect(() => {
+    const el = box.current;
+    if (!el) return undefined;
+    function measure() { setN(Math.max(4, Math.round(el.offsetWidth / 11))); }
+    measure();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const hi = size || 14;
+  const t = [];
+  for (let i = 0; i < n; i++) t.push(i);
+  return (
+    <span ref={box} className="fire-crest" aria-hidden="true">
+      {t.map((i) => {
+        const tall = hi * (0.5 + ((i * 37) % 55) / 100);
+        return (
+          <i key={i} style={{ left: ((i + 0.5) / n * 100) + "%", width: 14, height: Math.round(tall),
+            bottom: inward ? "auto" : -2, top: inward ? 0 : "auto",
+            animation: "needt-tongue " + (0.62 + ((i * 13) % 40) / 100) + "s ease-in-out " + (((i * 17) % 50) / 100) + "s infinite alternate" }} />
+        );
+      })}
+    </span>
+  );
+}
+
+/* ── BURNING TASK — a whole other skin. The block is the fire: warm body, warm
+   ink, no rail (heat is not movability), and a crest of tongues over its top
+   edge. It is the only object in the product allowed a warm fill, and a person
+   turns it on per task from the row menu. ───────────────────────────────── */
+function FireBlock({ b, compact, onToggle, onClick }) {
+  return (
+    <div style={{ position: "relative", height: "100%", minHeight: 26 }}>
+      <Crest size={compact ? 11 : 15} />
+      <div onClick={onClick} className="fire-body"
+        style={{ display: "flex", alignItems: "stretch", height: "100%", minHeight: 26, borderRadius: "var(--radius-md)", overflow: "hidden",
+          background: "linear-gradient(160deg, var(--fire-mid), var(--fire-deep) 78%)",
+          boxShadow: b.selected ? "var(--shadow-focus)" : "rgba(0, 0, 0, 0.18) 0 1px 2px 0" }}>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: compact ? "center" : "flex-start", gap: 6, padding: compact ? "0 8px" : "5px 8px" }}>
+          {onToggle ? <span style={{ paddingTop: compact ? 0 : 1 }}>
+            <span role="checkbox" aria-checked={!!b.done} onClick={(e) => { e.stopPropagation(); onToggle(); }}
+              style={{ width: 14, height: 14, display: "grid", placeItems: "center", borderRadius: "50%", boxShadow: "rgba(255, 255, 255, 0.7) 0 0 0 1.5px inset", cursor: "default" }}>
+              {b.done ? <Icon name="check" size={10} /> : null}
+            </span>
+          </span> : null}
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: compact ? "row" : "column", alignItems: compact ? "center" : "stretch", gap: compact ? 6 : 1 }}>
+            <span style={{ flex: compact ? "1 1 auto" : "none", minWidth: 0, font: "var(--type-meta-medium)", color: "#FFF8F0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.title}</span>
+            <span style={{ flex: "none", display: "flex", alignItems: "center", gap: 5 }}>
+              {b.time ? <TimeText ink="rgba(255, 248, 240, 0.78)">{b.time}</TimeText> : null}
+              {b.parts && b.parts.total ? (
+                <span style={{ display: "inline-flex", alignItems: "center", height: 15, padding: "0 4px", borderRadius: "var(--radius-xs)", fontFamily: "var(--font-mono)", fontSize: 10, color: "#FFF8F0", background: "rgba(255, 255, 255, 0.22)" }}>{b.parts.closed}/{b.parts.total}</span>
+              ) : null}
+            </span>
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+}

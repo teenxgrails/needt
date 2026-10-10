@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — composer treatments</title>
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="themes.css?v=3">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/_ds_bundle.js"></script>
+<script type="module" src="needt-icons.js?v=8"></script>
+<style>
+html,body{height:100%;margin:0;background:var(--background);overflow:auto}#root{width:100%}
+
+/* Every treatment is the same box. Only the light on it changes, so the choice
+   is between four kinds of light rather than four layouts. */
+.lab-box { position: relative; width: 100%; display: flex; flex-direction: column; gap: 9px;
+  padding: 12px 12px 10px; border-radius: var(--radius-2xl); background: var(--surface-raised); }
+.lab-line { position: relative; height: 34px; font: var(--weight-regular) 17px / 34px var(--font-sans);
+  color: var(--text-primary); white-space: nowrap; overflow: hidden; }
+.lab-mark { border-radius: 3px; padding: 1px 0; }
+.lab-caret { display: inline-block; width: 1.5px; height: 19px; vertical-align: -3px; margin-left: 1px;
+  background: var(--text-primary); animation: lab-blink 1.1s steps(1) infinite; }
+@keyframes lab-blink { 50% { opacity: 0; } }
+
+/* A — TRAVELLING EDGE. A light runs around the rim, and the rim casts it back
+   onto the page. The composer is never "inactive", so the mark never leaves. */
+@property --co-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes lab-spin { to { --co-a: 360deg; } }
+.v-a { box-shadow: var(--shadow-ring), rgba(0,0,0,0.05) 0 10px 18px -4px, rgba(0,0,0,0.06) 0 24px 48px -12px; }
+.v-a::before, .v-a::after { content: ""; position: absolute; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: conic-gradient(from var(--co-a),
+    rgba(var(--accent-rgb), 0.95) 0deg, rgba(var(--accent-rgb), 0.12) 62deg,
+    rgba(var(--accent-rgb), 0.05) 150deg, rgba(var(--accent-rgb), 0.5) 246deg,
+    rgba(var(--accent-rgb), 0.95) 360deg);
+  animation: lab-spin 7s linear infinite; }
+.v-a::before { inset: -1.5px; }
+.v-a::after { inset: -3px; filter: blur(18px); opacity: 0.4; }
+
+/* B — RESTING HALO. No motion at all: a steady accent ring and a wide, soft
+   bloom beneath. Presence without a moving part — the quietest way to be lit,
+   and the only one that costs nothing per frame. */
+.v-b { box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.55),
+    0 0 0 5px rgba(var(--accent-rgb), 0.10),
+    0 8px 30px -6px rgba(var(--accent-rgb), 0.28),
+    0 20px 60px -20px rgba(var(--accent-rgb), 0.4),
+    rgba(0,0,0,0.05) 0 10px 18px -4px; }
+
+/* C — BREATHING UNDERGLOW. The edge is a plain hairline; the light lives under
+   the panel and swells on a slow cycle, the way the focus aura already breathes
+   during a session. The product's own vocabulary, applied here. */
+@keyframes lab-breathe { 0%,100% { opacity: 0.35; transform: translateY(0) scaleX(0.88); }
+  50% { opacity: 0.85; transform: translateY(3px) scaleX(1); } }
+.v-c { box-shadow: var(--shadow-ring), rgba(0,0,0,0.05) 0 10px 18px -4px, rgba(0,0,0,0.06) 0 24px 48px -12px; }
+.v-c::after { content: ""; position: absolute; z-index: -1; inset: 12px 8px -14px; border-radius: 999px;
+  background: radial-gradient(60% 100% at 50% 100%, rgba(var(--accent-rgb), 0.85), transparent 72%);
+  filter: blur(22px); animation: lab-breathe 5.5s ease-in-out infinite; }
+
+/* D — SHEEN. Glass rather than glow: a hairline that catches light along the
+   top edge, and a specular band that crosses the surface every few seconds
+   like a reflection passing over a physical object. */
+@keyframes lab-sheen { 0% { transform: translateX(-130%) skewX(-18deg); } 55%,100% { transform: translateX(230%) skewX(-18deg); } }
+.v-d { overflow: hidden; box-shadow:
+    inset 0 1px 0 0 rgba(255,255,255,0.7),
+    0 0 0 1px rgba(var(--accent-rgb), 0.3),
+    rgba(0,0,0,0.06) 0 12px 28px -6px, rgba(0,0,0,0.08) 0 28px 60px -16px; }
+.dark .v-d, .dim .v-d { box-shadow:
+    inset 0 1px 0 0 rgba(255,255,255,0.18), inset 0 -1px 0 0 rgba(0,0,0,0.5),
+    0 0 0 1px rgba(var(--accent-rgb), 0.32),
+    rgba(0,0,0,0.42) 0 12px 28px -6px, rgba(0,0,0,0.4) 0 28px 60px -16px; }
+.v-d::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.16) 45%, rgba(255,255,255,0.22) 50%, rgba(var(--accent-rgb), 0.16) 55%, transparent);
+  width: 42%; animation: lab-sheen 6s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v-a::before, .v-a::after, .v-c::after, .v-d::after, .lab-caret { animation: none; }
+}
+</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.NeedtDesignSystem_25d3c8;
+const { Icon, ToggleGroup } = NS;
+
+const VARIANTS = [
+  ["v-a", "A · Travelling edge", "A light runs the rim and blooms behind it. Most alive, and the only one that reads as a machine that is on."],
+  ["v-b", "B · Resting halo", "A steady ring and a wide soft bloom. No moving part — presence without motion, and nothing to cost a frame."],
+  ["v-c", "C · Breathing underglow", "Plain hairline; the light lives under the panel and swells slowly — the same breath the focus aura already uses."],
+  ["v-d", "D · Sheen", "Glass, not glow: a lit top edge with a reflection crossing the surface every few seconds."]
+];
+
+function Chip({ tone, glyph, children, said }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, height: 26, padding: glyph ? "0 9px 0 8px" : "0 9px",
+      borderRadius: "var(--radius-pill)", flex: "none",
+      background: said ? "color-mix(in oklab, " + tone + " 13%, var(--surface-raised))" : "var(--fill-2)",
+      boxShadow: said ? "inset 0 0 0 1px color-mix(in oklab, " + tone + " 34%, transparent)" : "var(--shadow-inset-ring)",
+      color: said ? tone : "var(--text-muted)" }}>
+      {glyph ? <Icon name={glyph} size={12} /> : null}
+      <span style={{ font: "var(--type-meta-medium)", whiteSpace: "nowrap" }}>{children}</span>
+    </span>
+  );
+}
+
+function Box({ v }) {
+  return (
+    <div className={"lab-box " + v}>
+      <div className="lab-line">
+        Sell the Arc&apos;teryx shell{" "}
+        <span className="lab-mark" style={{ boxShadow: "inset 0 -2px 0 0 rgba(var(--accent-rgb), 0.55)", background: "rgba(var(--accent-rgb), 0.12)" }}>tomorrow</span>{" "}
+        <span className="lab-mark" style={{ boxShadow: "inset 0 -2px 0 0 rgba(var(--destructive-rgb), 0.55)", background: "rgba(var(--destructive-rgb), 0.12)" }}>urgent</span>
+        <span className="lab-caret" />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+        <span style={{ flex: "none", display: "grid", placeItems: "center", width: 30, height: 30, borderRadius: "var(--radius-md)",
+          background: "var(--fill-2)", color: "var(--text-secondary)" }}><Icon name="plus" size={15} /></span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 5, overflow: "hidden" }}>
+          <Chip tone="var(--text-secondary)" glyph="circle-check">Task</Chip>
+          <Chip tone="var(--accent)" glyph="calendar" said>Tomorrow</Chip>
+          <Chip tone="var(--destructive)" glyph="flag" said>Urgent</Chip>
+          <Chip tone="var(--text-tertiary)">No project</Chip>
+        </span>
+        <span style={{ flex: "none", display: "grid", placeItems: "center", width: 32, height: 32, borderRadius: "var(--radius-md)",
+          background: "var(--fill-accent)", color: "var(--accent)", boxShadow: "var(--shadow-inset-ring)" }}>
+          <Icon name="arrow-up" size={16} />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [theme, setTheme] = React.useState("dark");
+  return (
+    <div className={"app " + (theme === "paper" ? "paper" : theme)}
+      style={{ minHeight: "100%", background: "var(--background)", backgroundImage: "var(--canvas-image, none)", padding: "24px 24px 60px",
+        display: "flex", flexDirection: "column", gap: 24 }}>
+      <header style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 280 }}>
+          <h1 style={{ margin: 0, font: "var(--type-page-title)", color: "var(--text-primary)" }}>Composer — four kinds of light</h1>
+          <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 720, textWrap: "pretty" }}>
+            Same box, same line, same chips. Only the light changes, and in every one of them the accent mark is permanent —
+            it no longer waits for focus. Tell me a letter.
+          </span>
+        </div>
+        <ToggleGroup value={theme} onChange={setTheme} label="Theme"
+          items={[{ value: "paper", label: "Paper" }, { value: "dim", label: "Dim" }, { value: "dark", label: "Dark" }]} />
+      </header>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: "36px 28px" }}>
+        {VARIANTS.map(([v, label, note]) => (
+          <section key={v} style={{ display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
+            <Box v={v} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "0 2px" }}>
+              <span style={{ font: "var(--type-ui-medium)", color: "var(--text-primary)" }}>{label}</span>
+              <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", textWrap: "pretty" }}>{note}</span>
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body></html>

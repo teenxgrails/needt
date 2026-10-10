@@ -1,12 +1,3 @@
-/* ========================================================================
-   Needt themes — VENDORED, DO NOT EDIT BY HAND.
-   Generated from needt-app/themes.css on 2026-10-06.
-   Regenerate with: npm run tokens:sync
-   
-   Holds the two themes the design system does not ship (paper, warm), the
-   orthogonal drift layer, the dark-ground --shadow-raised override, and shared
-   object CSS that must not be duplicated per shell.
-   ======================================================================== */
 /* THE FIFTH THEME AND THE DRIFT LAYER
  *
  * Two separate things, deliberately kept separate:
@@ -40,7 +31,7 @@
    a paper thumbnail sitting inside a DARK shell inherits
    --foreground-rgb: 249, 249, 249, so three declarations would leave it
    drawing white bars on white paper. === */
-.needt-v2[data-theme="paper"] {
+.paper {
   --background: #fcfdfe;
   --surface-raised: #ffffff;
   --foreground: #1a1c1e;
@@ -73,7 +64,7 @@
 /* === WARM — cream paper. The same geometry, a warmer ground and a warmer
    near-black, so the greys derived from it are warm too rather than cold greys
    sitting on cream. === */
-.needt-v2[data-theme="warm"] {
+.warm {
   --background: #f7f1e4;                 /* canvas, sidebar */
   --surface-raised: #fffdf7;             /* card, sheet, popover */
   --foreground: #221d16;                 /* all text and icons */
@@ -124,28 +115,26 @@
  * The transition is 90s. It is not a duration anybody waits out — it is what
  * makes each one-minute step invisible, so the paper is never caught changing.
  * The whole sunset therefore reads as half an hour of nothing happening. */
-.needt-v2[data-drift="on"] {
+.drift {
   transition: background-color 90s linear, color 90s linear;
 }
-.needt-v2[data-drift="on"] .theme-drifts,
-.needt-v2[data-drift="on"] .theme-drifts {
+.drift .theme-drifts,
+.drift.theme-drifts {
   transition: background-color 90s linear, color 90s linear, box-shadow 90s linear;
 }
 
 /* Animation volume. Not a mute — the loops keep running, they simply stop
    asking for attention as the room gets dark. */
-.needt-v2[data-drift="on"][data-drift-quiet="1"] .needt-mark.is-breathing { animation-duration: 8s; }
-.needt-v2[data-drift="on"][data-drift-quiet="1"] .ew-leans { animation-duration: 34s; }
-.needt-v2[data-drift="on"][data-drift-quiet="1"] .focus-aura { animation-duration: 11s; opacity: 0.7; }
-.needt-v2[data-drift="on"][data-drift-quiet="1"] .focus-live { animation-duration: 11s; }
-.needt-v2[data-drift="on"][data-drift-quiet="1"] .flame i { animation-duration: 2.4s; }
+.drift[data-drift-quiet="1"] .needt-mark.is-breathing { animation-duration: 8s; }
+.drift[data-drift-quiet="1"] .ew-leans { animation-duration: 34s; }
+.drift[data-drift-quiet="1"] .focus-aura { animation-duration: 11s; opacity: 0.7; }
+.drift[data-drift-quiet="1"] .focus-live { animation-duration: 11s; }
+.drift[data-drift-quiet="1"] .flame i { animation-duration: 2.4s; }
 
 /* Reduced motion outranks drift: if the person asked for no movement, a slow
    colour crawl is still movement. */
 @media (prefers-reduced-motion: reduce) {
-  .needt-v2[data-drift="on"],
-.needt-v2[data-drift="on"] .theme-drifts,
-.needt-v2[data-drift="on"] .theme-drifts { transition: none; }
+  .drift, .drift .theme-drifts, .drift.theme-drifts { transition: none; }
 }
 
 
@@ -163,8 +152,7 @@
  * ring — over deepened cast layers. One override in the theme layer, so every
  * raised control on every screen changes together, on both shells.
  */
-.needt-v2[data-theme="dark"],
-.needt-v2[data-theme="dim"] {
+.dark, .dim {
   --shadow-raised:
     inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
     inset 0 -1px 0 0 rgba(0, 0, 0, 0.55),
@@ -189,24 +177,23 @@
 
 /* An outline glyph inside a filled tile runs heavier than it does in a nav
    row, so project marks and source marks read at the same weight. */
-.needt-v2 .rb-tile-glyph svg { stroke-width: 2.5; }
+.rb-tile-glyph svg { stroke-width: 2.5; }
 /* THE ENTRY. The one thing on a task you press, so the one thing built as a
    control: the raised default button, which answers the pointer with the
    accent and says what pressing it does. Both labels share a grid cell, so the
    opacity pair below is what keeps one of them hidden — without it they
    render on top of each other. */
-.needt-v2 .rb-entry { color: var(--text-primary); background: var(--surface-raised); box-shadow: var(--shadow-raised);
+.rb-entry { color: var(--text-primary); background: var(--surface-raised); box-shadow: var(--shadow-raised);
   transition: box-shadow 0.15s ease, background-color 0.15s ease, color 0.15s ease; }
-.needt-v2 .rb-entry .rb-arrow { color: var(--rb-ink); transition: color 0.15s ease, transform 0.15s ease; }
-.needt-v2 .rb-entry .rb-cost { color: var(--text-tertiary); transition: color 0.15s ease; }
-.needt-v2 .rb-entry .rb-rest { opacity: 1; transition: opacity 0.15s ease; }
-.needt-v2 .rb-entry .rb-hot { opacity: 0; transition: opacity 0.15s ease; }
-.needt-v2 .rb-entry:hover { background: color-mix(in oklab, var(--accent) 12%, var(--surface-raised)); color: var(--accent); box-shadow: var(--shadow-raised-hover); }
-.needt-v2 .rb-entry:hover .rb-arrow { color: var(--accent); transform: translateX(2px); }
-.needt-v2 .rb-entry:hover .rb-cost { color: color-mix(in oklab, var(--accent) 70%, var(--text-tertiary)); }
-.needt-v2 .rb-entry:hover .rb-rest { opacity: 0; }
-.needt-v2 .rb-entry:hover .rb-hot { opacity: 1; }
-.needt-v2 .rb-entry:active { box-shadow: var(--shadow-inset-ring); }
+.rb-entry .rb-arrow { color: var(--rb-ink); transition: color 0.15s ease, transform 0.15s ease; }
+.rb-entry .rb-cost { color: var(--text-tertiary); transition: color 0.15s ease; }
+.rb-entry .rb-rest { opacity: 1; transition: opacity 0.15s ease; }
+.rb-entry .rb-hot { opacity: 0; transition: opacity 0.15s ease; }
+.rb-entry:hover { background: color-mix(in oklab, var(--accent) 12%, var(--surface-raised)); color: var(--accent); box-shadow: var(--shadow-raised-hover); }
+.rb-entry:hover .rb-arrow { color: var(--accent); transform: translateX(2px); }
+.rb-entry:hover .rb-cost { color: color-mix(in oklab, var(--accent) 70%, var(--text-tertiary)); }
+.rb-entry:hover .rb-rest { opacity: 0; }
+.rb-entry:hover .rb-hot { opacity: 1; }
+.rb-entry:active { box-shadow: var(--shadow-inset-ring); }
 
-@media (prefers-reduced-motion: reduce) { .needt-v2 .rb-entry,
-.needt-v2 .rb-entry * { transition: none; } .needt-v2 .rb-entry:hover .rb-arrow { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rb-entry, .rb-entry * { transition: none; } .rb-entry:hover .rb-arrow { transform: none; } }

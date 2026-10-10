@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Needt — on a phone</title>
+<link rel="stylesheet" href="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/styles.css">
+<link rel="stylesheet" href="themes.css?v=4">
+<link rel="stylesheet" href="composer.css?v=2">
+<link rel="stylesheet" href="exposure-wordmark.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+<script src="../_ds/needt-design-system-main-25d3c8e5-a812-464d-881f-e887b9adef4b/_ds_bundle.js"></script>
+<script type="module" src="needt-icons.js?v=9"></script>
+<style>
+html,body{height:100%}body{margin:0;overflow:auto;background:var(--background)}#root{width:100%}
+/* A phone scrolls sideways with a finger, so the scrollbar is not the
+   affordance and does not need to be drawn. */
+.mb-strip { scrollbar-width: none; -ms-overflow-style: none; }
+/* A setup step arrives from the side it came from: with no rail to show where
+   you are, the direction of travel is the only progress cue the screen has. */
+@keyframes mb-step-in { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+.mb-step { animation: mb-step-in 0.26s cubic-bezier(0.2, 0.9, 0.24, 1); }
+@media (prefers-reduced-motion: reduce) { .mb-step { animation: none; } }
+.mb-strip::-webkit-scrollbar { display: none; }
+</style>
+</head><body><div id="root"></div>
+<script src="Data.js?v=3"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="BlockDesigns.jsx"></script>
+<script type="text/babel" src="RichBlock.jsx?v=5"></script>
+<script type="text/babel" src="Composer.jsx?v=2"></script>
+<script type="text/babel" src="ColumnsView.jsx?v=7"></script>
+<script type="text/babel" src="CalendarScreen.jsx"></script>
+<script type="text/babel" src="ExposureWordmark.jsx?v=6"></script>
+<script type="text/babel" src="Miniature.jsx?v=1"></script>
+<script type="text/babel" src="MobileAuth.jsx?v=3"></script>
+<script type="text/babel" src="Mobile.jsx?v=12"></script>
+<script type="text/babel">
+/* THE PHONE SHEET — the same product at 402×874, in the three themes, plus the
+   states a still cannot otherwise show: the composer with its shelf open, the
+   settings list, the queue sheet, and the calendar's single day. One component
+   set, two shells. */
+const { ToggleGroup: MsToggle } = window.NeedtDesignSystem_25d3c8;
+
+function Phone({ theme, label, note, screen }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+      <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <span style={{ font: "var(--type-meta-medium)", letterSpacing: "0.04em", textTransform: "uppercase", color: "var(--text-quaternary)" }}>{label}</span>
+        <span style={{ font: "var(--type-meta)", color: "var(--text-muted)" }}>{note}</span>
+      </span>
+      <IOSDevice width={402} height={874} dark={theme !== "paper"} keyboard={screen === "composer" || screen === "auth" || screen === "signup"}>
+        <window.MobileApp theme={theme} start={screen} />
+      </IOSDevice>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <div className="app" style={{ minHeight: "100%", background: "var(--background)", padding: "20px 20px 60px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <header style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <h1 style={{ margin: 0, font: "var(--type-page-title)", color: "var(--text-primary)" }}>Needt on a phone</h1>
+        <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", maxWidth: 780, textWrap: "pretty" }}>
+          The desktop is two panes; a phone has room for one, so the rail&apos;s four jobs go four different ways —
+          navigation to a bottom bar, the queue to a sheet, focus to the header, the mini month to a day strip.
+          Every task here is the desktop&apos;s own card, and every control clears 44px.
+        </span>
+      </header>
+      <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
+        <Phone theme="dark" label="Home · dark" note="habits, overdue, the day" screen="home" />
+        <Phone theme="paper" label="Home · paper" note="the same, on paper" screen="home" />
+        <Phone theme="dark" label="Capture · composer" note="the plus, with the shelf open" screen="composer" />
+        <Phone theme="paper" label="Settings · paper" note="sections, opened in place" screen="settings" />
+        <Phone theme="dark" label="Unplaced · sheet" note="the queue, pulled up" screen="queue" />
+        <Phone theme="dim" label="Calendar · dim" note="one day, not seven slivers" screen="calendar" />
+        <Phone theme="paper" label="Workspace · paper" note="projects, with their sums" screen="workspace" />
+        <Phone theme="dark" label="Sign in · dark" note="the two ways in that need no typing, first" screen="auth" />
+        <Phone theme="paper" label="Create · paper" note="the same screen, the other way round" screen="signup" />
+        <Phone theme="dim" label="Setup · how you work" note="three grounds, chosen by recognising one" screen="setup" />
+      </div>
+    </div>
+  );
+}
+
+const __root = document.getElementById("root");
+if (__root) ReactDOM.createRoot(__root).render(<App />);
+</script>
+</body></html>

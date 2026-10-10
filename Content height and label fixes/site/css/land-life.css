@@ -1,0 +1,253 @@
+/* THE LIFE LAYER — the product's own objects, moving.
+ *
+ * Genie's aliveness comes mostly from rendered 3D toys floating in the
+ * whitespace. We have no illustrator, and a CSS-drawn smiling cloud would be
+ * the one dishonest object on the page. But we have something they do not: the
+ * product's real objects. A task block IS our crayon — recognisable, ours, and
+ * free to float.
+ *
+ * Two mechanics carry this layer:
+ *
+ *   · Objects drift in the sky on independent loops at three depths, so the
+ *     hero is a place with things in it rather than a picture with a headline.
+ *   · A day ASSEMBLES under the scroll — blocks leave the air and land in real
+ *     hour slots as you move down, and scatter again if you scroll back. That
+ *     is the page's whole claim, performed instead of asserted.
+ */
+
+/* ── THE OBJECT ────────────────────────────────────────────────────────────
+   The product's block at landing scale: white body, a 3px rail in the
+   project's hue, title at 13/500, time in mono. It is the app's object, not a
+   decoration that resembles one — which is why it can be trusted to represent
+   the app. */
+.o-block {
+  display: flex; align-items: stretch; gap: 0; overflow: hidden;
+  border-radius: 12px; background: #fff;
+  box-shadow: 0 1px 2px rgba(10,13,18,0.08), 0 10px 26px -14px rgba(10,13,18,0.28);
+  font-family: var(--font-sans); letter-spacing: -0.01em;
+}
+.o-rail { flex: none; width: 3px; }
+.o-body { display: flex; flex-direction: column; gap: 2px; padding: 9px 13px 9px 11px; min-width: 0; }
+.o-title { font: 500 13px / 16px var(--font-sans); color: #0a0d12; white-space: nowrap; }
+.o-time { font-family: var(--font-mono); font-size: 11px; line-height: 14px; color: var(--fog); font-variant-numeric: tabular-nums; }
+/* Where it happens, beside when it happens — one row, so the block keeps its
+   two-line height. Sans rather than mono: a place is not a value that has to
+   align with the time, and in mono the pair read as two times. */
+.o-when-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.o-where { display: flex; align-items: center; gap: 3px; font: 400 11px / 14px var(--font-sans); color: var(--fog); white-space: nowrap; min-width: 0; }
+.o-where span { overflow: hidden; text-overflow: ellipsis; }
+.o-where svg { flex: none; width: 10px; height: 10px; opacity: 0.85; }
+/* The hairline between time and place, so the row is two facts and not one
+   run-on string. */
+.o-where::before { content: ""; flex: none; width: 1px; height: 9px; background: currentColor; opacity: 0.3; margin-right: 4px; }
+.o-tick { flex: none; align-self: center; width: 15px; height: 15px; margin-left: 11px; margin-right: 11px; border-radius: 9999px; box-shadow: inset 0 0 0 1.5px rgba(10,13,18,0.18); }
+/* An event: tinted fill, no rail, no circle. The fill IS the distinction, so
+   it carries its own ring — a rail-less block on a pale ground has nothing
+   else to end it. */
+.o-event { background: #E4EEFE; box-shadow: inset 0 0 0 1px rgba(76, 141, 255, 0.22), 0 1px 2px rgba(10,13,18,0.06), 0 8px 22px -14px rgba(10,13,18,0.22); }
+.o-event .o-body { padding-left: 13px; }
+.o-event .o-title { color: #16263F; }
+/* Personal: the product's green calendar. */
+.o-event-life { background: #DFF5E9; box-shadow: inset 0 0 0 1px rgba(47, 208, 138, 0.3), 0 1px 2px rgba(10,13,18,0.06), 0 8px 22px -14px rgba(10,13,18,0.22); }
+.o-event-life .o-title { color: #103828; }
+.o-event-life .o-time { color: #3C6B55; }
+/* Family: the amber one. */
+.o-event-family { background: #FFF1D6; box-shadow: inset 0 0 0 1px rgba(255, 197, 61, 0.42), 0 1px 2px rgba(10,13,18,0.06), 0 8px 22px -14px rgba(10,13,18,0.22); }
+.o-event-family .o-title { color: #3B2C08; }
+.o-event-family .o-time, .o-event-family .o-where { color: #6E5518; }
+.o-event .o-time, .o-event .o-where { color: #54688A; }
+.o-hue-ops { background: #FF7A45; }
+.o-hue-ds { background: #4C8DFF; }
+.o-hue-de { background: #B072FF; }
+.o-hue-re { background: #2FD08A; }
+.o-hue-life { background: #FFC53D; }
+.o-hue-grey { background: rgba(10,13,18,0.22); }
+
+/* ── 1 · THINGS IN THE AIR ─────────────────────────────────────────────────
+   Five objects, five periods, none a multiple of another — so the arrangement
+   never repeats and the sky never looks looped. Three depths: the far ones are
+   smaller, fainter and slower, which is the same rule the clouds follow. */
+.o-float { position: absolute; z-index: 3; pointer-events: none; will-change: transform; }
+@keyframes o-drift-a {
+  0%   { transform: translate3d(0, 0, 0) rotate(-2.5deg); }
+  50%  { transform: translate3d(18px, -26px, 0) rotate(1.5deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(-2.5deg); }
+}
+@keyframes o-drift-b {
+  0%   { transform: translate3d(0, 0, 0) rotate(2deg); }
+  50%  { transform: translate3d(-22px, 20px, 0) rotate(-1.8deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(2deg); }
+}
+@keyframes o-drift-c {
+  0%   { transform: translate3d(0, 0, 0) rotate(-1.2deg); }
+  33%  { transform: translate3d(14px, 18px, 0) rotate(1.4deg); }
+  66%  { transform: translate3d(-12px, -14px, 0) rotate(-0.6deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(-1.2deg); }
+}
+.o-float-1 { animation: o-drift-a 17s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
+.o-float-2 { animation: o-drift-b 23s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
+.o-float-3 { animation: o-drift-c 29s cubic-bezier(0.37, 0, 0.63, 1) infinite; }
+.o-float-4 { animation: o-drift-b 19s cubic-bezier(0.37, 0, 0.63, 1) infinite reverse; }
+.o-float-5 { animation: o-drift-a 31s cubic-bezier(0.37, 0, 0.63, 1) infinite reverse; }
+/* Depth: far objects are smaller, paler and behind the near clouds. */
+.o-far { opacity: 0.62; transform-origin: 50% 50%; filter: blur(0.3px); }
+.o-mid { opacity: 0.86; }
+@media (max-width: 900px) { .o-float { display: none; } }
+
+/* ── 3 · TWO ROWS, OPPOSITE DIRECTIONS ────────────────────────────────────
+   Real blocks on a continuous belt. Two speeds and two directions, because a
+   single row reads as a banner and two reads as a room with traffic in it. */
+.o-belt { position: relative; overflow: hidden; mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+.o-belt-row { display: flex; width: max-content; gap: 14px; padding: 7px 0; }
+.o-belt-row > * { flex: none; }
+@keyframes o-belt-l { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }
+@keyframes o-belt-r { from { transform: translate3d(-50%,0,0); } to { transform: translate3d(0,0,0); } }
+.o-belt-1 { animation: o-belt-l 44s linear infinite; }
+.o-belt-2 { animation: o-belt-r 58s linear infinite; }
+.o-belt:hover .o-belt-row { animation-play-state: paused; }
+
+/* ── 5 · READING ALONG ─────────────────────────────────────────────────────
+   One statement whose words light as you pass them, scrubbed by scroll. Used
+   exactly once on the page: as an effect it is memorable, and as a habit it
+   would make every paragraph a performance. */
+.o-read { font-family: var(--font-display); font-size: clamp(30px, 4.2vw, 62px); line-height: 1.12; letter-spacing: -0.02em; text-wrap: balance; }
+.o-read .o-w { transition: color 0.25s linear, opacity 0.25s linear; color: rgba(10,13,18,0.18); }
+.o-read .o-w.is-lit { color: #0a0d12; }
+
+/* Stopped, the scene is a finished day rather than a pinned stretch of empty
+   scroll: the objects in the air are gone, the section is its own height, and
+   the statement is simply readable. */
+@media (prefers-reduced-motion: reduce) {
+  .o-float { display: none; }
+  .o-read .o-w { color: #0a0d12; }
+  .o-belt { mask-image: none; }
+}
+
+
+/* ── THE HAND'S STAGE ──────────────────────────────────────────────────────
+   A fragment of the app, not a screenshot of it: the one line the agent acts
+   on and the one control it presses. Small on purpose — the claim is the
+   gesture, and a full screen around it would make the reader hunt for what
+   moved. */
+.o-hand { position: relative; padding: 26px 26px 34px; border-radius: var(--land-radius); background: var(--bone); overflow: hidden; }
+.o-hand-app {
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+  padding: 18px 20px; border-radius: 18px; background: #fff;
+  box-shadow: 0 1px 2px rgba(10,13,18,0.07), 0 14px 34px -20px rgba(10,13,18,0.26);
+}
+/* The app's own raised control, at the app's own size — so what the hand
+   presses is recognisably the button you would press. */
+.o-plan {
+  flex: none; display: inline-flex; align-items: center; height: 34px; padding: 0 14px;
+  border-radius: 10px; background: #fff; white-space: nowrap;
+  font: 500 13px / 1 var(--font-sans); color: var(--ink);
+  box-shadow: 0 0 0 1px rgba(10,13,18,0.07), 0 1px 1px rgba(10,13,18,0.06), 0 3px 6px -2px rgba(10,13,18,0.12);
+  transition: box-shadow 0.14s cubic-bezier(0.2, 0.9, 0.24, 1), transform 0.14s cubic-bezier(0.2, 0.9, 0.24, 1);
+}
+/* A synthetic press needs a real rule: nothing can trigger :active from
+   script, so the pressed state has to exist under a class as well. */
+.o-plan.is-hot { transform: translateY(1px); box-shadow: inset 0 1px 3px rgba(10,13,18,0.16), 0 0 0 1px rgba(10,13,18,0.07); }
+
+/* ── THE PRICE TABLE ──────────────────────────────────────────────────────
+   Twelve facts and three columns. A tick is a mark, not a glyph — the design
+   system's own rule, and at this size a checkmark icon would be mush. */
+.p-table { border-radius: var(--land-radius); background: var(--bone); overflow: hidden; }
+.p-row { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 92px); align-items: center; gap: 12px;
+  padding: 0 clamp(18px, 2.4vw, 30px); min-height: 52px;
+  box-shadow: rgba(10,13,18,0.06) 0 -1px 0 0 inset; }
+.p-row:first-child { box-shadow: none; }
+.p-head { min-height: 58px; }
+.p-head .p-what, .p-head .p-col { font: 500 13px / 1.3 var(--font-sans); letter-spacing: 0.02em; text-transform: uppercase; color: var(--fog); }
+.p-what { font: 500 16px / 1.4 var(--font-sans); letter-spacing: -0.01em; color: var(--ink); padding: 12px 0; }
+.p-col { display: flex; align-items: center; justify-content: center; }
+.p-yes { width: 17px; height: 17px; border-radius: 9999px; background: var(--ink);
+  /* The mark inside is punched out of the dot, so at 17px it stays a shape
+     rather than becoming two shapes fighting for the same pixels. */
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  position: relative; }
+.p-yes::after { content: ""; position: absolute; left: 4.5px; top: 5px; width: 7px; height: 4px;
+  border-left: 1.6px solid #fff; border-bottom: 1.6px solid #fff; transform: rotate(-45deg); }
+.p-no { width: 11px; height: 1.6px; border-radius: 2px; background: rgba(10,13,18,0.18); }
+@media (max-width: 620px) {
+  .p-row { grid-template-columns: minmax(0, 1fr) repeat(3, 52px); gap: 6px; padding: 0 16px; }
+  .p-what { font-size: 15px; }
+}
+
+
+/* ══ THE TILES DO SOMETHING ════════════════════════════════════════════════
+ *
+ * Genie's pastel tiles are alive because each one contains a fragment of the
+ * product PERFORMING the thing the heading names — a share panel filling with
+ * people, a prompt being typed. A tile with a still screenshot in it makes the
+ * same claim and proves none of it.
+ *
+ * So each tile gets one small object that carries out its own verb, on a loop,
+ * built from the app's real parts. CSS only: four small keyframed cards cost
+ * nothing next to the live screens already in these tiles, and a fifth script
+ * driving them would be a second timeline to keep in step with the first.
+ */
+.t-act {
+  position: absolute; z-index: 3; left: 50%; bottom: 14px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 13px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: saturate(1.4) blur(10px);
+  box-shadow: 0 1px 2px rgba(10,13,18,0.08), 0 14px 34px -18px rgba(10,13,18,0.3);
+  font: 500 13px / 1 var(--font-sans); letter-spacing: -0.01em; color: var(--ink);
+  white-space: nowrap;
+}
+.l-tile { position: relative; }
+/* The tile clips its own action, so a card sliding in never overlaps the one
+   beside it. */
+.l-tile { overflow: hidden; }
+
+/* 1 · THE BRIEF IS WRITTEN INTO — the accent line arrives character by
+   character, which is exactly what the product does when Needt writes. */
+@keyframes t-type {
+  0%, 6%    { width: 0; }
+  46%, 72%  { width: 15.5em; }
+  86%, 100% { width: 0; }
+}
+.t-type {
+  overflow: hidden; white-space: nowrap;
+  color: #2E6DE9; font: 500 13px / 1.3 var(--font-sans);
+  animation: t-type 7.5s steps(34, end) infinite;
+}
+.t-caret { flex: none; width: 2px; height: 1.05em; background: #2E6DE9; animation: t-blink 1s steps(2, end) infinite; }
+@keyframes t-blink { 50% { opacity: 0; } }
+
+/* 2 · THE BLOCK IS PLACED — it arrives from above, settles, and the hour it
+   landed on flashes once. The product's own placement, at tile scale. */
+@keyframes t-place {
+  0%, 8%    { transform: translateX(-50%) translateY(-26px) scale(1.04); opacity: 0; }
+  22%, 74%  { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+  90%, 100% { transform: translateX(-50%) translateY(-26px) scale(1.04); opacity: 0; }
+}
+.t-place { animation: t-place 6.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; }
+
+/* 3 · THE BLOCKER IS FOUND — the rail goes destructive and the count drops,
+   which is the Flow view's whole message in two marks. */
+@keyframes t-alarm {
+  0%, 30%   { background: #2FD08A; }
+  45%, 78%  { background: #E6000C; }
+  92%, 100% { background: #2FD08A; }
+}
+.t-rail { flex: none; width: 3px; align-self: stretch; border-radius: 2px; animation: t-alarm 6s ease-in-out infinite; }
+
+/* 4 · THE PAGE FILLS — lines of a document appearing in order, the way a note
+   written beside the work actually appears. */
+@keyframes t-line {
+  0%, 10%   { transform: scaleX(0); }
+  40%, 76%  { transform: scaleX(1); }
+  92%, 100% { transform: scaleX(0); }
+}
+.t-lines { display: flex; flex-direction: column; gap: 4px; width: 118px; }
+.t-lines i { display: block; height: 4px; border-radius: 2px; background: rgba(10,13,18,0.16); transform-origin: 0 50%; animation: t-line 6.8s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; }
+.t-lines i:nth-child(2) { animation-delay: 0.35s; width: 84%; }
+.t-lines i:nth-child(3) { animation-delay: 0.7s; width: 62%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .t-type, .t-caret, .t-place, .t-rail, .t-lines i { animation: none; }
+  .t-type { width: 15.5em; }
+  .t-lines i { transform: none; }
+}

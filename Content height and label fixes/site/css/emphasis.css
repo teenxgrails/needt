@@ -1,0 +1,457 @@
+/* ══ EMPHASIS — SIX WAYS TO MARK A PHRASE ══════════════════════════════════
+ *
+ * One highlight is a device; six are a vocabulary — provided each one means
+ * something different, which is the whole discipline here. A page where every
+ * emphasis looks the same has one voice; a page where they are random has
+ * none. So each treatment is assigned a job, and it is used only for that job:
+ *
+ *   wash     a quantity or a subject — the thing the sentence is ABOUT
+ *   sketch   a correction: the way it is, against the way people say it is
+ *   circle   the thing to remember: drawn round, the way you would on paper
+ *   spark    the surprise — the part that is better than expected
+ *   marker   a promise, struck through the line like a pen
+ *   grow     a limit or a count that matters, breathing so it is counted
+ *
+ * They share one geometry (.l-em), so a phrase can change treatment without
+ * changing the line's metrics, and nothing here shifts the baseline.
+ */
+.l-em {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  isolation: isolate;
+}
+
+/* ── 1 · WASH — a pastel plate behind the words ───────────────────────────
+   The quantity or the subject. Genie's inline circle, widened to hold a
+   phrase: the eye takes the highlighted words first and fills the rest in. */
+@keyframes l-wash {
+  0%   { background-color: var(--wash-a); }
+  50%  { background-color: var(--wash-b); }
+  100% { background-color: var(--wash-a); }
+}
+.l-hl-wash {
+  /* THE WASH HAS A TOKEN FOR ITS GROUND AND NOW ONE FOR ITS INK, because a
+     theme can only change what is a token. Without --wash-ink the phrase
+     inherited the page's own colour and landed on a pale panel — light ink on
+     a light wash, 1.4:1, on the one phrase the page marks BECAUSE it matters.
+     That is the same failure the rest of this site already learned once: the
+     theme changes the VALUE of a token, not the property.
+
+     `inherit` as the fallback keeps the landing exactly as it was — dark ink
+     on pale ground — and gives dusk.css something to override. */
+  --wash-a: #E9EFF7;
+  --wash-b: #DCE6F3;
+  display: inline-flex; align-items: center; gap: 0;
+  padding: 0.06em 0.42em 0.1em; margin: 0 0.04em;
+  border-radius: 0.5em;
+  background-color: var(--wash-a);
+  color: var(--wash-ink, inherit);
+  animation: l-wash 9s ease-in-out infinite;
+  box-shadow: inset 0 0 0 1px rgba(10, 13, 18, 0.04);
+}
+/* The only thing that ever needed the gap: a mark carrying the app's block
+   beside a word. */
+.l-hl-wash:has(.l-rot-chip), .l-hl-wash:has(.bat) { gap: 0.28em; }
+.l-hl-time { --wash-a: #FFF2BE; --wash-b: #FFE08A; }
+.l-hl-move { --wash-a: #DCEBFF; --wash-b: #CFE0FF; }
+.l-hl-warm { --wash-a: #FFEDE4; --wash-b: #FFD9C6; }
+.l-hl-cool { --wash-a: #E4F7EC; --wash-b: #D0F2E0; }
+
+/* ── 2 · SKETCH — a stroke drawn under the words by hand ──────────────────
+   A correction. The line is uneven on purpose: four different corner radii and
+   a fraction of a degree of rotation, which is what separates a drawn stroke
+   from a rule. It draws itself in when the phrase is reached. */
+.l-hl-sketch::after {
+  content: ""; position: absolute; left: -0.06em; right: -0.06em; bottom: -0.06em; height: 0.16em;
+  background: var(--sketch, #4C8DFF);
+  border-radius: 60% 40% 55% 45% / 100% 100% 100% 100%;
+  transform: rotate(-0.7deg) scaleX(0);
+  transform-origin: 0 50%;
+  animation: l-sketch-in 0.62s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both;
+  opacity: 0.85;
+}
+@keyframes l-sketch-in { to { transform: rotate(-0.7deg) scaleX(1); } }
+@supports (animation-timeline: view()) {
+  .l-hl-sketch::after {
+    animation: l-sketch-in linear both;
+    animation-timeline: view();
+    animation-range: entry 20% entry 70%;
+  }
+}
+
+/* ── 3 · CIRCLE — an open loop round the words ────────────────────────────
+   The thing to remember. An ellipse with one side left open and a slight tilt,
+   so it reads as a pen going round once and not quite closing — which is what
+   a person's circle looks like. */
+.l-hl-circle { padding: 0.1em 0.5em; }
+.l-hl-circle::before {
+  content: ""; position: absolute; inset: -0.06em -0.1em;
+  border: 2px solid var(--ring, #B072FF);
+  border-radius: 50%;
+  border-right-color: transparent;
+  transform: rotate(-3deg);
+  opacity: 0.75;
+  clip-path: inset(-4px -4px -4px -4px);
+}
+/* The second pass a pen makes when the first did not quite meet. */
+.l-hl-circle::after {
+  content: ""; position: absolute; right: -0.02em; top: 8%; width: 26%; height: 84%;
+  border: 2px solid var(--ring, #B072FF);
+  border-radius: 50%;
+  border-left-color: transparent; border-top-color: transparent; border-bottom-color: transparent;
+  transform: rotate(4deg);
+  opacity: 0.65;
+}
+
+/* ── 4 · SPARK — two small stars that twinkle ─────────────────────────────
+   The surprise. Four-pointed, because a four-pointed star is a glint and a
+   five-pointed one is a rating. They are out of phase, so it reads as a glint
+   catching rather than as a blinking light. */
+@keyframes l-spark {
+  0%, 72%, 100% { transform: scale(0.4) rotate(0deg); opacity: 0; }
+  82%           { transform: scale(1) rotate(22deg); opacity: 1; }
+  92%           { transform: scale(0.75) rotate(8deg); opacity: 0.5; }
+}
+.l-hl-spark { font-weight: 600; }
+.l-hl-spark::before, .l-hl-spark::after {
+  content: ""; position: absolute; width: 0.38em; height: 0.38em;
+  background: var(--spark, #FFC53D);
+  clip-path: polygon(50% 0%, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0% 50%, 40% 40%);
+  animation: l-spark 3.4s ease-in-out infinite;
+}
+.l-hl-spark::before { left: -0.42em; top: -0.1em; }
+.l-hl-spark::after { right: -0.36em; bottom: 0.04em; width: 0.26em; height: 0.26em; animation-delay: 1.5s; }
+
+/* ── 5 · MARKER — an ink bar struck through the line ──────────────────────
+   A promise. It sits behind the words at reading height and stops short of
+   their edges, the way a marker does when it is pulled across a line rather
+   than filled in. */
+.l-hl-marker { font-weight: 600; }
+.l-hl-marker::before {
+  content: ""; position: absolute; left: -0.12em; right: -0.12em; bottom: 0.1em; height: 0.46em; z-index: -1;
+  background: var(--ink-bar, rgba(46, 109, 233, 0.22));
+  border-radius: 0.1em 0.34em 0.14em 0.3em;
+  transform: skewX(-9deg) scaleX(0);
+  transform-origin: 0 50%;
+  animation: l-marker-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes l-marker-in { to { transform: skewX(-9deg) scaleX(1); } }
+@supports (animation-timeline: view()) {
+  .l-hl-marker::before {
+    animation: l-marker-in linear both;
+    animation-timeline: view();
+    animation-range: entry 22% entry 66%;
+  }
+}
+
+/* ── 6 · GROW — the words breathe ─────────────────────────────────────────
+   A limit or a count that matters. It grows and settles on the wordmark's own
+   5.2s period, so everything alive on this site breathes at one rate. Scaled
+   about its own left edge, so the line never reflows. */
+@keyframes l-grow {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.055); }
+}
+.l-hl-grow {
+  font-weight: 600;
+  transform-origin: 0 60%;
+  animation: l-grow 5.2s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+/* ── THE POINTER'S LIGHT, ON ANY OF THEM ──────────────────────────────────
+   Hovering deepens the treatment and a soft light tracks the cursor across
+   it: the mark is flat until you move over it, and then it has a top. The
+   position comes from the event's own offset, so no layout is ever read. */
+.l-em::after, .l-em::before { pointer-events: none; }
+.l-em-sheen {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: 0.5em;
+  background: radial-gradient(60% 160% at var(--hx, 50%) var(--hy, 50%),
+    rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.28) 46%, rgba(255, 255, 255, 0) 74%);
+  opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+}
+.l-em { transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s ease, background-color 0.3s ease; }
+.l-em:hover { transform: translateY(-1px); }
+.l-em:hover .l-em-sheen { opacity: 1; }
+.l-hl-wash:hover { background-color: var(--wash-b); animation-play-state: paused; box-shadow: inset 0 0 0 1px rgba(10, 13, 18, 0.06), 0 6px 16px -8px rgba(10, 13, 18, 0.28); }
+.l-hl-sketch:hover::after { height: 0.2em; opacity: 1; }
+.l-hl-circle:hover::before, .l-hl-circle:hover::after { opacity: 1; }
+.l-hl-spark:hover::before, .l-hl-spark:hover::after { animation-duration: 1.2s; }
+.l-hl-marker:hover::before { background: var(--ink-bar-hot, rgba(46, 109, 233, 0.34)); }
+.l-hl-grow:hover { animation-play-state: paused; transform: scale(1.055); }
+
+/* ── SIX TREATMENTS IN ONE SENTENCE ───────────────────────────────────────
+ *
+ * The claim is the one place on the site where typography is seen large, so it
+ * carries the whole vocabulary at once: a serif number, a synthesised oblique,
+ * a pencil line, a weight bump and two washes. Six is the ceiling — a seventh
+ * would mean nothing is emphasised, which is the failure mode of a page that
+ * shouts every word.
+ *
+ * Every treatment here is chosen so the LINE'S METRICS DO NOT MOVE. The serif
+ * number is sized in em against its own run, the oblique is a transform on an
+ * inline-block rather than a font swap, and the pencil line is drawn in a
+ * pseudo-element. A claim that reflows while it is read is a claim nobody
+ * finishes.
+ */
+
+/* The number: the integer in the display serif, because that is the figure
+   the eye takes; the unit in mono at 0.72em, because a per-cent sign set at
+   serif display size becomes a second number. */
+.l-num { display: inline-flex; align-items: baseline; }
+.l-num-i { font-family: var(--font-display); font-weight: 400; font-size: 1.1em; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; }
+.l-num-p { font-family: var(--font-mono); font-size: 0.66em; font-weight: 500; margin-left: 0.06em; }
+
+/* An oblique, not an italic: Instrument Serif ships no italic, and a browser's
+   synthesised slant on a display face at 40px shows its shear. Skewing an
+   inline-block gives the same read and leaves the baseline alone. */
+.l-it { display: inline-block; font-family: var(--font-display); font-size: 1.08em; transform: skewX(-9deg); }
+
+/* The weight bump: the plainest emphasis in the system, and the right one for
+   a phrase that is a quantity of work rather than a feeling about it. */
+.l-strong { font-weight: 700; letter-spacing: -0.016em; }
+
+/* THE PENCIL LINE, DRAWN ONCE.
+ * A hand gesture that repeats on a loop stops being a gesture, so this draws
+ * a single time, after the wordmark has developed in — and it draws left to
+ * right, at a slight angle, thickening at the end the way a pencil does when
+ * the hand lifts. */
+@keyframes l-pencil-draw {
+  0%   { clip-path: inset(0 100% 0 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+.l-pencil { position: relative; display: inline-block; }
+.l-pencil::after {
+  content: ""; position: absolute; left: -0.06em; right: -0.06em; bottom: -0.06em;
+  height: 0.1em; border-radius: 0.08em 0.14em 0.1em 0.06em;
+  background: linear-gradient(90deg,
+    color-mix(in oklab, currentColor 34%, transparent) 0%,
+    color-mix(in oklab, currentColor 62%, transparent) 46%,
+    color-mix(in oklab, currentColor 48%, transparent) 78%,
+    color-mix(in oklab, currentColor 70%, transparent) 100%);
+  transform: rotate(-0.7deg);
+  animation: l-pencil-draw 0.78s cubic-bezier(0.3, 0.7, 0.3, 1) 1.15s both;
+}
+
+/* THE CIGARETTE, BURNING DOWN.
+ * The battery beside "time" fills, because the promise is that time comes
+ * back. This one is its opposite and belongs to the number: a thing being
+ * consumed while you are not looking at it. */
+@keyframes l-cig-paper {
+  0%        { transform: scaleX(1); opacity: 1; }
+  74%       { transform: scaleX(0.06); opacity: 1; }
+  84%       { transform: scaleX(0.06); opacity: 0; }
+  85%       { transform: scaleX(1); opacity: 0; }
+  100%      { transform: scaleX(1); opacity: 1; }
+}
+/* The ember travels with the burning end and brightens as it goes: a coal
+   with more draw through it glows harder, and that is the difference between
+   a cigarette and a shrinking rectangle. */
+@keyframes l-cig-ember {
+  0%        { transform: translateX(1.42em); opacity: 1; filter: brightness(1); }
+  50%       { filter: brightness(1.25); }
+  74%       { transform: translateX(0.48em); opacity: 1; filter: brightness(1.5); }
+  84%       { transform: translateX(0.48em); opacity: 0; filter: brightness(1.5); }
+  85%       { transform: translateX(1.42em); opacity: 0; filter: brightness(1); }
+  100%      { transform: translateX(1.42em); opacity: 1; filter: brightness(1); }
+}
+/* A spark: thrown up and out, gone in a third of a second. Its own short
+   clock against the long one, because sparks are not on a schedule. */
+@keyframes l-cig-spark {
+  0%        { transform: translate(0, 0) scale(1); opacity: 0; }
+  6%        { opacity: 1; }
+  100%      { transform: translate(0.34em, -0.72em) scale(0.2); opacity: 0; }
+}
+@keyframes l-cig-smoke {
+  0%        { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  22%       { opacity: 0.42; }
+  100%      { transform: translate(0.2em, -1.2em) scale(1.7); opacity: 0; }
+}
+.cig {
+  position: relative; display: inline-block; flex: none;
+  width: 1.62em; height: 0.9em; vertical-align: -0.08em;
+}
+/* The filter: its own element, so nothing that happens to the paper can
+   happen to it. */
+.cig::before {
+  content: ""; position: absolute; left: 0; top: 50%; margin-top: -0.15em;
+  width: 0.44em; height: 0.3em; border-radius: 0.05em 0 0 0.05em;
+  background: linear-gradient(180deg, #D8AE74, #B98B50);
+  box-shadow: inset -0.04em 0 0 rgba(0, 0, 0, 0.18), inset 0 0 0 0.5px rgba(10, 13, 18, 0.2);
+}
+/* The paper, and only the paper, burns — from the far end toward the filter,
+   which is why its origin is its left edge. */
+.cig i {
+  position: absolute; left: 0.44em; top: 50%; margin-top: -0.15em;
+  width: 1.18em; height: 0.3em; border-radius: 0 0.04em 0.04em 0;
+  transform-origin: 0 50%;
+  background: linear-gradient(180deg, #FFFDF8, #EFE9DC);
+  box-shadow: inset 0 0 0 0.5px rgba(10, 13, 18, 0.14);
+  animation: l-cig-paper 7.2s linear infinite;
+}
+.cig b {
+  position: absolute; left: 0; top: 50%; margin-top: -0.16em;
+  width: 0.2em; height: 0.32em; border-radius: 0.04em;
+  background: radial-gradient(60% 70% at 40% 50%, #FFD08A, #FF5A1F 62%, #C62A00);
+  box-shadow: 0 0 0.26em 0.03em rgba(255, 106, 0, 0.6);
+  animation: l-cig-ember 7.2s linear infinite;
+}
+.cig b::before {
+  content: ""; position: absolute; left: 0.04em; top: 0.02em;
+  width: 0.09em; height: 0.09em; border-radius: 9999px;
+  background: #FFCE7A; box-shadow: 0 0 0.14em rgba(255, 150, 40, 0.9);
+  animation: l-cig-spark 1.9s ease-out infinite;
+}
+.cig b::after {
+  content: ""; position: absolute; left: 0.03em; top: -0.16em;
+  width: 0.17em; height: 0.17em; border-radius: 9999px;
+  background: rgba(140, 146, 156, 0.5); filter: blur(0.055em);
+  animation: l-cig-smoke 2.6s ease-out infinite;
+}
+.l-hl-wash:has(.cig) { gap: 0.3em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .l-pencil::after { animation: none; clip-path: none; }
+  .cig i, .cig b, .cig b::before, .cig b::after { animation: none; }
+  .cig b { transform: translateX(1.42em); }
+  .cig b::before, .cig b::after { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .l-hl-wash, .l-hl-grow { animation: none; }
+  .l-hl-sketch::after { animation: none; transform: rotate(-0.7deg); }
+  .l-hl-marker::before { animation: none; transform: skewX(-9deg); }
+  .l-hl-spark::before, .l-hl-spark::after { animation: none; opacity: 1; transform: scale(1); }
+  .l-em { transition: none; }
+  .l-em:hover { transform: none; }
+  .l-em-sheen { display: none; }
+}
+
+
+/* ── 7 · SWAP — a word replaced in the line, not in a box ─────────────────
+ * "Your time shouldn't live in five apps" → "should live in Needt."
+ *
+ * THE WORDS SIT IN THE LINE, not stacked in one grid cell. Stacking made the
+ * box as wide as the WIDER word, so the shorter one sat in a permanent gap:
+ * "Your time ␣␣ should", and a hole before "Needt."
+ *
+ * CONSTANT SUM — this is the whole mechanism, and it took two wrong versions
+ * to find. The pair's combined width must never leave the band between the
+ * two steady states, or the heading re-wraps mid-animation and every element
+ * below it jumps:
+ *   · Both full at once (one keyframe set offset by half the cycle) — the
+ *     line overflowed and wrapped DOWN.
+ *   · Both at zero at once (back-to-back windows) — the line got short
+ *     enough to fit on one line and wrapped UP, moving the page 40px.
+ * So the two ramps share ONE window in OPPOSITE directions: while the
+ * outgoing word gives up its width the incoming one takes exactly that much,
+ * and the sum sits at --sw for the whole handoff.
+ *
+ * --sw IS MEASURED, NOT CHOSEN. It is the longer word of the pair, in em of
+ * its own host's font-size, so the cap tracks the clamped heading size across
+ * every breakpoint. A cap larger than the word (it was 14em) puts a dead zone
+ * at the top of the ramp where max-width clips nothing, and inside that dead
+ * zone both words render at full natural width — which is failure one above.
+ * Re-measure only if the words change.
+ *
+ * LINEAR, on purpose. The sum is only constant if both ramps move at the same
+ * rate; an eased max-width makes the pair bulge in the middle of the handoff.
+ * The fade and the clip are shaped by extra stops instead of by easing.
+ *
+ * NO overflow: hidden. An inline-block with clipped overflow takes its
+ * baseline from its bottom edge, which would drop these words below the rest
+ * of the heading. clip-path hides the letters without touching the baseline.
+ */
+.l-swap { display: inline; --sw: 3.1em; }
+.l-swap > span {
+  display: inline-block; white-space: nowrap; max-width: var(--sw);
+  animation: l-swap-a 13s linear infinite;
+}
+.l-swap > span:nth-child(2) { animation-name: l-swap-b; }
+
+/* The word that starts visible. Hidden fully by 48% though its width runs to
+   52% — a word still legible while being squeezed reads as a rendering fault
+   rather than as a word leaving. */
+@keyframes l-swap-a {
+  0%, 40% { max-width: var(--sw); clip-path: inset(-0.3em 0 -0.3em 0); opacity: 1; filter: blur(0); }
+  44.7%   { max-width: calc(var(--sw) * 0.667); clip-path: inset(-0.3em 34% -0.3em 0); opacity: 0.55; filter: blur(1px); }
+  49.3%   { max-width: calc(var(--sw) * 0.333); clip-path: inset(-0.3em 67% -0.3em 0); opacity: 0; filter: blur(1.6px); }
+  54%, 86% { max-width: 0; clip-path: inset(-0.3em 100% -0.3em 0); opacity: 0; filter: blur(1.6px); }
+  90.7%   { max-width: calc(var(--sw) * 0.333); clip-path: inset(-0.3em 67% -0.3em 0); opacity: 0; filter: blur(1.6px); }
+  95.3%   { max-width: calc(var(--sw) * 0.667); clip-path: inset(-0.3em 34% -0.3em 0); opacity: 0.55; filter: blur(1px); }
+  100%    { max-width: var(--sw); clip-path: inset(-0.3em 0 -0.3em 0); opacity: 1; filter: blur(0); }
+}
+/* Its replacement: the exact complement, so the two widths always add to --sw. */
+@keyframes l-swap-b {
+  0%, 40% { max-width: 0; clip-path: inset(-0.3em 100% -0.3em 0); opacity: 0; filter: blur(1.6px); }
+  44.7%   { max-width: calc(var(--sw) * 0.333); clip-path: inset(-0.3em 67% -0.3em 0); opacity: 0; filter: blur(1.6px); }
+  49.3%   { max-width: calc(var(--sw) * 0.667); clip-path: inset(-0.3em 34% -0.3em 0); opacity: 0.55; filter: blur(1px); }
+  54%, 86% { max-width: var(--sw); clip-path: inset(-0.3em 0 -0.3em 0); opacity: 1; filter: blur(0); }
+  90.7%   { max-width: calc(var(--sw) * 0.667); clip-path: inset(-0.3em 34% -0.3em 0); opacity: 0.55; filter: blur(1px); }
+  95.3%   { max-width: calc(var(--sw) * 0.333); clip-path: inset(-0.3em 67% -0.3em 0); opacity: 0; filter: blur(1.6px); }
+  100%    { max-width: 0; clip-path: inset(-0.3em 100% -0.3em 0); opacity: 0; filter: blur(1.6px); }
+}
+
+/* ── The correction: "shouldn't" is struck out before it is taken away ──── */
+.l-swap-k > span:first-child { position: relative; }
+/* The stroke: one pen line, a fraction of a degree off level and heavier at
+   its end, because a pulled stroke is never even. It LANDS before the word
+   starts leaving at 40%, or the correction is never seen. */
+.l-swap-k > span:first-child::after {
+  content: ""; position: absolute; left: -0.04em; right: -0.04em; top: 52%;
+  height: 0.07em; min-height: 2px; border-radius: 2px 3px 3px 2px;
+  background: linear-gradient(90deg,
+    color-mix(in oklab, currentColor 70%, transparent) 0%,
+    currentColor 46%,
+    color-mix(in oklab, currentColor 84%, transparent) 100%);
+  transform-origin: 0 50%; pointer-events: none;
+  animation: l-swap-pen 13s cubic-bezier(0.3, 0.7, 0.2, 1) infinite;
+}
+@keyframes l-swap-pen {
+  0%, 26% { transform: rotate(-1.2deg) scaleX(0); opacity: 1; }
+  36%, 40% { transform: rotate(-1.2deg) scaleX(1); opacity: 1; }
+  47%     { transform: rotate(-1.2deg) scaleX(1); opacity: 0; }
+  99%     { transform: rotate(-1.2deg) scaleX(0); opacity: 0; }
+  100%    { transform: rotate(-1.2deg) scaleX(0); opacity: 1; }
+}
+
+/* ── The squeeze: five things pressed into one ──────────────────────────────
+   Not a second strike — the sentence's own argument, performed. The letters
+   tighten as the phrase narrows, so the five apps are compressed out of
+   existence rather than crossed off a list. Width and timing are the shared
+   mechanism above; this adds only what happens to the letters inside. */
+.l-swap-q > span:first-child { animation-name: l-swap-squeezed; transform-origin: 0 50%; }
+@keyframes l-swap-squeezed {
+  0%, 40% { max-width: var(--sw); letter-spacing: 0; opacity: 1; clip-path: inset(-0.3em 0 -0.3em 0); }
+  44.7%   { max-width: calc(var(--sw) * 0.667); letter-spacing: -0.05em; opacity: 0.55; clip-path: inset(-0.3em 30% -0.3em 0); }
+  49.3%   { max-width: calc(var(--sw) * 0.333); letter-spacing: -0.12em; opacity: 0; clip-path: inset(-0.3em 62% -0.3em 0); }
+  54%, 86% { max-width: 0; letter-spacing: -0.16em; opacity: 0; clip-path: inset(-0.3em 100% -0.3em 0); }
+  90.7%   { max-width: calc(var(--sw) * 0.333); letter-spacing: -0.12em; opacity: 0; clip-path: inset(-0.3em 62% -0.3em 0); }
+  95.3%   { max-width: calc(var(--sw) * 0.667); letter-spacing: -0.05em; opacity: 0.55; clip-path: inset(-0.3em 30% -0.3em 0); }
+  100%    { max-width: var(--sw); letter-spacing: 0; opacity: 1; clip-path: inset(-0.3em 0 -0.3em 0); }
+}
+
+/* BALANCE IS INCOMPATIBLE WITH AN ANIMATED INLINE WIDTH, and this is the last
+   defect the swap had. `text-wrap: balance` is a whole-paragraph optimisation
+   the browser recomputes on every layout, so a word whose width is a
+   function of time makes the chosen break point a function of time too: the
+   faint incoming word kept landing at the start of the next line, shoving the
+   full-opacity text beside it 60px sideways, then snapping back. The hero's
+   identical markup never did it because `.l-lead` computes `pretty` — which
+   is the control case, and the fix. Scoped by :has() so every other heading
+   on the site keeps its balanced breaks. */
+.l-display:has(.l-swap), .l-h2:has(.l-swap), .l-h3:has(.l-swap) { text-wrap: pretty; }
+
+/* The ring is drawn tighter here than on a phrase: around two letters the
+   default inset reads as a circle around nothing. */
+.l-hl-circle.l-hl-swap { padding: 0.06em 0.26em; }
+.l-hl-circle.l-hl-swap::before { inset: 0.02em 0.06em; }
+.l-hl-circle.l-hl-swap::after { right: 0.08em; top: 12%; height: 76%; width: 30%; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The turn is the whole message, so with motion off it stops on the first
+     word rather than cross-fading in place. */
+  .l-swap > span { animation: none; }
+  .l-swap > span:nth-child(2) { display: none; }
+  .l-swap-k > span:first-child::after { animation: none; transform: rotate(-1.2deg) scaleX(1); }
+}

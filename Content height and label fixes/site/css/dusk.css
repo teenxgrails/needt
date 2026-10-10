@@ -1,0 +1,339 @@
+/* ══ THE INNER PAGES AT DUSK ═══════════════════════════════════════════════
+ *
+ * The landing is an afternoon; these are the same weather three hours later —
+ * the half hour after the sun has gone, not the middle of the night. That is
+ * the honest split: the landing sells, the inner pages are read, and a long
+ * read is easier on a dark ground.
+ *
+ * WHAT MAKES IT EVENING AND NOT NIGHT, in the order the eye notices:
+ *
+ * 1 · THE CLOUDS ARE LIT FROM BELOW. This is the whole thing. After sunset
+ *     the light comes off the horizon, so a cloud's UNDERSIDE catches it and
+ *     its top goes cool and dark — the exact inverse of the day sky, where
+ *     the cap is bright and the base is in shadow. Every bank here is
+ *     therefore a warm underside under a cool crown, offset by a few per
+ *     cent. Get this wrong and no amount of colour reads as evening.
+ * 2 · THERE IS STILL LIGHT IN THE SKY, and it has a place: a warm band low on
+ *     the right, where the sun went down. The landing's sun is in that same
+ *     corner, higher up — one place, one light source, three hours apart.
+ * 3 · ALMOST NO STARS. At dusk you can see the evening star and a handful of
+ *     the brightest; forty is a midnight sky, and forty was what this file
+ *     had. Nine, all in the top third, plus one bright point.
+ * 4 · NO METEOR. You cannot see one against a lit sky. It was the first thing
+ *     to go — the layer is no longer injected at all.
+ *
+ * THE GROUND COMES FROM THE PRODUCT'S OWN DARK THEME, lifted a few steps
+ * toward blue: dusk is a lighter ground than night, so the surfaces come up
+ * with it and the ink stays put.
+ *
+ * FIXED TO THE VIEWPORT, not to the page. A background that scrolled with a
+ * 4000-word Privacy page would put the horizon in the middle of clause 7 and
+ * run out before the footer. Fixed, the reader moves through the text and the
+ * evening stays where the evening is.
+ *
+ * ALL CSS. Nine stars are nine gradient stops, the afterglow is three more,
+ * and the whole thing composites without a frame of script — which matters
+ * most on exactly these pages, where someone is reading rather than watching.
+ */
+:root, html:has(.s-dusk) { color-scheme: dark; }
+
+.s-dusk {
+  /* Six base values, the product's dark theme at dusk rather than at night:
+     every one is the same hue a few steps lighter and a shade bluer. */
+  --ink: #F7F9FC;
+  --charcoal: #F7F9FC;
+  --paper: #1C2331;
+  --bone: #161C29;
+  --mist: #10151F;
+  --graphite: #C8CFDB;
+  /* Lifted one step from the night theme's #98A1B0. The muted ink is the one
+     that meets the ground unprotected — the page lead, the footer line — and
+     on a ground that keeps some light in it, the old value measured 2.1:1.
+     Still unmistakably the muted level beside --graphite. */
+  --fog: #AEB7C4;
+  --sky-tint: #121826;
+  --hl: #71B2FF;
+
+  color: var(--ink);
+  /* The page's own ground must not paint over the sky: a fixed pseudo-element
+     at z-index -2 sits behind the element only if the element has no opaque
+     fill of its own. The colour lives on <html> instead. */
+  background: transparent;
+}
+html:has(.s-dusk) { background: #121826; }
+
+/* ── THE SKY ───────────────────────────────────────────────────────────────*/
+.s-dusk::before {
+  content: ""; position: fixed; inset: -14% -8%; z-index: -2; pointer-events: none;
+  transform-origin: 50% 74%;
+  animation: s-sky-breathe 74s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  will-change: transform, opacity;
+  background:
+    /* ── THE AFTERGLOW, low on the right, in three passes: a wide warm lift
+       off the horizon, a tighter rose core where the sun actually went, and a
+       thin gold seam along the skyline. Three, because a single gradient is a
+       coloured blob and the thing that reads as afterglow is the RAMP from
+       gold through rose into blue over a short vertical distance.
+
+       THE CORES SIT BELOW THE VIEWPORT AND THE FALLOFF IS SHORT. This layer
+       is `inset: -14%`, so a centre at 98% of the box lands just past the
+       viewport's floor — but a 30% y-radius on a box 128% of the viewport
+       tall still reaches 38% of the screen upward, and since the sky is
+       FIXED, every paragraph on all eleven pages scrolls through that band.
+       At the first pitch it put 16px --fog text on a peach ground at 2.1:1.
+       The light is therefore kept as a glow ON the horizon rather than a
+       wash over the lower page: radii cut by a third, alphas by a third, and
+       the ramp's tail taken back down. */
+    radial-gradient(64% 20% at 78% 98%, rgba(255, 176, 118, 0.20) 0%, rgba(255, 158, 112, 0.085) 36%, rgba(214, 130, 120, 0.03) 62%, rgba(214, 130, 120, 0) 82%),
+    radial-gradient(34% 12% at 82% 102%, rgba(255, 198, 138, 0.22) 0%, rgba(255, 178, 126, 0.08) 46%, rgba(255, 178, 126, 0) 76%),
+    radial-gradient(120% 7% at 68% 104%, rgba(255, 214, 158, 0.2) 0%, rgba(255, 196, 150, 0) 72%),
+    /* The counter-glow: the sky opposite the sunset keeps a cool violet cast,
+       which is what stops the left half from reading as flat navy. */
+    radial-gradient(52% 30% at 6% 92%, rgba(118, 116, 176, 0.13) 0%, rgba(118, 116, 176, 0) 74%),
+
+    /* ── THE NEAR BANK, five masses in the landing's own positions. Each is
+       TWO gradients: the warm underside first, then the cool crown a few per
+       cent above it. The offset is the light direction, and it is why these
+       read as evening cloud rather than as grey cloud on a warm ground. */
+    radial-gradient(21% 15% at 15% 79%, rgba(255, 169, 126, 0.30) 0%, rgba(240, 150, 122, 0.10) 52%, rgba(240, 150, 122, 0) 78%),
+    radial-gradient(22% 25% at 14% 70%, rgba(48, 58, 84, 0.72) 0%, rgba(44, 54, 78, 0.26) 54%, rgba(44, 54, 78, 0) 78%),
+
+    radial-gradient(26% 18% at 33% 86%, rgba(255, 176, 132, 0.34) 0%, rgba(242, 154, 126, 0.11) 50%, rgba(242, 154, 126, 0) 76%),
+    radial-gradient(27% 32% at 33% 76%, rgba(52, 62, 90, 0.76) 0%, rgba(46, 56, 82, 0.28) 52%, rgba(46, 56, 82, 0) 76%),
+
+    radial-gradient(18% 13% at 49% 76%, rgba(255, 166, 124, 0.24) 0%, rgba(238, 148, 120, 0.08) 54%, rgba(238, 148, 120, 0) 80%),
+    radial-gradient(19% 23% at 49% 67%, rgba(46, 56, 82, 0.66) 0%, rgba(42, 52, 76, 0.22) 54%, rgba(42, 52, 76, 0) 80%),
+
+    radial-gradient(23% 17% at 68% 84%, rgba(255, 182, 136, 0.32) 0%, rgba(244, 158, 128, 0.10) 52%, rgba(244, 158, 128, 0) 77%),
+    radial-gradient(24% 29% at 68% 74%, rgba(50, 60, 88, 0.72) 0%, rgba(44, 54, 80, 0.26) 53%, rgba(44, 54, 80, 0) 77%),
+
+    radial-gradient(16% 12% at 86% 79%, rgba(255, 188, 142, 0.28) 0%, rgba(246, 162, 132, 0.09) 54%, rgba(246, 162, 132, 0) 80%),
+    radial-gradient(17% 21% at 86% 70%, rgba(48, 58, 84, 0.62) 0%, rgba(42, 52, 76, 0.2) 55%, rgba(42, 52, 76, 0) 80%),
+
+    /* ── THE MIDDLE DISTANCE, weaker. Distance is the subject here as it is by
+       day: size, height and strength fall off together, and the warm light
+       reaches these less because there is more air in the way. */
+    radial-gradient(15% 10% at 57% 54%, rgba(255, 186, 150, 0.13) 0%, rgba(255, 186, 150, 0) 76%),
+    radial-gradient(15% 16% at 57% 49%, rgba(54, 64, 92, 0.4) 0%, rgba(54, 64, 92, 0) 78%),
+    radial-gradient(12% 8% at 24% 58%, rgba(255, 180, 146, 0.10) 0%, rgba(255, 180, 146, 0) 78%),
+    radial-gradient(12% 14% at 24% 53%, rgba(52, 62, 90, 0.34) 0%, rgba(52, 62, 90, 0) 80%),
+    radial-gradient(10% 12% at 76% 55%, rgba(56, 66, 94, 0.3) 0%, rgba(56, 66, 94, 0) 80%),
+
+    /* The band of haze that sits on every horizon, in the same place as the
+       day sky's, warmed from beneath. */
+    linear-gradient(180deg, rgba(150, 146, 190, 0) 36%, rgba(158, 148, 186, 0.10) 50%, rgba(178, 150, 168, 0.06) 62%, rgba(178, 150, 168, 0) 72%),
+
+    /* ── AND THE GROUND. Dusk's own ramp: deep blue-violet at the zenith,
+         warming downward, and it does NOT go black at the floor — the light
+         is at the bottom of an evening sky, which is the opposite of night.
+         The last two stops were #45394A and #52403F, a light warm brown that
+         put the body ink at 3.2:1 wherever the page scrolled over it. The
+         floor keeps the warm HUE and gives back the luminance: the sunset is
+         carried by the three radials above, which is where a sunset belongs. */
+    linear-gradient(178deg,
+      #10162A 0%, #141B31 16%, #1A2239 32%, #212A43 48%,
+      #262F49 62%, #2B2C42 74%, #322D3B 86%, #382F35 100%);
+}
+
+/* Origin at 74% — on the horizon, so the one line the eye uses to tell
+   whether something moved is the one line that cannot. The scale is 1.5% over
+   74 seconds, which is 0.0002% a frame: invisible as movement, and the reason
+   the sky looks different when you come back to it. */
+@keyframes s-sky-breathe {
+  0%, 100% { transform: scale(1.04); opacity: 1; }
+  50%      { transform: scale(1.055); opacity: 0.94; }
+}
+
+/* ── THE FIRST STARS ──────────────────────────────────────────────────────
+ * Nine, all above the cloud tops, none below 34% — a star near a lit horizon
+ * is a pixel, because at dusk that part of the sky is still bright enough to
+ * wash them out. They are also DIM: the brightest here is 0.6, where the
+ * midnight version ran to 0.95. Dusk stars are barely there; that is what
+ * makes them stars at dusk rather than at midnight.
+ */
+.s-dusk::after {
+  content: ""; position: fixed; inset: -10% -6%; z-index: -1; pointer-events: none;
+  /* THREE RESETS, AND THEY ARE THE WHOLE RULE. land.css paints the landing's
+     grain on `body::after` — the same pseudo-element — and `background-image`
+     is a longhand: it replaces the image list and leaves every sibling
+     background longhand in place. So this layer inherited the grain's
+     168px/47px tile sizes, which with `no-repeat` crammed all nine stars into
+     a 168px box in the top-left corner, and its `mix-blend-mode: multiply`,
+     which cannot lighten — near-white stars over a dark sky came out as a
+     no-op. The sky above escapes this only because it uses the `background:`
+     shorthand, which resets the siblings to initial.
+     Stated explicitly rather than by switching to the shorthand: the next
+     person to add a layer here needs to see why these three lines exist. */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  mix-blend-mode: normal;
+  /* Only the field's depth changes, on a clock three times slower than the
+     clouds' so the two never pulse together. */
+  animation: s-star-depth 197s ease-in-out infinite;
+  will-change: opacity;
+  background-image:
+    radial-gradient(1.3px 1.3px at 11% 9%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 24% 17%, rgba(226,236,255,0.38), transparent),
+    radial-gradient(1.5px 1.5px at 38% 7%, rgba(255,255,255,0.55), transparent),
+    radial-gradient(1px 1px at 47% 21%, rgba(226,236,255,0.3), transparent),
+    radial-gradient(1.2px 1.2px at 58% 12%, rgba(255,255,255,0.42), transparent),
+    radial-gradient(1px 1px at 66% 26%, rgba(226,236,255,0.26), transparent),
+    radial-gradient(1.4px 1.4px at 79% 15%, rgba(255,255,255,0.48), transparent),
+    radial-gradient(1px 1px at 88% 29%, rgba(226,236,255,0.24), transparent),
+    radial-gradient(1.1px 1.1px at 95% 11%, rgba(255,255,255,0.34), transparent);
+}
+@keyframes s-star-depth {
+  0%, 100% { opacity: 0.78; }
+  50%      { opacity: 1; }
+}
+
+/* THE EVENING STAR. One point, brighter than the nine and warmer — the planet
+   that is out before anything else is. Its own element, because a keyframe on
+   the field would make every star pulse in step, and that is the one thing a
+   real sky never does. */
+.s-dusk .s-twinkle {
+  position: fixed; inset: -10% -6%; z-index: -1; pointer-events: none;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(7px 7px at 71% 34%, rgba(255, 244, 226, 0.14), transparent),
+    radial-gradient(2.1px 2.1px at 71% 34%, rgba(255, 250, 240, 0.95), transparent);
+  animation: s-twinkle 7.5s ease-in-out infinite;
+}
+@keyframes s-twinkle { 0%, 100% { opacity: 0.55; } 46% { opacity: 1; } }
+
+/* ── THE LIGHT UNDER THE CURSOR ───────────────────────────────────────────
+ * A wide, soft warming rather than a torch: a hard circle with darkness
+ * around it turns a page into a game, and these are pages someone reads. The
+ * ground gets slightly warmer where the hand is and nothing gets dimmer
+ * anywhere — so it can never take light away from a paragraph. Warm here,
+ * not blue: the light in this sky is the sunset's, and a cool glow at dusk
+ * would be a second light source with no source.
+ *
+ * The position comes from two custom properties written by one rAF in
+ * site.js; the gradient itself is composited, so the only per-frame cost is
+ * two numbers. */
+.s-dusk .s-glow {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  opacity: 0; transition: opacity 0.6s ease;
+  background: radial-gradient(520px 520px at var(--gx, 50%) var(--gy, 40%),
+    rgba(255, 196, 150, 0.09) 0%,
+    rgba(250, 180, 145, 0.045) 34%,
+    rgba(240, 170, 145, 0.018) 58%,
+    transparent 76%);
+}
+.s-dusk.is-lit .s-glow { opacity: 1; }
+
+/* ── WHAT THE DARK GROUND CHANGES ─────────────────────────────────────────*/
+/* The header cluster stops being frosted pale and becomes a dark pane. */
+.s-dusk .s-nav-inner, .s-dusk .nv-shell {
+  background: rgba(26, 33, 47, 0.86);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 34px -18px rgba(0, 0, 0, 0.6);
+}
+.s-dusk .nv-shell.has-menu {
+  background: rgba(24, 30, 43, 0.97);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 30px 70px -24px rgba(0,0,0,0.7);
+}
+.s-dusk .nv-panel.is-open > .nv-cols { box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.08) inset; }
+/* The pane is the shell's surface a step more opaque, so when the shell goes
+   dark here the pane has to follow — it is pale by default, and without this
+   it arrives as a white card on a dark page. The three inks follow --ink and
+   --fog, which already flip above. */
+.s-dusk .nv-panel {
+  background: rgba(24, 30, 43, 0.985);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 26px 60px -22px rgba(0, 0, 0, 0.55);
+}
+/* Grain lifts a dark fill and dirties a pale one, so it inverts with the pane. */
+.s-dusk .nv-panel::after { opacity: 0.34; mix-blend-mode: overlay; }
+.s-dusk .nv-glyph { background: rgba(113, 178, 255, 0.14); color: #9EC6FF; }
+/* The header's own rules resolve through tokens that flip with the ground, so
+   the hover and current-page washes need no override here — a dead rule is
+   worse than no rule, because the next person edits it and nothing happens. */
+.s-dusk .nv-trigger.is-on { background: color-mix(in oklab, var(--ink) 9%, transparent); color: var(--ink); }
+
+/* The primary button inverts because --charcoal and --paper both flip: on a
+   dark ground the dense object is the light one. The cast is deepened by
+   changing the token's VALUE rather than by declaring box-shadow here — a
+   theme rule outranks a variant rule in another file, which is how the ghost
+   button once lost its ring to the solid pill's shadow. */
+.s-dusk {
+  --btn-cast: 0 1px 2px rgba(0, 0, 0, 0.42), 0 10px 26px -14px rgba(0, 0, 0, 0.7);
+  --btn-cast-hover: 0 2px 5px rgba(0, 0, 0, 0.42), 0 16px 34px -16px rgba(0, 0, 0, 0.78);
+}
+
+/* Cards float on the evening rather than being cut out of it: a step LIGHTER
+   than the ground, which is the same relationship as on paper, inverted.
+   NEAR-OPAQUE, NOT 5% WHITE. A translucent card over a sky whose lower band
+   carries the sunset lets that ground through to the type — measured at 2.1:1
+   on the 16px card paragraph. 5% white also gives almost nothing back: the
+   card has to own its own ground for the ink on it to be a known quantity.
+   The 0.92 keeps a trace of the sky for the card to sit in. */
+.s-dusk .s-card, .s-dusk .s-faq details {
+  background: rgba(28, 35, 49, 0.92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.s-dusk .s-card-pick {
+  background: rgba(34, 42, 58, 0.94);
+  box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--hl) 52%, transparent);
+}
+.s-dusk .s-eyebrow { background: rgba(255, 255, 255, 0.085); color: var(--graphite); }
+.s-dusk .s-frame, .s-dusk .s-mini {
+  background: #161C29; box-shadow: 0 0 0 1px rgba(255,255,255,0.09), 0 24px 54px -28px rgba(0,0,0,0.8);
+}
+.s-dusk .s-avatar { background: rgba(255,255,255,0.1); color: var(--graphite); box-shadow: none; }
+
+/* The footer is part of the same evening, so it carries no sky of its own —
+   one room, not a room with a picture of a room at the bottom. */
+.s-dusk .s-footer { background: none; --fog: #AEB7C4; --graphite: #C8CFDB; }
+.s-dusk .s-footer::before { content: none; }
+
+.s-dusk .s-dock { background: rgba(26, 33, 47, 0.9); box-shadow: 0 0 0 1px rgba(255,255,255,0.09), 0 16px 40px -12px rgba(0,0,0,0.7); }
+
+/* The page's own surfaces sit above all of it. Without this the cards are
+   transparent to the sky and the text is read against clouds. */
+.s-dusk .s-card, .s-dusk .s-nav-inner, .s-dusk .s-table { position: relative; z-index: 1; }
+
+
+/* ══ THE WASH ON A DARK PAGE ═══════════════════════════════════════════════
+ *
+ * A pale panel stamped into a dark page is a light-mode artefact whichever
+ * ink you put on it, so the ground is re-pitched rather than the text: a dark
+ * tint of the same hue, and the page's own light ink on top. The hue survives
+ * — a wash still says "this is the phrase" — but it now says it in the
+ * language of the page it is on.
+ *
+ * Every modifier gets the same treatment, not just the default. A modifier
+ * that only set --wash-a and --wash-b would inherit the base's dark ink onto
+ * its own pale ground, which is the original defect with an extra step.
+ *
+ * Overriding the TOKENS, not the properties: the base rule still owns
+ * background-color, the animation and the hover; this file only changes the
+ * values they read. A theme that has to out-specify a component is a theme
+ * that will eventually break it.
+ */
+.s-dusk .l-hl-wash {
+  --wash-a: #222B3C;
+  --wash-b: #2C3850;
+  --wash-ink: #EAF0FA;
+  box-shadow: inset 0 0 0 1px rgba(232, 238, 249, 0.1);
+}
+.s-dusk .l-hl-wash:hover {
+  box-shadow: inset 0 0 0 1px rgba(232, 238, 249, 0.17), 0 6px 18px -10px rgba(0, 0, 0, 0.6);
+}
+/* The four hues, at dusk: the tint drops to a shade and the ink goes light —
+   each one still recognisably its own colour. */
+.s-dusk .l-hl-time { --wash-a: #3B3013; --wash-b: #4E3F16; --wash-ink: #FFEFC2; }
+.s-dusk .l-hl-move { --wash-a: #1C2D46; --wash-b: #24385C; --wash-ink: #DCEBFF; }
+.s-dusk .l-hl-warm { --wash-a: #3D2820; --wash-b: #503227; --wash-ink: #FFE2D2; }
+.s-dusk .l-hl-cool { --wash-a: #163528; --wash-b: #1D4433; --wash-ink: #D6F5E5; }
+/* The pencil and the circle draw in currentColor, so they follow the page's
+   ink already — but the circle's ring is a fixed violet pitched for paper. */
+.s-dusk .l-hl-circle { --ring: #C79BFF; }
+
+@media (prefers-reduced-motion: reduce) {
+  .s-dusk::before, .s-dusk::after { animation: none; transform: scale(1.04); opacity: 1; }
+  .s-dusk .s-twinkle { animation: none; opacity: 0.8; }
+  .s-dusk .s-glow { transition: none; }
+}

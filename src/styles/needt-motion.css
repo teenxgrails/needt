@@ -1,6 +1,6 @@
 /* ========================================================================
    Needt motion layer — VENDORED, DO NOT EDIT BY HAND.
-   Extracted from needt-app/index.html on 2026-09-15.
+   Extracted from needt-app/app.css and needt-app/index.html on 2026-10-06.
    Regenerate with: npm run tokens:sync
    
    The prototype's living layer: entrance, landing, menu cascade, the close
@@ -8,7 +8,15 @@
    the focus aura and the composer glow. All of it off under
    prefers-reduced-motion, which is part of what is vendored.
    ======================================================================== */
-
+/* THE APP'S HOST CSS — shared by every page that renders the product.
+ *
+ * Host-side corrections and motion the design system does not carry: the
+ * classes it names but does not draw, the animations this product added, and
+ * the few places a token needed overriding with a stated reason. Extracted
+ * from index.html so that any other surface — the film, a landing shot —
+ * renders the identical product rather than an approximation of it. A page
+ * that renders the app without this file is not showing the app.
+ */
 /* Host-side correction to a design-system defect, not a restyle.
    .nt-block-title is flex: 0 0 auto in tokens/ui.css. In a compact block the
    row switches to flex-direction: row, so a title that cannot shrink pushes
@@ -647,6 +655,8 @@
 .needt-v2 [data-depth="lifted"] .cal-day { box-shadow: var(--shadow-raised); }
 /* The timeline sets its blocks' ring inline, so this one needs the weight. */
 .needt-v2 [data-depth="lifted"] .nt-timeline .nt-block { box-shadow: var(--shadow-raised) !important; }
+
+
 /* The shell fills whatever window it is opened in — the way the real app will.
    It was pinned to 1440×900 to make measurement reproducible; the floor keeps
    the two-pane layout honest, and below it the page scrolls rather than
@@ -658,6 +668,7 @@
 .needt-v2 #root {width:100%;min-width:1180px;height:100%;min-height:720px;flex:none;overflow:hidden}
 .needt-v2[data-measure="1440x900"] body {overflow:hidden;align-items:flex-start}
 .needt-v2[data-measure="1440x900"] #root {width:1440px;height:900px;min-width:0;min-height:0}
+
 /* ---------- composer.css ---------- */
 /* THE COMPOSER — shared by both shells.
  *
