@@ -149,6 +149,8 @@ describe("frame pacing", () => {
 
   it("an accent sky may ask for fewer frames, never more", () => {
     expect(framePeriod({ big: false, hover: false, fps: 15 })).toBe(67);
-    expect(framePeriod({ big: false, hover: false, fps: 60 })).toBe(SMALL_FRAME_MS);
+    expect(framePeriod({ big: false, hover: false, fps: 60 })).toBe(
+      SMALL_FRAME_MS
+    );
   });
 });

@@ -88,13 +88,17 @@ export function PwMiniHabit({
             key={i}
             className="pw-mini-habit-el"
             style={{
-              background: on ? "var(--demo-hue-green)" : "var(--mock-habit-off)",
+              background: on
+                ? "var(--demo-hue-green)"
+                : "var(--mock-habit-off)",
             }}
           />
         ))}
       </span>
       <span>{title}</span>
-      {streak ? <span className="pw-chip pw-mini-habit-el-2">{streak}</span> : null}
+      {streak ? (
+        <span className="pw-chip pw-mini-habit-el-2">{streak}</span>
+      ) : null}
     </span>
   );
 }
@@ -136,9 +140,13 @@ export function PwNoteCard({
             }}
           >
             <span
-              className={"pw-check" + (d ? " is-done" : "") + " pw-note-card-el"}
+              className={
+                "pw-check" + (d ? " is-done" : "") + " pw-note-card-el"
+              }
               style={{
-                boxShadow: d ? "none" : "var(--text-tertiary) 0 0 0 1.5px inset",
+                boxShadow: d
+                  ? "none"
+                  : "var(--text-tertiary) 0 0 0 1.5px inset",
                 background: d ? "var(--text-primary)" : "transparent",
               }}
             >
@@ -166,7 +174,13 @@ export function PwDateCard({
   event?: boolean;
 }) {
   return (
-    <GlassCard width={width || 120} pad={0} radius={18} className={className} style={style}>
+    <GlassCard
+      width={width || 120}
+      pad={0}
+      radius={18}
+      className={className}
+      style={style}
+    >
       <span className="pw-date-card-col">
         <span className="pw-date-card-grid">SEP</span>
         <span className="px-display pw-date-card-text">1</span>

@@ -27,7 +27,7 @@
  */
 import { newDate } from "@/lib/date-utils";
 
-import { hash3, noise, noiseAxis, NOISE_GRID } from "./sky-noise";
+import { NOISE_GRID, hash3, noise, noiseAxis } from "./sky-noise";
 import {
   type Mood,
   type Palette,
@@ -285,7 +285,6 @@ export function startSky(
   let qA = new Int32Array(0);
   let qB = new Int32Array(0);
   let big = false;
-  let frameMs = 50;
   let calmLive = true;
   let covered = false;
   let parked = !!opt.parked;
@@ -389,7 +388,6 @@ export function startSky(
        noise lattice is 4 cells apart on full skies, 2 on small ones. */
     big = W * H > 5e5;
     LQ = big ? 4 : 2;
-    frameMs = framePeriod({ big, hover: false, fps: opt.fps });
     lc = Math.floor((gc - 1) / LQ) + 2;
     lr = Math.floor((gr - 1) / LQ) + 2;
     LW = new Float32Array(lc * lr);
@@ -443,8 +441,11 @@ export function startSky(
         ]);
     });
     /* Unchanged words: keep the calm target as it is. */
-    const sa = calm.map((q) => q.map((v) => Math.round(v * 4)).join(",")).join(";");
-    if (sa === calmAllSig && calmTgt && calmTgt.length === gc * gr) return false;
+    const sa = calm
+      .map((q) => q.map((v) => Math.round(v * 4)).join(","))
+      .join(";");
+    if (sa === calmAllSig && calmTgt && calmTgt.length === gc * gr)
+      return false;
     calmAllSig = sa;
     buildCalm();
     return true;
@@ -454,7 +455,8 @@ export function startSky(
   function buildCalm() {
     if (!gc) return;
     const fresh = !calmMap || calmMap.length !== gc * gr;
-    if (!calmTgt || calmTgt.length !== gc * gr) calmTgt = new Float32Array(gc * gr);
+    if (!calmTgt || calmTgt.length !== gc * gr)
+      calmTgt = new Float32Array(gc * gr);
     else calmTgt.fill(0);
     if (fresh) calmMap = new Float32Array(gc * gr);
     buildCalmInto(calmTgt);
@@ -662,7 +664,8 @@ export function startSky(
       const rr = b[o] < 0 ? 0 : b[o] > 255 ? 255 : b[o] + 0.5;
       const gg = b[o + 1] < 0 ? 0 : b[o + 1] > 255 ? 255 : b[o + 1] + 0.5;
       const bb = b[o + 2] < 0 ? 0 : b[o + 2] > 255 ? 255 : b[o + 2] + 0.5;
-      base32[i] = (255 << 24) | ((bb & 255) << 16) | ((gg & 255) << 8) | (rr & 255);
+      base32[i] =
+        (255 << 24) | ((bb & 255) << 16) | ((gg & 255) << 8) | (rr & 255);
     }
     stars = [];
     fieldOk = false; /* repaint everything on the next frame */
@@ -694,10 +697,14 @@ export function startSky(
     depth: number
   ): Cloud {
     const p: number[] = [];
-    const np = (promo ? 12 : 9) + Math.floor(hash3(i + seed[0] * 3, 4, seed[1]) * 6);
+    const np =
+      (promo ? 12 : 9) + Math.floor(hash3(i + seed[0] * 3, 4, seed[1]) * 6);
     for (let j = 0; j < np; j++) {
       const u = (j + 0.5) / np + (hash3(i, j, 5) - 0.5) * 0.12;
-      const dome = Math.pow(Math.sin(Math.min(1, Math.max(0, u)) * Math.PI), 0.8);
+      const dome = Math.pow(
+        Math.sin(Math.min(1, Math.max(0, u)) * Math.PI),
+        0.8
+      );
       const pr = w * (0.1 + 0.13 * dome * (0.5 + 0.7 * hash3(i, j, 6)));
       p.push(
         (u - 0.5) * w * 0.8,
@@ -710,7 +717,12 @@ export function startSky(
       /* a few small top puffs */
       const u = 0.3 + 0.4 * hash3(i, j, 9);
       const pr = w * (0.09 + 0.05 * hash3(i, j, 10));
-      p.push((u - 0.5) * w * 0.7, -h * (0.5 + 0.12 * hash3(i, j, 11)), pr, hash3(i, j, 12) * 6.28);
+      p.push(
+        (u - 0.5) * w * 0.7,
+        -h * (0.5 + 0.12 * hash3(i, j, 11)),
+        pr,
+        hash3(i, j, 12) * 6.28
+      );
     }
     let x0 = 0;
     let x1 = 0;
@@ -750,7 +762,9 @@ export function startSky(
         const q = PROMO[i];
         const w = q[2] * H;
         const h = w * (0.46 + 0.1 * hash3(i, 2, seed[1]));
-        list.push(makeCloud(i, w, h, q[0] * W, q[1] * H, 0.4 + 0.6 * q[3], q[3]));
+        list.push(
+          makeCloud(i, w, h, q[0] * W, q[1] * H, 0.4 + 0.6 * q[3], q[3])
+        );
       }
       list.forEach((c) => {
         c.x += cloudPad;
@@ -764,7 +778,8 @@ export function startSky(
       const r = (k: number) => hash3(i + seed[0] * 3, k, seed[1]);
       const w = (190 + 260 * r(1)) * sc;
       const h = w * (0.42 + 0.14 * r(2));
-      const y = H * (0.14 + (top - 0.22) * ((i * 0.618 + r(3) * 0.35) % 1)) + h * 0.5;
+      const y =
+        H * (0.14 + (top - 0.22) * ((i * 0.618 + r(3) * 0.35) % 1)) + h * 0.5;
       const c = makeCloud(i, w, h, 0, y, 0.75 + 0.5 * r(14), 1);
       c.a = 1;
       c.lb = 0;
@@ -854,7 +869,8 @@ export function startSky(
           const dy = gy * kc - pcy;
           const dy2 = dy * dy;
           const row = gy * gc;
-          const keep = 1 - 0.92 * smooth((gy * kc - floorY) / floorH); /* flat base */
+          const keep =
+            1 - 0.92 * smooth((gy * kc - floorY) / floorH); /* flat base */
           if (keep <= 0.08) continue;
           for (let gx = x0; gx <= x1; gx++) {
             const dx = gx * kc - pcx;
@@ -893,7 +909,8 @@ export function startSky(
       const k = dwv > 0 ? smooth((fb - 0.36) / 0.1) : 1;
       lbias = lbias + (fl - lbias) * k;
       al = al + (fa - al) * k;
-      if (dwv > 0 && k < 1) lbias -= 0.16 * smooth((fb - 0.12) / 0.22) * (1 - k);
+      if (dwv > 0 && k < 1)
+        lbias -= 0.16 * smooth((fb - 0.12) / 0.22) * (1 - k);
     }
     AL[o] = al;
     return lbias;
@@ -1117,8 +1134,14 @@ export function startSky(
         let b4 = 0.6;
         let Fv: number;
         if (f + 0.3 - cut > cTw - 0.12) {
-          const n3 = noise(uu * 4.1 + cTm * 0.016 + 3.3, vv * 4.1 - cTm * 0.011 + 1.7);
-          const n4 = noise(uu * 8.3 - cTm * 0.022 + 8.8, vv * 8.3 + cTm * 0.015 + 2.2);
+          const n3 = noise(
+            uu * 4.1 + cTm * 0.016 + 3.3,
+            vv * 4.1 - cTm * 0.011 + 1.7
+          );
+          const n4 = noise(
+            uu * 8.3 - cTm * 0.022 + 8.8,
+            vv * 8.3 + cTm * 0.015 + 2.2
+          );
           const q3 = n3 * 2 - 1;
           const q4 = n4 * 2 - 1;
           b3 = 1 - q3 * q3;
@@ -1138,7 +1161,12 @@ export function startSky(
         let L: number;
         if (dens > 0) {
           od[gx] = od[gx] * cDecay + dens * cOdk;
-          L = Math.exp(-od[gx] * 0.42) * 0.8 + 0.24 + (b3 - 0.6) * 0.34 + (b4 - 0.6) * 0.22 + mk * 0.3;
+          L =
+            Math.exp(-od[gx] * 0.42) * 0.8 +
+            0.24 +
+            (b3 - 0.6) * 0.34 +
+            (b4 - 0.6) * 0.22 +
+            mk * 0.3;
           if (promo) L += lbias + hov * 0.1;
         } else {
           od[gx] *= cDecay;
@@ -1249,8 +1277,7 @@ export function startSky(
        two kinds of frame: (0) recompute the cloud field and the sea, repaint
        everything; (1) reuse that field slid sideways by the drift, repaint
        only the cloud pixels, restamp the dots. */
-    const ph =
-      big && !full && !reduced && !busyHover() ? frameTick++ & 1 : -1;
+    const ph = big && !full && !reduced && !busyHover() ? frameTick++ & 1 : -1;
     const doField =
       ph !== 1 || !fieldOk || promo || cm === "puff" || fieldS !== S;
     const dlt = doField ? 0 : (sx - fieldSx) / S;
@@ -1276,13 +1303,22 @@ export function startSky(
         /* The puffs this frame can touch, hashed once per bank (not per column). */
         const sp2 = sp * 0.42;
         const kA = Math.floor(off / sp) - 2;
-        const kB = Math.min(kA + seaCx.length - 1, Math.floor(((cols - 1) * kf + off) / sp) + 2);
+        const kB = Math.min(
+          kA + seaCx.length - 1,
+          Math.floor(((cols - 1) * kf + off) / sp) + 2
+        );
         for (let k = kA; k <= kB; k++) {
           seaCx[k - kA] = (k + 0.5 + (hash3(k, li, 7) - 0.5) * 0.9) * sp;
-          seaRr[k - kA] = rr * (0.4 + 0.8 * hash3(k, li, 9)) * (1 + 0.06 * Math.sin(tm * 0.08 + k * 1.7));
+          seaRr[k - kA] =
+            rr *
+            (0.4 + 0.8 * hash3(k, li, 9)) *
+            (1 + 0.06 * Math.sin(tm * 0.08 + k * 1.7));
         }
         const jA = Math.floor(off / sp2) - 1;
-        const jB = Math.min(jA + seaCx2.length - 1, Math.floor(((cols - 1) * kf + off) / sp2) + 1);
+        const jB = Math.min(
+          jA + seaCx2.length - 1,
+          Math.floor(((cols - 1) * kf + off) / sp2) + 1
+        );
         for (let k = jA; k <= jB; k++) {
           seaCx2[k - jA] = (k + 0.5 + (hash3(k, li, 11) - 0.5) * 0.8) * sp2;
           seaRr2[k - jA] = rr * 0.3 * (0.5 + 0.7 * hash3(k, li, 13));
@@ -1291,7 +1327,11 @@ export function startSky(
           const xp = x * kf + off;
           const k0 = Math.floor(xp / sp);
           let top = -rr * 0.3;
-          for (let k = Math.max(kA, k0 - 2), kz = Math.min(kB, k0 + 2); k <= kz; k++) {
+          for (
+            let k = Math.max(kA, k0 - 2), kz = Math.min(kB, k0 + 2);
+            k <= kz;
+            k++
+          ) {
             const r = seaRr[k - kA];
             const dx = xp - seaCx[k - kA];
             if (dx > -r && dx < r) {
@@ -1302,7 +1342,11 @@ export function startSky(
           /* Small puffs riding on the domes: the cauliflower rim. */
           const j0 = Math.floor(xp / sp2);
           let sm = 0;
-          for (let k = Math.max(jA, j0 - 1), kz = Math.min(jB, j0 + 1); k <= kz; k++) {
+          for (
+            let k = Math.max(jA, j0 - 1), kz = Math.min(jB, j0 + 1);
+            k <= kz;
+            k++
+          ) {
             const r = seaRr2[k - jA];
             const dx = xp - seaCx2[k - jA];
             if (dx > -r && dx < r) {
@@ -1311,7 +1355,8 @@ export function startSky(
             }
           }
           top += sm * 0.8;
-          const und = (noise(xp / (per * 3.5), li * 9.1 + 0.3) - 0.5) * rr * 0.9;
+          const und =
+            (noise(xp / (per * 3.5), li * 9.1 + 0.3) - 0.5) * rr * 0.9;
           const yy = (by - (top + und) * sq) / kf;
           e[x] = yy;
           if (yy < seaTop[x]) seaTop[x] = yy;
@@ -1353,8 +1398,13 @@ export function startSky(
           const ub = uu + B0;
           const vb = vv + B1;
           LW[o] = w;
-          L1[o] = 0.55 * noise(uu * 0.9, vv * 0.9) + 0.2 * noise(uu * 1.9 + 5.2 - t8, vv * 1.9 + 7.1 + t5);
-          L2[o] = 0.55 * noise(ub * 0.9, vb * 0.9) + 0.2 * noise(ub * 1.9 + 5.2 - t8, vb * 1.9 + 7.1 + t5) - B2;
+          L1[o] =
+            0.55 * noise(uu * 0.9, vv * 0.9) +
+            0.2 * noise(uu * 1.9 + 5.2 - t8, vv * 1.9 + 7.1 + t5);
+          L2[o] =
+            0.55 * noise(ub * 0.9, vb * 0.9) +
+            0.2 * noise(ub * 1.9 + 5.2 - t8, vb * 1.9 + 7.1 + t5) -
+            B2;
           LP[o] = noise(u * 0.5 + 70.3, v * 0.5 + 12.1 + t2);
         }
       }
@@ -1406,14 +1456,24 @@ export function startSky(
             }
           }
           const u = gx * S + sx;
-          const n3 = noise(u * 4.1 + tm * 0.016 + 3.3, v * 4.1 - tm * 0.011 + 1.7);
-          const n4 = noise(u * 9.3 - tm * 0.022 + 8.8, v * 9.3 + tm * 0.015 + 2.2);
+          const n3 = noise(
+            u * 4.1 + tm * 0.016 + 3.3,
+            v * 4.1 - tm * 0.011 + 1.7
+          );
+          const n4 = noise(
+            u * 9.3 - tm * 0.022 + 8.8,
+            v * 9.3 + tm * 0.015 + 2.2
+          );
           const q3 = n3 * 2 - 1;
           const q4 = n4 * 2 - 1;
           const b3 = 1 - q3 * q3;
           const b4 = 1 - q4 * q4;
           const Fv =
-            T + (m - 0.42) * 0.42 + (b3 - 0.62) * (promo ? 0.3 : 0.22) + (b4 - 0.62) * (promo ? 0.13 : 0.08) - cut;
+            T +
+            (m - 0.42) * 0.42 +
+            (b3 - 0.62) * (promo ? 0.3 : 0.22) +
+            (b4 - 0.62) * (promo ? 0.13 : 0.08) -
+            cut;
           const xp = gx * kc;
           const e = Math.min(xp, W - xp) / spanSide;
           const sideK = e < 1 ? (1 - e) * (1 - e) : 0;
@@ -1423,7 +1483,14 @@ export function startSky(
           od[gx] = od[gx] * decay + dens * odk;
           const pl = PL[o] / (MB[o] + 0.05);
           const L =
-            Math.exp(-od[gx] * 0.5) * 0.66 + 0.24 + pl * 0.2 + (b3 - 0.6) * 0.3 + (b4 - 0.6) * 0.14 + mk * 0.2 + lbias + (promo ? hov * 0.1 : 0);
+            Math.exp(-od[gx] * 0.5) * 0.66 +
+            0.24 +
+            pl * 0.2 +
+            (b3 - 0.6) * 0.3 +
+            (b4 - 0.6) * 0.14 +
+            mk * 0.2 +
+            lbias +
+            (promo ? hov * 0.1 : 0);
           F[o] = Fv;
           LB[o] = L < 0 ? 0 : L > 1 ? 1 : L;
           FW[o] = fw;
@@ -1495,10 +1562,11 @@ export function startSky(
        quads whose coarse cell corners reach a cloud edge, and each column
        below its cloud-sea top. */
     if (doField) D32.set(base32);
-    else for (let i = 0; i < cloudN; i++) {
-      const o = cloudList[i];
-      D32[o] = base32[o]; /* last frame's cloud pixels */
-    }
+    else
+      for (let i = 0; i < cloudN; i++) {
+        const o = cloudList[i];
+        D32[o] = base32[o]; /* last frame's cloud pixels */
+      }
     cloudN = 0;
     for (let gy0 = 0, gyN = (rows + 1) >> 1; gy0 < gyN; gy0++) {
       const rowA = gy0 * gc;
@@ -1548,7 +1616,9 @@ export function startSky(
          above is fixed, so a run is a walk down that bank's colour ramp. */
       for (let x = 0; x < cols; x++) {
         const st = seaTop[x];
-        const yE = ridgeTop ? Math.min(rows - 1, Math.floor(ridgeTop[x] + 1)) : rows - 1;
+        const yE = ridgeTop
+          ? Math.min(rows - 1, Math.floor(ridgeTop[x] + 1))
+          : rows - 1;
         let y = Math.max(0, Math.floor(st) + 1);
         for (; y <= yE && y < st + 1.5; y++) D32[y * cols + x] = px(x, y);
         let li = 0;
@@ -1573,7 +1643,8 @@ export function startSky(
               continue;
             }
             const dy = ea * inv;
-            D32[y * cols + x] = seaLut[lb + (dy >= 1 ? 127 : (dy * 127 + 0.5) | 0)];
+            D32[y * cols + x] =
+              seaLut[lb + (dy >= 1 ? 127 : (dy * 127 + 0.5) | 0)];
           }
         }
       }
@@ -1585,10 +1656,16 @@ export function startSky(
         const y = stars[i + 1];
         const o4 = (y * cols + x) * 4;
         const o3 = (y * cols + x) * 3;
-        if (D32[o4 >> 2] === starV[j]) D32[o4 >> 2] = base32[o4 >> 2]; /* undo last frame's star */
-        const cloud = Math.abs(d[o4] - bs[o3]) + Math.abs(d[o4 + 2] - bs[o3 + 2]);
+        if (D32[o4 >> 2] === starV[j])
+          D32[o4 >> 2] = base32[o4 >> 2]; /* undo last frame's star */
+        const cloud =
+          Math.abs(d[o4] - bs[o3]) + Math.abs(d[o4 + 2] - bs[o3 + 2]);
         if (cloud > 12) continue;
-        const tw = stars[i + 2] * (reduced ? 0.8 : 0.7 + 0.3 * Math.sin(ta * stars[i + 4] + stars[i + 3]));
+        const tw =
+          stars[i + 2] *
+          (reduced
+            ? 0.8
+            : 0.7 + 0.3 * Math.sin(ta * stars[i + 4] + stars[i + 3]));
         d[o4] += (220 - d[o4]) * tw;
         d[o4 + 1] += (228 - d[o4 + 1]) * tw;
         d[o4 + 2] += (240 - d[o4 + 2]) * tw;
@@ -1612,16 +1689,22 @@ export function startSky(
         aLutSig = palSig;
         stampW = dW;
         for (let q = 0; q <= 32; q++)
-          aLut[q] = (((Math.min(1, q / 32) * 255) | 0) << 24) | (dc[2] << 16) | (dc[1] << 8) | dc[0];
+          aLut[q] =
+            (((Math.min(1, q / 32) * 255) | 0) << 24) |
+            (dc[2] << 16) |
+            (dc[1] << 8) |
+            dc[0];
         stampOff = STAMPS.map((st) => {
           const o = new Int32Array(st.length / 3);
-          for (let s = 0; s < st.length; s += 3) o[s / 3] = st[s + 1] * dW + st[s];
+          for (let s = 0; s < st.length; s += 3)
+            o[s / 3] = st[s + 1] * dW + st[s];
           return o;
         });
         stampV = [aC, aS].map((a) =>
           STAMPS.map((st) => {
             const v = new Int32Array(st.length / 3);
-            for (let s = 0; s < st.length; s += 3) v[s / 3] = aLut[Math.round(st[s + 2] * a * 32)];
+            for (let s = 0; s < st.length; s += 3)
+              v[s / 3] = aLut[Math.round(st[s + 2] * a * 32)];
             return v;
           })
         );
@@ -1645,7 +1728,13 @@ export function startSky(
         for (let li = 0; li < NS; li++)
           for (let cx = 0; cx < ncx; cx++)
             seaFw[li * ncx + cx] =
-              6 + 22 * smooth((noise((cx * PITCH + 2) / 90 + li * 7, li + tm * 0.01) - 0.35) / 0.4);
+              6 +
+              22 *
+                smooth(
+                  (noise((cx * PITCH + 2) / 90 + li * 7, li + tm * 0.01) -
+                    0.35) /
+                    0.4
+                );
       for (let cy = 0; cy < ncy; cy++) {
         const py = cy * PITCH + 2;
         const gyf = py / kc;
@@ -1688,7 +1777,12 @@ export function startSky(
               const i10 = i00 + 1;
               const i01 = i00 + gc;
               const i11 = i01 + 1;
-              if (F[i00] > thD || F[i10] > thD || F[i01] > thD || F[i11] > thD) {
+              if (
+                F[i00] > thD ||
+                F[i10] > thD ||
+                F[i01] > thD ||
+                F[i11] > thD
+              ) {
                 const fa = F[i00] + (F[i10] - F[i00]) * tx;
                 const fb = F[i01] + (F[i11] - F[i01]) * tx;
                 const f = fa + (fb - fa) * ty;
@@ -1712,7 +1806,9 @@ export function startSky(
             const wS = sideMap[ci];
             const w = wC >= wS ? wC : wS;
             if (w >= 0.07)
-              key = ((wC >= wS ? 1 : 2) << 8) | (Math.min(NL - 1, (w * NL) | 0) + 1);
+              key =
+                ((wC >= wS ? 1 : 2) << 8) |
+                (Math.min(NL - 1, (w * NL) | 0) + 1);
           }
           if (key !== cellKey[ci]) setCell(ci, cx, cy, key);
         }
@@ -1806,7 +1902,11 @@ export function startSky(
         const a = m[1].split(",");
         if (a.length < 4 || parseFloat(a[3]) >= 0.97) return true;
       }
-      if (n.tagName === "CANVAS" || n.tagName === "IMG" || n.tagName === "VIDEO")
+      if (
+        n.tagName === "CANVAS" ||
+        n.tagName === "IMG" ||
+        n.tagName === "VIDEO"
+      )
         return true;
     }
     return false;
@@ -1880,7 +1980,8 @@ export function startSky(
     typeof ResizeObserver === "function"
       ? new ResizeObserver(() => {
           const r = root.getBoundingClientRect();
-          if (Math.max(1, r.width) === W && Math.max(1, r.height) === H) return; /* the initial callback, or no change */
+          if (Math.max(1, r.width) === W && Math.max(1, r.height) === H)
+            return; /* the initial callback, or no change */
           needResize = true;
           schedule();
         })
@@ -1909,7 +2010,8 @@ export function startSky(
           draw(performance.now(), true);
         })
       : null;
-  if (mo && themed) mo.observe(themed, { attributes: true, attributeFilter: ["data-theme"] });
+  if (mo && themed)
+    mo.observe(themed, { attributes: true, attributeFilter: ["data-theme"] });
   const onMq = () => {
     reduced = !!(mq && mq.matches);
     still();
@@ -1917,7 +2019,8 @@ export function startSky(
   };
   if (mq && mq.addEventListener) mq.addEventListener("change", onMq);
   const slow = window.setInterval(() => {
-    if (stopped || hidden || !inView || parked || (!raf && pageRest.idle)) return;
+    if (stopped || hidden || !inView || parked || (!raf && pageRest.idle))
+      return;
     if (reduced) {
       const a = readCalm();
       const b = readPalette(false);
@@ -1968,7 +2071,10 @@ export function startSky(
   };
   const onTouchEnd = (e: Event) => {
     const pe = e as PointerEvent;
-    if (e.type === "pointercancel" || (pe.pointerType && pe.pointerType !== "touch"))
+    if (
+      e.type === "pointercancel" ||
+      (pe.pointerType && pe.pointerType !== "touch")
+    )
       return;
     const te = e as TouchEvent;
     if (te.touches && te.touches.length) return;

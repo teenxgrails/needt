@@ -189,7 +189,10 @@ export function ExposureWordmark({
       });
     };
     measure();
-    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    window.addEventListener("scroll", onScroll, {
+      capture: true,
+      passive: true,
+    });
     window.addEventListener("resize", onScroll, { passive: true });
     document.fonts?.ready.then(measure).catch(() => undefined);
     let io: IntersectionObserver | null = null;
@@ -333,11 +336,15 @@ export function ExposureWordmark({
     if (!live || developed.current) return undefined;
     developed.current = true;
     setDeveloping(true);
-    const id = window.setTimeout(() => {
-      ensureSprings();
-      for (let i = 0; i < letters.length; i++) write(i, resolveRef.current(i));
-      setDeveloping(false);
-    }, EW_DEVELOP_MS + letters.length * EW_DEVELOP_STAGGER_MS + 40);
+    const id = window.setTimeout(
+      () => {
+        ensureSprings();
+        for (let i = 0; i < letters.length; i++)
+          write(i, resolveRef.current(i));
+        setDeveloping(false);
+      },
+      EW_DEVELOP_MS + letters.length * EW_DEVELOP_STAGGER_MS + 40
+    );
     return () => window.clearTimeout(id);
   }, [ensureSprings, letters.length, live, write]);
 
@@ -403,7 +410,9 @@ export function ExposureWordmark({
     <h1
       ref={host}
       className={
-        "font-display" + (px >= 22 ? " ew-sculpt" : "") + (className ? " " + className : "")
+        "font-display" +
+        (px >= 22 ? " ew-sculpt" : "") +
+        (className ? " " + className : "")
       }
       onPointerEnter={onEnter}
       onPointerMove={onMove}
@@ -427,7 +436,9 @@ export function ExposureWordmark({
           className={"ew-letter" + (developing ? " is-developing" : "")}
           style={
             {
-              animationDelay: developing ? `${i * EW_DEVELOP_STAGGER_MS}ms` : undefined,
+              animationDelay: developing
+                ? `${i * EW_DEVELOP_STAGGER_MS}ms`
+                : undefined,
               "--ew-from": floor,
             } as React.CSSProperties
           }

@@ -63,7 +63,11 @@ export function atRest(r: RestInput): boolean {
 }
 
 /** One step of the drift ease; the position integrates this, so it never jumps. */
-export function easeDrift(drift: number, dtSeconds: number, idle: boolean): number {
+export function easeDrift(
+  drift: number,
+  dtSeconds: number,
+  idle: boolean
+): number {
   const dt = Math.max(0, dtSeconds);
   return idle
     ? Math.max(0, drift - dt / REST_DOWN_S)
@@ -161,7 +165,13 @@ function attach(m: RestMachine) {
   // Not "scroll": the app scrolls by itself; a person's scroll always starts
   // with wheel / touch / key / pointerdown. Passive, capture, never blocks.
   const opts = { passive: true, capture: true } as const;
-  const names = ["pointermove", "pointerdown", "keydown", "wheel", "touchstart"];
+  const names = [
+    "pointermove",
+    "pointerdown",
+    "keydown",
+    "wheel",
+    "touchstart",
+  ];
   const wake = () => {
     const wasIdle = m.idle;
     m.touch();

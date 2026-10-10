@@ -1,4 +1,5 @@
 /* Copied from the v2 wordmark with axis.ts: v3 must not import src/components/needt/**, which the contract step deletes. */
+
 /* The maths the wordmark is made of, proved without a DOM: the clamps at
  * both sizes, that breathe's per-letter phase offset really is 260ms, that
  * pulse runs opposite to breathe, and that busy resolves to exactly 55. */

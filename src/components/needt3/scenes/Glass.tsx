@@ -18,7 +18,9 @@ export interface GlassCardProps
   strong?: boolean;
   /** The picked plan card: an ink ring instead of the hairline. */
   best?: boolean;
-  onClick?: (e: MouseEvent<HTMLDivElement> | KeyboardEvent<HTMLDivElement>) => void;
+  onClick?: (
+    e: MouseEvent<HTMLDivElement> | KeyboardEvent<HTMLDivElement>
+  ) => void;
   /** Accessible name when the card is clickable. */
   label?: string;
   style?: CSSProperties;
@@ -122,7 +124,8 @@ export function PxDots({
 }) {
   const items = [];
   for (let n = 0; n < count; n++) {
-    const cls = "px-dot" + (n === index ? " is-on" : n < index ? " is-done" : "");
+    const cls =
+      "px-dot" + (n === index ? " is-on" : n < index ? " is-done" : "");
     items.push(
       onPick ? (
         <button

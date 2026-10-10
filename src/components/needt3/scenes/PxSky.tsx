@@ -9,7 +9,12 @@ import {
   useState,
 } from "react";
 
-import { type SkyClouds, type SkyEngine, type SkyHorizon, startSky } from "./sky-engine";
+import {
+  type SkyClouds,
+  type SkyEngine,
+  type SkyHorizon,
+  startSky,
+} from "./sky-engine";
 
 let grainUrl: string | null = null;
 
