@@ -8,6 +8,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { getGoogleCredentials, getOutlookCredentials } from "@/lib/auth";
 import { authSecret } from "@/lib/auth/auth-secret";
 import { authenticateUser } from "@/lib/auth/credentials-provider";
+import { oauthSignInGate } from "@/lib/auth/signups";
 import { newDate } from "@/lib/date-utils";
 import { GOOGLE_SIGN_IN_SCOPES } from "@/lib/google-oauth-scopes";
 import { logger } from "@/lib/logger";
@@ -107,6 +108,14 @@ export async function getAuthOptions(): Promise<NextAuthOptions> {
     providers,
     callbacks: {
       async signIn({ user, account }) {
+        /* Registration is closed until launch: an OAuth return that would
+           create a user goes back to sign-in instead of into the adapter. */
+        const gate = await oauthSignInGate({
+          provider: account?.provider,
+          providerAccountId: account?.providerAccountId,
+          email: user.email,
+        });
+        if (gate !== true) return gate;
         if (account?.provider !== "credentials" && user.email) {
           await prisma.user.updateMany({
             where: { email: user.email },
