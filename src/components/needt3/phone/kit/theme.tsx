@@ -53,16 +53,22 @@ const QUARTER_HOUR = 15 * 60 * 1000;
 /**
  * The sky's mood now, re-read once a quarter hour while mounted (one timer
  * per host, no frames), so a plate left open crosses into golden hour / dusk.
+ * The first render (server and hydration) has no hour and wears the day's own
+ * mood, so the markup matches; the real hour lands in the first effect.
  */
 export function usePkSkyMood(): { mood: SkyMood; dark: boolean } {
   const side = usePkSide();
-  const [hour, setHour] = useState(() => newDate().getHours());
+  const [hour, setHour] = useState<number | null>(null);
   useEffect(() => {
+    setHour(newDate().getHours());
     const id = window.setInterval(
       () => setHour(newDate().getHours()),
       QUARTER_HOUR
     );
     return () => window.clearInterval(id);
   }, []);
-  return { mood: pkSkyMood(side, hour), dark: side === "dark" };
+  return {
+    mood: hour === null ? null : pkSkyMood(side, hour),
+    dark: side === "dark",
+  };
 }
