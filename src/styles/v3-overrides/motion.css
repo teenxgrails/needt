@@ -51,3 +51,23 @@
 .needt-v3 .tk-touch {
   transition: opacity 220ms ease;
 }
+
+/* Lane C · T15 Mailbox + T16 Habits (MailScreen.jsx, Habits.jsx, places.jsx).
+   V-D17: the banner's 200 ms transform snaps to the scale (220). */
+.needt-v3 .ml-banner {
+  transition:
+    opacity 180ms ease,
+    transform 220ms var(--nx-ease);
+}
+/* The prototype's inline <style> hovers (ML_CSS, PL_CSS), one fill step. */
+.needt-v3 .ml-tab {
+  background: transparent;
+}
+.needt-v3 .ml-tab[aria-pressed="false"]:hover {
+  background: var(--fill-3);
+  color: var(--text-secondary);
+}
+.needt-v3 .pl-habit-more:hover {
+  background: var(--fill-3);
+  color: var(--text-primary);
+}
