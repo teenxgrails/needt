@@ -95,3 +95,371 @@
   --px-shadow: transparent;
   --px-halo: transparent;
 }
+
+/* ───────── P3 · phone overlays + drag (phone-overlays.jsx, phone-drag.jsx) ─────────
+ * Rule 12: a PkSheet is already the one backdrop blur of its stack. A glass
+ * chip, card or button inside it is blur on blur (it blurs what the sheet has
+ * already blurred, for nothing), so inside the overlay sheets they keep their
+ * tint and edge and lose the filter. */
+.needt-v3
+  :is(.pov-task, .pov-pick, .pov-composer, .pov-ask, .pov-event, .pov-paywall)
+  :is(.pk-glass, .pk-btn) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Ask: the AI orb, still. The animated AiOrb is not ported; nothing loops at rest. */
+.needt-v3 .pov-orb-still {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 34% 28%,
+    var(--orb-spec),
+    var(--orb-hi) 16%,
+    var(--orb-blue) 52%,
+    var(--orb-deep) 100%
+  );
+}
+
+/* The paywall sheet. paywall.jsx keeps most of its CSS in an inline <style>
+ * (PW_CSS) that the vendor script does not extract; this is the phone half of
+ * it, with the prototype's names and geometry. Type is snapped to 13 / 12 px,
+ * the price and headline are display sizes. The sky is the CSS fallback set
+ * on [data-px-scope] above. */
+.needt-v3 .pw-phone {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--px-ground, var(--pov-paywall-ground));
+}
+.needt-v3 .pw-phone .pw-top {
+  flex: none;
+  position: relative;
+  z-index: 1;
+}
+.needt-v3 .pw-phone .pw-x {
+  position: absolute;
+  z-index: 8;
+  left: 14px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+.needt-v3 .pw-kicker {
+  font:
+    600 11px/14px ui-monospace,
+    "SF Mono",
+    Menlo,
+    Consolas,
+    monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--px-ink-2);
+}
+.needt-v3 .pw-h {
+  margin: 0;
+  font-family: var(--font-v3-exposure), Georgia, serif;
+  font-weight: 400;
+  font-variation-settings: "EXPO" -14;
+  letter-spacing: -0.01em;
+  line-height: 0.96;
+  color: var(--px-ink);
+  text-shadow:
+    0 1px 2px var(--px-shadow),
+    0 0 18px var(--px-halo);
+}
+.needt-v3 .pw-h em {
+  font-style: italic;
+  font-variation-settings: "EXPO" 8;
+  padding-right: 0.04em;
+}
+.needt-v3 .pw-phone .pw-body {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+.needt-v3 .pw-phone .pw-body::-webkit-scrollbar {
+  display: none;
+}
+.needt-v3 .pw-freeline {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 16px 16px 0;
+  font: 500 12px/16px var(--font-sans);
+  color: var(--px-ink);
+  text-shadow:
+    0 1px 2px var(--px-shadow),
+    0 0 12px var(--px-halo);
+}
+.needt-v3 .pw-freeline b {
+  font-weight: 650;
+}
+.needt-v3 .pw-freeline-tag {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--white-a22);
+  box-shadow: var(--white-a45) 0 0 0 1px inset;
+  font: 600 10px/12px var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-shadow: none;
+}
+.needt-v3 .pw-phone .pw-plans {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 22px 16px 6px;
+  box-sizing: border-box;
+}
+.needt-v3 .pw-phone .pw-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  text-align: left;
+  box-sizing: border-box;
+}
+.needt-v3 .pw-phone .pw-plan.is-picked {
+  box-shadow:
+    var(--pk-glass-chip-edge),
+    inset 0 0 0 1.5px var(--v2p-ink);
+}
+.needt-v3 .pw-phone .pw-plan:disabled {
+  opacity: 0.55;
+}
+.needt-v3 .pw-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 15px/20px var(--font-sans);
+  color: var(--v2p-ink);
+}
+.needt-v3 .pw-radio {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9px;
+  box-shadow: var(--v2p-ink-3) 0 0 0 1.5px inset;
+  transition: box-shadow 140ms ease;
+}
+.needt-v3 .pw-radio.is-on {
+  box-shadow: var(--v2p-ink) 0 0 0 5px inset;
+}
+.needt-v3 .pw-seg {
+  margin-left: auto;
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--pov-fill);
+}
+.needt-v3 .pw-seg-b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: 500 12px/1 var(--font-sans);
+  color: var(--v2p-ink-2);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+.needt-v3 .pw-seg-b.is-on {
+  background: var(--v2p-card, var(--surface-raised));
+  color: var(--v2p-ink);
+}
+.needt-v3 .pw-seg-save {
+  font: 600 11px/1 var(--font-sans);
+  color: var(--success);
+  font-variant-numeric: tabular-nums;
+}
+.needt-v3 .pw-limited {
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: var(--pov-fill-2);
+  font: 600 11px/1 var(--font-sans);
+  letter-spacing: 0.04em;
+}
+.needt-v3 .pw-price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.needt-v3 .pw-amount {
+  font-family: var(--font-v3-exposure), Georgia, serif;
+  font-variation-settings: "EXPO" -14;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--v2p-ink);
+  font-variant-numeric: tabular-nums;
+}
+.needt-v3 .pw-per {
+  font: 400 13px/1 var(--font-sans);
+  color: var(--v2p-ink-2);
+}
+.needt-v3 .pw-sub {
+  min-height: 16px;
+  font: 400 12px/16px var(--font-sans);
+  color: var(--v2p-ink-2);
+}
+.needt-v3 .pw-save {
+  font-weight: 600;
+  color: var(--success);
+}
+.needt-v3 .pw-meter-t {
+  font: 600 12px/14px var(--font-sans);
+  color: var(--v2p-ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.needt-v3 .pw-paywall-text {
+  padding: 6px 16px 0;
+}
+.needt-v3 .pw-feats-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+}
+.needt-v3 .pw-kick {
+  font:
+    600 11px/14px ui-monospace,
+    "SF Mono",
+    Menlo,
+    Consolas,
+    monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--v2p-ink-2);
+}
+.needt-v3 .pw-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.needt-v3 .pw-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font: 400 13px/18px var(--font-sans);
+  color: var(--v2p-ink);
+}
+.needt-v3 .pw-list .pw-ck {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--v2p-ink);
+  color: var(--v2p-ground);
+}
+.needt-v3 .pw-list .pw-note {
+  color: var(--v2p-ink-2);
+}
+.needt-v3 .pw-foot {
+  padding: 10px 24px 16px;
+  font: 500 12px/15px var(--font-sans);
+  color: var(--px-ink-2);
+  text-align: center;
+}
+.needt-v3 .pw-phone .pw-bar {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 12px 16px 26px;
+  background: var(--pov-paywall-ground);
+  box-shadow: inset 0 1px 0 var(--v2p-line);
+}
+.needt-v3 .pw-phone .pw-bar .pw-go-sub {
+  display: block;
+  color: var(--v2p-ink-2);
+  text-shadow: none;
+  text-align: center;
+}
+.needt-v3 .pw-phone .pw-bar .pk-btn {
+  height: 48px;
+}
+.needt-v3 .pw-state .pk-btn.pw-state-btn {
+  flex: none;
+}
+
+/* The lifted row (phone-drag.jsx): its shadow is its own layer, faded in by
+ * opacity, so the card that tilts and scales never animates a box-shadow
+ * (rule 12: transform / opacity / clip-path only). The vendored card clips
+ * its content to 18px; the clip moves to .pd-lift-clip so the shadow outside
+ * it is not cut. Shift and flip move rows by transform alone. */
+.needt-v3 .pd-lift-card {
+  position: relative;
+  overflow: visible;
+  background: none;
+  transition: transform 0.2s var(--pk-spring, ease);
+}
+.needt-v3 .pd-lift-card.is-up {
+  box-shadow: none;
+}
+.needt-v3 .pd-lift-clip {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--v2p-card);
+}
+.needt-v3 .pd-lift-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  box-shadow: var(--v2p-plate-shadow);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.needt-v3 .pd-lift-card.is-up .pd-lift-shadow {
+  opacity: 1;
+}
+.needt-v3 [data-pd-shift] {
+  transition: transform 0.22s var(--pk-ease, ease);
+}
+.needt-v3 [data-pd-flip] {
+  transition: transform 0.32s var(--pk-spring, ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .needt-v3 .pd-lift-card,
+  .needt-v3 .pd-lift-shadow,
+  .needt-v3 .pw-radio,
+  .needt-v3 .pw-seg-b,
+  .needt-v3 [data-pd-shift],
+  .needt-v3 [data-pd-flip] {
+    transition: none;
+  }
+}

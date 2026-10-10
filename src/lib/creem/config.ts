@@ -1,4 +1,6 @@
 export const NEEDT_PRICING = {
+  currency: "USD",
+  trialDays: 14,
   free: {
     name: "Free",
     amountCents: 0,
@@ -17,6 +19,8 @@ export const NEEDT_PRICING = {
   lifetime: {
     name: "Lifetime",
     amountCents: 14_900,
+    /** First N buyers only. How many are left comes from the server. */
+    cap: 300,
     productEnv: "CREEM_PRODUCT_LIFETIME",
   },
 } as const;
