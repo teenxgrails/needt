@@ -7,6 +7,7 @@ import { routeErrorResponse } from "@/lib/api/route-error";
 import { authenticateRequest } from "@/lib/auth/api-auth";
 import { resolvePageAccess } from "@/lib/auth/page-auth";
 import { pageV3FieldsSchema, parseV3Fields } from "@/lib/needt3/api-fields";
+import { proStyleRefusal } from "@/lib/pages/pro-style-gate";
 
 const LOG_SOURCE = "PageDetailAPI";
 type RouteContext = { params: Promise<{ id: string }> };
@@ -53,6 +54,17 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
         { error: "Page access denied" },
         { status: 403 }
       );
+    }
+    if (v3.data.style !== undefined) {
+      const current = await getPage(auth, id);
+      if (!current)
+        return NextResponse.json({ error: "Page not found" }, { status: 404 });
+      const refusal = await proStyleRefusal(
+        auth.userId,
+        current.style as Record<string, unknown> | null,
+        v3.data.style
+      );
+      if (refusal) return refusal;
     }
     const page = await updatePage(auth, id, {
       title: typeof body.title === "string" ? body.title : undefined,

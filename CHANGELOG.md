@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Documents: a backdrop (document themes, and every "All Styles" preset but
+  Default) is now Pro on the server too. `PATCH /api/pages/:id` and
+  `POST /api/pages` answer a Free plan that sets one with 403
+  `UPGRADE_REQUIRED`; a backdrop already on a page after a downgrade stays and
+  other edits still save, and going back to no backdrop is always allowed.
+  The v3 Style panel opens the plan page when the server refuses.
+- Billing: `GET /api/billing` reports `checkoutEnabled`, read from the new
+  server-controlled `billing_checkout` feature flag (off unless a flag row
+  turns it on). The v3 paywall keeps its checkout button off and says
+  checkout opens soon until it is on; its Free and Pro lists now print the
+  limits the server enforces (`PLAN_LIMITS`).
 - Design v3 port, foundations (behind the `design_v3` flag, off for
   everyone): the new design's tokens, themes and stylesheets are vendored
   under a `.needt-v3` scope (`npm run tokens:sync:v3`, guarded by
