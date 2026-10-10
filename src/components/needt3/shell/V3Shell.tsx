@@ -13,6 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { useNeedt3Ui } from "@/store/needt3-ui";
 
+import { ComposerHost } from "../composer/Composer";
 import { CtxLayer } from "../ctx/CtxLayer";
 import { V3PortalScope } from "../ctx/PortalScope";
 import { registerCtx } from "../ctx/registry";
@@ -283,6 +284,7 @@ export function V3Shell({ children }: PropsWithChildren) {
             open={paletteOpen}
             onClose={() => useNeedt3Ui.getState().setPaletteOpen(false)}
           />
+          <ComposerHost />
         </V3PortalScope>
       </div>
     </ShellContext.Provider>
