@@ -9,8 +9,10 @@ import { newDate, newDateFromYMD } from "@/lib/date-utils";
 import type { V3Project } from "@/lib/needt3/map";
 
 import {
+  canCommit,
   composeFromLine,
   composeFromParse,
+  settleCommit,
   vocabularyOf,
   writeFacet,
 } from "../compose";
@@ -144,5 +146,48 @@ describe("dayIn", () => {
     expect(dayIn(late, "UTC")).toBe("2026-09-01");
     expect(dayIn(late, "Europe/Berlin")).toBe("2026-09-02");
     expect(dayIn(late, "America/Los_Angeles")).toBe("2026-09-01");
+  });
+});
+
+describe("adding a task", () => {
+  const composed = composeFromLine("Call Sam", NOW, TODAY, [])!;
+
+  it("sends a line that says something, once", () => {
+    expect(canCommit(composed, false)).toBe(true);
+    expect(canCommit(composed, true)).toBe(false); // a double tap while pending
+    expect(canCommit(null, false)).toBe(false); // an empty line
+  });
+
+  it("clears the text and closes only after the create resolved", async () => {
+    const out = await settleCommit(async () => ({ id: "t1" }));
+    expect(out).toEqual({
+      ok: true,
+      clear: true,
+      close: true,
+      value: { id: "t1" },
+    });
+  });
+
+  it("keeps the text and the sheet when the create fails", async () => {
+    const out = await settleCommit(async () => {
+      throw new Error("offline");
+    });
+    expect(out.ok).toBe(false);
+    expect(out.clear).toBe(false);
+    expect(out.close).toBe(false);
+  });
+
+  it("decides nothing until the create has settled", async () => {
+    let release: (v: string) => void = () => undefined;
+    const pending = new Promise<string>((r) => (release = r));
+    let settled = false;
+    const run = settleCommit(() => pending).then((o) => {
+      settled = true;
+      return o;
+    });
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    release("done");
+    expect((await run).clear).toBe(true);
   });
 });

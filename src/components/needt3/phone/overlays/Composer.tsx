@@ -25,7 +25,9 @@ import { PkButton, PkSheet, pkCx } from "../kit";
 import {
   CHIP_ROWS,
   type ChipKind,
+  canCommit,
   composeFromParse,
+  settleCommit,
   vocabularyOf,
   writeFacet,
 } from "./compose";
@@ -79,6 +81,9 @@ export function PkComposer({ open, onClose }: PkComposerProps) {
   const partsApi = useTaskParts();
   const [text, setText] = useState("");
   const [pick, setPick] = useState<ChipKind | null>(null);
+  /* A create is in flight: Add and Enter do nothing until it settles. */
+  const [sending, setSending] = useState(false);
+  const inflight = useRef(false);
   const input = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -119,25 +124,38 @@ export function PkComposer({ open, onClose }: PkComposerProps) {
 
   const commit = useCallback(async () => {
     const composed = composeFromParse(parse, today);
-    if (!composed) return;
-    setText("");
-    setPick(null);
-    onClose();
+    if (!canCommit(composed, inflight.current)) return;
+    inflight.current = true;
+    setSending(true);
     try {
-      const { result, undo } = await create.mutateAsync({
-        draft: composed.draft,
-      });
+      const out = await settleCommit(() =>
+        create.mutateAsync({ draft: composed.draft })
+      );
+      // On a failure the text and the sheet stay; the hook has toasted.
+      if (!out.ok || !out.value) return;
+      setText("");
+      setPick(null);
+      onClose();
+      const { result, undo } = out.value;
       if (!result) return;
-      for (const part of composed.parts) {
-        await partsApi.add(result.id, part);
+      try {
+        for (const part of composed.parts) {
+          await partsApi.add(result.id, part);
+        }
+      } catch {
+        // The task exists; the parts hook has said what it could not add.
       }
       snack(addedLabel(result, today), undo);
-    } catch {
-      // The write hooks have said so and put the cache back.
+    } finally {
+      inflight.current = false;
+      setSending(false);
     }
   }, [parse, today, onClose, create, partsApi]);
 
+  /* The sheet has shut: forget the line, unless a send is still running, in
+     which case a failure must find its text where it was. */
   const reset = () => {
+    if (inflight.current) return;
     setText("");
     setPick(null);
   };
@@ -160,7 +178,7 @@ export function PkComposer({ open, onClose }: PkComposerProps) {
         <PkButton
           kind="primary"
           icon={<LuArrowUp size={18} />}
-          disabled={!text.trim()}
+          disabled={!text.trim() || sending}
           onClick={() => void commit()}
           data-pov-add=""
         >

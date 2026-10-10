@@ -19,16 +19,17 @@ import {
 
 import { ApiError, sendJson } from "@/lib/needt3/hooks/core";
 import { usePlan } from "@/lib/needt3/hooks/plan";
-import { lifetimeLeftLine, priceStrings } from "@/lib/needt3/pricing";
+import { freeIncludes, proIncludes } from "@/lib/needt3/paywall";
+import { priceStrings } from "@/lib/needt3/pricing";
 
 import { PkButton, PkGlass, PkSheet, pkCx } from "../kit";
 import {
-  PRO_FEATURES,
   type PwPick,
   checkoutBody,
-  ctaFor,
   freeSummary,
   pickOf,
+  pwDisabled,
+  pwView,
 } from "./paywallModel";
 import {
   pkPaywall,
@@ -39,6 +40,10 @@ import {
   pwScene,
   pwStatus,
 } from "./strings";
+
+/* Both lists come from PLAN_LIMITS, the numbers the server enforces. */
+const FREE = freeIncludes();
+const PRO = proIncludes();
 
 /* The sheet is the prototype's `Paywall phone` as a full PkSheet (phone-
    overlays.jsx `PkPaywall`). The painted sky is not ported (PxSky): the sheet
@@ -164,13 +169,14 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
     picked === "monthly" ? "monthly" : "annual"
   );
   if (picked !== "lifetime") lastPro.current = picked;
-  const closed = plan?.lifetimeAvailable === false;
-  const pick: PwPick =
-    picked === "lifetime" && closed ? lastPro.current : picked;
+  const pick: PwPick = picked;
   const cyc = lastPro.current;
-  const unconfigured = plan?.configured === false;
   const offline = !online;
-  const cta = ctaFor(pick, p);
+  /* The label, the sub line, "blocked" and the lifetime counter are the
+     desktop paywall's: `paywallCta(pick, plan)` and the server's count. */
+  const view = pwView(pick, plan, p.lifetimeCap);
+  const cta = view.cta;
+  const off = pwDisabled(view, { online, busy: checkout.busy });
 
   // A fresh open starts from the cycle asked for, with no stale error.
   const { clear } = checkout;
@@ -198,19 +204,12 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
   };
 
   const go = () => {
-    if (checkout.busy || offline || unconfigured) return;
+    if (off) return;
     void checkout.start(pick);
   };
 
   const proOn = pick !== "lifetime";
-  const status = unconfigured ? (
-    <Status
-      offline={false}
-      error={{ text: "Billing is not configured." }}
-      onRetry={go}
-      retrying={false}
-    />
-  ) : (
+  const status = (
     <Status
       offline={offline}
       error={checkout.error}
@@ -294,9 +293,9 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
           </div>
           <div className="pw-body">
             <div className="pw-freeline" data-pw-free="">
-              <span className="pw-freeline-tag">{pwFree.current_plan}</span>
+              <span className="pw-freeline-tag">{view.freeTag}</span>
               <span>
-                <b>{pwFree.free}</b> — {freeSummary()}
+                <b>{pwFree.free}</b> — {freeSummary(FREE)}
                 {pwFree.yours_to_keep}
               </span>
             </div>
@@ -349,7 +348,6 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
                 className={pkCx("pw-plan", pick === "lifetime" && "is-picked")}
                 data-pw-plan="lifetime"
                 aria-pressed={pick === "lifetime"}
-                disabled={closed}
                 onClick={() => setPicked("lifetime")}
               >
                 <span className="pw-name">
@@ -367,15 +365,16 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
                   <span className="pw-per">one-time</span>
                 </span>
                 <span className="pw-sub">
-                  {closed
-                    ? "Lifetime is closed."
-                    : `${pwPlans.for_the_first} ${p.lifetimeCap} people`}
+                  {pwPlans.for_the_first} {p.lifetimeCap} people
                 </span>
-                {closed ? null : (
-                  <span className="pw-meter-t" data-pw-left="">
-                    {lifetimeLeftLine(null, p.lifetimeCap)}
-                  </span>
-                )}
+                <span className="pw-meter" data-pw-left="">
+                  {view.lifetimePct !== null ? (
+                    <span className="pw-meter-bar">
+                      <span style={{ width: view.lifetimePct + "%" }} />
+                    </span>
+                  ) : null}
+                  <span className="pw-meter-t">{view.lifetimeLine}</span>
+                </span>
               </PkGlass>
             </div>
             <div className="pw-paywall-text">
@@ -384,7 +383,7 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
                   {pwFeatures.every_pro_plan_includes}
                 </span>
                 <ul className="pw-list pw-feats">
-                  {PRO_FEATURES.map(([t, n]) => (
+                  {PRO.map(([t, n]) => (
                     <li key={t}>
                       <span className="pw-ck">
                         <LuCheck size={11} />
@@ -408,13 +407,13 @@ export function PkPaywall({ open, onClose, feature, cycle }: PkPaywallProps) {
               kind="primary"
               block
               data-pw-cta={pick}
-              disabled={offline || unconfigured || checkout.busy}
+              disabled={off}
               onClick={go}
             >
-              {cta.label}
+              {checkout.busy ? "Opening checkout…" : cta.label}
             </PkButton>
             <span className="pw-go-sub" data-pw-cta-sub="">
-              {cta.sub}
+              {cta.blocked ?? cta.sub}
             </span>
           </div>
         </div>

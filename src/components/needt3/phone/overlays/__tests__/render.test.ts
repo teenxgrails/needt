@@ -161,7 +161,8 @@ describe("PkPaywall", () => {
     expect(out).toContain("$4.92");
     expect(out).toContain("$149");
     expect(out).toContain("−30%");
-    expect(out).toContain("Start 14-day free trial");
+    expect(out).toContain("Choose Pro · $59 / year");
+    expect(out).not.toContain("Start 14-day free trial");
     expect(out).toContain("Prices in USD. Taxes may apply.");
     expect(out).toContain("First 300 buyers");
     expect(out).not.toContain("212");
@@ -169,12 +170,15 @@ describe("PkPaywall", () => {
   it("names the feature that asked, and lists what Pro includes", () => {
     expect(out).toContain("Unlock <b>Plan my day</b> with Pro");
     expect(out).toContain("Every Pro plan includes");
-    expect(out).toContain("AI planning");
+    expect(out).toContain("AI included");
   });
   it("is a sheet, a close button and a bar with the call to action", () => {
     expect(out).toContain("pov-paywall");
     expect(out).toContain("data-pw-close");
     expect(out).toContain('data-pw-cta="annual"');
+  });
+  it("the button is off while the plan has not loaded", () => {
+    expect(out).toMatch(/data-pw-cta="annual" disabled=""/);
   });
 });
 

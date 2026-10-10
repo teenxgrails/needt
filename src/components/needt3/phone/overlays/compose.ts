@@ -127,3 +127,38 @@ export const CHIP_ROWS: Record<
     ["Whenever", "whenever"],
   ],
 };
+
+/* ── Adding: nothing is cleared or closed before the server has said yes ─── */
+
+/** A line can be sent when it says something and no send is already running. */
+export function canCommit(
+  composed: ComposedTask | null,
+  pending: boolean
+): composed is ComposedTask {
+  return composed !== null && !pending;
+}
+
+/** What the sheet does once the create call has settled. */
+export interface CommitOutcome<T> {
+  ok: boolean;
+  /** Clear the line and shut the sheet; false keeps both for another try. */
+  clear: boolean;
+  close: boolean;
+  value?: T;
+}
+
+/**
+ * Run the create call and decide what the sheet does with its answer: on
+ * success the line is cleared and the sheet closes; on failure the text stays
+ * and the sheet stays open (the write hook has already said what went wrong).
+ */
+export async function settleCommit<T>(
+  send: () => Promise<T>
+): Promise<CommitOutcome<T>> {
+  try {
+    const value = await send();
+    return { ok: true, clear: true, close: true, value };
+  } catch {
+    return { ok: false, clear: false, close: false };
+  }
+}
