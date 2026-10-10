@@ -14,9 +14,13 @@ import {
   plansWeekends,
   sectionFromHash,
   sectionOf,
+  settingsNotices,
+  settingsRedirectTarget,
   themeLocked,
   trialBarPct,
   withWeekends,
+  workHourChoices,
+  workHoursValid,
 } from "../derive";
 import { PREF_DEFAULTS, accentFromPrefs, readPref } from "../derive";
 
@@ -128,5 +132,70 @@ describe("prefs", () => {
     expect(accentFromPrefs({ accent: "pink" })).toBe("pink");
     expect(accentFromPrefs({ accent: 3 })).toBeUndefined();
     expect(accentFromPrefs(undefined)).toBeUndefined();
+  });
+});
+
+describe("/settings redirect with design_v3", () => {
+  it("sends anchors that moved out of Settings to Connections", () => {
+    expect(settingsRedirectTarget("#calendars")).toEqual({
+      kind: "screen",
+      href: "/connections",
+    });
+    expect(settingsRedirectTarget("#integrations")).toEqual({
+      kind: "screen",
+      href: "/connections",
+    });
+    expect(settingsRedirectTarget("#ai")).toEqual({
+      kind: "screen",
+      href: "/connections#ai",
+    });
+  });
+  it("opens the sheet for everything else", () => {
+    expect(settingsRedirectTarget("#billing")).toEqual({
+      kind: "sheet",
+      section: "plan",
+    });
+    expect(settingsRedirectTarget("")).toEqual({
+      kind: "sheet",
+      section: null,
+    });
+  });
+  it("turns the query a redirect brought back into notices", () => {
+    expect(
+      settingsNotices("?calendarSuccess=connected&provider=google")
+    ).toEqual([
+      expect.objectContaining({
+        tone: "success",
+        title: "Google Calendar connected",
+      }),
+    ]);
+    expect(
+      settingsNotices("?calendarError=consent_denied&provider=outlook")[0]
+    ).toMatchObject({
+      tone: "error",
+      title: "Outlook Calendar wasn’t connected",
+    });
+    expect(settingsNotices("?billing=success")[0]).toMatchObject({
+      tone: "success",
+      title: "Checkout complete",
+    });
+    expect(settingsNotices("?emailVerification=verified")).toEqual([
+      { tone: "success", title: "Email confirmed" },
+    ]);
+    expect(settingsNotices("")).toEqual([]);
+  });
+});
+
+describe("working hours", () => {
+  it("the day starts before it ends", () => {
+    expect(workHoursValid(9, 17)).toBe(true);
+    expect(workHoursValid(17, 17)).toBe(false);
+    expect(workHoursValid(18, 9)).toBe(false);
+  });
+  it("offers only start hours before the end, and end hours after the start", () => {
+    const starts = workHourChoices("start", 9, 10).map(([v]) => v);
+    expect(starts).toEqual(["07:00", "08:00", "09:00"]);
+    const ends = workHourChoices("end", 17, 18).map(([v]) => v);
+    expect(ends).toEqual(["17:00", "19:00", "20:00"]);
   });
 });

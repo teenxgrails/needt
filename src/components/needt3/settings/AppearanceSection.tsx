@@ -6,7 +6,7 @@ import { FiCheck, FiLock } from "react-icons/fi";
 
 import { usePlan } from "@/lib/needt3/hooks/plan";
 import { useUpdateSettings } from "@/lib/needt3/hooks/settings";
-import { useSetPref } from "@/lib/needt3/hooks/settings";
+import { useSetPref, useSettings } from "@/lib/needt3/hooks/settings";
 import {
   ACCENTS,
   type AccentId,
@@ -166,6 +166,7 @@ export function AppearanceSection({
   const plan = usePlan();
   const update = useUpdateSettings();
   const setPref = useSetPref();
+  const settings = useSettings();
   const palettes = usePalettes();
   const kind = plan.data?.kind ?? "free";
   const pro = isPro(kind);
@@ -177,8 +178,11 @@ export function AppearanceSection({
   };
   const pickAccent = (id: AccentId) => {
     if (accentLocked(id, kind)) return onUpgrade();
+    // The accent lives in prefs; before they load a write is refused, so
+    // the pick would show and then not survive a reload.
+    if (!settings.data) return;
     setLook({ accent: id });
-    void setPref("accent", id).then(mark);
+    void setPref("accent", id).then((saved) => saved && mark());
   };
   const cur = ACCENTS.find((a) => a.id === accent) ?? ACCENTS[0];
 

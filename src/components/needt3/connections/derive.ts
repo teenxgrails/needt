@@ -13,6 +13,8 @@ import type { V3Connection } from "@/lib/needt3/hooks/connections";
 export type CardState = "connected" | "disconnected" | "none";
 
 export interface CnItem extends CatalogEntry {
+  /** Unique per card: the slug, plus the account when a provider has several. */
+  key: string;
   /** Mail entries are not in the server catalog; the screen adds them. */
   kind: "calendar" | "mail" | "app";
   state: CardState;
@@ -71,42 +73,45 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
  * Catalog + mailboxes, each with how it is connected. A native card is
  * connected when an account of its provider exists; a toolkit card when an
  * integration row for its slug is CONNECTED (an ERROR row needs
- * reconnecting). Several accounts of one provider show the first.
+ * reconnecting). Several accounts of one native provider get one card each,
+ * so Disconnect always names the one account it removes.
  */
 export function buildItems(
   catalog: readonly CatalogEntry[],
   integrations: readonly IntegrationRow[],
   accounts: readonly V3Connection[]
 ): CnItem[] {
-  return [...catalog, ...MAIL_ENTRIES].map((entry) => {
+  return [...catalog, ...MAIL_ENTRIES].flatMap((entry): CnItem[] => {
     const calProvider = CAL_PROVIDER[entry.slug];
     const mailProvider = MAIL_PROVIDER[entry.slug];
-    const base = {
+    const base: CnItem = {
       ...entry,
+      key: entry.slug,
       kind: (calProvider
         ? "calendar"
         : mailProvider
           ? "mail"
           : "app") as CnItem["kind"],
-      state: "none" as CardState,
-      account: null as string | null,
-      detail: null as string | null,
-      accountId: null as string | null,
+      state: "none",
+      account: null,
+      detail: null,
+      accountId: null,
     };
     if (calProvider || mailProvider) {
-      const hit = accounts.find(
+      const hits = accounts.filter(
         (a) =>
           a.kind === (calProvider ? "calendar" : "mail") &&
           a.provider === (calProvider ?? mailProvider)
       );
-      if (!hit) return base;
-      return {
+      if (!hits.length) return [base];
+      return hits.map((hit) => ({
         ...base,
+        key: hits.length > 1 ? `${entry.slug}:${hit.accountId}` : entry.slug,
         state: hit.state === "connected" ? "connected" : "disconnected",
         account: hit.label,
         detail: hit.detail,
         accountId: hit.accountId,
-      };
+      }));
     }
     const rows = integrations.filter(
       (r) => norm(r.toolkit) === norm(entry.slug)
@@ -114,15 +119,24 @@ export function buildItems(
     const live = rows.find((r) => r.status === "CONNECTED");
     const failed = rows.find((r) => r.status === "ERROR");
     const row = live ?? failed;
-    if (!row) return base;
-    return {
-      ...base,
-      state: live ? "connected" : "disconnected",
-      account: row.toolkit,
-      detail: live ? null : "Access ended — reconnect to sync",
-      accountId: row.id,
-    };
+    if (!row) return [base];
+    return [
+      {
+        ...base,
+        state: live ? "connected" : "disconnected",
+        account: row.toolkit,
+        detail: live ? null : "Access ended — reconnect to sync",
+        accountId: row.id,
+      },
+    ];
   });
+}
+
+/** The confirm's title: names the account when the card has one. */
+export function disconnectTitle(item: Pick<CnItem, "name" | "account">) {
+  return item.account && item.account !== item.name
+    ? `Disconnect ${item.name} (${item.account})?`
+    : `Disconnect ${item.name}?`;
 }
 
 export type Show = "all" | "connected";
@@ -223,7 +237,11 @@ export function statusLine(c: { connected: number; issues: number }) {
   return parts.join(" · ");
 }
 
-/** The free plan's AI-tools gate (owner, 08.10.26): the tab is locked, not hidden. */
+/**
+ * The free plan's AI-tools gate (owner, 08.10.26): the tab is locked, not
+ * hidden. Locked only once the plan is known to be Free; while billing loads
+ * (no kind yet) nothing is locked, so a paying person never sees the lock flash.
+ */
 export function aiToolsLocked(kind: string | null | undefined) {
-  return !kind || kind === "free";
+  return kind === "free";
 }

@@ -11,12 +11,13 @@ import { useMark } from "./SettingsContext";
 import {
   hourLabel,
   hourOf,
-  hourOptions,
   minutes,
   parseWorkDays,
   planningSummary,
   plansWeekends,
   withWeekends,
+  workHourChoices,
+  workHoursValid,
 } from "./derive";
 import { SGroup, SRow, SSelect, V3Switch } from "./kit";
 
@@ -58,8 +59,20 @@ export function DaySection() {
 
   const save = (patch: Parameters<typeof update.mutateAsync>[0]) =>
     void update.mutateAsync(patch).then(mark);
-  const saveSchedule = (patch: Parameters<typeof setSchedule.mutateAsync>[0]) =>
+  // Never write the schedule before it has loaded: workDays in particular
+  // would be rebuilt from an empty list and drop every weekday.
+  const saveSchedule = (
+    patch: Parameters<typeof setSchedule.mutateAsync>[0]
+  ) => {
+    if (!sch) return;
     void setSchedule.mutateAsync(patch).then(mark);
+  };
+  const saveHours = (start: number, end: number) => {
+    if (!workHoursValid(start, end)) return;
+    saveSchedule({ workHourStart: start, workHourEnd: end });
+  };
+  const start = sch?.workHourStart ?? 9;
+  const end = sch?.workHourEnd ?? 17;
 
   return (
     <>
@@ -71,11 +84,12 @@ export function DaySection() {
           <SSelect
             label="Day starts"
             width={110}
-            value={hourLabel(sch?.workHourStart ?? 9)}
-            options={hourOptions(sch?.workHourStart)}
+            value={hourLabel(start)}
+            options={workHourChoices("start", sch?.workHourStart, end)}
+            disabled={!sch}
             onChange={(v) => {
               const h = hourOf(v);
-              if (h !== null) saveSchedule({ workHourStart: h });
+              if (h !== null) saveHours(h, end);
             }}
           />
         </SRow>
@@ -83,11 +97,12 @@ export function DaySection() {
           <SSelect
             label="Day ends"
             width={110}
-            value={hourLabel(sch?.workHourEnd ?? 17)}
-            options={hourOptions(sch?.workHourEnd)}
+            value={hourLabel(end)}
+            options={workHourChoices("end", sch?.workHourEnd, start)}
+            disabled={!sch}
             onChange={(v) => {
               const h = hourOf(v);
-              if (h !== null) saveSchedule({ workHourEnd: h });
+              if (h !== null) saveHours(start, h);
             }}
           />
         </SRow>
@@ -96,6 +111,7 @@ export function DaySection() {
             label="Week starts"
             value={s?.weekStartDay ?? "monday"}
             options={WEEK}
+            disabled={!s}
             onChange={(v) => save({ weekStartDay: v })}
           />
         </SRow>
@@ -105,6 +121,7 @@ export function DaySection() {
             width={170}
             value={s?.timeZone ?? "UTC"}
             options={zoneOptions(s?.timeZone ?? "UTC")}
+            disabled={!s}
             onChange={(v) => save({ timeZone: v })}
           />
         </SRow>
@@ -118,6 +135,7 @@ export function DaySection() {
             label="Calendar opens in"
             value={s?.defaultView === "days" ? "days" : "week"}
             options={VIEWS}
+            disabled={!s}
             onChange={(v) => save({ defaultView: v })}
           />
         </SRow>
@@ -152,6 +170,7 @@ export function DaySection() {
                 width={110}
                 value={String(sch?.bufferMinutes ?? 15)}
                 options={minutes([0, 5, 10, 15])}
+                disabled={!sch}
                 onChange={(v) => saveSchedule({ bufferMinutes: Number(v) })}
               />
             </SRow>
@@ -162,6 +181,7 @@ export function DaySection() {
               <V3Switch
                 label="Plan on weekends"
                 checked={weekends}
+                disabled={!sch}
                 onChange={(on) =>
                   saveSchedule({
                     workDays: JSON.stringify(withWeekends(days, on)),

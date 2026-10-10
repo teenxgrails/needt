@@ -91,7 +91,8 @@ export function AccountSection() {
         <SRow
           title="Delete account"
           tone="danger"
-          desc="Your tasks, documents, habits and connections go at once. Export first under Data & privacy. This cannot be undone."
+          // The wait is ACCOUNT_DELETION_GRACE_DAYS (services/account/account-deletion).
+          desc="Deletion is scheduled for 7 days after you confirm, and you can cancel it here until then. After that your tasks, documents, habits and connections are gone for good. Export first under Data & privacy."
           expanded={deleting}
           onClick={() => setDeleting((d) => !d)}
         />

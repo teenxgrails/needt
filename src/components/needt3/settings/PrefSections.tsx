@@ -15,7 +15,10 @@ function usePrefs() {
   const prefs = settings.data?.prefs;
   return {
     get: <K extends PrefKey>(key: K) => readPref(prefs, key),
-    set: (key: PrefKey, value: unknown) => void setPref(key, value).then(mark),
+    set: (key: PrefKey, value: unknown) =>
+      void setPref(key, value).then((saved) => saved && mark()),
+    /** Controls stay off until the stored prefs are known. */
+    off: !settings.data,
   };
 }
 
@@ -36,6 +39,7 @@ export function GeneralSection() {
               ["web", "Browser"],
               ["app", "Desktop app"],
             ]}
+            disabled={p.off}
             onChange={(v) => p.set("links", v)}
           />
         </SRow>
@@ -48,6 +52,7 @@ export function GeneralSection() {
           <V3Switch
             label="Offline mode"
             checked={p.get("offline")}
+            disabled={p.off}
             onChange={(v) => p.set("offline", v)}
           />
         </SRow>
@@ -69,6 +74,7 @@ export function TasksSection() {
             width={110}
             value={p.get("est")}
             options={minutes([15, 30, 45, 60, 90])}
+            disabled={p.off}
             onChange={(v) => p.set("est", v)}
           />
         </SRow>
@@ -81,6 +87,7 @@ export function TasksSection() {
               ["none", "No project"],
               ...list.map((x) => [x.id, x.name] as const),
             ]}
+            disabled={p.off}
             onChange={(v) => p.set("project", v)}
           />
         </SRow>
@@ -93,6 +100,7 @@ export function TasksSection() {
           <V3Switch
             label="Show subtasks"
             checked={p.get("parts")}
+            disabled={p.off}
             onChange={(v) => p.set("parts", v)}
           />
         </SRow>
@@ -103,6 +111,7 @@ export function TasksSection() {
           <V3Switch
             label="Task value"
             checked={p.get("money")}
+            disabled={p.off}
             onChange={(v) => p.set("money", v)}
           />
         </SRow>
@@ -124,6 +133,7 @@ export function FocusSection() {
             width={110}
             value={p.get("len")}
             options={minutes([25, 50, 90])}
+            disabled={p.off}
             onChange={(v) => p.set("len", v)}
           />
         </SRow>
@@ -133,6 +143,7 @@ export function FocusSection() {
             width={110}
             value={p.get("brk")}
             options={minutes([5, 10, 15])}
+            disabled={p.off}
             onChange={(v) => p.set("brk", v)}
           />
         </SRow>
@@ -145,6 +156,7 @@ export function FocusSection() {
               ["tick", "Tick"],
               ["chime", "Chime"],
             ]}
+            disabled={p.off}
             onChange={(v) => p.set("sound", v)}
           />
         </SRow>
@@ -154,6 +166,7 @@ export function FocusSection() {
           <V3Switch
             label="Hide notifications"
             checked={p.get("hideAlerts")}
+            disabled={p.off}
             onChange={(v) => p.set("hideAlerts", v)}
           />
         </SRow>
@@ -164,6 +177,7 @@ export function FocusSection() {
           <V3Switch
             label="Sound when a task snaps"
             checked={p.get("snapSound")}
+            disabled={p.off}
             onChange={(v) => p.set("snapSound", v)}
           />
         </SRow>
@@ -175,6 +189,7 @@ export function FocusSection() {
           <V3Switch
             label="Animate the logo"
             checked={!p.get("stopMark")}
+            disabled={p.off}
             onChange={(on) => p.set("stopMark", !on)}
           />
         </SRow>

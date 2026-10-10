@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { FiDownload } from "react-icons/fi";
 
 import { sendJson } from "@/lib/needt3/hooks/core";
 import { useSetPref, useSettings } from "@/lib/needt3/hooks/settings";
 import { notify } from "@/lib/notifications";
-import { clearNeedtOfflineData } from "@/lib/pwa/offline-client";
 
 import { useMark } from "./SettingsContext";
 import { readPref } from "./derive";
@@ -22,10 +20,9 @@ import { SBtn, SGroup, SRow, V3Switch } from "./kit";
  */
 export function DataSection() {
   const mark = useMark();
-  const qc = useQueryClient();
   const settings = useSettings();
   const setPref = useSetPref();
-  const [busy, setBusy] = useState<"all" | "device" | null>(null);
+  const [busy, setBusy] = useState<"all" | null>(null);
 
   const requestAll = async () => {
     setBusy("all");
@@ -36,16 +33,6 @@ export function DataSection() {
       notify.error(
         error instanceof Error ? error.message : "Could not start the export."
       );
-    } finally {
-      setBusy(null);
-    }
-  };
-  const again = async () => {
-    setBusy("device");
-    try {
-      await clearNeedtOfflineData();
-      await qc.invalidateQueries({ queryKey: ["v3"] });
-      notify.success("Fetched everything again");
     } finally {
       setBusy(null);
     }
@@ -91,20 +78,17 @@ export function DataSection() {
           <V3Switch
             label="Share usage data"
             checked={readPref(settings.data?.prefs, "usage")}
-            onChange={(v) => void setPref("usage", v).then(mark)}
+            disabled={!settings.data}
+            onChange={(v) =>
+              void setPref("usage", v).then((saved) => saved && mark())
+            }
           />
         </SRow>
       </SGroup>
-      <SGroup title="This device">
-        <SRow
-          title="Download everything again"
-          desc="Clears what this device keeps and fetches it fresh. Nothing is deleted."
-        >
-          <SBtn disabled={busy === "device"} onClick={() => void again()}>
-            Download again
-          </SBtn>
-        </SRow>
-      </SGroup>
+      {/* //todo: "This device → Download everything again". A safe version
+          first runs NEEDT_SYNC_NOW so the outbox drains, then refetches; it
+          must never call clearNeedtOfflineData(), which also wipes the
+          outbox queue, page drafts and task templates (unsent work). */}
     </>
   );
 }

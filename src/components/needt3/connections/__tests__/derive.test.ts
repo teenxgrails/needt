@@ -9,6 +9,7 @@ import {
   connectPlan,
   counts,
   disconnectKind,
+  disconnectTitle,
   filterItems,
   pillOf,
   statusLine,
@@ -97,6 +98,37 @@ describe("buildItems", () => {
   });
 });
 
+describe("several accounts of one provider", () => {
+  const items = buildItems(
+    catalog,
+    [],
+    [acct({}), acct({ label: "work@example.com", accountId: "a2" })]
+  );
+  const google = items.filter((i) => i.slug === "google-calendar");
+  it("get one card each, keyed and named by the account", () => {
+    expect(google.map((i) => [i.key, i.account, i.accountId])).toEqual([
+      ["google-calendar:a1", "me@example.com", "a1"],
+      ["google-calendar:a2", "work@example.com", "a2"],
+    ]);
+    expect(new Set(items.map((i) => i.key)).size).toBe(items.length);
+  });
+  it("the confirm names the account it disconnects", () => {
+    expect(disconnectTitle(google[1])).toBe(
+      "Disconnect Google Calendar (work@example.com)?"
+    );
+    expect(disconnectTitle({ name: "Notion", account: null })).toBe(
+      "Disconnect Notion?"
+    );
+  });
+  it("a single account keeps the plain slug key", () => {
+    expect(
+      buildItems(catalog, [], [acct({})]).find(
+        (i) => i.slug === "google-calendar"
+      )?.key
+    ).toBe("google-calendar");
+  });
+});
+
 describe("filterItems / counts", () => {
   const items = buildItems(catalog, rows, [acct({})]);
   it("Connected hides what is not connected", () => {
@@ -177,7 +209,8 @@ describe("connectPlan", () => {
     expect(pillOf("none", true).label).toBe("Connecting…");
     expect(pillOf("disconnected", false).tone).toBe("danger");
     expect(aiToolsLocked("free")).toBe(true);
-    expect(aiToolsLocked(undefined)).toBe(true);
+    expect(aiToolsLocked(undefined)).toBe(false);
+    expect(aiToolsLocked(null)).toBe(false);
     expect(aiToolsLocked("trial")).toBe(false);
   });
 });

@@ -121,12 +121,15 @@ export function SSelect({
   onChange,
   width,
   label,
+  disabled,
 }: {
   value: string;
   options: readonly (readonly [string, string])[];
   onChange: (value: string) => void;
   width?: number;
   label: string;
+  /** Off until the value's source has loaded, so nothing writes blind. */
+  disabled?: boolean;
 }) {
   const container = useV3PortalContainer();
   const [open, setOpen] = useState(false);
@@ -134,13 +137,18 @@ export function SSelect({
   const cur = options.find(([v]) => v === value);
   const w = width ?? 140;
   return (
-    <Dropdown.Root open={open} onOpenChange={setOpen} modal={false}>
+    <Dropdown.Root
+      open={open && !disabled}
+      onOpenChange={(next) => setOpen(next && !disabled)}
+      modal={false}
+    >
       <span className="settings-sselect-row" style={{ width: w }}>
         <Dropdown.Trigger asChild>
           <button
             type="button"
             className="settings-sselect-select"
             aria-label={label}
+            disabled={disabled}
             aria-haspopup="listbox"
             style={{
               textAlign: "left",

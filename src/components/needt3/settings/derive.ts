@@ -3,6 +3,7 @@
  * from the sheet: the sections, the `/settings#section` deep link, what Free
  * locks, and the hour / weekday helpers the Your day rows need.
  */
+import { calendarConnectionNotice } from "@/lib/calendar-connection-status";
 import type { AccentId, ThemeChoice } from "@/lib/needt3/theme";
 
 export type SectionId =
@@ -108,6 +109,75 @@ export function sectionFromHash(hash: string | null | undefined) {
   return HASH_ALIASES[key] ?? null;
 }
 
+/** Old anchors that now live on another screen, not in the sheet. */
+const HASH_SCREENS: Record<string, string> = {
+  calendars: "/connections",
+  calendar: "/connections",
+  accounts: "/connections",
+  integrations: "/connections",
+  "task-sync": "/connections",
+  // The AI tools tab of Connections (Claude, ChatGPT, … and the Pro lock).
+  ai: "/connections#ai",
+  "ai-assistant": "/connections#ai",
+  connectors: "/connections#ai",
+};
+
+export type SettingsRedirectTarget =
+  | { kind: "screen"; href: string }
+  | { kind: "sheet"; section: SectionId | null };
+
+/**
+ * Where `/settings#hash` goes with design_v3 on: another screen for the
+ * anchors that moved out of Settings (calendars, integrations, AI), else the
+ * sheet over Today at the matching section.
+ */
+export function settingsRedirectTarget(
+  hash: string | null | undefined
+): SettingsRedirectTarget {
+  const key = (hash ?? "").replace(/^#/, "").trim().toLowerCase();
+  const href = HASH_SCREENS[key];
+  return href
+    ? { kind: "screen", href }
+    : { kind: "sheet", section: sectionFromHash(key) };
+}
+
+export interface SettingsNotice {
+  tone: "success" | "error";
+  title: string;
+  description?: string;
+}
+
+/**
+ * What a redirect back to `/settings?…` came to say: a calendar OAuth result,
+ * a finished checkout, a confirmed email. Read before the URL is replaced,
+ * because the query is dropped with it.
+ */
+export function settingsNotices(search: string | URLSearchParams) {
+  const q = typeof search === "string" ? new URLSearchParams(search) : search;
+  const out: SettingsNotice[] = [];
+  const cal = calendarConnectionNotice(
+    q.get("calendarError"),
+    q.get("calendarSuccess"),
+    q.get("provider")
+  );
+  if (cal)
+    out.push({
+      tone: cal.tone,
+      title: cal.title,
+      description: cal.description,
+    });
+  if (q.get("billing") === "success")
+    out.push({
+      tone: "success",
+      title: "Checkout complete",
+      description:
+        "Your plan updates here as soon as the payment is confirmed.",
+    });
+  if (q.get("emailVerification") === "verified")
+    out.push({ tone: "success", title: "Email confirmed" });
+  return out;
+}
+
 /** The section a store value names, falling back to the default. */
 export function sectionOf(value: string | null | undefined): SectionId {
   return sectionFromHash(value) ?? DEFAULT_SECTION;
@@ -199,6 +269,29 @@ export function hourOptions(current: number | null | undefined) {
     );
   }
   return base;
+}
+
+/** The day has to start before it ends. */
+export const workHoursValid = (start: number, end: number) => start < end;
+
+/**
+ * Options for "Day starts" / "Day ends": the hours that keep start before end,
+ * given the other end's stored hour. The current value is always kept so the
+ * select can show what is stored.
+ */
+export function workHourChoices(
+  which: "start" | "end",
+  own: number | null | undefined,
+  other: number | null | undefined
+) {
+  return hourOptions(own).filter(([v]) => {
+    const h = hourOf(v);
+    if (h === null || other === null || other === undefined) return true;
+    if (h === own) return true;
+    return which === "start"
+      ? workHoursValid(h, other)
+      : workHoursValid(other, h);
+  });
 }
 
 /** `workDays` is a JSON string of weekday numbers, 0 = Sunday. */

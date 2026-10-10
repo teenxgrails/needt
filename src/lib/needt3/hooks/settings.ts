@@ -85,12 +85,19 @@ export function useUpdateSettings() {
   });
 }
 
-/** Set one UI preference: `setPref("docsSort", "viewed")`. */
+/**
+ * Set one UI preference: `setPref("docsSort", "viewed")`. The server replaces
+ * the whole `prefs` map, so the write needs the stored map to merge into.
+ * Before settings have loaded there is nothing to merge with, and writing
+ * `{ [key]: value }` alone would wipe every other preference; the write is
+ * refused instead and resolves to `null`.
+ */
 export function useSetPref() {
   const qc = useQueryClient();
   const update = useUpdateSettings();
-  return (key: string, value: unknown) => {
-    const cur = qc.getQueryData<V3Settings>(qk.settings())?.prefs ?? {};
-    return update.mutateAsync({ prefs: { ...cur, [key]: value } });
+  return async (key: string, value: unknown) => {
+    const cur = qc.getQueryData<V3Settings>(qk.settings());
+    if (!cur) return null;
+    return update.mutateAsync({ prefs: { ...cur.prefs, [key]: value } });
   };
 }

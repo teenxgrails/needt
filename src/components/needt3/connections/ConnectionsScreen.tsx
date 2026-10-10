@@ -44,6 +44,7 @@ import {
   connectPlan,
   counts,
   disconnectKind,
+  disconnectTitle,
   filterItems,
   pillOf,
   statusLine,
@@ -316,6 +317,8 @@ export function ConnectionsScreen() {
   const [caldav, setCaldav] = useState(false);
 
   useEffect(() => {
+    // `/settings#ai` lands here as `/connections#ai`: open the AI tools tab.
+    if (window.location.hash === "#ai") return setTab("ai");
     try {
       if (window.localStorage.getItem(TAB_KEY) === "ai") setTab("ai");
     } catch {
@@ -353,7 +356,7 @@ export function ConnectionsScreen() {
     if (how.kind === "unavailable") return void notify.info(how.reason);
     if (how.kind === "caldav") return setCaldav(true);
     if (how.kind === "navigate") return void window.location.assign(how.href);
-    setBusy(item.slug);
+    setBusy(item.key);
     const r = await connectToolkit(how.toolkit);
     if (!r.ok) {
       notify.error(r.error);
@@ -362,7 +365,7 @@ export function ConnectionsScreen() {
   };
   const disconnect = async (item: CnItem) => {
     if (!item.accountId) return;
-    setBusy(item.slug);
+    setBusy(item.key);
     const kind = disconnectKind(item);
     const r =
       kind === "calendar"
@@ -373,7 +376,11 @@ export function ConnectionsScreen() {
     setBusy(null);
     setConfirm(null);
     if (!r.ok) return void notify.error(r.error);
-    notify.success(`${item.name} disconnected`);
+    notify.success(
+      item.account && item.account !== item.name
+        ? `${item.name} (${item.account}) disconnected`
+        : `${item.name} disconnected`
+    );
     await refresh();
   };
 
@@ -471,10 +478,10 @@ export function ConnectionsScreen() {
               <div className="cn-grid">
                 {shown.map((item, i) => (
                   <Card
-                    key={item.slug}
+                    key={item.key}
                     item={item}
                     i={i}
-                    busy={busy === item.slug}
+                    busy={busy === item.key}
                     onConnect={() => void connect(item)}
                     onDisconnect={() => setConfirm(item)}
                   />
@@ -496,7 +503,7 @@ export function ConnectionsScreen() {
       <Sheet
         open={!!confirm}
         onClose={() => setConfirm(null)}
-        title={confirm ? `Disconnect ${confirm.name}?` : "Disconnect"}
+        title={confirm ? disconnectTitle(confirm) : "Disconnect"}
         scrimClassName="nx-scrim cn-sheet-grid"
         className="nx-sheet cn-sheet-col"
         style={{ width: 400 }}
@@ -504,10 +511,14 @@ export function ConnectionsScreen() {
         {confirm ? (
           <>
             <div className="cn-confirm-col">
-              <span className="cn-sheet-title">Disconnect {confirm.name}?</span>
+              <span className="cn-sheet-title">{disconnectTitle(confirm)}</span>
               <span className="cn-confirm-text">
-                Needt stops reading from {confirm.name}. What is already in
-                Needt stays; you can connect again at any time.
+                Needt stops reading from {confirm.name}
+                {confirm.account && confirm.account !== confirm.name
+                  ? ` for ${confirm.account}`
+                  : ""}
+                . What is already in Needt stays; you can connect again at any
+                time.
               </span>
             </div>
             <div className="cn-consent-row-5">
@@ -523,7 +534,7 @@ export function ConnectionsScreen() {
                 type="button"
                 className="nx-btn nx-btn-danger"
                 data-cn-confirm={confirm.slug}
-                disabled={busy === confirm.slug}
+                disabled={busy === confirm.key}
                 onClick={() => void disconnect(confirm)}
               >
                 Disconnect
