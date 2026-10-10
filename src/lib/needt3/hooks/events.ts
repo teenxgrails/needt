@@ -1,6 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
+
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { eventsInRange } from "@/lib/needt3/derive";
 import {
@@ -23,8 +25,9 @@ import {
 import { useTimeZone } from "./settings";
 
 const EVENTS = qk.events();
+const CALENDARS_KEY = [...EVENTS, "calendars"] as const;
 
-interface ApiFeed {
+export interface ApiFeed {
   id: string;
   type: string;
   name: string;
@@ -56,7 +59,7 @@ export function useEvents(range?: DateRange) {
 /** The person's calendars (feeds), for the calendar picker. */
 export function useCalendars() {
   return useQuery({
-    queryKey: [...EVENTS, "calendars"],
+    queryKey: CALENDARS_KEY,
     queryFn: () => fetchJson<ApiFeed[]>("/api/feeds"),
     staleTime: 5 * 60_000,
   });
@@ -132,4 +135,50 @@ export function useEventLifecycle() {
       });
     },
   });
+}
+
+/** Name of the calendar Needt creates when a person has nowhere to write. */
+export const NEEDT_CALENDAR_NAME = "Needt";
+
+/**
+ * Where a new event goes: an enabled Needt (LOCAL) calendar, or none.
+ * Synced provider calendars are read-only from v3
+ * (PATCH does not write back yet), so v3 never writes into them.
+ */
+export function pickWritableCalendar(feeds: ApiFeed[]): ApiFeed | null {
+  const enabled = feeds.filter((f) => f.enabled !== false);
+  return enabled.find((f) => f.type === "LOCAL") ?? null;
+}
+
+/**
+ * Create an event without the caller choosing a calendar. If the person
+ * has no LOCAL calendar yet, one named "Needt" is created first
+ * (POST /api/feeds), so the Composer's Event kind and the Calendar's
+ * click-a-slot draft always have somewhere to write. Undo removes the event.
+ */
+export function useCreateEvent() {
+  const qc = useQueryClient();
+  const lifecycle = useEventLifecycle();
+  return useCallback(
+    async (
+      fields: Pick<V3Event, "title" | "startAt" | "endAt" | "isAllDay">
+    ) => {
+      const feeds =
+        qc.getQueryData<ApiFeed[]>(CALENDARS_KEY) ??
+        (await fetchJson<ApiFeed[]>("/api/feeds"));
+      let calendar = pickWritableCalendar(feeds);
+      if (!calendar) {
+        calendar = await sendJson<ApiFeed>("/api/feeds", "POST", {
+          name: NEEDT_CALENDAR_NAME,
+          type: "LOCAL",
+          enabled: true,
+        });
+        qc.setQueryData<ApiFeed[]>(CALENDARS_KEY, [...feeds, calendar]);
+      }
+      return lifecycle.mutateAsync({
+        create: { ...fields, calendarId: calendar.id },
+      });
+    },
+    [qc, lifecycle]
+  );
 }
